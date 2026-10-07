@@ -1,6 +1,6 @@
 # How to work on this site
 
-This repository is a small website of interactive physics revision activities for Alex's students, hosted on GitHub Pages. Each activity is one self-contained HTML page. `index.html` is the front page that links to them all.
+This repository is a small website of interactive physics revision activities for Alex's students, hosted on GitHub Pages. Each activity is one self-contained HTML page. `index.html` is the launch page with a Year 9 button and an IGCSE button; these open `year-9.html` and `igcse.html`, which list the workouts for that course.
 
 ## Before you start any task
 
@@ -11,8 +11,9 @@ This repository is a small website of interactive physics revision activities fo
 ## Site structure
 
 - One HTML file per activity in the repository root, named in lowercase with hyphens (e.g. `forces-and-motion.html`, `heat-transfer.html`, `solids-liquids-gases.html`).
-- Every activity page has a small "← All activities" link at the top that goes to `index.html`.
-- When you add a new page, also add its card to `index.html`: title, year group, and one line saying what students do.
+- Every activity page has a small back link at the top to its course list: "← Year 9 workouts" (`year-9.html`) or "← IGCSE workouts" (`igcse.html`). The course lists link back to `index.html`.
+- When you add a new page, also add its card to the right course list (`year-9.html` or `igcse.html`): title ending in "Workout", and one line saying what students do. IGCSE titles start with the unit number (e.g. "1a Forces and Motion Workout"), and `igcse.html` lists cards in unit-number order, not by year.
+- **Drafts (not ready to publish):** commit the page to `main` as normal, but add `<meta name="robots" content="noindex">` after the charset meta and give it no card on any list. It is still reachable by its URL (and the repo is public), so nothing sensitive. To publish: add its card to the right list and remove the `noindex` line. Current drafts: `maths-skills.html`.
 - Each page is a complete standalone document: `<!doctype html>`, `<meta charset="utf-8">`, `<meta name="viewport" content="width=device-width, initial-scale=1">`, a `<title>`, then the content. Nothing loads from claude.ai.
 - External files: Google Fonts only. All CSS and JavaScript are inline. No build step, no frameworks, no animation libraries.
 - Never put student names, class lists or results in this repository. It is public.
@@ -67,5 +68,5 @@ For team tasks (jigsaws, escape rooms), design so the group genuinely has to coo
 1. Extract the `<script>` contents and run `node --check` on it.
 2. Check every `getElementById('x')` has a matching `id="x"`, and every `data-action` lookup has a matching attribute.
 3. If tabs changed: the nav `data-tab` values, the `panel-…` ids and `TAB_IDS` must be the same set.
-4. Check `index.html` links to every activity page and every page links back.
+4. Check each course list (`year-9.html`, `igcse.html`) links to every published page for that course (drafts excluded) and every page links back to its list.
 5. Look at it at phone and desktop width, try one activity with the keyboard only, and one with reduced motion on.
