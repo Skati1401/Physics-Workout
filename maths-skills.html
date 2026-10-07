@@ -150,7 +150,7 @@ sup{font-size:.7em;line-height:0}
 
 /* data tables / readings */
 .rtable{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}
-.rd{border:1.5px solid var(--ink3);background:var(--paper);padding:8px 12px;min-width:84px;cursor:pointer;text-align:center}
+.rd{border:1.5px solid var(--ink3);background:var(--paper);padding:8px 16px;min-width:108px;cursor:pointer;text-align:center}
 .rd small{display:block;font:500 11px var(--fm);color:var(--ink3)}
 .rd span{font:600 18px var(--fm)}
 .rd:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
@@ -794,7 +794,7 @@ reg({id:'sigfigs',group:'number',skills:'2A significant figures',title:'Signific
   }});
 /* ================= DATA ================= */
 
-/* ---- Mean, ignoring the anomaly ---- */
+/* ---- Mean and anomalies ---- */
 const MEAN_CTX=[
   {what:'the time for a ball to fall 2.0 m',q:'Time',u:'s',base:0.64,sp:0.02,dp:2},
   {what:'the time for 10 swings of a pendulum',q:'Time',u:'s',base:14.2,sp:0.3,dp:1},
@@ -811,19 +811,22 @@ function genMean(){
   let ai=-1;
   if(hasAnom){ ai=rnd(0,n-1); vals[ai]=qz(c.base+(Math.random()<.5?-1:1)*c.sp*rnd(7,11)); }
   const good=vals.filter((_,i)=>i!==ai), mean=good.reduce((a,b)=>a+b,0)/good.length, meanAll=vals.reduce((a,b)=>a+b,0)/n;
-  return {c,vals,ai,hasAnom,mean,meanAll,adp:dp+1};
+  const sf=Math.min(...good.map(v=>sfCount(v.toFixed(dp))));
+  return {c,vals,ai,hasAnom,mean,meanAll,sf};
 }
 function meanSpec(q){
-  const {c,vals,ai,mean,meanAll,adp}=q, tol=0.6*Math.pow(10,-adp);
+  const {c,vals,ai,mean,meanAll,sf}=q, ans=roundSF(mean,sf), place=Math.pow(10,expOf(+ans)-sf+1);
   const txt=vals.filter((_,i)=>i!==ai).map(v=>v.toFixed(c.dp)).join(' + ');
-  return {kind:'num',title:'Step 2 · Calculate the mean',
-    prompt:(q.hasAnom?'Calculate the mean of the readings, <b>ignoring the anomalous result</b>.':'Calculate the mean of <b>all</b> the readings.')+' Give your answer to <b>'+adp+' decimal place'+(adp>1?'s':'')+'</b>.',
-    unit:c.u,answer:mean,relTol:0,absTol:tol,show:mean.toFixed(adp),
-    hint:v=>q.hasAnom&&Math.abs(v-meanAll)<=tol?'That mean includes the anomalous result. Leave it out, then add up the rest and divide by how many are left.':'',
-    working:'Mean = ('+txt+') &divide; '+(vals.length-(q.hasAnom?1:0))+' = '+mean.toFixed(adp+2)+' = <b>'+mean.toFixed(adp)+' '+c.u+'</b>.'};
+  return {kind:'num',title:'Step '+(q.hasAnom?3:2)+' · Calculate the mean',
+    prompt:'Calculate the mean of the results. Give your answer to the same number of <b>significant figures</b> as the readings.',
+    unit:c.u,answer:+ans,relTol:0,absTol:place*0.01,show:ans,
+    extra:s=>s.includes('.')&&sfCount(s)!==sf?'The value is right, but check the significant figures. The readings are given to '+sf+' s.f., so the mean should be too.':'',
+    hint:v=>q.hasAnom&&Math.abs(v-meanAll)<=place*0.6?'That mean includes the anomalous result. Look back at what you decided to do with it in Step 2.'
+      :Math.abs(v-mean)<place*0.5?'Your value is right, but round it to the same number of significant figures as the readings ('+sf+' s.f.).':'',
+    working:'Mean = ('+txt+') &divide; '+(vals.length-(q.hasAnom?1:0))+' = '+fmt(clean(+roundSF(mean,sf+2)))+' = <b>'+ans+' '+c.u+'</b> (to '+sf+' s.f., the same as the readings).'};
 }
 function meanActionSpec(){
-  return {kind:'mc',title:'Step 3 · What next?',prompt:'What should you do about the anomalous result?',
+  return {kind:'mc',title:'Step 2 · What next?',prompt:'Before you calculate the mean, what should you do about the anomalous result?',
     options:['Leave it out of the mean, and repeat that measurement if you can','Include it, because every result must count','Swap it for a result that looks more sensible','Throw away the whole experiment'],
     correct:0,fixedOrder:false,hints:['','Anomalous results are probably caused by a mistake, so they would drag the mean away from the true value.','Never change data to suit what you expect. Leave it out and say so.','Overkill. One odd reading does not ruin the others.'],
     explain:'An anomalous result is probably a mistake, so leave it out of the mean and say that you have. Repeating the measurement checks it.'};
@@ -839,11 +842,9 @@ function renderMean(q,area,api){
   const finish=first=>{
     done=true; btns.forEach(b=>{ b.disabled=true; }); none.disabled=true; card.classList.add('done'); api.record(first);
     const next=stepCard(area);
-    block(next,meanSpec(q),f2=>{
-      api.record(f2);
-      if(q.hasAnom){ block(stepCard(area),meanActionSpec(),f3=>{ api.record(f3); api.ready(); }); }
-      else api.ready();
-    });
+    const calc=()=>block(q.hasAnom?stepCard(area):next,meanSpec(q),f=>{ api.record(f); api.ready(); });
+    if(q.hasAnom) block(next,meanActionSpec(),f2=>{ api.record(f2); calc(); });
+    else calc();
   };
   const verdict=(isRight,hint,btn)=>{
     if(done) return;
@@ -860,7 +861,7 @@ function renderMean(q,area,api){
   card.append(row,none,fb);
 }
 reg({id:'mean',group:'data',skills:'2B arithmetic mean',title:'Mean and anomalies',
-  intro:'Find the anomaly first, leave it out, then calculate the mean. Sometimes there is no anomaly at all.',
+  intro:'Spot any anomaly, decide what to do about it, then calculate the mean. Sometimes there is no anomaly at all.',
   gen:genMean,render:renderMean});
 
 /* ---- Scatter graphs: trends, shape, proportionality, anomalies ---- */
@@ -1096,9 +1097,9 @@ const SOLVES=[
   ()=>{ const tot=pick([100,200,250,400]), e=pick([20,25,30,40,60,80]), use=tot*e/100;
     return ns('A machine is <b>'+e+'%</b> efficient and the total energy input is <b>'+tot+' J</b>. Find the useful energy output.<span class="eq">efficiency = '+fr('useful','total')+' &times; 100</span>','J',use,'useful = efficiency &times; total &divide; 100 = '+e+' &times; '+tot+' &divide; 100 = <b>'+fmt(use)+' J</b>.'); },
   ()=>{ const n=pick([1.33,1.5,1.52]), i=pick([25,30,35,40,45,50,60]), r=Math.asin(Math.sin(i*Math.PI/180)/n)*180/Math.PI;
-    return ns('Light enters glass of refractive index <b>'+n+'</b> at an angle of incidence of <b>'+i+'&deg;</b>. Find the angle of refraction, to 1 d.p. (Check your calculator is in degree mode.)<span class="eq">n = '+fr('sin i','sin r')+'</span>','&deg;',r,'sin r = sin i &divide; n = sin '+i+'&deg; &divide; '+n+' = '+fmt(+(Math.sin(i*Math.PI/180)/n).toFixed(4))+'.<br>r = sin<sup>&minus;1</sup>('+fmt(+(Math.sin(i*Math.PI/180)/n).toFixed(4))+') = <b>'+r.toFixed(1)+'&deg;</b>.',{relTol:0,absTol:0.15,show:r.toFixed(1)}); },
+    return ns('Light enters glass of refractive index <b>'+n+'</b> at an angle of incidence of <b>'+i+'&deg;</b>. Find the angle of refraction, to 3 s.f. (Check your calculator is in degree mode.)<span class="eq">n = '+fr('sin i','sin r')+'</span>','&deg;',r,'sin r = sin i &divide; n = sin '+i+'&deg; &divide; '+n+' = '+fmt(+(Math.sin(i*Math.PI/180)/n).toFixed(4))+'.<br>r = sin<sup>&minus;1</sup>('+fmt(+(Math.sin(i*Math.PI/180)/n).toFixed(4))+') = <b>'+r.toFixed(1)+'&deg;</b>.',{relTol:0,absTol:0.15,show:r.toFixed(1)}); },
   ()=>{ const n=pick([1.33,1.5,1.52,2.42]), c=Math.asin(1/n)*180/Math.PI;
-    return ns('A material has refractive index <b>'+n+'</b>. Find its critical angle, to 1 d.p.<span class="eq">sin c = '+fr('1','n')+'</span>','&deg;',c,'sin c = 1 &divide; '+n+' = '+fmt(+(1/n).toFixed(4))+'.<br>c = sin<sup>&minus;1</sup>('+fmt(+(1/n).toFixed(4))+') = <b>'+c.toFixed(1)+'&deg;</b>.',{relTol:0,absTol:0.15,show:c.toFixed(1)}); }
+    return ns('A material has refractive index <b>'+n+'</b>. Find its critical angle, to 3 s.f.<span class="eq">sin c = '+fr('1','n')+'</span>','&deg;',c,'sin c = 1 &divide; '+n+' = '+fmt(+(1/n).toFixed(4))+'.<br>c = sin<sup>&minus;1</sup>('+fmt(+(1/n).toFixed(4))+') = <b>'+c.toFixed(1)+'&deg;</b>.',{relTol:0,absTol:0.15,show:c.toFixed(1)}); }
 ];
 function genSolve(){ return pick(SOLVES)(); }
 reg({id:'rearrange',group:'algebra',skills:'3B 3C 3D rearranging and substituting',title:'Rearranging and calculating',
