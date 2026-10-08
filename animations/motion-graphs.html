@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motion Graphs Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5;
+    --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff;
+    --panel-border:#d7dce4;
+    --ink:#182233;
+    --ink-soft:#4c5668;
+    --ink-faint:#8993a5;
+    --accent:#d9720c;
+    --accent-soft:#fdead2;
+    --good:#15803d;
+    --good-soft:#dcf5e3;
+    --bad:#c0311a;
+    --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+
+    --motion:#2158d1;      --motion-soft:#dfe8fc;
+    --calc:#0c8a76;        --calc-soft:#d6f3ee;
+    --measure:#0a7f96;     --measure-soft:#d7f0f4;
+    --force:#c2560c;       --force-soft:#fbe4cd;
+    --balance:#6d3bce;     --balance-soft:#e9e0fb;
+    --vector:#b8267a;      --vector-soft:#fbdeee;
+    --newton:#3d3aa8;      --newton-soft:#e3e2f8;
+    --units:#96660b;       --units-soft:#f6e8ca;
+
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --motion:#7da3ff; --motion-soft:#1a2440;
+      --calc:#4fd6bd; --calc-soft:#0f2e29;
+      --measure:#5fd0e6; --measure-soft:#0f2c33;
+      --force:#ff9f5c; --force-soft:#3a2413;
+      --balance:#b393f5; --balance-soft:#2a2148;
+      --vector:#ef83bd; --vector-soft:#3a1c2c;
+      --newton:#9d9af0; --newton-soft:#242259;
+      --units:#e0b64a; --units-soft:#332a10;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --motion:#7da3ff; --motion-soft:#1a2440;
+    --calc:#4fd6bd; --calc-soft:#0f2e29;
+    --measure:#5fd0e6; --measure-soft:#0f2c33;
+    --force:#ff9f5c; --force-soft:#3a2413;
+    --balance:#b393f5; --balance-soft:#2a2148;
+    --vector:#ef83bd; --vector-soft:#3a1c2c;
+    --newton:#9d9af0; --newton-soft:#242259;
+    --units:#e0b64a; --units-soft:#332a10;
+    color-scheme:dark;
+  }
+
+  :root{--c:var(--motion);--cs:var(--motion-soft);}
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; controls, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  /* the picture shrinks on short screens so the whole box fits in the window */
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 290px));}
+  .embed .view{max-height:460px;}
+  .under{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px;margin-top:12px;}
+  .under .btn-group{flex:0 1 auto;}
+  .mass{flex:1 1 220px;min-width:0;}
+  .sliders{flex:1 1 100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px 24px;}
+  .eq .why{font-family:var(--font-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;}
+  .view text{font-family:var(--font-mono);}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:flex;justify-content:space-between;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--c);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:var(--panel);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat strong{white-space:nowrap;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);}
+  .stat.up strong{color:var(--accent);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--c);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--c);background:var(--cs);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--c);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .eq{font-size:12.5px;padding:6px 8px;} }
+
+  /* inside a workout tab (skydiver.html?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .hint{font-size:13px;color:var(--ink-soft);}
+  .embed .hint{display:none;}
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="../index.html">&larr; Home</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; motion</div>
+    <h1>Motion Graphs</h1>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="mg-svg" viewBox="0 0 560 300" role="img" aria-label="A car on a road with its distance-time and velocity-time graphs"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" data-action="mg-go" id="mg-go" type="button">Go</button>
+          <button class="btn" data-action="mg-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="slow" type="button" aria-pressed="false">Slow motion</button>
+        </div>
+        <div class="mass"><label class="lab" for="mg-v">Target speed <output id="mg-vo"></output></label><input type="range" id="mg-v" min="0" max="10" step="1" value="5"></div>
+      </div>
+    </div>
+    <div class="side">
+      <p class="note" id="mg-note" aria-live="polite"></p>
+      <p class="hint">Press Go, then change the target speed while the car is moving. The car speeds up or slows down at 2 m/s&sup2;.</p>
+      <div class="stats">
+        <div class="stat"><small>Time</small><strong id="mg-t">0.0 s</strong></div>
+        <div class="stat"><small>Speed</small><strong id="mg-sp">0.0 m/s</strong></div>
+        <div class="stat"><small>Distance</small><strong id="mg-d">0.0 m</strong></div>
+      </div>
+      <details class="working" id="working">
+        <summary>Show working</summary>
+        <div class="eq" id="mg-eq"></div>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+(function(){
+  // This page is the one copy of this animation. On its own it is the lesson version;
+  // with ?embed it drops its heading so a workout tab can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var wk=document.getElementById('working'); if(wk) wk.open = true;
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  function bindRange(id, fn){ var el=$('#'+id); el.addEventListener('input', fn); return el; }
+  function onAction(name, fn){ var b=$('[data-action="'+name+'"]'); if(b) b.addEventListener('click', fn); }
+  var REDUCED_MOTION=false;   // runs start only when pressed and always end, so they play even with reduced motion on
+  // Slow motion: every run multiplies its time step by SPEED()
+  function SPEED(){ var b=document.getElementById('slow'); return b && b.getAttribute('aria-pressed')==='true' ? 0.3 : 1; }
+  (function(){ var b=document.getElementById('slow'); if(b) b.addEventListener('click',function(){ b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed')!=='true')); }); })();
+  function num(n, dp){   // round, drop trailing zeros, group thousands with a space from 10 000
+    var f = Math.pow(10, dp||0), r = Math.round(n*f)/f, t = String(r);
+    if(Math.abs(r)>=10000) t = t.replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    return t;
+  }
+  function FR(t){
+    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1 ')
+      .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  function arrowHead(id, col){ return '<marker id="'+id+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+col+'"/></marker>'; }
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(sel){ Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }); }
+
+  function initMotionGraphs(){
+    var vIn=$('#mg-v'), ACC=2, TMAX=20, REDUCED=false;   // student-started and always ends, so it plays even with reduced motion
+    var t=0, v=0, d=0, pts=[[0,0,0]], running=false, last=0, raf=0;
+    // the straight stretch of graph the car is on now: where it started, and whether it is speeding up (1), steady (0) or slowing (-1)
+    var seg={t:0,v:0,d:0,mode:0};
+    function f1(n){ return (Math.round(n*10)/10).toFixed(1); }
+    function step(dt){
+      var n=Math.ceil(dt/0.02), h=dt/n, target=+vIn.value;
+      for(var i=0;i<n;i++){ var a=v<target?Math.min(ACC,(target-v)/h):(v>target?-Math.min(ACC,(v-target)/h):0), mode=a>1e-9?1:(a<-1e-9?-1:0);
+        if(mode!==seg.mode) seg={t:t,v:v,d:d,mode:mode};
+        v=Math.max(0,v+a*h); d+=v*h; t+=h; }
+      if(t-pts[pts.length-1][0]>=0.1) pts.push([t,d,v]);
+    }
+    function graph(x0,y0,w,hh,ymax,yLab,col,idx,ticks){
+      var g='', gx=function(tt){ return x0+tt/TMAX*w; }, gy=function(y){ return y0+hh-y/ymax*hh; };
+      for(var i=0;i<=TMAX;i+=5) g+='<line x1="'+gx(i)+'" x2="'+gx(i)+'" y1="'+y0+'" y2="'+(y0+hh)+'" stroke="var(--panel-border)"/><text x="'+gx(i)+'" y="'+(y0+hh+14)+'" text-anchor="middle" font-family="var(--font-mono)" font-size="10" fill="var(--ink-faint)">'+i+'</text>';
+      ticks.forEach(function(y){ g+='<line x1="'+x0+'" x2="'+(x0+w)+'" y1="'+gy(y)+'" y2="'+gy(y)+'" stroke="var(--panel-border)"/><text x="'+(x0-5)+'" y="'+(gy(y)+3.5)+'" text-anchor="end" font-family="var(--font-mono)" font-size="10" fill="var(--ink-faint)">'+y+'</text>'; });
+      g+='<line x1="'+x0+'" x2="'+x0+'" y1="'+y0+'" y2="'+(y0+hh)+'" stroke="var(--ink-soft)" stroke-width="2"/><line x1="'+x0+'" x2="'+(x0+w)+'" y1="'+(y0+hh)+'" y2="'+(y0+hh)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
+      g+='<text x="'+x0+'" y="'+(y0-7)+'" font-family="var(--font-mono)" font-size="11" fill="var(--ink-soft)">'+yLab+'</text><text x="'+(x0+w)+'" y="'+(y0+hh+28)+'" text-anchor="end" font-family="var(--font-mono)" font-size="11" fill="var(--ink-soft)">time (s)</text>';
+      var all=pts.concat([[t,d,v]]);
+      if(idx===2) g+='<polygon points="'+gx(0)+','+gy(0)+' '+all.map(function(q){ return gx(q[0])+','+gy(q[2]); }).join(' ')+' '+gx(t)+','+gy(0)+'" fill="var(--motion-soft)" opacity=".7"/>';
+      g+='<polyline points="'+all.map(function(q){ return gx(q[0])+','+gy(q[idx]); }).join(' ')+'" fill="none" stroke="'+col+'" stroke-width="2.5"/>';
+      if(t>0) g+='<circle cx="'+gx(t)+'" cy="'+gy(all[all.length-1][idx])+'" r="4.5" fill="'+col+'" stroke="var(--panel)" stroke-width="2"/>';
+      return g;
+    }
+    function draw(){
+      var g='', RX=20, RW=520, cx=RX+Math.min(d,200)/200*RW;
+      g+='<rect x="'+RX+'" y="34" width="'+RW+'" height="22" fill="var(--panel-border)" opacity=".5"/>';
+      for(var i=0;i<=200;i+=50) g+='<text x="'+(RX+i/200*RW)+'" y="70" text-anchor="middle" font-family="var(--font-mono)" font-size="10" fill="var(--ink-faint)">'+i+' m</text>';
+      g+='<g transform="translate('+Math.max(RX+18,cx)+' 40)"><rect x="-36" y="-18" width="36" height="16" rx="4" fill="var(--motion)"/><circle cx="-28" cy="0" r="4.5" fill="var(--ink)"/><circle cx="-8" cy="0" r="4.5" fill="var(--ink)"/></g>';
+      g+=graph(52,100,210,160,200,'distance (m)','var(--motion)',1,[0,50,100,150,200]);
+      g+=graph(330,100,210,160,10,'velocity (m/s)','var(--accent)',2,[0,2,4,6,8,10]);
+      $('#mg-svg').innerHTML=g;
+      $('#mg-vo').textContent=vIn.value+' m/s'; $('#mg-t').textContent=f1(t)+' s'; $('#mg-sp').textContent=f1(v)+' m/s'; $('#mg-d').textContent=f1(d)+' m';
+      var target=+vIn.value, acc=Math.abs(v-target)<0.01?0:(v<target?ACC:-ACC);
+      // read the answers off the graphs: gradient of the stretch the car is on, and the area under the velocity-time graph
+      var dt=t-seg.t, lines;
+      if(seg.mode!==0) lines='acceleration = gradient of the velocity–time graph<br>acceleration = [[change in velocity|time taken]]'+(dt>=0.1?'<br>acceleration = [['+f1(v)+' − '+f1(seg.v)+'|'+f1(t)+' − '+f1(seg.t)+']] = <b>'+(seg.mode<0?'−':'')+ACC+' m/s²</b>':'');
+      else lines='speed = gradient of the distance–time graph<br>speed = [[change in distance|time taken]]'+(t>0&&dt>=0.1?'<br>speed = [['+f1(d)+' − '+f1(seg.d)+'|'+f1(t)+' − '+f1(seg.t)+']] = <b>'+f1(v)+' m/s</b>':'');
+      $('#mg-eq').innerHTML=FR(lines+'<br>distance = area under the velocity–time graph = <b>'+f1(d)+' m</b>');
+      var note;
+      if(t===0) note='Ready. The car accelerates at 2 m/s² until it reaches the target speed.';
+      else if(t>=TMAX) note='Done. Steady speed gave straight lines on the distance–time graph; speeding up or slowing down gave curves.';
+      else if(acc>0) note='Speeding up: the distance–time line gets steeper, and the velocity–time line slopes up.';
+      else if(acc<0) note='Slowing down: the distance–time line gets less steep, and the velocity–time line slopes down.';
+      else if(v===0) note='Stopped: the distance–time line is flat, and the velocity is zero.';
+      else note='Steady speed: a straight sloping line on the distance–time graph, and a flat line on the velocity–time graph.';
+      $('#mg-note').textContent=note;
+      $('#mg-go').textContent = REDUCED ? (t>=TMAX?'Done':'Next second') : (running?'Pause':(t>0&&t<TMAX?'Carry on':'Go'));
+    }
+    function stop(){ running=false; cancelAnimationFrame(raf); }
+    function frame(now){ if(!running) return; var dt=Math.min(0.05,(now-last)/1000)*SPEED(); last=now; step(Math.min(dt,TMAX-t)); if(t>=TMAX-1e-9){ t=TMAX; stop(); } draw(); if(running) raf=requestAnimationFrame(frame); }
+    onAction('mg-go',function(){
+      if(t>=TMAX) return;
+      if(REDUCED){ step(Math.min(1,TMAX-t)); draw(); return; }   // reduced motion: move on one second per press
+      if(running){ stop(); draw(); return; }
+      running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw();
+    });
+    onAction('mg-reset',function(){ stop(); t=0; v=0; d=0; pts=[[0,0,0]]; seg={t:0,v:0,d:0,mode:0}; draw(); });
+    vIn.addEventListener('input',draw);
+    draw();
+  }
+  watchEquals('.eq');
+  initMotionGraphs();
+})();
+</script>
+</body>
+</html>
