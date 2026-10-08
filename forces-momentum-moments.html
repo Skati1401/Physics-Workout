@@ -539,19 +539,20 @@
 
   <section id="panel-stopping" class="panel" role="tabpanel" hidden>
     <div class="panel-head"><h2>Stopping Distance</h2><div class="spec"><b>1.19</b><b>1.20</b></div></div>
-    <div class="section-label">Explore &mdash; stopping distance and speed</div>
-    <p class="panel-intro">Change the speed, the driver&rsquo;s reaction time and the road surface. The graph shows how the stopping distance grows with speed; the dot is your car, and the strip below shows the same distances on the road.</p>
-    <div class="card xs" data-minw="0.45" style="--c:var(--motion);--cs:var(--motion-soft);margin-bottom:6px;">
+    <div class="section-label">Explore &mdash; a velocity&ndash;time graph of stopping</div>
+    <p class="panel-intro">At time 0 both drivers see a hazard. The reference car always has a 0.7&nbsp;s reaction time on a dry road. Change your driver&rsquo;s reaction time and the road surface, choose the speed (both cars travel at it), then press Go. The area under each velocity&ndash;time graph is the distance travelled.</p>
+    <div class="card xs" data-minw="0.5" style="--c:var(--motion);--cs:var(--motion-soft);margin-bottom:6px;">
       <div>
-        <svg class="xs-svg" id="sd-graph" viewBox="0 0 520 290" role="img" aria-label="Graph of thinking, braking and stopping distance against speed"></svg>
-        <svg class="xs-svg" id="sd-road" viewBox="0 0 520 64" role="img" aria-label="Thinking and braking distance drawn on the road"></svg>
+        <svg class="xs-svg" id="sd-graph" viewBox="0 0 520 270" role="img" aria-label="Velocity–time graphs of the reference car and your car stopping"></svg>
+        <svg class="xs-svg" id="sd-road" viewBox="0 0 520 96" role="img" aria-label="The reference car and your car stopping on the road"></svg>
       </div>
       <div class="xs-ctl">
-        <div class="xs-row"><label for="sd-v">Speed v <output id="sd-vo"></output></label><input type="range" id="sd-v" min="0" max="35" step="1" value="20"></div>
-        <div class="xs-row"><label for="sd-t">Reaction time t <output id="sd-to"></output></label><input type="range" id="sd-t" min="0.3" max="1.5" step="0.1" value="0.7"></div>
-        <div class="xs-row"><span class="xs-lab">Road surface (braking deceleration)</span><div class="xs-seg" id="sd-road-btns"></div></div>
+        <div class="xs-row"><label for="sd-v">Speed of both cars, u <output id="sd-vo"></output></label><input type="range" id="sd-v" min="5" max="35" step="1" value="20"></div>
+        <div class="xs-row"><label for="sd-t">Your driver&rsquo;s reaction time <output id="sd-to"></output></label><input type="range" id="sd-t" min="0.4" max="2" step="0.1" value="0.7"></div>
+        <div class="xs-row"><span class="xs-lab">Your road surface (braking deceleration)</span><div class="xs-seg" id="sd-road-btns"></div></div>
+        <div class="btn-row" style="margin-top:0;"><button class="btn btn-primary" data-action="sd-go">Go</button><button class="btn btn-ghost" data-action="sd-reset">Reset</button></div>
         <div class="xs-eq" id="sd-eq" aria-live="polite"></div>
-        <p class="xs-note">In the braking working, u is the car&rsquo;s speed before braking and a is the size of the deceleration. Double the speed and the thinking distance doubles, but the braking distance goes up four times.</p>
+        <p class="xs-note" id="sd-note" aria-live="polite"></p>
       </div>
     </div>
 
@@ -2121,49 +2122,91 @@
     });
   }
 
-  /* ---- stopping distance: graph against speed + road strip ---- */
+  /* ---- stopping distance: velocity-time graphs of a reference car and your car, and the road ---- */
   function initStoppingSim(){
-    var vIn=bindRange('sd-v',draw), tIn=bindRange('sd-t',draw), dec=7;
-    var ROADS=[['Dry',7],['Wet',5],['Icy',2]];
+    var vIn=bindRange('sd-v',reset), tIn=bindRange('sd-t',reset), dec=7;
+    var REF_T=0.7, REF_A=7, ROADS=[['Dry',7],['Wet',5],['Icy',2]];
     var btns=$('#sd-road-btns');
     btns.innerHTML=ROADS.map(function(r){ return '<button type="button" data-a="'+r[1]+'" aria-pressed="'+(r[1]===dec)+'">'+r[0]+' ('+r[1]+' m/s²)</button>'; }).join('');
     btns.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; dec=+b.dataset.a;
-      Array.prototype.forEach.call(btns.children,function(x){ x.setAttribute('aria-pressed', String(x===b)); }); draw(); });
-    var W=520,H=290,PL=58,PR=16,PT=14,PB=46,VMAX=35;
-    function think(v){ return v*(+tIn.value); } function brake(v){ return v*v/(2*dec); }
-    function niceMax(x){ var steps=[50,100,150,200,300,400,500]; for(var i=0;i<steps.length;i++) if(x<=steps[i]) return steps[i]; return Math.ceil(x/100)*100; }
-    function draw(){
-      var v=+vIn.value, t=+tIn.value, th=think(v), br=brake(v), YMAX=niceMax(think(VMAX)+brake(VMAX));
-      var gx=function(x){ return PL+x/VMAX*(W-PL-PR); }, gy=function(y){ return H-PB-y/YMAX*(H-PT-PB); };
-      var g='', i, step=YMAX/5;
-      for(i=0;i<=5;i++){ var yy=gy(i*step); g+='<line x1="'+PL+'" x2="'+(W-PR)+'" y1="'+yy+'" y2="'+yy+'" stroke="var(--panel-border)"/><text x="'+(PL-8)+'" y="'+(yy+4)+'" text-anchor="end" font-size="11" fill="var(--ink-faint)">'+num(i*step)+'</text>'; }
-      for(i=0;i<=VMAX;i+=5){ var xx=gx(i); g+='<line x1="'+xx+'" x2="'+xx+'" y1="'+PT+'" y2="'+(H-PB)+'" stroke="var(--panel-border)"/><text x="'+xx+'" y="'+(H-PB+16)+'" text-anchor="middle" font-size="11" fill="var(--ink-faint)">'+i+'</text>'; }
-      var thPts=[], totPts=[];
-      for(i=0;i<=VMAX;i+=0.5){ thPts.push(gx(i)+','+gy(think(i))); totPts.push(gx(i)+','+gy(think(i)+brake(i))); }
-      g+='<polygon points="'+gx(0)+','+gy(0)+' '+thPts.join(' ')+' '+gx(VMAX)+','+gy(0)+'" fill="var(--motion-soft)"/>';
-      g+='<polygon points="'+thPts.join(' ')+' '+totPts.slice().reverse().join(' ')+'" fill="var(--accent-soft)"/>';
-      g+='<polyline points="'+thPts.join(' ')+'" fill="none" stroke="var(--motion)" stroke-width="2.5"/>';
-      g+='<polyline points="'+totPts.join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="2.5"/>';
+      Array.prototype.forEach.call(btns.children,function(x){ x.setAttribute('aria-pressed', String(x===b)); }); reset(); });
+    var W=520,H=270,PL=50,PR=16,PT=14,PB=42,VMAX=35, t=0, running=false, last=0, raf=0;
+    function car(tr,a){ var u=+vIn.value; return {u:u, tr:tr, a:a, tb:u/a, th:u*tr, br:u*u/(2*a), end:tr+u/a}; }
+    function you(){ return car(+tIn.value, dec); } function ref(){ return car(REF_T, REF_A); }
+    function vAt(c,tt){ return tt<=c.tr ? c.u : Math.max(0, c.u-c.a*(tt-c.tr)); }
+    function xAt(c,tt){ if(tt<=c.tr) return c.u*tt; var d=Math.min(tt,c.end)-c.tr; return c.th+c.u*d-0.5*c.a*d*d; }
+    function tMax(){ var e=Math.max(you().end, ref().end), st=e<=6?1:(e<=12?2:(e<=25?5:10)); return {max:Math.ceil(e*1.05/st)*st, step:st}; }
+    function dMax(){ var m=Math.max(you().th+you().br, ref().th+ref().br); return m<=60?Math.ceil(m/10)*10:(m<=200?Math.ceil(m/20)*20:Math.ceil(m/50)*50); }
+    function drawGraph(){
+      var Y=you(), R=ref(), T=tMax(), gx=function(x){ return PL+x/T.max*(W-PL-PR); }, gy=function(y){ return H-PB-y/VMAX*(H-PT-PB); };
+      var g='', i, tt=Math.min(t, T.max);
+      for(i=0;i<=VMAX;i+=5){ var yy=gy(i); g+='<line x1="'+PL+'" x2="'+(W-PR)+'" y1="'+yy+'" y2="'+yy+'" stroke="var(--panel-border)"/><text x="'+(PL-8)+'" y="'+(yy+4)+'" text-anchor="end" font-size="11" fill="var(--ink-faint)">'+i+'</text>'; }
+      for(i=0;i<=T.max+1e-9;i+=T.step){ var xx=gx(i); g+='<line x1="'+xx+'" x2="'+xx+'" y1="'+PT+'" y2="'+(H-PB)+'" stroke="var(--panel-border)"/><text x="'+xx+'" y="'+(H-PB+16)+'" text-anchor="middle" font-size="11" fill="var(--ink-faint)">'+i+'</text>'; }
+      // your car: thinking rectangle and braking triangle, filled up to the current time
+      var a1=Math.min(tt,Y.tr), a2=Math.min(tt,Y.end);
+      if(a1>0) g+='<polygon points="'+gx(0)+','+gy(0)+' '+gx(0)+','+gy(Y.u)+' '+gx(a1)+','+gy(Y.u)+' '+gx(a1)+','+gy(0)+'" fill="var(--motion-soft)"/>';
+      if(a2>Y.tr) g+='<polygon points="'+gx(Y.tr)+','+gy(0)+' '+gx(Y.tr)+','+gy(Y.u)+' '+gx(a2)+','+gy(vAt(Y,a2))+' '+gx(a2)+','+gy(0)+'" fill="var(--accent-soft)"/>';
+      function line(c, upTo, attrs){ var pts=[gx(0)+','+gy(c.u)]; if(upTo>0){ pts.push(gx(Math.min(upTo,c.tr))+','+gy(c.u)); if(upTo>c.tr) pts.push(gx(Math.min(upTo,c.end))+','+gy(vAt(c,upTo))); if(upTo>c.end) pts.push(gx(upTo)+','+gy(0)); } return '<polyline points="'+pts.join(' ')+'" fill="none" '+attrs+'/>'; }
+      // the whole of each line shows faintly, so a slider change is seen at once; Go traces it in bold
+      g+=line(R, T.max, 'stroke="var(--ink-faint)" stroke-width="2" stroke-dasharray="6 4" opacity="0.45"');
+      g+=line(Y, T.max, 'stroke="var(--motion)" stroke-width="2" opacity="0.35"');
+      g+=line(R, tt, 'stroke="var(--ink-soft)" stroke-width="2.5" stroke-dasharray="6 4"');
+      g+=line(Y, tt, 'stroke="var(--motion)" stroke-width="3"');
+      if(running) g+='<line x1="'+gx(tt)+'" x2="'+gx(tt)+'" y1="'+PT+'" y2="'+(H-PB)+'" stroke="var(--ink)" stroke-dasharray="3 3"/>';
       g+='<line x1="'+PL+'" x2="'+PL+'" y1="'+PT+'" y2="'+(H-PB)+'" stroke="var(--ink-soft)" stroke-width="2"/><line x1="'+PL+'" x2="'+(W-PR)+'" y1="'+(H-PB)+'" y2="'+(H-PB)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
-      g+='<text x="'+(PL+(W-PL-PR)/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="12" fill="var(--ink-soft)">Speed (m/s)</text>';
-      g+='<text transform="translate(16 '+(PT+(H-PT-PB)/2)+') rotate(-90)" text-anchor="middle" font-size="12" fill="var(--ink-soft)">Distance (m)</text>';
-      g+='<rect x="'+(PL+10)+'" y="'+(PT+6)+'" width="12" height="12" fill="var(--motion-soft)" stroke="var(--motion)"/><text x="'+(PL+28)+'" y="'+(PT+16)+'" font-size="11.5" fill="var(--ink)">thinking distance</text>';
-      g+='<rect x="'+(PL+10)+'" y="'+(PT+24)+'" width="12" height="12" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="'+(PL+28)+'" y="'+(PT+34)+'" font-size="11.5" fill="var(--ink)">braking distance</text>';
-      g+='<line x1="'+gx(v)+'" x2="'+gx(v)+'" y1="'+gy(th+br)+'" y2="'+(H-PB)+'" stroke="var(--ink)" stroke-dasharray="4 3"/>';
-      g+='<circle cx="'+gx(v)+'" cy="'+gy(th+br)+'" r="7" fill="var(--accent)" stroke="var(--panel)" stroke-width="2"/>';
+      g+='<text x="'+(PL+(W-PL-PR)/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="12" fill="var(--ink-soft)">Time (s)</text>';
+      g+='<text transform="translate(14 '+(PT+(H-PT-PB)/2)+') rotate(-90)" text-anchor="middle" font-size="12" fill="var(--ink-soft)">Velocity (m/s)</text>';
+      var LX=W-PR-178, LY=PT+6;
+      g+='<rect x="'+(LX-8)+'" y="'+(LY-4)+'" width="184" height="78" rx="6" fill="var(--panel)" opacity="0.92"/>';
+      g+='<line x1="'+LX+'" x2="'+(LX+22)+'" y1="'+(LY+7)+'" y2="'+(LY+7)+'" stroke="var(--motion)" stroke-width="3"/><text x="'+(LX+30)+'" y="'+(LY+11)+'" font-size="11.5" fill="var(--ink)">your car</text>';
+      g+='<line x1="'+LX+'" x2="'+(LX+22)+'" y1="'+(LY+25)+'" y2="'+(LY+25)+'" stroke="var(--ink-soft)" stroke-width="2.5" stroke-dasharray="6 4"/><text x="'+(LX+30)+'" y="'+(LY+29)+'" font-size="11.5" fill="var(--ink)">reference car</text>';
+      g+='<rect x="'+(LX+5)+'" y="'+(LY+37)+'" width="12" height="12" fill="var(--motion-soft)" stroke="var(--motion)"/><text x="'+(LX+30)+'" y="'+(LY+47)+'" font-size="11.5" fill="var(--ink)">thinking distance</text>';
+      g+='<rect x="'+(LX+5)+'" y="'+(LY+55)+'" width="12" height="12" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="'+(LX+30)+'" y="'+(LY+65)+'" font-size="11.5" fill="var(--ink)">braking distance</text>';
+      if(t>0) g+='<text x="'+(PL+8)+'" y="'+(H-PB-8)+'" font-size="12" fill="var(--ink)">t = '+tt.toFixed(1)+' s</text>';
       $('#sd-graph').innerHTML=g;
-      // road strip, same distance scale for every setting so it grows with speed
-      var RX=56, RW=W-RX-12, sc=RW/YMAX, r='';
-      r+='<rect x="'+RX+'" y="22" width="'+(th*sc)+'" height="16" fill="var(--motion-soft)" stroke="var(--motion)"/>';
-      r+='<rect x="'+(RX+th*sc)+'" y="22" width="'+(br*sc)+'" height="16" fill="var(--accent-soft)" stroke="var(--accent)"/>';
-      r+='<rect x="8" y="20" width="40" height="20" rx="5" fill="var(--motion)"/><circle cx="18" cy="42" r="5" fill="var(--ink)"/><circle cx="38" cy="42" r="5" fill="var(--ink)"/>';
-      r+='<line x1="'+(RX+(th+br)*sc)+'" x2="'+(RX+(th+br)*sc)+'" y1="12" y2="48" stroke="var(--bad)" stroke-width="2.5"/>';
-      r+='<text x="'+RX+'" y="60" font-size="11.5" fill="var(--ink-soft)">stopping distance '+num(th+br,1)+' m</text>';
-      $('#sd-road').innerHTML=r;
-      $('#sd-vo').textContent=v+' m/s'; $('#sd-to').textContent=t.toFixed(1)+' s';
-      $('#sd-eq').innerHTML=FR('thinking = v × t = '+v+' × '+t.toFixed(1)+' = '+num(th,1)+' m<br>braking: v² = u² + 2as, with v = 0 and acceleration −a<br>0 = u² − 2as<br>2as = u²<br>s = [[u²|2a]]<br>s = [['+v+'²|2 × '+dec+']] = '+num(br,1)+' m<br>stopping = '+num(th,1)+' + '+num(br,1)+' = <b>'+num(th+br,1)+' m</b>');
     }
-    draw();
+    function drawRoad(){
+      var Y=you(), R=ref(), D=dMax(), RX=54, sc=(W-RX-14)/D, r='';
+      function lane(c, y, label, body, think, brake){
+        var x=xAt(c,t), xt=Math.min(x,c.th);
+        r+='<line x1="8" x2="'+(W-8)+'" y1="'+(y+20)+'" y2="'+(y+20)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
+        r+='<text x="'+RX+'" y="'+(y-6)+'" font-size="11" fill="var(--ink-faint)">'+label+'</text>';
+        if(xt>0) r+='<rect x="'+RX+'" y="'+(y+14)+'" width="'+(xt*sc)+'" height="6" fill="'+think+'"/>';
+        if(x>c.th) r+='<rect x="'+(RX+c.th*sc)+'" y="'+(y+14)+'" width="'+((x-c.th)*sc)+'" height="6" fill="'+brake+'"/>';
+        r+='<line x1="'+(RX+(c.th+c.br)*sc)+'" x2="'+(RX+(c.th+c.br)*sc)+'" y1="'+(y+2)+'" y2="'+(y+24)+'" stroke="'+body+'" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.6"/>';
+        var cx=RX+x*sc-40, braking=t>c.tr && x<c.th+c.br-1e-6 || (t>=c.end && t>0);
+        r+='<rect x="'+cx+'" y="'+(y+2)+'" width="40" height="12" rx="4" fill="'+body+'"/>';
+        r+='<rect x="'+(cx+1)+'" y="'+(y+4)+'" width="4" height="5" rx="1" fill="'+(braking?'var(--bad)':'var(--panel)')+'"/>';
+        r+='<circle cx="'+(cx+9)+'" cy="'+(y+15)+'" r="4" fill="var(--ink)"/><circle cx="'+(cx+31)+'" cy="'+(y+15)+'" r="4" fill="var(--ink)"/>';
+        if(t>=c.end && t>0) r+='<text x="'+(W-10)+'" y="'+(y-6)+'" text-anchor="end" font-size="11" fill="var(--ink)">stopped after '+num(c.th+c.br,1)+' m</text>';
+      }
+      lane(R, 18, 'Reference car: 0.7 s, dry road', 'var(--ink-faint)', 'var(--panel-border)', 'var(--ink-faint)');
+      lane(Y, 66, 'Your car: '+Y.tr.toFixed(1)+' s, '+ROADS.filter(function(x){return x[1]===dec;})[0][0].toLowerCase()+' road', 'var(--motion)', 'var(--motion)', 'var(--accent)');
+      $('#sd-road').innerHTML=r;
+    }
+    function eq(){
+      var Y=you(), R=ref();
+      $('#sd-vo').textContent=Y.u+' m/s'; $('#sd-to').textContent=Y.tr.toFixed(1)+' s';
+      $('#sd-eq').innerHTML=FR('<b>Your car</b><br>Thinking distance (area of the rectangle), t is the reaction time<br>s = u × t<br>s = '+Y.u+' × '+Y.tr.toFixed(1)+' = '+num(Y.th,1)+' m<br>Braking distance (area of the triangle): v is 0 and acceleration is −a<br>v² = u² + 2as<br>0 = u² − 2as<br>2as = u²<br>s = [[u²|2a]]<br>s = [['+Y.u+'²|2 × '+dec+']] = '+num(Y.br,1)+' m<br>stopping = '+num(Y.th,1)+' + '+num(Y.br,1)+' = <b>'+num(Y.th+Y.br,1)+' m</b><br>reference car = '+num(R.th,1)+' + '+num(R.br,1)+' = '+num(R.th+R.br,1)+' m');
+    }
+    function draw(){ drawGraph(); drawRoad(); }
+    function stop(){ running=false; cancelAnimationFrame(raf); }
+    function reset(){ stop(); t=0; $('#sd-note').textContent=''; eq(); draw(); }
+    function finish(){
+      stop(); t=Math.max(you().end, ref().end); draw();
+      var Y=you(), R=ref(), d=(Y.th+Y.br)-(R.th+R.br), dt=Y.th-R.th, db=Y.br-R.br;
+      function ch(x){ return Math.abs(x)<0.05 ? 'the same' : (x>0?num(x,1)+' m longer':num(-x,1)+' m shorter'); }
+      $('#sd-note').textContent = Math.abs(d)<0.05
+        ? 'Both cars stopped in '+num(Y.th+Y.br,1)+' m: the same reaction time and road, so the same graph.'
+        : 'Your car stopped '+num(Math.abs(d),1)+' m '+(d>0?'further':'sooner')+' than the reference car. Thinking distance: '+ch(dt)+'. Braking distance: '+ch(db)+'.';
+    }
+    // a long stop (an icy road) plays faster than real time so every run lasts about 6 s at most
+    function frame(now){ if(!running) return; var end=Math.max(you().end, ref().end), k=Math.max(1,end/6);
+      t+=Math.min(0.05,(now-last)/1000)*k; last=now;
+      if(t>=end){ finish(); return; } draw(); raf=requestAnimationFrame(frame); }
+    onAction('sd-go',function(){ reset(); running=true; last=performance.now(); raf=requestAnimationFrame(frame); });
+    onAction('sd-reset',reset);
+    reset();
   }
 
   /* ---- momentum: A hits B at rest and they stick together ---- */
