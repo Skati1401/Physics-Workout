@@ -1,6 +1,6 @@
 # How to work on this site
 
-This repository is a small website of interactive physics revision activities for Alex's students, hosted on GitHub Pages. Each activity is one self-contained HTML page. `index.html` is the launch page with a Year 9 button and an IGCSE button; these open `year-9.html` and `igcse.html`, which list the workouts for that course.
+This repository is a small website of interactive physics revision activities for Alex's students, hosted on GitHub Pages. Each activity is one self-contained HTML page. `index.html` is the launch page with a Year 9 button and an IGCSE button; these open `year-9.html` and `igcse.html`, which list the workouts for that course. Below them, an "Animations" section on `index.html` holds a card for each teaching animation (e.g. `friction.html`): one page per animation, no tabs or activities, a Play/Pause, Reset and Slow motion bar, and a "← Home" back link.
 
 ## Before you start any task
 
