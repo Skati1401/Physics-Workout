@@ -70,6 +70,11 @@ Animation is feedback, not decoration. CSS transitions and `@keyframes` only.
 - Test the largest and smallest slider values at phone width; nothing should be clipped at either end.
 - Reference sims: Unit 5 (pressure, dam, heating curve, specific heat, gas cylinder, gas laws), 1a (F = ma trolley), 1b (stopping-distance graph, momentum collision, seesaw, bridge).
 
+## Spec points and Triple Award
+
+- **Every tab shows its spec points.** Start each topic tab with its 4PH1 spec numbers as small badges (Unit 5 puts them in the `.panel-head` beside the heading; the Forces pages use a `.spec-row` at the top of the panel). Overview, Key Terms and Units tabs can leave them out. Take the numbers from the spec itself, never from memory: if you don't have the relevant page of the spec, ask Alex for it rather than guessing.
+- **Mark Triple Award content as TA.** Any tab covering a P spec point (Physics only, e.g. 1.25P–1.33P, 5.12P–5.14P) gets a TA tag on its tab button (`data-ta` attribute, drawn by `.tab-btn[data-ta]::after`) and a TA badge in the panel (`<span class="triple" title="Triple Award only">TA</span>` in the intro, or `<b class="ta">TA</b>` among the spec badges). Add "TA = Triple Award only" to the page's eyebrow line so students know what it means.
+
 ## Balance against the spec
 
 Before a topic page is finished, list its spec points and check each has at least one activity, that no tab is spent on something the spec doesn't name (Unit 5's Manometer tab became two questions), that no idea is repeated by three activities, that each spec section gets a similar number of tabs, and that every named practical has an Order activity.
