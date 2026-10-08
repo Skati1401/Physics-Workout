@@ -184,7 +184,7 @@ table.units .blank{width:100%;min-width:100px;margin:0}
 .vbars{display:flex;flex-direction:column;gap:7px}
 .vbar{display:grid;grid-template-columns:minmax(90px,150px) 1fr;gap:10px;align-items:center;font-size:12.5px}
 .vtrack{height:20px;background:var(--panel-2);border:1px solid var(--panel-border);border-radius:4px;overflow:hidden}
-.vfill{height:100%;width:0;background:var(--c,var(--accent));display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font:500 11px var(--f-mono);color:#fff;white-space:nowrap;transition:width .9s cubic-bezier(.2,.7,.2,1)}
+.vfill{height:100%;width:0;background:var(--c,var(--accent));display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font:500 11px var(--f-mono);color:#fff;white-space:nowrap;min-width:max-content;transition:width .9s cubic-bezier(.2,.7,.2,1)}
 .go .vfill{width:var(--w)}
 .viz{width:100%;max-width:420px;height:auto;display:block}
 .viz .arr{transform-box:fill-box;transform-origin:center;transform:scale(0);transition:transform .6s cubic-bezier(.2,.8,.2,1)}
@@ -283,7 +283,8 @@ svg text{font-family:var(--f-mono)}
 <button class="tab-btn" role="tab" id="tab-units" data-tab="units" data-grp="" aria-selected="false" aria-controls="panel-units">Units</button>
 <button class="tab-btn" role="tab" id="tab-density" data-tab="density" data-grp="b" aria-selected="false" aria-controls="panel-density">Density</button>
 <button class="tab-btn" role="tab" id="tab-pressure" data-tab="pressure" data-grp="b" aria-selected="false" aria-controls="panel-pressure">Pressure</button>
-<button class="tab-btn" role="tab" id="tab-fluids" data-tab="fluids" data-grp="b" aria-selected="false" aria-controls="panel-fluids">Fluids</button>
+<button class="tab-btn" role="tab" id="tab-fluids" data-tab="fluids" data-grp="b" aria-selected="false" aria-controls="panel-fluids">Pressure &amp; Depth</button>
+<button class="tab-btn" role="tab" id="tab-manometer" data-tab="manometer" data-grp="b" aria-selected="false" aria-controls="panel-manometer">Manometer</button>
 <button class="tab-btn" role="tab" id="tab-particles" data-tab="particles" data-grp="c" aria-selected="false" aria-controls="panel-particles">Particles</button>
 <button class="tab-btn" role="tab" id="tab-heating" data-tab="heating" data-grp="c" aria-selected="false" aria-controls="panel-heating">Heating Curve</button>
 <button class="tab-btn" role="tab" id="tab-shc" data-tab="shc" data-grp="c" aria-selected="false" aria-controls="panel-shc">Specific Heat</button>
@@ -309,7 +310,11 @@ svg text{font-family:var(--f-mono)}
 <div class="acts"></div>
 </section>
 <section id="panel-fluids" class="panel" role="tabpanel" aria-labelledby="tab-fluids" hidden>
-<div class="panel-head"><h2>Pressure in Fluids</h2><div class="spec"><b>5.6</b><b>5.7</b></div></div>
+<div class="panel-head"><h2>Pressure and Depth</h2><div class="spec"><b>5.6</b><b>5.7</b></div></div>
+<div class="acts"></div>
+</section>
+<section id="panel-manometer" class="panel" role="tabpanel" aria-labelledby="tab-manometer" hidden>
+<div class="panel-head"><h2>The U-tube Manometer</h2><div class="spec"><b>5.7</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-particles" class="panel" role="tabpanel" aria-labelledby="tab-particles" hidden>
@@ -357,7 +362,7 @@ const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim
 const raf=f=>requestAnimationFrame(f);
 
 const STORE_KEY='unit5-slg-lab-v1';
-const TAB_IDS=['overview','units','density','pressure','fluids','particles','heating','shc','gas','gaspress','kelvin','laws'];
+const TAB_IDS=['overview','units','density','pressure','fluids','manometer','particles','heating','shc','gas','gaspress','kelvin','laws'];
 let activeTab='overview';
 const reflowers=[];
 const tickers=[];
@@ -1191,49 +1196,48 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
 
 /* ================= 5. FLUIDS ================= */
 {
-  const LIQ={water:{n:'Fresh water',r:1000,f:'var(--liquid-soft)',max:40,step:1},sea:{n:'Sea water',r:1030,f:'var(--solid-soft)',max:40,step:1},oil:{n:'Oil',r:800,f:'var(--gas-soft)',max:40,step:1},hg:{n:'Mercury',r:13600,f:'var(--panel-border)',max:3,step:0.1}};
-  const PMAX=420000; // full scale of the bar and arrows: 412 000 Pa is the largest value any liquid reaches
-  let liq='water';
-  const body=act('fluids','Explore','Pressure grows with depth','Move the diver down. The arrows show the pressure of the liquid pressing on the diver from every side.');
-  const dirs=[0,45,90,135,180,225,270,315];
-  const arrows=dirs.map((a,i)=>'<line id="fl-a'+i+'" stroke="var(--accent)" stroke-width="3.5" marker-end="url(#fl-head)"/>').join('');
+  // Water behind a dam: the pressure on the dam face grows with depth, p = h × ρ × g.
+  const HMAX=40,RHO=1000,PMAX=HMAX*RHO*10,Y0=50,YB=320,FACE=246,ALEN=96;
+  const yOf=h=>Y0+h/HMAX*(YB-Y0);
+  const lenOf=p=>8+ALEN*p/PMAX;
+  const dirs=[0,45,90,135,180,225,270,315];   // used by the "Which way does the pressure push?" picture below
+  const body=act('fluids','Explore','Water pressing on a dam','Move the point down the face of the dam. The arrow shows how hard the water pushes on the dam at that depth.');
+  const guide=[10,20,30,40].map(h=>{const y=yOf(h)-(h===HMAX?7:0);return '<line x1="'+(FACE-lenOf(h*RHO*10))+'" x2="'+(FACE-2)+'" y1="'+y+'" y2="'+y+'" stroke="var(--ink-faint)" stroke-width="2" marker-end="url(#dm-headf)"/>';}).join('');
   body.innerHTML=`
   <div class="sim">
-    <div class="sim-view"><svg class="diagram" id="fl-svg" viewBox="0 0 360 330" role="img" aria-label="A diver in a tank of liquid">
-      <defs><marker id="fl-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
-      <rect id="fl-liq" x="30" y="50" width="300" height="270" fill="var(--liquid-soft)"/>
-      <path d="M30,20 L30,320 L330,320 L330,20" fill="none" stroke="var(--ink-soft)" stroke-width="3"/>
-      <line x1="30" x2="330" y1="50" y2="50" stroke="var(--liquid)" stroke-width="2" stroke-dasharray="6 4"/>
-      <text x="38" y="42" font-size="12" fill="var(--ink-soft)">surface</text>
-      <line id="fl-dim" x1="60" x2="60" y1="50" y2="150" stroke="var(--ink)" stroke-width="1.5"/>
-      <text id="fl-dimt" x="68" y="110" font-size="13" fill="var(--ink)">h</text>
-      <g id="fl-diver"><circle r="15" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>${arrows}</g>
+    <div class="sim-view"><svg class="diagram" viewBox="0 0 360 330" role="img" aria-label="Water held back by a dam, with arrows showing the water pressure on the dam">
+      <defs>
+        <marker id="dm-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+        <marker id="dm-headf" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-faint)"/></marker>
+      </defs>
+      <rect x="10" y="${Y0}" width="${FACE-10}" height="${YB-Y0}" fill="var(--liquid-soft)"/>
+      <line x1="10" x2="${FACE}" y1="${Y0}" y2="${Y0}" stroke="var(--liquid)" stroke-width="2" stroke-dasharray="6 4"/>
+      <text x="18" y="${Y0-8}" font-size="12" fill="var(--ink-soft)">surface</text>
+      <path d="M${FACE},24 L${FACE+22},24 L350,${YB} L${FACE},${YB} Z" fill="var(--panel-2)" stroke="var(--ink-soft)" stroke-width="2.5" stroke-linejoin="round"/>
+      <text x="${FACE+38}" y="${YB-20}" font-size="13" text-anchor="middle" fill="var(--ink-soft)">dam</text>
+      <line x1="4" x2="356" y1="${YB}" y2="${YB}" stroke="var(--ink-soft)" stroke-width="3"/>
+      ${guide}
+      <line id="dm-dim" x1="40" x2="40" y1="${Y0}" stroke="var(--ink)" stroke-width="1.5"/>
+      <text id="dm-dimt" x="48" font-size="13" fill="var(--ink)">h</text>
+      <line id="dm-arrow" stroke="var(--accent)" stroke-width="4" marker-end="url(#dm-head)"/>
+      <circle id="dm-pt" cx="${FACE}" r="6" fill="var(--accent)" stroke="var(--panel)" stroke-width="2"/>
     </svg></div>
     <div class="ctl">
-      <div class="ctl-row"><span class="sub">Liquid</span><div class="seg" id="fl-seg"></div></div>
-      <div class="ctl-row"><label for="fl-h">Depth h <output id="fl-ho"></output></label><input type="range" id="fl-h" min="0" max="40" step="1" value="12"></div>
-      <div class="eq" id="fl-eq"></div>
-      <div class="vbars go"><div class="vbar"><span>Pressure difference</span><div class="vtrack"><div class="vfill" id="fl-bar" style="--c:var(--accent)"></div></div></div></div>
-      <p class="note">Take g = 10 N/kg. This is the extra pressure caused by the liquid. The air above adds atmospheric pressure on top. The pressure at a point acts equally in all directions, so every arrow has the same length. Mercury is so dense that the depth only goes to 3 m.</p>
+      <div class="ctl-row"><label for="dm-h">Depth h <output id="dm-ho"></output></label><input type="range" id="dm-h" min="0" max="${HMAX}" step="1" value="12"></div>
+      <div class="eq" id="dm-eq"></div>
+      <div class="vbars go"><div class="vbar"><span>Pressure difference</span><div class="vtrack"><div class="vfill" id="dm-bar" style="--c:var(--accent)"></div></div></div></div>
+      <p class="note">Take g = 10 N/kg and ρ = 1000 kg/m³ for water. This is the extra pressure caused by the water; the air adds atmospheric pressure on top. The grey arrows show the pressure every 10 m. The water pushes hardest at the bottom, which is why a dam is built thicker at its base.</p>
     </div>
   </div>`;
-  const H=slider('fl-h',upd);
-  seg(byId('fl-seg'),Object.keys(LIQ).map(k=>({key:k,label:LIQ[k].n})),'water',k=>{liq=k;const L=LIQ[k],keep=Math.min(+H.value,L.max);H.max=L.max;H.step=L.step;H.value=keep;upd();});
+  const H=slider('dm-h',upd);
   function upd(){
-    const L=LIQ[liq],h=+H.value,p=Math.round(h*L.r*10);
-    byId('fl-ho').textContent=h+' m';
-    byId('fl-liq').setAttribute('fill',L.f);
-    byId('fl-eq').innerHTML='Pressure difference from the surface<br>p = h × ρ × g<br>p = '+fmt(h,1)+' × '+fmt(L.r)+' × 10 = <b>'+fmt(p)+' Pa</b>';
-    byId('fl-ho').textContent=fmt(h,1)+' m';
-    const y=50+h/L.max*250,cy=Math.max(y,66);
-    byId('fl-diver').setAttribute('transform','translate(200 '+cy+')');
-    const len=8+26*p/PMAX;
-    dirs.forEach((a,i)=>{
-      const r=a*Math.PI/180,dx=Math.cos(r),dy=Math.sin(r),d0=17+len+4,d1=19;
-      const l=byId('fl-a'+i);l.setAttribute('x1',dx*d0);l.setAttribute('y1',dy*d0);l.setAttribute('x2',dx*d1);l.setAttribute('y2',dy*d1);
-    });
-    const dm=byId('fl-dim');dm.setAttribute('y2',cy);byId('fl-dimt').setAttribute('y',50+(cy-50)/2+4);
-    const bar=byId('fl-bar');bar.style.width=Math.max(3,Math.min(100,p/PMAX*100))+'%';bar.textContent=fmt(p)+' Pa';
+    const h=+H.value,p=h*RHO*10,y=yOf(h)-(h===HMAX?7:0);
+    byId('dm-ho').textContent=fmt(h)+' m';
+    byId('dm-eq').innerHTML='Pressure difference from the surface<br>p = h × ρ × g<br>p = '+fmt(h)+' × '+fmt(RHO)+' × 10 = <b>'+fmt(p)+' Pa</b>';
+    const ar=byId('dm-arrow');ar.setAttribute('x1',FACE-lenOf(p));ar.setAttribute('x2',FACE-3);ar.setAttribute('y1',y);ar.setAttribute('y2',y);
+    byId('dm-pt').setAttribute('cy',y);
+    byId('dm-dim').setAttribute('y2',y);const t=byId('dm-dimt');t.setAttribute('y',Y0+(y-Y0)/2+4);t.style.display=h<3?'none':'';
+    const bar=byId('dm-bar');bar.style.width=Math.max(3,p/PMAX*100)+'%';bar.textContent=fmt(p)+' Pa';
   }
   upd();
 
@@ -1242,7 +1246,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     const MAN={hg:{n:'Mercury',r:13600,max:48000,step:400,start:13600,c:'var(--ink-faint)'},w:{n:'Water',r:1000,max:4000,step:50,start:2000,c:'var(--liquid)'}};
     let man='hg';
     const PXCM=4.5,Y0=130,XL=120,XR=240,YB=230,RB=60;
-    const ub=act('fluids','Explore','U-tube manometer','One side of the U-tube is connected to a gas supply and the other side is open to the air. Change the gas pressure and watch the liquid levels. The height difference h tells you the pressure difference.');
+    const ub=act('manometer','Explore','U-tube manometer','One side of the U-tube is connected to a gas supply and the other side is open to the air. Change the gas pressure and watch the liquid levels. The height difference h tells you the pressure difference.');
     const tubePath='M60,30 L'+XL+',30 L'+XL+','+YB+' A'+RB+','+RB+' 0 0 0 '+XR+','+YB+' L'+XR+',22';
     ub.innerHTML=`
     <div class="sim">
@@ -1287,7 +1291,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     }
     draw();
     createCalc({
-      host:act('fluids','Calculate','Reading a manometer','Use p = h × ρ × g with g = 10 N/kg. Mercury: ρ = 13 600 kg/m³. Water: ρ = 1000 kg/m³.'),
+      host:act('manometer','Calculate','Reading a manometer','Use p = h × ρ × g with g = 10 N/kg. Mercury: ρ = 13 600 kg/m³. Water: ρ = 1000 kg/m³.'),
       questions:[
         {q:'A mercury manometer shows a height difference of 0.20 m. The pressure difference between the gas and the air is',unit:'Pa',answer:27200,working:'p = h × ρ × g = 0.20 × 13 600 × 10 = 27 200 Pa'},
         {q:'A water manometer shows a height difference of 15 cm. The pressure difference is',unit:'Pa',answer:1500,working:'h = 15 cm = 0.15 m<br>p = 0.15 × 1000 × 10 = 1500 Pa'},
