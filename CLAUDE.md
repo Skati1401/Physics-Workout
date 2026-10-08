@@ -66,11 +66,10 @@ Animation is feedback, not decoration. CSS transitions and `@keyframes` only.
 
 - Picture left (capped, or a wide SVG cropped to its content), controls right, stacking under about 860px; on phones shorten button labels and shrink the readout so equations don't wrap mid-line.
 - The readout shows the equation, the rearranged form with its step, and the numbers, updating on every `input` event.
-- A Go button runs a `requestAnimationFrame` loop that always ends (end of track or a fixed time) and then shows a one-line conclusion. Changing a slider resets it. With reduced motion, Go jumps straight to the end state.
+- A Go button runs a `requestAnimationFrame` loop that always ends (end of track or a fixed time) and then shows a one-line conclusion. Changing a slider resets it. These runs play even when reduced motion is on: they only start when a student presses Go, they are short and they always stop, and seeing the motion is the point (many school laptops have animations switched off, which made the trolleys appear to jump straight to the end). Reduced motion still turns off the decorative effects (shake, fades, flips). A sim that loops continuously (the Unit 5 particle boxes) still starts paused under reduced motion, with a Play button.
 - Don't keep an animated position in a stepped range input: `step="0.5"` rounds each small increment back down. Keep it in a JS variable and copy it to the slider.
 - Test the largest and smallest slider values at phone width; nothing should be clipped at either end.
 - Reference sims: Unit 5 (pressure, dam, manometer, heating curve, specific heat, gas cylinder, gas laws), 1a (motion graphs car, F = ma trolley), 1b (stopping-distance graph, momentum collision, seesaw, bridge, skydiver, Hooke's law).
-- A sim the student drives live (like the 1a motion-graphs car) can't jump to its end under reduced motion; instead its Go button steps it on one second per press.
 
 ## Spec points and Triple Award
 
