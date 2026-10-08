@@ -72,8 +72,8 @@ Animation is feedback, not decoration. CSS transitions and `@keyframes` only.
 
 ## Spec points and Triple Award
 
-- **Every tab shows its spec points.** Start each topic tab with its 4PH1 spec numbers as small badges (Unit 5 puts them in the `.panel-head` beside the heading; the Forces pages use a `.spec-row` at the top of the panel). Overview, Key Terms and Units tabs can leave them out. Take the numbers from the spec itself, never from memory: if you don't have the relevant page of the spec, ask Alex for it rather than guessing.
-- **Mark Triple Award content as TA.** Any tab covering a P spec point (Physics only, e.g. 1.25P–1.33P, 5.12P–5.14P) gets a TA tag on its tab button (`data-ta` attribute, drawn by `.tab-btn[data-ta]::after`) and a TA badge in the panel (`<span class="triple" title="Triple Award only">TA</span>` in the intro, or `<b class="ta">TA</b>` among the spec badges). Add "TA = Triple Award only" to the page's eyebrow line so students know what it means.
+- **Every tab starts with the same heading.** A `.panel-head` holding an `<h2>` title (Big Shoulders, uppercase) and a `.spec` list of the tab's 4PH1 spec numbers as small badges, e.g. `<div class="panel-head"><h2>Momentum</h2><div class="spec"><b class="ta" title="Triple Award only">TA</b><b>1.25P</b><b>1.27P</b></div></div>`. Overview can say "All of Unit 5"; Key Terms and Units can leave the badges out. Take the numbers from the spec itself, never from memory: if you don't have the relevant page of the spec, ask Alex for it rather than guessing.
+- **Mark Triple Award content as TA.** Any tab covering a P spec point (e.g. 1.25P–1.33P, 5.8P–5.14P) gets the TA badge first in its spec list and a TA tag on its tab button (`data-ta` attribute, drawn by `.tab-btn[data-ta]::after`). Add "TA = Triple Award only" to the page's eyebrow line.
 
 ## Balance against the spec
 
