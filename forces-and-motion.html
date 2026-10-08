@@ -276,6 +276,8 @@
   .example .answer ul{margin:0;padding-left:18px;}
   .example .answer li{font-size:13.5px;line-height:1.7;color:var(--ink-soft);}
   .example .answer li b{color:var(--ink);font-family:var(--font-mono);}
+  .calc-working{margin-top:10px;}
+  .calc-working-head{font-family:var(--font-mono);font-size:12.5px;font-weight:600;color:var(--cat);min-height:28px;display:flex;align-items:center;}
   .calc-inputs{display:flex;flex-direction:column;gap:10px;margin:12px 0 4px;}
   .predict{margin-bottom:14px;padding:16px 18px;}
   .predict .q{font-size:14.5px;font-weight:600;margin-bottom:10px;}
@@ -463,7 +465,7 @@
   @keyframes settle{from{transform:scale(.92);opacity:.6;} to{transform:scale(1);opacity:1;}}
   @keyframes pulse{0%{transform:scale(1);} 40%{transform:scale(1.12);} 100%{transform:scale(1);}}
   @media (prefers-reduced-motion: no-preference){
-    .predict-reveal{animation:reveal .45s ease;}
+    .predict-reveal,.calc-working{animation:reveal .45s ease;}
     @keyframes reveal{from{opacity:0}to{opacity:1}}
     .panel{animation:fadein .25s ease;}
     .is-wrong{animation:shake .5s ease;}
@@ -580,7 +582,7 @@
 
   <section id="panel-calculating" class="panel" role="tabpanel" hidden>
     <div class="panel-head"><h2>Speed and Acceleration</h2><div class="spec"><b>1.4</b><b>1.6</b></div></div>
-    <p class="panel-intro">Work each question out on paper first, type your answer and press Check, then reveal the worked answer to check yourself.</p>
+    <p class="panel-intro">Work each question out on paper first, type your answer and press Check. If an answer is wrong, the working appears below it.</p>
     <div id="calculating-examples"></div>
     <div class="btn-row" style="margin-top:0;">
       <button class="btn btn-ghost" data-action="calculating-reset">Clear Answers</button>
@@ -1416,11 +1418,14 @@
         '<div class="calc-inputs">'+rows+'</div>'+
         '<div class="btn-row"><button class="btn btn-primary" data-check="'+i+'">Check</button>'+
         '<span class="calc-fb" id="'+cfg.id+'-fb-'+i+'"></span></div>'+
-        (ex.steps ? '<details><summary>Show full working</summary><div class="answer"><ul>'+
-          ex.steps.map(function(s){ return '<li>'+FR(s)+'</li>'; }).join('')+'</ul></div></details>' : '')+
+        (ex.steps ? '<div class="calc-working" id="'+cfg.id+'-work-'+i+'" hidden><div class="calc-working-head">Working</div><div class="answer"><ul>'+
+          ex.steps.map(function(s){ return '<li>'+FR(s)+'</li>'; }).join('')+'</ul></div></div>' : '')+
         '</div>';
     }).join('');
     function input(i, bi){ return document.getElementById(cfg.id+'-'+i+'-'+bi); }
+    // the working stays hidden until a wrong answer is checked, then appears by itself
+    function working(i){ return document.getElementById(cfg.id+'-work-'+i); }
+    function showWorking(i){ var w = working(i); if(w) w.hidden = false; }
     function parse(raw){ return parseFloat(String(raw).replace(/,/g,'').replace(/\s/g,'').replace(/[−–]/g,'-')); }
     function info(i){
       var ex = cfg.questions[i], n = 0;
@@ -1434,7 +1439,7 @@
       return fb.textContent;
     }
     function check(i){
-      var any = false;
+      var any = false, wrong = false;
       cfg.questions[i].blanks.forEach(function(b, bi){
         var el = input(i, bi);
         if(el.disabled || el.value.trim()==='') return;
@@ -1444,10 +1449,13 @@
         else {
           el.classList.add('is-wrong');
           setTimeout(function(){ el.classList.remove('is-wrong'); }, 750);
+          wrong = true;
         }
       });
       if(!any){ announce('Type a number first.'); return; }
-      announce((numbered?'Question '+(i+1)+': ':'')+showFb(i));
+      var firstShow = wrong && working(i) && working(i).hidden;
+      if(wrong) showWorking(i);
+      announce((numbered?'Question '+(i+1)+': ':'')+showFb(i)+(firstShow?'. The working is shown below.':''));
       saveSnapshot();
     }
     cfg.el.addEventListener('click', function(e){
@@ -1461,6 +1469,7 @@
       cfg.questions.forEach(function(ex, i){
         ex.blanks.forEach(function(b, bi){ var el = input(i,bi); el.value=''; el.disabled=false; el.className='calc-num-input'; });
         var fb = document.getElementById(cfg.id+'-fb-'+i); fb.textContent=''; fb.className='calc-fb';
+        if(working(i)) working(i).hidden = true;
       });
       saveSnapshot();
     }
@@ -1471,10 +1480,13 @@
         cfg.questions.forEach(function(ex, i){ ex.blanks.forEach(function(b, bi){
           var el = input(i,bi); vals[el.id] = {v:el.value, ok:el.classList.contains('is-correct')};
         }); });
-        return {vals:vals};
+        var shown = [];
+        cfg.questions.forEach(function(ex, i){ if(working(i) && !working(i).hidden) shown.push(i); });
+        return {vals:vals, shown:shown};
       },
       setState: function(s){
         if(!s || !s.vals) return;
+        (s.shown||[]).forEach(showWorking);
         Object.keys(s.vals).forEach(function(id){
           var el = document.getElementById(id);
           if(!el) return;
