@@ -269,6 +269,8 @@
   .example .answer ul{margin:0;padding-left:18px;}
   .example .answer li{font-size:13.5px;line-height:1.7;color:var(--ink-soft);}
   .example .answer li b{color:var(--ink);font-family:var(--font-mono);}
+  .calc-working{margin-top:10px;}
+  .calc-working-head{font-family:var(--font-mono);font-size:12.5px;font-weight:600;color:var(--cat);min-height:28px;display:flex;align-items:center;}
   .calc-inputs{display:flex;flex-direction:column;gap:10px;margin:12px 0 4px;}
   .calc-set{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:14px;align-items:start;margin-bottom:14px;}
   .calc-set .example{margin-bottom:0;}
@@ -444,7 +446,7 @@
     .graph-drop.just-placed{animation:none;}
     .graph-drop.just-placed .drop-marker{animation:settle .15s ease-out;}
     .score-pill.is-done,.reorder-result.good{animation:pulse .6s ease;}
-    .predict-reveal{animation:reveal .45s ease;}
+    .predict-reveal,.calc-working{animation:reveal .45s ease;}
   }
 </style>
 </head>
@@ -1330,22 +1332,28 @@
      cfg: {id, el, questions:[{diagram?, q, blanks:[{label,unit,answer}], steps:[...]}]} */
   function createCalcSet(cfg){
     cfg.el.classList.add('calc-set');   // questions sit two to a row on wide screens
+    var numbered = cfg.questions.length>1;
+    // a decimal keypad has no minus sign on some phones, so a set with a negative answer gets a full keyboard on every box
+    var mode = cfg.questions.some(function(ex){ return ex.blanks.some(function(b){ return b.answer<0; }); }) ? 'text' : 'decimal';
     cfg.el.innerHTML = cfg.questions.map(function(ex, i){
       var rows = ex.blanks.map(function(b, bi){
         return '<label class="calc-input-row"><span class="calc-input-label">'+b.label+'</span>'+
-          '<span class="calc-input-wrap"><input type="text" inputmode="decimal" class="calc-num-input" id="'+cfg.id+'-'+i+'-'+bi+'" data-q="'+i+'" autocomplete="off" spellcheck="false">'+
+          '<span class="calc-input-wrap"><input type="text" inputmode="'+mode+'" class="calc-num-input" id="'+cfg.id+'-'+i+'-'+bi+'" data-q="'+i+'" autocomplete="off" spellcheck="false">'+
           '<span class="calc-input-unit">'+b.unit+'</span></span></label>';
       }).join('');
       return '<div class="example">'+(ex.diagram||'')+
-        '<p class="q">'+(i+1)+'. '+ex.q+'</p>'+
+        (ex.q ? '<p class="q">'+(numbered?(i+1)+'. ':'')+ex.q+'</p>' : '')+
         '<div class="calc-inputs">'+rows+'</div>'+
         '<div class="btn-row"><button class="btn btn-primary" data-check="'+i+'">Check</button>'+
         '<span class="calc-fb" id="'+cfg.id+'-fb-'+i+'"></span></div>'+
-        '<details><summary>Show full working</summary><div class="answer"><ul>'+
-        ex.steps.map(function(s){ return '<li>'+FR(s)+'</li>'; }).join('')+
-        '</ul></div></details></div>';
+        (ex.steps ? '<div class="calc-working" id="'+cfg.id+'-work-'+i+'" hidden><div class="calc-working-head">Working</div><div class="answer"><ul>'+
+          ex.steps.map(function(s){ return '<li>'+FR(s)+'</li>'; }).join('')+'</ul></div></div>' : '')+
+        '</div>';
     }).join('');
     function input(i, bi){ return document.getElementById(cfg.id+'-'+i+'-'+bi); }
+    // the working stays hidden until a wrong answer is checked, then appears by itself
+    function working(i){ return document.getElementById(cfg.id+'-work-'+i); }
+    function showWorking(i){ var w = working(i); if(w) w.hidden = false; }
     function parse(raw){ return parseFloat(String(raw).replace(/,/g,'').replace(/\s/g,'').replace(/[−–]/g,'-')); }
     function info(i){
       var ex = cfg.questions[i], n = 0;
@@ -1359,7 +1367,7 @@
       return fb.textContent;
     }
     function check(i){
-      var any = false;
+      var any = false, wrong = false;
       cfg.questions[i].blanks.forEach(function(b, bi){
         var el = input(i, bi);
         if(el.disabled || el.value.trim()==='') return;
@@ -1369,10 +1377,13 @@
         else {
           el.classList.add('is-wrong');
           setTimeout(function(){ el.classList.remove('is-wrong'); }, 750);
+          wrong = true;
         }
       });
       if(!any){ announce('Type a number first.'); return; }
-      announce('Question '+(i+1)+': '+showFb(i));
+      var firstShow = wrong && working(i) && working(i).hidden;
+      if(wrong) showWorking(i);
+      announce((numbered?'Question '+(i+1)+': ':'')+showFb(i)+(firstShow?'. The working is shown below.':''));
       saveSnapshot();
     }
     cfg.el.addEventListener('click', function(e){
@@ -1386,6 +1397,7 @@
       cfg.questions.forEach(function(ex, i){
         ex.blanks.forEach(function(b, bi){ var el = input(i,bi); el.value=''; el.disabled=false; el.className='calc-num-input'; });
         var fb = document.getElementById(cfg.id+'-fb-'+i); fb.textContent=''; fb.className='calc-fb';
+        if(working(i)) working(i).hidden = true;
       });
       saveSnapshot();
     }
@@ -1396,10 +1408,13 @@
         cfg.questions.forEach(function(ex, i){ ex.blanks.forEach(function(b, bi){
           var el = input(i,bi); vals[el.id] = {v:el.value, ok:el.classList.contains('is-correct')};
         }); });
-        return {vals:vals};
+        var shown = [];
+        cfg.questions.forEach(function(ex, i){ if(working(i) && !working(i).hidden) shown.push(i); });
+        return {vals:vals, shown:shown};
       },
       setState: function(s){
         if(!s || !s.vals) return;
+        (s.shown||[]).forEach(showWorking);
         Object.keys(s.vals).forEach(function(id){
           var el = document.getElementById(id);
           if(!el) return;
