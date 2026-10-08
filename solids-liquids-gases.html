@@ -297,7 +297,6 @@ svg text{font-family:var(--f-mono)}
 <button class="tab-btn" role="tab" id="tab-density" data-tab="density" data-grp="b" aria-selected="false" aria-controls="panel-density">Density</button>
 <button class="tab-btn" role="tab" id="tab-pressure" data-tab="pressure" data-grp="b" aria-selected="false" aria-controls="panel-pressure">Pressure</button>
 <button class="tab-btn" role="tab" id="tab-fluids" data-tab="fluids" data-grp="b" aria-selected="false" aria-controls="panel-fluids">Pressure &amp; Depth</button>
-<button class="tab-btn" role="tab" id="tab-manometer" data-tab="manometer" data-grp="b" aria-selected="false" aria-controls="panel-manometer">Manometer</button>
 <button class="tab-btn" role="tab" id="tab-particles" data-tab="particles" data-grp="c" aria-selected="false" aria-controls="panel-particles">Particles</button>
 <button class="tab-btn" role="tab" id="tab-heating" data-tab="heating" data-grp="c" aria-selected="false" aria-controls="panel-heating">Heating Curve</button>
 <button class="tab-btn" role="tab" id="tab-shc" data-tab="shc" data-grp="c" aria-selected="false" aria-controls="panel-shc">Specific Heat</button>
@@ -324,10 +323,6 @@ svg text{font-family:var(--f-mono)}
 </section>
 <section id="panel-fluids" class="panel" role="tabpanel" aria-labelledby="tab-fluids" hidden>
 <div class="panel-head"><h2>Pressure and Depth</h2><div class="spec"><b>5.6</b><b>5.7</b></div></div>
-<div class="acts"></div>
-</section>
-<section id="panel-manometer" class="panel" role="tabpanel" aria-labelledby="tab-manometer" hidden>
-<div class="panel-head"><h2>The U-tube Manometer</h2><div class="spec"><b>5.7</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-particles" class="panel" role="tabpanel" aria-labelledby="tab-particles" hidden>
@@ -377,7 +372,7 @@ const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim
 const raf=f=>requestAnimationFrame(f);
 
 const STORE_KEY='unit5-slg-lab-v1';
-const TAB_IDS=['overview','units','density','pressure','fluids','manometer','particles','heating','shc','gas','gaspress','kelvin','laws'];
+const TAB_IDS=['overview','units','density','pressure','fluids','particles','heating','shc','gas','gaspress','kelvin','laws'];
 let activeTab='overview';
 const reflowers=[];
 const tickers=[];
@@ -1259,66 +1254,6 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   }
   upd();
 
-  /* ---------- U-tube manometer ---------- */
-  {
-    const MAN={hg:{n:'Mercury',r:13600,max:48000,step:400,start:13600,c:'var(--ink-faint)'},w:{n:'Water',r:1000,max:4000,step:50,start:2000,c:'var(--liquid)'}};
-    let man='hg';
-    const PXCM=4.5,Y0=130,XL=120,XR=240,YB=230,RB=60;
-    const ub=act('manometer','Explore','U-tube manometer','One side of the U-tube is connected to a gas supply and the other side is open to the air. Change the gas pressure and watch the liquid levels. The height difference h tells you the pressure difference.');
-    const tubePath='M60,30 L'+XL+',30 L'+XL+','+YB+' A'+RB+','+RB+' 0 0 0 '+XR+','+YB+' L'+XR+',22';
-    ub.innerHTML=`
-    <div class="sim sim-small" style="--simw:420px">
-      <div class="sim-view"><svg class="diagram" viewBox="0 0 360 310" role="img" aria-label="A U-tube manometer connected to a gas supply">
-        <rect x="8" y="8" width="56" height="46" rx="6" fill="var(--gas-soft)" stroke="var(--gas)" stroke-width="2"/>
-        <text x="36" y="36" font-size="12" text-anchor="middle" fill="var(--ink)">gas</text>
-        <path d="${tubePath}" fill="none" stroke="var(--ink-soft)" stroke-width="30" stroke-linejoin="round"/>
-        <path d="${tubePath}" fill="none" stroke="var(--panel)" stroke-width="24" stroke-linejoin="round"/>
-        <path id="ut-liq" fill="none" stroke="var(--ink-faint)" stroke-width="24"/>
-        <text x="${XR}" y="14" font-size="11" text-anchor="middle" fill="var(--ink-soft)">open to the air</text>
-        <line id="ut-l1" x1="${XL+14}" x2="340" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="4 3"/>
-        <line id="ut-l2" x1="${XR+14}" x2="340" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="4 3"/>
-        <line id="ut-dim" x1="334" x2="334" stroke="var(--accent)" stroke-width="2.5"/>
-        <text id="ut-h" x="327" font-size="13" text-anchor="end" paint-order="stroke" stroke="var(--panel-2)" stroke-width="4" fill="var(--accent)">h</text>
-      </svg></div>
-      <div class="ctl">
-        <div class="ctl-row"><span class="sub">Liquid in the tube</span><div class="seg" id="ut-seg"></div></div>
-        <div class="ctl-row"><label for="ut-p">Gas pressure minus air pressure <output id="ut-po"></output></label><input type="range" id="ut-p" min="-48000" max="48000" step="400" value="13600"></div>
-        <div class="eq" id="ut-eq"></div>
-        <p class="note" id="ut-cmp"></p>
-        <p class="note">The liquid is pushed down on the side with the higher pressure. Take g = 10 N/kg and atmospheric pressure as about 100 000 Pa.</p>
-      </div>
-    </div>`;
-    const P=slider('ut-p',draw);
-    seg(byId('ut-seg'),[{key:'hg',label:'Mercury'},{key:'w',label:'Water'}],'hg',k=>{man=k;const M=MAN[k];P.min=-M.max;P.max=M.max;P.step=M.step;P.value=M.start;draw();});
-    function draw(){
-      const M=MAN[man],dp=+P.value,h=dp/(M.r*10),hcm=h*100,half=hcm*PXCM/2;
-      const yL=Y0+half,yR=Y0-half;
-      byId('ut-liq').setAttribute('d','M'+XL+','+yL+' L'+XL+','+YB+' A'+RB+','+RB+' 0 0 0 '+XR+','+YB+' L'+XR+','+yR);
-      byId('ut-liq').setAttribute('stroke',M.c);
-      byId('ut-l1').setAttribute('y1',yL);byId('ut-l1').setAttribute('y2',yL);
-      byId('ut-l2').setAttribute('y1',yR);byId('ut-l2').setAttribute('y2',yR);
-      const dm=byId('ut-dim');dm.setAttribute('y1',Math.min(yL,yR));dm.setAttribute('y2',Math.max(yL,yR));
-      const ht=byId('ut-h');ht.setAttribute('y',(yL+yR)/2+4);ht.textContent='h = '+fmt(Math.abs(hcm),1)+' cm';
-      byId('ut-po').textContent=(dp<0?'−':'')+fmt(Math.abs(dp))+' Pa';
-      byId('ut-eq').innerHTML=FR('p(gas) − p(air) = h × ρ × g<br>h = [[p(gas) − p(air)|ρ × g]]<span class="why">divide both sides by ρ × g</span><br>h = [['+fmt(Math.abs(dp))+'|'+fmt(M.r)+' × 10]] = <b>'+fmt(Math.abs(h),3)+' m</b>'+
-        '<br>Gas pressure ≈ 100 000 '+(dp<0?'−':'+')+' '+fmt(Math.abs(dp))+' = <b>'+fmt(100000+dp)+' Pa</b>');
-      const other=man==='hg'?Math.abs(dp)/(1000*10):Math.abs(dp)/(13600*10);
-      byId('ut-cmp').textContent=dp===0?'The levels are equal, so the gas is at the same pressure as the air.':
-        (man==='hg'?'With water in the tube, the same pressure difference would need h = '+fmt(other,2)+' m. Mercury is 13.6 times denser, so its height difference is 13.6 times smaller.'
-                   :'With mercury in the tube, the same pressure difference would give h = '+fmt(other*100,2)+' cm. Water is much less dense, so it shows small pressure differences more clearly.');
-    }
-    draw();
-    createCalc({
-      host:act('manometer','Calculate','Reading a manometer','Use p = h × ρ × g with g = 10 N/kg. Mercury: ρ = 13 600 kg/m³. Water: ρ = 1000 kg/m³.'),
-      questions:[
-        {q:'A mercury manometer shows a height difference of 0.20 m. The pressure difference between the gas and the air is',unit:'Pa',answer:27200,working:'p = h × ρ × g = 0.20 × 13 600 × 10 = 27 200 Pa'},
-        {q:'A water manometer shows a height difference of 15 cm. The pressure difference is',unit:'Pa',answer:1500,working:'h = 15 cm = 0.15 m<br>p = 0.15 × 1000 × 10 = 1500 Pa'},
-        {q:'A gas is 6800 Pa above atmospheric pressure. The height difference in a mercury manometer is',unit:'m',answer:0.05,working:'h = [[p|ρ × g]] = [[6800|13 600 × 10]] = 0.05 m'},
-        {q:'In a mercury manometer the level on the gas side is 0.25 m lower than on the open side. Atmospheric pressure is 100 000 Pa. The gas pressure is',unit:'Pa',answer:134000,hint:'The gas side is pushed down, so the gas pressure is higher than atmospheric. Add the pressure difference.',working:'Difference = 0.25 × 13 600 × 10 = 34 000 Pa<br>Gas pressure = 100 000 + 34 000 = 134 000 Pa'}
-      ]
-    });
-  }
-
   const arrowsViz='<svg class="viz" style="max-width:200px" viewBox="0 0 170 170" role="img" aria-label="Arrows pointing at a diver from all sides"><rect width="170" height="170" rx="8" fill="var(--liquid-soft)"/><circle cx="85" cy="85" r="15" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>'+
     dirs.map(a=>{const r=a*Math.PI/180,x1=85+Math.cos(r)*62,y1=85+Math.sin(r)*62,x2=85+Math.cos(r)*24,y2=85+Math.sin(r)*24;return '<g class="arr"><line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="var(--accent)" stroke-width="4"/><circle cx="'+x2+'" cy="'+y2+'" r="4" fill="var(--accent)"/></g>';}).join('')+'</svg>';
   createPredict({
@@ -1351,6 +1286,8 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       {q:'Sea water has a density of 1030 kg/m³. The pressure difference between the surface and a depth of 20 m is',unit:'Pa',answer:206000,working:'p = h × ρ × g = 20 × 1030 × 10 = 206 000 Pa'},
       {q:'The water behind a dam is 40 m deep (ρ = 1000 kg/m³). The pressure difference between the top and the bottom is',unit:'Pa',answer:400000,working:'p = 40 × 1000 × 10 = 400 000 Pa'},
       {q:'In oil (ρ = 800 kg/m³) the pressure difference is 64 000 Pa. The depth is',unit:'m',answer:8,working:'h = [[p|ρ × g]] = [[64 000|800 × 10]] = 8 m'},
+      {q:'A U-tube manometer contains mercury (ρ = 13 600 kg/m³). The liquid levels differ by 0.20 m. The pressure difference between the gas and the air is',unit:'Pa',answer:27200,working:'p = h × ρ × g = 0.20 × 13 600 × 10 = 27 200 Pa'},
+      {q:'In a mercury manometer (ρ = 13 600 kg/m³) the level on the gas side is 0.25 m lower than on the open side. Atmospheric pressure is 100 000 Pa. The gas pressure is',unit:'Pa',answer:134000,hint:'The gas pushes its side down, so the gas pressure is higher than atmospheric. Add the pressure difference.',working:'Difference = 0.25 × 13 600 × 10 = 34 000 Pa<br>Gas pressure = 100 000 + 34 000 = 134 000 Pa'},
       {q:'A column of liquid 0.5 m tall gives a pressure difference of 68 000 Pa. The density of the liquid is',unit:'kg/m³',answer:13600,working:'ρ = [[p|h × g]] = [[68 000|0.5 × 10]] = 13 600 kg/m³ (mercury)'}
     ]
   });
@@ -1382,6 +1319,14 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     {id:'l3',text:'Particles are close together in a random arrangement',cat:'l'},{id:'l4',text:'Takes the shape of its container but does not fill it',cat:'l'},
     {id:'g1',text:'Particles are far apart and move quickly in all directions',cat:'g'},{id:'g2',text:'Has no fixed shape and no fixed volume',cat:'g'},
     {id:'g3',text:'Can be compressed easily',cat:'g'},{id:'g4',text:'Almost no forces between the particles',cat:'g'}
+  ]});
+  createSortGame({host:act('particles','Sort','Evaporating or boiling?','Both turn a liquid into a gas. Drag each statement into the right bin.'),cats:[
+    {id:'e',label:'Evaporating',color:'--liquid',soft:'--liquid-soft'},{id:'b',label:'Boiling',color:'--gas',soft:'--gas-soft'},{id:'x',label:'Both',color:'--accent',soft:'--accent-soft'}],items:[
+    {id:'e1',text:'Happens only at the surface of the liquid',cat:'e'},{id:'e2',text:'Can happen at any temperature',cat:'e'},
+    {id:'e3',text:'Puddles slowly disappear on a cool day',cat:'e'},
+    {id:'b1',text:'Bubbles of gas form all through the liquid',cat:'b'},{id:'b2',text:'Happens only at one temperature for a given liquid',cat:'b'},
+    {id:'b3',text:'Temperature stays constant while energy is still being supplied',cat:'b'},
+    {id:'x1',text:'Particles gain enough energy to escape the forces holding them',cat:'x'},{id:'x2',text:'The particles end up far apart, moving quickly',cat:'x'}
   ]});
 
   const latticeViz=(()=>{
@@ -1448,6 +1393,19 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
   gm=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer,slotText:c=>c.short,placedClass:'drop-caption'});
 
+  createReorder({
+    host:act('heating','Order','Heating curve practical','Put the method for getting a temperature–time graph for ice in order.'),
+    steps:[
+      {id:'a',text:'Put crushed ice into a beaker and stand a thermometer in it.'},
+      {id:'b',text:'Record the starting temperature of the ice.'},
+      {id:'c',text:'Heat the beaker gently at a steady rate.'},
+      {id:'d',text:'Stir, and record the temperature every 30 seconds.'},
+      {id:'e',text:'Carry on until the water has been boiling for a few minutes.'},
+      {id:'f',text:'Plot temperature against time and look for the flat sections.'}
+    ],
+    constraints:[['a','b'],['b','c'],['c','d'],['d','e'],['e','f']],
+    why:'Set up and take a starting reading, heat steadily while taking regular readings through melting and boiling, then plot the graph: the flat sections show the changes of state.'
+  });
   createPredict({
     host:act('heating','Predict','The water keeps boiling','Water in a beaker is heated at a steady rate and starts to boil at 100 °C. The heater stays on.'),
     q:'What happens to the temperature of the boiling water while it is turning into steam?',
@@ -1674,18 +1632,6 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   /* ---------- kinetic theory chains ---------- */
   const chain=ids=>ids.slice(1).map((x,i)=>[ids[i],x]);
   createReorder({
-    host:act('gaspress','Order','Why a gas exerts pressure','Put the explanation in order, from the molecules to the pressure.'),
-    steps:[
-      {id:'a',text:'Air molecules move randomly at high speed.'},
-      {id:'b',text:'They collide with the surfaces around them, such as the walls of a container.'},
-      {id:'c',text:'Each collision changes the molecule’s direction, so it exerts a tiny force on the wall.'},
-      {id:'d',text:'Billions of collisions every second add up to a total force on the wall.'},
-      {id:'e',text:'Pressure = [[total force|area]], so the gas exerts a pressure on the wall.'}
-    ],
-    constraints:chain(['a','b','c','d','e']),
-    why:'Moving molecules collide with the walls, each collision exerts a force, and the total force per unit area is the pressure.'
-  });
-  createReorder({
     host:act('gaspress','Order','Heating a gas in a sealed container','The volume cannot change. Put the chain of effects in order.'),
     steps:[
       {id:'a',text:'The gas is heated, so energy is transferred to the gas molecules.'},
@@ -1728,6 +1674,30 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       {id:'k7',text:'Water boils at 100 K',cat:'f'},
       {id:'k8',text:'To change °C into K you subtract 273',cat:'f'}
     ]});
+  createPredict({
+    host:act('kelvin','Predict','Cooling a sealed can','The can is rigid, so the volume of the gas cannot change.'),
+    q:'A sealed can of gas at 27 °C is cooled further and further towards −273 °C. What happens to the pressure of the gas?',
+    options:[
+      {text:'It falls steadily and would reach zero at −273 °C',correct:true},
+      {text:'It falls to zero when the gas reaches 0 °C',why:'0 °C is only the melting point of ice. The gas still has plenty of energy at 0 °C (273 K), so it still exerts a pressure.'},
+      {text:'It stays the same, because the volume cannot change',why:'The volume is fixed, but the molecules slow down as the gas cools, so they hit the walls less hard and less often.'},
+      {text:'It falls below zero once the gas is under 0 °C',why:'Pressure cannot be negative. It falls in proportion to the Kelvin temperature and reaches zero at 0 K.'}
+    ],
+    explain:'Pressure is proportional to the Kelvin temperature. As the gas cools the molecules slow down, so they hit the walls less often and less hard. At −273 °C (0 K) they would have the least possible energy and the pressure would be zero.',
+    reveal:barsHTML([{l:'27 °C (300 K)',v:1,t:'100 kPa',c:COL.g},{l:'−123 °C (150 K)',v:.5,t:'50 kPa',c:COL.g},{l:'−273 °C (0 K)',v:.02,t:'0 kPa',c:COL.g}])
+  });
+  createPredict({
+    host:act('kelvin','Predict','Why nothing is colder','Think about the particles.'),
+    q:'Why can nothing be cooled below −273 °C?',
+    options:[
+      {text:'The particles already have the least energy they can have',correct:true},
+      {text:'Thermometers cannot measure any lower than that temperature',why:'This is about the particles, not the thermometer. Even a perfect thermometer would find nothing colder.'},
+      {text:'Every substance turns into a solid at exactly that temperature',why:'Most substances become solid long before this. Freezing is not what sets the limit.'},
+      {text:'The Kelvin scale was simply chosen to stop at that point',why:'It is the other way round: the Kelvin scale starts at 0 K because that is the lowest temperature possible.'}
+    ],
+    explain:'Temperature measures the average kinetic energy of the particles. At absolute zero the particles have the least possible energy, so there is no lower temperature to reach.',
+    reveal:barsHTML([{l:'Average KE at 300 K',v:1,t:'2 units',c:COL.a},{l:'Average KE at 150 K',v:.5,t:'1 unit',c:COL.a},{l:'Average KE at 0 K',v:.02,t:'least possible',c:COL.a}])
+  });
   createCalc({
     host:act('kelvin','Calculate','Convert and compare','Use T (K) = θ (°C) + 273.'),
     questions:[
