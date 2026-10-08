@@ -203,7 +203,7 @@ table.units .blank{width:100%;min-width:100px;margin:0}
 .err-line.is-bad{border-color:var(--bad);background:var(--bad-soft)}
 .err-fb{font-size:13.5px;min-height:20px;margin:2px 0 0}
 .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25}
-.frac>span{padding:0 .25em}
+.frac>span{padding:0 .25em;white-space:nowrap}
 .frac>span:first-child{border-bottom:1.5px solid currentColor}
 .err-fix .fix-line{display:block;padding:4px 0}
 .err-fix{margin:6px 0 0;padding:8px 10px;border-left:3px solid var(--good);background:var(--panel);font:500 14px/1.6 var(--f-mono)}
@@ -367,6 +367,8 @@ const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
 const mk=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;};
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+// Write a fraction as [[top|bottom]] in any text that goes through FR(); it is drawn stacked.
+const FR=t=>String(t).replace(/(\d) (?=\d{3}\b)/g,'$1\u00a0').replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
 const fmt=(n,dp)=>{const t=Number(n).toLocaleString('en-GB',{maximumFractionDigits:dp==null?2:dp});return Math.abs(n)<10000?t.replace(/,/g,''):t.replace(/,/g,'\u2009');};
 const REDUCED=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
@@ -383,7 +385,7 @@ function loop(t){if(!document.hidden){for(const k of tickers){if(k.tab===activeT
 
 function act(panel,kind,title,intro){
   const a=mk('article','act');
-  a.innerHTML='<h3 class="act-title"><span class="kind">'+kind+'</span><span>'+title+'</span></h3>'+(intro?'<p class="act-intro">'+intro+'</p>':'');
+  a.innerHTML='<h3 class="act-title"><span class="kind">'+kind+'</span><span>'+title+'</span></h3>'+(intro?'<p class="act-intro">'+FR(intro)+'</p>':'');
   const body=mk('div','act-body');a.appendChild(body);
   $('#panel-'+panel+' .acts').appendChild(a);
   return body;
@@ -705,7 +707,7 @@ function createCalc(cfg){
     row.innerHTML='<div class="calc-input-label"><label for="'+id+'-'+i+'">'+q.q+'</label></div>'+
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
-      '<details class="calc-working"><summary>Show full working</summary><div>'+q.working+'</div></details>';
+      '<details class="calc-working"><summary>Show full working</summary><div>'+FR(q.working)+'</div></details>';
     wrap.appendChild(row);
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
@@ -743,7 +745,7 @@ function createReorder(cfg){
     list.innerHTML='';rows={};
     steps.forEach(s=>{
       const li=mk('li','reorder-row');li.dataset.id=s.id;
-      li.innerHTML='<span class="reorder-pos"></span><span class="reorder-grip" aria-hidden="true">≡</span><span class="reorder-text">'+s.text+'</span><span class="mv"><button type="button" aria-label="Move up">▲</button><button type="button" aria-label="Move down">▼</button></span>';
+      li.innerHTML='<span class="reorder-pos"></span><span class="reorder-grip" aria-hidden="true">≡</span><span class="reorder-text">'+FR(s.text)+'</span><span class="mv"><button type="button" aria-label="Move up">▲</button><button type="button" aria-label="Move down">▼</button></span>';
       const btns=li.querySelectorAll('.mv button');
       btns[0].addEventListener('click',()=>move(s.id,-1));btns[1].addEventListener('click',()=>move(s.id,1));
       makeDraggable(li.querySelector('.reorder-grip'),{
@@ -807,7 +809,7 @@ function createPredict(cfg){
       if(+btn.dataset.i===i){btn.classList.add('is-chosen');if(!k.correct)btn.classList.add('is-wrong');}
     });
     const right=cfg.options.find(x=>x.correct);
-    out.innerHTML='<p><strong>'+(o.correct?'That is right.':'Not quite.')+'</strong> '+(o.correct?cfg.explain:o.why+' '+cfg.explain)+'</p>'+(cfg.reveal||'');
+    out.innerHTML='<p><strong>'+(o.correct?'That is right.':'Not quite.')+'</strong> '+FR(o.correct?cfg.explain:o.why+' '+cfg.explain)+'</p>'+(cfg.reveal||'');
     out.hidden=false;out.classList.remove('go');b.el.hidden=false;
     raf(()=>raf(()=>out.classList.add('go')));
   }
@@ -822,7 +824,7 @@ function createSpot(cfg){
   // Steps after the wrong one are worked correctly from it, so only the mistake itself is wrong.
   // Write a fraction as [[top|bottom]]; it is drawn stacked, and read aloud as "top over bottom".
   const nb=t=>t.replace(/(\d) (?=\d{3}\b)/g,'$1 ');   // keep "15 000" on one line
-  const html=t=>nb(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  const html=FR;
   const said=t=>t.replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'($1) over ($2)');
   cfg.host.classList.add('err-grid');
   const blk=mk('div','err-block');cfg.host.appendChild(blk);
@@ -1086,12 +1088,12 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     host:act('density','Predict','Cut the block in half','Decide first, then see what happens.'),
     q:'A solid block of wood has a density of 600 kg/m³. It is cut exactly in half. What is the density of one half?',
     options:[
-      {text:'300 kg/m³',why:'The mass halves, but so does the volume, so mass ÷ volume stays the same.'},
+      {text:'300 kg/m³',why:'The mass halves, but so does the volume, so [[mass|volume]] stays the same.'},
       {text:'600 kg/m³',correct:true},
       {text:'1200 kg/m³',why:'Cutting does not squash the wood. Both its mass and its volume are halved.'},
       {text:'It depends on how the block is cut',why:'Density is a property of the material, so any piece of the same wood has the same density.'}
     ],
-    explain:'Density is a property of the material. Cut in half, the mass halves and the volume halves, so ρ = m ÷ V is unchanged.',
+    explain:'Density is a property of the material. Cut in half, the mass halves and the volume halves, so ρ = [[m|V]] is unchanged.',
     reveal:barsHTML([
       {l:'Mass, whole: 6 kg',v:1,t:'6 kg',c:COL.a},{l:'Mass, half: 3 kg',v:.5,t:'3 kg',c:COL.a},
       {l:'Volume, whole',v:1,t:'0.010 m³',c:COL.l},{l:'Volume, half',v:.5,t:'0.005 m³',c:COL.l},
@@ -1104,9 +1106,9 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       {text:'The lead, because lead is heavier',why:'Both have a mass of 1 kg, so neither is heavier here.'},
       {text:'The feathers',correct:true},
       {text:'They take up the same space because their masses are the same',why:'Equal mass does not mean equal volume. The volume depends on the density.'},
-      {text:'It cannot be worked out without measuring them',why:'You can reason it out from the densities, using V = m ÷ ρ.'}
+      {text:'It cannot be worked out without measuring them',why:'You can reason it out from the densities, using V = [[m|ρ]].'}
     ],
-    explain:'V = m ÷ ρ. Loose feathers have a very low density, so 1 kg of them fills a much larger volume than 1 kg of dense lead.',
+    explain:'V = [[m|ρ]]. Loose feathers have a very low density, so 1 kg of them fills a much larger volume than 1 kg of dense lead.',
     reveal:barsHTML([{l:'1 kg of lead',v:.03,t:'',c:COL.s},{l:'1 kg of feathers',v:1,t:'about 200 times larger',c:COL.g}])+'<p class="note">Lead: about 88 cm³. Loose feathers: roughly 20 000 cm³ (a density near 50 kg/m³).</p>'
   });
   createReorder({
@@ -1116,18 +1118,18 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       {id:'b',text:'Half-fill a measuring cylinder with water and read the volume V₁.'},
       {id:'c',text:'Tie the stone to a thread and lower it gently into the water.'},
       {id:'d',text:'Read the new water level V₂ and work out the stone’s volume: V = V₂ − V₁.'},
-      {id:'e',text:'Calculate the density using density = mass ÷ volume.'}
+      {id:'e',text:'Calculate the density using density = [[mass|volume]].'}
     ],
     constraints:[['a','c'],['b','c'],['c','d'],['d','e'],['a','e']],
     why:'The stone is weighed while dry, the water level is read before and after, and the calculation comes last.'
   });
   createCalc({
-    host:act('density','Calculate','Density, mass and volume','Use ρ = m ÷ V. Give your answer in the unit shown.'),
+    host:act('density','Calculate','Density, mass and volume','Use ρ = [[m|V]]. Give your answer in the unit shown.'),
     questions:[
-      {q:'A steel block has a mass of 2.4 kg and a volume of 0.0003 m³. Its density is',unit:'kg/m³',answer:8000,working:'ρ = m ÷ V = 2.4 ÷ 0.0003 = 8000 kg/m³'},
+      {q:'A steel block has a mass of 2.4 kg and a volume of 0.0003 m³. Its density is',unit:'kg/m³',answer:8000,working:'ρ = [[m|V]] = [[2.4|0.0003]] = 8000 kg/m³'},
       {q:'A block of aluminium has a density of 2700 kg/m³ and a volume of 0.004 m³. Its mass is',unit:'kg',answer:10.8,working:'m = ρ × V = 2700 × 0.004 = 10.8 kg'},
-      {q:'1.5 kg of petrol has a density of 750 kg/m³. Its volume is',unit:'m³',answer:0.002,working:'V = m ÷ ρ = 1.5 ÷ 750 = 0.002 m³'},
-      {q:'A stone has a mass of 270 g. It raises the water level in a measuring cylinder from 50 cm³ to 150 cm³. Its density is',unit:'g/cm³',answer:2.7,working:'V = 150 − 50 = 100 cm³<br>ρ = m ÷ V = 270 ÷ 100 = 2.7 g/cm³'}
+      {q:'1.5 kg of petrol has a density of 750 kg/m³. Its volume is',unit:'m³',answer:0.002,working:'V = [[m|ρ]] = [[1.5|750]] = 0.002 m³'},
+      {q:'A stone has a mass of 270 g. It raises the water level in a measuring cylinder from 50 cm³ to 150 cm³. Its density is',unit:'g/cm³',answer:2.7,working:'V = 150 − 50 = 100 cm³<br>ρ = [[m|V]] = [[270|100]] = 2.7 g/cm³'}
     ]
   });
 }
@@ -1158,7 +1160,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   function upd(){
     const f=+F.value,a=+A.value,p=f/a;
     byId('pr-fo').textContent=fmt(f)+' N';byId('pr-ao').textContent=a.toFixed(2)+' m²';
-    byId('pr-eq').innerHTML='p = F ÷ A<br>p = '+fmt(f)+' ÷ '+a.toFixed(2)+' = <b>'+fmt(Math.round(p))+' Pa</b>';
+    byId('pr-eq').innerHTML=FR('p = [[F|A]]<br>p = [['+fmt(f)+'|'+a.toFixed(2)+']] = <b>'+fmt(Math.round(p))+' Pa</b>');
     const bw=24+(a-0.02)/0.48*190,d=4+40*Math.log10(p/200)/Math.log10(500);
     byId('pr-dent').setAttribute('x',180-bw/2);byId('pr-dent').setAttribute('width',bw);byId('pr-dent').setAttribute('height',d);
     const by=160+d-56;
@@ -1172,12 +1174,12 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   upd();
 
   createCalc({
-    host:act('pressure','Calculate','Pressure, force and area','Use p = F ÷ A.'),
+    host:act('pressure','Calculate','Pressure, force and area','Use p = [[F|A]].'),
     questions:[
-      {q:'A force of 600 N acts on an area of 0.25 m². The pressure is',unit:'Pa',answer:2400,working:'p = F ÷ A = 600 ÷ 0.25 = 2400 Pa'},
-      {q:'A brick weighs 30 N. Its smallest face has an area of 0.015 m². Resting on that face, the pressure is',unit:'Pa',answer:2000,working:'p = F ÷ A = 30 ÷ 0.015 = 2000 Pa'},
+      {q:'A force of 600 N acts on an area of 0.25 m². The pressure is',unit:'Pa',answer:2400,working:'p = [[F|A]] = [[600|0.25]] = 2400 Pa'},
+      {q:'A brick weighs 30 N. Its smallest face has an area of 0.015 m². Resting on that face, the pressure is',unit:'Pa',answer:2000,working:'p = [[F|A]] = [[30|0.015]] = 2000 Pa'},
       {q:'A pressure of 5000 Pa acts on an area of 0.4 m². The force is',unit:'N',answer:2000,working:'F = p × A = 5000 × 0.4 = 2000 N'},
-      {q:'A force of 120 N produces a pressure of 30 000 Pa. The area is',unit:'m²',answer:0.004,working:'A = F ÷ p = 120 ÷ 30 000 = 0.004 m²'}
+      {q:'A force of 120 N produces a pressure of 30 000 Pa. The area is',unit:'m²',answer:0.004,working:'A = [[F|p]] = [[120|30 000]] = 0.004 m²'}
     ]
   });
   const sp=act('pressure','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
@@ -1297,8 +1299,8 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       const dm=byId('ut-dim');dm.setAttribute('y1',Math.min(yL,yR));dm.setAttribute('y2',Math.max(yL,yR));
       const ht=byId('ut-h');ht.setAttribute('y',(yL+yR)/2+4);ht.textContent='h = '+fmt(Math.abs(hcm),1)+' cm';
       byId('ut-po').textContent=(dp<0?'−':'')+fmt(Math.abs(dp))+' Pa';
-      byId('ut-eq').innerHTML='p(gas) − p(air) = h × ρ × g<br>h = '+fmt(Math.abs(dp))+' ÷ ('+fmt(M.r)+' × 10) = <b>'+fmt(Math.abs(h),3)+' m</b>'+
-        '<br>Gas pressure ≈ 100 000 '+(dp<0?'−':'+')+' '+fmt(Math.abs(dp))+' = <b>'+fmt(100000+dp)+' Pa</b>';
+      byId('ut-eq').innerHTML=FR('p(gas) − p(air) = h × ρ × g<br>h = [['+fmt(Math.abs(dp))+'|'+fmt(M.r)+' × 10]] = <b>'+fmt(Math.abs(h),3)+' m</b>'+
+        '<br>Gas pressure ≈ 100 000 '+(dp<0?'−':'+')+' '+fmt(Math.abs(dp))+' = <b>'+fmt(100000+dp)+' Pa</b>');
       const other=man==='hg'?Math.abs(dp)/(1000*10):Math.abs(dp)/(13600*10);
       byId('ut-cmp').textContent=dp===0?'The levels are equal, so the gas is at the same pressure as the air.':
         (man==='hg'?'With water in the tube, the same pressure difference would need h = '+fmt(other,2)+' m. Mercury is 13.6 times denser, so its height difference is 13.6 times smaller.'
@@ -1310,7 +1312,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       questions:[
         {q:'A mercury manometer shows a height difference of 0.20 m. The pressure difference between the gas and the air is',unit:'Pa',answer:27200,working:'p = h × ρ × g = 0.20 × 13 600 × 10 = 27 200 Pa'},
         {q:'A water manometer shows a height difference of 15 cm. The pressure difference is',unit:'Pa',answer:1500,working:'h = 15 cm = 0.15 m<br>p = 0.15 × 1000 × 10 = 1500 Pa'},
-        {q:'A gas is 6800 Pa above atmospheric pressure. The height difference in a mercury manometer is',unit:'m',answer:0.05,working:'h = p ÷ (ρ × g) = 6800 ÷ (13 600 × 10) = 0.05 m'},
+        {q:'A gas is 6800 Pa above atmospheric pressure. The height difference in a mercury manometer is',unit:'m',answer:0.05,working:'h = [[p|ρ × g]] = [[6800|13 600 × 10]] = 0.05 m'},
         {q:'In a mercury manometer the level on the gas side is 0.25 m lower than on the open side. Atmospheric pressure is 100 000 Pa. The gas pressure is',unit:'Pa',answer:134000,hint:'The gas side is pushed down, so the gas pressure is higher than atmospheric. Add the pressure difference.',working:'Difference = 0.25 × 13 600 × 10 = 34 000 Pa<br>Gas pressure = 100 000 + 34 000 = 134 000 Pa'}
       ]
     });
@@ -1347,8 +1349,8 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     questions:[
       {q:'Sea water has a density of 1030 kg/m³. The pressure difference between the surface and a depth of 20 m is',unit:'Pa',answer:206000,working:'p = h × ρ × g = 20 × 1030 × 10 = 206 000 Pa'},
       {q:'The water behind a dam is 40 m deep (ρ = 1000 kg/m³). The pressure difference between the top and the bottom is',unit:'Pa',answer:400000,working:'p = 40 × 1000 × 10 = 400 000 Pa'},
-      {q:'In oil (ρ = 800 kg/m³) the pressure difference is 64 000 Pa. The depth is',unit:'m',answer:8,working:'h = p ÷ (ρ × g) = 64 000 ÷ (800 × 10) = 8 m'},
-      {q:'A column of liquid 0.5 m tall gives a pressure difference of 68 000 Pa. The density of the liquid is',unit:'kg/m³',answer:13600,working:'ρ = p ÷ (h × g) = 68 000 ÷ (0.5 × 10) = 13 600 kg/m³ (mercury)'}
+      {q:'In oil (ρ = 800 kg/m³) the pressure difference is 64 000 Pa. The depth is',unit:'m',answer:8,working:'h = [[p|ρ × g]] = [[64 000|800 × 10]] = 8 m'},
+      {q:'A column of liquid 0.5 m tall gives a pressure difference of 68 000 Pa. The density of the liquid is',unit:'kg/m³',answer:13600,working:'ρ = [[p|h × g]] = [[68 000|0.5 × 10]] = 13 600 kg/m³ (mercury)'}
     ]
   });
   const sp=act('fluids','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
@@ -1559,7 +1561,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     byId('sh-heat').setAttribute('opacity',(0.08+Math.min(1,dt/150)*0.7).toFixed(2));
     const hgt=Math.max(8,clamp(ft/300,0,1)*210);
     const f=byId('sh-fill');f.setAttribute('y',230-hgt);f.setAttribute('height',hgt);
-    byId('sh-eq').innerHTML='ΔQ = m × c × ΔT<br>ΔT = ΔQ ÷ (m × c)<br>ΔT = '+fmt(q)+' ÷ ('+m.toFixed(1)+' × '+fmt(c)+') = <b>'+dt.toFixed(1)+' °C</b>';
+    byId('sh-eq').innerHTML=FR('ΔQ = m × c × ΔT<br>ΔT = [[ΔQ|m × c]]<br>ΔT = [['+fmt(q)+'|'+m.toFixed(1)+' × '+fmt(c)+']] = <b>'+dt.toFixed(1)+' °C</b>');
     byId('sh-dt').textContent=dt.toFixed(1)+' °C';byId('sh-ft').textContent=ft.toFixed(1)+' °C';
     const all=Object.keys(MAT).map(k=>({k:k,dt:q/(m*MAT[k].c)}));const mx=Math.max.apply(null,all.map(x=>x.dt))||1;
     byId('sh-cmp').innerHTML=all.map(x=>'<div class="vbar"><span>'+MAT[x.k].n+'</span><div class="vtrack"><div class="vfill" style="--w:'+Math.max(3,x.dt/mx*100)+'%;--c:'+(x.k===mat?'var(--gas)':'var(--ink-faint)')+';width:'+Math.max(3,x.dt/mx*100)+'%">'+x.dt.toFixed(1)+' °C</div></div></div>').join('');
@@ -1574,7 +1576,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       {id:'c',text:'Record the starting temperature of the block.'},
       {id:'d',text:'Switch on the heater and start the stopwatch. Note the power of the heater.'},
       {id:'e',text:'After several minutes, switch off and record the highest temperature reached.'},
-      {id:'f',text:'Work out ΔT and the energy supplied (power × time), then use c = ΔQ ÷ (m × ΔT).'}
+      {id:'f',text:'Work out ΔT and the energy supplied (power × time), then use c = [[ΔQ|m × ΔT]].'}
     ],
     constraints:[['a','f'],['b','c'],['c','d'],['d','e'],['e','f']],
     why:'The block is set up and measured before heating, and the calculation uses the final readings.'
@@ -1584,9 +1586,9 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     questions:[
       {q:'How much energy is needed to heat 2 kg of water by 15 °C?',unit:'J',answer:126000,working:'ΔQ = m × c × ΔT = 2 × 4200 × 15 = 126 000 J'},
       {q:'0.5 kg of aluminium (c = 900 J/kg °C) is heated from 20 °C to 80 °C. The energy transferred is',unit:'J',answer:27000,working:'ΔT = 80 − 20 = 60 °C<br>ΔQ = 0.5 × 900 × 60 = 27 000 J'},
-      {q:'A 1.5 kg block receives 54 000 J and its temperature rises by 40 °C. Its specific heat capacity is',unit:'J/kg °C',answer:900,working:'c = ΔQ ÷ (m × ΔT) = 54 000 ÷ (1.5 × 40) = 900 J/kg °C'},
-      {q:'3 kg of copper (c = 390 J/kg °C) receives 46 800 J. Its temperature rises by',unit:'°C',answer:40,working:'ΔT = ΔQ ÷ (m × c) = 46 800 ÷ (3 × 390) = 40 °C'},
-      {q:'84 000 J raises the temperature of some water by 10 °C. The mass of the water is',unit:'kg',answer:2,working:'m = ΔQ ÷ (c × ΔT) = 84 000 ÷ (4200 × 10) = 2 kg'}
+      {q:'A 1.5 kg block receives 54 000 J and its temperature rises by 40 °C. Its specific heat capacity is',unit:'J/kg °C',answer:900,working:'c = [[ΔQ|m × ΔT]] = [[54 000|1.5 × 40]] = 900 J/kg °C'},
+      {q:'3 kg of copper (c = 390 J/kg °C) receives 46 800 J. Its temperature rises by',unit:'°C',answer:40,working:'ΔT = [[ΔQ|m × c]] = [[46 800|3 × 390]] = 40 °C'},
+      {q:'84 000 J raises the temperature of some water by 10 °C. The mass of the water is',unit:'kg',answer:2,working:'m = [[ΔQ|c × ΔT]] = [[84 000|4200 × 10]] = 2 kg'}
     ]
   });
   const sp=act('shc','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
@@ -1677,7 +1679,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       {id:'b',text:'They collide with the surfaces around them, such as the walls of a container.'},
       {id:'c',text:'Each collision changes the molecule’s direction, so it exerts a tiny force on the wall.'},
       {id:'d',text:'Billions of collisions every second add up to a total force on the wall.'},
-      {id:'e',text:'Pressure = total force ÷ area, so the gas exerts a pressure on the wall.'}
+      {id:'e',text:'Pressure = [[total force|area]], so the gas exerts a pressure on the wall.'}
     ],
     constraints:chain(['a','b','c','d','e']),
     why:'Moving molecules collide with the walls, each collision exerts a force, and the total force per unit area is the pressure.'
@@ -1732,7 +1734,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       {q:'Convert 373 K to degrees Celsius.',unit:'°C',answer:100,working:'θ = 373 − 273 = 100 °C'},
       {q:'What is absolute zero, −273 °C, in kelvin?',unit:'K',answer:0,working:'T = −273 + 273 = 0 K'},
       {q:'Convert −50 °C to kelvin.',unit:'K',answer:223,working:'T = −50 + 273 = 223 K'},
-      {q:'A gas is heated from 300 K to 600 K. By what factor does the average kinetic energy of its molecules increase?',unit:'times',answer:2,hint:'The average kinetic energy is proportional to the Kelvin temperature. Compare 600 with 300.',working:'Average KE ∝ T (in K), so 600 ÷ 300 = 2 times'}
+      {q:'A gas is heated from 300 K to 600 K. By what factor does the average kinetic energy of its molecules increase?',unit:'times',answer:2,hint:'The average kinetic energy is proportional to the Kelvin temperature. Compare 600 with 300.',working:'Average KE ∝ T (in K), so [[600|300]] = 2 times'}
     ]
   });
 }
@@ -1769,8 +1771,8 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     }else{
       const t=+byId('lw-t').value,p=0.4*t;
       byId('lw-to').textContent=t+' K';
-      byId('lw-eq').innerHTML='Constant volume<br>p ÷ T = '+p.toFixed(0)+' ÷ '+t+' = <b>0.40</b> (always)<br>p = <b>'+p.toFixed(0)+' kPa</b>';
-      byId('lw-note').textContent='The straight line through the origin shows that p is directly proportional to the Kelvin temperature: p₁ ÷ T₁ = p₂ ÷ T₂.';
+      byId('lw-eq').innerHTML=FR('Constant volume<br>[[p|T]] = [['+p.toFixed(0)+'|'+t+']] = <b>0.40</b> (always)<br>p = <b>'+p.toFixed(0)+' kPa</b>');
+      byId('lw-note').innerHTML=FR('The straight line through the origin shows that p is directly proportional to the Kelvin temperature: [[p₁|T₁]] = [[p₂|T₂]].');
       byId('lw-dot').setAttribute('cx',gr.gx(t));byId('lw-dot').setAttribute('cy',gr.gy(p));
     }
   }
@@ -1781,11 +1783,11 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   createCalc({
     host:act('laws','Calculate','Use the gas laws','For temperature questions, change °C into kelvin first. Pressure and volume stay in the units given.'),
     questions:[
-      {q:'A gas at 100 kPa has a volume of 2.0 m³. It is compressed to 0.5 m³ at constant temperature. The new pressure is',unit:'kPa',answer:400,working:'p₁V₁ = p₂V₂<br>p₂ = (100 × 2.0) ÷ 0.5 = 400 kPa'},
-      {q:'A gas has a pressure of 200 kPa and a volume of 0.6 m³. Its pressure is changed to 300 kPa at constant temperature. The new volume is',unit:'m³',answer:0.4,working:'V₂ = (p₁V₁) ÷ p₂ = (200 × 0.6) ÷ 300 = 0.4 m³'},
-      {q:'A gas at 100 kPa and 300 K is heated to 360 K in a rigid container. The new pressure is',unit:'kPa',answer:120,working:'p₁ ÷ T₁ = p₂ ÷ T₂<br>p₂ = 100 × 360 ÷ 300 = 120 kPa'},
-      {q:'A sealed can at 20 °C has a pressure of 150 kPa. It is heated to 100 °C. The new pressure is',unit:'kPa',answer:191,hint:'Check that you have changed both temperatures to kelvin.',working:'T₁ = 20 + 273 = 293 K, T₂ = 100 + 273 = 373 K<br>p₂ = 150 × 373 ÷ 293 = 191 kPa'},
-      {q:'A fixed volume of gas at 27 °C has a pressure of 2.4 × 10⁵ Pa. The pressure rises to 3.2 × 10⁵ Pa. The new temperature is',unit:'K',answer:400,hint:'Remember that the temperature in the equation must be in kelvin.',working:'T₁ = 27 + 273 = 300 K<br>T₂ = T₁ × p₂ ÷ p₁ = 300 × 3.2 ÷ 2.4 = 400 K'}
+      {q:'A gas at 100 kPa has a volume of 2.0 m³. It is compressed to 0.5 m³ at constant temperature. The new pressure is',unit:'kPa',answer:400,working:'p₁V₁ = p₂V₂<br>p₂ = [[100 × 2.0|0.5]] = 400 kPa'},
+      {q:'A gas has a pressure of 200 kPa and a volume of 0.6 m³. Its pressure is changed to 300 kPa at constant temperature. The new volume is',unit:'m³',answer:0.4,working:'V₂ = [[p₁V₁|p₂]] = [[200 × 0.6|300]] = 0.4 m³'},
+      {q:'A gas at 100 kPa and 300 K is heated to 360 K in a rigid container. The new pressure is',unit:'kPa',answer:120,working:'[[p₁|T₁]] = [[p₂|T₂]]<br>p₂ = [[100 × 360|300]] = 120 kPa'},
+      {q:'A sealed can at 20 °C has a pressure of 150 kPa. It is heated to 100 °C. The new pressure is',unit:'kPa',answer:191,hint:'Check that you have changed both temperatures to kelvin.',working:'T₁ = 20 + 273 = 293 K, T₂ = 100 + 273 = 373 K<br>p₂ = [[150 × 373|293]] = 191 kPa'},
+      {q:'A fixed volume of gas at 27 °C has a pressure of 2.4 × 10⁵ Pa. The pressure rises to 3.2 × 10⁵ Pa. The new temperature is',unit:'K',answer:400,hint:'Remember that the temperature in the equation must be in kelvin.',working:'T₁ = 27 + 273 = 300 K<br>T₂ = [[T₁ × p₂|p₁]] = [[300 × 3.2|2.4]] = 400 K'}
     ]
   });
   const sp=act('laws','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
