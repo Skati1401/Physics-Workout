@@ -202,14 +202,17 @@ table.units .blank{width:100%;min-width:100px;margin:0}
 .err-line.is-ok{border-color:var(--good);background:var(--good-soft)}
 .err-line.is-bad{border-color:var(--bad);background:var(--bad-soft)}
 .err-fb{font-size:13.5px;min-height:20px;margin:2px 0 0}
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25}
+.frac>span{padding:0 .25em}
+.frac>span:first-child{border-bottom:1.5px solid currentColor}
+.err-fix .fix-line{display:block;padding:4px 0}
 .err-fix{margin:6px 0 0;padding:8px 10px;border-left:3px solid var(--good);background:var(--panel);font:500 14px/1.6 var(--f-mono)}
-.calc-inputs{display:flex;flex-direction:column;gap:12px}
-.calc-input-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--panel-border)}
-.calc-input-row:last-child{border-bottom:0}
+.calc-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:12px 18px;align-items:start}
+.calc-input-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:10px 12px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
 @media (max-width:560px){.calc-input-row{grid-template-columns:minmax(0,1fr)}}
 .calc-input-label{font-size:14px}
 .calc-input-wrap{display:flex;align-items:center;gap:8px}
-.calc-num-input{width:130px;padding:7px 9px;border:1px solid var(--panel-border);border-radius:6px;background:var(--panel-2);font:500 14px var(--f-mono);color:var(--ink)}
+.calc-num-input{width:130px;padding:7px 9px;border:1px solid var(--panel-border);border-radius:6px;background:var(--panel);font:500 14px var(--f-mono);color:var(--ink)}
 .calc-num-input:disabled{border-color:var(--good);background:var(--good-soft);color:var(--good)}
 .calc-num-input.is-wrong{border-color:var(--bad);background:var(--bad-soft)}
 .calc-input-unit{font:500 13px var(--f-mono);color:var(--ink-soft);white-space:nowrap}
@@ -227,8 +230,8 @@ details>div{margin-top:6px;padding:8px 10px;background:var(--panel-2);border-rad
 .sim{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
 @media (max-width:720px){.sim{grid-template-columns:minmax(0,1fr)}}
 .sim-view{min-width:0}
-.sim.sim-small{grid-template-columns:minmax(0,340px) minmax(0,1fr)}
-.sim.sim-small .sim-view{max-width:340px;width:100%;justify-self:center}
+.sim.sim-small{grid-template-columns:minmax(0,var(--simw,340px)) minmax(0,1fr)}
+.sim.sim-small .sim-view{max-width:var(--simw,340px);width:100%;justify-self:center}
 @media (max-width:720px){.sim.sim-small{grid-template-columns:minmax(0,1fr)}}
 .act-pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px;align-items:start;margin-bottom:18px}
 .act-pair>.act{margin-bottom:0}
@@ -817,13 +820,16 @@ function createPredict(cfg){
 function createSpot(cfg){
   // cfg.lines: one step per line. cfg.wrong: index of the one wrong step (never the first line).
   // Steps after the wrong one are worked correctly from it, so only the mistake itself is wrong.
-  const nb=t=>t.replace(/(\d) (?=\d{3}\b)/g,'$1\u00a0');   // keep "15 000" on one line
+  // Write a fraction as [[top|bottom]]; it is drawn stacked, and read aloud as "top over bottom".
+  const nb=t=>t.replace(/(\d) (?=\d{3}\b)/g,'$1 ');   // keep "15 000" on one line
+  const html=t=>nb(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  const said=t=>t.replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'($1) over ($2)');
   cfg.host.classList.add('err-grid');
   const blk=mk('div','err-block');cfg.host.appendChild(blk);
   blk.appendChild(mk('p','err-scn',nb(cfg.scenario)));
-  const btns=cfg.lines.map(nb).map((t,i)=>{
-    const btn=mk('button','err-line','<span class="err-num" aria-hidden="true">'+(i+1)+'</span><span>'+t+'</span>');
-    btn.type='button';btn.setAttribute('aria-label','Line '+(i+1)+': '+t);
+  const btns=cfg.lines.map((t,i)=>{
+    const btn=mk('button','err-line','<span class="err-num" aria-hidden="true">'+(i+1)+'</span><span aria-hidden="true">'+html(t)+'</span>');
+    btn.type='button';btn.setAttribute('aria-label','Line '+(i+1)+': '+said(t));
     btn.addEventListener('click',()=>pick(i,btn));
     blk.appendChild(btn);return btn;
   });
@@ -832,8 +838,8 @@ function createSpot(cfg){
   function pick(i,btn){
     if(i===cfg.wrong){
       btn.classList.add('is-bad');btns.forEach(x=>x.disabled=true);
-      fb.innerHTML='<strong style="color:var(--bad)">Found it: line '+(i+1)+'.</strong> '+cfg.explain+
-        '<span class="err-fix" style="display:block">'+cfg.fix.map(nb).join('<br>')+'</span>';
+      fb.innerHTML='<strong style="color:var(--bad)">Found it: line '+(i+1)+'.</strong> '+html(cfg.explain)+
+        '<span class="err-fix" style="display:block">'+cfg.fix.map(f=>'<span class="fix-line">'+html(f)+'</span>').join('')+'</span>';
     }else{
       btn.classList.add('is-ok');
       fb.innerHTML='<strong style="color:var(--good)">Line '+(i+1)+' is fine.</strong> '+
@@ -1130,7 +1136,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
 {
   const body=act('pressure','Explore','Force, area and pressure','Change the force and the area and watch the pressure. The dent in the sand shows how hard the surface is being pressed.');
   body.innerHTML=`
-  <div class="sim">
+  <div class="sim sim-small" style="--simw:420px">
     <div class="sim-view"><svg class="diagram" id="pr-svg" viewBox="0 0 360 240" role="img" aria-label="A block pressing on sand">
       <defs><marker id="pr-head" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
       <rect x="0" y="160" width="360" height="80" fill="var(--gas-soft)"/>
@@ -1176,22 +1182,22 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   });
   const sp=act('pressure','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
   createSpot({host:sp,scenario:'A crate exerts a pressure of 2500 Pa on the floor. The area of its base is 0.8 m². Find the weight of the crate.',lines:[
-    'p = F ÷ A',
-    'F = p ÷ A',
-    'F = 2500 ÷ 0.8',
+    'p = [[F|A]]',
+    'F = [[p|A]]',
+    'F = [[2500|0.8]]',
     'F = 3125 N'],
     wrong:1,explain:'To get F on its own, multiply both sides by A. Dividing by A again is the wrong way round.',
     fix:['F = p × A','F = 2500 × 0.8','F = 2000 N']});
   createSpot({host:sp,scenario:'A force of 600 N produces a pressure of 15 000 Pa. Find the area the force acts on.',lines:[
-    'p = F ÷ A',
+    'p = [[F|A]]',
     'p × A = F',
-    'A = p ÷ F',
-    'A = 15 000 ÷ 600',
+    'A = [[p|F]]',
+    'A = [[15 000|600]]',
     'A = 25 m²'],
-    wrong:2,explain:'From p × A = F, divide both sides by p to leave A. The answer is A = F ÷ p, not p ÷ F.',
-    fix:['A = F ÷ p','A = 600 ÷ 15 000','A = 0.04 m²']});
+    wrong:2,explain:'From p × A = F, divide both sides by p to leave A. So A = [[F|p]], not [[p|F]].',
+    fix:['A = [[F|p]]','A = [[600|15 000]]','A = 0.04 m²']});
   createSpot({host:sp,scenario:'A box exerts a pressure of 4000 Pa on an area of 0.25 m². Find the mass of the box. (g = 10 N/kg)',lines:[
-    'p = F ÷ A',
+    'p = [[F|A]]',
     'F = p × A',
     'F = 4000 × 0.25',
     'F = 1000 N',
@@ -1200,7 +1206,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     'm = 1000 × 10',
     'm = 10 000 kg'],
     wrong:5,explain:'The weight is 1000 N. To get m on its own from W = m × g, divide both sides by g.',
-    fix:['m = W ÷ g','m = 1000 ÷ 10','m = 100 kg']});
+    fix:['m = [[W|g]]','m = [[1000|10]]','m = 100 kg']});
 }
 
 /* ================= 5. FLUIDS ================= */
@@ -1258,7 +1264,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     const ub=act('manometer','Explore','U-tube manometer','One side of the U-tube is connected to a gas supply and the other side is open to the air. Change the gas pressure and watch the liquid levels. The height difference h tells you the pressure difference.');
     const tubePath='M60,30 L'+XL+',30 L'+XL+','+YB+' A'+RB+','+RB+' 0 0 0 '+XR+','+YB+' L'+XR+',22';
     ub.innerHTML=`
-    <div class="sim">
+    <div class="sim sim-small" style="--simw:420px">
       <div class="sim-view"><svg class="diagram" viewBox="0 0 360 310" role="img" aria-label="A U-tube manometer connected to a gas supply">
         <rect x="8" y="8" width="56" height="46" rx="6" fill="var(--gas-soft)" stroke="var(--gas)" stroke-width="2"/>
         <text x="36" y="36" font-size="12" text-anchor="middle" fill="var(--ink)">gas</text>
@@ -1348,19 +1354,19 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   const sp=act('fluids','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
   createSpot({host:sp,scenario:'The pressure difference between the surface and the bottom of a water tank is 30 000 Pa. Find the depth of the water. (ρ = 1000 kg/m³, g = 10 N/kg)',lines:[
     'p = h × ρ × g',
-    'h = p × g ÷ ρ',
-    'h = 30 000 × 10 ÷ 1000',
+    'h = [[p × g|ρ]]',
+    'h = [[30 000 × 10|1000]]',
     'h = 300 m'],
-    wrong:1,explain:'h is multiplied by both ρ and g, so divide p by both of them.',
-    fix:['h = p ÷ (ρ × g)','h = 30 000 ÷ (1000 × 10)','h = 3 m']});
+    wrong:1,explain:'h is multiplied by both ρ and g, so divide p by both of them: they both go on the bottom.',
+    fix:['h = [[p|ρ × g]]','h = [[30 000|1000 × 10]]','h = 3 m']});
   createSpot({host:sp,scenario:'At a depth of 0.2 m in a liquid, the pressure is 1600 Pa greater than at the surface. Find the density of the liquid. (g = 10 N/kg)',lines:[
     'p = h × ρ × g',
-    'p ÷ h = ρ × g',
-    'ρ = (p ÷ h) × g',
-    'ρ = (1600 ÷ 0.2) × 10',
+    '[[p|h]] = ρ × g',
+    'ρ = [[p|h]] × g',
+    'ρ = [[1600|0.2]] × 10',
     'ρ = 80 000 kg/m³'],
-    wrong:2,explain:'From p ÷ h = ρ × g, divide both sides by g to leave ρ. Multiplying by g is the wrong way round.',
-    fix:['ρ = (p ÷ h) ÷ g','ρ = (1600 ÷ 0.2) ÷ 10','ρ = 800 kg/m³']});
+    wrong:2,explain:'From [[p|h]] = ρ × g, divide both sides by g to leave ρ. Multiplying by g is the wrong way round.',
+    fix:['ρ = [[p|h × g]]','ρ = [[1600|0.2 × 10]]','ρ = 800 kg/m³']});
 }
 
 /* ================= 6. PARTICLES ================= */
@@ -1519,7 +1525,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   const body=act('shc','Explore','Same energy, different materials','Choose a material, a mass and an amount of energy. For the same energy, a material with a lower specific heat capacity has a bigger temperature rise.');
   const ticks=[0,100,200,300].map(t=>'<line x1="286" x2="292" y1="'+(230-t/300*210)+'" y2="'+(230-t/300*210)+'" stroke="var(--ink-faint)" stroke-width="1.5"/><text x="318" y="'+(234-t/300*210)+'" font-size="11" fill="var(--ink-soft)">'+t+'</text>').join('');
   body.innerHTML=`
-  <div class="sim">
+  <div class="sim sim-small" style="--simw:420px">
     <div class="sim-view"><svg class="diagram" viewBox="0 0 360 260" role="img" aria-label="A block being heated with a thermometer">
       <rect id="sh-block" x="40" y="70" width="190" height="120" rx="4" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2.5"/>
       <rect id="sh-heat" x="40" y="70" width="190" height="120" rx="4" fill="var(--gas)" opacity="0.1"/>
@@ -1586,19 +1592,19 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   const sp=act('shc','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
   createSpot({host:sp,scenario:'A 0.5 kg block of aluminium absorbs 9000 J of energy and its temperature rises by 20 °C. Find the specific heat capacity of aluminium.',lines:[
     'ΔQ = m × c × ΔT',
-    'c = ΔQ × ΔT ÷ m',
-    'c = 9000 × 20 ÷ 0.5',
+    'c = [[ΔQ × ΔT|m]]',
+    'c = [[9000 × 20|0.5]]',
     'c = 360 000 J/kg °C'],
-    wrong:1,explain:'c is multiplied by both m and ΔT, so divide ΔQ by both of them.',
-    fix:['c = ΔQ ÷ (m × ΔT)','c = 9000 ÷ (0.5 × 20)','c = 900 J/kg °C']});
+    wrong:1,explain:'c is multiplied by both m and ΔT, so divide ΔQ by both of them: they both go on the bottom.',
+    fix:['c = [[ΔQ|m × ΔT]]','c = [[9000|0.5 × 20]]','c = 900 J/kg °C']});
   createSpot({host:sp,scenario:'A kettle transfers 168 000 J of energy to 0.8 kg of water. Find the rise in temperature. (c = 4200 J/kg °C)',lines:[
     'ΔQ = m × c × ΔT',
-    'ΔQ ÷ m = c × ΔT',
-    'ΔT = (ΔQ ÷ m) × c',
-    'ΔT = (168 000 ÷ 0.8) × 4200',
+    '[[ΔQ|m]] = c × ΔT',
+    'ΔT = [[ΔQ|m]] × c',
+    'ΔT = [[168 000|0.8]] × 4200',
     'ΔT = 882 000 000 °C'],
-    wrong:2,explain:'From ΔQ ÷ m = c × ΔT, divide both sides by c to leave ΔT. An answer this huge is a sign the rearranging has gone wrong.',
-    fix:['ΔT = (ΔQ ÷ m) ÷ c','ΔT = (168 000 ÷ 0.8) ÷ 4200','ΔT = 50 °C']});
+    wrong:2,explain:'From [[ΔQ|m]] = c × ΔT, divide both sides by c to leave ΔT. An answer this huge is a sign the rearranging has gone wrong.',
+    fix:['ΔT = [[ΔQ|m × c]]','ΔT = [[168 000|0.8 × 4200]]','ΔT = 50 °C']});
 }
 
 /* ================= 9. GAS MOTION ================= */
@@ -1784,20 +1790,20 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   });
   const sp=act('laws','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
   createSpot({host:sp,scenario:'Gas in a sealed rigid can is at 100 kPa and 300 K. It is heated until the pressure is 150 kPa. Find the new temperature.',lines:[
-    'p₁ ÷ T₁ = p₂ ÷ T₂',
+    '[[p₁|T₁]] = [[p₂|T₂]]',
     'p₁ × T₂ = p₂ × T₁',
-    'T₂ = p₁ × T₁ ÷ p₂',
-    'T₂ = 100 × 300 ÷ 150',
+    'T₂ = [[p₁ × T₁|p₂]]',
+    'T₂ = [[100 × 300|150]]',
     'T₂ = 200 K'],
     wrong:2,explain:'From p₁ × T₂ = p₂ × T₁, divide both sides by p₁ to leave T₂. Raising the pressure of a fixed volume of gas needs a higher temperature, not a lower one.',
-    fix:['T₂ = p₂ × T₁ ÷ p₁','T₂ = 150 × 300 ÷ 100','T₂ = 450 K']});
+    fix:['T₂ = [[p₂ × T₁|p₁]]','T₂ = [[150 × 300|100]]','T₂ = 450 K']});
   createSpot({host:sp,scenario:'A gas has a volume of 0.6 m³ at 100 kPa. At constant temperature it is compressed until the pressure is 400 kPa. Find the new volume.',lines:[
     'p₁ × V₁ = p₂ × V₂',
-    'V₂ = p₂ × V₁ ÷ p₁',
-    'V₂ = 400 × 0.6 ÷ 100',
+    'V₂ = [[p₂ × V₁|p₁]]',
+    'V₂ = [[400 × 0.6|100]]',
     'V₂ = 2.4 m³'],
     wrong:1,explain:'To get V₂ on its own, divide both sides by p₂. Squashing a gas to a higher pressure must make its volume smaller.',
-    fix:['V₂ = p₁ × V₁ ÷ p₂','V₂ = 100 × 0.6 ÷ 400','V₂ = 0.15 m³']});
+    fix:['V₂ = [[p₁ × V₁|p₂]]','V₂ = [[100 × 0.6|400]]','V₂ = 0.15 m³']});
 }
 
 /* ================= tabs, startup ================= */
@@ -1813,6 +1819,12 @@ function pairPredicts(){
   });
 }
 pairPredicts();
+// The two cause-and-effect chains on Gas Pressure sit side by side.
+(function pairByTitle(t1,t2){
+  const find=t=>$$('.act').find(a=>$('.act-title',a).textContent.endsWith(t));
+  const a=find(t1),b=find(t2);if(!a||!b)return;
+  const pair=mk('div','act-pair');a.parentNode.insertBefore(pair,a);pair.appendChild(a);pair.appendChild(b);
+})('Heating a gas in a sealed container','Squashing a gas at constant temperature');
 function applyTabUI(tab){
   TAB_IDS.forEach(id=>{const p=byId('panel-'+id);if(p)p.hidden=(id!==tab);});
   $$('.tab-btn').forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('is-active',on);b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1;});
