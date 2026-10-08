@@ -258,6 +258,7 @@ svg text{font-family:var(--f-mono)}
 .graph .g-lab{fill:var(--ink-soft);font-size:14px}
 .graph .g-line{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
 .graph .g-dot{fill:var(--gas);stroke:var(--panel);stroke-width:2}
+.graph.scrub{cursor:ew-resize;touch-action:pan-y}
 .graph .g-seg-s{stroke:var(--solid)} .graph .g-seg-l{stroke:var(--liquid)} .graph .g-seg-g{stroke:var(--gas)} .graph .g-seg-m{stroke:var(--ink)}
 .graph-plot-wrap{position:relative;max-width:640px}
 .graph-line-drop{position:absolute;width:0;height:0}
@@ -889,11 +890,17 @@ function createParticleSim(canvas){
   }
   let E=0,pal=palette(),frame=0,paused=REDUCED,t=0;
   const modeOf=p=>E<p.t1?'s':(E<p.t2?'l':'g');
+  const OPEN_AT=95;   // near the end of heating the gas escapes through the open top; rewinding brings it back
   function step(){
     const T=Tof(E),amp=0.9+(T+20)*0.055,sL=0.7+Math.max(0,T)*0.011,sG=sL+Math.max(0,T-100)*0.03;
+    const open=E>=OPEN_AT;
     t++;
     P.forEach(p=>{
       const m=modeOf(p);
+      if(p.out){
+        if(open&&m==='g'){p.mode=m;return;}
+        p.out=false;p.x=R+8+Math.random()*(W-2*R-16);p.y=R+4;p.vx=0;p.vy=0;
+      }
       if(m==='s'){
         const tx=p.hx+amp*Math.sin(t*0.35+p.ph),ty=p.hy+amp*Math.cos(t*0.31+p.ph2);
         p.x+=(tx-p.x)*0.2;p.y+=(ty-p.y)*0.2;p.vx=0;p.vy=0;
@@ -908,14 +915,15 @@ function createParticleSim(canvas){
         if(p.x<left){p.x=left;p.vx=Math.abs(p.vx);}
         if(p.x>right){p.x=right;p.vx=-Math.abs(p.vx);}
         if(p.y>bot){p.y=bot;p.vy=-Math.abs(p.vy);}
-        if(p.y<top){if(m==='l'){p.vy=Math.max(Math.abs(p.vy),0.7);}else{p.y=top;p.vy=Math.abs(p.vy);}}
+        if(m==='g'&&open){p.vy-=0.04;if(p.y<-2*R){p.out=true;p.mode=m;return;}}
+        else if(p.y<top){if(m==='l'){p.vy=Math.max(Math.abs(p.vy),0.7);}else{p.y=top;p.vy=Math.abs(p.vy);}}
       }
       p.mode=m;
     });
     for(let i=0;i<P.length;i++){
-      const a=P[i];if(a.mode==='s')continue;
+      const a=P[i];if(a.mode==='s'||a.out)continue;
       for(let j=i+1;j<P.length;j++){
-        const b=P[j];if(b.mode==='s')continue;
+        const b=P[j];if(b.mode==='s'||b.out)continue;
         const dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy;
         if(d2<4*R*R&&d2>0.01){
           const d=Math.sqrt(d2),nx=dx/d,ny=dy/d,ov=(2*R-d)/2;
@@ -932,6 +940,7 @@ function createParticleSim(canvas){
     ctx.strokeStyle=pal.faint;ctx.lineWidth=2;ctx.lineJoin='round';
     ctx.beginPath();ctx.moveTo(5,5);ctx.lineTo(5,H-5);ctx.lineTo(W-5,H-5);ctx.lineTo(W-5,5);ctx.stroke();
     P.forEach(p=>{
+      if(p.out)return;
       ctx.beginPath();ctx.arc(p.x,p.y,R,0,6.2832);
       ctx.fillStyle=p.mode==='s'?pal.solid:(p.mode==='l'?pal.liquid:pal.gas);ctx.globalAlpha=0.92;ctx.fill();ctx.globalAlpha=1;
     });
@@ -1479,7 +1488,8 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     reveal:barsHTML([{l:'Just before boiling',v:.77,t:'100 °C',c:COL.l},{l:'Halfway through boiling',v:.77,t:'100 °C',c:COL.g},{l:'Energy supplied each minute',v:1,t:'unchanged',c:COL.a}])
   });
 
-  const wb=act('heating','Watch','Heating curve and particles together','Press Play. The dot moves along the graph while the particles show what is happening to the substance.');
+  const wb=act('heating','Watch','Heating curve and particles together','Press Play, or drag the dot along the graph (or move the time slider) forwards and backwards. The particles show what is happening to the substance. At the end the gas escapes from the open beaker.');
+  wb.parentNode.parentNode.prepend(wb.parentNode);   // the animation leads the tab
   const g2=lineGraph(Object.assign({},GOPT,{segments:SEGS.map(s=>({pts:s.pts,cls:s.cls})),label:'Heating curve with a moving point',extra:'<circle id="hw-dot" class="g-dot" r="8" cx="0" cy="0"/>'}));
   wb.innerHTML=`
   <div class="sim">
@@ -1501,7 +1511,16 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     $$('.stage-pill',byId('hw-pills')).forEach(p=>p.classList.toggle('is-on',p.dataset.k===k));
     sim.setE(E);
   }
-  slid.addEventListener('input',()=>{E=+slid.value;auto=0;btns();ui();if(sim.isPaused())sim.redraw();});
+  function scrubTo(v){E=clamp(Math.round(v*2)/2,0,100);slid.value=E;auto=0;btns();ui();if(sim.isPaused())sim.redraw();}
+  slid.addEventListener('input',()=>scrubTo(+slid.value));
+  // Drag the dot (or press anywhere on the graph) to move through time; the slider gives the same control by keyboard.
+  const gsvg=wb.querySelector('.sim-view svg');gsvg.classList.add('scrub');
+  const x0=g2.gx(0),x1=g2.gx(30);
+  const toE=ev=>{const r=gsvg.getBoundingClientRect(),x=(ev.clientX-r.left)/r.width*g2.W;return (x-x0)/(x1-x0)*100;};
+  let dragging=false;
+  gsvg.addEventListener('pointerdown',ev=>{dragging=true;gsvg.setPointerCapture(ev.pointerId);scrubTo(toE(ev));});
+  gsvg.addEventListener('pointermove',ev=>{if(dragging)scrubTo(toE(ev));});
+  ['pointerup','pointercancel'].forEach(n=>gsvg.addEventListener(n,()=>{dragging=false;}));
   function btns(){
     const h=byId('hw-btns');h.innerHTML='';
     const play=mk('button',auto?'is-on':'',auto?'Pause':'Play');play.type='button';
