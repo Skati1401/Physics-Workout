@@ -259,6 +259,10 @@ svg text{font-family:var(--f-mono)}
 .graph.scrub{cursor:ew-resize;touch-action:pan-y}
 .graph .g-seg-s{stroke:var(--solid)} .graph .g-seg-l{stroke:var(--liquid)} .graph .g-seg-g{stroke:var(--gas)} .graph .g-seg-m{stroke:var(--ink)}
 .graph-plot-wrap{position:relative;max-width:640px}
+.label-split{display:grid;grid-template-columns:minmax(0,640px) minmax(0,1fr);gap:12px 22px;align-items:start}
+.label-split .graph-plot-wrap{max-width:none}
+.label-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (max-width:860px){.label-split{grid-template-columns:minmax(0,1fr)}.label-split .graph-plot-wrap{max-width:640px}}
 .graph-line-drop{position:absolute;width:0;height:0}
 .graph-line-drop .drop-marker{position:absolute;left:-14px;top:-14px;width:28px;height:28px;border-radius:50%;background:var(--panel);border:2px solid var(--ink);font:500 13px/24px var(--f-mono);text-align:center;box-shadow:0 0 0 4px var(--bg);z-index:2}
 .graph-line-drop.is-over .drop-marker{background:var(--accent-soft);border-color:var(--accent)}
@@ -1381,13 +1385,25 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     host:act('particles','Predict','What happens when a solid melts?','Think about the particles, not the whole object.'),
     q:'A solid is heated until it melts. What happens to its particles?',
     options:[
-      {text:'The particles expand and become bigger',why:'The particles themselves do not change size. Their spacing and movement change.'},
-      {text:'They gain energy, the forces holding them in place are overcome, and they can move past each other',correct:true},
-      {text:'The particles stop moving and stick together',why:'Melting does the opposite. The particles become freer to move.'},
-      {text:'The particles break up into smaller particles',why:'Melting is a physical change. The particles stay the same and only their arrangement and motion change.'}
+      {text:'The particles get bigger, so the whole solid expands',why:'The particles themselves do not change size. Their spacing and movement change.'},
+      {text:'The particles break free and slide past each other',correct:true},
+      {text:'The particles stop vibrating and stick closer together',why:'Melting does the opposite. The particles become freer to move.'},
+      {text:'The particles break up into smaller, lighter particles',why:'Melting is a physical change. The particles stay the same and only their arrangement and motion change.'}
     ],
     explain:'The energy supplied is used to overcome the forces between particles, so they leave their fixed positions and slide past each other.',
     reveal:latticeViz
+  });
+  createPredict({
+    host:act('particles','Predict','Squash the syringes','Both syringes have their ends sealed.'),
+    q:'One sealed syringe is full of air and the other is full of water. You push both plungers equally hard. What happens?',
+    options:[
+      {text:'Both plungers move a long way in, as both are fluids',why:'The particles in a liquid are already touching, so there is almost no space to squash them into.'},
+      {text:'Only the air plunger moves a long way in',correct:true},
+      {text:'The water plunger moves further, because liquids can flow',why:'Flowing lets a liquid change its shape, not its volume. Its particles are already touching, so it cannot be squashed into a smaller volume.'},
+      {text:'Neither plunger moves, because both syringes are sealed',why:'Nothing escapes, but the air particles are far apart, so the air can be squashed into a smaller space.'}
+    ],
+    explain:'In a gas the particles are far apart, so pushing them closer together makes the volume smaller. In a liquid the particles are already touching, so it is almost impossible to compress.',
+    reveal:barsHTML([{l:'Air, before',v:1,t:'20 cm³',c:COL.g},{l:'Air, after',v:.5,t:'about 10 cm³',c:COL.g},{l:'Water, before',v:1,t:'20 cm³',c:COL.l},{l:'Water, after',v:1,t:'still about 20 cm³',c:COL.l}])
   });
 }
 
@@ -1404,7 +1420,9 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   ];
   const body=act('heating','Label the graph','Heat ice until it becomes steam','Drag a caption onto each lettered point on the line. Read the temperature axis carefully, and say what the energy is doing.');
   const g=lineGraph(Object.assign({},GOPT,{segments:SEGS.map(s=>({pts:s.pts,cls:s.cls})),label:'Temperature against time for heating ice to steam'}));
-  const wrap=mk('div','graph-plot-wrap');wrap.innerHTML=g.svg;body.appendChild(wrap);
+  const split=mk('div','label-split');body.appendChild(split);
+  const wrap=mk('div','graph-plot-wrap');wrap.innerHTML=g.svg;split.appendChild(wrap);
+  const side=mk('div','label-side');split.appendChild(side);
   const slots=[],chips=[];
   SEGS.forEach(s=>{
     const p=g.pct(s.mid[0],s.mid[1]);
@@ -1414,8 +1432,8 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   });
   chips.push({id:'hx1',text:'Freezing: the particles lose energy and lock into place',short:'Freezing'});
   chips.push({id:'hx2',text:'Evaporation from the surface only',short:'Evaporating'});
-  body.appendChild(mk('div','pool-label','Captions'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
+  side.appendChild(mk('div','pool-label','Captions'));
+  const pool=mk('div','chip-pool');side.appendChild(pool);
   let gm;
   const b=bar(body,[{label:'Check labels',primary:true,fn:()=>gm.check()},{label:'Shuffle again',fn:()=>gm.reset()}]);
   const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
@@ -1432,6 +1450,18 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     ],
     explain:'During boiling, the energy supplied is used to overcome the forces between the particles and separate them. It does not make them move faster, so the temperature stays constant.',
     reveal:barsHTML([{l:'Just before boiling',v:.77,t:'100 °C',c:COL.l},{l:'Halfway through boiling',v:.77,t:'100 °C',c:COL.g},{l:'Energy supplied each minute',v:1,t:'unchanged',c:COL.a}])
+  });
+  createPredict({
+    host:act('heating','Predict','Twice as much ice','The same heater is used both times.'),
+    q:'The heating curve is for 1 kg of ice. The experiment is repeated with 2 kg of ice and the same heater. What happens to the flat section where the ice melts?',
+    options:[
+      {text:'It happens at a higher temperature',why:'Ice melts at 0 °C whatever its mass. The melting point does not depend on how much ice there is.'},
+      {text:'It lasts about twice as long, still at 0 °C',correct:true},
+      {text:'It lasts the same time, because the heater is the same',why:'Twice the mass needs twice the energy to melt, and the heater supplies energy at the same rate, so it takes twice as long.'},
+      {text:'It lasts half as long, as more ice absorbs the energy',why:'More ice needs more energy to melt, so melting takes longer, not shorter.'}
+    ],
+    explain:'Ice melts at its melting point, 0 °C, however much there is. Twice the mass needs twice the energy to melt, and the heater supplies energy at the same rate, so the flat section lasts twice as long.',
+    reveal:barsHTML([{l:'Melting time, 1 kg',v:.5,t:'3 min',c:COL.s},{l:'Melting time, 2 kg',v:1,t:'6 min',c:COL.s},{l:'Melting temperature, 1 kg',v:.4,t:'0 °C',c:COL.l},{l:'Melting temperature, 2 kg',v:.4,t:'0 °C',c:COL.l}])
   });
 
   const wb=act('heating','Watch','Heating curve and particles together','Press Play, or drag the dot along the graph (or move the time slider) forwards and backwards. The particles show what is happening to the substance. At the end the gas escapes from the open beaker.');
@@ -1616,10 +1646,10 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     host:act('gas','Predict','Heat the sealed can','A sealed, rigid can of gas is heated. Its volume cannot change.'),
     q:'Why does the pressure of the gas rise?',
     options:[
-      {text:'The molecules get bigger and fill the can more',why:'Molecules do not get bigger when a gas is heated.'},
-      {text:'More molecules are made inside the can',why:'The can is sealed, so the number of molecules stays the same.'},
-      {text:'The molecules move faster, so they hit the walls harder and more often',correct:true},
-      {text:'The molecules slow down and press against the walls',why:'Heating makes molecules faster, not slower.'}
+      {text:'The molecules expand, so they take up more of the can',why:'Molecules do not get bigger when a gas is heated.'},
+      {text:'More molecules are made as the gas warms up',why:'The can is sealed, so the number of molecules stays the same.'},
+      {text:'Faster molecules hit the walls harder and more often',correct:true},
+      {text:'The molecules slow down and press harder on the walls',why:'Heating makes molecules faster, not slower.'}
     ],
     explain:'Heating gives the molecules more kinetic energy. They move faster, so each collision with the wall is harder and collisions happen more often.',
     reveal:barsHTML([{l:'Temperature before',v:.5,t:'300 K',c:COL.g},{l:'Temperature after',v:1,t:'600 K',c:COL.g},{l:'Average KE before',v:.5,t:'1 unit',c:COL.a},{l:'Average KE after',v:1,t:'2 units',c:COL.a},{l:'Pressure before',v:.5,t:'100 kPa',c:COL.l},{l:'Pressure after',v:1,t:'200 kPa',c:COL.l}])
