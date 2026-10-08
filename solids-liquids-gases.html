@@ -192,13 +192,17 @@ table.units .blank{width:100%;min-width:100px;margin:0}
 .viz .dot{fill:var(--solid);transition:transform .9s cubic-bezier(.2,.7,.2,1),fill .9s}
 .go .viz .dot{transform:translate(var(--dx,0),var(--dy,0));fill:var(--liquid)}
 .graph-line-drop::before{content:'';position:absolute;left:-26px;top:-26px;width:52px;height:52px;border-radius:50%}
+.err-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,400px),1fr));gap:12px;align-items:start}
 .err-block{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
 .err-scn{margin:0 0 4px;font-size:14px}
-.err-line{display:block;width:100%;text-align:left;padding:8px 10px;border:1px solid var(--panel-border);border-radius:6px;background:var(--panel);cursor:pointer;font:500 14px var(--f-mono);line-height:1.4}
-.err-line:hover{border-color:var(--accent)}
+.err-line{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;text-align:left;padding:6px 10px;border:1px solid var(--panel-border);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer;font:500 15px var(--f-mono);line-height:1.4}
+.err-line:hover:not(:disabled){border-color:var(--accent)}
+.err-line:disabled{cursor:default;opacity:1}
+.err-num{flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 12px var(--f-mono);color:var(--ink-soft);background:var(--panel-2);border:1px solid var(--panel-border)}
 .err-line.is-ok{border-color:var(--good);background:var(--good-soft)}
 .err-line.is-bad{border-color:var(--bad);background:var(--bad-soft)}
 .err-fb{font-size:13.5px;min-height:20px;margin:2px 0 0}
+.err-fix{margin:6px 0 0;padding:8px 10px;border-left:3px solid var(--good);background:var(--panel);font:500 14px/1.6 var(--f-mono)}
 .calc-inputs{display:flex;flex-direction:column;gap:12px}
 .calc-input-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--panel-border)}
 .calc-input-row:last-child{border-bottom:0}
@@ -798,24 +802,33 @@ function createPredict(cfg){
 
 /* ================= spot the error ================= */
 function createSpot(cfg){
-  const host=cfg.host;
-  const blk=mk('div','err-block');host.appendChild(blk);
-  blk.appendChild(mk('p','err-scn',cfg.scenario));
-  const fb=mk('p','err-fb','Click the line that contains the mistake.');
-  cfg.lines.forEach(l=>{
-    const btn=mk('button','err-line',l.text);btn.type='button';
-    btn.addEventListener('click',()=>{
-      if(l.wrong){
-        btn.classList.add('is-bad');
-        fb.innerHTML='<strong style="color:var(--bad)">Found it.</strong> '+l.explain+'<br><strong>Corrected:</strong> <span style="font-family:var(--f-mono)">'+l.fix+'</span>';
-      }else{
-        btn.classList.add('is-ok');
-        fb.innerHTML='<strong style="color:var(--good)">This line is fine.</strong> Keep looking.';
-      }
-    });
-    blk.appendChild(btn);
+  // cfg.lines: one step per line. cfg.wrong: index of the one wrong step (never the first line).
+  // Steps after the wrong one are worked correctly from it, so only the mistake itself is wrong.
+  const nb=t=>t.replace(/(\d) (?=\d{3}\b)/g,'$1\u00a0');   // keep "15 000" on one line
+  cfg.host.classList.add('err-grid');
+  const blk=mk('div','err-block');cfg.host.appendChild(blk);
+  blk.appendChild(mk('p','err-scn',nb(cfg.scenario)));
+  const btns=cfg.lines.map(nb).map((t,i)=>{
+    const btn=mk('button','err-line','<span class="err-num" aria-hidden="true">'+(i+1)+'</span><span>'+t+'</span>');
+    btn.type='button';btn.setAttribute('aria-label','Line '+(i+1)+': '+t);
+    btn.addEventListener('click',()=>pick(i,btn));
+    blk.appendChild(btn);return btn;
   });
-  blk.appendChild(fb);
+  const fb=mk('p','err-fb');fb.setAttribute('aria-live','polite');blk.appendChild(fb);
+  const reset=()=>{btns.forEach(x=>{x.disabled=false;x.classList.remove('is-ok','is-bad','shake');});fb.textContent='Click the line that contains the mistake.';};
+  function pick(i,btn){
+    if(i===cfg.wrong){
+      btn.classList.add('is-bad');btns.forEach(x=>x.disabled=true);
+      fb.innerHTML='<strong style="color:var(--bad)">Found it: line '+(i+1)+'.</strong> '+cfg.explain+
+        '<span class="err-fix" style="display:block">'+cfg.fix.map(nb).join('<br>')+'</span>';
+    }else{
+      btn.classList.add('is-ok');
+      fb.innerHTML='<strong style="color:var(--good)">Line '+(i+1)+' is fine.</strong> '+
+        (i>cfg.wrong?'It is worked correctly from the line above. The mistake is earlier.':'Keep looking.');
+    }
+  }
+  bar(blk,[{label:'Try Again',fn:reset}]);
+  reset();
 }
 
 /* ================= SVG line graph ================= */
@@ -1147,19 +1160,33 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       {q:'A force of 120 N produces a pressure of 30 000 Pa. The area is',unit:'m²',answer:0.004,working:'A = F ÷ p = 120 ÷ 30 000 = 0.004 m²'}
     ]
   });
-  const sp=act('pressure','Spot the error','Find the mistake','Each solution has exactly one wrong line. Click the line you think is wrong. Use g = 10 N/kg.');
-  createSpot({host:sp,scenario:'A box weighs 200 N. Its base measures 0.5 m by 0.4 m. Find the pressure on the floor.',lines:[
-    {text:'1  Area = 0.5 + 0.4 = 0.9 m²',wrong:true,explain:'Area of a rectangle is length × width, not length + width.',fix:'Area = 0.5 × 0.4 = 0.2 m², so p = 200 ÷ 0.2 = 1000 Pa'},
-    {text:'2  p = F ÷ A'},
-    {text:'3  p = 200 ÷ 0.9 = 222 Pa'}]});
-  createSpot({host:sp,scenario:'A girl of mass 50 kg stands on two shoes with a total contact area of 0.04 m².',lines:[
-    {text:'1  Force = mass = 50 N',wrong:true,explain:'The force on the ground is her weight, and weight = mass × gravitational field strength.',fix:'F = 50 × 10 = 500 N, so p = 500 ÷ 0.04 = 12 500 Pa'},
-    {text:'2  p = F ÷ A'},
-    {text:'3  p = 50 ÷ 0.04 = 1250 Pa'}]});
-  createSpot({host:sp,scenario:'A 600 N person stands on one stiletto heel of area 0.0001 m².',lines:[
-    {text:'1  p = F ÷ A'},
-    {text:'2  p = 600 ÷ 0.0001'},
-    {text:'3  p = 6 000 000 N',wrong:true,explain:'Pressure is not measured in newtons. Newtons are a unit of force.',fix:'p = 6 000 000 Pa (or 6 000 000 N/m²)'}]});
+  const sp=act('pressure','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
+  createSpot({host:sp,scenario:'A crate exerts a pressure of 2500 Pa on the floor. The area of its base is 0.8 m². Find the weight of the crate.',lines:[
+    'p = F ÷ A',
+    'F = p ÷ A',
+    'F = 2500 ÷ 0.8',
+    'F = 3125 N'],
+    wrong:1,explain:'To get F on its own, multiply both sides by A. Dividing by A again is the wrong way round.',
+    fix:['F = p × A','F = 2500 × 0.8','F = 2000 N']});
+  createSpot({host:sp,scenario:'A force of 600 N produces a pressure of 15 000 Pa. Find the area the force acts on.',lines:[
+    'p = F ÷ A',
+    'p × A = F',
+    'A = p ÷ F',
+    'A = 15 000 ÷ 600',
+    'A = 25 m²'],
+    wrong:2,explain:'From p × A = F, divide both sides by p to leave A. The answer is A = F ÷ p, not p ÷ F.',
+    fix:['A = F ÷ p','A = 600 ÷ 15 000','A = 0.04 m²']});
+  createSpot({host:sp,scenario:'A box exerts a pressure of 4000 Pa on an area of 0.25 m². Find the mass of the box. (g = 10 N/kg)',lines:[
+    'p = F ÷ A',
+    'F = p × A',
+    'F = 4000 × 0.25',
+    'F = 1000 N',
+    'W = m × g',
+    'm = W × g',
+    'm = 1000 × 10',
+    'm = 10 000 kg'],
+    wrong:5,explain:'The weight is 1000 N. To get m on its own from W = m × g, divide both sides by g.',
+    fix:['m = W ÷ g','m = 1000 ÷ 10','m = 100 kg']});
 }
 
 /* ================= 5. FLUIDS ================= */
@@ -1305,14 +1332,22 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       {q:'A column of liquid 0.5 m tall gives a pressure difference of 68 000 Pa. The density of the liquid is',unit:'kg/m³',answer:13600,working:'ρ = p ÷ (h × g) = 68 000 ÷ (0.5 × 10) = 13 600 kg/m³ (mercury)'}
     ]
   });
-  const sp=act('fluids','Spot the error','Find the mistake','Each solution has exactly one wrong line.');
-  createSpot({host:sp,scenario:'A student describes the pressure on a diver 12 m under water.',lines:[
-    {text:'1  Pressure comes from the weight of the water above the diver.'},
-    {text:'2  The pressure acts only downwards on the diver.',wrong:true,explain:'Pressure at a point in a liquid at rest acts equally in all directions.',fix:'The pressure acts equally in all directions.'},
-    {text:'3  p = h × ρ × g, so the pressure increases with depth.'}]});
-  createSpot({host:sp,scenario:'Find the pressure difference between the surface and 15 m deep in water (ρ = 1000 kg/m³, g = 10 N/kg).',lines:[
-    {text:'1  p = h × ρ × g'},
-    {text:'2  p = 15 × 1000 = 15 000 Pa',wrong:true,explain:'The gravitational field strength g has been left out of the multiplication.',fix:'p = 15 × 1000 × 10 = 150 000 Pa'}]});
+  const sp=act('fluids','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
+  createSpot({host:sp,scenario:'The pressure difference between the surface and the bottom of a water tank is 30 000 Pa. Find the depth of the water. (ρ = 1000 kg/m³, g = 10 N/kg)',lines:[
+    'p = h × ρ × g',
+    'h = p × g ÷ ρ',
+    'h = 30 000 × 10 ÷ 1000',
+    'h = 300 m'],
+    wrong:1,explain:'h is multiplied by both ρ and g, so divide p by both of them.',
+    fix:['h = p ÷ (ρ × g)','h = 30 000 ÷ (1000 × 10)','h = 3 m']});
+  createSpot({host:sp,scenario:'At a depth of 0.2 m in a liquid, the pressure is 1600 Pa greater than at the surface. Find the density of the liquid. (g = 10 N/kg)',lines:[
+    'p = h × ρ × g',
+    'p ÷ h = ρ × g',
+    'ρ = (p ÷ h) × g',
+    'ρ = (1600 ÷ 0.2) × 10',
+    'ρ = 80 000 kg/m³'],
+    wrong:2,explain:'From p ÷ h = ρ × g, divide both sides by g to leave ρ. Multiplying by g is the wrong way round.',
+    fix:['ρ = (p ÷ h) ÷ g','ρ = (1600 ÷ 0.2) ÷ 10','ρ = 800 kg/m³']});
 }
 
 /* ================= 6. PARTICLES ================= */
@@ -1548,14 +1583,22 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     constraints:[['a','f'],['b','c'],['c','d'],['d','e'],['e','f']],
     why:'The block is set up and measured before heating, and the calculation uses the final readings.'
   });
-  createSpot({
-    host:act('shc','Spot the error','Find the mistake','One line is wrong.'),
-    scenario:'How much energy is needed to warm 2 kg of water from 20 °C to 50 °C? (c = 4200 J/kg °C)',
-    lines:[
-      {text:'1  ΔQ = m × c × ΔT'},
-      {text:'2  ΔT = 50 °C',wrong:true,explain:'ΔT is the change in temperature, which is the final temperature minus the starting temperature.',fix:'ΔT = 50 − 20 = 30 °C, so ΔQ = 2 × 4200 × 30 = 252 000 J'},
-      {text:'3  ΔQ = 2 × 4200 × 50 = 420 000 J'}]
-  });
+  const sp=act('shc','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
+  createSpot({host:sp,scenario:'A 0.5 kg block of aluminium absorbs 9000 J of energy and its temperature rises by 20 °C. Find the specific heat capacity of aluminium.',lines:[
+    'ΔQ = m × c × ΔT',
+    'c = ΔQ × ΔT ÷ m',
+    'c = 9000 × 20 ÷ 0.5',
+    'c = 360 000 J/kg °C'],
+    wrong:1,explain:'c is multiplied by both m and ΔT, so divide ΔQ by both of them.',
+    fix:['c = ΔQ ÷ (m × ΔT)','c = 9000 ÷ (0.5 × 20)','c = 900 J/kg °C']});
+  createSpot({host:sp,scenario:'A kettle transfers 168 000 J of energy to 0.8 kg of water. Find the rise in temperature. (c = 4200 J/kg °C)',lines:[
+    'ΔQ = m × c × ΔT',
+    'ΔQ ÷ m = c × ΔT',
+    'ΔT = (ΔQ ÷ m) × c',
+    'ΔT = (168 000 ÷ 0.8) × 4200',
+    'ΔT = 882 000 000 °C'],
+    wrong:2,explain:'From ΔQ ÷ m = c × ΔT, divide both sides by c to leave ΔT. An answer this huge is a sign the rearranging has gone wrong.',
+    fix:['ΔT = (ΔQ ÷ m) ÷ c','ΔT = (168 000 ÷ 0.8) ÷ 4200','ΔT = 50 °C']});
 }
 
 /* ================= 9. GAS MOTION ================= */
@@ -1774,14 +1817,22 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       {q:'A fixed volume of gas at 27 °C has a pressure of 2.4 × 10⁵ Pa. The pressure rises to 3.2 × 10⁵ Pa. The new temperature is',unit:'K',answer:400,hint:'Remember that the temperature in the equation must be in kelvin.',working:'T₁ = 27 + 273 = 300 K<br>T₂ = T₁ × p₂ ÷ p₁ = 300 × 3.2 ÷ 2.4 = 400 K'}
     ]
   });
-  const sp=act('laws','Spot the error','Find the mistake','Each solution has exactly one wrong line.');
-  createSpot({host:sp,scenario:'A rigid container of gas at 100 kPa and 27 °C is heated to 87 °C. Find the new pressure.',lines:[
-    {text:'1  p₁ ÷ T₁ = p₂ ÷ T₂'},
-    {text:'2  p₂ = 100 × 87 ÷ 27 = 322 kPa',wrong:true,explain:'The temperatures must be in kelvin, not degrees Celsius.',fix:'T₁ = 300 K, T₂ = 360 K, so p₂ = 100 × 360 ÷ 300 = 120 kPa'}]});
-  createSpot({host:sp,scenario:'3 m³ of gas at 100 kPa is compressed to 1.5 m³ at constant temperature.',lines:[
-    {text:'1  p₁V₁ = p₂V₂'},
-    {text:'2  p₂ = p₁ × V₂ ÷ V₁ = 100 × 1.5 ÷ 3',wrong:true,explain:'The rearrangement is upside down. p₂ = p₁ × V₁ ÷ V₂, so squashing the gas must raise the pressure.',fix:'p₂ = 100 × 3 ÷ 1.5 = 200 kPa'},
-    {text:'3  p₂ = 50 kPa'}]});
+  const sp=act('laws','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
+  createSpot({host:sp,scenario:'Gas in a sealed rigid can is at 100 kPa and 300 K. It is heated until the pressure is 150 kPa. Find the new temperature.',lines:[
+    'p₁ ÷ T₁ = p₂ ÷ T₂',
+    'p₁ × T₂ = p₂ × T₁',
+    'T₂ = p₁ × T₁ ÷ p₂',
+    'T₂ = 100 × 300 ÷ 150',
+    'T₂ = 200 K'],
+    wrong:2,explain:'From p₁ × T₂ = p₂ × T₁, divide both sides by p₁ to leave T₂. Raising the pressure of a fixed volume of gas needs a higher temperature, not a lower one.',
+    fix:['T₂ = p₂ × T₁ ÷ p₁','T₂ = 150 × 300 ÷ 100','T₂ = 450 K']});
+  createSpot({host:sp,scenario:'A gas has a volume of 0.6 m³ at 100 kPa. At constant temperature it is compressed until the pressure is 400 kPa. Find the new volume.',lines:[
+    'p₁ × V₁ = p₂ × V₂',
+    'V₂ = p₂ × V₁ ÷ p₁',
+    'V₂ = 400 × 0.6 ÷ 100',
+    'V₂ = 2.4 m³'],
+    wrong:1,explain:'To get V₂ on its own, divide both sides by p₂. Squashing a gas to a higher pressure must make its volume smaller.',
+    fix:['V₂ = p₁ × V₁ ÷ p₂','V₂ = 100 × 0.6 ÷ 400','V₂ = 0.15 m³']});
 }
 
 /* ================= tabs, startup ================= */
