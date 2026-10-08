@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hooke’s Law Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5;
+    --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff;
+    --panel-border:#d7dce4;
+    --ink:#182233;
+    --ink-soft:#4c5668;
+    --ink-faint:#8993a5;
+    --accent:#d9720c;
+    --accent-soft:#fdead2;
+    --good:#15803d;
+    --good-soft:#dcf5e3;
+    --bad:#c0311a;
+    --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+
+    --motion:#2158d1;      --motion-soft:#dfe8fc;
+    --elastic:#0c8a76;     --elastic-soft:#d6f3ee;
+    --momentum:#b8267a;    --momentum-soft:#fbdeee;
+    --newton:#3d3aa8;      --newton-soft:#e3e2f8;
+    --moments:#6d3bce;     --moments-soft:#e9e0fb;
+    --units:#96660b;       --units-soft:#f6e8ca;
+
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --motion:#7da3ff; --motion-soft:#1a2440;
+      --elastic:#4fd6bd; --elastic-soft:#0f2e29;
+      --momentum:#ef83bd; --momentum-soft:#3a1c2c;
+      --newton:#9d9af0; --newton-soft:#242259;
+      --moments:#b393f5; --moments-soft:#2a2148;
+      --units:#e0b64a; --units-soft:#332a10;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --motion:#7da3ff; --motion-soft:#1a2440;
+    --elastic:#4fd6bd; --elastic-soft:#0f2e29;
+    --momentum:#ef83bd; --momentum-soft:#3a1c2c;
+    --newton:#9d9af0; --newton-soft:#242259;
+    --moments:#b393f5; --moments-soft:#2a2148;
+    --units:#e0b64a; --units-soft:#332a10;
+    color-scheme:dark;
+  }
+
+  :root{--c:var(--elastic);--cs:var(--elastic-soft);}
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; controls, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  /* the picture shrinks on short screens so the whole box fits in the window */
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 290px));}
+  .embed .view{max-height:460px;}
+  .under{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px;margin-top:12px;}
+  .under .btn-group{flex:0 1 auto;}
+  .mass{flex:1 1 220px;min-width:0;}
+  .sliders{flex:1 1 100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px 24px;}
+  .eq .why{font-family:var(--font-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;}
+  .view text{font-family:var(--font-mono);}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:flex;justify-content:space-between;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--c);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:var(--panel);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat strong{white-space:nowrap;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);}
+  .stat.up strong{color:var(--accent);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--c);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--c);background:var(--cs);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--c);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .eq{font-size:12.5px;padding:6px 8px;} }
+
+  /* inside a workout tab (skydiver.html?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;}
+  .embed .home-link,.embed .page-head{display:none;}
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="index.html">&larr; Home</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; forces</div>
+    <h1>Hooke’s Law</h1>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="hk-svg" viewBox="0 0 520 300" role="img" aria-label="A stretched sample and its force-extension graph"></svg>
+      <div class="under">
+        <div class="mass"><label class="lab" for="hk-f">Load (force) <output id="hk-fo"></output></label><input type="range" id="hk-f" min="0" max="10" step="0.5" value="0"></div>
+      </div>
+    </div>
+    <div class="side">
+      <div><div class="lab">Material</div><div class="seg" id="hk-mat"></div></div>
+      <p class="note" id="hk-note" aria-live="polite"></p>
+      <details class="working" id="working">
+        <summary>Show working</summary>
+        <div class="eq" id="hk-eq"></div>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+(function(){
+  // This page is the one copy of this animation. On its own it is the lesson version;
+  // with ?embed it drops its heading so a workout tab can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var wk=document.getElementById('working'); if(wk) wk.open = true;
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  function bindRange(id, fn){ var el=$('#'+id); el.addEventListener('input', fn); return el; }
+  function onAction(name, fn){ var b=$('[data-action="'+name+'"]'); if(b) b.addEventListener('click', fn); }
+  var REDUCED_MOTION=false;   // runs start only when pressed and always end, so they play even with reduced motion on
+  // Slow motion: every run multiplies its time step by SPEED()
+  function SPEED(){ var b=document.getElementById('slow'); return b && b.getAttribute('aria-pressed')==='true' ? 0.3 : 1; }
+  (function(){ var b=document.getElementById('slow'); if(b) b.addEventListener('click',function(){ b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed')!=='true')); }); })();
+  function num(n, dp){   // round, drop trailing zeros, group thousands with a space from 10 000
+    var f = Math.pow(10, dp||0), r = Math.round(n*f)/f, t = String(r);
+    if(Math.abs(r)>=10000) t = t.replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    return t;
+  }
+  function FR(t){
+    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1 ')
+      .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  function arrowHead(id, col){ return '<marker id="'+id+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+col+'"/></marker>'; }
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(sel){ Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }); }
+
+  function initHookeSim(){
+    var fIn=bindRange('hk-f',draw), mat='spring';
+    var MATS={
+      spring:{name:'Spring', unit:'cm', orig:10, xmax:30, lop:6, ext:function(F){ return F<=6?1.5*F:9+1.5*(F-6)+0.9*(F-6)*(F-6); }, px:4},
+      wire:{name:'Metal wire', unit:'mm', orig:2000, xmax:8, lop:7, ext:function(F){ return F<=7?0.25*F:1.75+0.25*(F-7)+0.6*(F-7)*(F-7); }, px:15},
+      rubber:{name:'Rubber band', unit:'cm', orig:8, xmax:20, lop:null, ext:function(F){ return 18*(1-Math.exp(-F/3.5)); }, px:4}
+    };
+    var segEl=$('#hk-mat');
+    segEl.innerHTML=Object.keys(MATS).map(function(k){ return '<button type="button" data-k="'+k+'" aria-pressed="'+(k===mat)+'">'+MATS[k].name+'</button>'; }).join('');
+    segEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; mat=b.dataset.k;
+      Array.prototype.forEach.call(segEl.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); draw(); });
+    function draw(){
+      var M=MATS[mat], F=+fIn.value, x=M.ext(F), g='', top=24, X0=70;
+      var baseLen = mat==='wire'?60:M.orig*M.px, len=baseLen+x*M.px, y1=top+14+len;
+      g+='<rect x="'+(X0-36)+'" y="'+top+'" width="72" height="12" fill="var(--panel-border)" stroke="var(--ink-soft)"/>';
+      if(mat==='spring'){ var n=14, pth='M'+X0+','+(top+12); for(var i=1;i<=n;i++){ pth+=' L'+(X0+(i%2?10:-10))+','+(top+12+len*i/(n+1)); } pth+=' L'+X0+','+y1; g+='<path d="'+pth+'" fill="none" stroke="var(--elastic)" stroke-width="2.5"/>'; }
+      else if(mat==='wire'){ g+='<line x1="'+X0+'" x2="'+X0+'" y1="'+(top+12)+'" y2="'+y1+'" stroke="var(--elastic)" stroke-width="2"/><text x="'+(X0+8)+'" y="'+(top+40)+'" font-size="10.5" fill="var(--ink-faint)">2 m wire</text><text x="'+(X0+8)+'" y="'+(top+54)+'" font-size="10.5" fill="var(--ink-faint)">(stretch magnified)</text>'; }
+      else { g+='<path d="M'+(X0-5)+','+(top+12)+' L'+(X0-5)+','+y1+' M'+(X0+5)+','+(top+12)+' L'+(X0+5)+','+y1+'" stroke="var(--elastic)" stroke-width="3" fill="none"/>'; }
+      g+='<rect x="'+(X0-18)+'" y="'+y1+'" width="36" height="'+(16+F*2)+'" rx="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+X0+'" y="'+(y1+12+F)+'" text-anchor="middle" font-size="11" fill="var(--ink)">'+F+' N</text>';
+      g+='<line x1="'+(X0-30)+'" x2="'+(X0+30)+'" y1="'+(top+14+baseLen)+'" y2="'+(top+14+baseLen)+'" stroke="var(--ink-faint)" stroke-dasharray="4 3"/><text x="'+(X0-34)+'" y="'+(top+18+baseLen)+'" text-anchor="end" font-size="10" fill="var(--ink-faint)">start</text>';
+      // force-extension graph: extension across, force up (same as Task 1)
+      var GX=190, GY=24, GW=310, GH=226;
+      function gx(e){ return GX+e/M.xmax*GW; } function gy(f){ return GY+GH-f/10*GH; }
+      for(i=0;i<=10;i+=2) g+='<line x1="'+GX+'" x2="'+(GX+GW)+'" y1="'+gy(i)+'" y2="'+gy(i)+'" stroke="var(--panel-border)"/><text x="'+(GX-6)+'" y="'+(gy(i)+4)+'" text-anchor="end" font-size="10.5" fill="var(--ink-faint)">'+i+'</text>';
+      var stepX=M.xmax/5; for(i=0;i<=5;i++){ var ev=i*stepX; g+='<line x1="'+gx(ev)+'" x2="'+gx(ev)+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--panel-border)"/><text x="'+gx(ev)+'" y="'+(GY+GH+15)+'" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">'+num(ev,1)+'</text>'; }
+      g+='<line x1="'+GX+'" x2="'+GX+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/><line x1="'+GX+'" x2="'+(GX+GW)+'" y1="'+(GY+GH)+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
+      g+='<text x="'+(GX+GW/2)+'" y="'+(GY+GH+32)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">extension ('+M.unit+')</text><text x="'+GX+'" y="'+(GY-8)+'" font-size="11.5" fill="var(--ink-soft)">force (N)</text>';
+      var tr=[]; for(var f=0;f<=F+1e-9;f+=0.1){ var e=Math.min(M.ext(f),M.xmax); tr.push(gx(e)+','+gy(f)); }
+      if(tr.length>1) g+='<polyline points="'+tr.join(' ')+'" fill="none" stroke="var(--elastic)" stroke-width="2.5"/>';
+      if(M.lop!==null && F>M.lop){ var le=M.ext(M.lop); g+='<circle cx="'+gx(le)+'" cy="'+gy(M.lop)+'" r="4.5" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"/><text x="'+(gx(le)+8)+'" y="'+(gy(M.lop)+14)+'" font-size="10.5" fill="var(--accent)">limit of proportionality</text>'; }
+      g+='<circle cx="'+gx(Math.min(x,M.xmax))+'" cy="'+gy(F)+'" r="5.5" fill="var(--elastic)" stroke="var(--panel)" stroke-width="2"/>';
+      $('#hk-svg').innerHTML=g;
+      var dp=mat==='wire'?2:1, newL=M.orig+x;
+      $('#hk-fo').textContent=F+' N';
+      $('#hk-eq').innerHTML='extension = new length − original length<br>extension = '+num(newL,dp)+' − '+num(M.orig)+' = <b>'+num(x,dp)+' '+M.unit+'</b>';
+      var note;
+      if(mat==='rubber') note='A rubber band does not obey Hooke’s law: its graph is curved from the start.';
+      else if(F===0) note='Add some load. In the straight-line region, doubling the force doubles the extension.';
+      else if(F<=M.lop) note='Straight-line region: extension is directly proportional to force, so it obeys Hooke’s law.';
+      else note='Past the limit of proportionality: the line curves, so extension is no longer proportional to force.';
+      $('#hk-note').textContent=note;
+    }
+    draw();
+  }
+  watchEquals('.eq');
+  initHookeSim();
+})();
+</script>
+</body>
+</html>
