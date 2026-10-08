@@ -1978,10 +1978,14 @@
   function initMotionGraphs(){
     var vIn=$('#mg-v'), ACC=2, TMAX=20, REDUCED=false;   // student-started and always ends, so it plays even with reduced motion
     var t=0, v=0, d=0, pts=[[0,0,0]], running=false, last=0, raf=0;
+    // the straight stretch of graph the car is on now: where it started, and whether it is speeding up (1), steady (0) or slowing (-1)
+    var seg={t:0,v:0,d:0,mode:0};
     function f1(n){ return (Math.round(n*10)/10).toFixed(1); }
     function step(dt){
       var n=Math.ceil(dt/0.02), h=dt/n, target=+vIn.value;
-      for(var i=0;i<n;i++){ var a=v<target?Math.min(ACC,(target-v)/h):(v>target?-Math.min(ACC,(v-target)/h):0); v=Math.max(0,v+a*h); d+=v*h; t+=h; }
+      for(var i=0;i<n;i++){ var a=v<target?Math.min(ACC,(target-v)/h):(v>target?-Math.min(ACC,(v-target)/h):0), mode=a>1e-9?1:(a<-1e-9?-1:0);
+        if(mode!==seg.mode) seg={t:t,v:v,d:d,mode:mode};
+        v=Math.max(0,v+a*h); d+=v*h; t+=h; }
       if(t-pts[pts.length-1][0]>=0.1) pts.push([t,d,v]);
     }
     function graph(x0,y0,w,hh,ymax,yLab,col,idx,ticks){
@@ -2006,7 +2010,11 @@
       $('#mg-svg').innerHTML=g;
       $('#mg-vo').textContent=vIn.value+' m/s'; $('#mg-t').textContent=f1(t)+' s'; $('#mg-sp').textContent=f1(v)+' m/s'; $('#mg-d').textContent=f1(d)+' m';
       var target=+vIn.value, acc=Math.abs(v-target)<0.01?0:(v<target?ACC:-ACC);
-      $('#mg-eq').innerHTML=FR('acceleration = [[change in velocity|time taken]] = '+(acc<0?'−'+Math.abs(acc):acc)+' m/s²<br>average speed = [[distance moved|time taken]] = [['+f1(d)+'|'+f1(t)+']] = <b>'+(t>0?f1(d/t):'0.0')+' m/s</b>');
+      // read the answers off the graphs: gradient of the stretch the car is on, and the area under the velocity-time graph
+      var dt=t-seg.t, lines;
+      if(seg.mode!==0) lines='acceleration = gradient of the velocity–time graph<br>acceleration = [[change in velocity|time taken]]'+(dt>=0.1?'<br>acceleration = [['+f1(v)+' − '+f1(seg.v)+'|'+f1(t)+' − '+f1(seg.t)+']] = <b>'+(seg.mode<0?'−':'')+ACC+' m/s²</b>':'');
+      else lines='speed = gradient of the distance–time graph<br>speed = [[change in distance|time taken]]'+(t>0&&dt>=0.1?'<br>speed = [['+f1(d)+' − '+f1(seg.d)+'|'+f1(t)+' − '+f1(seg.t)+']] = <b>'+f1(v)+' m/s</b>':'');
+      $('#mg-eq').innerHTML=FR(lines+'<br>distance = area under the velocity–time graph = <b>'+f1(d)+' m</b>');
       var note;
       if(t===0) note='Ready. The car accelerates at 2 m/s² until it reaches the target speed.';
       else if(t>=TMAX) note='Done. Steady speed gave straight lines on the distance–time graph; speeding up or slowing down gave curves.';
@@ -2025,7 +2033,7 @@
       if(running){ stop(); draw(); return; }
       running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw();
     });
-    onAction('mg-reset',function(){ stop(); t=0; v=0; d=0; pts=[[0,0,0]]; draw(); });
+    onAction('mg-reset',function(){ stop(); t=0; v=0; d=0; pts=[[0,0,0]]; seg={t:0,v:0,d:0,mode:0}; draw(); });
     vIn.addEventListener('input',draw);
     draw();
   }
