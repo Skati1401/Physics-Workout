@@ -242,13 +242,6 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .stat small{display:block;font:500 10.5px var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint)}
 .stat strong{font:500 17px var(--f-mono)}
 canvas.sim-canvas{display:block;width:100%;height:auto;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
-.thermo-wrap{display:flex;gap:14px;align-items:stretch}
-.thermo{width:30px;flex:none;border:2px solid var(--ink-soft);border-radius:15px;background:var(--panel-2);position:relative;overflow:hidden;min-height:200px}
-.thermo-fill{position:absolute;left:0;right:0;bottom:0;background:var(--c,var(--gas));transition:height .25s,background .25s}
-.state-tag{font:800 24px/1 var(--f-head);text-transform:uppercase;letter-spacing:.02em}
-.traits{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;font-size:13.5px}
-.traits li{display:flex;gap:8px}
-.traits b{font:500 11px var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);width:76px;flex:none;padding-top:2px}
 svg.diagram{width:100%;height:auto;display:block;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
 svg text{font-family:var(--f-mono)}
 .graph{width:100%;height:auto;display:block}
@@ -856,7 +849,7 @@ function lineGraph(o){
 
 /* ================= shared heating model =================
    E = energy supplied (0-100, arbitrary). Temperature is piecewise: it is flat while melting (E 15-25)
-   and boiling (E 50-85), so the graph, the thermometer and the particles always agree. */
+   and boiling (E 50-85), so the graph and the particles always agree. */
 const SEG=[[0,-20],[15,0],[25,0],[50,100],[85,100],[100,130]];
 function Tof(E){
   for(let i=1;i<SEG.length;i++){
@@ -865,13 +858,6 @@ function Tof(E){
   return 130;
 }
 function stageOf(E){return E<15?'s':E<25?'m':E<50?'l':E<85?'b':'g';}
-const STAGE_INFO={
-  s:{name:'Solid',col:'--solid',arr:'Regular pattern, touching',mot:'Vibrate about fixed positions',gap:'Very small'},
-  m:{name:'Melting',col:'--ink',arr:'Part regular, part random',mot:'Some vibrate, some now move past each other',gap:'Small'},
-  l:{name:'Liquid',col:'--liquid',arr:'Random, still touching',mot:'Move past one another',gap:'Small'},
-  b:{name:'Boiling',col:'--ink',arr:'Some close, some far apart',mot:'Some slide past each other, some break away completely',gap:'Small to large'},
-  g:{name:'Gas',col:'--gas',arr:'Random, far apart',mot:'Fast, in all directions',gap:'Large'}
-};
 function palette(){return{solid:css('--solid'),liquid:css('--liquid'),gas:css('--gas'),ink:css('--ink'),faint:css('--ink-faint'),panel:css('--panel-2'),line:css('--ink-soft')};}
 function fitCanvas(c,W,H){
   const dpr=Math.min(window.devicePixelRatio||1,2);
@@ -1366,55 +1352,6 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
 
 /* ================= 6. PARTICLES ================= */
 {
-  const body=act('particles','Explore','Heat a substance and watch the particles','Drag the energy slider, or press Heat. Melting and boiling happen gradually, a few particles at a time, while the temperature stays the same.');
-  body.innerHTML=`
-  <div class="sim">
-    <div class="sim-view"><canvas class="sim-canvas" id="ps-canvas" aria-label="Particles in a box"></canvas></div>
-    <div class="ctl">
-      <div class="thermo-wrap">
-        <div class="thermo" aria-hidden="true"><div class="thermo-fill" id="ps-fill"></div></div>
-        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
-          <div class="state-tag" id="ps-state">Solid</div>
-          <div class="stat"><small>Temperature</small><strong id="ps-temp"></strong></div>
-          <ul class="traits"><li><b>Pattern</b><span id="ps-arr"></span></li><li><b>Motion</b><span id="ps-mot"></span></li><li><b>Gaps</b><span id="ps-gap"></span></li></ul>
-        </div>
-      </div>
-      <div class="ctl-row"><label for="ps-e">Energy supplied <output id="ps-eo"></output></label><input type="range" id="ps-e" min="0" max="100" step="0.5" value="5"></div>
-      <div class="seg" id="ps-btns"></div>
-    </div>
-  </div>`;
-  const sim=createParticleSim(byId('ps-canvas'));
-  let E=5,auto=0;
-  const slid=byId('ps-e');
-  function ui(){
-    const T=Tof(E),k=stageOf(E),inf=STAGE_INFO[k];
-    byId('ps-eo').textContent=Math.round(E);
-    const st=byId('ps-state');st.textContent=inf.name;st.style.color='var('+(inf.col)+')';
-    byId('ps-temp').textContent=Math.round(T)+' °C';
-    byId('ps-arr').textContent=inf.arr;byId('ps-mot').textContent=inf.mot;byId('ps-gap').textContent=inf.gap;
-    const f=byId('ps-fill');f.style.height=clamp((T+30)/170*100,3,100)+'%';f.style.setProperty('--c',k==='s'?'var(--solid)':k==='l'?'var(--liquid)':k==='g'?'var(--gas)':'var(--ink-soft)');
-    sim.setE(E);
-  }
-  slid.addEventListener('input',()=>{E=+slid.value;auto=0;setBtns();ui();if(sim.isPaused())sim.redraw();});
-  const btns=byId('ps-btns');
-  function setBtns(){
-    btns.innerHTML='';
-    [['Heat',1],['Cool',-1],['Stop',0]].forEach(x=>{
-      const b=mk('button',auto===x[1]&&x[1]!==0?'is-on':'',x[0]);b.type='button';b.addEventListener('click',()=>{auto=x[1];if(auto&&sim.isPaused()){sim.setPaused(false);}setBtns();});btns.appendChild(b);
-    });
-    [['Solid',6],['Liquid',38],['Gas',95]].forEach(x=>{
-      const b=mk('button','',x[0]);b.type='button';b.addEventListener('click',()=>{auto=0;E=x[1];slid.value=E;setBtns();ui();if(sim.isPaused())sim.redraw();});btns.appendChild(b);
-    });
-    const pb=mk('button','',sim.isPaused()?'Play animation':'Pause');pb.type='button';
-    pb.addEventListener('click',()=>{sim.setPaused(!sim.isPaused());setBtns();});btns.appendChild(pb);
-  }
-  setBtns();ui();
-  addTicker('particles',()=>{
-    if(auto){E=clamp(E+auto*0.12,0,100);slid.value=E;if(E===0||E===100){auto=0;setBtns();}ui();}
-    sim.tick();
-  });
-  reflowers.push(tab=>{if(tab==='particles')sim.redraw();});
-
   const cats=[{id:'s',label:'Solid',color:'--solid',soft:'--solid-soft'},{id:'l',label:'Liquid',color:'--liquid',soft:'--liquid-soft'},{id:'g',label:'Gas',color:'--gas',soft:'--gas-soft'}];
   createSortGame({host:act('particles','Sort','Which state is being described?','Drag each description into the right bin.'),cats:cats,items:[
     {id:'s1',text:'Particles vibrate about fixed positions',cat:'s'},{id:'s2',text:'Particles are arranged in a regular pattern',cat:'s'},
