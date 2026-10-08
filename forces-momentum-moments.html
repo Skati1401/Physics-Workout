@@ -540,7 +540,7 @@
   <section id="panel-stopping" class="panel" role="tabpanel" hidden>
     <div class="panel-head"><h2>Stopping Distance</h2><div class="spec"><b>1.19</b><b>1.20</b></div></div>
     <div class="section-label">Explore &mdash; a velocity&ndash;time graph of stopping</div>
-    <p class="panel-intro">At time 0 both drivers see a hazard. The reference car always has a 0.7&nbsp;s reaction time on a dry road. Change your driver&rsquo;s reaction time and the road surface, choose the speed (both cars travel at it), then press Go. The area under each velocity&ndash;time graph is the distance travelled.</p>
+    <p class="panel-intro">At time 0 both drivers see a hazard. The reference car always has an alert driver (0.7&nbsp;s reaction time) on a dry road. Choose whether your driver is alert, tired or distracted, and whether the road is dry, wet or icy. Set the speed (both cars travel at it), then press Go. The area under each velocity&ndash;time graph is the distance travelled.</p>
     <div class="card xs" data-minw="0.5" style="--c:var(--motion);--cs:var(--motion-soft);margin-bottom:6px;">
       <div>
         <svg class="xs-svg" id="sd-graph" viewBox="0 0 520 270" role="img" aria-label="Velocity–time graphs of the reference car and your car stopping"></svg>
@@ -548,7 +548,7 @@
       </div>
       <div class="xs-ctl">
         <div class="xs-row"><label for="sd-v">Speed of both cars, u <output id="sd-vo"></output></label><input type="range" id="sd-v" min="5" max="35" step="1" value="20"></div>
-        <div class="xs-row"><label for="sd-t">Your driver&rsquo;s reaction time <output id="sd-to"></output></label><input type="range" id="sd-t" min="0.4" max="2" step="0.1" value="0.7"></div>
+        <div class="xs-row"><span class="xs-lab">Your driver (reaction time)</span><div class="xs-seg" id="sd-driver-btns"></div></div>
         <div class="xs-row"><span class="xs-lab">Your road surface (braking deceleration)</span><div class="xs-seg" id="sd-road-btns"></div></div>
         <div class="btn-row" style="margin-top:0;"><button class="btn btn-primary" data-action="sd-go">Go</button><button class="btn btn-ghost" data-action="sd-reset">Reset</button></div>
         <div class="xs-eq" id="sd-eq" aria-live="polite"></div>
@@ -2054,15 +2054,20 @@
 
   /* ---- stopping distance: velocity-time graphs of a reference car and your car, and the road ---- */
   function initStoppingSim(){
-    var vIn=bindRange('sd-v',reset), tIn=bindRange('sd-t',reset), dec=7;
-    var REF_T=0.7, REF_A=7, ROADS=[['Dry',7],['Wet',5],['Icy',2]];
-    var btns=$('#sd-road-btns');
-    btns.innerHTML=ROADS.map(function(r){ return '<button type="button" data-a="'+r[1]+'" aria-pressed="'+(r[1]===dec)+'">'+r[0]+' ('+r[1]+' m/s²)</button>'; }).join('');
-    btns.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; dec=+b.dataset.a;
-      Array.prototype.forEach.call(btns.children,function(x){ x.setAttribute('aria-pressed', String(x===b)); }); reset(); });
+    var vIn=bindRange('sd-v',reset), dec=7, react=0.7;
+    var REF_T=0.7, REF_A=7, ROADS=[['Dry',7],['Wet',5],['Icy',2]], DRIVERS=[['Alert',0.7],['Tired',1.2],['Distracted',1.5]];
+    // one row of choice buttons; pick() gets the chosen value
+    function choices(el, list, unit, cur, pick){
+      el.innerHTML=list.map(function(r){ return '<button type="button" data-k="'+r[1]+'" aria-pressed="'+(r[1]===cur)+'">'+r[0]+' ('+r[1]+' '+unit+')</button>'; }).join('');
+      el.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; pick(+b.dataset.k);
+        Array.prototype.forEach.call(el.children,function(x){ x.setAttribute('aria-pressed', String(x===b)); }); reset(); });
+    }
+    choices($('#sd-driver-btns'), DRIVERS, 's', react, function(v){ react=v; });
+    choices($('#sd-road-btns'), ROADS, 'm/s²', dec, function(v){ dec=v; });
+    function nameOf(list, v){ return list.filter(function(x){ return x[1]===v; })[0][0].toLowerCase(); }
     var W=520,H=270,PL=50,PR=16,PT=14,PB=42,VMAX=35, t=0, running=false, last=0, raf=0;
     function car(tr,a){ var u=+vIn.value; return {u:u, tr:tr, a:a, tb:u/a, th:u*tr, br:u*u/(2*a), end:tr+u/a}; }
-    function you(){ return car(+tIn.value, dec); } function ref(){ return car(REF_T, REF_A); }
+    function you(){ return car(react, dec); } function ref(){ return car(REF_T, REF_A); }
     function vAt(c,tt){ return tt<=c.tr ? c.u : Math.max(0, c.u-c.a*(tt-c.tr)); }
     function xAt(c,tt){ if(tt<=c.tr) return c.u*tt; var d=Math.min(tt,c.end)-c.tr; return c.th+c.u*d-0.5*c.a*d*d; }
     function tMax(){ var e=Math.max(you().end, ref().end), st=e<=6?1:(e<=12?2:(e<=25?5:10)); return {max:Math.ceil(e*1.05/st)*st, step:st}; }
@@ -2110,13 +2115,13 @@
         r+='<circle cx="'+(cx+9)+'" cy="'+(y+15)+'" r="4" fill="var(--ink)"/><circle cx="'+(cx+31)+'" cy="'+(y+15)+'" r="4" fill="var(--ink)"/>';
         if(t>=c.end && t>0) r+='<text x="'+(W-10)+'" y="'+(y-6)+'" text-anchor="end" font-size="11" fill="var(--ink)">stopped after '+num(c.th+c.br,1)+' m</text>';
       }
-      lane(R, 18, 'Reference car: 0.7 s, dry road', 'var(--ink-faint)', 'var(--panel-border)', 'var(--ink-faint)');
-      lane(Y, 66, 'Your car: '+Y.tr.toFixed(1)+' s, '+ROADS.filter(function(x){return x[1]===dec;})[0][0].toLowerCase()+' road', 'var(--motion)', 'var(--motion)', 'var(--accent)');
+      lane(R, 18, 'Reference car: alert driver (0.7 s), dry road', 'var(--ink-faint)', 'var(--panel-border)', 'var(--ink-faint)');
+      lane(Y, 66, 'Your car: '+nameOf(DRIVERS,react)+' driver ('+Y.tr.toFixed(1)+' s), '+nameOf(ROADS,dec)+' road', 'var(--motion)', 'var(--motion)', 'var(--accent)');
       $('#sd-road').innerHTML=r;
     }
     function eq(){
       var Y=you(), R=ref();
-      $('#sd-vo').textContent=Y.u+' m/s'; $('#sd-to').textContent=Y.tr.toFixed(1)+' s';
+      $('#sd-vo').textContent=Y.u+' m/s';
       $('#sd-eq').innerHTML=FR('<b>Your car</b><br>Thinking distance (area of the rectangle), t is the reaction time<br>s = u × t<br>s = '+Y.u+' × '+Y.tr.toFixed(1)+' = '+num(Y.th,1)+' m<br>Braking distance (area of the triangle): v is 0 and acceleration is −a<br>v² = u² + 2as<br>0 = u² − 2as<br>2as = u²<br>s = [[u²|2a]]<br>s = [['+Y.u+'²|2 × '+dec+']] = '+num(Y.br,1)+' m<br>stopping = '+num(Y.th,1)+' + '+num(Y.br,1)+' = <b>'+num(Y.th+Y.br,1)+' m</b><br>reference car = '+num(R.th,1)+' + '+num(R.br,1)+' = '+num(R.th+R.br,1)+' m');
     }
     function draw(){ drawGraph(); drawRoad(); }
