@@ -18,6 +18,7 @@ This repository is a small website of interactive physics revision activities fo
 - Each page is a complete standalone document: `<!doctype html>`, `<meta charset="utf-8">`, `<meta name="viewport" content="width=device-width, initial-scale=1">`, a `<title>`, then the content. Nothing loads from claude.ai.
 - External files: Google Fonts only. All CSS and JavaScript are inline. No build step, no frameworks, no animation libraries.
 - Never put student names, class lists or results in this repository. It is public.
+- **One copy of each animation.** An animation that is both a lesson tool and part of a workout lives only on its own page (e.g. `skydiver.html`). The workout tab shows it in `<iframe class="anim-frame" src="skydiver.html?embed">` with an "Open … full screen" link below. With `?embed` the page hides its back link and heading, opens its working, and posts `{animHeight}` to the parent, whose `message` listener sizes the frame. Fix the animation page and both places update; never copy the animation code back into the workout.
 
 ## Page shell
 

@@ -276,6 +276,10 @@
   .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
   .frac>span{padding:0 .25em;white-space:nowrap;}
   .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  /* an animation page shown inside a tab */
+  .anim-frame{display:block;width:100%;height:640px;border:0;margin-bottom:6px;}
+  .anim-open{font:600 13px var(--font-mono);margin:0 0 6px;}
+  .anim-open a{color:var(--motion);}
   /* slider explores */
   .xs{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px 22px;align-items:start;padding:18px;}
   @media (max-width:860px){.xs{grid-template-columns:minmax(0,1fr);}}
@@ -499,17 +503,8 @@
     <div class="panel-head"><h2>Falling and Terminal Velocity</h2><div class="spec"><b>1.21</b></div></div>
     <div class="section-label">Explore &mdash; a skydiver falling</div>
     <p class="panel-intro">Press Jump and watch the two forces on the skydiver and her velocity&ndash;time graph. Open the parachute whenever you like: the opening plays in slow motion. Or pick a point on the journey to freeze it there, then press Play to carry on.</p>
-    <div class="card xs" data-minw="0.45" style="--c:var(--motion);--cs:var(--motion-soft);margin-bottom:6px;">
-      <svg class="xs-svg" id="fa-svg" viewBox="0 0 520 290" role="img" aria-label="A skydiver with weight and air resistance arrows, and her velocity-time graph"></svg>
-      <div class="xs-ctl">
-        <div class="xs-row"><label for="fa-m">Mass of skydiver <output id="fa-mo"></output></label><input type="range" id="fa-m" min="50" max="110" step="5" value="80"></div>
-        <div class="xs-eq" id="fa-eq" aria-live="polite"></div>
-        <div class="xs-stats"><div class="xs-stat"><small>Time</small><strong id="fa-t">0 s</strong></div><div class="xs-stat"><small>Speed</small><strong id="fa-v">0 m/s</strong></div></div>
-        <div class="xs-row"><span class="xs-lab">Jump to a point</span><div class="xs-seg" id="fa-points"><button type="button" data-p="start" aria-pressed="false">Start</button><button type="button" data-p="mid" aria-pressed="false">Mid fall</button><button type="button" data-p="term1" aria-pressed="false">Terminal velocity 1</button><button type="button" data-p="slow" aria-pressed="false">Parachute slowing her</button><button type="button" data-p="term2" aria-pressed="false">Terminal velocity 2</button></div></div>
-        <div class="btn-row" style="margin-top:0;"><button class="btn btn-primary" data-action="fa-go">Jump</button><button class="btn" data-action="fa-play" id="fa-play" disabled>Pause</button><button class="btn" data-action="fa-chute" id="fa-chute" disabled>Open parachute</button><button class="btn btn-ghost" data-action="fa-reset">Reset</button></div>
-        <p class="xs-note" id="fa-note"></p>
-      </div>
-    </div>
+    <iframe class="anim-frame" src="skydiver.html?embed" title="Skydiver animation: forces and velocity–time graph"></iframe>
+    <p class="anim-open"><a href="skydiver.html">Open the skydiver animation full screen &rarr;</a></p>
 
     <div class="section-label">Task 1 &mdash; label the skydiver&rsquo;s graph</div>
     <p class="panel-intro">A skydiver jumps, then opens her parachute. Drag each description onto its point on the line. Not every card is used.</p>
@@ -2280,83 +2275,13 @@
   }
 
   /* ---- falling: weight, air resistance and terminal velocity ---- */
-  function initFallingSim(){
-    var mIn=bindRange('fa-m',reset), G=10, KC=0.25, KO=30, TMAX=60, PLAY=5, OPEN=3, TCHUTE=25;
-    // the canopy takes OPEN seconds to fill; that part, and the slowing straight after, play in slow motion
-    var t=0, v=0, chuteAt=null, pts=[[0,0]], running=false, last=0, raf=0, playBtn=$('#fa-play'), pointsEl=$('#fa-points');
-    function m(){ return +mIn.value; }
-    function opened(tt){ return chuteAt===null||tt<chuteAt ? 0 : Math.min(1,(tt-chuteAt)/OPEN); }
-    function k(tt){ var f=opened(tt); return KC+(KO-KC)*f*f; }
-    function rate(){ if(chuteAt===null||t<chuteAt) return PLAY; var d=t-chuteAt; return d<OPEN+1 ? 0.5 : (d<OPEN+4 ? 1 : PLAY); }
-    function drag(){ return k(t)*v*v; }
-    function step(dt){   // small fixed steps keep the parachute opening stable
-      var n=Math.ceil(dt/0.005), h=dt/n;
-      for(var i=0;i<n;i++){ var a=(m()*G-k(t)*v*v)/m(); v=Math.max(0,v+a*h); t+=h; }
-      if(!pts.length||t-pts[pts.length-1][0]>=0.2) pts.push([t,v]);
-    }
-    function advance(to){ while(t<to-1e-9) step(Math.min(0.2,to-t)); }
-    function draw(){
-      var W=m()*G, D=Math.min(drag(),W*3), g='<defs>'+arrowHead('fa-d','var(--ink)')+arrowHead('fa-u','var(--accent)')+'</defs>';
-      var cx=52, cy=150, sc=0.07, open=chuteAt!==null&&t>=chuteAt, f=opened(t), cw=10+36*f, ch=cy-30-28*f, ctop=ch-54*f-6;
-      if(open){ g+='<path d="M'+(cx-cw)+','+ch+' Q'+cx+','+ctop+' '+(cx+cw)+','+ch+' Z" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><line x1="'+(cx-cw)+'" y1="'+ch+'" x2="'+(cx-6)+'" y2="'+(cy-18)+'" stroke="var(--ink-faint)"/><line x1="'+(cx+cw)+'" y1="'+ch+'" x2="'+(cx+6)+'" y2="'+(cy-18)+'" stroke="var(--ink-faint)"/>'; }
-      // the skydiver: a girl with a ponytail and a dress
-      g+='<path d="M'+(cx+6)+','+(cy-27)+' q12,-2 14,10 q-6,-4 -12,-3 z" fill="var(--ink)"/>';
-      g+='<circle cx="'+cx+'" cy="'+(cy-22)+'" r="8" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>';
-      g+='<path d="M'+(cx-9)+','+(cy-21)+' a9,9 0 0 1 18,0 q-5,-6 -9,-5 q-5,0 -9,5 z" fill="var(--ink)"/>';
-      g+='<line x1="'+(cx-16)+'" y1="'+(cy-8)+'" x2="'+(cx+16)+'" y2="'+(cy-8)+'" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>';
-      g+='<polygon points="'+(cx-4)+','+(cy-13)+' '+(cx+4)+','+(cy-13)+' '+(cx+12)+','+(cy+14)+' '+(cx-12)+','+(cy+14)+'" fill="var(--motion-soft)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/>';
-      g+='<line x1="'+(cx-5)+'" y1="'+(cy+14)+'" x2="'+(cx-8)+'" y2="'+(cy+28)+'" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/><line x1="'+(cx+5)+'" y1="'+(cy+14)+'" x2="'+(cx+8)+'" y2="'+(cy+28)+'" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>';
-      g+='<line x1="'+cx+'" x2="'+cx+'" y1="'+(cy+32)+'" y2="'+(cy+32+W*sc)+'" stroke="var(--ink)" stroke-width="4" marker-end="url(#fa-d)"/><text x="'+(cx+8)+'" y="'+(cy+46+W*sc)+'" font-size="11.5" fill="var(--ink)">weight '+num(W)+' N</text>';
-      if(D>5){ var L=Math.min(D*sc,110), x2=cx+30; g+='<line x1="'+x2+'" x2="'+x2+'" y1="'+(cy+4)+'" y2="'+(cy+4-L)+'" stroke="var(--accent)" stroke-width="4" marker-end="url(#fa-u)"/><text x="'+(x2+6)+'" y="'+(cy+18)+'" font-size="10.5" fill="var(--accent)">air resistance</text><text x="'+(x2+6)+'" y="'+(cy+31)+'" font-size="10.5" fill="var(--accent)">'+num(drag())+' N</text>'; }
-      // velocity-time graph
-      var GX=205, GY=20, GW=300, GH=230, VMAX=70;
-      function gx(tt){ return GX+tt/TMAX*GW; } function gy(vv){ return GY+GH-vv/VMAX*GH; }
-      for(var i=0;i<=60;i+=10) g+='<line x1="'+gx(i)+'" x2="'+gx(i)+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--panel-border)"/><text x="'+gx(i)+'" y="'+(GY+GH+15)+'" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">'+i+'</text>';
-      for(i=0;i<=70;i+=10) g+='<line x1="'+GX+'" x2="'+(GX+GW)+'" y1="'+gy(i)+'" y2="'+gy(i)+'" stroke="var(--panel-border)"/><text x="'+(GX-6)+'" y="'+(gy(i)+4)+'" text-anchor="end" font-size="10.5" fill="var(--ink-faint)">'+i+'</text>';
-      g+='<line x1="'+GX+'" x2="'+GX+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/><line x1="'+GX+'" x2="'+(GX+GW)+'" y1="'+(GY+GH)+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
-      g+='<text x="'+(GX+GW/2)+'" y="'+(GY+GH+32)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">time (s)</text><text x="'+(GX)+'" y="'+(GY-6)+'" font-size="11.5" fill="var(--ink-soft)">velocity (m/s)</text>';
-      var ptsAll=pts.concat([[t,v]]);
-      g+='<polyline points="'+ptsAll.map(function(q){ return gx(q[0])+','+gy(q[1]); }).join(' ')+'" fill="none" stroke="var(--motion)" stroke-width="2.5"/>';
-      if(t>0) g+='<circle cx="'+gx(t)+'" cy="'+gy(v)+'" r="5" fill="var(--motion)" stroke="var(--panel)" stroke-width="2"/>';
-      if(running && rate()<1) g+='<text x="'+(GX+GW-6)+'" y="'+(GY+16)+'" text-anchor="end" font-size="12" fill="var(--accent)">slow motion</text>';
-      $('#fa-svg').innerHTML=g;
-      var F=W-drag(), dir=Math.abs(F)<0.5?'':(F>0?' downwards':' upwards');
-      $('#fa-mo').textContent=m()+' kg'; $('#fa-t').textContent=Math.round(t)+' s'; $('#fa-v').textContent=num(v,1)+' m/s';
-      $('#fa-eq').innerHTML=FR('weight = m × g = '+m()+' × 10 = '+num(W)+' N<br>resultant force = '+num(W)+' − '+num(drag())+' = '+num(Math.abs(F))+' N'+dir+'<br>F = m × a, so a = [[F|m]]<br>a = [['+num(Math.abs(F))+'|'+m()+']] = <b>'+num(Math.abs(F)/m(),1)+' m/s²</b>'+dir);
-      var note='';
-      if(t===0) note='She is about to jump: the only force is her weight.';
-      else if(open && f<1 && F>=-0.5) note='The parachute is opening. Air resistance is growing fast as the canopy fills.';
-      else if(open && F<-0.5) note='The parachute is open: air resistance is now bigger than her weight, so the resultant force is upwards and she slows down.';
-      else if(Math.abs(F)<0.02*W) note=open?'Air resistance balances her weight again at a much lower speed: a new, lower terminal velocity.':'Air resistance has grown until it balances her weight: zero resultant force, so she falls at a steady terminal velocity.';
-      else note='Weight is bigger than air resistance, so she accelerates. As she speeds up the air resistance grows, so her acceleration gets smaller.';
-      $('#fa-note').textContent=note;
-      $('#fa-chute').disabled = !(t>0) || chuteAt!==null || t>=TMAX;
-      playBtn.disabled = !(t>0) || t>=TMAX; playBtn.textContent = running ? 'Pause' : 'Play';
-    }
-    function stop(){ running=false; cancelAnimationFrame(raf); }
-    function mark(p){ Array.prototype.forEach.call(pointsEl.children,function(x){ x.setAttribute('aria-pressed', String(x.dataset.p===p)); }); }
-    function reset(){ stop(); t=0; v=0; chuteAt=null; pts=[[0,0]]; mark(''); draw(); }
-    function frame(now){ if(!running) return; var dt=Math.min(0.05,(now-last)/1000)*rate(); last=now;
-      advance(Math.min(TMAX,t+dt)); draw(); if(t>=TMAX){ stop(); return; } raf=requestAnimationFrame(frame); }
-    function run(){ running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); }
-    // fixed points on one standard journey: the parachute opens at TCHUTE seconds
-    function until(test){ while(t<TMAX && !test()) step(0.02); }
-    function jumpTo(p){
-      reset(); mark(p); if(p==='start'){ draw(); return; }
-      var vt1=Math.sqrt(m()*G/KC), vt2=Math.sqrt(m()*G/KO);
-      if(p==='mid'){ until(function(){ return v>=vt1/2; }); draw(); return; }
-      advance(TCHUTE-3); if(p==='term1'){ draw(); return; }
-      advance(TCHUTE); chuteAt=TCHUTE;
-      if(p==='slow'){ until(function(){ return v<=(vt1+vt2)/2; }); draw(); return; }
-      advance(TCHUTE+15); draw();
-    }
-    pointsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) jumpTo(b.dataset.p); });
-    onAction('fa-play',function(){ if(running){ stop(); draw(); } else if(t>0 && t<TMAX) run(); });
-    onAction('fa-go',function(){ reset(); run(); });
-    onAction('fa-chute',function(){ if(chuteAt!==null||t===0) return; chuteAt=t; mark(''); if(!running && t<TMAX) run(); draw(); });
-    onAction('fa-reset',reset);
-    reset();
-  }
+  // Animations that also have their own page (skydiver.html) are shown here in a frame, so there is one copy.
+  // The framed page reports its height, and the frame grows to fit it.
+  window.addEventListener('message', function(e){
+    var h = e.data && e.data.animHeight; if(typeof h !== 'number') return;
+    Array.prototype.forEach.call(document.querySelectorAll('iframe.anim-frame'), function(f){ if(f.contentWindow === e.source) f.style.height = h+'px'; });
+  });
+
 
 
   /* ---- Hooke's law: spring, metal wire or rubber band ---- */
@@ -2446,7 +2371,7 @@
     tabReflow.terms = [games.terms];
 
     games.units = initUnits();
-    initStoppingSim(); initMomentumSim(); initSeesawSim(); initBridgeSim(); initFallingSim(); initHookeSim();
+    initStoppingSim(); initMomentumSim(); initSeesawSim(); initBridgeSim(); initHookeSim();
     stackSliders('.card.xs','xs-ctl','.xs-row','.xs-seg'); watchEquals('.xs-eq'); balanceSims('.card.xs','.xs-row','.xs-seg');
 
     Object.keys(games).forEach(function(k){
