@@ -7,6 +7,7 @@ This repository is a small website of interactive physics revision activities fo
 - **Most activities are for Edexcel IGCSE Physics (4PH1).** Pitch a new activity at IGCSE level unless the request says otherwise. If the request suggests a different group (e.g. KS3), confirm the year group first (see "Pitching it" below), as it changes the whole page.
 - **Copy from the existing pages, don't start from scratch.** The current activity pages are the reference implementation. Open the one closest to the new topic and copy its `<style>` block, helpers and activity factories, then change only the data and the panels. The Forces page has the fullest engine (`makeDraggable`, `createSortGame`, `createMatchGame`, `createReorderGame`, `numClose`, `lineGraph`, `applyTabUI`, `collectState`). The Heat Transfer page has the original shell, the icon class set and the fill-in-the-blank passage. The Unit 5 page (`solids-liquids-gases.html`) has the newest pieces: `createSpot`, `createPredict`, `createCalc`, the `FR()` fraction helper, `.act-pair`, `.sim-small`, and the side-by-side layouts below.
 - **Commit straight to `main`** unless Alex asks for a branch. Pushing to `main` updates the live site in a minute or two.
+- **When students are using the site** (Alex says not to push live), commit to a working branch instead and push only that branch. Keep a list of what is waiting, and merge it into `main` in one go when Alex says "go live".
 
 ## Site structure
 
@@ -58,10 +59,24 @@ Animation is feedback, not decoration. CSS transitions and `@keyframes` only.
 ## Equations
 
 - **Never use ÷ in an equation.** Show every division as a stacked fraction: write `[[top|bottom]]` in the text and pass it through the page's `FR()` helper (see `solids-liquids-gases.html`), which draws the fraction and keeps numbers like "15 000" on one line. This applies to Spot the Error steps, Calculate intros and "Show full working", the equation readouts beside sliders, Predict feedback and Order steps. For screen readers, a fraction reads as "top over bottom".
+- **Show the rearranging, never jump to it.** Where a readout or worked answer uses a rearranged form, write the equation as learnt, then the rearranged form on its own line with a short grey note (`<span class="why">divide both sides by ρ × g</span>`), then the numbers. For braking distance from v² = u² + 2as, state v = 0 and acceleration −a before 0 = u² − 2as → s = [[u²|2a]].
+
+## Slider explores
+
+- Picture left (capped, or a wide SVG cropped to its content), controls right, stacking under about 860px; on phones shorten button labels and shrink the readout so equations don't wrap mid-line.
+- The readout shows the equation, the rearranged form with its step, and the numbers, updating on every `input` event.
+- A Go button runs a `requestAnimationFrame` loop that always ends (end of track or a fixed time) and then shows a one-line conclusion. Changing a slider resets it. With reduced motion, Go jumps straight to the end state.
+- Don't keep an animated position in a stepped range input: `step="0.5"` rounds each small increment back down. Keep it in a JS variable and copy it to the slider.
+- Test the largest and smallest slider values at phone width; nothing should be clipped at either end.
+- Reference sims: Unit 5 (pressure, dam, heating curve, specific heat, gas cylinder, gas laws), 1a (F = ma trolley), 1b (stopping-distance graph, momentum collision, seesaw, bridge).
+
+## Balance against the spec
+
+Before a topic page is finished, list its spec points and check each has at least one activity, that no tab is spent on something the spec doesn't name (Unit 5's Manometer tab became two questions), that no idea is repeated by three activities, that each spec section gets a similar number of tabs, and that every named practical has an Order activity.
 
 ## Activity types to choose from
 
-Fill in the blank (word bank with distractors) · Sort into labelled bins (`createSortGame`; bins above the pool) · Reorder · Match two columns (`createMatchGame`, with connecting lines and ~40px column gap) · Reveal a worked example (`<details>`, model answer as bullet points) · Predict-then-reveal (choices include real misconceptions; explain why the chosen wrong answer is wrong; keep the options a similar length so the right one is never the longest; pair them side by side) · Spot the error (`createSpot`: a clean worked example, one step per line with the step number in its own badge; exactly one mistake, made while rearranging the equation; the first line is always right and every line after the mistake is worked correctly from it; finding it shows why and the corrected working, and each example has Try Again; 2–3 examples per tab) · Flip-card memory match (8–10 pairs) · Slider simulation (one real formula, for older students) · Type-the-number (`numClose`: 2% tolerance, 0.05 minimum; unit shown beside the box) · Label the graph line (chips dropped onto the line, named by physics meaning) · Quantity–Symbol–Unit table (one given cell per row, chosen so the row has only one correct answer; watch symbol clashes such as p, s, m, a, t, W, V, g).
+Fill in the blank (word bank with distractors; check every gap against every chip, distractors and other gaps' answers alike, and reword any gap where a second chip reads as sensible; distractors are real misconceptions that fit no gap) · Sort into labelled bins (`createSortGame`; bins above the pool) · Reorder · Match two columns (`createMatchGame`, with connecting lines and ~40px column gap) · Reveal a worked example (`<details>`, model answer as bullet points) · Predict-then-reveal (choices include real misconceptions; explain why the chosen wrong answer is wrong; keep the options a similar length so the right one is never the longest; pair them side by side) · Spot the error (`createSpot`: a clean worked example, one step per line with the step number in its own badge; exactly one mistake, made while rearranging the equation; the first line is always right and every line after the mistake is worked correctly from it; finding it shows why and the corrected working, and each example has Try Again; 2–3 examples per tab) · Flip-card memory match (8–10 pairs) · Slider simulation (one real formula, for older students) · Type-the-number (`numClose`: 2% tolerance, 0.05 minimum; unit shown beside the box) · Label the graph line (chips dropped onto the line, named by physics meaning) · Quantity–Symbol–Unit table (one given cell per row, chosen so the row has only one correct answer; watch symbol clashes such as p, s, m, a, t, W, V, g).
 
 ## Pitching it
 
