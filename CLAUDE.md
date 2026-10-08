@@ -69,11 +69,12 @@ Animation is feedback, not decoration. CSS transitions and `@keyframes` only.
 - A Go button runs a `requestAnimationFrame` loop that always ends (end of track or a fixed time) and then shows a one-line conclusion. Changing a slider resets it. With reduced motion, Go jumps straight to the end state.
 - Don't keep an animated position in a stepped range input: `step="0.5"` rounds each small increment back down. Keep it in a JS variable and copy it to the slider.
 - Test the largest and smallest slider values at phone width; nothing should be clipped at either end.
-- Reference sims: Unit 5 (pressure, dam, heating curve, specific heat, gas cylinder, gas laws), 1a (F = ma trolley), 1b (stopping-distance graph, momentum collision, seesaw, bridge).
+- Reference sims: Unit 5 (pressure, dam, manometer, heating curve, specific heat, gas cylinder, gas laws), 1a (motion graphs car, F = ma trolley), 1b (stopping-distance graph, momentum collision, seesaw, bridge, skydiver, Hooke's law).
+- A sim the student drives live (like the 1a motion-graphs car) can't jump to its end under reduced motion; instead its Go button steps it on one second per press.
 
 ## Spec points and Triple Award
 
-- **Every tab starts with the same heading.** A `.panel-head` holding an `<h2>` title (Big Shoulders, uppercase) and a `.spec` list of the tab's 4PH1 spec numbers as small badges, e.g. `<div class="panel-head"><h2>Momentum</h2><div class="spec"><b class="ta" title="Triple Award only">TA</b><b>1.25P</b><b>1.27P</b></div></div>`. Overview can say "All of Unit 5"; Key Terms and Units can leave the badges out. Take the numbers from the spec itself, never from memory: if you don't have the relevant page of the spec, ask Alex for it rather than guessing.
+- **Every tab starts with the same heading.** A `.panel-head` holding an `<h2>` title (Big Shoulders, title case) and a `.spec` list of the tab's 4PH1 spec numbers as small badges, e.g. `<div class="panel-head"><h2>Momentum</h2><div class="spec"><b class="ta" title="Triple Award only">TA</b><b>1.25P</b><b>1.27P</b></div></div>`. Overview can say "All of Unit 5"; Key Terms and Units can leave the badges out. Take the numbers from the spec itself, never from memory: if you don't have the relevant page of the spec, ask Alex for it rather than guessing.
 - **Mark Triple Award content as TA.** Any tab covering a P spec point (e.g. 1.25P–1.33P, 5.8P–5.14P) gets the TA badge first in its spec list and a TA tag on its tab button (`data-ta` attribute, drawn by `.tab-btn[data-ta]::after`). Add "TA = Triple Award only" to the page's eyebrow line.
 
 ## Balance against the spec
