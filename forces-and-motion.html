@@ -272,6 +272,28 @@
   .example .answer li{font-size:13.5px;line-height:1.7;color:var(--ink-soft);}
   .example .answer li b{color:var(--ink);font-family:var(--font-mono);}
   .calc-inputs{display:flex;flex-direction:column;gap:10px;margin:12px 0 4px;}
+  /* stacked fractions: write [[top|bottom]] and pass the text through FR() */
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  /* F = ma explore */
+  .fma-sim{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px 22px;align-items:start;padding:18px;}
+  @media (max-width:860px){.fma-sim{grid-template-columns:minmax(0,1fr);}}
+  .fma-svg{display:block;width:100%;height:auto;}
+  .fma-ctl{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .fma-row label{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12.5px;color:var(--ink-soft);margin-bottom:4px;}
+  .fma-row output{color:var(--ink);font-weight:600;}
+  .fma-row input[type=range]{width:100%;accent-color:var(--newton);min-height:28px;}
+  .fma-eq{font-family:var(--font-mono);font-size:15px;line-height:2.1;padding:8px 12px;border-left:3px solid var(--newton);background:var(--newton-soft);border-radius:6px;color:var(--ink);}
+  .fma-eq b{color:var(--newton);}
+  .fma-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+  .fma-stat{border:1px solid var(--panel-border);border-radius:8px;padding:6px 8px;}
+  .fma-stat small{display:block;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);}
+  .fma-stat strong{font-family:var(--font-mono);font-size:15px;color:var(--ink);}
+  .fma-note{font-size:13px;color:var(--ink-soft);margin:0;min-height:1.4em;}
+  #fma-examples{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:14px;align-items:start;margin-bottom:14px;}
+  #fma-examples .example{margin-bottom:0;}
+  .fma-sim .fma-svg{align-self:center;}
   .calc-input-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .calc-input-label{font-size:13.5px;font-weight:600;color:var(--ink);}
   .calc-input-wrap{display:inline-flex;align-items:center;gap:7px;}
@@ -421,6 +443,7 @@
     <button class="tab-btn" role="tab" data-tab="forcedef" aria-controls="panel-forcedef">Force Definitions</button>
     <button class="tab-btn" role="tab" data-tab="freebody" aria-controls="panel-freebody">Free Body Diagram</button>
     <button class="tab-btn" role="tab" data-tab="balanced" aria-controls="panel-balanced">Resultant?</button>
+    <button class="tab-btn" role="tab" data-tab="fma" aria-controls="panel-fma">F = ma</button>
     <button class="tab-btn" role="tab" data-tab="definitions" aria-controls="panel-definitions">Definitions</button>
     <button class="tab-btn" role="tab" data-tab="weight" aria-controls="panel-weight">Weight</button>
     <button class="tab-btn" role="tab" data-tab="units" aria-controls="panel-units">Units</button>
@@ -570,6 +593,49 @@
     </div>
   </section>
 
+  <section id="panel-fma" class="panel" role="tabpanel" hidden>
+    <div class="section-label">Explore: push a trolley</div>
+    <p class="panel-intro">Set the <b>resultant force</b> and the <b>mass</b>, then press Go. The trolley starts from rest on a 10 m track. The faint dots mark where it was every 0.5 s, so you can see it speeding up.</p>
+    <div class="card fma-sim">
+      <svg class="fma-svg" id="fma-svg" viewBox="20 72 530 92" role="img" aria-label="A trolley on a track pushed by a resultant force">
+        <defs><marker id="fma-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--force)"/></marker></defs>
+        <line x1="24" x2="546" y1="132" y2="132" stroke="var(--ink-soft)" stroke-width="3"/>
+        <g id="fma-ticks"></g>
+        <g id="fma-trail"></g>
+        <g id="fma-trolley">
+          <line id="fma-arrow" y1="-26" y2="-26" stroke="var(--force)" stroke-width="5" marker-end="url(#fma-head)"/>
+          <text id="fma-flabel" y="-40" text-anchor="middle" font-family="var(--font-mono)" font-size="13" fill="var(--force)"></text>
+          <rect id="fma-body" y="-44" height="34" rx="5" fill="var(--newton-soft)" stroke="var(--newton)" stroke-width="2.5"/>
+          <text id="fma-mlabel" y="-22" text-anchor="middle" font-family="var(--font-mono)" font-size="13" fill="var(--ink)"></text>
+          <circle id="fma-w1" cy="-5" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>
+          <circle id="fma-w2" cy="-5" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>
+        </g>
+      </svg>
+      <div class="fma-ctl">
+        <div class="fma-row"><label for="fma-f">Resultant force F <output id="fma-fo"></output></label><input type="range" id="fma-f" min="0" max="24" step="1" value="12"></div>
+        <div class="fma-row"><label for="fma-m">Mass m <output id="fma-mo"></output></label><input type="range" id="fma-m" min="1" max="8" step="0.5" value="4"></div>
+        <div class="fma-eq" id="fma-eq" aria-live="polite"></div>
+        <div class="fma-stats">
+          <div class="fma-stat"><small>Time</small><strong id="fma-t">0.0 s</strong></div>
+          <div class="fma-stat"><small>Speed</small><strong id="fma-v">0.0 m/s</strong></div>
+          <div class="fma-stat"><small>Distance</small><strong id="fma-s">0.0 m</strong></div>
+        </div>
+        <div class="btn-row" style="margin-top:0;">
+          <button class="btn btn-primary" data-action="fma-go">Go</button>
+          <button class="btn btn-ghost" data-action="fma-reset">Reset</button>
+        </div>
+        <p class="fma-note" id="fma-note"></p>
+      </div>
+    </div>
+
+    <div class="section-label">Now try the calculations</div>
+    <p class="panel-intro">Type your answer into each box, then press Check. Correct answers lock in green.</p>
+    <div id="fma-examples"></div>
+    <div class="btn-row" style="margin-top:0;">
+      <button class="btn btn-ghost" data-action="fma-examples-reset">Clear Answers</button>
+    </div>
+  </section>
+
   <section id="panel-definitions" class="panel" role="tabpanel" hidden>
     <p class="panel-intro">Match each law, quantity or formula to what it actually says. Select a card on each side; select a joined card to undo it.</p>
     <div class="card" style="padding:20px;">
@@ -624,7 +690,7 @@
 (function(){
   'use strict';
 
-  var TAB_IDS = ['overview','stgraph','vtgraph','calculating','measuring','vectors','forcedef','freebody','balanced','definitions','weight','units'];
+  var TAB_IDS = ['overview','stgraph','vtgraph','calculating','measuring','vectors','forcedef','freebody','balanced','fma','definitions','weight','units'];
 
   /* ================= helpers ================= */
   function shuffle(arr){
@@ -644,6 +710,11 @@
     return Math.abs(val-answer) <= tol;
   }
   function $(sel){ return document.querySelector(sel); }
+  // Write a fraction as [[top|bottom]] in any text passed through FR(); it is drawn stacked.
+  function FR(t){
+    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1\u00a0')
+      .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
   function onAction(name, fn){ var b = $('[data-action="'+name+'"]'); if(b) b.addEventListener('click', fn); }
 
   // Check results are read out by screen readers through one polite live region.
@@ -1125,7 +1196,7 @@
         row.dataset.id = id;
         row.innerHTML =
           '<div class="reorder-num" aria-hidden="true">'+(idx+1)+'</div>'+
-          '<div class="reorder-text">'+stepById(id).text+'</div>'+
+          '<div class="reorder-text">'+FR(stepById(id).text)+'</div>'+
           '<div class="reorder-arrows no-drag">'+
             '<button type="button" data-dir="-1" data-fkey="'+cfg.id+'-up-'+id+'" aria-label="Move up: step '+(idx+1)+'">&#9650;</button>'+
             '<button type="button" data-dir="1" data-fkey="'+cfg.id+'-dn-'+id+'" aria-label="Move down: step '+(idx+1)+'">&#9660;</button>'+
@@ -1214,7 +1285,7 @@
         '<div class="btn-row"><button class="btn btn-primary" data-check="'+i+'">Check</button>'+
         '<span class="calc-fb" id="'+cfg.id+'-fb-'+i+'"></span></div>'+
         (ex.steps ? '<details><summary>Show full working</summary><div class="answer"><ul>'+
-          ex.steps.map(function(s){ return '<li>'+s+'</li>'; }).join('')+'</ul></div></details>' : '')+
+          ex.steps.map(function(s){ return '<li>'+FR(s)+'</li>'; }).join('')+'</ul></div></details>' : '')+
         '</div>';
     }).join('');
     function input(i, bi){ return document.getElementById(cfg.id+'-'+i+'-'+bi); }
@@ -1421,7 +1492,7 @@
       {label:'Distance travelled during section C =', unit:'m', answer:0},
       {label:'Distance travelled during section D (just the size — ignore the direction) =', unit:'m', answer:16}
     ],
-    steps:['B: displacement falls from 16 m to 0 m in 4 s, so speed = 16 ÷ 4 = <b>4 m/s</b>','C: displacement stays at 0 m, so distance travelled = <b>0 m</b>','D: displacement goes from 0 m to −16 m, so distance travelled = <b>16 m</b>']
+    steps:['B: displacement falls from 16 m to 0 m in 4 s, so speed = [[16|4]] = <b>4 m/s</b>','C: displacement stays at 0 m, so distance travelled = <b>0 m</b>','D: displacement goes from 0 m to −16 m, so distance travelled = <b>16 m</b>']
   }];
   var vtCalc = [{
     q:'Use the graph in Task 1.',
@@ -1431,7 +1502,7 @@
       {label:'Acceleration during section C =', unit:'m/s²', answer:0},
       {label:'Distance travelled during section D =', unit:'m', answer:20}
     ],
-    steps:['B: a = (10 − 20) ÷ 4 = <b>−2.5 m/s²</b>','B: area = ½ × (20 + 10) × 4 = <b>60 m</b>','C: velocity is constant, so a = <b>0 m/s²</b>','D: 10 m forwards (triangle above the axis, ½ × 2 × 10) plus 10 m backwards (triangle below) = <b>20 m</b> travelled']
+    steps:['B: a = [[10 − 20|4]] = <b>−2.5 m/s²</b>','B: area = ½ × (20 + 10) × 4 = <b>60 m</b>','C: velocity is constant, so a = <b>0 m/s²</b>','D: 10 m forwards (triangle above the axis, ½ × 2 × 10) plus 10 m backwards (triangle below) = <b>20 m</b> travelled']
   }];
 
   /* ---- calculating examples ---- */
@@ -1439,12 +1510,12 @@
     {
       q:'A cyclist travels 240 m in 30 s. Calculate her average speed.',
       blanks:[{label:'average speed =', unit:'m/s', answer:8}],
-      steps:['average speed = distance ÷ time','average speed = 240 <b>m</b> ÷ 30 <b>s</b>','average speed = <b>8 m/s</b>']
+      steps:['average speed = [[distance|time]]','average speed = [[240 m|30 s]]','average speed = <b>8 m/s</b>']
     },
     {
       q:'A car accelerates from 5 m/s to 25 m/s in 4 s. Calculate its acceleration.',
       blanks:[{label:'acceleration =', unit:'m/s²', answer:5}],
-      steps:['a = (v − u) ÷ t','a = (25 − 5) ÷ 4','a = 20 ÷ 4 = <b>5 m/s²</b>']
+      steps:['a = [[v − u|t]]','a = [[25 − 5|4]]','a = [[20|4]] = <b>5 m/s²</b>']
     },
     {
       diagram: lineGraph(stGraphData),
@@ -1453,7 +1524,7 @@
         {label:'speed during section A =', unit:'m/s', answer:10},
         {label:'speed during section B =', unit:'m/s', answer:0}
       ],
-      steps:['Section A: speed = distance ÷ time = 50 ÷ 5 = <b>10 m/s</b>','Section B: the line is flat — distance isn’t changing, so speed = <b>0 m/s</b> (she’s stationary)']
+      steps:['Section A: speed = [[distance|time]] = [[50|5]] = <b>10 m/s</b>','Section B: the line is flat — distance isn’t changing, so speed = <b>0 m/s</b> (she’s stationary)']
     },
     {
       diagram: lineGraph(vtGraphData),
@@ -1464,7 +1535,7 @@
         {label:'acceleration during section B =', unit:'m/s²', answer:0},
         {label:'distance travelled during section B =', unit:'m', answer:100}
       ],
-      steps:['Section A: a = gradient = (20 − 0) ÷ 4 = <b>5 m/s²</b>; s = area = ½ × 4 × 20 = <b>40 m</b>','Section B: the line is flat, so a = <b>0 m/s²</b>; s = area = 20 × 5 = <b>100 m</b>']
+      steps:['Section A: a = gradient = [[20 − 0|4]] = <b>5 m/s²</b>; s = area = ½ × 4 × 20 = <b>40 m</b>','Section B: the line is flat, so a = <b>0 m/s²</b>; s = area = 20 × 5 = <b>100 m</b>']
     }
   ];
 
@@ -1475,7 +1546,7 @@
     {id:'m3', text:'Attach an interrupt card of known length to the top of the trolley.'},
     {id:'m4', text:'Release the trolley from the same point at the top of the ramp each time.'},
     {id:'m5', text:'Use the data logger to record the time taken for the trolley to pass between the two light gates.'},
-    {id:'m6', text:'Calculate the trolley’s average speed using speed = distance ÷ time.'},
+    {id:'m6', text:'Calculate the trolley’s average speed using speed = [[distance|time]].'},
     {id:'m7', text:'Repeat the run at least three times and calculate a mean speed to improve reliability.'}
   ];
 
@@ -1681,12 +1752,89 @@
     {id:'p4', left:'Earth (IGCSE value)', right:'10 N/kg'},
     {id:'p5', left:'Jupiter', right:'25 N/kg'}
   ];
+  var fmaExamples = [
+    {
+      q:'A resultant force of 30 N acts on a 5 kg box. Calculate its acceleration.',
+      blanks:[{label:'acceleration, a =', unit:'m/s²', answer:6}],
+      steps:['a = [[F|m]]','a = [[30|5]]','a = <b>6 m/s²</b>']
+    },
+    {
+      q:'A car of mass 1200 kg accelerates at 2.5 m/s². Calculate the resultant force on it.',
+      blanks:[{label:'resultant force, F =', unit:'N', answer:3000}],
+      steps:['F = m × a','F = 1200 × 2.5','F = <b>3000 N</b>']
+    },
+    {
+      q:'A resultant force of 18 N gives a trolley an acceleration of 4.5 m/s². Calculate the mass of the trolley.',
+      blanks:[{label:'mass, m =', unit:'kg', answer:4}],
+      steps:['m = [[F|a]]','m = [[18|4.5]]','m = <b>4 kg</b>']
+    },
+    {
+      q:'A cyclist and bike have a total mass of 60 kg. The forward force is 150 N, and air resistance and friction together are 30 N. Calculate the acceleration.',
+      blanks:[{label:'acceleration, a =', unit:'m/s²', answer:2}],
+      steps:['resultant force = 150 − 30 = 120 N','a = [[F|m]] = [[120|60]]','a = <b>2 m/s²</b>']
+    }
+  ];
+
+  /* ---- F = ma explore: a trolley pushed from rest along a 10 m track ---- */
+  function initFmaSim(){
+    var X0=130, PXM=32, TRACK=10, TMAX=8, REDUCED=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var fIn=$('#fma-f'), mIn=$('#fma-m'), t=0, running=false, last=0, raf=0, dots=[];
+    var ticks='';
+    for(var i=0;i<=TRACK;i+=2){ var x=X0+i*PXM; ticks+='<line x1="'+x+'" x2="'+x+'" y1="132" y2="140" stroke="var(--ink-faint)" stroke-width="1.5"/><text x="'+x+'" y="156" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink-faint)">'+i+' m</text>'; }
+    $('#fma-ticks').innerHTML=ticks;
+    function F(){ return +fIn.value; } function M(){ return +mIn.value; } function A(){ return F()/M(); }
+    function sAt(tt){ return Math.min(TRACK, 0.5*A()*tt*tt); }
+    function fmt1(n){ return (Math.round(n*10)/10).toFixed(1); }
+    function fmtA(n){ return String(Math.round(n*100)/100); }
+    function draw(){
+      var s=sAt(t), v=A()*t, bw=34+M()*7, x=X0+s*PXM, f=F();
+      if(s>=TRACK) v=Math.sqrt(2*A()*TRACK);
+      $('#fma-trolley').setAttribute('transform','translate('+x+' 132)');
+      var b=$('#fma-body'); b.setAttribute('x',0); b.setAttribute('width',bw);
+      $('#fma-mlabel').setAttribute('x',bw/2); $('#fma-mlabel').textContent=M()+' kg';
+      $('#fma-w1').setAttribute('cx',9); $('#fma-w2').setAttribute('cx',bw-9);
+      var ar=$('#fma-arrow'), len=f*4;
+      ar.setAttribute('x1',-6-len); ar.setAttribute('x2',-6); ar.style.display=f?'':'none';
+      $('#fma-flabel').setAttribute('x',-6-len/2); $('#fma-flabel').textContent=f?f+' N':'';
+      $('#fma-trail').innerHTML=dots.map(function(d){ return '<circle cx="'+(X0+d*PXM)+'" cy="118" r="3.5" fill="var(--newton)" opacity=".35"/>'; }).join('');
+      $('#fma-t').textContent=fmt1(t)+' s'; $('#fma-v').textContent=fmt1(v)+' m/s'; $('#fma-s').textContent=fmt1(s)+' m';
+    }
+    function eq(){
+      $('#fma-fo').textContent=F()+' N'; $('#fma-mo').textContent=M()+' kg';
+      $('#fma-eq').innerHTML=FR('a = [[F|m]] = [['+F()+'|'+M()+']] = <b>'+fmtA(A())+' m/s²</b>');
+    }
+    function stop(){ running=false; cancelAnimationFrame(raf); }
+    function reset(){ stop(); t=0; dots=[]; $('#fma-note').textContent=''; eq(); draw(); }
+    function addDots(){ dots=[]; for(var k=0.5;k<=t+1e-9;k+=0.5){ var d=sAt(k); dots.push(d); if(d>=TRACK) break; } }
+    function finish(){
+      stop(); addDots(); draw();
+      $('#fma-note').textContent = F()===0 ? 'No resultant force, so no acceleration: the trolley stays at rest.'
+        : 'It reached the end of the track in '+fmt1(t)+' s. Try doubling the force, or doubling the mass.';
+    }
+    function frame(now){
+      if(!running) return;
+      t+=Math.min(0.05,(now-last)/1000); last=now;
+      addDots();
+      if(sAt(t)>=TRACK || t>=TMAX){ if(sAt(t)>=TRACK) t=Math.sqrt(2*TRACK/A()); finish(); return; }
+      draw(); raf=requestAnimationFrame(frame);
+    }
+    function go(){
+      reset();
+      if(F()===0){ t=0; finish(); return; }
+      if(REDUCED){ t=Math.min(TMAX, Math.sqrt(2*TRACK/A())); finish(); return; }
+      running=true; last=performance.now(); raf=requestAnimationFrame(frame);
+    }
+    fIn.addEventListener('input',reset); mIn.addEventListener('input',reset);
+    onAction('fma-go',go); onAction('fma-reset',reset);
+    reset();
+  }
+
   var newtonExamples = [
     {
       diagram: '<svg class="example-diagram" viewBox="0 0 140 70" aria-hidden="true"><rect x="50" y="24" width="30" height="20" rx="3" fill="none" stroke="var(--newton)" stroke-width="2"/><line x1="82" y1="34" x2="118" y2="34" stroke="var(--newton)" stroke-width="3" stroke-linecap="round"/><polygon points="118,34 108,28 108,40" fill="var(--newton)"/><text x="100" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink)">12 N</text></svg>',
       q:'A trolley of mass 4 kg is pushed with a resultant force of 12 N. Calculate its acceleration.',
       blanks:[{label:'acceleration, a =', unit:'m/s²', answer:3}],
-      steps:['a = F ÷ m','a = 12 ÷ 4','a = <b>3 m/s²</b>']
+      steps:['a = [[F|m]]','a = [[12|4]]','a = <b>3 m/s²</b>']
     },
     {
       diagram: '<svg class="example-diagram" viewBox="0 0 140 70" aria-hidden="true"><rect x="45" y="16" width="26" height="20" rx="3" fill="none" stroke="var(--newton)" stroke-width="2"/><line x1="58" y1="36" x2="58" y2="58" stroke="var(--newton)" stroke-width="3" stroke-linecap="round"/><polygon points="58,58 52,48 64,48" fill="var(--newton)"/><text x="90" y="50" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink)">g = 10 N/kg</text></svg>',
@@ -1851,6 +1999,8 @@
     games.newtonMatch = createMatchGame({id:'newton-match', containerEl:$('#newton-match'), scoreEl:$('#newton-match-score'), pairs:newtonPairs});
     games.newtonPlanets = createMatchGame({id:'newton-planets', containerEl:$('#newton-planets-match'), scoreEl:$('#newton-planets-score'), pairs:planetPairs});
     games.newtonExamples = createCalcSet({id:'newton-examples', el:$('#newton-examples'), questions:newtonExamples});
+    games.fmaExamples = createCalcSet({id:'fma-examples', el:$('#fma-examples'), questions:fmaExamples});
+    initFmaSim();
 
     games.units = initUnits();
 
