@@ -227,6 +227,11 @@ details>div{margin-top:6px;padding:8px 10px;background:var(--panel-2);border-rad
 .sim{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
 @media (max-width:720px){.sim{grid-template-columns:minmax(0,1fr)}}
 .sim-view{min-width:0}
+.sim.sim-small{grid-template-columns:minmax(0,340px) minmax(0,1fr)}
+.sim.sim-small .sim-view{max-width:340px;width:100%;justify-self:center}
+@media (max-width:720px){.sim.sim-small{grid-template-columns:minmax(0,1fr)}}
+.act-pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px;align-items:start;margin-bottom:18px}
+.act-pair>.act{margin-bottom:0}
 .ctl{display:flex;flex-direction:column;gap:12px;min-width:0}
 .ctl-row{display:flex;flex-direction:column;gap:3px}
 .ctl-row label{display:flex;justify-content:space-between;gap:8px;font:500 12px var(--f-mono);color:var(--ink-soft)}
@@ -1204,7 +1209,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   const body=act('fluids','Explore','Water pressing on a dam','Move the point down the face of the dam. The arrow shows how hard the water pushes on the dam at that depth.');
   const guide=[10,20,30,40].map(h=>{const y=yOf(h)-(h===HMAX?7:0);return '<line x1="'+(FACE-lenOf(h*RHO*10))+'" x2="'+(FACE-2)+'" y1="'+y+'" y2="'+y+'" stroke="var(--ink-faint)" stroke-width="2" marker-end="url(#dm-headf)"/>';}).join('');
   body.innerHTML=`
-  <div class="sim">
+  <div class="sim sim-small">
     <div class="sim-view"><svg class="diagram" viewBox="0 0 360 330" role="img" aria-label="Water held back by a dam, with arrows showing the water pressure on the dam">
       <defs>
         <marker id="dm-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
@@ -1301,7 +1306,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     });
   }
 
-  const arrowsViz='<svg class="viz" viewBox="0 0 170 170" role="img" aria-label="Arrows pointing at a diver from all sides"><rect width="170" height="170" rx="8" fill="var(--liquid-soft)"/><circle cx="85" cy="85" r="15" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>'+
+  const arrowsViz='<svg class="viz" style="max-width:200px" viewBox="0 0 170 170" role="img" aria-label="Arrows pointing at a diver from all sides"><rect width="170" height="170" rx="8" fill="var(--liquid-soft)"/><circle cx="85" cy="85" r="15" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>'+
     dirs.map(a=>{const r=a*Math.PI/180,x1=85+Math.cos(r)*62,y1=85+Math.sin(r)*62,x2=85+Math.cos(r)*24,y2=85+Math.sin(r)*24;return '<g class="arr"><line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="var(--accent)" stroke-width="4"/><circle cx="'+x2+'" cy="'+y2+'" r="4" fill="var(--accent)"/></g>';}).join('')+'</svg>';
   createPredict({
     host:act('fluids','Predict','Which way does the pressure push?','Think about a diver 10 m below the surface.'),
@@ -1766,6 +1771,18 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
 }
 
 /* ================= tabs, startup ================= */
+// Two Predict activities in a row sit side by side (they stack again on narrow screens).
+function pairPredicts(){
+  const isPred=a=>a&&a.classList.contains('act')&&(($('.kind',a)||{}).textContent==='Predict');
+  $$('.acts').forEach(list=>{
+    Array.from(list.children).forEach(a=>{
+      if(!isPred(a)||!a.parentNode||a.parentNode!==list)return;
+      const b=a.nextElementSibling;if(!isPred(b))return;
+      const pair=mk('div','act-pair');list.insertBefore(pair,a);pair.appendChild(a);pair.appendChild(b);
+    });
+  });
+}
+pairPredicts();
 function applyTabUI(tab){
   TAB_IDS.forEach(id=>{const p=byId('panel-'+id);if(p)p.hidden=(id!==tab);});
   $$('.tab-btn').forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('is-active',on);b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1;});
