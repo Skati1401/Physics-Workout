@@ -311,6 +311,11 @@
   .fma-row input[type=range]{width:100%;accent-color:var(--newton);min-height:28px;}
   .fma-eq{font-family:var(--font-mono);font-size:15px;line-height:2.1;padding:8px 12px;border-left:3px solid var(--newton);background:var(--newton-soft);border-radius:6px;color:var(--ink);}
   .fma-eq b{color:var(--newton);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
   .fma-eq .why{font-family:var(--font-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
   .fma-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
   .fma-stat{border:1px solid var(--panel-border);border-radius:8px;padding:6px 8px;}
@@ -493,7 +498,7 @@
     <div class="panel-head"><h2>Distance–Time Graphs</h2><div class="spec"><b>1.3</b><b>1.4</b></div></div>
     <div class="section-label">Explore &mdash; drive the car</div>
     <p class="panel-intro">Press Go, then change the target speed while the car is moving. Watch both graphs: the gradient of the distance&ndash;time graph is the speed, the gradient of the velocity&ndash;time graph is the acceleration, and the area under the velocity&ndash;time graph is the distance travelled.</p>
-    <div class="card fma-sim" style="margin-bottom:6px;">
+    <div class="card fma-sim" data-minw="0.55" style="margin-bottom:6px;">
       <svg class="fma-svg" id="mg-svg" viewBox="0 0 560 300" role="img" aria-label="A car on a road with its distance-time and velocity-time graphs"></svg>
       <div class="fma-ctl">
         <div class="fma-row"><label for="mg-v">Target speed <output id="mg-vo"></output></label><input type="range" id="mg-v" min="0" max="10" step="1" value="5"></div>
@@ -1951,6 +1956,65 @@
     }
   ];
 
+
+  /* ---- slider explores: one layout, and the = signs lined up ---- */
+  // Picture on the left with its sliders underneath; choice buttons, Go, the working and notes on the right.
+  function stackSliders(cardSel, colCls, rowSel, segSel){
+    Array.prototype.forEach.call(document.querySelectorAll(cardSel), function(card){
+      var cols = Array.prototype.slice.call(card.children); if(cols.length!==2) return;
+      var left = cols[0], right = cols[1];
+      if(!left.classList.contains(colCls)){ var w=document.createElement('div'); w.className=colCls; card.insertBefore(w,left); w.appendChild(left); left=w; }
+      Array.prototype.forEach.call(right.querySelectorAll(rowSel), function(r){ if(r.querySelector('input[type=range]')) left.appendChild(r); });
+      Array.prototype.slice.call(left.querySelectorAll(rowSel)).reverse().forEach(function(r){ if(r.querySelector(segSel)) right.insertBefore(r, right.firstChild); });
+    });
+  }
+  // Size the picture so the left column (picture + sliders) ends about where the right column ends:
+  // less empty space under the working. Wide screens only; phones stack the two columns anyway.
+  function balanceSims(cardSel, rowSel, segSel){
+    var cards = Array.prototype.slice.call(document.querySelectorAll(cardSel));
+    function fit(card){
+      var left = card.children[0], right = card.children[1], pic = left && left.firstElementChild;
+      if(!pic || !right) return;
+      if(window.innerWidth <= 860){ card.style.gridTemplateColumns=''; card.style.removeProperty('--simw'); card.dataset.fitW=''; return; }
+      var W = card.clientWidth; if(!W || card.dataset.fitW == W) return;   // hidden, or already fitted at this width
+      for(var pass=0; pass<2; pass++){
+        var pr = pic.getBoundingClientRect(); if(!pr.width || !pr.height) return;
+        var cs = getComputedStyle(card), inner = W - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - (parseFloat(cs.columnGap)||16);
+        var rest = left.getBoundingClientRect().height - pr.height, want = right.getBoundingClientRect().height - rest;
+        var x = Math.max(inner*(parseFloat(card.dataset.minw)||0.32), Math.min(inner*0.6, Math.max(160, want) * pr.width/pr.height));
+        card.style.gridTemplateColumns = Math.round(x)+'px minmax(0,1fr)'; card.style.setProperty('--simw', Math.round(x)+'px');
+        // still much taller on the left? move sliders up to the right column, after its choice buttons
+        var rows = Array.prototype.filter.call(left.querySelectorAll(rowSel), function(r){ return r.querySelector('input[type=range]'); });
+        while(rows.length>0 && left.getBoundingClientRect().height - right.getBoundingClientRect().height > 60){
+          var r = rows.pop(), segs = Array.prototype.filter.call(right.children, function(c){ return c.matches(segSel) || (c.matches(rowSel) && c.querySelector(segSel)); });
+          var after = segs.length ? segs[segs.length-1].nextSibling : right.firstChild;
+          var moved = Array.prototype.filter.call(right.children, function(c){ return c.dataset.movedSlider; });
+          right.insertBefore(r, moved.length ? moved[0] : after); r.dataset.movedSlider = '1';
+        }
+      }
+      card.dataset.fitW = W;
+    }
+    var ro = window.ResizeObserver ? new ResizeObserver(function(es){ es.forEach(function(e){ fit(e.target); }); }) : null;
+    cards.forEach(function(c){ if(ro) ro.observe(c); fit(c); });
+    window.addEventListener('resize', function(){ cards.forEach(fit); });
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(sel){
+    Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){
+      alignEquals(el);
+      new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true});
+    });
+  }
+
   /* ---- motion graphs: drive a car and draw its s-t and v-t graphs ---- */
   function initMotionGraphs(){
     var vIn=$('#mg-v'), ACC=2, TMAX=20, REDUCED=false;   // student-started and always ends, so it plays even with reduced motion
@@ -2033,7 +2097,7 @@
     }
     function eq(){
       $('#fma-fo').textContent=F()+' N'; $('#fma-mo').textContent=M()+' kg';
-      $('#fma-eq').innerHTML=FR('F = m × a<br>a = [[F|m]]<span class="why">divide both sides by m</span><br>a = [['+F()+'|'+M()+']] = <b>'+fmtA(A())+' m/s²</b>');
+      $('#fma-eq').innerHTML=FR('F = m × a<br>a = [[F|m]]<br>a = [['+F()+'|'+M()+']] = <b>'+fmtA(A())+' m/s²</b>');
     }
     function stop(){ running=false; cancelAnimationFrame(raf); }
     function reset(){ stop(); t=0; dots=[]; $('#fma-note').textContent=''; eq(); draw(); }
@@ -2231,6 +2295,7 @@
     games.fmaExamples = createCalcSet({id:'fma-examples', el:$('#fma-examples'), questions:fmaExamples});
     initFmaSim();
     initMotionGraphs();
+    stackSliders('.card.fma-sim','fma-ctl','.fma-row','.xs-seg'); watchEquals('.fma-eq'); balanceSims('.card.fma-sim','.fma-row','.xs-seg');
 
     games.units = initUnits();
 

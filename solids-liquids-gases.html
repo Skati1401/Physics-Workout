@@ -231,7 +231,7 @@ details>div{margin-top:6px;padding:8px 10px;background:var(--panel-2);border-rad
 /* ---------- simulations ---------- */
 .sim{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
 @media (max-width:720px){.sim{grid-template-columns:minmax(0,1fr)}}
-.sim-view{min-width:0}
+.sim-view{min-width:0;display:flex;flex-direction:column;gap:12px}
 .sim.sim-small{grid-template-columns:minmax(0,var(--simw,340px)) minmax(0,1fr)}
 .sim.sim-small .sim-view{max-width:var(--simw,340px);width:100%;justify-self:center}
 @media (max-width:720px){.sim.sim-small{grid-template-columns:minmax(0,1fr)}}
@@ -249,6 +249,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .seg button{font:500 12.5px var(--f-body);padding:6px 10px;border:1px solid var(--panel-border);border-radius:6px;background:var(--panel-2);cursor:pointer}
 .seg button.is-on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .eq{font:500 14px/1.5 var(--f-mono);padding:10px 12px;border-radius:6px;background:var(--panel-2);border-left:4px solid var(--accent);overflow-wrap:anywhere}
+.eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+.eqg-l{justify-self:end;text-align:right}
+.eqg-m{justify-self:center}
+.eqg-r{justify-self:start;min-width:0}
+.eqg-full{grid-column:1/-1}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -1300,7 +1305,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       const dm=byId('ut-dim');dm.setAttribute('y1',Math.min(yL,yR));dm.setAttribute('y2',Math.max(yL,yR));
       const ht=byId('ut-h');ht.setAttribute('y',(yL+yR)/2+4);ht.textContent='h = '+fmt(Math.abs(hcm),1)+' cm';
       byId('ut-po').textContent=(dp<0?'−':'')+fmt(Math.abs(dp))+' Pa';
-      byId('ut-eq').innerHTML=FR('p(gas) − p(air) = h × ρ × g<br>h = [[p(gas) − p(air)|ρ × g]]<span class="why">divide both sides by ρ × g</span><br>h = [['+fmt(Math.abs(dp))+'|'+fmt(M.r)+' × 10]] = <b>'+fmt(Math.abs(h),3)+' m</b>'+
+      byId('ut-eq').innerHTML=FR('p(gas) − p(air) = h × ρ × g<br>h = [[p(gas) − p(air)|ρ × g]]<br>h = [['+fmt(Math.abs(dp))+'|'+fmt(M.r)+' × 10]] = <b>'+fmt(Math.abs(h),3)+' m</b>'+
         '<br>Gas pressure ≈ 100 000 '+(dp<0?'−':'+')+' '+fmt(Math.abs(dp))+' = <b>'+fmt(100000+dp)+' Pa</b>');
       const other=man==='hg'?Math.abs(dp)/(1000*10):Math.abs(dp)/(13600*10);
       byId('ut-cmp').textContent=dp===0?'The levels are equal, so the gas is at the same pressure as the air.':
@@ -1576,7 +1581,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     byId('sh-heat').setAttribute('opacity',(0.08+Math.min(1,dt/150)*0.7).toFixed(2));
     const hgt=Math.max(8,clamp(ft/300,0,1)*210);
     const f=byId('sh-fill');f.setAttribute('y',230-hgt);f.setAttribute('height',hgt);
-    byId('sh-eq').innerHTML=FR('ΔQ = m × c × ΔT<br>ΔT = [[ΔQ|m × c]]<span class="why">divide both sides by m × c</span><br>ΔT = [['+fmt(q)+'|'+m.toFixed(1)+' × '+fmt(c)+']] = <b>'+dt.toFixed(1)+' °C</b>');
+    byId('sh-eq').innerHTML=FR('ΔQ = m × c × ΔT<br>ΔT = [[ΔQ|m × c]]<br>ΔT = [['+fmt(q)+'|'+m.toFixed(1)+' × '+fmt(c)+']] = <b>'+dt.toFixed(1)+' °C</b>');
     byId('sh-dt').textContent=dt.toFixed(1)+' °C';byId('sh-ft').textContent=ft.toFixed(1)+' °C';
     const all=Object.keys(MAT).map(k=>({k:k,dt:q/(m*MAT[k].c)}));const mx=Math.max.apply(null,all.map(x=>x.dt))||1;
     byId('sh-cmp').innerHTML=all.map(x=>'<div class="vbar"><span>'+MAT[x.k].n+'</span><div class="vtrack"><div class="vfill" style="--w:'+Math.max(3,x.dt/mx*100)+'%;--c:'+(x.k===mat?'var(--gas)':'var(--ink-faint)')+';width:'+Math.max(3,x.dt/mx*100)+'%">'+x.dt.toFixed(1)+' °C</div></div></div>').join('');
@@ -1847,7 +1852,68 @@ function pairPredicts(){
     });
   });
 }
+
+/* ---- slider explores: one layout, and the = signs lined up ---- */
+// Picture on the left with its sliders underneath; choice buttons, Go, the working and notes on the right.
+function stackSliders(cardSel, colCls, rowSel, segSel){
+  Array.prototype.forEach.call(document.querySelectorAll(cardSel), function(card){
+    var cols = Array.prototype.slice.call(card.children); if(cols.length!==2) return;
+    var left = cols[0], right = cols[1];
+    if(!left.classList.contains(colCls)){ var w=document.createElement('div'); w.className=colCls; card.insertBefore(w,left); w.appendChild(left); left=w; }
+    Array.prototype.forEach.call(right.querySelectorAll(rowSel), function(r){ if(r.querySelector('input[type=range]')) left.appendChild(r); });
+    Array.prototype.slice.call(left.querySelectorAll(rowSel)).reverse().forEach(function(r){ if(r.querySelector(segSel)) right.insertBefore(r, right.firstChild); });
+  });
+}
+// Size the picture so the left column (picture + sliders) ends about where the right column ends:
+// less empty space under the working. Wide screens only; phones stack the two columns anyway.
+function balanceSims(cardSel, rowSel, segSel){
+  var cards = Array.prototype.slice.call(document.querySelectorAll(cardSel));
+  function fit(card){
+    var left = card.children[0], right = card.children[1], pic = left && left.firstElementChild;
+    if(!pic || !right) return;
+    if(window.innerWidth <= 860){ card.style.gridTemplateColumns=''; card.style.removeProperty('--simw'); card.dataset.fitW=''; return; }
+    var W = card.clientWidth; if(!W || card.dataset.fitW == W) return;   // hidden, or already fitted at this width
+    for(var pass=0; pass<2; pass++){
+      var pr = pic.getBoundingClientRect(); if(!pr.width || !pr.height) return;
+      var cs = getComputedStyle(card), inner = W - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - (parseFloat(cs.columnGap)||16);
+      var rest = left.getBoundingClientRect().height - pr.height, want = right.getBoundingClientRect().height - rest;
+      var x = Math.max(inner*(parseFloat(card.dataset.minw)||0.32), Math.min(inner*0.6, Math.max(160, want) * pr.width/pr.height));
+      card.style.gridTemplateColumns = Math.round(x)+'px minmax(0,1fr)'; card.style.setProperty('--simw', Math.round(x)+'px');
+      // still much taller on the left? move sliders up to the right column, after its choice buttons
+      var rows = Array.prototype.filter.call(left.querySelectorAll(rowSel), function(r){ return r.querySelector('input[type=range]'); });
+      while(rows.length>0 && left.getBoundingClientRect().height - right.getBoundingClientRect().height > 60){
+        var r = rows.pop(), segs = Array.prototype.filter.call(right.children, function(c){ return c.matches(segSel) || (c.matches(rowSel) && c.querySelector(segSel)); });
+        var after = segs.length ? segs[segs.length-1].nextSibling : right.firstChild;
+        var moved = Array.prototype.filter.call(right.children, function(c){ return c.dataset.movedSlider; });
+        right.insertBefore(r, moved.length ? moved[0] : after); r.dataset.movedSlider = '1';
+      }
+    }
+    card.dataset.fitW = W;
+  }
+  var ro = window.ResizeObserver ? new ResizeObserver(function(es){ es.forEach(function(e){ fit(e.target); }); }) : null;
+  cards.forEach(function(c){ if(ro) ro.observe(c); fit(c); });
+  window.addEventListener('resize', function(){ cards.forEach(fit); });
+}
+// Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+function alignEquals(el){
+  if(el.querySelector('.eqg')) return;
+  var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+    var i = line.indexOf(' = ');
+    if(i<0) return '<span class="eqg-full">'+line+'</span>';
+    return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+  });
+  el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+}
+function watchEquals(sel){
+  Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){
+    alignEquals(el);
+    new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true});
+  });
+}
 pairPredicts();
+stackSliders('.sim','sim-view','.ctl-row','.seg:not(#hw-btns)');
+watchEquals('.eq');
+balanceSims('.sim:not(.act-pair .sim)','.ctl-row','.seg');
 // Two related activities that sit side by side (they stack on narrow screens).
 function pairByTitle(t1,t2){
   const find=t=>$$('.act').find(a=>$('.act-title',a).textContent.endsWith(t));

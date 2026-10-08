@@ -290,6 +290,11 @@
   .xs-seg button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:var(--panel);}
   .xs-eq{font-family:var(--font-mono);font-size:14.5px;line-height:2.1;padding:8px 12px;border-left:3px solid var(--c);background:var(--cs);border-radius:6px;color:var(--ink);}
   .xs-eq b{color:var(--c);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
   .xs-eq .why{font-family:var(--font-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
   .xs-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;}
   .xs-stat{border:1px solid var(--panel-border);border-radius:8px;padding:6px 8px;}
@@ -492,7 +497,7 @@
     <div class="panel-head"><h2>Falling and Terminal Velocity</h2><div class="spec"><b>1.21</b></div></div>
     <div class="section-label">Explore &mdash; a skydiver falling</div>
     <p class="panel-intro">Press Jump and watch the two forces on the skydiver and her velocity&ndash;time graph. Open the parachute whenever you like.</p>
-    <div class="card xs" style="--c:var(--motion);--cs:var(--motion-soft);margin-bottom:6px;">
+    <div class="card xs" data-minw="0.45" style="--c:var(--motion);--cs:var(--motion-soft);margin-bottom:6px;">
       <svg class="xs-svg" id="fa-svg" viewBox="0 0 520 290" role="img" aria-label="A skydiver with weight and air resistance arrows, and her velocity-time graph"></svg>
       <div class="xs-ctl">
         <div class="xs-row"><label for="fa-m">Mass of skydiver <output id="fa-mo"></output></label><input type="range" id="fa-m" min="50" max="110" step="5" value="80"></div>
@@ -534,7 +539,7 @@
     <div class="panel-head"><h2>Stopping Distance</h2><div class="spec"><b>1.19</b><b>1.20</b></div></div>
     <div class="section-label">Explore &mdash; stopping distance and speed</div>
     <p class="panel-intro">Change the speed, the driver&rsquo;s reaction time and the road surface. The graph shows how the stopping distance grows with speed; the dot is your car, and the strip below shows the same distances on the road.</p>
-    <div class="card xs" style="--c:var(--motion);--cs:var(--motion-soft);margin-bottom:6px;">
+    <div class="card xs" data-minw="0.45" style="--c:var(--motion);--cs:var(--motion-soft);margin-bottom:6px;">
       <div>
         <svg class="xs-svg" id="sd-graph" viewBox="0 0 520 290" role="img" aria-label="Graph of thinking, braking and stopping distance against speed"></svg>
         <svg class="xs-svg" id="sd-road" viewBox="0 0 520 64" role="img" aria-label="Thinking and braking distance drawn on the road"></svg>
@@ -570,7 +575,7 @@
     <div class="panel-head"><h2>Hooke’s Law</h2><div class="spec"><b>1.22</b><b>1.23</b><b>1.24</b></div></div>
     <div class="section-label">Explore &mdash; stretch it</div>
     <p class="panel-intro">Choose a spring, a metal wire or a rubber band, then add load. Watch the extension and the force&ndash;extension graph. Where does the line stop being straight?</p>
-    <div class="card xs" style="--c:var(--elastic);--cs:var(--elastic-soft);margin-bottom:6px;">
+    <div class="card xs" data-minw="0.45" style="--c:var(--elastic);--cs:var(--elastic-soft);margin-bottom:6px;">
       <svg class="xs-svg" id="hk-svg" viewBox="0 0 520 300" role="img" aria-label="A stretched sample and its force-extension graph"></svg>
       <div class="xs-ctl">
         <div class="xs-row"><span class="xs-lab">Material</span><div class="xs-seg" id="hk-mat"></div></div>
@@ -2055,6 +2060,65 @@
   function bindRange(id, fn){ var el=$('#'+id); el.addEventListener('input', fn); return el; }
   function arrowHead(id, col){ return '<marker id="'+id+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+col+'"/></marker>'; }
 
+
+  /* ---- slider explores: one layout, and the = signs lined up ---- */
+  // Picture on the left with its sliders underneath; choice buttons, Go, the working and notes on the right.
+  function stackSliders(cardSel, colCls, rowSel, segSel){
+    Array.prototype.forEach.call(document.querySelectorAll(cardSel), function(card){
+      var cols = Array.prototype.slice.call(card.children); if(cols.length!==2) return;
+      var left = cols[0], right = cols[1];
+      if(!left.classList.contains(colCls)){ var w=document.createElement('div'); w.className=colCls; card.insertBefore(w,left); w.appendChild(left); left=w; }
+      Array.prototype.forEach.call(right.querySelectorAll(rowSel), function(r){ if(r.querySelector('input[type=range]')) left.appendChild(r); });
+      Array.prototype.slice.call(left.querySelectorAll(rowSel)).reverse().forEach(function(r){ if(r.querySelector(segSel)) right.insertBefore(r, right.firstChild); });
+    });
+  }
+  // Size the picture so the left column (picture + sliders) ends about where the right column ends:
+  // less empty space under the working. Wide screens only; phones stack the two columns anyway.
+  function balanceSims(cardSel, rowSel, segSel){
+    var cards = Array.prototype.slice.call(document.querySelectorAll(cardSel));
+    function fit(card){
+      var left = card.children[0], right = card.children[1], pic = left && left.firstElementChild;
+      if(!pic || !right) return;
+      if(window.innerWidth <= 860){ card.style.gridTemplateColumns=''; card.style.removeProperty('--simw'); card.dataset.fitW=''; return; }
+      var W = card.clientWidth; if(!W || card.dataset.fitW == W) return;   // hidden, or already fitted at this width
+      for(var pass=0; pass<2; pass++){
+        var pr = pic.getBoundingClientRect(); if(!pr.width || !pr.height) return;
+        var cs = getComputedStyle(card), inner = W - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - (parseFloat(cs.columnGap)||16);
+        var rest = left.getBoundingClientRect().height - pr.height, want = right.getBoundingClientRect().height - rest;
+        var x = Math.max(inner*(parseFloat(card.dataset.minw)||0.32), Math.min(inner*0.6, Math.max(160, want) * pr.width/pr.height));
+        card.style.gridTemplateColumns = Math.round(x)+'px minmax(0,1fr)'; card.style.setProperty('--simw', Math.round(x)+'px');
+        // still much taller on the left? move sliders up to the right column, after its choice buttons
+        var rows = Array.prototype.filter.call(left.querySelectorAll(rowSel), function(r){ return r.querySelector('input[type=range]'); });
+        while(rows.length>0 && left.getBoundingClientRect().height - right.getBoundingClientRect().height > 60){
+          var r = rows.pop(), segs = Array.prototype.filter.call(right.children, function(c){ return c.matches(segSel) || (c.matches(rowSel) && c.querySelector(segSel)); });
+          var after = segs.length ? segs[segs.length-1].nextSibling : right.firstChild;
+          var moved = Array.prototype.filter.call(right.children, function(c){ return c.dataset.movedSlider; });
+          right.insertBefore(r, moved.length ? moved[0] : after); r.dataset.movedSlider = '1';
+        }
+      }
+      card.dataset.fitW = W;
+    }
+    var ro = window.ResizeObserver ? new ResizeObserver(function(es){ es.forEach(function(e){ fit(e.target); }); }) : null;
+    cards.forEach(function(c){ if(ro) ro.observe(c); fit(c); });
+    window.addEventListener('resize', function(){ cards.forEach(fit); });
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(sel){
+    Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){
+      alignEquals(el);
+      new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true});
+    });
+  }
+
   /* ---- stopping distance: graph against speed + road strip ---- */
   function initStoppingSim(){
     var vIn=bindRange('sd-v',draw), tIn=bindRange('sd-t',draw), dec=7;
@@ -2095,7 +2159,7 @@
       r+='<text x="'+RX+'" y="60" font-size="11.5" fill="var(--ink-soft)">stopping distance '+num(th+br,1)+' m</text>';
       $('#sd-road').innerHTML=r;
       $('#sd-vo').textContent=v+' m/s'; $('#sd-to').textContent=t.toFixed(1)+' s';
-      $('#sd-eq').innerHTML=FR('thinking = v × t = '+v+' × '+t.toFixed(1)+' = '+num(th,1)+' m<br>braking: v² = u² + 2as, with v = 0 and acceleration −a<br>0 = u² − 2as<span class="why">so 2as = u²</span><br>s = [[u²|2a]]<span class="why">divide both sides by 2a</span><br>s = [['+v+'²|2 × '+dec+']] = '+num(br,1)+' m<br>stopping = '+num(th,1)+' + '+num(br,1)+' = <b>'+num(th+br,1)+' m</b>');
+      $('#sd-eq').innerHTML=FR('thinking = v × t = '+v+' × '+t.toFixed(1)+' = '+num(th,1)+' m<br>braking: v² = u² + 2as, with v = 0 and acceleration −a<br>0 = u² − 2as<br>2as = u²<br>s = [[u²|2a]]<br>s = [['+v+'²|2 × '+dec+']] = '+num(br,1)+' m<br>stopping = '+num(th,1)+' + '+num(br,1)+' = <b>'+num(th+br,1)+' m</b>');
     }
     draw();
   }
@@ -2145,9 +2209,9 @@
       var p=ma()*u(), v=after(), M=ma()+mb();
       var lhs=ma()+' × '+u()+' + '+mb()+' × 0';
       if(mode==='stick')
-        $('#mo-eq').innerHTML=FR('total momentum before = total momentum after<br>m<sub>1</sub>u<sub>1</sub> + m<sub>2</sub>u<sub>2</sub> = (m<sub>1</sub> + m<sub>2</sub>)v<br>'+lhs+' = ('+ma()+' + '+mb()+') × v<br>'+num(p,2)+' = '+num(M,2)+' × v<br>v = [['+num(p,2)+'|'+num(M,2)+']]<span class="why">divide both sides by '+num(M,2)+'</span><br>v = <b>'+num(v.va,2)+' m/s</b>');
+        $('#mo-eq').innerHTML=FR('total momentum before = total momentum after<br>m<sub>1</sub>u<sub>1</sub> + m<sub>2</sub>u<sub>2</sub> = (m<sub>1</sub> + m<sub>2</sub>)v<br>'+lhs+' = ('+ma()+' + '+mb()+') × v<br>'+num(p,2)+' = '+num(M,2)+' × v<br>v = [['+num(p,2)+'|'+num(M,2)+']]<br>v = <b>'+num(v.va,2)+' m/s</b>');
       else
-        $('#mo-eq').innerHTML=FR('total momentum before = total momentum after<br>m<sub>1</sub>u<sub>1</sub> + m<sub>2</sub>u<sub>2</sub> = m<sub>1</sub>v<sub>1</sub> + m<sub>2</sub>v<sub>2</sub><br>'+lhs+' = '+ma()+' × '+sv(v.va)+' + '+mb()+' × '+num(v.vb,2)+'<br><b>'+num(p,2)+' kg m/s = '+num(ma()*v.va+mb()*v.vb,2)+' kg m/s</b><span class="why">momentum is conserved</span><br><span class="why" style="margin-left:0;white-space:normal">v<sub>1</sub> and v<sub>2</sub> assume a perfectly elastic bounce: no kinetic energy is lost</span>');
+        $('#mo-eq').innerHTML=FR('total momentum before = total momentum after<br>m<sub>1</sub>u<sub>1</sub> + m<sub>2</sub>u<sub>2</sub> = m<sub>1</sub>v<sub>1</sub> + m<sub>2</sub>v<sub>2</sub><br>'+lhs+' = '+ma()+' × '+sv(v.va)+' + '+mb()+' × '+num(v.vb,2)+'<br><b>'+num(p,2)+' kg m/s</b> = <b>'+num(ma()*v.va+mb()*v.vb,2)+' kg m/s</b><span class="why">momentum is conserved</span><br><span class="why" style="margin-left:0;white-space:normal">v<sub>1</sub> and v<sub>2</sub> assume a perfectly elastic bounce: no kinetic energy is lost</span>');
     }
     function stop(){ running=false; cancelAnimationFrame(raf); }
     function reset(){ stop(); t=0; $('#mo-note').textContent=''; eq(); draw(); }
@@ -2267,7 +2331,7 @@
       $('#fa-svg').innerHTML=g;
       var F=W-drag(), dir=Math.abs(F)<0.5?'':(F>0?' downwards':' upwards');
       $('#fa-mo').textContent=m()+' kg'; $('#fa-t').textContent=Math.round(t)+' s'; $('#fa-v').textContent=num(v,1)+' m/s';
-      $('#fa-eq').innerHTML=FR('weight = m × g = '+m()+' × 10 = '+num(W)+' N<br>resultant force = '+num(W)+' − '+num(drag())+' = '+num(Math.abs(F))+' N'+dir+'<br>F = m × a, so a = [[F|m]]<span class="why">divide both sides by m</span><br>a = [['+num(Math.abs(F))+'|'+m()+']] = <b>'+num(Math.abs(F)/m(),1)+' m/s²</b>'+dir);
+      $('#fa-eq').innerHTML=FR('weight = m × g = '+m()+' × 10 = '+num(W)+' N<br>resultant force = '+num(W)+' − '+num(drag())+' = '+num(Math.abs(F))+' N'+dir+'<br>F = m × a, so a = [[F|m]]<br>a = [['+num(Math.abs(F))+'|'+m()+']] = <b>'+num(Math.abs(F)/m(),1)+' m/s²</b>'+dir);
       var note='';
       if(t===0) note='She is about to jump: the only force is her weight.';
       else if(open && F<-0.5) note='The parachute is open: air resistance is now bigger than her weight, so the resultant force is upwards and she slows down.';
@@ -2375,6 +2439,7 @@
 
     games.units = initUnits();
     initStoppingSim(); initMomentumSim(); initSeesawSim(); initBridgeSim(); initFallingSim(); initHookeSim();
+    stackSliders('.card.xs','xs-ctl','.xs-row','.xs-seg'); watchEquals('.xs-eq'); balanceSims('.card.xs','.xs-row','.xs-seg');
 
     Object.keys(games).forEach(function(k){
       try{ if(initial[k]!==undefined) games[k].setState(initial[k]); }catch(e){}
