@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photoelectric Effect Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5;
+    --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff;
+    --panel-border:#d7dce4;
+    --ink:#182233;
+    --ink-soft:#4c5668;
+    --ink-faint:#8993a5;
+    --accent:#d9720c;
+    --accent-soft:#fdead2;
+    --good:#15803d;
+    --good-soft:#dcf5e3;
+    --bad:#c0311a;
+    --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --quantum:#6d38d6;     --quantum-soft:#ece4fc;
+    --electron:#2158d1;
+    --metal:#8a94a6;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --quantum:#b392ff; --quantum-soft:#2a1f45;
+      --electron:#7da3ff;
+      --metal:#9aa4b6;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --quantum:#b392ff; --quantum-soft:#2a1f45;
+    --electron:#7da3ff;
+    --metal:#9aa4b6;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; controls, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  /* the picture shrinks on short screens so the whole box fits in the window */
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 350px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;text-align:right;}
+  input[type=range]{width:100%;accent-color:var(--quantum);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--quantum);border-color:var(--quantum);color:var(--panel);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--quantum);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:6.2em;}
+  .kept-list{margin:0;padding:0;list-style:none;font:12px var(--font-mono);color:var(--ink-soft);display:flex;flex-wrap:wrap;gap:4px 18px;}
+  .kept-list:empty{display:none;}
+  .kept-list b{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--ink-faint);font-size:11px;margin-right:6px;color:var(--ink);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--quantum);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--quantum);background:var(--quantum-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--quantum);}
+  .eq + .eq{margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} }
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="index.html">&larr; Animations</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; quantum physics &middot; IB E.2 (HL)</div>
+    <h1>The Photoelectric Effect</h1>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="pe-svg" viewBox="0 0 600 300" role="img" aria-label="A lamp shines on a metal plate inside a vacuum tube. Photoelectrons cross to a collector, and the current is plotted against the collector voltage."></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="pe-play" type="button">&#9654; Switch on</button>
+          <button class="btn" id="pe-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="pe-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="pe-keep" type="button">Keep this curve</button>
+          <button class="btn" id="pe-clear" type="button" disabled>Clear kept curves</button>
+        </div>
+        <div class="sliders">
+          <div>
+            <label class="lab" for="pe-f">Frequency <output id="pe-fo"></output></label>
+            <input type="range" id="pe-f" min="4" max="12" step="0.1" value="7.5">
+          </div>
+          <div>
+            <label class="lab" for="pe-i">Intensity <output id="pe-io"></output></label>
+            <input type="range" id="pe-i" min="0" max="100" step="10" value="60">
+          </div>
+          <div>
+            <label class="lab" for="pe-v">Collector voltage <output id="pe-vo"></output></label>
+            <input type="range" id="pe-v" min="-4" max="2" step="0.1" value="1">
+          </div>
+        </div>
+        <ul class="kept-list" id="pe-kept"></ul>
+      </div>
+    </div>
+    <div class="side">
+      <div>
+        <div class="lab">Metal</div>
+        <div class="seg" id="pe-metals"></div>
+      </div>
+      <div>
+        <div class="lab">Try these</div>
+        <div class="seg" id="pe-presets"><button type="button" data-p="red" aria-pressed="false">Bright red light</button><button type="button" data-p="dim" aria-pressed="false">Dim blue light</button><button type="button" data-p="bright" aria-pressed="false">Bright blue light</button><button type="button" data-p="stop" aria-pressed="false">Stop the fastest</button></div>
+      </div>
+      <p class="note" id="pe-note" aria-live="polite"></p>
+      <div class="stats">
+        <div class="stat"><small>Photon energy</small><strong id="pe-e">0 eV</strong></div>
+        <div class="stat hi"><small>E<sub>max</sub></small><strong id="pe-ek">0 eV</strong></div>
+        <div class="stat"><small>Stopping voltage</small><strong id="pe-vs">0 V</strong></div>
+        <div class="stat"><small>Current</small><strong id="pe-cur">0 &mu;A</strong></div>
+      </div>
+      <details class="working" id="pe-working">
+        <summary>Show working</summary>
+        <div class="eq" id="pe-eq1"></div>
+        <div class="eq" id="pe-eq2"></div>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+(function(){
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 4.97 × 10⁻¹⁹
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+m.toFixed(dp)>=10){ m/=10; e++; }
+    return m.toFixed(dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+
+  var H = 6.63e-34, E = 1.60e-19, C = 3.00e8;
+  var METALS = [
+    {id:'cs', name:'caesium', phi:2.10},
+    {id:'na', name:'sodium',  phi:2.30},
+    {id:'ca', name:'calcium', phi:2.90},
+    {id:'zn', name:'zinc',    phi:4.30}
+  ];
+  var fIn=$('#pe-f'), iIn=$('#pe-i'), vIn=$('#pe-v'), playBtn=$('#pe-play'), slowBtn=$('#pe-slow');
+  var metal = METALS[1], kept = [];
+
+  // ---- the physics (all energies in eV, rounded the same way as the working shows them)
+  function f(){ return +fIn.value*1e14; }
+  function inten(){ return +iIn.value; }
+  function volts(){ return +vIn.value; }
+  function photonEV(fr){ return Math.round(H*fr/E*100)/100; }
+  function emax(fr, m){ return Math.round((photonEV(fr)-m.phi)*100)/100; }
+  function lam(fr){ return C/fr*1e9; }
+  // Electrons leave with kinetic energies from 0 up to Emax; the fraction with more than K is (1 − K/Emax)^1.5.
+  // At zero or small positive voltage a few electrons still miss the collector, so the current levels off a little above 0 V.
+  function collect(V){ return V>=0 ? 1-0.25*Math.exp(-V/0.6) : 0.75; }
+  function current(V, fr, I, m){   // in microamps
+    var ek = emax(fr, m); if(ek<=0 || I<=0) return 0;
+    var pass = V>=0 ? 1 : Math.pow(Math.max(0, 1+V/ek), 1.5);
+    return 0.02*I*collect(V)*pass;
+  }
+
+  // ---- colour of the light
+  function lightColour(l){
+    if(l<380) return null;   // ultraviolet: drawn in a pale violet with a label
+    var r=0,g=0,b=0;
+    if(l<440){ r=(440-l)/60; b=1; } else if(l<490){ g=(l-440)/50; b=1; } else if(l<510){ g=1; b=(510-l)/20; }
+    else if(l<580){ r=(l-510)/70; g=1; } else if(l<645){ r=1; g=(645-l)/65; } else { r=1; }
+    var k = l<420 ? 0.4+0.6*(l-380)/40 : (l>700 ? 0.4+0.6*(750-l)/50 : 1);
+    function c(x){ return Math.round(255*Math.pow(x*k,0.8)); }
+    return 'rgb('+c(r)+','+c(g)+','+c(b)+')';
+  }
+  function colourName(l){
+    if(l<380) return 'ultraviolet'; if(l<450) return 'violet'; if(l<495) return 'blue'; if(l<570) return 'green';
+    if(l<590) return 'yellow'; if(l<620) return 'orange'; return 'red';
+  }
+
+  // ---- the picture
+  var LAMP={x:206,y:22}, PLATE_X=74, EX=80, CX=246, TUBE_TOP=48, TUBE_BOT=190;
+  var GX, GY, GW, GH, VMIN=-4, VMAX=2, IMAX=2.2, NARROW;
+  // wide: tube and graph side by side; phone: the graph goes under the tube so the labels stay readable
+  var narrowQ = window.matchMedia('(max-width:560px)');
+  function layout(){
+    NARROW = narrowQ.matches;
+    if(NARROW){ GX=44; GY=338; GW=270; GH=200; $('#pe-svg').setAttribute('viewBox','0 0 330 590'); }
+    else { GX=338; GY=28; GW=248; GH=214; $('#pe-svg').setAttribute('viewBox','0 0 600 300'); }
+  }
+  if(narrowQ.addEventListener) narrowQ.addEventListener('change',function(){ layout(); draw(); });
+  layout();
+  function gx(V){ return GX+(V-VMIN)/(VMAX-VMIN)*GW; }
+  function gy(I){ return GY+GH-I/IMAX*GH; }
+  var photons=[], electrons=[], spawn=0, t=0, running=false, started=false, idle=0, last=0, raf=0, AUTO_PAUSE=40;
+
+  function curvePath(fr, I, m){
+    var p=[];
+    for(var V=VMIN; V<=VMAX+1e-9; V+=0.05) p.push(gx(V).toFixed(1)+','+gy(current(V,fr,I,m)).toFixed(1));
+    return p.join(' ');
+  }
+  function draw(){
+    var fr=f(), l=lam(fr), col=lightColour(l), beam=col||'#a58be0', ek=emax(fr,metal), V=volts(), I=inten(), on=started && I>0;
+    var cur = on ? current(V,fr,I,metal) : 0, g='';
+    // lamp and beam
+    if(on){
+      g+='<polygon points="'+(LAMP.x-6)+','+(LAMP.y+4)+' '+(LAMP.x+6)+','+(LAMP.y+8)+' '+(PLATE_X+1)+',150 '+(PLATE_X-1)+',84" fill="'+beam+'" opacity="'+(0.08+0.32*I/100).toFixed(2)+'"/>';
+    }
+    g+='<circle cx="'+LAMP.x+'" cy="'+LAMP.y+'" r="10" fill="'+(on?beam:'var(--panel)')+'" stroke="var(--ink)" stroke-width="2"/>';
+    var lx=NARROW?LAMP.x-16:LAMP.x+16, la=NARROW?' text-anchor="end"':'';
+    g+='<text x="'+lx+'" y="'+(LAMP.y+(NARROW?-4:4))+'"'+la+' font-size="11" fill="var(--ink-soft)">lamp</text>';
+    if(on) g+='<text x="'+lx+'" y="'+(LAMP.y+(NARROW?9:17))+'"'+la+' font-size="10" fill="var(--ink-faint)">'+(col?colourName(l)+' light':'ultraviolet (invisible)')+'</text>';
+    // vacuum tube, metal plate and collector
+    g+='<rect x="30" y="'+TUBE_TOP+'" width="250" height="'+(TUBE_BOT-TUBE_TOP)+'" rx="40" fill="none" stroke="var(--ink-soft)" stroke-width="2.5"/>';
+    g+='<text x="155" y="'+(TUBE_BOT-10)+'" text-anchor="middle" font-size="10" fill="var(--ink-faint)">vacuum</text>';
+    g+='<path d="M70,82 Q60,117 70,152" fill="none" stroke="var(--metal)" stroke-width="8" stroke-linecap="round"/>';
+    g+='<line x1="'+CX+'" x2="'+CX+'" y1="92" y2="142" stroke="var(--metal)" stroke-width="6" stroke-linecap="round"/>';
+    g+='<text x="44" y="72" font-size="10.5" fill="var(--ink-soft)">'+metal.name+'</text>';
+    g+='<text x="'+(CX+4)+'" y="84" text-anchor="end" font-size="10.5" fill="var(--ink-soft)">collector</text>';
+    // photons: short wave packets, longer waves for lower frequencies
+    var seg=(1.4+l/260).toFixed(2), packet='M0,0';
+    for(var k=0;k<6;k++) packet+=' q'+(seg/2)+','+(k%2?3.5:-3.5)+' '+seg+',0';
+    photons.forEach(function(p){
+      var x=p.sx+(p.hx-p.sx)*p.s, y=p.sy+(p.hy-p.sy)*p.s, a=Math.atan2(p.hy-p.sy,p.hx-p.sx)*180/Math.PI;
+      g+='<path d="'+packet+'" transform="translate('+x.toFixed(1)+','+y.toFixed(1)+') rotate('+a.toFixed(0)+')" fill="none" stroke="'+beam+'" stroke-width="2.2" stroke-linecap="round"/>';
+    });
+    electrons.forEach(function(q){
+      var x=EX+q.x*(CX-EX), y=q.y0+(q.y1-q.y0)*Math.min(1,Math.max(0,q.x))+q.dy;
+      g+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.6" fill="var(--electron)"/>';
+    });
+    // circuit: plate – supply – ammeter – collector
+    g+='<path d="M70,152 V262 H118 M168,262 H190 M220,262 H'+CX+' V142" fill="none" stroke="var(--ink-soft)" stroke-width="2"/>';
+    g+='<rect x="118" y="248" width="50" height="28" rx="5" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>';
+    g+='<text x="143" y="266" text-anchor="middle" font-size="11.5" fill="var(--ink)">'+(V>0?'+':'')+sn(V,1)+' V</text>';
+    g+='<text x="143" y="292" text-anchor="middle" font-size="10" fill="var(--ink-faint)">supply</text>';
+    g+='<circle cx="205" cy="262" r="15" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="205" y="267" text-anchor="middle" font-size="13" font-weight="600" fill="var(--ink)">A</text>';
+    g+='<text x="205" y="292" text-anchor="middle" font-size="11" fill="var(--quantum)">'+cur.toFixed(2)+' μA</text>';
+    // current–voltage graph
+    for(var v=VMIN; v<=VMAX; v++) g+='<line x1="'+gx(v)+'" x2="'+gx(v)+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--panel-border)"/><text x="'+gx(v)+'" y="'+(GY+GH+15)+'" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">'+sn(v,0)+'</text>';
+    for(var i=0.5; i<=2.01; i+=0.5) g+='<line x1="'+GX+'" x2="'+(GX+GW)+'" y1="'+gy(i)+'" y2="'+gy(i)+'" stroke="var(--panel-border)"/><text x="'+(gx(0)-5)+'" y="'+(gy(i)+4)+'" text-anchor="end" font-size="10.5" fill="var(--ink-faint)">'+i.toFixed(1)+'</text>';
+    g+='<line x1="'+gx(0)+'" x2="'+gx(0)+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/><line x1="'+GX+'" x2="'+(GX+GW)+'" y1="'+(GY+GH)+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
+    g+='<text x="'+(GX+GW/2)+'" y="'+(GY+GH+32)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">collector voltage (V)</text><text x="'+(gx(0)-4)+'" y="'+(GY-8)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">current (μA)</text>';
+    kept.forEach(function(c, n){
+      g+='<polyline points="'+curvePath(c.f,c.i,c.m)+'" fill="none" stroke="var(--ink-faint)" stroke-width="2" stroke-dasharray="5 4"/>';
+      var yEnd=gy(current(VMAX,c.f,c.i,c.m));
+      g+='<circle cx="'+(GX+GW-10-n*20)+'" cy="'+(yEnd-12)+'" r="8" fill="var(--panel)" stroke="var(--ink-faint)" stroke-width="1.5"/><text x="'+(GX+GW-10-n*20)+'" y="'+(yEnd-8)+'" text-anchor="middle" font-size="10" fill="var(--ink)">'+(n+1)+'</text>';
+    });
+    g+='<polyline points="'+curvePath(fr,I,metal)+'" fill="none" stroke="var(--quantum)" stroke-width="2.8" stroke-linejoin="round"/>';
+    if(ek>0 && -ek>=VMIN && I>0){
+      g+='<line x1="'+gx(-ek)+'" x2="'+gx(-ek)+'" y1="'+(GY+GH-34)+'" y2="'+(GY+GH)+'" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"/>';
+      g+='<text x="'+gx(-ek)+'" y="'+(GY+GH-38)+'" text-anchor="middle" font-size="10.5" fill="var(--accent)">−V<tspan font-size="8" dy="2">s</tspan></text>';
+    }
+    if(on) g+='<circle cx="'+gx(V)+'" cy="'+gy(cur)+'" r="5.5" fill="var(--quantum)" stroke="var(--panel)" stroke-width="2"/>';
+    if(running && slowOn()) g+='<text x="'+(GX+GW)+'" y="'+(GY+12)+'" text-anchor="end" font-size="11.5" fill="var(--accent)">slow motion</text>';
+    $('#pe-svg').innerHTML=g;
+    readings(fr, ek, V, I, cur, on);
+  }
+
+  var lastNote='';
+  function readings(fr, ek, V, I, cur, on){
+    var l=lam(fr), pe=photonEV(fr), J=H*fr, f0=metal.phi*E/H;
+    $('#pe-fo').textContent=sci(fr,1)+' Hz · '+Math.round(l)+' nm';
+    $('#pe-io').textContent=I+'%';
+    $('#pe-vo').textContent=(V>0?'+':'')+sn(V,1)+' V';
+    $('#pe-e').textContent=pe.toFixed(2)+' eV';
+    $('#pe-ek').textContent=ek>0 ? ek.toFixed(2)+' eV' : 'none';
+    $('#pe-vs').textContent=ek>0 ? ek.toFixed(2)+' V' : 'none';
+    $('#pe-cur').textContent=cur.toFixed(2)+' μA';
+    // working: the photon energy and Emax, then the stopping voltage and the threshold frequency
+    var w='E = hf<br>E = 6.63 × 10⁻³⁴ × '+sci(fr,2)+'<br>E = '+sci(J,2)+' J<br>E = [['+sci(J,2)+'|1.60 × 10⁻¹⁹]] = '+pe.toFixed(2)+' eV'
+      +'<br>E<sub>max</sub> = hf − Φ<br>E<sub>max</sub> = '+pe.toFixed(2)+' − '+metal.phi.toFixed(2)+'<br>E<sub>max</sub> = <b>'+sn(ek,2)+' eV</b>';
+    if(ek<=0) w+='<br>Not positive: one photon cannot give an electron enough energy to leave '+metal.name+'.';
+    $('#pe-eq1').innerHTML=FR(w);
+    var w2='';
+    if(ek>0){
+      var ekJ=ek*E;
+      w2+='eV<sub>s</sub> = E<sub>max</sub><br>E<sub>max</sub> = '+ek.toFixed(2)+' × 1.60 × 10⁻¹⁹ = '+sci(ekJ,2)+' J<br>V<sub>s</sub> = [[E<sub>max</sub>|e]]<br>V<sub>s</sub> = [['+sci(ekJ,2)+'|1.60 × 10⁻¹⁹]] = <b>'+ek.toFixed(2)+' V</b><br>';
+    }
+    w2+='hf<sub>0</sub> = Φ<br>Φ = '+metal.phi.toFixed(2)+' × 1.60 × 10⁻¹⁹ = '+sci(metal.phi*E,2)+' J<br>f<sub>0</sub> = [[Φ|h]]<br>f<sub>0</sub> = [['+sci(metal.phi*E,2)+'|6.63 × 10⁻³⁴]] = <b>'+sci(f0,2)+' Hz</b>';
+    $('#pe-eq2').innerHTML=FR(w2);
+    // what is happening now
+    var note;
+    if(!started) note='Press Switch on to shine the lamp on the '+metal.name+' plate. Change the frequency, intensity and voltage at any time.';
+    else if(I===0) note='The lamp is off: no photons, so no photoelectrons.';
+    else if(ek<=0) note='Each photon has only '+pe.toFixed(2)+' eV, less than the work function of '+metal.name+' ('+metal.phi.toFixed(2)+' eV). No electrons escape, however bright the light: more intensity means more photons, but each one still has too little energy.';
+    else if(V>=0) note='Each photon gives all its energy to one electron, which leaves at once with up to '+ek.toFixed(2)+' eV of kinetic energy. The collector attracts them, so nearly all are collected: brighter light means more electrons per second, so more current.';
+    else if(-V<ek) note='The collector is negative, so it repels the electrons. Only those with more than '+(-V).toFixed(2)+' eV of kinetic energy get across, so the current is smaller.';
+    else note='The reverse voltage is at least the stopping voltage: even the fastest electrons ('+ek.toFixed(2)+' eV) turn back, so the current is zero. eV<sub>s</sub> = E<sub>max</sub>.';
+    if(started && !running && t>0 && idle>=AUTO_PAUSE) note='Paused. Press Play to carry on. '+note;
+    if(note!==lastNote){ $('#pe-note').innerHTML=note; lastNote=note; }
+    playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : (started ? '&#9654; Play' : '&#9654; Switch on');
+  }
+
+  // ---- the animation
+  function slowOn(){ return slowBtn.getAttribute('aria-pressed')==='true'; }
+  function step(dt){
+    var fr=f(), ek=emax(fr,metal), V=volts(), I=inten();
+    t+=dt; spawn+=dt*16*I/100;
+    while(spawn>=1){ spawn--;
+      photons.push({s:0, sx:LAMP.x+(Math.random()-0.5)*8, sy:LAMP.y+6, hx:PLATE_X, hy:88+Math.random()*58});
+    }
+    photons=photons.filter(function(p){
+      p.s+=dt/0.45; if(p.s<1) return true;
+      // one photon, one electron, straight away — but only if the photon has more energy than the work function
+      if(ek>0 && electrons.length<220){
+        var K=ek*(1-Math.pow(Math.random(),2/3)), stray=Math.random()>collect(V);
+        electrons.push({x:0, v:0.9*Math.sqrt(K+0.02), y0:p.hy, y1:96+Math.random()*42, dy:0, vy:stray?(p.hy<117?-1:1)*(70+Math.random()*50):0});
+      }
+      return false;
+    });
+    // kinetic energy at distance x across the gap is K + Vx, so the acceleration is constant: a = 0.405 V (gap widths per s²)
+    electrons=electrons.filter(function(q){
+      q.v+=0.405*V*dt; q.x+=q.v*dt; q.dy+=q.vy*dt;
+      var y=q.y0+(q.y1-q.y0)*Math.min(1,Math.max(0,q.x))+q.dy;
+      return q.x<1 && q.x>-0.02 && y>TUBE_TOP+6 && y<TUBE_BOT-6;
+    });
+  }
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function frame(now){
+    if(!running) return;
+    var real=Math.min(0.05,(now-last)/1000); last=now;
+    step(real*(slowOn()?0.3:1)); idle+=real;
+    if(idle>=AUTO_PAUSE) stop();   // it always ends: it pauses itself after 40 s with nobody touching it
+    draw(); if(running) raf=requestAnimationFrame(frame);
+  }
+  function run(){ started=true; running=true; idle=0; last=performance.now(); raf=requestAnimationFrame(frame); draw(); }
+  function reset(){ stop(); started=false; t=0; idle=0; photons=[]; electrons=[]; spawn=0; draw(); }
+  function touched(){ idle=0; }
+
+  // ---- controls
+  var metalsEl=$('#pe-metals'), presetsEl=$('#pe-presets');
+  metalsEl.innerHTML=METALS.map(function(m){ return '<button type="button" data-m="'+m.id+'" aria-pressed="false">'+m.name+' ('+m.phi.toFixed(1)+' eV)</button>'; }).join('');
+  function markMetal(){ Array.prototype.forEach.call(metalsEl.children,function(b){ b.setAttribute('aria-pressed', String(b.dataset.m===metal.id)); }); }
+  function markPreset(p){ Array.prototype.forEach.call(presetsEl.children,function(b){ b.setAttribute('aria-pressed', String(b.dataset.p===p)); }); }
+  metalsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return;
+    metal=METALS.filter(function(m){ return m.id===b.dataset.m; })[0]; markMetal(); markPreset(''); touched(); draw(); });
+  [fIn,iIn,vIn].forEach(function(el){ el.addEventListener('input',function(){ markPreset(''); touched(); draw(); }); });
+  var PRESETS={
+    red:{f:4.5, i:100, v:1},
+    dim:{f:6.5, i:20, v:1},
+    bright:{f:6.5, i:100, v:1},
+    stop:{f:10, i:100, v:null}   // the voltage is set to the stopping voltage for the chosen metal
+  };
+  presetsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return;
+    var p=PRESETS[b.dataset.p]; fIn.value=p.f; iIn.value=p.i;
+    vIn.value = p.v!==null ? p.v : Math.max(-4, -Math.ceil(emax(p.f*1e14,metal)*10)/10);
+    markPreset(b.dataset.p); touched(); if(!running) run(); else draw(); });
+  playBtn.addEventListener('click',function(){ if(running){ stop(); draw(); } else run(); });
+  slowBtn.addEventListener('click',function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); touched(); draw(); });
+  $('#pe-reset').addEventListener('click',reset);
+  function listKept(){
+    $('#pe-kept').innerHTML=kept.map(function(c,n){ return '<li><b>'+(n+1)+'</b>'+c.m.name+', '+sci(c.f,1)+' Hz, '+c.i+'%</li>'; }).join('');
+    $('#pe-clear').disabled=!kept.length; $('#pe-keep').disabled=kept.length>=3;
+  }
+  $('#pe-keep').addEventListener('click',function(){ if(kept.length<3) kept.push({f:f(), i:inten(), m:metal}); listKept(); draw(); });
+  $('#pe-clear').addEventListener('click',function(){ kept=[]; listKept(); draw(); });
+
+  watchEquals($('#pe-eq1')); watchEquals($('#pe-eq2'));
+  markMetal(); listKept(); reset();
+})();
+</script>
+</body>
+</html>
