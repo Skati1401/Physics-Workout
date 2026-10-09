@@ -166,6 +166,7 @@
           <button class="btn btn-primary" id="pe-play" type="button">&#9654; Switch on</button>
           <button class="btn" id="pe-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="pe-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="pe-exp" type="button" aria-pressed="false" title="Hide the theory curve and plot the readings as the voltage changes">Experiment</button>
           <button class="btn" id="pe-keep" type="button">Keep this curve</button>
           <button class="btn" id="pe-clear" type="button" disabled>Clear kept curves</button>
         </div>
@@ -291,6 +292,13 @@
   function gx(V){ return GX+(V-VMIN)/(VMAX-VMIN)*GW; }
   function gy(I){ return GY+GH-I/IMAX*GH; }
   var photons=[], electrons=[], spawn=0, t=0, running=false, started=false, idle=0, last=0, raf=0, AUTO_PAUSE=40;
+  // Experiment mode: no theory curve; the supply steps down from +2 V to −4 V and each ammeter reading is plotted.
+  // The voltage lives in expV (not the stepped slider), and readings are kept every 0.1 V.
+  var exp=false, readings0={}, sweeping=false, swept=false, expV=2, SWEEP_RATE=0.5;   // volts per second
+  function expPoints(src){ return Object.keys(src).map(Number).sort(function(a,b){ return a-b; }).map(function(k){ return [k/10, src[k]]; }); }
+  function pointsPath(p){ return p.map(function(q){ return gx(q[0]).toFixed(1)+','+gy(q[1]).toFixed(1); }).join(' '); }
+  function record(V){ readings0[Math.round(V*10)] = started ? current(V,f(),inten(),metal) : 0; }
+  function clearExp(){ readings0={}; swept=false; sweeping=false; expV=VMAX; if(exp) vIn.value=VMAX; }
 
   function curvePath(fr, I, m){
     var p=[];
@@ -339,12 +347,19 @@
     g+='<line x1="'+gx(0)+'" x2="'+gx(0)+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/><line x1="'+GX+'" x2="'+(GX+GW)+'" y1="'+(GY+GH)+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
     g+='<text x="'+(GX+GW/2)+'" y="'+(GY+GH+32)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">collector voltage (V)</text><text x="'+(gx(0)-4)+'" y="'+(GY-8)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">current (μA)</text>';
     kept.forEach(function(c, n){
-      g+='<polyline points="'+curvePath(c.f,c.i,c.m)+'" fill="none" stroke="var(--ink-faint)" stroke-width="2" stroke-dasharray="5 4"/>';
-      var yEnd=gy(current(VMAX,c.f,c.i,c.m));
+      g+='<polyline points="'+(c.pts ? pointsPath(c.pts) : curvePath(c.f,c.i,c.m))+'" fill="none" stroke="var(--ink-faint)" stroke-width="2" stroke-dasharray="5 4"/>';
+      var yEnd = c.pts && c.pts.length ? gy(c.pts[c.pts.length-1][1]) : gy(current(VMAX,c.f,c.i,c.m));
       g+='<circle cx="'+(GX+GW-10-n*20)+'" cy="'+(yEnd-12)+'" r="8" fill="var(--panel)" stroke="var(--ink-faint)" stroke-width="1.5"/><text x="'+(GX+GW-10-n*20)+'" y="'+(yEnd-8)+'" text-anchor="middle" font-size="10" fill="var(--ink)">'+(n+1)+'</text>';
     });
-    g+='<polyline points="'+curvePath(fr,I,metal)+'" fill="none" stroke="var(--quantum)" stroke-width="2.8" stroke-linejoin="round"/>';
-    if(ek>0 && -ek>=VMIN && I>0){
+    if(!exp) g+='<polyline points="'+curvePath(fr,I,metal)+'" fill="none" stroke="var(--quantum)" stroke-width="2.8" stroke-linejoin="round"/>';
+    else {
+      var pts=expPoints(readings0);
+      if(pts.length>1) g+='<polyline points="'+pointsPath(pts)+'" fill="none" stroke="var(--quantum)" stroke-width="1.5" opacity="0.6"/>';
+      pts.forEach(function(q){ g+='<circle cx="'+gx(q[0]).toFixed(1)+'" cy="'+gy(q[1]).toFixed(1)+'" r="2.8" fill="var(--quantum)"/>'; });
+      if(!started) g+='<text x="'+(GX+GW/2)+'" y="'+(GY+GH/2)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-faint)">readings appear here</text>';
+    }
+    var reveal = !exp || swept;
+    if(reveal && ek>0 && -ek>=VMIN && I>0){
       g+='<line x1="'+gx(-ek)+'" x2="'+gx(-ek)+'" y1="'+(GY+GH-34)+'" y2="'+(GY+GH)+'" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"/>';
       g+='<text x="'+gx(-ek)+'" y="'+(GY+GH-38)+'" text-anchor="middle" font-size="10.5" fill="var(--accent)">−V<tspan font-size="8" dy="2">s</tspan></text>';
     }
@@ -361,8 +376,9 @@
     $('#pe-io').textContent=I+'%';
     $('#pe-vo').textContent=(V>0?'+':'')+sn(V,1)+' V';
     $('#pe-e').textContent=pe.toFixed(2)+' eV';
-    $('#pe-ek').textContent=ek>0 ? ek.toFixed(2)+' eV' : 'none';
-    $('#pe-vs').textContent=ek>0 ? ek.toFixed(2)+' V' : 'none';
+    var hide = exp && !swept;
+    $('#pe-ek').textContent=hide ? '?' : (ek>0 ? ek.toFixed(2)+' eV' : 'none');
+    $('#pe-vs').textContent=hide ? '?' : (ek>0 ? ek.toFixed(2)+' V' : 'none');
     $('#pe-cur').textContent=cur.toFixed(2)+' μA';
     // working: the photon energy and Emax, then the stopping voltage and the threshold frequency
     var w='E = hf<br>E = 6.63 × 10⁻³⁴ × '+sci(fr,2)+'<br>E = '+sci(J,2)+' J<br>E = [['+sci(J,2)+'|1.60 × 10⁻¹⁹]] = '+pe.toFixed(2)+' eV'
@@ -376,14 +392,20 @@
     }
     w2+='hf<sub>0</sub> = Φ<br>Φ = '+metal.phi.toFixed(2)+' × 1.60 × 10⁻¹⁹ = '+sci(metal.phi*E,2)+' J<br>f<sub>0</sub> = [[Φ|h]]<br>f<sub>0</sub> = [['+sci(metal.phi*E,2)+'|6.63 × 10⁻³⁴]] = <b>'+sci(f0,2)+' Hz</b>';
     $('#pe-eq2').innerHTML=FR(w2);
+    if(hide){ $('#pe-eq1').innerHTML='Finish the experiment to see the working.'; $('#pe-eq2').innerHTML='Read the stopping voltage off your graph first: where does the current reach zero?'; }
     // what is happening now
     var note;
     if(!started) note='Press Switch on to shine the lamp on the '+metal.name+' plate. Change the frequency, intensity and voltage at any time.';
     else if(I===0) note='The lamp is off: no photons, so no photoelectrons.';
     else if(ek<=0) note='Each photon has only '+pe.toFixed(2)+' eV, less than the work function of '+metal.name+' ('+metal.phi.toFixed(2)+' eV). No electrons escape, however bright the light: more intensity means more photons, but each one still has too little energy.';
-    else if(V>=0) note='Each photon gives all its energy to one electron, which leaves at once with up to '+ek.toFixed(2)+' eV of kinetic energy. The collector attracts them, so nearly all are collected: brighter light means more electrons per second, so more current.';
+    else if(V>=0) note='Each photon gives all its energy to one electron, which leaves at once with up to '+(hide?'E<sub>max</sub>':ek.toFixed(2)+' eV')+' of kinetic energy. The collector attracts them, so nearly all are collected: brighter light means more electrons per second, so more current.';
     else if(-V<ek) note='The collector is negative, so it repels the electrons. Only those with more than '+(-V).toFixed(2)+' eV of kinetic energy get across, so the current is smaller.';
-    else note='The reverse voltage is at least the stopping voltage: even the fastest electrons ('+ek.toFixed(2)+' eV) turn back, so the current is zero. eV<sub>s</sub> = E<sub>max</sub>.';
+    else note='The reverse voltage is at least the stopping voltage: even the fastest electrons'+(hide?'':' ('+ek.toFixed(2)+' eV)')+' turn back, so the current is zero. eV<sub>s</sub> = E<sub>max</sub>.';
+    if(exp){
+      if(!started) note='Experiment: press Switch on. The supply steps down from +2 V to −4 V and each ammeter reading is plotted. You can also drag the voltage slider to take your own readings.';
+      else if(swept) note='Experiment finished. The current falls to zero at the stopping voltage: V<sub>s</sub> = '+(ek>0?ek.toFixed(2)+' V, so E<sub>max</sub> = '+ek.toFixed(2)+' eV':'none, as no electrons escape')+'. Keep this curve, then change the frequency, intensity or metal to repeat it.';
+      else if(!sweeping && running) note='Taking your own readings: drag the voltage slider. Press Pause, then Play, to carry on stepping down from here. '+note;
+    }
     if(started && !running && t>0 && idle>=AUTO_PAUSE) note='Paused. Press Play to carry on. '+note;
     if(note!==lastNote){ $('#pe-note').innerHTML=note; lastNote=note; }
     playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : (started ? '&#9654; Play' : '&#9654; Switch on');
@@ -392,6 +414,10 @@
   // ---- the animation
   function slowOn(){ return slowBtn.getAttribute('aria-pressed')==='true'; }
   function step(dt){
+    if(exp && sweeping){
+      expV=Math.max(VMIN, expV-SWEEP_RATE*dt); vIn.value=expV.toFixed(1); record(+vIn.value); idle=0;
+      if(expV<=VMIN){ sweeping=false; swept=true; }
+    }
     var fr=f(), ek=emax(fr,metal), V=volts(), I=inten();
     t+=dt; spawn+=dt*16*I/100;
     while(spawn>=1){ spawn--;
@@ -421,8 +447,12 @@
     if(idle>=AUTO_PAUSE) stop();   // it always ends: it pauses itself after 40 s with nobody touching it
     draw(); if(running) raf=requestAnimationFrame(frame);
   }
-  function run(){ started=true; running=true; idle=0; last=performance.now(); raf=requestAnimationFrame(frame); draw(); }
-  function reset(){ stop(); started=false; t=0; idle=0; photons=[]; electrons=[]; spawn=0; draw(); }
+  function run(){
+    started=true; running=true; idle=0; last=performance.now();
+    if(exp && !swept){ if(!Object.keys(readings0).length) expV=VMAX; else expV=volts(); vIn.value=expV.toFixed(1); sweeping=true; record(+vIn.value); }
+    raf=requestAnimationFrame(frame); draw();
+  }
+  function reset(){ stop(); started=false; t=0; idle=0; photons=[]; electrons=[]; spawn=0; clearExp(); draw(); }
   function touched(){ idle=0; }
 
   // ---- controls
@@ -431,8 +461,13 @@
   function markMetal(){ Array.prototype.forEach.call(metalsEl.children,function(b){ b.setAttribute('aria-pressed', String(b.dataset.m===metal.id)); }); }
   function markPreset(p){ Array.prototype.forEach.call(presetsEl.children,function(b){ b.setAttribute('aria-pressed', String(b.dataset.p===p)); }); }
   metalsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return;
-    metal=METALS.filter(function(m){ return m.id===b.dataset.m; })[0]; markMetal(); markPreset(''); touched(); draw(); });
-  [fIn,iIn,vIn].forEach(function(el){ el.addEventListener('input',function(){ markPreset(''); touched(); draw(); }); });
+    metal=METALS.filter(function(m){ return m.id===b.dataset.m; })[0]; markMetal(); markPreset(''); touched(); newSetup(); draw(); });
+  // In an experiment, a new frequency, intensity or metal is a new set of readings: start again from +2 V.
+  function newSetup(){ if(!exp) return; clearExp(); if(running){ sweeping=true; record(VMAX); } }
+  [fIn,iIn].forEach(function(el){ el.addEventListener('input',function(){ markPreset(''); touched(); newSetup(); draw(); }); });
+  vIn.addEventListener('input',function(){ markPreset(''); touched();
+    if(exp){ sweeping=false; expV=volts(); if(started) record(expV); }
+    draw(); });
   var PRESETS={
     red:{f:4.5, i:100, v:1},
     dim:{f:6.5, i:20, v:1},
@@ -441,8 +476,14 @@
   };
   presetsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return;
     var p=PRESETS[b.dataset.p]; fIn.value=p.f; iIn.value=p.i;
-    vIn.value = p.v!==null ? p.v : Math.max(-4, -Math.ceil(emax(p.f*1e14,metal)*10)/10);
-    markPreset(b.dataset.p); touched(); if(!running) run(); else draw(); });
+    if(exp) clearExp();
+    else vIn.value = p.v!==null ? p.v : Math.max(-4, -Math.ceil(emax(p.f*1e14,metal)*10)/10);
+    markPreset(b.dataset.p); touched(); if(!running) run(); else { if(exp){ sweeping=true; record(VMAX); } draw(); } });
+  var expBtn=$('#pe-exp');
+  expBtn.addEventListener('click',function(){
+    exp=!exp; expBtn.setAttribute('aria-pressed', String(exp)); clearExp();
+    if(exp && running){ sweeping=true; record(VMAX); }
+    touched(); draw(); });
   playBtn.addEventListener('click',function(){ if(running){ stop(); draw(); } else run(); });
   slowBtn.addEventListener('click',function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); touched(); draw(); });
   $('#pe-reset').addEventListener('click',reset);
@@ -450,7 +491,7 @@
     $('#pe-kept').innerHTML=kept.map(function(c,n){ return '<li><b>'+(n+1)+'</b>'+c.m.name+', '+sci(c.f,1)+' Hz, '+c.i+'%</li>'; }).join('');
     $('#pe-clear').disabled=!kept.length; $('#pe-keep').disabled=kept.length>=3;
   }
-  $('#pe-keep').addEventListener('click',function(){ if(kept.length<3) kept.push({f:f(), i:inten(), m:metal}); listKept(); draw(); });
+  $('#pe-keep').addEventListener('click',function(){ if(kept.length<3) kept.push({f:f(), i:inten(), m:metal, pts: exp ? expPoints(readings0) : null}); listKept(); draw(); });
   $('#pe-clear').addEventListener('click',function(){ kept=[]; listKept(); draw(); });
 
   watchEquals($('#pe-eq1')); watchEquals($('#pe-eq2'));
