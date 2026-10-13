@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DC Motor Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#0f7a86;   --topic-soft:#d6f1f3;
+    --north:#d23b3b;   --north-soft:#fbdede;
+    --south:#2f62d6;   --south-soft:#dde7fb;
+    --copper:#b8651b;  --filing:#3b4352;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#4fd1dc; --topic-soft:#123236;
+      --north:#ff7a7a; --north-soft:#3d1a1a;
+      --south:#7da3ff; --south-soft:#1a2440;
+      --copper:#f0a35e; --filing:#c3cad6;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#4fd1dc; --topic-soft:#123236;
+    --north:#ff7a7a; --north-soft:#3d1a1a;
+    --south:#7da3ff; --south-soft:#1a2440;
+    --copper:#f0a35e; --filing:#c3cad6;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; controls, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view-wrap{position:relative;}
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 290px));touch-action:pan-y;}
+  .view-wrap canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .embed .view{max-height:460px;}
+  .under{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px;margin-top:12px;}
+  .under .btn-group{flex:0 1 auto;}
+  .sliders{flex:1 1 300px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px 20px;min-width:0;}
+  .view text{font-family:var(--font-mono);}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--accent);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+  .hint{font-size:12.5px;color:var(--ink-soft);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  .dragme{cursor:grab;}
+  .dragme:focus{outline:none;}
+  .dragme:focus-visible .focus-ring{stroke:var(--accent);stroke-width:3;}
+  @media (max-width:560px){ .stage{padding:12px;} .eq{font-size:12.5px;padding:6px 8px;} .note{font-size:14px;} }
+
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .hint{display:none;}
+
+  .view{max-height:max(240px,calc(100vh - 330px));}
+  .under .sliders{flex-basis:100%;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  (function(){
+    if (/[?&]embed\b/.test(location.search) || window.self !== window.top) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; magnetism</div>
+    <h1>How a DC Motor Works</h1>
+  </header>
+  <section class="card stage">
+    <div>
+      <svg class="view" id="dm-svg" viewBox="0 0 640 330" role="img" aria-label="A DC motor seen end-on: a coil turning between the poles of a magnet, with the split-ring commutator and brushes"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="dm-play" type="button">&#9654; Switch on</button>
+          <button class="btn" id="dm-step" type="button">Step &#8539; turn</button>
+          <button class="btn" id="dm-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="dm-slow" type="button" aria-pressed="false">Slow motion</button>
+        </div>
+        <div class="sliders">
+          <div><label class="lab" for="dm-i">Current <output id="dm-io"></output></label><input type="range" id="dm-i" min="1" max="3" step="0.5" value="2"></div>
+          <div><label class="lab" for="dm-n">Turns on the coil <output id="dm-no"></output></label><input type="range" id="dm-n" min="20" max="60" step="20" value="40"></div>
+          <div><label class="lab" for="dm-b">Magnet strength <output id="dm-bo"></output></label><input type="range" id="dm-b" min="1" max="3" step="1" value="2"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div>
+        <div class="lab">Jump to a point</div>
+        <div class="seg" id="dm-points"><button type="button" data-v="flat" aria-pressed="false">Coil flat</button><button type="button" data-v="upright" aria-pressed="false">Coil upright</button><button type="button" data-v="half" aria-pressed="false">Half a turn on</button></div>
+      </div>
+      <div>
+        <div class="lab">Current direction</div>
+        <div class="seg" id="dm-cur"><button type="button" data-v="1" aria-pressed="true">Normal</button><button type="button" data-v="-1" aria-pressed="false">Reversed</button></div>
+      </div>
+      <div>
+        <div class="lab">Magnet</div>
+        <div class="seg" id="dm-mag"><button type="button" data-v="1" aria-pressed="true">N on the left</button><button type="button" data-v="-1" aria-pressed="false">N on the right</button></div>
+      </div>
+      <p class="note" id="dm-note" aria-live="polite"></p>
+      <div class="stats">
+        <div class="stat"><small>Speed</small><strong id="dm-sp">0 turns/s</strong></div>
+        <div class="stat"><small>Force on each side</small><strong id="dm-sf">0 N</strong></div>
+        <div class="stat hi"><small>Turning effect</small><strong id="dm-sm">0 N m</strong></div>
+      </div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="dm-eq"></div>
+      </details>
+    </div>
+  </section>
+
+</div>
+<script>
+(function(){
+  // dc-motor.html is the one copy of this animation.
+  // With ?embed the page drops its heading so a workout tab can show it in a frame, and tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var wk = document.querySelector('details.working'); if(wk) wk.open = true;
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  function num(n, dp){   // round, drop trailing zeros, group thousands with a space from 10 000
+    var f = Math.pow(10, dp||0), r = Math.round(n*f)/f, t = String(Math.abs(r));
+    if(Math.abs(r)>=10000) t = t.replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    return (r<0?'−':'')+t;
+  }
+  function FR(t){
+    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1 ')
+      .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  function arrowHead(id, col){ return '<marker id="'+id+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+col+'"/></marker>'; }
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ if(!el) return; alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function toggle(b){ b.setAttribute('aria-pressed', String(!pressed(b))); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  // a pole of a magnet: coloured block with its letter
+  function poleRect(x,y,w,h,pole,fs){
+    var c = pole==='N' ? 'north' : 'south';
+    return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="var(--'+c+'-soft)" stroke="var(--'+c+')" stroke-width="2"/>'+
+      '<text x="'+(x+w/2)+'" y="'+(y+h/2+(fs||16)*0.36)+'" text-anchor="middle" font-size="'+(fs||16)+'" font-weight="600" fill="var(--'+c+')">'+pole+'</text>';
+  }
+  // a wire seen end-on: dot = current out of the page, cross = into the page
+  function wireEnd(x,y,r,dir,col){
+    var g='<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="var(--panel)" stroke="'+(col||'var(--copper)')+'" stroke-width="3"/>';
+    if(dir>0) g+='<circle cx="'+x+'" cy="'+y+'" r="'+(r*0.28)+'" fill="var(--ink)"/>';
+    else if(dir<0){ var d=r*0.55; g+='<path d="M'+(x-d)+','+(y-d)+' L'+(x+d)+','+(y+d)+' M'+(x+d)+','+(y-d)+' L'+(x-d)+','+(y+d)+'" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>'; }
+    return g;
+  }
+  function line(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+(w||2)+'"'+(extra||'')+'/>'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+x+'" y="'+y+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11.5)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  // pointer position in SVG user units
+  function svgPoint(svg, e){ var r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; return {x:vb.x+(e.clientX-r.left)/r.width*vb.width, y:vb.y+(e.clientY-r.top)/r.height*vb.height}; }
+
+  var svg=$('#dm-svg'), playBtn=$('#dm-play'), slowBtn=$('#dm-slow'), iIn=$('#dm-i'), nIn=$('#dm-n'), bIn=$('#dm-b');
+  var CX=200, CY=165, R=92, HALF=0.04, LEN=0.05, J=0.01, B2=0.001, B1=0.0005, TMAX=20, DEG=Math.PI/180;
+  var th=20*DEG, w=0, t=0, on=false, running=false, raf=0, last=0;
+  var cur=segGroup($('#dm-cur'), changed), mag=segGroup($('#dm-mag'), changed), pts=$('#dm-points');
+  [iIn,nIn,bIn].forEach(function(x){ x.addEventListener('input', function(){ draw(); }); });
+  var STR=['','weak','medium','strong'];
+
+  function sc(){ return +cur.value(); } function bd(){ return +mag.value(); }
+  function Bt(){ return +bIn.value*0.1; }
+  function F(){ return Bt()*(+iIn.value)*LEN*(+nIn.value); }        // force on each side of the coil, in N
+  function gapNow(a){ return Math.abs(Math.cos(a))<0.03; }            // brushes on the gaps of the split ring: no current
+  function cA(a){ return (!on||gapNow(a)) ? 0 : sc()*(Math.cos(a)>=0?1:-1); }   // +1 = out of the page in side A
+  function torque(a){ return (!on||gapNow(a)) ? 0 : 2*F()*HALF*Math.abs(Math.cos(a))*sc()*bd(); }   // + = anticlockwise
+  function P(a,r,cx,cy){ return [ (cx||CX)+r*Math.cos(a), (cy||CY)-r*Math.sin(a) ]; }
+
+  function step(dt){
+    var n=Math.ceil(dt/0.002), h=dt/n;
+    for(var i=0;i<n;i++){ var a=(torque(th)-B1*w-B2*w*Math.abs(w))/J; w+=a*h; th+=w*h; t+=h; }
+  }
+  function draw(){
+    var g='<defs>'+arrowHead('dm-fa','var(--accent)')+arrowHead('dm-ta','var(--ink-soft)')+arrowHead('dm-ba','var(--topic)')+'</defs>';
+    var nl=bd()>0;
+    g+=poleRect(18,58,62,214,nl?'N':'S',28)+poleRect(320,58,62,214,nl?'S':'N',28);
+    for(var y=78;y<=252;y+=29){ var a0=nl?82:318, a1=nl?318:82; g+=line(a0,y,a1,y,'var(--topic)',1.2,' opacity="0.45"'); g+=line(a0+(a1-a0)*0.06,y,a0+(a1-a0)*0.09,y,'var(--topic)',2,' opacity="0.7" marker-end="url(#dm-ba)"'); }
+    // the coil, seen end-on: side A and side B joined through the axle
+    var A=P(th,R), Bp=P(th+Math.PI,R), c=cA(th);
+    g+=line(A[0],A[1],Bp[0],Bp[1],'var(--copper)',5,' stroke-linecap="round" opacity="0.55"');
+    g+='<circle cx="'+CX+'" cy="'+CY+'" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>';
+    // forces: out-of-page current in a rightward field is pushed up
+    var fl=16+F()*26;
+    [[A,c],[Bp,-c]].forEach(function(s){ if(!s[1]) return; var up=s[1]*bd(); g+=line(s[0][0],s[0][1]-up*17,s[0][0],s[0][1]-up*(17+fl),'var(--accent)',4,' marker-end="url(#dm-fa)"'); });
+    g+=wireEnd(A[0],A[1],14,c,'var(--copper)')+wireEnd(Bp[0],Bp[1],14,-c,'var(--ink-soft)');
+    var la=P(th,R+26), lb=P(th+Math.PI,R+26);
+    g+=txt(la[0],la[1]+4,'A',{a:'middle',c:'var(--copper)',w:600,fs:13})+txt(lb[0],lb[1]+4,'B',{a:'middle',c:'var(--ink-soft)',w:600,fs:13});
+    var tq=torque(th);
+    if(on && Math.abs(w)>0.05){ var dir=w>0?1:-1, r2=R-34, s0=th+dir*0.5, s1=th+dir*1.2, p0=P(s0,r2), p1=P(s1,r2);
+      g+='<path d="M'+p0[0].toFixed(1)+','+p0[1].toFixed(1)+' A'+r2+','+r2+' 0 0 '+(dir>0?0:1)+' '+p1[0].toFixed(1)+','+p1[1].toFixed(1)+'" fill="none" stroke="var(--ink-soft)" stroke-width="2" marker-end="url(#dm-ta)"/>'; }
+    g+=txt(CX,318,'the coil, seen end-on',{a:'middle'});
+    // split-ring commutator and brushes, seen from the front
+    var KX=520, KY=128, KR=36, gp=0.16;
+    g+=txt(KX,30,'split-ring commutator',{a:'middle',c:'var(--ink)',w:600,fs:12.5});
+    function arc(a1,a2,col){ var p=P(a1,KR,KX,KY), q=P(a2,KR,KX,KY); return '<path d="M'+p[0].toFixed(1)+','+p[1].toFixed(1)+' A'+KR+','+KR+' 0 0 0 '+q[0].toFixed(1)+','+q[1].toFixed(1)+'" fill="none" stroke="'+col+'" stroke-width="10"/>'; }
+    g+=arc(th-Math.PI/2+gp, th+Math.PI/2-gp,'var(--copper)')+arc(th+Math.PI/2+gp, th+3*Math.PI/2-gp,'var(--ink-faint)');
+    var ha=P(th,KR-18,KX,KY), hb=P(th+Math.PI,KR-18,KX,KY);
+    g+=txt(ha[0],ha[1]+4,'A',{a:'middle',c:'var(--copper)',w:600})+txt(hb[0],hb[1]+4,'B',{a:'middle',c:'var(--ink-soft)',w:600});
+    var plusR=sc()>0, live=on?'var(--accent)':'var(--ink-soft)';
+    g+='<rect x="'+(KX+KR+5)+'" y="'+(KY-9)+'" width="22" height="18" rx="2" fill="var(--panel-border)" stroke="'+live+'" stroke-width="2"/><rect x="'+(KX-KR-27)+'" y="'+(KY-9)+'" width="22" height="18" rx="2" fill="var(--panel-border)" stroke="'+live+'" stroke-width="2"/>';
+    g+=txt(KX+KR+16,KY-16,plusR?'+':'−',{a:'middle',c:'var(--ink)',w:600,fs:14})+txt(KX-KR-16,KY-16,plusR?'−':'+',{a:'middle',c:'var(--ink)',w:600,fs:14});
+    g+=txt(KX,KY+KR+22,'brushes',{a:'middle',fs:10.5});
+    // wires to the battery
+    var BY=262; g+='<path d="M'+(KX+KR+27)+','+KY+' H'+(KX+70)+' V'+BY+' H'+(KX+12)+' M'+(KX-12)+','+BY+' H'+(KX-70)+' V'+KY+' H'+(KX-KR-27)+'" fill="none" stroke="'+live+'" stroke-width="2"/>';
+    var lp=plusR?KX+8:KX-8, sp=plusR?KX-8:KX+8;
+    g+=line(lp,BY-16,lp,BY+16,'var(--ink)',2.5)+line(sp,BY-8,sp,BY+8,'var(--ink)',5)+txt(KX,BY+34,on?'switch on':'switched off',{a:'middle',fs:10.5,c:on?'var(--accent)':'var(--ink-faint)'});
+    svg.innerHTML=g;
+
+    var f=F(), d=HALF*Math.abs(Math.cos(th)), m=f*d;
+    $('#dm-io').textContent=num(+iIn.value,1)+' A'; $('#dm-no').textContent=nIn.value; $('#dm-bo').textContent=STR[+bIn.value];
+    $('#dm-sp').textContent=num(Math.abs(w)/(2*Math.PI),1)+' turns/s';
+    $('#dm-sf').textContent=(on&&c)?num(f,2)+' N':'0 N';
+    $('#dm-sm').textContent=(on&&c)?num(2*m,3)+' N m':'0 N m';
+    var rs=Math.cos(th)>=0?'A':'B';
+    $('#dm-eq').innerHTML=(on&&c)?FR('Side '+rs+' (on the right), by Fleming’s left-hand rule:<br>field to the '+(bd()>0?'right':'left')+', current '+(sc()>0?'out of':'into')+' the page, so force '+(sc()*bd()>0?'up':'down')+'<br>moment of one force = F × d<br>moment = '+num(f,2)+' × '+num(d,3)+' = '+num(m,4)+' N m<br>total moment = 2 × '+num(m,4)+' = <b>'+num(2*m,3)+' N m</b><br>d is the distance from the axle to the line of the force (biggest when the coil is flat).'):'Switch on to see the forces on the coil.';
+    var n, ac=Math.abs(Math.cos(th)), turn=tq>0?'anticlockwise':'clockwise';
+    if(!on) n='Press <b>Switch on</b>. Current flows round the coil through the brushes and split ring, and each side of the coil feels a force.';
+    else if(!c) n='The coil is upright: the brushes are on the gaps in the split ring, so no current flows for a moment. The coil’s momentum carries it past, then the current flows the other way round the coil.'+(Math.abs(w)<0.01?' (Stopped exactly here, a simple motor can\u2019t start by itself: Play gives it a small nudge.)':'');
+    else if(ac<0.3) n='The coil is nearly upright. The forces point almost through the axle, so the turning effect is small. The split ring is about to swap the current in the coil.';
+    else if(ac>0.92) n='The coil is flat. The forces are as far from the axle as they can be, so the turning effect is <b>biggest</b>.';
+    else n='The side on the right is pushed '+(sc()*bd()>0?'up':'down')+' and the side on the left is pushed '+(sc()*bd()>0?'down':'up')+', so the coil turns <b>'+turn+'</b>.';
+    if(on && !running && t>=TMAX) n+=' Paused: press Play to keep it turning.';
+    $('#dm-note').innerHTML=n;
+    playBtn.innerHTML=running?'&#10074;&#10074; Pause':(on?'&#9654; Play':'&#9654; Switch on');
+  }
+  function mark(v){ Array.prototype.forEach.call(pts.children,function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+  function rate(){ return pressed(slowBtn)?0.3:1; }
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function frame(now){ if(!running) return; var dt=Math.min(0.05,(now-last)/1000)*rate(); last=now;
+    step(dt); if(t>=TMAX){ stop(); } draw(); if(running) raf=requestAnimationFrame(frame); }
+  function run(){ on=true; if(t>=TMAX) t=0;
+    if(Math.abs(w)<0.01 && Math.abs(Math.cos(th))<0.05) th+=0.06*(sc()*bd());
+    running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); }
+  function reset(){ stop(); th=20*DEG; w=0; t=0; on=false; mark(''); draw(); }
+  function changed(){ stop(); w=0; t=0; draw(); }
+  function jump(v){ stop(); on=true; w=0; t=0; th={flat:0, upright:90*DEG, half:180*DEG}[v]; mark(v); draw(); }
+  playBtn.addEventListener('click',function(){ mark(''); if(running){ stop(); draw(); } else run(); });
+  $('#dm-step').addEventListener('click',function(){ stop(); on=true; mark(''); var dir=(sc()*bd())||1; w=0; th+=dir*45*DEG; th=Math.round(th/(45*DEG))*45*DEG; draw(); });
+  pts.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) jump(b.dataset.v); });
+  slowBtn.addEventListener('click',function(){ toggle(slowBtn); });
+  $('#dm-reset').addEventListener('click',reset);
+  watchEquals($('#dm-eq'));
+  reset();
+
+})();
+</script>
+</body>
+</html>

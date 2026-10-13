@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motor Effect Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#0f7a86;   --topic-soft:#d6f1f3;
+    --north:#d23b3b;   --north-soft:#fbdede;
+    --south:#2f62d6;   --south-soft:#dde7fb;
+    --copper:#b8651b;  --filing:#3b4352;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#4fd1dc; --topic-soft:#123236;
+      --north:#ff7a7a; --north-soft:#3d1a1a;
+      --south:#7da3ff; --south-soft:#1a2440;
+      --copper:#f0a35e; --filing:#c3cad6;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#4fd1dc; --topic-soft:#123236;
+    --north:#ff7a7a; --north-soft:#3d1a1a;
+    --south:#7da3ff; --south-soft:#1a2440;
+    --copper:#f0a35e; --filing:#c3cad6;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; controls, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view-wrap{position:relative;}
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 290px));touch-action:pan-y;}
+  .view-wrap canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .embed .view{max-height:460px;}
+  .under{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px;margin-top:12px;}
+  .under .btn-group{flex:0 1 auto;}
+  .sliders{flex:1 1 300px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px 20px;min-width:0;}
+  .view text{font-family:var(--font-mono);}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--accent);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+  .hint{font-size:12.5px;color:var(--ink-soft);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  .dragme{cursor:grab;}
+  .dragme:focus{outline:none;}
+  .dragme:focus-visible .focus-ring{stroke:var(--accent);stroke-width:3;}
+  @media (max-width:560px){ .stage{padding:12px;} .eq{font-size:12.5px;padding:6px 8px;} .note{font-size:14px;} }
+
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .hint{display:none;}
+
+  .fbar{display:block;height:10px;margin-top:5px;border-radius:5px;background:var(--bg);overflow:hidden;}
+  .fbar>span{display:block;height:100%;background:var(--accent);transform-origin:left center;transition:transform .25s ease-out;}
+  @media (prefers-reduced-motion: reduce){ .fbar>span{transition:none;} }
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  (function(){
+    if (/[?&]embed\b/.test(location.search) || window.self !== window.top) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; magnetism</div>
+    <h1>The Motor Effect and Fleming’s Left-Hand Rule</h1>
+  </header>
+  <section class="card stage">
+    <div>
+      <svg class="view" id="me-svg" viewBox="0 0 600 320" role="img" aria-label="A wire seen end-on between the poles of a magnet, with field lines and the three directions of Fleming's left-hand rule"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="me-go" type="button">&#9654; Switch on</button>
+          <button class="btn" id="me-comb" type="button" aria-pressed="false">Combined field</button>
+          <button class="btn" id="me-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="me-slow" type="button" aria-pressed="false">Slow motion</button>
+        </div>
+        <div class="sliders">
+          <div><label class="lab" for="me-i">Current <output id="me-io"></output></label><input type="range" id="me-i" min="1" max="3" step="0.5" value="2"></div>
+          <div><label class="lab" for="me-b">Magnet strength <output id="me-bo"></output></label><input type="range" id="me-b" min="1" max="3" step="1" value="2"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div>
+        <div class="lab">Magnet</div>
+        <div class="seg" id="me-mag"><button type="button" data-v="L" aria-pressed="true">N on the left</button><button type="button" data-v="R" aria-pressed="false">N on the right</button></div>
+      </div>
+      <div>
+        <div class="lab">Current in the wire</div>
+        <div class="seg" id="me-cur"><button type="button" data-v="in" aria-pressed="true">Into the page &otimes;</button><button type="button" data-v="out" aria-pressed="false">Out of the page &odot;</button></div>
+      </div>
+      <div>
+        <div class="lab">Your prediction</div>
+        <div class="seg" id="me-pred"><button type="button" data-v="up" aria-pressed="false">Moves up</button><button type="button" data-v="down" aria-pressed="false">Moves down</button><button type="button" data-v="none" aria-pressed="false">Doesn&rsquo;t move</button></div>
+      </div>
+      <p class="note" id="me-note" aria-live="polite"></p>
+      <div class="stats">
+        <div class="stat"><small>Current</small><strong id="me-si">0 A</strong></div>
+        <div class="stat"><small>Force size</small><strong id="me-sf">&ndash;</strong></div>
+        <div class="stat hi"><small>Force direction</small><strong id="me-sd">&ndash;</strong></div>
+      </div>
+      <details class="working">
+        <summary>Show Fleming&rsquo;s left-hand rule</summary>
+        <div class="eq" id="me-eq"></div>
+      </details>
+    </div>
+  </section>
+
+</div>
+<script>
+(function(){
+  // motor-effect.html is the one copy of this animation.
+  // With ?embed the page drops its heading so a workout tab can show it in a frame, and tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var wk = document.querySelector('details.working'); if(wk) wk.open = true;
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  function num(n, dp){   // round, drop trailing zeros, group thousands with a space from 10 000
+    var f = Math.pow(10, dp||0), r = Math.round(n*f)/f, t = String(Math.abs(r));
+    if(Math.abs(r)>=10000) t = t.replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    return (r<0?'−':'')+t;
+  }
+  function FR(t){
+    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1 ')
+      .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  function arrowHead(id, col){ return '<marker id="'+id+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+col+'"/></marker>'; }
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ if(!el) return; alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function toggle(b){ b.setAttribute('aria-pressed', String(!pressed(b))); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  // a pole of a magnet: coloured block with its letter
+  function poleRect(x,y,w,h,pole,fs){
+    var c = pole==='N' ? 'north' : 'south';
+    return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="var(--'+c+'-soft)" stroke="var(--'+c+')" stroke-width="2"/>'+
+      '<text x="'+(x+w/2)+'" y="'+(y+h/2+(fs||16)*0.36)+'" text-anchor="middle" font-size="'+(fs||16)+'" font-weight="600" fill="var(--'+c+')">'+pole+'</text>';
+  }
+  // a wire seen end-on: dot = current out of the page, cross = into the page
+  function wireEnd(x,y,r,dir,col){
+    var g='<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="var(--panel)" stroke="'+(col||'var(--copper)')+'" stroke-width="3"/>';
+    if(dir>0) g+='<circle cx="'+x+'" cy="'+y+'" r="'+(r*0.28)+'" fill="var(--ink)"/>';
+    else if(dir<0){ var d=r*0.55; g+='<path d="M'+(x-d)+','+(y-d)+' L'+(x+d)+','+(y+d)+' M'+(x+d)+','+(y-d)+' L'+(x-d)+','+(y+d)+'" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>'; }
+    return g;
+  }
+  function line(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+(w||2)+'"'+(extra||'')+'/>'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+x+'" y="'+y+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11.5)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  // pointer position in SVG user units
+  function svgPoint(svg, e){ var r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; return {x:vb.x+(e.clientX-r.left)/r.width*vb.width, y:vb.y+(e.clientY-r.top)/r.height*vb.height}; }
+
+  var svg=$('#me-svg'), goBtn=$('#me-go'), combBtn=$('#me-comb'), slowBtn=$('#me-slow'), iIn=$('#me-i'), bIn=$('#me-b');
+  var XW=200, YW=160, DMAX=72, t=0, d=0, on=false, running=false, finished=false, raf=0, last=0;
+  var mag=segGroup($('#me-mag'), changed), cur=segGroup($('#me-cur'), changed), pred=segGroup($('#me-pred'), function(){ draw(); });
+  iIn.addEventListener('input', changed); bIn.addEventListener('input', changed);
+
+  function bdir(){ return mag.value()==='L' ? 1 : -1; }             // field points from N to S: +1 = to the right
+  function cdir(){ return cur.value()==='out' ? 1 : -1; }           // +1 = out of the page
+  function I(){ return +iIn.value; } function B(){ return +bIn.value; }
+  function fup(){ return cdir()*bdir(); }                           // F = I L x B: out-of-page current in a rightward field is pushed up
+  function fsize(){ return I()*B(); }
+  var STR=['','weak','medium','strong'];
+
+  // total field at an SVG point (physics y is up), for the combined-field picture
+  function field(X,Y){
+    var bx=bdir()*B()*0.9, by=0;
+    if(on){ var rx=X-XW, ry=-(Y-(YW+d)), r2=rx*rx+ry*ry+30, k=I()*55*cdir(); bx+=k*(-ry)/r2; by+=k*rx/r2; }
+    return [bx,-by];
+  }
+  function trace(x,y){
+    var pts=[[x,y]];
+    for(var i=0;i<260;i++){
+      var b=field(x,y), l=Math.hypot(b[0],b[1]); if(l<1e-6) break;
+      x+=b[0]/l*2; y+=b[1]/l*2; pts.push([x,y]);
+      if(x<112||x>288||y<62||y>258) break;
+    }
+    return pts;
+  }
+
+  function draw(){
+    var g='<defs>'+arrowHead('me-fa','var(--topic)')+arrowHead('me-ff','var(--accent)')+arrowHead('me-fc','var(--copper)')+arrowHead('me-fi','var(--ink)')+'</defs>';
+    var nl=mag.value()==='L';
+    g+=poleRect(20,62,90,196,nl?'N':'S',30)+poleRect(290,62,90,196,nl?'S':'N',30);
+    // the field lines
+    if(pressed(combBtn) && on){
+      var x0=bdir()>0?113:287;
+      for(var y=74;y<=246;y+=12){ var p=trace(x0,y); g+='<polyline points="'+p.map(function(q){return q[0].toFixed(1)+','+q[1].toFixed(1);}).join(' ')+'" fill="none" stroke="var(--topic)" stroke-width="1.5"/>'; }
+    } else {
+      for(var yy=80;yy<=240;yy+=20){ var a=bdir()>0?[112,288]:[288,112];
+        g+=line(a[0],yy,a[1],yy,'var(--topic)',1.5);
+        g+=line(a[0]+(a[1]-a[0])*0.22,yy,a[0]+(a[1]-a[0])*0.26,yy,'var(--topic)',2,' marker-end="url(#me-fa)"');
+        g+=line(a[0]+(a[1]-a[0])*0.76,yy,a[0]+(a[1]-a[0])*0.80,yy,'var(--topic)',2,' marker-end="url(#me-fa)"');
+      }
+      if(on){ for(var r=26;r<=50;r+=12){ g+='<circle cx="'+XW+'" cy="'+(YW+d)+'" r="'+r+'" fill="none" stroke="var(--copper)" stroke-width="1.3" stroke-dasharray="4 4" opacity="0.8"/>';
+        // arrow on the wire's own field: anticlockwise for current out of the page
+        var sx=XW+r, sy=YW+d; g+=line(sx,sy+3*cdir(),sx,sy-3*cdir(),'var(--copper)',1.6,' marker-end="url(#me-fc)"'); } }
+    }
+    g+='<rect x="'+(XW-24)+'" y="'+(YW-DMAX-24)+'" width="48" height="'+(2*DMAX+48)+'" rx="24" fill="none" stroke="var(--panel-border)" stroke-dasharray="3 5"/>';
+    g+=wireEnd(XW,YW+d,15,on?cdir():0);
+    if(on){ var L=14+fsize()*6.5; g+=line(XW+30,YW+d,XW+30,YW+d-fup()*L,'var(--accent)',4,' marker-end="url(#me-ff)"')+txt(XW+38,YW+d-fup()*L*0.6+4,'force',{c:'var(--accent)',w:600}); }
+    g+=txt(200,300,'the wire, seen end-on',{a:'middle'});
+    // Fleming's left-hand rule: field, current and force at right angles
+    var ox=505, oy=168;
+    g+=txt(505,30,'Fleming’s left-hand rule',{a:'middle',c:'var(--ink)',w:600,fs:12.5});
+    g+='<circle cx="'+ox+'" cy="'+oy+'" r="4" fill="var(--ink-soft)"/>';
+    var fl=bdir()>0 ? {x:ox+10,y:oy+20,a:'start'} : {x:ox-10,y:oy-24,a:'end'};
+    g+=line(ox,oy,ox+bdir()*62,oy,'var(--topic)',4,' marker-end="url(#me-fa)"')+txt(fl.x,fl.y,'first finger:',{a:fl.a,c:'var(--topic)',fs:10.5})+txt(fl.x,fl.y+13,'field',{a:fl.a,c:'var(--topic)',fs:11.5,w:600});
+    var zx=-44*cdir(), zy=36*cdir();   // out of the page drawn towards the viewer (down and left)
+    var cl=cdir()>0 ? {x:ox+zx-6,y:oy+zy+18,a:'start'} : {x:ox+zx+8,y:oy+zy+2,a:'start'};
+    g+=line(ox,oy,ox+zx,oy+zy,on?'var(--copper)':'var(--ink-faint)',4,' marker-end="url(#me-fc)"')+txt(cl.x,cl.y,'second finger:',{a:cl.a,c:'var(--copper)',fs:10.5})+txt(cl.x,cl.y+13,'current',{a:cl.a,c:'var(--copper)',fs:11.5,w:600});
+    if(on){ g+=line(ox,oy,ox,oy-fup()*62,'var(--accent)',4,' marker-end="url(#me-ff)"')+txt(ox+8,oy-fup()*62+(fup()>0?6:4),'thumb: force',{c:'var(--accent)',fs:10.5,w:600}); }
+    else g+=txt(ox,oy-80,'thumb: force (switch on)',{a:'middle',c:'var(--ink-faint)',fs:10.5});
+    svg.innerHTML=g;
+
+    $('#me-io').textContent=num(I(),1)+' A'; $('#me-bo').textContent=STR[B()];
+    $('#me-si').textContent=on?num(I(),1)+' A':'0 A';
+    $('#me-sf').innerHTML=on?'<span class="fbar"><span style="transform:scaleX('+(fsize()/9).toFixed(3)+')"></span></span>':'–';
+    $('#me-sd').textContent=on?(fup()>0?'up':'down'):'–';
+    $('#me-eq').innerHTML='First finger (field): N to S, to the '+(bdir()>0?'right':'left')+'<br>Second finger (current): '+(cdir()>0?'out of':'into')+' the page<br>Thumb (force): <b>'+(fup()>0?'up':'down')+'</b>';
+    var p=pred.value(), n;
+    if(!on) n='Choose the magnet and the current, predict which way the wire will move, then <b>switch on</b>.';
+    else if(running) n=pressed(combBtn)?'The wire’s own circular field adds to the magnet’s field on one side and cancels it on the other. The wire is pushed out of the stronger field towards the weaker one.':'The current makes a magnetic field around the wire. This interacts with the magnet’s field, so there is a force on the wire.';
+    else { var dir=fup()>0?'up':'down';
+      n='The wire moved <b>'+dir+'</b>. '+(p? (p===dir?'Your prediction was right. ':(p==='none'?'It does move: a current at right angles to a magnetic field always feels a force. ':'You predicted '+p+': check with Fleming’s left-hand rule. ')) : '')+'Reverse the current or the magnet and the force reverses; a bigger current or a stronger magnet gives a bigger force.'; }
+    $('#me-note').innerHTML=n;
+    goBtn.disabled=running||finished;
+    Array.prototype.forEach.call($('#me-pred').children,function(b){ b.disabled=on; });
+  }
+  function rate(){ return pressed(slowBtn)?0.3:1; }
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function frame(now){ if(!running) return; t+=Math.min(0.05,(now-last)/1000)*rate(); last=now;
+    var A=fsize()*28;                              // bigger force, bigger acceleration
+    d=Math.min(DMAX,0.5*A*t*t)*-fup();
+    if(Math.abs(d)>=DMAX){ stop(); finished=true; }
+    draw(); if(running) raf=requestAnimationFrame(frame); }
+  function go(){ if(running||finished) return; on=true; t=0; d=0; running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); }
+  function reset(){ stop(); on=false; finished=false; t=0; d=0; draw(); }
+  function changed(){ reset(); }
+  goBtn.addEventListener('click',go);
+  combBtn.addEventListener('click',function(){ toggle(combBtn); draw(); });
+  slowBtn.addEventListener('click',function(){ toggle(slowBtn); });
+  $('#me-reset').addEventListener('click',reset);
+  watchEquals($('#me-eq'));
+  reset();
+
+})();
+</script>
+</body>
+</html>
