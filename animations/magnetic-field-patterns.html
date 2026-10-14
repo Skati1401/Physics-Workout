@@ -307,8 +307,19 @@
       // still show going into the S pole. A backward line that reaches a magnet is already drawn from its N end.
       [true,false].forEach(function(isN){
         var atLeft=(m.left==='N')===isN, fx=atLeft?m.x-2:m.x+m.w+2, starts=[], k;
-        var nf=close?(big?17:11):(big?9:5), ne=close?(big?3:2):(big?5:3), half=m.w*0.4;
-        for(k=0;k<nf;k++) starts.push([fx, m.y+m.h*(k+0.5)/nf]);
+        // side lines start near the ends only, so their loops stay well away from the magnet
+        var nf=close?(big?15:9):(big?9:5), ne=close?0:(big?3:2), half=m.w*0.22;
+        for(k=0;k<nf;k++){
+          var yy=m.y+m.h*(k+0.5)/nf;
+          // close unlike poles: the gap is a uniform field, so its lines are drawn straight across;
+          // only the outermost one (two when stronger) is traced, to show the curve at the edges
+          if(close && isN && fx>W/2-80 && fx<W/2 && k>=(big?2:1) && k<nf-(big?2:1)){
+            var gx=fx, gEnd=SETUPS[setup].mags[1].x-2, line=[];
+            for(; gx<=gEnd; gx+=3) line.push([gx,yy]);
+            fieldLines.push(line); continue;
+          }
+          starts.push([fx, yy]);
+        }
         for(k=0;k<ne;k++){ var xx=atLeft? m.x+half*(k+0.5)/ne : m.x+m.w-half*(k+0.5)/ne; starts.push([xx,m.y-2]); starts.push([xx,m.y+m.h+2]); }
         starts.forEach(function(s){
           var p=trace(s[0],s[1],isN?1:-1); if(p.length<=4) return;
