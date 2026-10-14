@@ -95,10 +95,13 @@
   /* picture on the left; controls, readings and working on the right */
   .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:18px 24px;align-items:start;padding:18px;}
   @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
-  .view-wrap{position:relative;}
-  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 290px));touch-action:pan-y;}
-  .view-wrap canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
-  .embed .view{max-height:460px;}
+  /* three pictures side by side: plan view, 3D view, Fleming's rule */
+  .views{display:grid;grid-template-columns:260fr 380fr 300fr;gap:10px;align-items:start;}
+  .views figure{margin:0;border:1px solid var(--panel-border);border-radius:10px;background:var(--panel);min-width:0;}
+  .views figcaption{font:600 12px var(--font-mono);color:var(--ink-soft);padding:6px 10px 0;}
+  .view{display:block;width:100%;height:auto;max-height:max(240px,calc(100vh - 320px));touch-action:pan-y;}
+  .embed .view{max-height:420px;}
+  @media (max-width:640px){ .views{grid-template-columns:1fr 1fr;} .views .v3d{grid-column:1/-1;grid-row:1;} }
   .under{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px;margin-top:12px;}
   .under .btn-group{flex:0 1 auto;}
   .sliders{flex:1 1 300px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px 20px;min-width:0;}
@@ -166,7 +169,11 @@
   </header>
   <section class="card stage">
     <div>
-      <svg class="view" id="me-svg" viewBox="0 0 600 320" role="img" aria-label="A wire seen end-on between the poles of a magnet, with field lines and the three directions of Fleming's left-hand rule"></svg>
+      <div class="views">
+        <figure><figcaption>2D: plan view from above</figcaption><svg class="view" id="me-plan" viewBox="0 0 260 300" role="img" aria-label="Plan view: the wire runs up the page between the poles of a magnet"></svg></figure>
+        <figure class="v3d"><figcaption>3D view</figcaption><svg class="view" id="me-3d" viewBox="0 0 380 300" role="img" aria-label="3D view of the wire between the poles of the magnet, showing which way it moves"></svg></figure>
+        <figure><figcaption>Fleming&rsquo;s left-hand rule</figcaption><svg class="view" id="me-hand" viewBox="0 0 300 300" role="img" aria-label="Thumb, first finger and second finger at right angles: motion, field and current"></svg></figure>
+      </div>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="me-go" type="button">&#9654; Switch on</button>
@@ -187,17 +194,17 @@
       </div>
       <div>
         <div class="lab">Current in the wire</div>
-        <div class="seg" id="me-cur"><button type="button" data-v="in" aria-pressed="true">Into the page &otimes;</button><button type="button" data-v="out" aria-pressed="false">Out of the page &odot;</button></div>
+        <div class="seg" id="me-cur"><button type="button" data-v="up" aria-pressed="true">Up the page &uarr;</button><button type="button" data-v="down" aria-pressed="false">Down the page &darr;</button></div>
       </div>
       <div>
         <div class="lab">Your prediction</div>
-        <div class="seg" id="me-pred"><button type="button" data-v="up" aria-pressed="false">Moves up</button><button type="button" data-v="down" aria-pressed="false">Moves down</button><button type="button" data-v="none" aria-pressed="false">Doesn&rsquo;t move</button></div>
+        <div class="seg" id="me-pred"><button type="button" data-v="up" aria-pressed="false">Moves up &odot;</button><button type="button" data-v="down" aria-pressed="false">Moves down &otimes;</button><button type="button" data-v="none" aria-pressed="false">Doesn&rsquo;t move</button></div>
       </div>
       <p class="note" id="me-note" aria-live="polite"></p>
       <div class="stats">
         <div class="stat"><small>Current</small><strong id="me-si">0 A</strong></div>
         <div class="stat"><small>Force size</small><strong id="me-sf">&ndash;</strong></div>
-        <div class="stat hi"><small>Force direction</small><strong id="me-sd">&ndash;</strong></div>
+        <div class="stat hi"><small>Motion</small><strong id="me-sd">&ndash;</strong></div>
       </div>
       <details class="working">
         <summary>Show Fleming&rsquo;s left-hand rule</summary>
@@ -268,79 +275,141 @@
   // pointer position in SVG user units
   function svgPoint(svg, e){ var r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; return {x:vb.x+(e.clientX-r.left)/r.width*vb.width, y:vb.y+(e.clientY-r.top)/r.height*vb.height}; }
 
-  var svg=$('#me-svg'), goBtn=$('#me-go'), combBtn=$('#me-comb'), slowBtn=$('#me-slow'), iIn=$('#me-i'), bIn=$('#me-b');
-  var XW=200, YW=160, DMAX=72, t=0, d=0, on=false, running=false, finished=false, raf=0, last=0;
+  var plan=$('#me-plan'), v3=$('#me-3d'), hand=$('#me-hand'), goBtn=$('#me-go'), combBtn=$('#me-comb'), slowBtn=$('#me-slow'), iIn=$('#me-i'), bIn=$('#me-b');
+  // world axes: X to the right (across the gap), Y away from you (up the page in the plan view), Z up
+  var GAP=52, POLE=62, HA=50, HZ=50, WL=125, DMAX=40, t=0, d=0, on=false, running=false, finished=false, raf=0, last=0;
   var mag=segGroup($('#me-mag'), changed), cur=segGroup($('#me-cur'), changed), pred=segGroup($('#me-pred'), function(){ draw(); });
   iIn.addEventListener('input', changed); bIn.addEventListener('input', changed);
 
   function bdir(){ return mag.value()==='L' ? 1 : -1; }             // field points from N to S: +1 = to the right
-  function cdir(){ return cur.value()==='out' ? 1 : -1; }           // +1 = out of the page
+  function cdir(){ return cur.value()==='up' ? 1 : -1; }            // +1 = up the page in the plan (away from you in 3D)
   function I(){ return +iIn.value; } function B(){ return +bIn.value; }
-  function fup(){ return cdir()*bdir(); }                           // F = I L x B: out-of-page current in a rightward field is pushed up
+  function fup(){ return -cdir()*bdir(); }                          // F = I L x B: y x x = -z, so current away in a rightward field is pushed down
   function fsize(){ return I()*B(); }
   var STR=['','weak','medium','strong'];
 
-  // total field at an SVG point (physics y is up), for the combined-field picture
-  function field(X,Y){
-    var bx=bdir()*B()*0.9, by=0;
-    if(on){ var rx=X-XW, ry=-(Y-(YW+d)), r2=rx*rx+ry*ry+30, k=I()*55*cdir(); bx+=k*(-ry)/r2; by+=k*rx/r2; }
-    return [bx,-by];
+  // one camera for the 3D view and the hand: a true (orthographic) view from the front left and above
+  var TH=28*Math.PI/180, PH=26*Math.PI/180, CT=Math.cos(TH), ST=Math.sin(TH), CP=Math.cos(PH), SP=Math.sin(PH);
+  function proj(cx,cy,s){ return function(X,Y,Z){ var dep=-X*ST+Y*CT; return [cx+s*(X*CT+Y*ST), cy+s*(-Z*CP-dep*SP)]; }; }
+  function pts(P,list){ return list.map(function(q){ var p=P(q[0],q[1],q[2]); return p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' '); }
+  function poly(P,list,fill,stroke,extra){ return '<polygon points="'+pts(P,list)+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.6" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function seg3(P,a,b,col,w,extra){ var p=P(a[0],a[1],a[2]), q=P(b[0],b[1],b[2]); return line(p[0].toFixed(1),p[1].toFixed(1),q[0].toFixed(1),q[1].toFixed(1),col,w,extra); }
+  // a pole block: visible faces are the top, the front (towards you) and the right-hand side
+  function block(P,x0,x1,pole,op){
+    var c=pole==='N'?'north':'south', f='var(--'+c+'-soft)', s='var(--'+c+')', o=op?' fill-opacity="'+op+'"':'';
+    var g=poly(P,[[x0,-HA,HZ],[x1,-HA,HZ],[x1,HA,HZ],[x0,HA,HZ]],f,s,o)+
+          poly(P,[[x0,-HA,-HZ],[x1,-HA,-HZ],[x1,-HA,HZ],[x0,-HA,HZ]],f,s,o)+
+          poly(P,[[x1,-HA,-HZ],[x1,HA,-HZ],[x1,HA,HZ],[x1,-HA,HZ]],f,s,(o||'')+' style="filter:brightness(0.93)"');
+    var tp=P((x0+x1)/2,0,HZ), fp=P((x0+x1)/2,-HA,0);
+    g+=txt(tp[0].toFixed(1),(tp[1]+6).toFixed(1),pole,{a:'middle',c:s,w:600,fs:17})+txt(fp[0].toFixed(1),(fp[1]+7).toFixed(1),pole,{a:'middle',c:s,w:600,fs:20});
+    return g;
   }
-  function trace(x,y){
-    var pts=[[x,y]];
-    for(var i=0;i<260;i++){
-      var b=field(x,y), l=Math.hypot(b[0],b[1]); if(l<1e-6) break;
-      x+=b[0]/l*2; y+=b[1]/l*2; pts.push([x,y]);
-      if(x<112||x>288||y<62||y>258) break;
+
+  // total field in the front face (X-Z plane), for the combined-field picture
+  function field(X,Z){
+    var bx=bdir()*B()*0.9, bz=0;
+    if(on){ var rx=X, rz=Z-d, r2=rx*rx+rz*rz+30, k=I()*32*cdir(); bx+=k*rz/r2; bz+=-k*rx/r2; }
+    return [bx,bz];
+  }
+  function trace(x,z){
+    var p=[[x,-HA,z]];
+    for(var i=0;i<240;i++){
+      var b=field(x,z), l=Math.hypot(b[0],b[1]); if(l<1e-6) break;
+      x+=b[0]/l*1.6; z+=b[1]/l*1.6; p.push([x,-HA,z]);
+      if(x<-GAP||x>GAP||z<-HZ||z>HZ) break;
     }
-    return pts;
+    return p;
+  }
+
+  function drawPlan(){
+    var g='<defs>'+arrowHead('me-pa','var(--topic)')+arrowHead('me-pc','var(--copper)')+'</defs>';
+    var cx=130, cy=150, nl=mag.value()==='L';
+    g+=poleRect(cx-GAP-POLE,cy-HA*1.1,POLE,HA*2.2,nl?'N':'S',22)+poleRect(cx+GAP,cy-HA*1.1,POLE,HA*2.2,nl?'S':'N',22);
+    for(var y=cy-44;y<=cy+44;y+=22){ var a=bdir()>0?[cx-GAP,cx+GAP]:[cx+GAP,cx-GAP];
+      g+=line(a[0],y,a[1],y,'var(--topic)',1.5);
+      g+=line(a[0]+(a[1]-a[0])*0.16,y,a[0]+(a[1]-a[0])*0.22,y,'var(--topic)',2,' marker-end="url(#me-pa)"');
+      g+=line(a[0]+(a[1]-a[0])*0.80,y,a[0]+(a[1]-a[0])*0.86,y,'var(--topic)',2,' marker-end="url(#me-pa)"');
+    }
+    // the wire runs up the page; it looks a little thicker as it rises towards you
+    var w=7+5*d/DMAX;
+    g+=line(cx,20,cx,284,'var(--ink)',w+3,' stroke-linecap="round"')+line(cx,20,cx,284,'var(--copper)',w,' stroke-linecap="round"');
+    if(on){ [52,248].forEach(function(y){ g+=line(cx-20,y+cdir()*12,cx-20,y-cdir()*12,'var(--copper)',2.5,' marker-end="url(#me-pc)"'); });
+      g+=txt(cx-26,40,'I',{a:'end',c:'var(--copper)',w:600,fs:13});
+      var r=8+fsize()*0.9;
+      [cy-26,cy+26].forEach(function(y){ g+=wireEnd(cx+24,y,r,fup(),'var(--accent)'); });
+      g+=txt(cx+24,cy+4,'F',{a:'middle',c:'var(--accent)',w:600,fs:12});
+      g+=txt(cx,296,fup()>0?'force out of the page ⊙':'force into the page ⊗',{a:'middle',c:'var(--accent)',w:600,fs:11});
+    } else g+=txt(cx,296,'wire runs up the page',{a:'middle',fs:11});
+    plan.innerHTML=g;
+  }
+
+  function draw3d(){
+    var P=proj(190,152,1.2);
+    var g='<defs>'+arrowHead('me-ta','var(--topic)')+arrowHead('me-tc','var(--copper)')+arrowHead('me-tf','var(--accent)')+'</defs>';
+    var nl=mag.value()==='L', comb=pressed(combBtn)&&on, x0=bdir()>0?-GAP:GAP;
+    g+=block(P,-GAP-POLE,-GAP,nl?'N':'S');
+    // the magnet's field lines across the gap (the back rows first)
+    function fieldRow(y,z){ var a=[x0,y,z], b=[-x0,y,z], m1=[x0*0.45,y,z], m2=[x0*0.25,y,z];
+      return seg3(P,a,b,'var(--topic)',1.3,' opacity="0.75"')+seg3(P,m1,m2,'var(--topic)',2,' marker-end="url(#me-ta)"'); }
+    if(!comb){ [HA*0.6,0].forEach(function(y){ [-30,0,30].forEach(function(z){ g+=fieldRow(y,z); }); }); }
+    // the wire, with arrows showing the current
+    var wb=[0,WL,d], wf=[0,-WL,d];
+    g+=seg3(P,wb,wf,'var(--ink)',10,' stroke-linecap="round"')+seg3(P,wb,wf,'var(--copper)',7,' stroke-linecap="round"');
+    if(on){ [-95,92].forEach(function(y){ g+=seg3(P,[0,y-cdir()*12,d+9],[0,y+cdir()*12,d+9],'var(--copper)',2.5,' marker-end="url(#me-tc)"'); });
+      var ti=P(0,-102,d+16); g+=txt(ti[0].toFixed(1),ti[1].toFixed(1),'I',{a:'end',c:'var(--copper)',w:600,fs:13}); }
+    if(comb){
+      g+='<polygon points="'+pts(P,[[-GAP,-HA,-HZ],[GAP,-HA,-HZ],[GAP,-HA,HZ],[-GAP,-HA,HZ]])+'" fill="var(--topic-soft)" fill-opacity="0.35" stroke="var(--topic)" stroke-dasharray="3 4" stroke-width="1"/>';
+      for(var z=-44;z<=44;z+=8){ g+='<polyline points="'+pts(P,trace(x0*0.98,z))+'" fill="none" stroke="var(--topic)" stroke-width="1.4"/>'; }
+    } else {
+      [-HA*0.6].forEach(function(y){ [-30,0,30].forEach(function(z){ g+=fieldRow(y,z); }); });
+      if(on){ for(var r=16;r<=34;r+=9){ var c=[]; for(var k=0;k<=48;k++){ var a=k/48*2*Math.PI; c.push([r*Math.cos(a),-HA,d+r*Math.sin(a)]); }
+        g+='<polyline points="'+pts(P,c)+'" fill="none" stroke="var(--copper)" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.85"/>';
+        // arrow on the wire's own field, from the right-hand grip rule
+        g+=seg3(P,[-3*cdir(),-HA,d+r],[3*cdir(),-HA,d+r],'var(--copper)',1.6,' marker-end="url(#me-tc)"'); } }
+    }
+    g+=block(P,GAP,GAP+POLE,nl?'S':'N',0.82);
+    if(on){ var L=16+fsize()*4.5, a0=P(0,-HA-20,d), a1=P(0,-HA-20,d+fup()*L);
+      g+=line(a0[0].toFixed(1),a0[1].toFixed(1),a1[0].toFixed(1),a1[1].toFixed(1),'var(--accent)',4.5,' marker-end="url(#me-tf)"');
+      g+=txt((a1[0]+8).toFixed(1),(a1[1]+(fup()>0?8:4)).toFixed(1),'force',{a:'start',c:'var(--accent)',w:600}); }
+    v3.innerHTML=g;
+  }
+
+  function drawHand(){
+    var P=proj(150,165,1.0), Lx=88, HW=300;
+    var g='<defs>'+arrowHead('me-ha','var(--topic)')+arrowHead('me-hc','var(--copper)')+arrowHead('me-hf','var(--accent)')+'</defs>';
+    var bx=bdir(), cy=cdir(), fz=fup();
+    // a faint floor and wall so the three directions read as 3D, with right-angle marks
+    g+=poly(P,[[0,0,0],[bx*Lx,0,0],[bx*Lx,cy*Lx,0],[0,cy*Lx,0]],'var(--topic-soft)','var(--panel-border)',' fill-opacity="0.55"');
+    if(on) g+=poly(P,[[0,0,0],[bx*Lx*0.55,0,0],[bx*Lx*0.55,0,fz*Lx*0.55],[0,0,fz*Lx*0.55]],'var(--accent-soft)','var(--panel-border)',' fill-opacity="0.6"');
+    var q=12; g+='<polyline points="'+pts(P,[[bx*q,0,0],[bx*q,cy*q,0],[0,cy*q,0]])+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.3"/>';
+    if(on) g+='<polyline points="'+pts(P,[[bx*q,0,0],[bx*q,0,fz*q],[0,0,fz*q]])+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.3"/>';
+    function ax(v,col,mk,l1,l2){
+      var o=P(0,0,0), e=P(v[0],v[1],v[2]), dx=e[0]-o[0], dy=e[1]-o[1], n=Math.hypot(dx,dy)||1, lx=e[0]+dx/n*14, ly=e[1]+dy/n*14;
+      var an=dx>8?'start':(dx<-8?'end':'middle'), y0=ly+(dy>8?8:(dy<-8?-12:0)), tw=Math.max(l1.length*6.4,l2.length*7.8);
+      if(an==='start') lx=Math.min(lx,HW-4-tw); else if(an==='end') lx=Math.max(lx,4+tw); else lx=Math.min(Math.max(lx,4+tw/2),HW-4-tw/2);
+      return line(o[0].toFixed(1),o[1].toFixed(1),e[0].toFixed(1),e[1].toFixed(1),col,5,' stroke-linecap="round" marker-end="url(#'+mk+')"')+
+        txt(lx.toFixed(1),y0.toFixed(1),l1,{a:an,c:col,fs:10.5})+txt(lx.toFixed(1),(y0+13).toFixed(1),l2,{a:an,c:col,fs:12.5,w:600});
+    }
+    g+=ax([bx*Lx,0,0],'var(--topic)','me-ha','First finger','Field');
+    g+=ax([0,cy*Lx*1.35,0],on?'var(--copper)':'var(--ink-faint)','me-hc','Second finger','Current');
+    if(on) g+=ax([0,0,fz*Lx],'var(--accent)','me-hf','Thumb','Motion');
+    else { var tp=P(0,0,Lx); g+=txt(tp[0].toFixed(1),(tp[1]-6).toFixed(1),'Thumb: Motion',{a:'middle',c:'var(--ink-faint)',fs:11})+txt(tp[0].toFixed(1),(tp[1]+8).toFixed(1),'(switch on)',{a:'middle',c:'var(--ink-faint)',fs:10.5}); }
+    g+='<circle cx="150" cy="165" r="4" fill="var(--ink-soft)"/>';
+    hand.innerHTML=g;
   }
 
   function draw(){
-    var g='<defs>'+arrowHead('me-fa','var(--topic)')+arrowHead('me-ff','var(--accent)')+arrowHead('me-fc','var(--copper)')+arrowHead('me-fi','var(--ink)')+'</defs>';
-    var nl=mag.value()==='L';
-    g+=poleRect(20,62,90,196,nl?'N':'S',30)+poleRect(290,62,90,196,nl?'S':'N',30);
-    // the field lines
-    if(pressed(combBtn) && on){
-      var x0=bdir()>0?113:287;
-      for(var y=74;y<=246;y+=12){ var p=trace(x0,y); g+='<polyline points="'+p.map(function(q){return q[0].toFixed(1)+','+q[1].toFixed(1);}).join(' ')+'" fill="none" stroke="var(--topic)" stroke-width="1.5"/>'; }
-    } else {
-      for(var yy=80;yy<=240;yy+=20){ var a=bdir()>0?[112,288]:[288,112];
-        g+=line(a[0],yy,a[1],yy,'var(--topic)',1.5);
-        g+=line(a[0]+(a[1]-a[0])*0.22,yy,a[0]+(a[1]-a[0])*0.26,yy,'var(--topic)',2,' marker-end="url(#me-fa)"');
-        g+=line(a[0]+(a[1]-a[0])*0.76,yy,a[0]+(a[1]-a[0])*0.80,yy,'var(--topic)',2,' marker-end="url(#me-fa)"');
-      }
-      if(on){ for(var r=26;r<=50;r+=12){ g+='<circle cx="'+XW+'" cy="'+(YW+d)+'" r="'+r+'" fill="none" stroke="var(--copper)" stroke-width="1.3" stroke-dasharray="4 4" opacity="0.8"/>';
-        // arrow on the wire's own field: anticlockwise for current out of the page
-        var sx=XW+r, sy=YW+d; g+=line(sx,sy+3*cdir(),sx,sy-3*cdir(),'var(--copper)',1.6,' marker-end="url(#me-fc)"'); } }
-    }
-    g+='<rect x="'+(XW-24)+'" y="'+(YW-DMAX-24)+'" width="48" height="'+(2*DMAX+48)+'" rx="24" fill="none" stroke="var(--panel-border)" stroke-dasharray="3 5"/>';
-    g+=wireEnd(XW,YW+d,15,on?cdir():0);
-    if(on){ var L=14+fsize()*6.5; g+=line(XW+30,YW+d,XW+30,YW+d-fup()*L,'var(--accent)',4,' marker-end="url(#me-ff)"')+txt(XW+38,YW+d-fup()*L*0.6+4,'force',{c:'var(--accent)',w:600}); }
-    g+=txt(200,300,'the wire, seen end-on',{a:'middle'});
-    // Fleming's left-hand rule: field, current and force at right angles
-    var ox=505, oy=168;
-    g+=txt(505,30,'Fleming’s left-hand rule',{a:'middle',c:'var(--ink)',w:600,fs:12.5});
-    g+='<circle cx="'+ox+'" cy="'+oy+'" r="4" fill="var(--ink-soft)"/>';
-    var fl=bdir()>0 ? {x:ox+10,y:oy+20,a:'start'} : {x:ox-10,y:oy-24,a:'end'};
-    g+=line(ox,oy,ox+bdir()*62,oy,'var(--topic)',4,' marker-end="url(#me-fa)"')+txt(fl.x,fl.y,'first finger:',{a:fl.a,c:'var(--topic)',fs:10.5})+txt(fl.x,fl.y+13,'field',{a:fl.a,c:'var(--topic)',fs:11.5,w:600});
-    var zx=-44*cdir(), zy=36*cdir();   // out of the page drawn towards the viewer (down and left)
-    var cl=cdir()>0 ? {x:ox+zx-6,y:oy+zy+18,a:'start'} : {x:ox+zx+8,y:oy+zy+2,a:'start'};
-    g+=line(ox,oy,ox+zx,oy+zy,on?'var(--copper)':'var(--ink-faint)',4,' marker-end="url(#me-fc)"')+txt(cl.x,cl.y,'second finger:',{a:cl.a,c:'var(--copper)',fs:10.5})+txt(cl.x,cl.y+13,'current',{a:cl.a,c:'var(--copper)',fs:11.5,w:600});
-    if(on){ g+=line(ox,oy,ox,oy-fup()*62,'var(--accent)',4,' marker-end="url(#me-ff)"')+txt(ox+8,oy-fup()*62+(fup()>0?6:4),'thumb: force',{c:'var(--accent)',fs:10.5,w:600}); }
-    else g+=txt(ox,oy-80,'thumb: force (switch on)',{a:'middle',c:'var(--ink-faint)',fs:10.5});
-    svg.innerHTML=g;
-
+    drawPlan(); draw3d(); drawHand();
     $('#me-io').textContent=num(I(),1)+' A'; $('#me-bo').textContent=STR[B()];
     $('#me-si').textContent=on?num(I(),1)+' A':'0 A';
     $('#me-sf').innerHTML=on?'<span class="fbar"><span style="transform:scaleX('+(fsize()/9).toFixed(3)+')"></span></span>':'–';
     $('#me-sd').textContent=on?(fup()>0?'up':'down'):'–';
-    $('#me-eq').innerHTML='First finger (field): N to S, to the '+(bdir()>0?'right':'left')+'<br>Second finger (current): '+(cdir()>0?'out of':'into')+' the page<br>Thumb (force): <b>'+(fup()>0?'up':'down')+'</b>';
+    $('#me-eq').innerHTML='First finger (Field): N to S, to the '+(bdir()>0?'right':'left')+'<br>Second finger (Current): '+(cdir()>0?'up the page, away from you':'down the page, towards you')+'<br>Thumb (Motion): <b>'+(fup()>0?'up, out of the page':'down, into the page')+'</b>';
     var p=pred.value(), n;
     if(!on) n='Choose the magnet and the current, predict which way the wire will move, then <b>switch on</b>.';
     else if(running) n=pressed(combBtn)?'The wire’s own circular field adds to the magnet’s field on one side and cancels it on the other. The wire is pushed out of the stronger field towards the weaker one.':'The current makes a magnetic field around the wire. This interacts with the magnet’s field, so there is a force on the wire.';
     else { var dir=fup()>0?'up':'down';
-      n='The wire moved <b>'+dir+'</b>. '+(p? (p===dir?'Your prediction was right. ':(p==='none'?'It does move: a current at right angles to a magnetic field always feels a force. ':'You predicted '+p+': check with Fleming’s left-hand rule. ')) : '')+'Reverse the current or the magnet and the force reverses; a bigger current or a stronger magnet gives a bigger force.'; }
+      n='The wire moved <b>'+dir+'</b> ('+(fup()>0?'out of':'into')+' the page in the plan view). '+(p? (p===dir?'Your prediction was right. ':(p==='none'?'It does move: a current at right angles to a magnetic field always feels a force. ':'You predicted '+p+': check with Fleming’s left-hand rule. ')) : '')+'Reverse the current or the magnet and the force reverses; a bigger current or a stronger magnet gives a bigger force.'; }
     $('#me-note').innerHTML=n;
     goBtn.disabled=running||finished;
     Array.prototype.forEach.call($('#me-pred').children,function(b){ b.disabled=on; });
@@ -348,8 +417,8 @@
   function rate(){ return pressed(slowBtn)?0.3:1; }
   function stop(){ running=false; cancelAnimationFrame(raf); }
   function frame(now){ if(!running) return; t+=Math.min(0.05,(now-last)/1000)*rate(); last=now;
-    var A=fsize()*28;                              // bigger force, bigger acceleration
-    d=Math.min(DMAX,0.5*A*t*t)*-fup();
+    var A=fsize()*24;                              // bigger force, bigger acceleration
+    d=Math.min(DMAX,0.5*A*t*t)*fup();
     if(Math.abs(d)>=DMAX){ stop(); finished=true; }
     draw(); if(running) raf=requestAnimationFrame(frame); }
   function go(){ if(running||finished) return; on=true; t=0; d=0; running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); }
