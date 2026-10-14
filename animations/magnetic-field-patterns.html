@@ -173,7 +173,7 @@
           <button class="btn" id="fp-lines" type="button" aria-pressed="false">Field lines</button>
           <button class="btn" id="fp-compass" type="button" aria-pressed="false">Plotting compass</button>
           <button class="btn" id="fp-reset" type="button">&#8634; Reset</button>
-          <button class="btn" id="fp-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="fp-strong" type="button" aria-pressed="false">Stronger magnets</button>
         </div>
       </div>
       <p class="hint" style="margin-top:8px">Drag the compass around the magnets (or select it and use the arrow keys).</p>
@@ -256,20 +256,20 @@
   var W=560, H=340;
   var base=$('#fp-svg'), top=$('#fp-top'), cv=$('#fp-canvas'), wrap=$('#fp-wrap');
   top.style.height='100%';
-  var slowBtn=$('#fp-slow'), linesBtn=$('#fp-lines'), compBtn=$('#fp-compass'), goBtn=$('#fp-go');
+  var strongBtn=$('#fp-strong'), linesBtn=$('#fp-lines'), compBtn=$('#fp-compass'), goBtn=$('#fp-go');
 
   // Each magnet: box, and which pole is on its left. Poles are modelled as rows of point poles across each end face.
   var SETUPS={
     bar:   {mags:[{x:190,y:150,w:180,h:40,left:'N'}], neutral:null,
             text:'Field lines leave the <b>north</b> pole and loop round to the <b>south</b> pole. They are closest together at the poles, where the field is <b>strongest</b>, and spread out further away, where it is weaker.'},
-    like:  {mags:[{x:20,y:150,w:160,h:40,left:'S'},{x:380,y:150,w:160,h:40,left:'N'}], neutral:[280,170],
-            text:'Two north poles facing: like poles <b>repel</b>. The field lines from the two poles push away from each other and never join, leaving a <b>neutral point</b> in the middle where the field is zero.'},
-    unlike:{mags:[{x:20,y:150,w:160,h:40,left:'S'},{x:380,y:150,w:160,h:40,left:'S'}], neutral:null,
-            text:'North facing south: unlike poles <b>attract</b>. Field lines go straight across the gap from the N pole to the S pole.'},
-    close: {mags:[{x:40,y:95,w:170,h:150,left:'S'},{x:350,y:95,w:170,h:150,left:'S'}], neutral:null,
-            text:'Between two large unlike poles close together, the lines are <b>straight, parallel and evenly spaced</b>: a <b>uniform field</b>, the same strength and direction everywhere in the gap. The field only curves near the edges.'}
+    like:  {mags:[{x:50,y:150,w:130,h:40,left:'S'},{x:380,y:150,w:130,h:40,left:'N'}], neutral:[280,170],
+            text:'Two north poles facing: like poles <b>repel</b>. The field lines from the two poles push away from each other and never join, leaving a <b>neutral point</b> in the middle where the field is zero. Lines still go into the <b>south</b> pole at each outer end.'},
+    unlike:{mags:[{x:50,y:150,w:130,h:40,left:'S'},{x:380,y:150,w:130,h:40,left:'S'}], neutral:null,
+            text:'North facing south: unlike poles <b>attract</b>. Field lines go across the gap from the N pole to the S pole, and also come out of the N pole and go into the S pole at the <b>outer ends</b>.'},
+    close: {mags:[{x:80,y:60,w:160,h:220,left:'S'},{x:320,y:60,w:160,h:220,left:'S'}], neutral:null,
+            text:'Between two large unlike poles close together, the lines are <b>straight, parallel and evenly spaced</b>: a <b>uniform field</b>, the same strength and direction everywhere in the gap. The lines only curve at the <b>edges</b> of the gap.'}
   };
-  var setup='bar', poles=[], fieldLines=[], filings=[], t=0, running=false, done=false, raf=0, last=0, comp={x:280,y:70};
+  var setup='bar', strength=1, poles=[], fieldLines=[], filings=[], t=0, running=false, done=false, raf=0, last=0, comp={x:280,y:70};
 
   function makePoles(){
     poles=[];
@@ -285,11 +285,11 @@
   function field(x,y){
     var bx=0, by=0;
     for(var i=0;i<poles.length;i++){ var p=poles[i], dx=x-p.x, dy=y-p.y, r2=dx*dx+dy*dy+4, r3=r2*Math.sqrt(r2); bx+=p.q*dx/r3; by+=p.q*dy/r3; }
-    return [bx,by];
+    return [bx*strength,by*strength];
   }
   function inMag(x,y,pad){ pad=pad||0; return SETUPS[setup].mags.some(function(m){ return x>m.x-pad && x<m.x+m.w+pad && y>m.y-pad && y<m.y+m.h+pad; }); }
-  function trace(x,y){
-    var pts=[[x,y]], ds=3;
+  function trace(x,y,dir){
+    var pts=[[x,y]], ds=3*(dir||1);
     for(var i=0;i<900;i++){
       var b=field(x,y), l=Math.hypot(b[0],b[1]); if(l<1e-12) break;
       var mx=x+b[0]/l*ds/2, my=y+b[1]/l*ds/2, b2=field(mx,my), l2=Math.hypot(b2[0],b2[1]); if(l2<1e-12) break;
@@ -300,13 +300,22 @@
   }
   function makeLines(){
     fieldLines=[];
+    var big=strength>1, close=setup==='close';
     SETUPS[setup].mags.forEach(function(m){
-      // start just outside the north half of each magnet: its end face, then its top and bottom edges
-      var nLeft=m.left==='N', fx=nLeft?m.x-2:m.x+m.w+2, starts=[], k, nf=setup==='close'?9:5;
-      for(k=0;k<nf;k++) starts.push([fx, m.y+m.h*(k+0.5)/nf]);
-      var half=setup==='close'?m.w*0.45:m.w*0.4, ne=setup==='close'?3:3;
-      for(k=0;k<ne;k++){ var xx=nLeft? m.x+half*(k+0.5)/ne : m.x+m.w-half*(k+0.5)/ne; starts.push([xx,m.y-2]); starts.push([xx,m.y+m.h+2]); }
-      starts.forEach(function(s){ var p=trace(s[0],s[1]); if(p.length>4) fieldLines.push(p); });
+      // Lines start just outside each end face and along the top and bottom of each half.
+      // From the N end they are traced along the field; from the S end, backwards, so lines that leave the picture
+      // still show going into the S pole. A backward line that reaches a magnet is already drawn from its N end.
+      [true,false].forEach(function(isN){
+        var atLeft=(m.left==='N')===isN, fx=atLeft?m.x-2:m.x+m.w+2, starts=[], k;
+        var nf=close?(big?17:11):(big?9:5), ne=close?(big?3:2):(big?5:3), half=m.w*0.4;
+        for(k=0;k<nf;k++) starts.push([fx, m.y+m.h*(k+0.5)/nf]);
+        for(k=0;k<ne;k++){ var xx=atLeft? m.x+half*(k+0.5)/ne : m.x+m.w-half*(k+0.5)/ne; starts.push([xx,m.y-2]); starts.push([xx,m.y+m.h+2]); }
+        starts.forEach(function(s){
+          var p=trace(s[0],s[1],isN?1:-1); if(p.length<=4) return;
+          if(!isN){ var e=p[p.length-1]; if(inMag(e[0],e[1])) return; p.reverse(); }
+          fieldLines.push(p);
+        });
+      });
     });
   }
   function makeFilings(){
@@ -315,7 +324,7 @@
       var x=6+Math.random()*(W-12), y=6+Math.random()*(H-12); if(inMag(x,y,5)) continue;
       var b=field(x,y), s=Math.hypot(b[0],b[1]);
       filings.push({x:x,y:y,a0:Math.random()*Math.PI,target:Math.atan2(b[1],b[0]),s:s,delay:Math.random()*0.5,jit:(Math.random()*2-1)});
-      strengths.push(s);
+      strengths.push(s/strength);   // judge against normal magnets, so stronger ones line the filings up better
     }
     strengths.sort(function(a,b){return a-b;}); var ref=strengths[Math.floor(strengths.length*0.35)]||1;
     filings.forEach(function(f){
@@ -336,7 +345,9 @@
     if(pressed(linesBtn)){
       fieldLines.forEach(function(p){
         g+='<polyline points="'+p.map(function(q){return q[0].toFixed(1)+','+q[1].toFixed(1);}).join(' ')+'" fill="none" stroke="var(--topic)" stroke-width="1.6" opacity="0.9"/>';
-        var i=Math.floor(p.length/2); if(i>0 && i<p.length-1){ var a=p[i-1], b=p[i+1];
+        // arrow halfway along the longest stretch of the line that is inside the picture
+        var run=0, best=0, bestEnd=-1; p.forEach(function(q,j){ if(q[0]>8&&q[0]<W-8&&q[1]>8&&q[1]<H-8){ run++; if(run>best){ best=run; bestEnd=j; } } else run=0; });
+        var i=bestEnd-Math.floor(best/2); if(best>2 && i>0 && i<p.length-1){ var a=p[i-1], b=p[i+1];
           g+='<line x1="'+a[0].toFixed(1)+'" y1="'+a[1].toFixed(1)+'" x2="'+b[0].toFixed(1)+'" y2="'+b[1].toFixed(1)+'" stroke="var(--topic)" stroke-width="2.4" marker-end="url(#fp-lh)"/>'; }
       });
       var nt=SETUPS[setup].neutral;
@@ -361,8 +372,8 @@
   var focusComp=false;
   function readings(){
     if(!pressed(compBtn)){ $('#fp-str').textContent='–'; $('#fp-dir').textContent='–'; return; }
-    var b=field(comp.x,comp.y), s=Math.hypot(b[0],b[1]), atPole=field(SETUPS[setup].mags[0].x-12, SETUPS[setup].mags[0].y+SETUPS[setup].mags[0].h/2), ref=Math.hypot(atPole[0],atPole[1]);
-    var r=s/ref, word = r>0.35?'strong':(r>0.08?'medium':(r>0.012?'weak':'almost zero'));
+    var b=field(comp.x,comp.y), s=Math.hypot(b[0],b[1]), atPole=field(SETUPS[setup].mags[0].x-12, SETUPS[setup].mags[0].y+SETUPS[setup].mags[0].h/2), ref=Math.hypot(atPole[0],atPole[1])/strength;
+    var r=s/ref, word = r>0.7?'very strong':(r>0.35?'strong':(r>0.08?'medium':(r>0.012?'weak':'almost zero')));
     $('#fp-str').textContent=word;
     var ang=Math.atan2(-b[1],b[0])*180/Math.PI, dirs=['right','up and right','up','up and left','left','down and left','down','down and right'];
     $('#fp-dir').textContent= r>0.004 ? dirs[((Math.round(ang/45)%8)+8)%8] : 'any way';
@@ -398,12 +409,11 @@
     if(!filings.length && !pressed(linesBtn)) s='Predict the pattern the iron filings will make, then press <b>Sprinkle filings</b>.';
     else if(running && t<0.9) s='The filings land on the card facing every way.';
     else if(running) s='Tapping the card lets each filing turn to line up with the magnetic field. Where the field is strong they line up quickly; far away they hardly move.';
-    else s=SETUPS[setup].text;
+    else s=SETUPS[setup].text+(strength>1?' <b>Stronger magnets</b>: the same pattern, but the field is stronger everywhere, so the lines are closer together and the filings line up further from the magnets.':'');
     $('#fp-note').innerHTML=s;
   }
-  function rate(){ return pressed(slowBtn)?0.3:1; }
   function stop(){ running=false; cancelAnimationFrame(raf); goBtn.innerHTML=filings.length?'&#9654; Sprinkle again':'&#9654; Sprinkle filings'; }
-  function frame(now){ if(!running) return; t+=Math.min(0.05,(now-last)/1000)*rate(); last=now;
+  function frame(now){ if(!running) return; t+=Math.min(0.05,(now-last)/1000); last=now;
     if(t>=TEND){ t=TEND; done=true; drawFilings(); stop(); note(); return; }
     drawFilings(); note(); raf=requestAnimationFrame(frame); }
   function sprinkle(){ stop(); makeFilings(); t=0; done=false; running=true; goBtn.innerHTML='Sprinkling…'; last=performance.now(); note(); raf=requestAnimationFrame(frame); }
@@ -435,7 +445,11 @@
   goBtn.addEventListener('click',sprinkle);
   linesBtn.addEventListener('click',function(){ toggle(linesBtn); drawTop(); note(); });
   compBtn.addEventListener('click',function(){ toggle(compBtn); drawTop(); });
-  slowBtn.addEventListener('click',function(){ toggle(slowBtn); });
+  strongBtn.addEventListener('click',function(){
+    toggle(strongBtn); strength=pressed(strongBtn)?2:1; makeLines();
+    if(filings.length) sprinkle(); else note();
+    drawTop();
+  });
   $('#fp-reset').addEventListener('click',reset);
   if(window.ResizeObserver) new ResizeObserver(fitCanvas).observe(wrap); else window.addEventListener('resize',fitCanvas);
   if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawFilings);
