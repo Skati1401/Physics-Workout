@@ -846,7 +846,7 @@ function createPredict(cfg){
   const opts=mk('div','pred-opts');host.appendChild(opts);
   const out=mk('div','pred-out');out.hidden=true;host.appendChild(out);
   const b=bar(host,[{label:'Try again',fn:reset}]);b.el.hidden=true;
-  let order;
+  let order,tries=0;
   function render(){
     opts.innerHTML='';
     order.forEach(i=>{
@@ -856,8 +856,18 @@ function createPredict(cfg){
       btn.dataset.i=i;opts.appendChild(btn);
     });
   }
+  // A first wrong answer lights up only that option and explains why it is wrong; the student tries again.
+  // The right answer is shown once they find it, or after a second wrong answer.
   function choose(i){
     const o=cfg.options[i];
+    if(!o.correct&&tries===0){
+      tries++;
+      const btn=$$('.pred-opt',opts).find(x=>+x.dataset.i===i);
+      btn.disabled=true;btn.classList.add('is-chosen','is-wrong');
+      out.innerHTML='<p><strong>Not quite.</strong> '+FR(o.why)+' Try another answer.</p>';
+      out.hidden=false;out.classList.remove('go');
+      return;
+    }
     $$('.pred-opt',opts).forEach(btn=>{
       btn.disabled=true;const k=cfg.options[btn.dataset.i];
       if(k.correct){btn.classList.add('is-right');if(+btn.dataset.i===i)btn.classList.add('pop');}
@@ -868,7 +878,7 @@ function createPredict(cfg){
     out.hidden=false;out.classList.remove('go');b.el.hidden=false;
     raf(()=>raf(()=>out.classList.add('go')));
   }
-  function reset(){order=shuffle(cfg.options.map((o,i)=>i));out.hidden=true;out.classList.remove('go');b.el.hidden=true;render();}
+  function reset(){tries=0;order=shuffle(cfg.options.map((o,i)=>i));out.hidden=true;out.classList.remove('go');b.el.hidden=true;render();}
   reset();
   return {reset:reset};
 }

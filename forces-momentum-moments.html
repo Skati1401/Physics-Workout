@@ -1440,24 +1440,29 @@
   /* ================= predict-then-reveal factory =================
      cfg: {id, el, scoreEl, questions:[{q, options:[{t, ok, why}]}]} */
   function createPredict(cfg){
-    var chosen, orders, fkey = null;
+    // A first wrong answer lights up only that option and explains why it is wrong; the student tries again.
+    // The right answer is shown once they find it, or after a second wrong answer.
+    var chosen, tries, orders, fkey = null;
     function newRound(){
-      chosen = {};
+      chosen = {}; tries = {};
       orders = cfg.questions.map(function(q){ return shuffle(q.options.map(function(o, i){ return i; })); });
     }
     newRound();
     function render(){
       cfg.el.innerHTML = cfg.questions.map(function(q, qi){
-        var pick = chosen[qi];
+        var pick = chosen[qi], tried = tries[qi];
         var opts = orders[qi].map(function(oi){
           var o = q.options[oi], cls = 'predict-opt';
           if(pick!==undefined){
             if(o.ok) cls += ' is-right';
-            else if(oi===pick) cls += ' is-chosen-wrong';
-          }
-          return '<button type="button" class="'+cls+'" data-q="'+qi+'" data-o="'+oi+'" data-fkey="'+cfg.id+'-'+qi+'-'+oi+'"'+(pick!==undefined?' disabled':'')+'>'+o.t+'</button>';
+            else if(oi===pick || oi===tried) cls += ' is-chosen-wrong';
+          } else if(oi===tried) cls += ' is-chosen-wrong';
+          return '<button type="button" class="'+cls+'" data-q="'+qi+'" data-o="'+oi+'" data-fkey="'+cfg.id+'-'+qi+'-'+oi+'"'+(pick!==undefined||oi===tried?' disabled':'')+'>'+o.t+'</button>';
         }).join('');
         var reveal = '';
+        if(pick===undefined && tried!==undefined){
+          reveal = '<div class="predict-reveal" tabindex="-1" data-fkey="'+cfg.id+'-r-'+qi+'"><p><span class="verdict bad">✗ Not quite.</span> '+FR(q.options[tried].why)+' Try another answer.</p></div>';
+        }
         if(pick!==undefined){
           var c = q.options[pick];
           var right = q.options.filter(function(o){ return o.ok; })[0];
@@ -1468,25 +1473,25 @@
         }
         return '<div class="card predict"><p class="q">'+(qi+1)+'. '+q.q+'</p><div class="predict-opts">'+opts+'</div>'+reveal+'</div>';
       }).join('');
-      var n = Object.keys(chosen).filter(function(qi){ return cfg.questions[qi].options[chosen[qi]].ok; }).length;
+      var n = Object.keys(chosen).filter(function(qi){ return cfg.questions[qi].options[chosen[qi]].ok && tries[qi]===undefined; }).length;
       setScore(cfg.scoreEl, n, cfg.questions.length, ' right first time');
       focusKey(fkey); fkey = null;
     }
     cfg.el.addEventListener('click', function(e){
       var b = e.target.closest('.predict-opt');
       if(!b || b.disabled) return;
-      var qi = +b.dataset.q, oi = +b.dataset.o;
-      chosen[qi] = oi;
+      var qi = +b.dataset.q, oi = +b.dataset.o, ok = cfg.questions[qi].options[oi].ok, first = tries[qi]===undefined;
+      if(!ok && first) tries[qi] = oi; else chosen[qi] = oi;
       fkey = cfg.id+'-r-'+qi;
       render();
-      announce(cfg.questions[qi].options[oi].ok ? 'Correct.' : 'Not quite. The explanation is shown.');
+      announce(ok ? 'Correct.' : first ? 'Not quite. Try another answer.' : 'Not quite. The answer is shown.');
       saveSnapshot();
     });
     onAction(cfg.id+'-reset', function(){ newRound(); render(); saveSnapshot(); });
     return {
       render: render,
-      getState: function(){ return {chosen:chosen, orders:orders}; },
-      setState: function(s){ if(s && s.orders && s.orders.length===orders.length){ chosen = s.chosen || {}; orders = s.orders; } }
+      getState: function(){ return {chosen:chosen, tries:tries, orders:orders}; },
+      setState: function(s){ if(s && s.orders && s.orders.length===orders.length){ chosen = s.chosen || {}; tries = s.tries || {}; orders = s.orders; } }
     };
   }
 
