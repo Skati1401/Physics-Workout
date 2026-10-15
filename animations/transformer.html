@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transformer Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#0f7a86;   --topic-soft:#d6f1f3;
+    --north:#d23b3b;   --north-soft:#fbdede;
+    --south:#2f62d6;   --south-soft:#dde7fb;
+    --copper:#b8651b;  --filing:#3b4352;
+    --core:#7d8796;    --core-soft:#e3e6eb;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#4fd1dc; --topic-soft:#123236;
+      --north:#ff7a7a; --north-soft:#3d1a1a;
+      --south:#7da3ff; --south-soft:#1a2440;
+      --copper:#f0a35e; --filing:#c3cad6; --core:#9aa4b5; --core-soft:#2a313d;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#4fd1dc; --topic-soft:#123236;
+    --north:#ff7a7a; --north-soft:#3d1a1a;
+    --south:#7da3ff; --south-soft:#1a2440;
+    --copper:#f0a35e; --filing:#c3cad6; --core:#9aa4b5; --core-soft:#2a313d;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; controls, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view-wrap{position:relative;}
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 290px));touch-action:pan-y;}
+  .view-wrap canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .embed .view{max-height:460px;}
+  .under{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px;margin-top:12px;}
+  .under .btn-group{flex:0 1 auto;}
+  .sliders{flex:1 1 300px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px 20px;min-width:0;}
+  .view text{font-family:var(--font-mono);}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--accent);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+  .hint{font-size:12.5px;color:var(--ink-soft);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  .dragme{cursor:grab;}
+  .dragme:focus{outline:none;}
+  .dragme:focus-visible .focus-ring{stroke:var(--accent);stroke-width:3;}
+  @media (max-width:560px){ .stage{padding:12px;} .eq{font-size:12.5px;padding:6px 8px;} .note{font-size:14px;} }
+
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .hint{display:none;}
+
+  .view{max-height:max(240px,calc(100vh - 330px));}
+  .under .sliders{flex-basis:100%;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  (function(){
+    if (/[?&]embed\b/.test(location.search) || window.self !== window.top) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; magnetism</div>
+    <h1>How a Transformer Works</h1>
+  </header>
+  <section class="card stage">
+    <div>
+      <svg class="view" id="tf-svg" viewBox="0 0 640 320" role="img" aria-label="A transformer: a primary coil and a secondary coil on an iron core, with a supply and a voltmeter, beside a graph of input and output voltage against time"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="tf-play" type="button">&#9654; Switch on</button>
+          <button class="btn" id="tf-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="tf-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="tf-exp" type="button" aria-pressed="false" title="Hide the theory curves and plot the readings as the transformer runs">Experiment</button>
+        </div>
+        <div class="sliders">
+          <div><label class="lab" for="tf-np"><span>Primary turns N<sub>p</sub></span> <output id="tf-npo"></output></label><input type="range" id="tf-np" min="100" max="1000" step="100" value="200"></div>
+          <div><label class="lab" for="tf-ns"><span>Secondary turns N<sub>s</sub></span> <output id="tf-nso"></output></label><input type="range" id="tf-ns" min="100" max="2000" step="100" value="400"></div>
+          <div><label class="lab" for="tf-vp"><span>Input voltage V<sub>p</sub></span> <output id="tf-vpo"></output></label><input type="range" id="tf-vp" min="2" max="24" step="2" value="12"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div>
+        <div class="lab">Supply</div>
+        <div class="seg" id="tf-sup"><button type="button" data-v="ac" aria-pressed="true">a.c. supply</button><button type="button" data-v="dc" aria-pressed="false">Battery (d.c.)</button></div>
+      </div>
+      <div>
+        <div class="lab">Jump to a point</div>
+        <div class="seg" id="tf-points"><button type="button" data-v="0" aria-pressed="false">Field passing zero</button><button type="button" data-v="0.25" aria-pressed="false">Field at its biggest</button><button type="button" data-v="0.5" aria-pressed="false">Field reversing</button><button type="button" data-v="0.75" aria-pressed="false">Biggest, other way</button></div>
+      </div>
+      <p class="note" id="tf-note" aria-live="polite"></p>
+      <div class="stats">
+        <div class="stat"><small>Input voltage</small><strong id="tf-si">&ndash;</strong></div>
+        <div class="stat"><small>Output now</small><strong id="tf-sn">0 V</strong></div>
+        <div class="stat hi"><small>Output voltage</small><strong id="tf-so">&ndash;</strong></div>
+        <div class="stat"><small>Type</small><strong id="tf-st">&ndash;</strong></div>
+      </div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="tf-eq"></div>
+      </details>
+    </div>
+  </section>
+
+</div>
+<script>
+(function(){
+  // transformer.html is the one copy of this animation.
+  // With ?embed the page drops its heading so a workout tab can show it in a frame, and tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var wk = document.querySelector('details.working'); if(wk) wk.open = true;
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  function num(n, dp){   // round, drop trailing zeros, group thousands with a space from 10 000
+    var f = Math.pow(10, dp||0), r = Math.round(n*f)/f, t = String(Math.abs(r));
+    if(Math.abs(r)>=10000) t = t.replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    return (r<0?'−':'')+t;
+  }
+  function FR(t){
+    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1 ')
+      .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  function arrowHead(id, col){ return '<marker id="'+id+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+col+'"/></marker>'; }
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ if(!el) return; alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function toggle(b){ b.setAttribute('aria-pressed', String(!pressed(b))); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  // a pole of a magnet: coloured block with its letter
+  function poleRect(x,y,w,h,pole,fs){
+    var c = pole==='N' ? 'north' : 'south';
+    return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="var(--'+c+'-soft)" stroke="var(--'+c+')" stroke-width="2"/>'+
+      '<text x="'+(x+w/2)+'" y="'+(y+h/2+(fs||16)*0.36)+'" text-anchor="middle" font-size="'+(fs||16)+'" font-weight="600" fill="var(--'+c+')">'+pole+'</text>';
+  }
+  // a wire seen end-on: dot = current out of the page, cross = into the page
+  function wireEnd(x,y,r,dir,col){
+    var g='<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="var(--panel)" stroke="'+(col||'var(--copper)')+'" stroke-width="3"/>';
+    if(dir>0) g+='<circle cx="'+x+'" cy="'+y+'" r="'+(r*0.28)+'" fill="var(--ink)"/>';
+    else if(dir<0){ var d=r*0.55; g+='<path d="M'+(x-d)+','+(y-d)+' L'+(x+d)+','+(y+d)+' M'+(x+d)+','+(y-d)+' L'+(x-d)+','+(y+d)+'" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>'; }
+    return g;
+  }
+  function line(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+(w||2)+'"'+(extra||'')+'/>'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+x+'" y="'+y+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11.5)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  // pointer position in SVG user units
+  function svgPoint(svg, e){ var r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; return {x:vb.x+(e.clientX-r.left)/r.width*vb.width, y:vb.y+(e.clientY-r.top)/r.height*vb.height}; }
+
+  var svg=$('#tf-svg'), playBtn=$('#tf-play'), slowBtn=$('#tf-slow'), expBtn=$('#tf-exp'), npIn=$('#tf-np'), nsIn=$('#tf-ns'), vpIn=$('#tf-vp'), ptsEl=$('#tf-points');
+  var F=0.5, W=2*Math.PI*F, TAU=0.12, TMAX=4, t=0, readings=[], running=false, raf=0, last=0, dotP=0;
+  var sup=segGroup($('#tf-sup'), changed);
+  [npIn,nsIn,vpIn].forEach(function(x){ x.addEventListener('input', changed); });
+
+  // Model (slowed right down: mains is 50 Hz, this is 0.5 Hz).
+  // The current in the primary sets the field in the core; the output is induced by the field CHANGING.
+  // a.c.: Vp = V cos(wt), field = sin(wt), Vs = V x Ns/Np x cos(wt): biggest when the field passes zero.
+  // battery: the field grows to a steady value; Vs is a brief flick at switch-on, then zero.
+  function Np(){ return +npIn.value; } function Ns(){ return +nsIn.value; } function Vin(){ return +vpIn.value; }
+  function ac(){ return sup.value()==='ac'; }
+  function ratio(){ return Ns()/Np(); }
+  function vsPk(){ return Vin()*ratio(); }
+  function vp(tt){ return ac()?Vin()*Math.cos(W*tt):Vin(); }
+  function field(tt){ return ac()?Math.sin(W*tt):1-Math.exp(-tt/TAU); }
+  function vs(tt){ return ac()?vsPk()*Math.cos(W*tt):vsPk()*Math.exp(-tt/TAU); }
+  function yMax(){ var v=Math.max(Vin(),vsPk())*1.1, s=[5,10,20,50,100,200,500]; for(var i=0;i<s.length;i++) if(s[i]>=v) return s[i]; return 500; }
+  function exp(){ return pressed(expBtn); }
+  function done(){ return t>=TMAX-1e-9; }
+  function on(){ return t>0||running; }
+  function type(){ return Ns()>Np()?'step-up':Ns()<Np()?'step-down':'neither'; }
+
+  // the primary circuit, for the moving charges: supply top, along to the coil, down the coil, back to the supply
+  var PATH=[[30,134],[30,82],[86,82],[86,218],[30,218],[30,166]];
+  var PLEN=0; for(var i=1;i<PATH.length;i++) PLEN+=Math.hypot(PATH[i][0]-PATH[i-1][0],PATH[i][1]-PATH[i-1][1]);
+  function along(s){ s=((s%PLEN)+PLEN)%PLEN; for(var i=1;i<PATH.length;i++){ var a=PATH[i-1],b=PATH[i],l=Math.hypot(b[0]-a[0],b[1]-a[1]); if(s<=l) return [a[0]+(b[0]-a[0])*s/l, a[1]+(b[1]-a[1])*s/l]; s-=l; } return PATH[0]; }
+
+  function coil(x0,n,col){   // loops wound round a limb of the core, front half bright
+    var g='', top=88, h=124, k=Math.min(20,Math.max(1,Math.round(n/100))), d=h/k;
+    for(var i=0;i<k;i++){ var y=top+(i+0.5)*d; var sl=Math.min(d*0.3,7); g+=line(x0-6,y+sl,x0+46,y-sl,col,Math.min(4,Math.max(2,d*0.55)),' stroke-linecap="round"'); }
+    return g;
+  }
+  function draw(){
+    var g='<defs>'+arrowHead('tf-fa','var(--topic)')+'</defs>';
+    var b=on()?field(t):0, vo=on()?vs(t):0;
+    // iron core
+    g+='<path d="M90,40 H270 V260 H90 Z M130,80 V220 H230 V80 Z" fill="var(--core-soft)" stroke="var(--core)" stroke-width="2" fill-rule="evenodd"/>';
+    g+=txt(180,32,'iron core',{a:'middle',fs:11.5});
+    // field in the core: arrows round the loop, as strong as the field, pointing the way it points
+    var op=Math.min(1,Math.abs(b)), cw=b>=0;
+    if(op>0.04){
+      var sides=[[140,60,220,60],[250,100,250,200],[220,240,140,240],[110,200,110,100]];
+      sides.forEach(function(s){ var x1=cw?s[0]:s[2], y1=cw?s[1]:s[3], x2=cw?s[2]:s[0], y2=cw?s[3]:s[1];
+        g+=line(x1,y1,x2,y2,'var(--topic)',3.5,' opacity="'+op.toFixed(2)+'" marker-end="url(#tf-fa)"'); });
+    }
+    // coils
+    g+=coil(90,Np(),'var(--copper)')+coil(230,Ns(),'var(--copper)');
+    // primary circuit and supply
+    g+='<polyline points="'+PATH.map(function(p){return p.join(',');}).join(' ')+'" fill="none" stroke="var(--ink-soft)" stroke-width="2"/>';
+    if(ac()) g+='<circle cx="30" cy="150" r="16" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+txt(30,156,'~',{a:'middle',fs:20,c:'var(--ink)'});
+    else g+=line(30,134,30,144,'var(--ink-soft)',2)+line(16,144,44,144,'var(--ink)',2.5)+line(23,154,37,154,'var(--ink)',5)+line(30,154,30,166,'var(--ink-soft)',2)+txt(48,142,'+',{fs:12});
+    // moving charges in the primary: their speed follows the current, which sets the field
+    if(on()) for(var s=0;s<PLEN;s+=24){ var q=along(s+dotP); g+='<circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" r="3" fill="var(--accent)"/>'; }
+    // secondary circuit and voltmeter
+    g+='<polyline points="274,82 330,82 330,128" fill="none" stroke="var(--ink-soft)" stroke-width="2"/><polyline points="330,172 330,218 274,218" fill="none" stroke="var(--ink-soft)" stroke-width="2"/>';
+    g+='<circle cx="330" cy="150" r="22" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>';
+    var nd=Math.max(-1,Math.min(1,vo/yMax()))*1.1, nx=330+16*Math.sin(nd), ny=158-16*Math.cos(nd);
+    g+=line(330,158,nx.toFixed(1),ny.toFixed(1),'var(--topic)',2.5,' stroke-linecap="round"')+txt(330,168,'V',{a:'middle',fs:10,c:'var(--ink)'});
+    g+=txt(110,278,'primary',{a:'middle'})+txt(110,294,'N<tspan baseline-shift="sub" font-size="8">p</tspan> = '+Np(),{a:'middle',fs:10.5,c:'var(--ink-faint)'});
+    g+=txt(250,278,'secondary',{a:'middle'})+txt(250,294,'N<tspan baseline-shift="sub" font-size="8">s</tspan> = '+Ns(),{a:'middle',fs:10.5,c:'var(--ink-faint)'});
+    // voltage-time graph: input and output
+    var GX=388, GY=30, GW=236, GH=240, YM=yMax(), y0=GY+GH/2;
+    function gx(tt){ return GX+tt/TMAX*GW; } function gy(v){ return y0-v/YM*(GH/2); }
+    g+='<rect x="'+GX+'" y="'+GY+'" width="'+GW+'" height="'+GH+'" fill="var(--bg)" stroke="var(--panel-border)"/>';
+    for(var k=0;k<=TMAX;k++){ g+=line(gx(k),GY,gx(k),GY+GH,'var(--panel-border)',1)+txt(gx(k),GY+GH+14,String(k),{a:'middle',fs:10,c:'var(--ink-faint)'}); }
+    [-YM,-YM/2,0,YM/2,YM].forEach(function(v){ g+=line(GX,gy(v),GX+GW,gy(v),v===0?'var(--ink-faint)':'var(--panel-border)',v===0?1.5:1)+txt(GX-5,gy(v)+4,num(v,1),{a:'end',fs:10,c:'var(--ink-faint)'}); });
+    g+=txt(GX,GY-8,'voltage (V)',{fs:11})+txt(GX+GW,GY+GH+30,'time (s)',{a:'end',fs:11});
+    g+=line(GX+96,GY-12,GX+112,GY-12,'var(--accent)',2.5)+txt(GX+116,GY-8,'input',{fs:10.5})+line(GX+160,GY-12,GX+176,GY-12,'var(--topic)',2.5)+txt(GX+180,GY-8,'output',{fs:10.5});
+    if(!exp()){
+      ['vp','vs'].forEach(function(w){ var pts=[]; for(var k=0;k<=400;k++){ var tt=k/400*TMAX; pts.push(gx(tt).toFixed(1)+','+gy(w==='vp'?vp(tt):vs(tt)).toFixed(1)); }
+        g+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--'+(w==='vp'?'accent':'topic')+')" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.5"/>'; });
+    }
+    if(readings.length){
+      if(exp()) readings.forEach(function(r){ g+='<circle cx="'+gx(r[0]).toFixed(1)+'" cy="'+gy(r[1]).toFixed(1)+'" r="2" fill="var(--accent)"/><circle cx="'+gx(r[0]).toFixed(1)+'" cy="'+gy(r[2]).toFixed(1)+'" r="2.4" fill="var(--topic)"/>'; });
+      else{
+        g+='<polyline points="'+readings.map(function(r){ return gx(r[0]).toFixed(1)+','+gy(r[1]).toFixed(1); }).join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="2.4"/>';
+        g+='<polyline points="'+readings.map(function(r){ return gx(r[0]).toFixed(1)+','+gy(r[2]).toFixed(1); }).join(' ')+'" fill="none" stroke="var(--topic)" stroke-width="2.6"/>';
+      }
+    }
+    if(on()) g+='<circle cx="'+gx(t)+'" cy="'+gy(vo)+'" r="5" fill="var(--topic)" stroke="var(--panel)" stroke-width="2"/>';
+    svg.innerHTML=g;
+
+    $('#tf-npo').textContent=Np(); $('#tf-nso').textContent=Ns(); $('#tf-vpo').textContent=Vin()+' V';
+    var hide=exp() && !done();
+    $('#tf-si').textContent=Vin()+' V'+(ac()?'':' d.c.');
+    $('#tf-sn').textContent=num(vo,1)+' V';
+    $('#tf-so').textContent=hide?'?':(ac()?num(vsPk(),2)+' V':'0 V');
+    $('#tf-st').textContent=ac()?type():'no output';
+    var vsub='V<sub>s</sub>', vpsub='V<sub>p</sub>', nps='N<sub>p</sub>', nss='N<sub>s</sub>';
+    if(!ac()) $('#tf-eq').innerHTML='With a battery the current settles to a steady value, so the field in the core stops changing.<br>No changing field means no induced voltage, so the output is 0 V (after a brief flick at switch-on).';
+    else if(hide) $('#tf-eq').innerHTML='Finish the experiment, then read the peak output voltage off your graph and check it with the turns.';
+    else $('#tf-eq').innerHTML=FR('[['+vpsub+'|'+vsub+']] = [['+nps+'|'+nss+']]<br>[['+Vin()+'|'+vsub+']] = [['+Np()+'|'+Ns()+']]<br>'+Vin()+' × '+Ns()+' = '+Np()+' × '+vsub+'<br>'+num(Vin()*Ns(),0)+' = '+Np()+' × '+vsub+'<br>'+vsub+' = [['+num(Vin()*Ns(),0)+'|'+Np()+']]<br>'+vsub+' = <b>'+num(vsPk(),2)+' V</b><br>'+(type()==='neither'?'Same turns on each coil, so the voltage is unchanged.':nss+(type()==='step-up'?' &gt; ':' &lt; ')+nps+', so this is a <b>'+type()+'</b> transformer.'));
+    var n, a=Math.abs(b);
+    if(exp()){
+      if(done()) n='Experiment finished. Read the peak output voltage off your graph and compare it with the input. Is the ratio the same as the turns ratio? Change the turns and repeat.';
+      else n='Experiment: the input and output voltages are plotted as the transformer runs, like a data logger.';
+    } else if(!on()) n=ac()?'Press <b>Switch on</b>. The a.c. supply drives an alternating current in the primary coil, which makes a magnetic field in the iron core.':'Press <b>Switch on</b> to connect the battery and watch the voltmeter on the secondary.';
+    else if(!ac()) n=t<0.6?'Switch on: the current and the field in the core grow, so the field <b>changes</b> for a moment and a brief voltage is induced in the secondary.':'The current is now steady, so the field in the core is <b>not changing</b>. No voltage is induced: a transformer does not work on d.c.';
+    else if(done()) n='The output peak is '+num(vsPk(),2)+' V from an input of '+Vin()+' V. The voltages are in the same ratio as the turns: more turns on the secondary steps the voltage <b>up</b>, fewer steps it <b>down</b>.';
+    else if(a<0.2) n='The field in the core is passing through zero, so it is <b>changing fastest</b>: the voltage induced in the secondary is at its biggest.';
+    else if(a>0.94) n='The field in the core is at its biggest, but for an instant it is <b>not changing</b>, so the output voltage is zero.';
+    else n='The alternating current makes a field in the iron core that keeps growing, shrinking and reversing. The core carries this <b>changing</b> field through the secondary coil, which induces an alternating voltage across it.';
+    $('#tf-note').innerHTML=n;
+    playBtn.innerHTML=running?'&#10074;&#10074; Pause':(done()?'&#9654; Run again':(t>0?'&#9654; Play':'&#9654; Switch on'));
+    Array.prototype.forEach.call(ptsEl.children,function(x){ x.disabled=!ac(); });
+  }
+  function record(to){ var dt=0.02; var nx=readings.length?readings[readings.length-1][0]+dt:0; while(nx<=to+1e-9){ readings.push([nx,vp(nx),vs(nx)]); nx+=dt; } }
+  function rate(){ return pressed(slowBtn)?0.3:1; }
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function frame(now){ if(!running) return; var dt=Math.min(0.05,(now-last)/1000)*rate(); last=now;
+    t=Math.min(TMAX,t+dt); dotP+=field(t)*dt*90; record(t);
+    if(done()) stop(); draw(); if(running) raf=requestAnimationFrame(frame); }
+  function mark(v){ Array.prototype.forEach.call(ptsEl.children,function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+  function reset(){ stop(); t=0; dotP=0; readings=[]; mark(''); draw(); }
+  function changed(){ reset(); }
+  playBtn.addEventListener('click',function(){ mark(''); if(running){ stop(); draw(); return; } if(done()) reset(); if(!readings.length) record(0); running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); });
+  ptsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; reset(); t=(+b.dataset.v)/F+(+b.dataset.v===0?1/F:0); record(t); mark(b.dataset.v); draw(); });
+  slowBtn.addEventListener('click',function(){ toggle(slowBtn); });
+  expBtn.addEventListener('click',function(){ toggle(expBtn); reset(); });
+  $('#tf-reset').addEventListener('click',reset);
+  watchEquals($('#tf-eq'));
+  reset();
+
+})();
+</script>
+</body>
+</html>
