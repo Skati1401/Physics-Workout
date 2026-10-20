@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inclined Plane Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5;
+    --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff;
+    --panel-border:#d7dce4;
+    --ink:#182233;
+    --ink-soft:#4c5668;
+    --ink-faint:#8993a5;
+    --accent:#d9720c;
+    --accent-soft:#fdead2;
+    --good:#15803d;
+    --good-soft:#dcf5e3;
+    --bad:#c0311a;
+    --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --forces:#c2560a;      --forces-soft:#fde8d6;
+    --fw:#6d38d6; --fr:#2158d1; --ff:#c0311a; --fn:#d9720c; --ramp:#b9a27c; --block:#e9eef5;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --forces:#ff9f5c; --forces-soft:#3a2413;
+      --fw:#b392ff; --fr:#7da3ff; --ff:#f27159; --fn:#ff9a3d; --ramp:#7d6a4c; --block:#2c3444;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --forces:#ff9f5c; --forces-soft:#3a2413;
+    --fw:#b392ff; --fr:#7da3ff; --ff:#f27159; --fn:#ff9a3d; --ramp:#7d6a4c; --block:#2c3444;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  .embed .page{display:flow-root;padding-block:0;}
+  .embed .home-link,.embed .page-head{display:none;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; controls, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,390px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 330px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;text-align:right;}
+  input[type=range]{width:100%;accent-color:var(--forces);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--forces);border-color:var(--forces);color:var(--panel);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--forces);}
+  .stat.hit strong{color:var(--good);}
+  .stat.miss strong{color:var(--bad);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:6.2em;}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--forces);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--forces);background:var(--forces-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--forces);}
+  .eq + .eq{margin-top:8px;}
+  .eq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px 14px;align-items:start;}
+  .eq-title{font:600 12px var(--font-mono);color:var(--ink-soft);margin:0 0 4px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} }
+  .graphs{padding:18px;margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:18px 24px;align-items:start;}
+  .graphs svg{display:block;width:100%;height:auto;}
+  .graphs svg text{font-family:var(--font-mono);}
+  .tbl-wrap{overflow-x:auto;}
+  table.res{border-collapse:collapse;width:100%;font:13px var(--font-mono);}
+  table.res th,table.res td{padding:6px 10px;border-bottom:1px solid var(--panel-border);text-align:right;white-space:nowrap;}
+  table.res th{color:var(--ink-faint);font-weight:500;font-size:11.5px;}
+  table.res th:first-child,table.res td:first-child{text-align:left;}
+  .hint{font-size:12.5px;color:var(--ink-faint);margin-top:8px;}
+  .key{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;}
+  .eq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px 14px;align-items:start;grid-column:1/-1;}
+  .eq-title{font:600 12px var(--font-mono);color:var(--ink-soft);margin:0 0 4px;}
+  details.working{grid-column:1/-1;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  (function(){
+    if (/[?&]embed\b/.test(location.search) || window.self !== window.top) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="a-level-ib.html">&larr; A Level and IB animations</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; mechanics &middot; forces on a slope</div>
+    <h1>Inclined Plane</h1>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="ip-svg" viewBox="0 0 640 340" role="img" aria-label="A block on a ramp with its weight, normal force and friction drawn as arrows, and the components of the weight along and perpendicular to the slope."></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="ip-play" type="button">&#9654; Play</button>
+          <button class="btn" id="ip-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="ip-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="ip-exp" type="button" aria-pressed="false" title="Hide the theory line and plot the velocity as the block moves">Experiment</button>
+          <button class="btn" id="ip-comp" type="button" aria-pressed="true">Weight components</button>
+          <button class="btn" id="ip-num" type="button" aria-pressed="true">Values on arrows</button>
+        </div>
+        <div class="sliders">
+          <div>
+            <label class="lab" for="ip-th"><span>Slope angle &theta;</span> <output id="ip-tho"></output></label>
+            <input type="range" id="ip-th" min="0" max="60" step="1" value="30">
+          </div>
+          <div>
+            <label class="lab" for="ip-m"><span>Mass m</span> <output id="ip-mo"></output></label>
+            <input type="range" id="ip-m" min="0.5" max="10" step="0.5" value="2">
+          </div>
+          <div>
+            <label class="lab" for="ip-v"><span>Starting velocity u (+ up the slope)</span> <output id="ip-vo"></output></label>
+            <input type="range" id="ip-v" min="-8" max="12" step="0.5" value="0">
+          </div>
+          <div>
+            <label class="lab" for="ip-s"><span>Start, from the bottom</span> <output id="ip-so"></output></label>
+            <input type="range" id="ip-s" min="0.5" max="9.5" step="0.5" value="5">
+          </div>
+          <div>
+            <label class="lab" for="ip-ms"><span>Static friction &mu;<sub>s</sub></span> <output id="ip-mso"></output></label>
+            <input type="range" id="ip-ms" min="0" max="1" step="0.05" value="0.5">
+          </div>
+          <div>
+            <label class="lab" for="ip-mk"><span>Dynamic friction &mu;<sub>d</sub></span> <output id="ip-mko"></output></label>
+            <input type="range" id="ip-mk" min="0" max="1" step="0.05" value="0.4">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div>
+        <div class="lab">Symbols</div>
+        <div class="seg" id="ip-sym"></div>
+      </div>
+      <div>
+        <div class="lab">Axes for resolving</div>
+        <div class="seg" id="ip-axes"><button type="button" data-a="tilt" aria-pressed="true">Along and perpendicular to the slope</button><button type="button" data-a="level" aria-pressed="false">Horizontal and vertical</button></div>
+      </div>
+      <div>
+        <div class="lab">Try these</div>
+        <div class="seg" id="ip-pre">
+          <button type="button" data-p="rest">Resting</button>
+          <button type="button" data-p="slide">Slides down</button>
+          <button type="button" data-p="back">Up, then back down</button>
+          <button type="button" data-p="stays">Up, then stays</button>
+          <button type="button" data-p="smooth">Smooth slope</button>
+          <button type="button" data-p="holds">Static just holds</button>
+          <button type="button" data-p="nudge">Nudged: keeps sliding</button>
+          <button type="button" data-p="floor">Level floor skid</button>
+        </div>
+      </div>
+      <p class="note" id="ip-note" aria-live="polite"></p>
+      <div class="stats">
+        <div class="stat"><small>Normal force <span data-sym="R"></span></small><strong id="ip-R">0 N</strong></div>
+        <div class="stat"><small>Friction <span data-sym="F"></span></small><strong id="ip-F">0 N</strong></div>
+        <div class="stat hi"><small>Acceleration a</small><strong id="ip-a">0</strong></div>
+        <div class="stat"><small>Velocity v</small><strong id="ip-vv">0</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card graphs">
+    <div>
+      <svg id="ip-graph" viewBox="0 0 520 220" role="img" aria-label="Velocity along the slope against time"></svg>
+      <p class="hint">Up the slope is positive. The gradient of this graph is the acceleration.</p>
+    </div>
+    <div>
+      <div class="tbl-wrap"><table class="res" id="ip-tbl"></table></div>
+      <p class="hint" id="ip-axhint"></p>
+    </div>
+    <details class="working" id="ip-working">
+      <summary>Show working</summary>
+      <div class="eq-grid" id="ip-eqs"></div>
+    </details>
+  </section>
+</div>
+<script>
+(function(){
+
+  function $(sel){ return document.querySelector(sel); }
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){ document.documentElement.classList.add('embed'); Array.prototype.forEach.call(document.querySelectorAll('details.working'),function(d){ d.open=true; }); }
+
+  // 3 significant figures, with a real minus sign
+  function n3(x){
+    var a=Math.abs(x), s;
+    if(a===0) s='0';
+    else if(a>=99.95) s=a.toFixed(0);
+    else if(a>=9.995) s=a.toFixed(1);
+    else if(a>=0.9995) s=a.toFixed(2);
+    else s=a.toPrecision(3);
+    return (x<0?'−':'')+s;
+  }
+  function r3(x){ return x===0 ? 0 : +x.toPrecision(3); }
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+
+
+  // ---- symbols: A Level or IB (remembered in this browser only, shared by every animation page)
+  var SYMS={
+    alevel:{W:'W',R:'R',T:'T',F:'F',D:'D',P:'P',Fmax:'F<sub>max</sub>',Wname:'weight',Rname:'normal reaction',Tname:'tension',Fname:'friction',Dname:'air resistance',Pname:'applied force'},
+    ib:{W:'F<sub>g</sub>',R:'F<sub>N</sub>',T:'F<sub>T</sub>',F:'F<sub>f</sub>',D:'F<sub>d</sub>',P:'F<sub>app</sub>',Fmax:'F<sub>f,max</sub>',Wname:'weight',Rname:'normal force',Tname:'tension',Fname:'friction',Dname:'drag',Pname:'applied force'}
+  };
+  var symSet='alevel'; try{ if(localStorage.getItem('pw-symbols')==='ib') symSet='ib'; }catch(e){}
+  function S(k){ return SYMS[symSet][k]; }
+  function sy(t){ return String(t).replace(/\{(\w+)\}/g,function(m,k){ return SYMS[symSet][k]!==undefined ? SYMS[symSet][k] : m; }); }
+  function svgSub(t){ return String(t).replace(/<sub>(.*?)<\/sub>/g,'<tspan dy="3" font-size="0.78em">$1</tspan><tspan dy="-3">​</tspan>'); }
+  function fillSyms(){ Array.prototype.forEach.call(document.querySelectorAll('[data-sym]'),function(e){ e.innerHTML=S(e.dataset.sym); }); }
+  function symSeg(el, onChange){
+    el.innerHTML='<button type="button" data-s="alevel">A Level</button><button type="button" data-s="ib">IB</button>';
+    function mark(){ Array.prototype.forEach.call(el.children,function(b){ b.setAttribute('aria-pressed',String(b.dataset.s===symSet)); }); }
+    el.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; symSet=b.dataset.s; try{ localStorage.setItem('pw-symbols',symSet); }catch(err){} mark(); fillSyms(); onChange(); });
+    mark(); fillSyms();
+  }
+
+  function sn(x, dp){ var t=Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }
+  function br(s){ return s.charAt(0)==='−' ? '('+s+')' : s; }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  var G=9.81, L=10;   // ramp length in metres
+  var thIn=$('#ip-th'), mIn=$('#ip-m'), vIn=$('#ip-v'), sIn=$('#ip-s'), msIn=$('#ip-ms'), mkIn=$('#ip-mk'), playBtn=$('#ip-play'), slowBtn=$('#ip-slow');
+  var tilt=true;
+  function P(){ return {th:+thIn.value, m:+mIn.value, u:+vIn.value, s0:+sIn.value, ms:+msIn.value, mk:Math.min(+mkIn.value,+msIn.value)}; }
+
+  // ---- the physics, up the slope positive
+  // Moving: F = μd R against the motion. At rest: static friction holds if mg sin θ ≤ μs R, otherwise it starts sliding down.
+  function forcesAt(p, v){
+    var th=p.th*Math.PI/180, W=p.m*G, Wpar=W*Math.sin(th), Wperp=W*Math.cos(th), R=Wperp, F, state;
+    if(v>1e-6){ F=-p.mk*R; state='up'; }
+    else if(v<-1e-6){ F=p.mk*R; state='down'; }
+    else if(Wpar<=p.ms*R+1e-9){ F=Wpar; state='rest'; }
+    else { F=p.mk*R; state='start'; }
+    return {W:W, Wpar:Wpar, Wperp:Wperp, R:R, F:F, a:(-Wpar+F)/p.m, state:state};
+  }
+  var RUN=null;
+  function simulate(){
+    var p=P(), s=p.s0, v=p.u, t=0, dt=0.002, out=[{t:0,s:s,v:v}], restFor=0, end='time';
+    while(t<15){
+      var f=forcesAt(p,v), v2=v+f.a*dt;
+      if(f.state==='up' && v2<0) v2=0;          // stops at the top of its path; friction then changes
+      if(f.state==='down' && v2>0) v2=0;
+      if(f.state==='rest') v2=0;
+      s+=(v+v2)/2*dt; v=v2; t+=dt;
+      if(Math.abs(v)<1e-9) restFor+=dt; else restFor=0;
+      if(out.length===0 || t-out[out.length-1].t>=0.02-1e-9) out.push({t:t,s:s,v:v});
+      if(s<=0){ s=0; end='bottom'; break; }
+      if(s>=L){ s=L; end='top'; break; }
+      if(restFor>=1.5){ end='rest'; break; }
+    }
+    out.push({t:t,s:s,v:v});
+    RUN={p:p, pts:out, T:t, end:end};
+  }
+  function at(t){
+    var pts=RUN.pts; if(t<=0) return pts[0]; if(t>=RUN.T) return pts[pts.length-1];
+    var lo=0, hi=pts.length-1; while(hi-lo>1){ var m=(lo+hi)>>1; if(pts[m].t<=t) lo=m; else hi=m; }
+    var A=pts[lo], B=pts[hi], f=(t-A.t)/((B.t-A.t)||1);
+    return {t:t, s:A.s+(B.s-A.s)*f, v:A.v+(B.v-A.v)*f};
+  }
+  var t=0, running=false, started=false, last=0, raf=0;
+  function done(){ return started && t>=RUN.T-1e-9; }
+  function expOn(){ return pressed($('#ip-exp')); }
+
+  // ---- the picture
+  function arrow(x1,y1,x2,y2,col,dash,w){
+    var dx=x2-x1, dy=y2-y1, Ln=Math.hypot(dx,dy); if(Ln<4) return '';
+    var ux=dx/Ln, uy=dy/Ln, hx=x2-ux*9, hy=y2-uy*9;
+    return '<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+hx.toFixed(1)+'" y2="'+hy.toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||2.6)+'"'+(dash?' stroke-dasharray="5 4"':'')+'/>'
+      +'<path d="M'+x2.toFixed(1)+','+y2.toFixed(1)+' L'+(hx-uy*5).toFixed(1)+','+(hy+ux*5).toFixed(1)+' L'+(hx+uy*5).toFixed(1)+','+(hy-ux*5).toFixed(1)+' Z" fill="'+col+'"'+(dash?' opacity="0.75"':'')+'/>';
+  }
+  function draw(){
+    var p=RUN.p, th=p.th*Math.PI/180, c=Math.cos(th), s=Math.sin(th), g='';
+    var Lp=Math.min(520, 230/Math.max(s,1e-6)), ox=60, oy=300;
+    var topX=ox+Lp*c, topY=oy-Lp*s;
+    // ground, ramp and angle
+    g+='<line x1="0" x2="640" y1="'+oy+'" y2="'+oy+'" stroke="var(--ink-soft)" stroke-width="2"/>';
+    g+='<polygon points="'+ox+','+oy+' '+topX.toFixed(1)+','+oy+' '+topX.toFixed(1)+','+topY.toFixed(1)+'" fill="var(--ramp)" opacity="0.55" stroke="var(--ink-soft)" stroke-width="1.5"/>';
+    if(p.th>0){
+      g+='<path d="M'+(ox+44)+','+oy+' A44,44 0 0 0 '+(ox+44*c).toFixed(1)+','+(oy-44*s).toFixed(1)+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.2"/>';
+      g+='<text x="'+(ox+50)+'" y="'+(oy-8)+'" font-size="12" fill="var(--ink)">θ = '+p.th+'°</text>';
+    }
+    // tick marks every metre along the ramp
+    for(var i=0;i<=L;i++){ var tx=ox+Lp*i/L*c, ty=oy-Lp*i/L*s; g+='<line x1="'+tx.toFixed(1)+'" y1="'+ty.toFixed(1)+'" x2="'+(tx+5*s).toFixed(1)+'" y2="'+(ty+5*c).toFixed(1)+'" stroke="var(--ink-soft)" stroke-width="1"/>'; }
+    // the block
+    var st=at(t), B=36, bx=ox+Lp*st.s/L*c - (B/2)*s, by=oy-Lp*st.s/L*s - (B/2)*c;
+    g+='<g transform="translate('+bx.toFixed(1)+','+by.toFixed(1)+') rotate('+(-p.th)+')"><rect x="'+(-B/2)+'" y="'+(-B/2)+'" width="'+B+'" height="'+B+'" rx="3" fill="var(--block)" stroke="var(--ink)" stroke-width="2"/><text x="0" y="4" text-anchor="middle" font-size="11" fill="var(--ink)">'+n3(p.m)+' kg</text></g>';
+    // forces from the centre of the block, to scale (W is 80 px)
+    var f=forcesAt(p, st.v), k=80/f.W, num=pressed($('#ip-num'));
+    var down=[0,1], perpOut=[-s,-c], upSlope=[c,-s];
+    function lab(x,y,text,col,anchor){ return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" font-size="11.5" font-weight="600" fill="'+col+'"'+(anchor?' text-anchor="'+anchor+'"':'')+'>'+svgSub(sy(text))+'</text>'; }
+    if(pressed($('#ip-comp')) && p.th>0){
+      var wpX=bx+(-upSlope[0])*f.Wpar*k, wpY=by+(-upSlope[1])*f.Wpar*k;
+      var wnX=bx+(-perpOut[0])*f.Wperp*k, wnY=by+(-perpOut[1])*f.Wperp*k;
+      g+=arrow(bx,by,wpX,wpY,'var(--fw)',true,2)+arrow(bx,by,wnX,wnY,'var(--fw)',true,2);
+      g+=lab(wpX-8,wpY+14,'{W} sin θ'+(num?' = '+n3(f.Wpar)+' N':''),'var(--fw)','end');
+      g+=lab(wnX+6,wnY+12,'{W} cos θ'+(num?' = '+n3(f.Wperp)+' N':''),'var(--fw)');
+    }
+    g+=arrow(bx,by,bx,by+f.W*k,'var(--fw)')+lab(bx-6,by+f.W*k+4,'{W}'+(num?' = '+n3(f.W)+' N':''),'var(--fw)','end');
+    var rx=bx+perpOut[0]*f.R*k, ry=by+perpOut[1]*f.R*k;
+    g+=arrow(bx,by,rx,ry,'var(--fr)')+lab(rx-4,ry-6,'{R}'+(num?' = '+n3(f.R)+' N':''),'var(--fr)','end');
+    if(Math.abs(f.F)>1e-6){
+      var fx=bx+upSlope[0]*f.F*k, fy=by+upSlope[1]*f.F*k;
+      g+=arrow(bx,by,fx,fy,'var(--ff)')+lab(fx+(f.F>0?6:-6),fy-6,'{F}'+(num?' = '+n3(Math.abs(f.F))+' N':''),'var(--ff)',f.F>0?'start':'end');
+    }
+    // the axes used for resolving
+    var ax=560, ay=60, e1=tilt?upSlope:[1,0], e2=tilt?perpOut:[0,-1];
+    g+=arrow(ax,ay,ax+e1[0]*44,ay+e1[1]*44,'var(--ink-soft)',false,1.5)+arrow(ax,ay,ax+e2[0]*44,ay+e2[1]*44,'var(--ink-soft)',false,1.5);
+    g+='<text x="'+(ax+e1[0]*52).toFixed(1)+'" y="'+(ay+e1[1]*52+4).toFixed(1)+'" font-size="11" fill="var(--ink-soft)">x</text><text x="'+(ax+e2[0]*52-3).toFixed(1)+'" y="'+(ay+e2[1]*52).toFixed(1)+'" font-size="11" fill="var(--ink-soft)">y</text>';
+    // resultant force, in its own box because it is not a separate force
+    var Fnet=f.a*p.m;
+    g+='<rect x="10" y="10" width="170" height="44" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';
+    g+='<text x="20" y="28" font-size="11" fill="var(--ink-soft)">resultant force</text>';
+    g+='<text x="20" y="46" font-size="12.5" font-weight="600" fill="var(--fn)">'+(Math.abs(Fnet)<0.005?'0 N':n3(Math.abs(Fnet))+' N '+(Fnet>0?'up':'down')+' the slope')+'</text>';
+    if(running && pressed(slowBtn)) g+='<text x="630" y="330" text-anchor="end" font-size="11.5" fill="var(--accent)">slow motion</text>';
+    $('#ip-svg').innerHTML=g;
+    graph(); table(f); readouts(f, st);
+  }
+
+  // ---- velocity–time graph
+  var GL=52, GR=508, GT=14, GB=180;
+  function graph(){
+    var pts=RUN.pts, T=Math.max(RUN.T,1), lo=0, hi=0.5, g='';
+    pts.forEach(function(q){ lo=Math.min(lo,q.v); hi=Math.max(hi,q.v); });
+    var st=niceStep((hi-lo)/4||1); lo=Math.floor(lo/st)*st; hi=Math.ceil(hi/st)*st; if(hi===lo) hi=lo+st;
+    function gx(x){ return GL+x/T*(GR-GL); } function gy(v){ return GB-(v-lo)/(hi-lo)*(GB-GT); }
+    for(var v=lo; v<=hi+1e-9; v+=st) g+='<line x1="'+GL+'" x2="'+GR+'" y1="'+gy(v)+'" y2="'+gy(v)+'" stroke="var(--panel-border)"/><text x="'+(GL-5)+'" y="'+(gy(v)+4)+'" text-anchor="end" font-size="10.5" fill="var(--ink-faint)">'+sn(+v.toFixed(6),st<1?1:0)+'</text>';
+    var ts=niceStep(T/6);
+    for(var x=0; x<=T+1e-9; x+=ts) g+='<line x1="'+gx(x)+'" x2="'+gx(x)+'" y1="'+GT+'" y2="'+GB+'" stroke="var(--panel-border)"/><text x="'+gx(x)+'" y="'+(GB+15)+'" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">'+(+x.toFixed(6))+'</text>';
+    g+='<line x1="'+GL+'" x2="'+GR+'" y1="'+gy(0)+'" y2="'+gy(0)+'" stroke="var(--ink-soft)" stroke-width="1.5"/><line x1="'+GL+'" x2="'+GL+'" y1="'+GT+'" y2="'+GB+'" stroke="var(--ink-soft)" stroke-width="1.5"/>';
+    g+='<text x="'+((GL+GR)/2)+'" y="'+(GB+32)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">t (s)</text><text x="14" y="'+((GT+GB)/2)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)" transform="rotate(-90 14 '+((GT+GB)/2)+')">v (m s⁻¹)</text>';
+    if(!expOn()) g+='<polyline points="'+pts.map(function(q){ return gx(q.t).toFixed(1)+','+gy(q.v).toFixed(1); }).join(' ')+'" fill="none" stroke="var(--fn)" stroke-width="1.5" opacity="0.4"/>';
+    if(started){
+      if(expOn()){ for(var x2=0; x2<=t+1e-9; x2+=Math.max(0.05,RUN.T/80)) g+='<circle cx="'+gx(x2).toFixed(1)+'" cy="'+gy(at(x2).v).toFixed(1)+'" r="2.4" fill="var(--fn)"/>'; }
+      else g+='<polyline points="'+pts.filter(function(q){ return q.t<=t; }).concat([at(t)]).map(function(q){ return gx(q.t).toFixed(1)+','+gy(q.v).toFixed(1); }).join(' ')+'" fill="none" stroke="var(--fn)" stroke-width="2.6"/>';
+      g+='<circle cx="'+gx(t).toFixed(1)+'" cy="'+gy(at(t).v).toFixed(1)+'" r="4.5" fill="var(--fn)" stroke="var(--panel)" stroke-width="1.5"/>';
+    }
+    $('#ip-graph').innerHTML=g;
+  }
+  function niceStep(r){ var p=Math.pow(10,Math.floor(Math.log10(r))), f=r/p; return (f<1.5?1:f<3.5?2:f<7.5?5:10)*p; }
+
+  // ---- force components in the chosen axes
+  function table(f){
+    var th=RUN.p.th*Math.PI/180, c=Math.cos(th), s=Math.sin(th);
+    // each force as (along-slope, perpendicular) then turned into the chosen axes
+    var list=[['{W}','var(--fw)','weight',-f.Wpar,-f.Wperp],['{R}','var(--fr)','{Rname}',0,f.R]];
+    if(Math.abs(f.F)>1e-6) list.push(['{F}','var(--ff)',f.state==='rest'?'static friction':'dynamic friction',f.F,0]);
+    var rows='<tr><th>Force</th><th>Size (N)</th><th>x-component (N)</th><th>y-component (N)</th></tr>', zero=0;
+    list.forEach(function(r){
+      var X=tilt?r[3]:r[3]*c-r[4]*s, Y=tilt?r[4]:r[3]*s+r[4]*c, mag=Math.hypot(r[3],r[4]);
+      if(Math.abs(X)<0.005) X=0; if(Math.abs(Y)<0.005) Y=0; if(X===0||Y===0) zero++;
+      rows+='<tr><td><span class="key" style="background:'+r[1]+'"></span>'+r[0]+' ('+r[2]+')</td><td>'+n3(mag)+'</td><td>'+n3(X)+'</td><td>'+n3(Y)+'</td></tr>';
+    });
+    $('#ip-tbl').innerHTML=sy(rows);
+    $('#ip-axhint').innerHTML = sy(tilt
+      ? 'With x along the slope, only {W} has two components and the acceleration is all in x, so the y-components add to zero.'
+      : 'With horizontal and vertical axes, {R} and {F} each split into two components, and the acceleration has both an x and a y part. Harder work.');
+  }
+
+  var lastNote='';
+  function readouts(f, st){
+    var p=RUN.p, hide=expOn() && !done();
+    $('#ip-tho').textContent=p.th+'°'; $('#ip-mo').textContent=n3(p.m)+' kg'; $('#ip-vo').textContent=sn(p.u,1)+' m s⁻¹';
+    $('#ip-so').textContent=n3(p.s0)+' m'; $('#ip-mso').textContent=(+msIn.value).toFixed(2); $('#ip-mko').textContent=(+mkIn.value).toFixed(2)+(+mkIn.value>+msIn.value?' (capped at static)':'');
+    $('#ip-R').textContent=n3(f.R)+' N'; $('#ip-F').textContent=n3(Math.abs(f.F))+' N';
+    $('#ip-a').textContent=hide?'?':(Math.abs(f.a)<0.005?'0':sn(f.a,2))+' m s⁻²'; $('#ip-vv').textContent=sn(st.v,2)+' m s⁻¹';
+    playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play';
+    var note, tanTh=Math.tan(p.th*Math.PI/180);
+    if(f.state==='rest') note='At rest. Static friction ('+n3(f.F)+' N up the slope) exactly balances {W} sin θ. It can reach up to μ<sub>s</sub>{R} = '+n3(p.ms*f.R)+' N, so it holds'+(p.th>0?' (tan θ = '+tanTh.toFixed(2)+' ≤ μ<sub>s</sub>)':'')+'.';
+    else if(f.state==='up') note='Sliding up the slope. Friction and {W} sin θ both point down the slope, so it slows quickly: a = '+sn(f.a,2)+' m s⁻².';
+    else if(f.state==='down') note='Sliding down the slope. Friction now points up the slope, against the motion, but {W} sin θ is '+(f.Wpar>Math.abs(f.F)?'bigger, so it speeds up':'smaller, so it slows down')+'.';
+    else note='{W} sin θ ('+n3(f.Wpar)+' N) is more than the most static friction can give (μ<sub>s</sub>{R} = '+n3(p.ms*f.R)+' N), so it starts to slide down.';
+    if(!started) note='Set the slope and friction, then press Play. '+note;
+    if(done()) note+= RUN.end==='bottom' ? ' It has reached the bottom of the slope.' : RUN.end==='top' ? ' It has reached the top of the slope.' : RUN.end==='rest' ? ' It stays at rest.' : '';
+    if(note!==lastNote){ $('#ip-note').innerHTML=sy(note); lastNote=note; }
+    working(f);
+  }
+
+  // ---- working for what is happening now: equation, substitute, rearrange
+  function working(f){
+    var box=$('#ip-eqs'), p=RUN.p, m=n3(p.m), th=p.th+'°', html='';
+    if(expOn() && !done()){ box.innerHTML='<div class="eq">Finish the run first, then find the acceleration from the gradient of your velocity–time graph.</div>'; return; }
+    function block(title, lines){ html+='<div><div class="eq-title">'+title+'</div><div class="eq">'+FR(lines)+'</div></div>'; }
+    var R=r3(f.R);
+    block('Perpendicular to the slope: no acceleration',
+      '{R} − mg cos θ = 0<br>{R} − '+m+' × 9.81 × cos '+th+' = 0<br>{R} − '+n3(R)+' = 0<br>{R} = <b>'+n3(R)+' N</b>');
+    var Wp=r3(f.Wpar);
+    if(f.state==='rest' || f.state==='start'){
+      var Fmax=r3(p.ms*R);
+      block('At rest: can static friction hold it?',
+        '{W} sin θ = mg sin θ<br>{W} sin θ = '+m+' × 9.81 × sin '+th+'<br>{W} sin θ = '+n3(Wp)+' N<br>{Fmax} = μ<sub>s</sub>{R}<br>{Fmax} = '+p.ms.toFixed(2)+' × '+n3(R)+'<br>{Fmax} = '+n3(Fmax)+' N<br>'
+        +(f.state==='rest' ? n3(Wp)+' N ≤ '+n3(Fmax)+' N, so it holds: {F} = '+n3(Wp)+' N and a = 0.' : n3(Wp)+' N > '+n3(Fmax)+' N, so it slips. Moving down, friction is dynamic: {F} = μ<sub>d</sub>{R}.'));
+    }
+    if(f.state!=='rest'){
+      var Fk=r3(p.mk*R), sgnF=f.F>0, net=r3(-Wp+(sgnF?Fk:-Fk)), a=r3(net/p.m);
+      block('Along the slope, up positive ('+(f.state==='up'?'moving up':'moving down')+')',
+        '{F} = μ<sub>d</sub>{R}<br>{F} = '+p.mk.toFixed(2)+' × '+n3(R)+'<br>{F} = '+n3(Fk)+' N'
+        +'<br>resultant force = ma<br>−mg sin θ '+(sgnF?'+':'−')+' {F} = ma<br>−'+n3(Wp)+' '+(sgnF?'+':'−')+' '+n3(Fk)+' = '+m+' × a<br>'+n3(net)+' = '+m+' × a<br>a = [['+n3(net)+'|'+m+']]<br>a = <b>'+n3(a)+' m s⁻²</b>');
+    }
+    box.innerHTML=sy(html);
+    Array.prototype.forEach.call(box.querySelectorAll('.eq'),alignEquals);
+  }
+
+  // ---- the animation: it always ends (either end of the slope, or at rest for 1.5 s, or 15 s)
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function frame(now){
+    if(!running) return;
+    var real=Math.min(0.05,(now-last)/1000); last=now;
+    t=Math.min(RUN.T, t+real*(pressed(slowBtn)?0.3:1));
+    if(t>=RUN.T) stop();
+    draw(); if(running) raf=requestAnimationFrame(frame);
+  }
+  function run(){ if(done()) t=0; started=true; running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); }
+  function reset(){ stop(); started=false; t=0; simulate(); draw(); }
+
+  [thIn,mIn,vIn,sIn,msIn,mkIn].forEach(function(el){ el.addEventListener('input',reset); });
+  $('#ip-axes').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; tilt=b.dataset.a==='tilt';
+    Array.prototype.forEach.call($('#ip-axes').children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); draw(); });
+  var PRE={ rest:[20,2,0,5,0.5,0.4], slide:[35,2,0,9,0.3,0.25], back:[30,2,8,1,0.3,0.2], stays:[15,2,6,1,0.5,0.4],
+    smooth:[25,2,0,9,0,0], holds:[28,2,0,9,0.55,0.3], nudge:[28,2,-0.5,9,0.55,0.3], floor:[0,2,6,0.5,0.4,0.3] };
+  $('#ip-pre').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var q=PRE[b.dataset.p];
+    thIn.value=q[0]; mIn.value=q[1]; vIn.value=q[2]; sIn.value=q[3]; msIn.value=q[4]; mkIn.value=q[5]; reset(); run(); });
+  playBtn.addEventListener('click',function(){ if(running){ stop(); draw(); } else run(); });
+  slowBtn.addEventListener('click',function(){ slowBtn.setAttribute('aria-pressed',String(!pressed(slowBtn))); draw(); });
+  ['#ip-exp','#ip-comp','#ip-num'].forEach(function(s){ $(s).addEventListener('click',function(){ var b=$(s); b.setAttribute('aria-pressed',String(!pressed(b))); if(s==='#ip-exp') reset(); else draw(); }); });
+  $('#ip-reset').addEventListener('click',reset);
+
+  symSeg($('#ip-sym'), draw);
+  reset();
+
+  // in a workout frame, tell the parent page how tall this is
+  if(EMBED && window.parent!==window){
+    var pageEl=document.getElementById('page');
+    var post=function(){ parent.postMessage({animHeight: Math.ceil(pageEl.getBoundingClientRect().height)}, '*'); };
+    if(window.ResizeObserver) new ResizeObserver(post).observe(pageEl);
+    window.addEventListener('load', post);
+  }
+})();
+</script>
+</body>
+</html>
