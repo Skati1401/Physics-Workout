@@ -312,6 +312,7 @@ svg text{font-family:var(--f-mono)}
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
 table.units.res-tbl{min-width:0}
+.table-scroll:has(> .res-tbl){width:fit-content;max-width:100%}
 .graph-split{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:16px 22px;align-items:start}
 @media (max-width:900px){.graph-split{grid-template-columns:minmax(0,1fr)}}
 .graph-side .calc-inputs{grid-template-columns:minmax(0,1fr)}
@@ -323,6 +324,20 @@ table.units.res-tbl{min-width:0}
 .graph-box{max-width:560px}
 .graph .g-line-b{stroke:var(--c2)}
 .graph .g-line-c{stroke:var(--c1)}
+.plot-split{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:16px 22px;align-items:start}
+@media (max-width:900px){.plot-split{grid-template-columns:minmax(0,1fr)}}
+.plot-svg{cursor:crosshair;touch-action:manipulation;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel)}
+.graph .g-minor{stroke:var(--panel-border);stroke-width:.5;opacity:.7}
+.graph .pc{stroke:var(--ink);stroke-width:2.2;fill:none}
+.graph .pc.ok{stroke:var(--good)}
+.graph .pc.no{stroke:var(--bad)}
+.graph .pcur{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:3 3}
+.plot-svg:not(:focus-visible) .pcur{opacity:.0}
+.plot-list{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:6px}
+.plot-row{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--panel-border);border-radius:6px;background:var(--panel-2);font:500 14px var(--f-mono)}
+.plot-row.is-next{border-color:var(--accent);background:var(--accent-soft)}
+.plot-row.is-correct{border-color:var(--good);background:var(--good-soft);color:var(--good)}
+.plot-state{font-size:12px;color:var(--ink-faint)}
 
 </style>
 <div class="page">
@@ -339,7 +354,6 @@ table.units.res-tbl{min-width:0}
 <button class="tab-btn" role="tab" id="tab-experiment" data-tab="experiment" aria-selected="false" aria-controls="panel-experiment">Experiment</button>
 <button class="tab-btn" role="tab" id="tab-results" data-tab="results" aria-selected="false" aria-controls="panel-results">Results</button>
 <button class="tab-btn" role="tab" id="tab-graphs" data-tab="graphs" aria-selected="false" aria-controls="panel-graphs">Graphs</button>
-<button class="tab-btn" role="tab" id="tab-materials" data-tab="materials" aria-selected="false" aria-controls="panel-materials">Materials</button>
 <button class="tab-btn" role="tab" id="tab-calculate" data-tab="calculate" aria-selected="false" aria-controls="panel-calculate">Calculate</button>
 <button class="tab-btn" role="tab" id="tab-accuracy" data-tab="accuracy" aria-selected="false" aria-controls="panel-accuracy">Accuracy</button>
 <button class="tab-btn" role="tab" id="tab-exam" data-tab="exam" aria-selected="false" aria-controls="panel-exam">Exam</button>
@@ -357,7 +371,7 @@ table.units.res-tbl{min-width:0}
 <div class="acts"></div>
 </section>
 <section id="panel-experiment" class="panel" role="tabpanel" aria-labelledby="tab-experiment" hidden>
-<div class="panel-head"><h2>Take Your Own Readings</h2><div class="spec"><b>1.22</b><b>1.23</b></div></div>
+<div class="panel-head"><h2>Take Your Own Readings</h2><div class="spec"><b>1.22</b><b>1.23</b><b>1.24</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-results" class="panel" role="tabpanel" aria-labelledby="tab-results" hidden>
@@ -366,10 +380,6 @@ table.units.res-tbl{min-width:0}
 </section>
 <section id="panel-graphs" class="panel" role="tabpanel" aria-labelledby="tab-graphs" hidden>
 <div class="panel-head"><h2>Force–Extension Graphs</h2><div class="spec"><b>1.22</b><b>1.23</b></div></div>
-<div class="acts"></div>
-</section>
-<section id="panel-materials" class="panel" role="tabpanel" aria-labelledby="tab-materials" hidden>
-<div class="panel-head"><h2>Wires, Rubber Bands and Elastic Behaviour</h2><div class="spec"><b>1.22</b><b>1.23</b><b>1.24</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-calculate" class="panel" role="tabpanel" aria-labelledby="tab-calculate" hidden>
@@ -402,8 +412,8 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='cp-hookes-law-v2';
-const TAB_IDS=['overview', 'method', 'variables', 'experiment', 'results', 'graphs', 'materials', 'calculate', 'accuracy', 'exam'];
+const STORE_KEY='cp-hookes-law-v3';
+const TAB_IDS=['overview', 'method', 'variables', 'experiment', 'results', 'graphs', 'calculate', 'accuracy', 'exam'];
 let activeTab='overview';
 const reflowers=[];
 const tickers=[];
@@ -969,7 +979,7 @@ window.addEventListener('message',e=>{
 
 /* ================= EXPERIMENT ================= */
 {
-  const body=act('experiment','Your turn','Take your own readings','Press Experiment, then add the masses one at a time and watch your results table and graph fill in. Do it for all three samples. Which one obeys Hooke’s law, and up to what load?');
+  const body=act('experiment','Your turn','Take your own readings','Press Experiment, choose a mass size, then add the masses one at a time and watch your results table and graph fill in. Then take them off one at a time. Do it for all three samples. Which obeys Hooke’s law, up to what load, and which go back to their original length?');
 }
 frameAct('experiment','animations/hookes-law.html','','Hooke’s law animation: stretching a spring, wire or rubber band','Hooke’s law',false);
 
@@ -1000,18 +1010,18 @@ frameAct('experiment','animations/hookes-law.html','','Hooke’s law animation: 
   ],explain:'The independent variable is the one she changes on purpose: the thickness of the wire. She keeps the load the same and measures the extension.'});
 }
 {
-  const body=act('variables','Predict','Choosing the graph','');
-  createPredict({host:body,q:'Force and extension can both take any value. How should the results be shown?',options:[
-    {text:'A line graph with a line of best fit',correct:true},
-    {text:'A bar chart with one bar per load',why:'A bar chart is for a variable in categories (such as type of material). Force can take any value, so it goes on a continuous scale.'},
-    {text:'A pie chart of the extensions',why:'A pie chart shows parts of a whole. The extensions are not parts of a whole.'},
-    {text:'Just the table, with no graph',why:'Without a graph you cannot see where the straight line ends, so you cannot find the limit of proportionality.'}
-  ],explain:'Both variables are continuous, so plot a line graph and draw a line of best fit. The straight part shows where Hooke’s law is obeyed.'});
+  const body=act('variables','Predict','Measuring the original length','');
+  createPredict({host:body,q:'Why must Ali read the length of the spring before he adds any masses?',options:[
+    {text:'Each extension is the new length minus this original length',correct:true},
+    {text:'It is the only way to check the ruler is vertical',why:'A set square checks the ruler is vertical. The original length is needed to work out every extension.'},
+    {text:'The spring is at its longest before any masses go on',why:'With no load the spring is at its shortest. That length is what each extension is measured from.'},
+    {text:'It shows whether the spring obeys Hooke’s law',why:'One length on its own cannot show that. You need the extensions for several loads.'}
+  ],explain:'Extension = new length − original length. Without the original length you cannot work out any extension, and an error in it would shift every result.'});
 }
 
-/* ================= MATERIALS: wires, rubber bands, elastic behaviour ================= */
+/* ================= EXPERIMENT (continued): wires, rubber bands, elastic behaviour ================= */
 {
-  const body=act('materials','Sort','Elastic or permanently deformed?','Elastic means it goes back to its original shape once the force is removed. Sort each card, then press Check.');
+  const body=act('experiment','Sort','Elastic or permanently deformed?','Elastic means it goes back to its original shape once the force is removed. Sort each card, then press Check.');
   createSortGame({host:body,cats:[
     {id:'e',label:'Elastic behaviour',hint:'Back to its original shape',color:'--c3',soft:'--c3-soft'},
     {id:'p',label:'Permanently deformed',hint:'Stays changed',color:'--c2',soft:'--c2-soft'}
@@ -1027,27 +1037,16 @@ frameAct('experiment','animations/hookes-law.html','','Hooke’s law animation: 
   ]});
 }
 {
-  const body=act('materials','Match','Samples and key terms','Pair each sample or term with what it means.');
-  createMatchGame({host:body,leftTitle:'Sample or term',rightTitle:'What it means',pairs:[
-    {id:'s',l:'Helical spring',r:'Straight line for centimetres of extension, then curves past its limit'},
-    {id:'w',l:'Metal wire',r:'Straight line, but extensions of only a millimetre or so'},
-    {id:'r',l:'Rubber band',r:'Never a straight line, so extension is never proportional to force'},
-    {id:'h',l:'Hooke’s law',r:'Extension is directly proportional to the force applied'},
-    {id:'l',l:'Limit of proportionality',r:'The point where the straight-line part of the graph ends'},
-    {id:'e',l:'Elastic limit',r:'Beyond this, the sample does not return to its original length'}
-  ]});
-}
-{
-  const body=act('materials','Predict','Testing a metal wire','');
+  const body=act('experiment','Predict','Testing a metal wire','');
   createPredict({host:body,q:'Copper wire stretches very little. Why do you test a long, thin wire (about 2 m) instead of a short, thick one?',options:[
     {text:'A long, thin wire gives an extension big enough to measure',correct:true},
     {text:'A short, thick wire would snap more easily',why:'A thick wire is stronger, not weaker. The problem is that its extension would be too small to measure.'},
     {text:'A long wire makes the load on it bigger',why:'The load is set by the masses you hang, not by the length of the wire.'},
     {text:'Thin wire obeys Hooke’s law, but thick wire does not',why:'Both obey Hooke’s law at first. The thin, long wire just stretches more, so it is easier to measure.'}
-  ],explain:'Each part of the wire stretches a little, so a longer wire stretches more in total, and a thinner wire stretches more for the same load. That makes a millimetre-sized extension big enough to measure.'});
+  ],explain:'Each part of the wire stretches a little, so a longer wire stretches more in total, and a thinner wire stretches more for the same load. Even then the extension is only millimetres, so it is read with a marker and a vernier scale rather than a ruler.'});
 }
 {
-  const body=act('materials','Predict','Unloading a rubber band','');
+  const body=act('experiment','Predict','Unloading a rubber band','');
   createPredict({host:body,q:'Ali stretches a rubber band with loads up to 5 N. Its graph is curved. When he takes the loads off, it returns to its original length. Which is right?',options:[
     {text:'It shows elastic behaviour, but does not obey Hooke’s law',correct:true},
     {text:'It obeys Hooke’s law, because it is elastic',why:'Elastic only means it returns to its original shape. Hooke’s law needs a straight line through the origin, and this graph is curved.'},
@@ -1058,14 +1057,14 @@ frameAct('experiment','animations/hookes-law.html','','Hooke’s law animation: 
 
 /* ================= GRAPHS ================= */
 const GR={xMin:0,xMax:20,yMin:0,yMax:10,xTicks:[0,4,8,12,16,20],yTicks:[0,2,4,6,8,10],xLabel:'extension (cm)',yLabel:'force (N)',W:560,H:340};
+function lab(g0,t,x,y){return '<circle cx="'+g0.gx(x)+'" cy="'+g0.gy(y)+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+g0.gx(x)+'" y="'+(g0.gy(y)+5)+'" text-anchor="middle" font-size="14" fill="var(--ink)">'+t+'</text>';}
 function hookeGraph(label){
   const A=[[0,0],[4,8],[4.6,8.7],[5.4,9.4],[6.5,10]];
   const C=[[0,0],[10,5],[12,5.7],[14.5,6.3],[18,6.8]];
   const B=[[0,0],[1,0.9],[2.5,1.5],[5,2],[8,2.5],[11,3.1],[13.5,3.9],[15,5],[16,6.6],[16.6,8.2],[17,10]];
   const g0=lineGraph(Object.assign({points:[[0,0]]},GR));
-  const lab=(t,x,y)=>'<circle cx="'+g0.gx(x)+'" cy="'+g0.gy(y)+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+g0.gx(x)+'" y="'+(g0.gy(y)+5)+'" text-anchor="middle" font-size="14" fill="var(--ink)">'+t+'</text>';
   return lineGraph(Object.assign({label:label,segments:[{pts:A},{pts:B,cls:'g-line-b'},{pts:C,cls:'g-line-c'}],
-    extra:lab('A',6.5,10)+lab('B',17.2,10)+lab('C',18,6.8)},GR)).svg;
+    extra:lab(g0,'A',6.5,10)+lab(g0,'B',17,10)+lab(g0,'C',18,6.8)},GR)).svg;
 }
 {
   const body=act('graphs','Calculate','Read the graph','The graph shows force against extension for two springs and a rubber band. Read your answers off the graph.');
@@ -1095,7 +1094,44 @@ function hookeGraph(label){
     {text:'C: its line goes further across the graph',why:'Going further across means it stretched more, which makes it easier to stretch, not stiffer.'},
     {text:'Neither: both start as straight lines',why:'Both obey Hooke’s law at first, but their lines have different slopes, so they are not equally stiff.'},
     {text:'C: it has the lower limit of proportionality',why:'The limit tells you where the straight part ends, not how stiff the spring is.'}
-  ],explain:'On a force–extension graph the stiffer spring has the steeper line. Spring A needs 2 N for each centimetre; spring C needs only 0.5 N.'});
+  ],explain:'On a force–extension graph (force up the side) the stiffer spring has the steeper line. Spring A needs 2 N for each centimetre; spring C needs only 0.5 N.'});
+}
+/* the same idea with the axes the other way round, as many exam papers draw it */
+const GR2={xMin:0,xMax:10,yMin:0,yMax:12,xTicks:[0,2,4,6,8,10],yTicks:[0,2,4,6,8,10,12],xLabel:'force (N)',yLabel:'extension (cm)',W:560,H:340};
+function swapGraph(label){
+  const P=[[0,0],[8,9.6],[9,11],[9.6,12]];
+  const Q=[[0,0],[10,5]];
+  const g0=lineGraph(Object.assign({points:[[0,0]]},GR2));
+  return lineGraph(Object.assign({label:label,segments:[{pts:P,cls:'g-line-c'},{pts:Q,cls:'g-line-b'}],
+    extra:lab(g0,'P',9.6,12)+lab(g0,'Q',10,5)},GR2)).svg;
+}
+{
+  const body=act('graphs','Calculate','The axes the other way round','Many exam questions plot extension up the side and force along the bottom. Read your answers off this graph for springs P and Q.');
+  const split=mk('div','graph-split');body.appendChild(split);
+  split.appendChild(mk('div','graph-box',swapGraph('Extension against force for springs P and Q')));
+  const side=mk('div','graph-side');split.appendChild(side);
+  createCalc({host:side,questions:[
+    {q:'Spring P: what is its extension with a 5 N load?',unit:'cm',answer:6,working:'Line P is straight up to 8 N.<br>At 5 N, read across from the line: extension = 6 cm'},
+    {q:'Spring Q: what load gives an extension of 3 cm?',unit:'N',answer:6,working:'At 10 N, extension = 5 cm<br>At 3 cm, force = [[3|5]] × 10<br>force = 6 N'}
+  ]});
+}
+{
+  const body=act('graphs','Predict','Stiffer, with the axes swapped','');
+  createPredict({host:body,q:'On this graph, which spring is stiffer (harder to stretch), P or Q?',options:[
+    {text:'Q: it stretches less for each newton',correct:true},
+    {text:'P: its line is steeper',why:'With extension up the side, a steeper line means more stretch for each newton, so P is easier to stretch.'},
+    {text:'P: it reaches a bigger extension',why:'A bigger extension for the same load means the spring is easier to stretch, not stiffer.'},
+    {text:'Neither: both are straight lines',why:'Both obey Hooke’s law, but they stretch by different amounts for the same load.'}
+  ],explain:'With extension up the side, the stiffer spring has the less steep line. Q stretches 0.5 cm for each newton; P stretches 1.2 cm.'});
+}
+{
+  const body=act('graphs','Predict','Is steeper always stiffer?','');
+  createPredict({host:body,q:'Sophie says, “The steeper line is always the stiffer spring.” Is she right?',options:[
+    {text:'Only when force is up the side of the graph',correct:true},
+    {text:'Yes, on every force–extension graph',why:'Look at P and Q: with extension up the side, the steeper line (P) is the easier spring to stretch.'},
+    {text:'Only when extension is up the side of the graph',why:'With extension up the side, the steeper line stretches more for each newton, so it is less stiff.'},
+    {text:'No: stiffness cannot be seen on a graph',why:'You can see it from the slope; you just have to check which way round the axes are.'}
+  ],explain:'Always check the axes. Force up the side: steeper means stiffer. Extension up the side: steeper means easier to stretch.'});
 }
 
 /* ================= 4. RESULTS ================= */
@@ -1113,14 +1149,83 @@ function hookeGraph(label){
     {q:'Extension with an 8 N load',unit:'cm',answer:11.0,working:w('23.0','11.0')}
   ]});
 }
+/* ---- plot the results: click (or use the arrow keys and Enter) to place each cross ---- */
+function createPlot(cfg){
+  const host=cfg.host, pts=cfg.points, o=cfg.graph;
+  const W=o.W,H=o.H,pl=58,pr=18,pt=16,pb=50;
+  const gx=x=>pl+(x-o.xMin)/(o.xMax-o.xMin)*(W-pl-pr), gy=y=>H-pb-(y-o.yMin)/(o.yMax-o.yMin)*(H-pt-pb);
+  const ix=px=>o.xMin+(px-pl)/(W-pl-pr)*(o.xMax-o.xMin), iy=py=>o.yMin+(H-pb-py)/(H-pt-pb)*(o.yMax-o.yMin);
+  const snap=(v,s)=>Math.round(v/s)*s;
+  const wrap=mk('div','plot-split');host.appendChild(wrap);
+  const box=mk('div','plot-box');wrap.appendChild(box);
+  const side=mk('div','plot-side');wrap.appendChild(side);
+  const list=mk('ol','plot-list');side.appendChild(list);
+  let placed=[],locked=[],cur={x:0,y:0},wrongIdx=-1;
+  const b=bar(side,[{label:'Check plot',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  function next(){for(let i=0;i<pts.length;i++)if(!placed[i])return i;return -1;}
+  function cross(x,y,cls){const cx=gx(x),cy=gy(y);return '<path class="'+cls+'" d="M'+(cx-6)+','+(cy-6)+' L'+(cx+6)+','+(cy+6)+' M'+(cx+6)+','+(cy-6)+' L'+(cx-6)+','+(cy+6)+'"/>';}
+  function render(){
+    let s='<svg class="graph plot-svg" viewBox="0 0 '+W+' '+H+'" tabindex="0" role="application" aria-label="Graph paper: click to plot the next point, or move with the arrow keys and press Enter">';
+    for(let x=o.xMin;x<=o.xMax+1e-9;x+=o.minor[0])s+='<line class="g-minor" x1="'+gx(x)+'" x2="'+gx(x)+'" y1="'+pt+'" y2="'+(H-pb)+'"/>';
+    for(let y=o.yMin;y<=o.yMax+1e-9;y+=o.minor[1])s+='<line class="g-minor" y1="'+gy(y)+'" y2="'+gy(y)+'" x1="'+pl+'" x2="'+(W-pr)+'"/>';
+    o.yTicks.forEach(t=>{s+='<line class="g-grid" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+gy(t)+'" y2="'+gy(t)+'"/><text class="g-tick" x="'+(pl-8)+'" y="'+(gy(t)+5)+'" text-anchor="end">'+t+'</text>';});
+    o.xTicks.forEach(t=>{s+='<line class="g-grid" y1="'+pt+'" y2="'+(H-pb)+'" x1="'+gx(t)+'" x2="'+gx(t)+'"/><text class="g-tick" x="'+gx(t)+'" y="'+(H-pb+20)+'" text-anchor="middle">'+t+'</text>';});
+    s+='<line class="g-axis" x1="'+pl+'" x2="'+pl+'" y1="'+pt+'" y2="'+(H-pb)+'"/><line class="g-axis" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+(H-pb)+'" y2="'+(H-pb)+'"/>';
+    s+='<text class="g-lab" x="'+(pl+(W-pl-pr)/2)+'" y="'+(H-8)+'" text-anchor="middle">'+o.xLabel+'</text><text class="g-lab" transform="translate(16 '+(pt+(H-pt-pb)/2)+') rotate(-90)" text-anchor="middle">'+o.yLabel+'</text>';
+    placed.forEach((p,i)=>{if(p)s+=cross(p.x,p.y,'pc'+(locked[i]?' ok':'')+(i===wrongIdx?' no':''));});
+    if(next()>=0)s+='<circle class="pcur" cx="'+gx(cur.x)+'" cy="'+gy(cur.y)+'" r="7"/>';
+    s+='</svg>';
+    box.innerHTML=s;
+    const svg=box.querySelector('svg');
+    svg.addEventListener('click',e=>{
+      const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*W,py=(e.clientY-r.top)/r.height*H;
+      const x=snap(ix(px),o.snap[0]),y=snap(iy(py),o.snap[1]);
+      if(x<o.xMin||x>o.xMax||y<o.yMin||y>o.yMax)return;
+      // clicking an unlocked cross takes it off again
+      const hit=placed.findIndex((p,i)=>p&&!locked[i]&&Math.abs(gx(p.x)-gx(x))<8&&Math.abs(gy(p.y)-gy(y))<8);
+      if(hit>=0){placed[hit]=null;render();return;}
+      cur={x:x,y:y};place();
+    });
+    svg.addEventListener('keydown',e=>{
+      const k=e.key,d={ArrowRight:[1,0],ArrowLeft:[-1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[k];
+      if(d){e.preventDefault();cur={x:clamp(snap(cur.x+d[0]*o.snap[0],o.snap[0]),o.xMin,o.xMax),y:clamp(snap(cur.y+d[1]*o.snap[1],o.snap[1]),o.yMin,o.yMax)};render();box.querySelector('svg').focus();b.say('Cursor at ('+fmt(cur.x,1)+', '+fmt(cur.y,1)+')','');}
+      else if(k==='Enter'||k===' '){e.preventDefault();place();box.querySelector('svg').focus();}
+    });
+    list.innerHTML='';
+    pts.forEach((p,i)=>{
+      const li=mk('li','plot-row'+(locked[i]?' is-correct':'')+(placed[i]&&!locked[i]?' is-placed':'')+(i===next()?' is-next':''),
+        '<span>'+cfg.rowText(p)+'</span><span class="plot-state">'+(locked[i]?'✓':placed[i]?'plotted':i===next()?'next':'')+'</span>');
+      list.appendChild(li);
+    });
+  }
+  function place(){const i=next();if(i<0)return;placed[i]={x:cur.x,y:cur.y};wrongIdx=-1;render();if(next()<0)b.say('All points plotted. Press Check plot.','');}
+  function check(){
+    let ok=0,bad=-1;
+    pts.forEach((p,i)=>{if(!placed[i])return;if(Math.abs(placed[i].x-p.x)<=o.snap[0]/2+1e-9&&Math.abs(placed[i].y-p.y)<=o.snap[1]/2+1e-9)locked[i]=true;else if(bad<0)bad=i;});
+    ok=locked.filter(Boolean).length;
+    if(ok===pts.length){b.say('All '+pts.length+' points plotted correctly. Now choose the line of best fit below.','good');wrongIdx=-1;render();return;}
+    if(bad>=0){wrongIdx=bad;render();b.say(ok+' of '+pts.length+' correct. The red cross is in the wrong place: check the scale on each axis.','bad');
+      setTimeout(()=>{if(!locked[bad])placed[bad]=null;wrongIdx=-1;render();},900);}
+    else b.say(ok+' of '+pts.length+' correct so far. Plot the rest.','');
+  }
+  function reset(){placed=[];locked=[];cur={x:0,y:0};wrongIdx=-1;b.say('','');render();}
+  reset();
+}
+{
+  const body=act('results','Plot','Plot Ali’s results','Plot each point from Ali’s table as a small cross. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
+  createPlot({host:body,
+    points:[{x:2.4,y:2},{x:4.8,y:4},{x:7.2,y:6},{x:11,y:8}],
+    rowText:p=>p.y+' N, '+fmt(p.x,1)+' cm',
+    graph:{xMin:0,xMax:12,yMin:0,yMax:8,xTicks:[0,2,4,6,8,10,12],yTicks:[0,2,4,6,8],minor:[0.4,0.5],snap:[0.2,0.5],xLabel:'extension (cm)',yLabel:'force (N)',W:560,H:340}});
+}
 {
   const body=act('results','Predict','Reading the results','');
   createPredict({host:body,q:'Use Ali’s table. Up to which load does the spring obey Hooke’s law?',options:[
-    {text:'Up to 6 N: each extra 2 N adds another 2.4 cm',correct:true},
+    {text:'To at least 6 N: each extra 2 N adds 2.4 cm',correct:true},
     {text:'Up to 8 N: the extension goes up every time',why:'Going up is not enough. Hooke’s law needs the extension to be proportional to the force; from 6 N to 8 N it grows by 3.8 cm, not 2.4 cm.'},
     {text:'Only to 2 N: the later rows are all different',why:'The extensions are different, but 4.8 cm is twice 2.4 cm and 7.2 cm is three times it, so they are still in proportion.'},
     {text:'Never: no extension equals its load',why:'Proportional does not mean equal. It means doubling the force doubles the extension.'}
-  ],explain:'From 0 to 6 N, each extra 2 N adds 2.4 cm, so extension is directly proportional to force. From 6 N to 8 N it adds 3.8 cm, so the limit of proportionality is at about 6 N.'});
+  ],explain:'From 0 to 6 N, each extra 2 N adds 2.4 cm, so extension is directly proportional to force. From 6 N to 8 N it adds 3.8 cm. So the spring obeys Hooke’s law to at least 6 N, and its limit of proportionality is somewhere between 6 N and 8 N.'});
 }
 {
   const body=act('results','Predict','Taking the masses off','');
@@ -1130,6 +1235,27 @@ function hookeGraph(label){
     {text:'Springs always stay a little longer; that is normal',why:'A spring that is not overloaded returns to its original length. Staying longer is a sign it was overloaded.'},
     {text:'The extension at 8 N must have been measured wrongly',why:'The 8 N reading fits a spring that has gone past its limit. The longer final length is a second sign of the same thing.'}
   ],explain:'Elastic behaviour means the spring goes back to its original shape when the load is removed. This one was loaded too far (8 N), so it has been permanently deformed.'});
+}
+
+{
+  const body=act('results','Predict','The line of best fit','');
+  createPredict({host:body,q:'What line of best fit should Ali draw through his plotted points?',options:[
+    {text:'A straight line through the origin to 6 N, then a smooth curve',correct:true},
+    {text:'Short straight lines joining each point to the next',why:'Joining the dots follows every small error. A line of best fit shows the trend, so it is one smooth line.'},
+    {text:'One straight line through every point, from 0 to 8 N',why:'The 8 N point is well off the straight line, so the trend changes there. Forcing one straight line hides the limit of proportionality.'},
+    {text:'A smooth curve from the origin through every point',why:'The first four points lie on a straight line. Drawing a curve there hides that the spring obeys Hooke’s law.'}
+  ],explain:'Draw one thin, smooth line that follows the trend: straight through the origin while the points are in line, then curving once they are not.'});
+}
+{
+  const body=act('results','Predict','An anomalous result','');
+  createPredict({host:body,q:'Zahra’s results are below. Which result is anomalous, and what should she do?',
+    pre:'<div class="table-scroll"><table class="units res-tbl"><thead><tr><th>Load (N)</th><th>0</th><th>2</th><th>4</th><th>6</th><th>8</th></tr></thead><tbody><tr><th>Extension (cm)</th><td>0</td><td>1.6</td><td>3.2</td><td>5.9</td><td>6.4</td></tr></tbody></table></div>',
+    options:[
+    {text:'6 N: repeat that reading, and leave it out of the line',correct:true},
+    {text:'8 N: it is the biggest, so leave it out',why:'6.4 cm fits the pattern: 1.6 cm for each 2 N. Being the biggest does not make a result anomalous.'},
+    {text:'6 N: average it in with the other results',why:'Averaging an anomalous result in drags the answer away from the true value. Repeat it, and ignore it when drawing the line.'},
+    {text:'None: every reading counts, so use them all',why:'One result breaks the pattern of 1.6 cm for each 2 N, so it is probably a mistake in measuring or recording.'}
+  ],explain:'Each 2 N should add 1.6 cm, so 6 N should give about 4.8 cm, not 5.9 cm. An anomalous result does not fit the pattern: repeat it if you can, and leave it out when drawing the line of best fit.'});
 }
 
 /* ================= 5. CALCULATE ================= */
@@ -1157,10 +1283,10 @@ function hookeGraph(label){
 
 /* ================= 6. ACCURACY AND SAFETY ================= */
 {
-  const body=act('accuracy','Sort','Better readings or safer?','Sort each card into the right bin, then press Check.');
+  const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
-    {id:'a',label:'More accurate readings',hint:'',color:'--c1',soft:'--c1-soft'},
-    {id:'s',label:'Keeps people safe',hint:'',color:'--c3',soft:'--c3-soft'}
+    {id:'a',label:'Better results',hint:'More accurate or more useful readings',color:'--c1',soft:'--c1-soft'},
+    {id:'s',label:'Keeps people safe',hint:'Protects people and equipment',color:'--c3',soft:'--c3-soft'}
   ],items:[
     {id:'1',text:'Read the ruler with your eye level with the pointer',cat:'a'},
     {id:'2',text:'Check the ruler is vertical with a set square',cat:'a'},
@@ -1204,7 +1330,7 @@ function hookeGraph(label){
   body.appendChild(mk('p','sub','(b) 3 marks'));
   body.appendChild(mk('p','','Sophie says the spring obeys Hooke’s law for every load she used. Discuss whether she is right. Use data from the table. Write your answer, then check it.'));
   const d1=mk('details','');
-  d1.innerHTML='<summary>Check your answer</summary><div><ul><li>From 0 to 8 N, each extra 2 N adds 1.5 cm, so extension is directly proportional to load.</li><li>From 8 N to 10 N the extension goes up by 2.9 cm, much more than 1.5 cm, so it is no longer proportional.</li><li>So she is wrong: the spring obeys Hooke’s law only up to about 8 N, its limit of proportionality.</li></ul></div>';
+  d1.innerHTML='<summary>Check your answer</summary><div><ul><li>From 0 to 8 N, each extra 2 N adds 1.5 cm, so extension is directly proportional to load.</li><li>From 8 N to 10 N the extension goes up by 2.9 cm, much more than 1.5 cm, so it is no longer proportional.</li><li>So she is wrong: the spring obeys Hooke’s law to at least 8 N, and its limit of proportionality is somewhere between 8 N and 10 N.</li></ul></div>';
   body.appendChild(d1);
   body.appendChild(mk('p','sub','(c) 2 marks'));
   body.appendChild(mk('p','','When Sophie takes all the masses off, the spring is 0.4 cm longer than at the start. Explain what this shows.'));

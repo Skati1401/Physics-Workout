@@ -137,12 +137,12 @@
   .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
   .stat strong{font:600 15px var(--font-mono);color:var(--ink);}
   .stat.up strong{color:var(--accent);}
-  .exp-btns{display:flex;flex-wrap:wrap;gap:10px;}
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
   .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
   .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
   .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
   .rtable tr.new td{background:var(--cs);}
-  .rtable-wrap{max-height:200px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
   .rtable-wrap p{font-size:13px;color:var(--ink-faint);padding:8px 10px;}
   @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
   @keyframes rowin{from{opacity:0}to{opacity:1}}
@@ -192,7 +192,7 @@
       <div class="under">
         <div class="mass" id="hk-slider"><label class="lab" for="hk-f">Load (force) <output id="hk-fo"></output></label><input type="range" id="hk-f" min="0" max="10" step="0.5" value="0"></div>
         <div class="exp-btns" id="hk-exp-btns" hidden>
-          <button type="button" class="btn btn-primary" data-action="add">Add a 100 g mass</button>
+          <button type="button" class="btn btn-primary" data-action="add">Add a mass</button>
           <button type="button" class="btn" data-action="remove">Take one off</button>
         </div>
         <div class="btn-group">
@@ -203,6 +203,7 @@
     </div>
     <div class="side">
       <div><div class="lab">Material</div><div class="seg" id="hk-mat"></div></div>
+      <div id="hk-msize-wrap" hidden><div class="lab">Each mass</div><div class="seg" id="hk-msize"></div></div>
       <p class="note" id="hk-note" aria-live="polite"></p>
       <div id="hk-results" hidden><div class="lab">Results</div><div class="rtable-wrap" id="hk-table"></div></div>
       <details class="working" id="working">
@@ -255,24 +256,49 @@
 
   function initHookeSim(){
     var fIn=bindRange('hk-f',draw), mat='spring';
-    // Experiment mode: no theory line; 100 g (1 N) masses go on one at a time and each reading is
-    // plotted like a data logger. The line and the limit of proportionality appear once the run reaches 10 N.
-    var EXP=false, readings=[];
+    // Experiment mode: no theory line. Masses go on one at a time (50 g, 100 g or 200 g each: the student picks the interval)
+    // and each reading is plotted like a data logger. Once loading stops (10 N, or the first mass taken off),
+    // the masses come off one at a time and the unloading readings are plotted too, so the page shows whether
+    // the sample is elastic (back to its original length) or permanently stretched.
+    var EXP=false, step=1, phase='load', Fpeak=0, loadR=[], unloadR=[];
     var expBtn=$('#hk-exp');
     expBtn.addEventListener('click',function(){ EXP=!EXP; expBtn.setAttribute('aria-pressed',String(EXP)); clearRun(); });
-    function clearRun(){ readings=[]; fIn.value=0; $('#hk-slider').hidden=EXP; $('#hk-exp-btns').hidden=!EXP; $('#hk-results').hidden=!EXP; draw(); }
-    function noise(i){ var r=[0,1,-1,0,2,-1,1,-2,0,1,-1][i%11]; return r; }
-    function reading(F){   // what the student reads off the scale, to the scale's precision
-      var M=MATS[mat], step=M.res, gap=F>0?M.ext(F)-M.ext(F-1):0,
-        x=M.ext(F)+(F>0?noise(F)*Math.min(step*(mat==='wire'?0.5:1), gap/4):0);   // the error never makes a reading go backwards
-      return Math.round(x/step)*step;
+    var MSIZES=[{g:50,N:0.5},{g:100,N:1},{g:200,N:2}], msEl=$('#hk-msize');
+    msEl.innerHTML=MSIZES.map(function(m){ return '<button type="button" data-n="'+m.N+'" aria-pressed="'+(m.N===step)+'">'+m.g+' g</button>'; }).join('');
+    msEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; step=+b.dataset.n;
+      Array.prototype.forEach.call(msEl.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); clearRun(); });
+    function clearRun(){ loadR=[]; unloadR=[]; phase='load'; Fpeak=0; fIn.value=0; $('#hk-slider').hidden=EXP; $('#hk-exp-btns').hidden=!EXP; $('#hk-results').hidden=!EXP; $('#hk-msize-wrap').hidden=!EXP; draw(); }
+    function noise(F){ return [0,1,-1,0,2,-1,1,-2,0,1,-1,0,1,-1,2,0,-1,1,0,-2,1][Math.round(F*2)%21]; }
+    // The true extension now: on the way down an overloaded spring or wire comes back along a line parallel to
+    // its straight-line region (so it keeps a permanent extension); a rubber band comes back on a different curve.
+    function xNow(F){
+      var M=MATS[mat];
+      if(phase!=='unload' || F>=Fpeak) return M.ext(F);
+      if(mat==='rubber'){ var u=F/Fpeak; return M.ext(F)+1.5*(Fpeak/10)*6.75*u*(1-u)*(1-u); }
+      if(Fpeak<=M.lop) return M.ext(F);
+      return M.ext(Fpeak)-M.k0*(Fpeak-F);
     }
-    onAction('add',function(){ var F=readings.length; if(F>=10) return; F+=1; fIn.value=F; readings.push({F:F, x:reading(F)}); draw(true); });
-    onAction('remove',function(){ if(!readings.length) return; readings.pop(); fIn.value=readings.length; draw(); });
+    function reading(F, prev){   // what the student reads off the scale, to the scale's precision
+      var M=MATS[mat], res=M.res, x=xNow(F), gap=Math.abs(x-prev);
+      if(F>0) x+=noise(F)*Math.min(res*(mat==='wire'?0.5:1), gap/4);   // the error never makes a reading go the wrong way
+      return Math.max(0, Math.round(x/res)*res);
+    }
+    onAction('add',function(){
+      if(phase!=='load' || Fpeak>=10-1e-9) return;
+      var prev=loadR.length?loadR[loadR.length-1].x:0, F=Math.round((Fpeak+step)*2)/2;
+      Fpeak=F; fIn.value=F; loadR.push({F:F, x:reading(F, prev)}); draw('load');
+    });
+    onAction('remove',function(){
+      var F=+fIn.value; if(F<=0 || Fpeak<=0) return;
+      if(phase==='load'){ phase='unload'; }
+      var prev=unloadR.length?unloadR[unloadR.length-1].x:loadR[loadR.length-1].x;
+      F=Math.round((F-step)*2)/2; if(F<0) F=0;
+      fIn.value=F; unloadR.push({F:F, x:reading(F, prev)}); draw('unload');
+    });
     onAction('reset',function(){ clearRun(); });
     var MATS={
-      spring:{name:'Spring', unit:'cm', res:0.1, orig:10, xmax:30, lop:6, ext:function(F){ return F<=6?1.5*F:9+1.5*(F-6)+0.9*(F-6)*(F-6); }, px:4},
-      wire:{name:'Metal wire', unit:'mm', res:0.05, orig:2000, xmax:8, lop:7, ext:function(F){ return F<=7?0.25*F:1.75+0.25*(F-7)+0.6*(F-7)*(F-7); }, px:15},
+      spring:{name:'Spring', unit:'cm', res:0.1, k0:1.5, orig:10, xmax:30, lop:6, ext:function(F){ return F<=6?1.5*F:9+1.5*(F-6)+0.5*(F-6)*(F-6); }, px:4},
+      wire:{name:'Metal wire', unit:'mm', res:0.05, k0:0.25, orig:2000, xmax:8, lop:7, ext:function(F){ return F<=7?0.25*F:1.75+0.25*(F-7)+0.6*(F-7)*(F-7); }, px:15},
       rubber:{name:'Rubber band', unit:'cm', res:0.1, orig:8, xmax:25, lop:null, ext:function(F){ var L=function(f){ return 1/(1+Math.exp(-(f-4)/1.4)); }; return 20*(L(F)-L(0))/(L(10)-L(0)); }, px:4}
     };
     var segEl=$('#hk-mat');
@@ -280,7 +306,7 @@
     segEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; mat=b.dataset.k;
       Array.prototype.forEach.call(segEl.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); if(EXP) clearRun(); else draw(); });
     function draw(isNew){
-      var M=MATS[mat], F=+fIn.value, x=M.ext(F), g='', top=24, X0=70;
+      var M=MATS[mat], F=+fIn.value, x=EXP?xNow(F):M.ext(F), g='', top=24, X0=70;
       var baseLen = mat==='wire'?60:M.orig*M.px, len=baseLen+x*M.px, y1=top+14+len;
       g+='<rect x="'+(X0-36)+'" y="'+top+'" width="72" height="12" fill="var(--panel-border)" stroke="var(--ink-soft)"/>';
       if(mat==='spring'){ var n=14, pth='M'+X0+','+(top+12); for(var i=1;i<=n;i++){ pth+=' L'+(X0+(i%2?10:-10))+','+(top+12+len*i/(n+1)); } pth+=' L'+X0+','+y1; g+='<path d="'+pth+'" fill="none" stroke="var(--elastic)" stroke-width="2.5"/>'; }
@@ -288,6 +314,11 @@
       else { g+='<path d="M'+(X0-5)+','+(top+12)+' L'+(X0-5)+','+y1+' M'+(X0+5)+','+(top+12)+' L'+(X0+5)+','+y1+'" stroke="var(--elastic)" stroke-width="3" fill="none"/>'; }
       g+='<rect x="'+(X0-18)+'" y="'+y1+'" width="36" height="'+(16+F*2)+'" rx="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+X0+'" y="'+(y1+12+F)+'" text-anchor="middle" font-size="11" fill="var(--ink)">'+F+' N</text>';
       g+='<line x1="'+(X0-30)+'" x2="'+(X0+30)+'" y1="'+(top+14+baseLen)+'" y2="'+(top+14+baseLen)+'" stroke="var(--ink-faint)" stroke-dasharray="4 3"/><text x="'+(X0-34)+'" y="'+(top+18+baseLen)+'" text-anchor="end" font-size="10" fill="var(--ink-faint)">start</text>';
+      if(EXP && mat==='wire'){   // a marker on the wire, read against a vernier scale
+        g+='<rect x="'+(X0+14)+'" y="'+(y1-26)+'" width="16" height="40" fill="var(--units-soft)" stroke="var(--units)"/>';
+        for(var vt=0; vt<=8; vt++) g+='<line x1="'+(X0+14)+'" x2="'+(X0+(vt%4?20:24))+'" y1="'+(y1-22+vt*4)+'" y2="'+(y1-22+vt*4)+'" stroke="var(--units)"/>';
+        g+='<line x1="'+(X0-6)+'" x2="'+(X0+14)+'" y1="'+(y1-6)+'" y2="'+(y1-6)+'" stroke="var(--accent)" stroke-width="2"/><text x="'+(X0+34)+'" y="'+(y1-12)+'" font-size="9.5" fill="var(--ink-soft)">marker and</text><text x="'+(X0+34)+'" y="'+(y1-1)+'" font-size="9.5" fill="var(--ink-soft)">vernier scale</text>';
+      }
       if(EXP && mat!=='wire'){   // clamped vertical ruler with a pointer on the bottom of the sample
         var RX=X0+44, r0=top+14+baseLen;
         g+='<rect x="'+RX+'" y="'+(top+14)+'" width="22" height="'+(250-top)+'" fill="var(--units-soft)" stroke="var(--units)" stroke-width="1"/>';
@@ -302,32 +333,45 @@
       var stepX=M.xmax/5; for(i=0;i<=5;i++){ var ev=i*stepX; g+='<line x1="'+gx(ev)+'" x2="'+gx(ev)+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--panel-border)"/><text x="'+gx(ev)+'" y="'+(GY+GH+15)+'" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">'+num(ev,1)+'</text>'; }
       g+='<line x1="'+GX+'" x2="'+GX+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/><line x1="'+GX+'" x2="'+(GX+GW)+'" y1="'+(GY+GH)+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
       g+='<text x="'+(GX+GW/2)+'" y="'+(GY+GH+32)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">extension ('+M.unit+')</text><text x="'+GX+'" y="'+(GY-8)+'" font-size="11.5" fill="var(--ink-soft)">force (N)</text>';
-      var done = EXP && readings.length===10;
-      if(!EXP || done){
-        var tr=[]; for(var f=0;f<=F+1e-9;f+=0.1){ var e=Math.min(M.ext(f),M.xmax); tr.push(gx(e)+','+gy(f)); }
-        if(tr.length>1) g+='<polyline points="'+tr.join(' ')+'" fill="none" stroke="var(--elastic)" stroke-width="2.5"'+(done?' stroke-dasharray="7 5" opacity=".8"':'')+'/>';
+      var loadDone = EXP && (phase==='unload' || Fpeak>=10-1e-9), unloadDone = EXP && phase==='unload' && F<=0;
+      function curve(fn, f0, f1, dash){ var tr=[]; for(var f=f0; f<=f1+1e-9; f+=0.1) tr.push(gx(Math.min(fn(f),M.xmax))+','+gy(f)); return tr.length>1?'<polyline points="'+tr.join(' ')+'" fill="none" stroke="var(--elastic)" stroke-width="2.5"'+(dash?' stroke-dasharray="7 5" opacity=".8"':'')+'/>':''; }
+      if(!EXP) g+=curve(M.ext,0,F,false);
+      if(loadDone) g+=curve(M.ext,0,Fpeak,true);
+      if(unloadDone && !(mat!=='rubber' && Fpeak<=M.lop)){ var sv=phase; g+=curve(function(f){ return xNow(f); },0,Fpeak,true).replace('var(--elastic)','var(--accent)'); }
+      if(EXP){
+        loadR.forEach(function(r){ var cx=gx(Math.min(r.x,M.xmax)), cy=gy(r.F); g+='<path d="M'+(cx-5)+','+(cy-5)+' L'+(cx+5)+','+(cy+5)+' M'+(cx+5)+','+(cy-5)+' L'+(cx-5)+','+(cy+5)+'" stroke="var(--ink)" stroke-width="2"/>'; });
+        unloadR.forEach(function(r){ g+='<circle cx="'+gx(Math.min(r.x,M.xmax))+'" cy="'+gy(r.F)+'" r="4.5" fill="none" stroke="var(--accent)" stroke-width="2"/>'; });
+        if(unloadR.length) g+='<text x="'+(GX+GW-4)+'" y="'+(GY+GH-26)+'" text-anchor="end" font-size="10.5" fill="var(--ink)">× loading</text><text x="'+(GX+GW-4)+'" y="'+(GY+GH-12)+'" text-anchor="end" font-size="10.5" fill="var(--accent)">○ unloading</text>';
       }
-      if(EXP){ readings.forEach(function(r){ var cx=gx(Math.min(r.x,M.xmax)), cy=gy(r.F); g+='<path d="M'+(cx-5)+','+(cy-5)+' L'+(cx+5)+','+(cy+5)+' M'+(cx+5)+','+(cy-5)+' L'+(cx-5)+','+(cy+5)+'" stroke="var(--ink)" stroke-width="2"/>'; }); }
-      if(M.lop!==null && F>M.lop && (!EXP || done)){ var le=M.ext(M.lop); g+='<circle cx="'+gx(le)+'" cy="'+gy(M.lop)+'" r="4.5" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"/><text x="'+(gx(le)+8)+'" y="'+(gy(M.lop)+14)+'" font-size="10.5" fill="var(--accent)">limit of proportionality</text>'; }
+      if(M.lop!==null && (EXP ? (loadDone && Fpeak>M.lop) : F>M.lop)){ var le=M.ext(M.lop); g+='<circle cx="'+gx(le)+'" cy="'+gy(M.lop)+'" r="4.5" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"/><text x="'+(gx(le)+8)+'" y="'+(gy(M.lop)+14)+'" font-size="10.5" fill="var(--accent)">limit of proportionality</text>'; }
       if(!EXP) g+='<circle cx="'+gx(Math.min(x,M.xmax))+'" cy="'+gy(F)+'" r="5.5" fill="var(--elastic)" stroke="var(--panel)" stroke-width="2"/>';
       $('#hk-svg').innerHTML=g;
       var dp=mat==='wire'?2:1, newL=M.orig+x;
       $('#hk-fo').textContent=F+' N';
       if(EXP){
-        var dpx=mat==='wire'?2:1, last=readings[readings.length-1];
-        var head='<table class="rtable"><thead><tr><th>Load (N)</th>'+(mat==='wire'?'':'<th>Length ('+M.unit+')</th>')+'<th>Extension ('+M.unit+')</th></tr></thead><tbody>';
-        var rows='<tr><td>0</td>'+(mat==='wire'?'':'<td>'+num(M.orig,1)+'</td>')+'<td>0</td></tr>';
-        readings.forEach(function(r,i){ rows+='<tr'+(isNew&&i===readings.length-1?' class="new"':'')+'><td>'+r.F+'</td>'+(mat==='wire'?'':'<td>'+(M.orig+r.x).toFixed(1)+'</td>')+'<td>'+r.x.toFixed(dpx)+'</td></tr>'; });
+        var dpx=mat==='wire'?2:1, wire=mat==='wire', fx=function(v){ return v.toFixed(dpx); };
+        var last=phase==='unload'&&unloadR.length?unloadR[unloadR.length-1]:loadR[loadR.length-1];
+        var head='<table class="rtable"><thead><tr><th>Load (N)</th>'+(wire?'':'<th>Length ('+M.unit+')</th>')+'<th>Extension loading ('+M.unit+')</th><th>Extension unloading ('+M.unit+')</th></tr></thead><tbody>';
+        var loads=[0].concat(loadR.map(function(r){ return r.F; })), rows='';
+        loads.forEach(function(Fv){
+          var l=Fv===0?{x:0}:loadR.filter(function(r){ return r.F===Fv; })[0], u=unloadR.filter(function(r){ return r.F===Fv; })[0];
+          if(Fv===Fpeak && phase==='unload') u=l;
+          var isNewRow=(isNew==='load'&&l===loadR[loadR.length-1])||(isNew==='unload'&&u===unloadR[unloadR.length-1]);
+          rows+='<tr'+(isNewRow?' class="new"':'')+'><td>'+Fv+'</td>'+(wire?'':'<td>'+(M.orig+l.x).toFixed(1)+'</td>')+'<td>'+fx(l.x)+'</td><td>'+(u?fx(u.x):'')+'</td></tr>';
+        });
         $('#hk-table').innerHTML=head+rows+'</tbody></table>';
-        var tw=$('#hk-table'); tw.scrollTop=tw.scrollHeight;
-        if(last && mat!=='wire') $('#hk-eq').innerHTML='extension = new length − original length<br>extension = '+(M.orig+last.x).toFixed(1)+' − '+num(M.orig)+' = <b>'+last.x.toFixed(1)+' '+M.unit+'</b>';
-        else if(last) $('#hk-eq').innerHTML='The scale beside the wire reads the extension directly.<br>extension = <b>'+last.x.toFixed(2)+' mm</b>';
-        else $('#hk-eq').innerHTML='Original length = '+num(M.orig)+' '+M.unit+(mat==='wire'?' (2 m)':'');
-        var nt;
-        if(!last) nt='Experiment: add 100 g masses one at a time. Each one adds 1 N. Read the '+(mat==='wire'?'scale':'ruler at the pointer, with your eye level with it')+'.';
-        else if(!done) nt='Reading '+readings.length+': load '+last.F+' N, extension '+last.x.toFixed(dpx)+' '+M.unit+'. Add the next mass.';
-        else if(mat==='rubber') nt='All 10 readings taken. The points do not lie on a straight line: the band stretches easily in the middle, then gets stiffer. A rubber band does not obey Hooke’s law.';
-        else nt='All 10 readings taken. The points lie on a straight line through the origin up to '+M.lop+' N, then curve: that is the limit of proportionality.';
+        var tw=$('#hk-table'); if(isNew!=='unload') tw.scrollTop=tw.scrollHeight;
+        if(last && !wire) $('#hk-eq').innerHTML='extension = new length − original length<br>extension = '+(M.orig+last.x).toFixed(1)+' − '+num(M.orig)+' = <b>'+last.x.toFixed(1)+' '+M.unit+'</b>';
+        else if(last) $('#hk-eq').innerHTML='Read the vernier scale at the marker on the wire.<br>extension = <b>'+last.x.toFixed(2)+' mm</b>';
+        else $('#hk-eq').innerHTML='Original length = '+num(M.orig)+' '+M.unit+(wire?' (2 m)':'');
+        var nt, mg=Math.round(step*100)+' g', sample=mat==='spring'?'spring':mat==='wire'?'wire':'band';
+        if(!last) nt='Experiment: choose a mass size (each 100 g adds 1 N), then add the masses one at a time. Read the '+(wire?'vernier scale at the marker on the wire':'ruler at the pointer, with your eye level with it')+'.';
+        else if(phase==='load' && !loadDone) nt='Reading: load '+last.F+' N, extension '+fx(last.x)+' '+M.unit+'. Add another '+mg+' mass, or take one off to start unloading.';
+        else if(phase==='load') nt=(mat==='rubber'?'Loading done. The points do not lie on a straight line, so a rubber band does not obey Hooke’s law.':'Loading done. The points lie on a straight line through the origin up to about '+M.lop+' N, then curve: that is the limit of proportionality.')+' Now take the masses off one at a time.';
+        else if(F>0) nt='Unloading: load '+F+' N, extension '+fx(last.x)+' '+M.unit+'. Take the next mass off.';
+        else if(mat==='rubber') nt='Back at 0 N the band is at its original length, so it is elastic. But the unloading points lie on a different curve from the loading points.';
+        else if(last.x>M.res*1.5) nt='Back at 0 N the '+sample+' is still '+fx(last.x)+' '+M.unit+' longer than at the start. It was loaded past its elastic limit, so it is permanently stretched.';
+        else nt='Back at 0 N the '+sample+' is at its original length: it was only loaded in its straight-line region, so it shows elastic behaviour.';
         $('#hk-note').textContent=nt;
         return;
       }
