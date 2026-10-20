@@ -137,6 +137,15 @@
   .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
   .stat strong{font:600 15px var(--font-mono);color:var(--ink);}
   .stat.up strong{color:var(--accent);}
+  .exp-btns{display:flex;flex-wrap:wrap;gap:10px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs);}
+  .rtable-wrap{max-height:200px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  .rtable-wrap p{font-size:13px;color:var(--ink-faint);padding:8px 10px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
   .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
 
   details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--c);min-height:44px;display:flex;align-items:center;}
@@ -181,12 +190,21 @@
     <div>
       <svg class="view" id="hk-svg" viewBox="0 0 520 300" role="img" aria-label="A stretched sample and its force-extension graph"></svg>
       <div class="under">
-        <div class="mass"><label class="lab" for="hk-f">Load (force) <output id="hk-fo"></output></label><input type="range" id="hk-f" min="0" max="10" step="0.5" value="0"></div>
+        <div class="mass" id="hk-slider"><label class="lab" for="hk-f">Load (force) <output id="hk-fo"></output></label><input type="range" id="hk-f" min="0" max="10" step="0.5" value="0"></div>
+        <div class="exp-btns" id="hk-exp-btns" hidden>
+          <button type="button" class="btn btn-primary" data-action="add">Add a 100 g mass</button>
+          <button type="button" class="btn" data-action="remove">Take one off</button>
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn" id="hk-exp" aria-pressed="false">Experiment</button>
+          <button type="button" class="btn" data-action="reset">Reset</button>
+        </div>
       </div>
     </div>
     <div class="side">
       <div><div class="lab">Material</div><div class="seg" id="hk-mat"></div></div>
       <p class="note" id="hk-note" aria-live="polite"></p>
+      <div id="hk-results" hidden><div class="lab">Results</div><div class="rtable-wrap" id="hk-table"></div></div>
       <details class="working" id="working">
         <summary>Show working</summary>
         <div class="eq" id="hk-eq"></div>
@@ -237,16 +255,30 @@
 
   function initHookeSim(){
     var fIn=bindRange('hk-f',draw), mat='spring';
+    // Experiment mode: no theory line; 100 g (1 N) masses go on one at a time and each reading is
+    // plotted like a data logger. The line and the limit of proportionality appear once the run reaches 10 N.
+    var EXP=false, readings=[];
+    var expBtn=$('#hk-exp');
+    expBtn.addEventListener('click',function(){ EXP=!EXP; expBtn.setAttribute('aria-pressed',String(EXP)); clearRun(); });
+    function clearRun(){ readings=[]; fIn.value=0; $('#hk-slider').hidden=EXP; $('#hk-exp-btns').hidden=!EXP; $('#hk-results').hidden=!EXP; draw(); }
+    function noise(i){ var r=[0,1,-1,0,2,-1,1,-2,0,1,-1][i%11]; return r; }
+    function reading(F){   // what the student reads off the scale, to the scale's precision
+      var M=MATS[mat], step=M.res, x=M.ext(F)+(F>0?noise(F)*step*(mat==='wire'?0.5:1):0);
+      return Math.round(x/step)*step;
+    }
+    onAction('add',function(){ var F=readings.length; if(F>=10) return; F+=1; fIn.value=F; readings.push({F:F, x:reading(F)}); draw(true); });
+    onAction('remove',function(){ if(!readings.length) return; readings.pop(); fIn.value=readings.length; draw(); });
+    onAction('reset',function(){ clearRun(); });
     var MATS={
-      spring:{name:'Spring', unit:'cm', orig:10, xmax:30, lop:6, ext:function(F){ return F<=6?1.5*F:9+1.5*(F-6)+0.9*(F-6)*(F-6); }, px:4},
-      wire:{name:'Metal wire', unit:'mm', orig:2000, xmax:8, lop:7, ext:function(F){ return F<=7?0.25*F:1.75+0.25*(F-7)+0.6*(F-7)*(F-7); }, px:15},
-      rubber:{name:'Rubber band', unit:'cm', orig:8, xmax:20, lop:null, ext:function(F){ return 18*(1-Math.exp(-F/3.5)); }, px:4}
+      spring:{name:'Spring', unit:'cm', res:0.1, orig:10, xmax:30, lop:6, ext:function(F){ return F<=6?1.5*F:9+1.5*(F-6)+0.9*(F-6)*(F-6); }, px:4},
+      wire:{name:'Metal wire', unit:'mm', res:0.05, orig:2000, xmax:8, lop:7, ext:function(F){ return F<=7?0.25*F:1.75+0.25*(F-7)+0.6*(F-7)*(F-7); }, px:15},
+      rubber:{name:'Rubber band', unit:'cm', res:0.1, orig:8, xmax:20, lop:null, ext:function(F){ return 18*(1-Math.exp(-F/3.5)); }, px:4}
     };
     var segEl=$('#hk-mat');
     segEl.innerHTML=Object.keys(MATS).map(function(k){ return '<button type="button" data-k="'+k+'" aria-pressed="'+(k===mat)+'">'+MATS[k].name+'</button>'; }).join('');
     segEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; mat=b.dataset.k;
-      Array.prototype.forEach.call(segEl.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); draw(); });
-    function draw(){
+      Array.prototype.forEach.call(segEl.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); if(EXP) clearRun(); else draw(); });
+    function draw(isNew){
       var M=MATS[mat], F=+fIn.value, x=M.ext(F), g='', top=24, X0=70;
       var baseLen = mat==='wire'?60:M.orig*M.px, len=baseLen+x*M.px, y1=top+14+len;
       g+='<rect x="'+(X0-36)+'" y="'+top+'" width="72" height="12" fill="var(--panel-border)" stroke="var(--ink-soft)"/>';
@@ -255,6 +287,13 @@
       else { g+='<path d="M'+(X0-5)+','+(top+12)+' L'+(X0-5)+','+y1+' M'+(X0+5)+','+(top+12)+' L'+(X0+5)+','+y1+'" stroke="var(--elastic)" stroke-width="3" fill="none"/>'; }
       g+='<rect x="'+(X0-18)+'" y="'+y1+'" width="36" height="'+(16+F*2)+'" rx="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+X0+'" y="'+(y1+12+F)+'" text-anchor="middle" font-size="11" fill="var(--ink)">'+F+' N</text>';
       g+='<line x1="'+(X0-30)+'" x2="'+(X0+30)+'" y1="'+(top+14+baseLen)+'" y2="'+(top+14+baseLen)+'" stroke="var(--ink-faint)" stroke-dasharray="4 3"/><text x="'+(X0-34)+'" y="'+(top+18+baseLen)+'" text-anchor="end" font-size="10" fill="var(--ink-faint)">start</text>';
+      if(EXP && mat!=='wire'){   // clamped vertical ruler with a pointer on the bottom of the sample
+        var RX=X0+44, r0=top+14+baseLen;
+        g+='<rect x="'+RX+'" y="'+(top+14)+'" width="22" height="'+(250-top)+'" fill="var(--units-soft)" stroke="var(--units)" stroke-width="1"/>';
+        for(var cm=0; top+14+cm*M.px<=264; cm++){ var ty=top+14+cm*M.px; g+='<line x1="'+RX+'" x2="'+(RX+(cm%5?6:11))+'" y1="'+ty+'" y2="'+ty+'" stroke="var(--units)" stroke-width="1"/>'; if(cm%10===0) g+='<text x="'+(RX+13)+'" y="'+(ty+3.5)+'" font-size="8.5" fill="var(--ink-soft)">'+cm+'</text>'; }
+        g+='<line x1="'+(X0+8)+'" x2="'+(RX-1)+'" y1="'+y1+'" y2="'+y1+'" stroke="var(--accent)" stroke-width="2"/><path d="M'+(RX-1)+','+y1+' l-6,-4 v8 z" fill="var(--accent)"/>';
+        g+='<text x="'+(RX+11)+'" y="'+(top+14+(250-top)+13)+'" text-anchor="middle" font-size="9.5" fill="var(--ink-soft)">ruler (cm)</text>';
+      }
       // force-extension graph: extension across, force up (same as Task 1)
       var GX=190, GY=24, GW=310, GH=226;
       function gx(e){ return GX+e/M.xmax*GW; } function gy(f){ return GY+GH-f/10*GH; }
@@ -262,13 +301,35 @@
       var stepX=M.xmax/5; for(i=0;i<=5;i++){ var ev=i*stepX; g+='<line x1="'+gx(ev)+'" x2="'+gx(ev)+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--panel-border)"/><text x="'+gx(ev)+'" y="'+(GY+GH+15)+'" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">'+num(ev,1)+'</text>'; }
       g+='<line x1="'+GX+'" x2="'+GX+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/><line x1="'+GX+'" x2="'+(GX+GW)+'" y1="'+(GY+GH)+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
       g+='<text x="'+(GX+GW/2)+'" y="'+(GY+GH+32)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">extension ('+M.unit+')</text><text x="'+GX+'" y="'+(GY-8)+'" font-size="11.5" fill="var(--ink-soft)">force (N)</text>';
-      var tr=[]; for(var f=0;f<=F+1e-9;f+=0.1){ var e=Math.min(M.ext(f),M.xmax); tr.push(gx(e)+','+gy(f)); }
-      if(tr.length>1) g+='<polyline points="'+tr.join(' ')+'" fill="none" stroke="var(--elastic)" stroke-width="2.5"/>';
-      if(M.lop!==null && F>M.lop){ var le=M.ext(M.lop); g+='<circle cx="'+gx(le)+'" cy="'+gy(M.lop)+'" r="4.5" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"/><text x="'+(gx(le)+8)+'" y="'+(gy(M.lop)+14)+'" font-size="10.5" fill="var(--accent)">limit of proportionality</text>'; }
-      g+='<circle cx="'+gx(Math.min(x,M.xmax))+'" cy="'+gy(F)+'" r="5.5" fill="var(--elastic)" stroke="var(--panel)" stroke-width="2"/>';
+      var done = EXP && readings.length===10;
+      if(!EXP || done){
+        var tr=[]; for(var f=0;f<=F+1e-9;f+=0.1){ var e=Math.min(M.ext(f),M.xmax); tr.push(gx(e)+','+gy(f)); }
+        if(tr.length>1) g+='<polyline points="'+tr.join(' ')+'" fill="none" stroke="var(--elastic)" stroke-width="2.5"'+(done?' stroke-dasharray="7 5" opacity=".8"':'')+'/>';
+      }
+      if(EXP){ readings.forEach(function(r){ var cx=gx(Math.min(r.x,M.xmax)), cy=gy(r.F); g+='<path d="M'+(cx-5)+','+(cy-5)+' L'+(cx+5)+','+(cy+5)+' M'+(cx+5)+','+(cy-5)+' L'+(cx-5)+','+(cy+5)+'" stroke="var(--ink)" stroke-width="2"/>'; }); }
+      if(M.lop!==null && F>M.lop && (!EXP || done)){ var le=M.ext(M.lop); g+='<circle cx="'+gx(le)+'" cy="'+gy(M.lop)+'" r="4.5" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"/><text x="'+(gx(le)+8)+'" y="'+(gy(M.lop)+14)+'" font-size="10.5" fill="var(--accent)">limit of proportionality</text>'; }
+      if(!EXP) g+='<circle cx="'+gx(Math.min(x,M.xmax))+'" cy="'+gy(F)+'" r="5.5" fill="var(--elastic)" stroke="var(--panel)" stroke-width="2"/>';
       $('#hk-svg').innerHTML=g;
       var dp=mat==='wire'?2:1, newL=M.orig+x;
       $('#hk-fo').textContent=F+' N';
+      if(EXP){
+        var dpx=mat==='wire'?2:1, last=readings[readings.length-1];
+        var head='<table class="rtable"><thead><tr><th>Load (N)</th>'+(mat==='wire'?'':'<th>Length ('+M.unit+')</th>')+'<th>Extension ('+M.unit+')</th></tr></thead><tbody>';
+        var rows='<tr><td>0</td>'+(mat==='wire'?'':'<td>'+num(M.orig,1)+'</td>')+'<td>0</td></tr>';
+        readings.forEach(function(r,i){ rows+='<tr'+(isNew&&i===readings.length-1?' class="new"':'')+'><td>'+r.F+'</td>'+(mat==='wire'?'':'<td>'+(M.orig+r.x).toFixed(1)+'</td>')+'<td>'+r.x.toFixed(dpx)+'</td></tr>'; });
+        $('#hk-table').innerHTML=head+rows+'</tbody></table>';
+        var tw=$('#hk-table'); tw.scrollTop=tw.scrollHeight;
+        if(last && mat!=='wire') $('#hk-eq').innerHTML='extension = new length − original length<br>extension = '+(M.orig+last.x).toFixed(1)+' − '+num(M.orig)+' = <b>'+last.x.toFixed(1)+' '+M.unit+'</b>';
+        else if(last) $('#hk-eq').innerHTML='The scale beside the wire reads the extension directly.<br>extension = <b>'+last.x.toFixed(2)+' mm</b>';
+        else $('#hk-eq').innerHTML='Original length = '+num(M.orig)+' '+M.unit+(mat==='wire'?' (2 m)':'');
+        var nt;
+        if(!last) nt='Experiment: add 100 g masses one at a time. Each one adds 1 N. Read the '+(mat==='wire'?'scale':'ruler at the pointer, with your eye level with it')+'.';
+        else if(!done) nt='Reading '+readings.length+': load '+last.F+' N, extension '+last.x.toFixed(dpx)+' '+M.unit+'. Add the next mass.';
+        else if(mat==='rubber') nt='All 10 readings taken. The points lie on a curve from the start, so a rubber band does not obey Hooke’s law.';
+        else nt='All 10 readings taken. The points lie on a straight line through the origin up to '+M.lop+' N, then curve: that is the limit of proportionality.';
+        $('#hk-note').textContent=nt;
+        return;
+      }
       $('#hk-eq').innerHTML='extension = new length − original length<br>extension = '+num(newL,dp)+' − '+num(M.orig)+' = <b>'+num(x,dp)+' '+M.unit+'</b>';
       var note;
       if(mat==='rubber') note='A rubber band does not obey Hooke’s law: its graph is curved from the start.';
