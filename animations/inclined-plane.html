@@ -104,6 +104,7 @@
   .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 330px));}
   .view text{font-family:var(--font-mono);}
   .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  html[data-course="ib"] .al-only, html:not([data-course="ib"]) .ib-only{display:none !important;}
   .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px 24px;}
   .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
   .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
@@ -200,11 +201,15 @@
             <label class="lab" for="ip-s"><span>Start, from the bottom</span> <output id="ip-so"></output></label>
             <input type="range" id="ip-s" min="0.5" max="9.5" step="0.5" value="5">
           </div>
-          <div>
+          <div class="al-only">
+            <div class="lab"><span>Surface</span></div>
+            <div class="seg" id="ip-surf"><button type="button" data-f="0,0">Smooth</button><button type="button" data-f="0.5,0.4">Rough</button><button type="button" data-f="0.8,0.7">Very rough</button></div>
+          </div>
+          <div class="ib-only">
             <label class="lab" for="ip-ms"><span>Static friction &mu;<sub>s</sub></span> <output id="ip-mso"></output></label>
             <input type="range" id="ip-ms" min="0" max="1" step="0.05" value="0.5">
           </div>
-          <div>
+          <div class="ib-only">
             <label class="lab" for="ip-mk"><span>Dynamic friction &mu;<sub>d</sub></span> <output id="ip-mko"></output></label>
             <input type="range" id="ip-mk" min="0" max="1" step="0.05" value="0.4">
           </div>
@@ -228,7 +233,7 @@
           <button type="button" data-p="back">Up, then back down</button>
           <button type="button" data-p="stays">Up, then stays</button>
           <button type="button" data-p="smooth">Smooth slope</button>
-          <button type="button" data-p="holds">Static just holds</button>
+          <button type="button" data-p="holds">Friction just holds</button>
           <button type="button" data-p="nudge">Nudged: keeps sliding</button>
           <button type="button" data-p="floor">Level floor skid</button>
         </div>
@@ -437,7 +442,7 @@
     var th=RUN.p.th*Math.PI/180, c=Math.cos(th), s=Math.sin(th);
     // each force as (along-slope, perpendicular) then turned into the chosen axes
     var list=[['{W}','var(--fw)','weight',-f.Wpar,-f.Wperp],['{R}','var(--fr)','{Rname}',0,f.R]];
-    if(Math.abs(f.F)>1e-6) list.push(['{F}','var(--ff)',f.state==='rest'?'static friction':'dynamic friction',f.F,0]);
+    if(Math.abs(f.F)>1e-6) list.push(['{F}','var(--ff)',symSet!=='ib'?'friction':f.state==='rest'?'static friction':'dynamic friction',f.F,0]);
     var rows='<tr><th>Force</th><th>Size (N)</th><th>x-component (N)</th><th>y-component (N)</th></tr>', zero=0;
     list.forEach(function(r){
       var X=tilt?r[3]:r[3]*c-r[4]*s, Y=tilt?r[4]:r[3]*s+r[4]*c, mag=Math.hypot(r[3],r[4]);
@@ -455,14 +460,18 @@
     var p=RUN.p, hide=expOn() && !done();
     $('#ip-tho').textContent=p.th+'°'; $('#ip-mo').textContent=n3(p.m)+' kg'; $('#ip-vo').textContent=sn(p.u,1)+' m s⁻¹';
     $('#ip-so').textContent=n3(p.s0)+' m'; $('#ip-mso').textContent=(+msIn.value).toFixed(2); $('#ip-mko').textContent=(+mkIn.value).toFixed(2)+(+mkIn.value>+msIn.value?' (capped at static)':'');
+    Array.prototype.forEach.call($('#ip-surf').children,function(b){ var q=b.dataset.f.split(','); b.setAttribute('aria-pressed',String(+q[0]===+msIn.value && +q[1]===+mkIn.value)); });
     $('#ip-R').textContent=n3(f.R)+' N'; $('#ip-F').textContent=n3(Math.abs(f.F))+' N';
     $('#ip-a').textContent=hide?'?':(Math.abs(f.a)<0.005?'0':sn(f.a,2))+' m s⁻²'; $('#ip-vv').textContent=sn(st.v,2)+' m s⁻¹';
     playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play';
     var note, tanTh=Math.tan(p.th*Math.PI/180);
-    if(f.state==='rest') note='At rest. Static friction ('+n3(f.F)+' N up the slope) exactly balances {W} sin θ. It can reach up to μ<sub>s</sub>{R} = '+n3(p.ms*f.R)+' N, so it holds'+(p.th>0?' (tan θ = '+tanTh.toFixed(2)+' ≤ μ<sub>s</sub>)':'')+'.';
+    var IB=symSet==='ib', Fm=n3(r3(p.ms*r3(f.R)));   // rounded the same way as the working
+    if(f.state==='rest' && !IB) note='At rest. Friction ('+n3(f.F)+' N up the slope) exactly balances {W} sin θ. The surface can give up to '+Fm+' N of friction, so it holds.';
+    else if(f.state==='rest') note='At rest. Static friction ('+n3(f.F)+' N up the slope) exactly balances {W} sin θ. It can reach up to μ<sub>s</sub>{R} = '+Fm+' N, so it holds'+(p.th>0?' (tan θ = '+tanTh.toFixed(2)+' ≤ μ<sub>s</sub>)':'')+'.';
     else if(f.state==='up') note='Sliding up the slope. Friction and {W} sin θ both point down the slope, so it slows quickly: a = '+sn(f.a,2)+' m s⁻².';
     else if(f.state==='down') note='Sliding down the slope. Friction now points up the slope, against the motion, but {W} sin θ is '+(f.Wpar>Math.abs(f.F)?'bigger, so it speeds up':'smaller, so it slows down')+'.';
-    else note='{W} sin θ ('+n3(f.Wpar)+' N) is more than the most static friction can give (μ<sub>s</sub>{R} = '+n3(p.ms*f.R)+' N), so it starts to slide down.';
+    else if(!IB) note='{W} sin θ ('+n3(f.Wpar)+' N) is more than the most friction the surface can give ('+Fm+' N), so it starts to slide down.';
+    else note='{W} sin θ ('+n3(f.Wpar)+' N) is more than the most static friction can give (μ<sub>s</sub>{R} = '+Fm+' N), so it starts to slide down.';
     if(!started) note='Set the slope and friction, then press Play. '+note;
     if(done()) note+= RUN.end==='bottom' ? ' It has reached the bottom of the slope.' : RUN.end==='top' ? ' It has reached the top of the slope.' : RUN.end==='rest' ? ' It stays at rest.' : '';
     if(note!==lastNote){ $('#ip-note').innerHTML=sy(note); lastNote=note; }
@@ -480,14 +489,18 @@
     var Wp=r3(f.Wpar);
     if(f.state==='rest' || f.state==='start'){
       var Fmax=r3(p.ms*R);
-      block('At rest: can static friction hold it?',
-        '{W} sin θ = mg sin θ<br>{W} sin θ = '+m+' × 9.81 × sin '+th+'<br>{W} sin θ = '+n3(Wp)+' N<br>{Fmax} = μ<sub>s</sub>{R}<br>{Fmax} = '+p.ms.toFixed(2)+' × '+n3(R)+'<br>{Fmax} = '+n3(Fmax)+' N<br>'
-        +(f.state==='rest' ? n3(Wp)+' N ≤ '+n3(Fmax)+' N, so it holds: {F} = '+n3(Wp)+' N and a = 0.' : n3(Wp)+' N > '+n3(Fmax)+' N, so it slips. Moving down, friction is dynamic: {F} = μ<sub>d</sub>{R}.'));
+      // IB uses the coefficients of friction; Edexcel IAL has no μ, so A Level gives the friction as a force
+      var IB=symSet==='ib';
+      block(IB?'At rest: can static friction hold it?':'At rest: can friction hold it?',
+        '{W} sin θ = mg sin θ<br>{W} sin θ = '+m+' × 9.81 × sin '+th+'<br>{W} sin θ = '+n3(Wp)+' N<br>'
+        +(IB ? '{Fmax} = μ<sub>s</sub>{R}<br>{Fmax} = '+p.ms.toFixed(2)+' × '+n3(R)+'<br>{Fmax} = '+n3(Fmax)+' N<br>' : 'The most friction this surface can give:<br>{Fmax} = '+n3(Fmax)+' N<br>')
+        +(f.state==='rest' ? n3(Wp)+' N ≤ '+n3(Fmax)+' N, so it holds: {F} = '+n3(Wp)+' N and a = 0.'
+          : n3(Wp)+' N > '+n3(Fmax)+' N, so it slips.'+(IB?' Moving down, friction is dynamic: {F} = μ<sub>d</sub>{R}.':' Friction acts up the slope as it slides.')));
     }
     if(f.state!=='rest'){
       var Fk=r3(p.mk*R), sgnF=f.F>0, net=r3(-Wp+(sgnF?Fk:-Fk)), a=r3(net/p.m);
       block('Along the slope, up positive ('+(f.state==='up'?'moving up':'moving down')+')',
-        '{F} = μ<sub>d</sub>{R}<br>{F} = '+p.mk.toFixed(2)+' × '+n3(R)+'<br>{F} = '+n3(Fk)+' N'
+        (symSet==='ib' ? '{F} = μ<sub>d</sub>{R}<br>{F} = '+p.mk.toFixed(2)+' × '+n3(R)+'<br>{F} = '+n3(Fk)+' N' : 'Friction from the surface while it slides:<br>{F} = '+n3(Fk)+' N')
         +'<br>resultant force = ma<br>−mg sin θ '+(sgnF?'+':'−')+' {F} = ma<br>−'+n3(Wp)+' '+(sgnF?'+':'−')+' '+n3(Fk)+' = '+m+' × a<br>'+n3(net)+' = '+m+' × a<br>a = [['+n3(net)+'|'+m+']]<br>a = <b>'+n3(a)+' m s⁻²</b>');
     }
     box.innerHTML=sy(html);
@@ -518,7 +531,10 @@
   ['#ip-exp','#ip-comp','#ip-num'].forEach(function(s){ $(s).addEventListener('click',function(){ var b=$(s); b.setAttribute('aria-pressed',String(!pressed(b))); if(s==='#ip-exp') reset(); else draw(); }); });
   $('#ip-reset').addEventListener('click',reset);
 
-  symSeg($('#ip-sym'), draw);
+  $('#ip-surf').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var q=b.dataset.f.split(','); msIn.value=q[0]; mkIn.value=q[1]; reset(); });
+  function setCourse(){ document.documentElement.setAttribute('data-course', symSet); }
+  setCourse();
+  symSeg($('#ip-sym'), function(){ setCourse(); lastNote=''; draw(); });
   reset();
 
   // in a workout frame, tell the parent page how tall this is
