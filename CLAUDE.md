@@ -80,6 +80,21 @@ Animation is feedback, not decoration. CSS transitions and `@keyframes` only.
 - Test the largest and smallest slider values at phone width; nothing should be clipped at either end.
 - Reference sims: the animation pages listed under "One copy of each animation" (the skydiver page is the model for the lesson layout: picture left with the Play/Go, Reset and Slow motion buttons and sliders under it; choices, fixed points, note, readings and "Show working" on the right). Sims still inside workouts: Unit 5 (pressure, specific heat), 1b (bridge).
 
+## Animation page layout (Alex, 20 Oct 2026)
+
+- **Fit one laptop screen.** At 1366×657 the whole stage card (picture, buttons, choices, readings) ends above the bottom of the window. Measure it in Playwright; don't guess. `newtons-laws.html` is the model.
+- **Header:** when a page has part or symbol pickers, put them on the title line, to the right of the `<h1>`, not in a row of their own.
+- **Buttons straight under the picture.** Go, Push, Fire, Play, Reset and Slow motion sit right under the scene they control. A graph goes below the buttons, never between the picture and its buttons.
+- **Diagrams that explain the picture go on the right.** A free-body diagram or force inset sits in the right-hand column beside the readings, not inside the main picture. The main picture shows only the scene, with its SVG `viewBox` trimmed to it (no empty sky).
+- **When the left column is full,** move setup sliders to the right with the choices.
+- **Many choices become a compact grid** with small row labels (e.g. "Going up" / "Going down", each with Speeding up / Steady / Slowing down), not a long run of wide buttons.
+- **Readings:** one row of stat boxes, or two rows of two beside a diagram. Leave out a reading the picture already shows.
+- **Phones (≤560px):** a diagram and its readings stack. A wide picture with a diagram beside it switches to a tall `viewBox` with the diagram underneath (the lift in `newtons-laws.html`).
+- **People are drawn to scale and handle equipment as they really would.** For example, a rifle is fired from the shoulder, so its muzzle is about 1.5 m up, and the physics uses that height.
+- **Let students change what an exam question would vary.** For example, the aim angle, including a horizontal shot. Give a lock button for the standard case ("Aim at the monkey").
+- **Free-body diagram builders:** every new arrow starts pointing the same way (right), so the starting direction gives nothing away. Arrows pointing the same way sit far enough apart that each tip can be grabbed.
+- **Working:** carry 4 significant figures through the intermediate lines and round only the final answers to 3, so the working matches the tables and readings.
+
 ## Spec points and Triple Award
 
 - **Every tab starts with the same heading.** A `.panel-head` holding an `<h2>` title (Big Shoulders, title case) and a `.spec` list of the tab's 4PH1 spec numbers as small badges, e.g. `<div class="panel-head"><h2>Momentum</h2><div class="spec"><b class="ta" title="Triple Award only">TA</b><b>1.25P</b><b>1.27P</b></div></div>`. Overview can say "All of Unit 5"; Key Terms and Units can leave the badges out. Take the numbers from the spec itself, never from memory: if you don't have the relevant page of the spec, ask Alex for it rather than guessing.
