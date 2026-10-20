@@ -90,6 +90,7 @@ Animation is feedback, not decoration. CSS transitions and `@keyframes` only.
 - **Many choices become a compact grid** with small row labels (e.g. "Going up" / "Going down", each with Speeding up / Steady / Slowing down), not a long run of wide buttons.
 - **Readings:** one row of stat boxes, or two rows of two beside a diagram. Leave out a reading the picture already shows.
 - **Phones (≤560px):** a diagram and its readings stack. A wide picture with a diagram beside it switches to a tall `viewBox` with the diagram underneath (the lift in `newtons-laws.html`).
+- **A girl's dress is solid, never see-through.** Fill it with a solid colour (`var(--accent)`) and draw it after the body line and legs, so nothing shows through it; then draw the arms, hair and head on top. This applies to every stick figure (Zahra in `skydiver.html` and `newtons-laws.html`, Sophie in `newtons-laws.html`).
 - **People are drawn to scale and handle equipment as they really would.** For example, a rifle is fired from the shoulder, so its muzzle is about 1.5 m up, and the physics uses that height.
 - **Let students change what an exam question would vary.** For example, the aim angle, including a horizontal shot. Give a lock button for the standard case ("Aim at the monkey").
 - **Free-body diagram builders:** every new arrow starts pointing the same way (right), so the starting direction gives nothing away. Arrows pointing the same way sit far enough apart that each tip can be grabbed.

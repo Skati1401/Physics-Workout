@@ -186,6 +186,7 @@
   .part .note{min-height:4.6em;}
   .part .stage{gap:14px 24px;}
   @media (max-width:560px){ .fbd-row{grid-template-columns:minmax(0,1fr);} .fbd-row .fbd{max-width:220px;margin-inline:auto;} }
+  .wk-seg{margin-bottom:8px;}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -300,6 +301,7 @@
         </div>
         <details class="working" id="f2-working">
           <summary>Show working</summary>
+          <div class="seg wk-seg" id="f2-wk" aria-label="Show the working in numbers or in symbols"><button type="button" data-w="num" aria-pressed="true">In numbers</button><button type="button" data-w="sym" aria-pressed="false">In symbols (m and g)</button></div>
           <div class="eq" id="f2-eq"></div>
         </details>
       </div>
@@ -423,9 +425,10 @@
   function person(x,yF,col,o){
     o=o||{}; var hip=yF-34, sh=yF-62, s='';
     var hand=o.hand||[x+16,sh+26], hand2=o.hand2||[x-16,sh+26];
-    if(o.dress) s+='<path d="M'+x+','+(sh+2)+' L'+(x-13)+','+(hip+8)+' L'+(x+13)+','+(hip+8)+' Z" fill="var(--accent-soft)" stroke="'+col+'" stroke-width="2"/>';
     s+='<line x1="'+x+'" y1="'+(sh-2)+'" x2="'+x+'" y2="'+hip+'" stroke="'+col+'" stroke-width="2.4"/>';
     s+='<line x1="'+x+'" y1="'+hip+'" x2="'+(x-9)+'" y2="'+yF+'" stroke="'+col+'" stroke-width="2.4" stroke-linecap="round"/><line x1="'+x+'" y1="'+hip+'" x2="'+(x+9)+'" y2="'+yF+'" stroke="'+col+'" stroke-width="2.4" stroke-linecap="round"/>';
+    // a solid dress drawn over the body, so nothing shows through it
+    if(o.dress) s+='<path d="M'+(x-4)+','+(sh+1)+' L'+(x+4)+','+(sh+1)+' L'+(x+13)+','+(hip+8)+' L'+(x-13)+','+(hip+8)+' Z" fill="var(--accent)" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/>';
     s+='<line x1="'+x+'" y1="'+(sh+6)+'" x2="'+hand[0]+'" y2="'+hand[1]+'" stroke="'+col+'" stroke-width="2.4" stroke-linecap="round"/><line x1="'+x+'" y1="'+(sh+6)+'" x2="'+hand2[0]+'" y2="'+hand2[1]+'" stroke="'+col+'" stroke-width="2.4" stroke-linecap="round"/>';
     if(o.pony) s+='<path d="M'+(x+(o.pony>0?6:-6))+','+(sh-16)+' q'+(o.pony*12)+',2 '+(o.pony*10)+',16" fill="none" stroke="'+col+'" stroke-width="3" stroke-linecap="round"/>';
     s+='<circle cx="'+x+'" cy="'+(sh-12)+'" r="10" fill="var(--panel)" stroke="'+col+'" stroke-width="2.4"/>';
@@ -588,7 +591,7 @@
       {id:'downSlow',lab:'Slowing down, going down',v0:-6,a:2,T:3,say:'Slowing down while moving down means the acceleration is upwards, so {R} is bigger than {W}. She feels heavier.'},
       {id:'fall',lab:'The cable snaps',v0:0,a:-G,T:1.5,say:'Free fall: the lift and Zahra both accelerate at g, so the scales do not need to push at all. {R} = 0 and they read zero: she feels weightless.'}
     ];
-    var mode=MODES[1], t=0, running=false, started=false, raf=0, last=0;
+    var symWork=false, mode=MODES[1], t=0, running=false, started=false, raf=0, last=0;
     function m(){ return +mIn.value; }
     function R(){ return Math.max(0,m()*(G+mode.a)); }
     function vel(){ return mode.v0+mode.a*t; }
@@ -624,14 +627,14 @@
       g+='<g'+(narrow?' transform="translate(-320,292)"':'')+'>';
       var cx=420, cy=150, k=70/(m()*G);
       g+=txt(420,22,'forces on Zahra','var(--ink-faint)','middle',11);
-      g+=arrow(cx,cy,cx,cy+70,'var(--fw)',false,3.2)+lab(cx+10,cy+64,'{W} = '+n3(m()*G)+' N','var(--fw)');
-      if(Rn>0.5) g+=arrow(cx,cy,cx,cy-Rn*k,'var(--fr)',false,3.2)+lab(cx+10,cy-Rn*k+10,'{R} = '+n3(Rn)+' N','var(--fr)');
+      g+=arrow(cx,cy,cx,cy+70,'var(--fw)',false,3.2)+lab(cx+10,cy+64,'{W} = '+(symWork?'mg':n3(m()*G)+' N'),'var(--fw)');
+      if(Rn>0.5) g+=arrow(cx,cy,cx,cy-Rn*k,'var(--fr)',false,3.2)+lab(cx+10,cy-Rn*k+10,'{R} = '+(symWork?(mode.a===0?'mg':'m(g + a)'):n3(Rn)+' N'),'var(--fr)');
       else g+=lab(cx+10,cy-12,'{R} = 0','var(--fr)');
       g+='<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="var(--ink)"/>';
       var a=mode.a;
-      if(Math.abs(a)>0.01) g+=arrow(560,cy,560,cy-a*9,'var(--fn)',true,2.4)+lab(568,cy-a*9+(a>0?8:0),'a = '+n3(Math.abs(a))+' m s⁻²','var(--fn)',null,11);
-      else g+=lab(548,cy+4,'a = 0','var(--fn)',null,11);
-      var vv=vel(); g+=txt(548,cy+(a>0?34:-30),'v = '+(Math.abs(vv)<0.005?'0':sn(vv,1))+' m s⁻¹','var(--ink-soft)',null,11);
+      if(Math.abs(a)>0.01) g+=arrow(520,cy,520,cy-a*9,'var(--fn)',true,2.4)+lab(528,cy-a*9+(a>0?8:0),'a = '+n3(Math.abs(a))+' m s⁻²','var(--fn)',null,11);
+      else g+=lab(508,cy+4,'a = 0','var(--fn)',null,11);
+      var vv=vel(); g+=txt(508,cy+(a>0?34:-30),'v = '+(Math.abs(vv)<0.005?'0':sn(vv,1))+' m s⁻¹','var(--ink-soft)',null,11);
       g+='</g>';
       if(running && pressed(slowBtn)) g+=txt(narrow?330:630,narrow?572:290,'slow motion','var(--accent)','end');
       $('#f2-svg').innerHTML=g;
@@ -645,6 +648,14 @@
       var note=(!started && mode.id!=='rest' ? 'Press Go. ' : '')+mode.say;
       if(started && t>=mode.T) note+=' Up is positive, so a = '+n3(mode.a)+' m s⁻².';
       if(note!==lastNote){ $('#f2-note').innerHTML=sy(note); lastNote=note; }
+      if(symWork){
+        var line = mode.id==='fall' ? 'In free fall, a is −g:<br>{R} = m(g − g)<br>{R} = <b>0</b>'
+          : mode.a===0 ? 'Here a is zero:<br>{R} = m(g + 0)<br>{R} = <b>mg</b>'
+          : mode.a>0 ? 'Here a is positive, so g + a is bigger than g:<br><b>{R} &gt; mg</b>, and the scales read more than m'
+          : 'Here a is negative, so g + a is smaller than g:<br><b>{R} &lt; mg</b>, and the scales read less than m';
+        work($('#f2-eq'),'Up is positive.<br>resultant force = ma<br>{R} − {W} = ma<br>{R} − mg = ma<br>{R} = ma + mg<br>{R} = m(g + a)<br>scale reading = [[{R}|g]]<br>scale reading = [[m(g + a)|g]]<br>'+line);
+        return;
+      }
       var M=String(m()), W=r3(m()*G), ma=r3(m()*mode.a), Rr=r3(W+ma), A=mode.a===-G?'(−9.81)':mode.a<0?'('+sn(mode.a,1)+')':mode.a.toFixed(1);
       var w='Up is positive.<br>resultant force = ma<br>{R} − {W} = ma<br>{R} − '+M+' × 9.81 = '+M+' × '+A+'<br>{R} − '+n3(W)+' = '+(ma<0?'−'+n3(-ma):n3(ma))+'<br>{R} = '+(ma<0?'−'+n3(-ma):n3(ma))+' + '+n3(W)+'<br>{R} = <b>'+n3(Math.max(0,Rr))+' N</b>'
         +'<br>scale reading = [[{R}|g]]<br>scale reading = [['+n3(Math.max(0,Rr))+'|9.81]]<br>scale reading = <b>'+(Math.max(0,Rr)/G).toFixed(1)+' kg</b>';
@@ -659,6 +670,8 @@
     $('#f2-go').addEventListener('click',function(){ if(running){ stop(); draw(); } else go(); });
     $('#f2-reset').addEventListener('click',reset);
     slowBtn.addEventListener('click',function(){ slowBtn.setAttribute('aria-pressed',String(!pressed(slowBtn))); draw(); });
+    $('#f2-wk').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; symWork=b.dataset.w==='sym';
+      Array.prototype.forEach.call(this.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); draw(); });
     mIn.addEventListener('input',reset);
     if(narrowQ.addEventListener) narrowQ.addEventListener('change',function(){ draw(); });
     return {reset:reset, stop:stop, draw:draw};
