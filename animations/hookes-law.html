@@ -263,7 +263,8 @@
     function clearRun(){ readings=[]; fIn.value=0; $('#hk-slider').hidden=EXP; $('#hk-exp-btns').hidden=!EXP; $('#hk-results').hidden=!EXP; draw(); }
     function noise(i){ var r=[0,1,-1,0,2,-1,1,-2,0,1,-1][i%11]; return r; }
     function reading(F){   // what the student reads off the scale, to the scale's precision
-      var M=MATS[mat], step=M.res, x=M.ext(F)+(F>0?noise(F)*step*(mat==='wire'?0.5:1):0);
+      var M=MATS[mat], step=M.res, gap=F>0?M.ext(F)-M.ext(F-1):0,
+        x=M.ext(F)+(F>0?noise(F)*Math.min(step*(mat==='wire'?0.5:1), gap/4):0);   // the error never makes a reading go backwards
       return Math.round(x/step)*step;
     }
     onAction('add',function(){ var F=readings.length; if(F>=10) return; F+=1; fIn.value=F; readings.push({F:F, x:reading(F)}); draw(true); });
@@ -272,7 +273,7 @@
     var MATS={
       spring:{name:'Spring', unit:'cm', res:0.1, orig:10, xmax:30, lop:6, ext:function(F){ return F<=6?1.5*F:9+1.5*(F-6)+0.9*(F-6)*(F-6); }, px:4},
       wire:{name:'Metal wire', unit:'mm', res:0.05, orig:2000, xmax:8, lop:7, ext:function(F){ return F<=7?0.25*F:1.75+0.25*(F-7)+0.6*(F-7)*(F-7); }, px:15},
-      rubber:{name:'Rubber band', unit:'cm', res:0.1, orig:8, xmax:20, lop:null, ext:function(F){ return 18*(1-Math.exp(-F/3.5)); }, px:4}
+      rubber:{name:'Rubber band', unit:'cm', res:0.1, orig:8, xmax:25, lop:null, ext:function(F){ var L=function(f){ return 1/(1+Math.exp(-(f-4)/1.4)); }; return 20*(L(F)-L(0))/(L(10)-L(0)); }, px:4}
     };
     var segEl=$('#hk-mat');
     segEl.innerHTML=Object.keys(MATS).map(function(k){ return '<button type="button" data-k="'+k+'" aria-pressed="'+(k===mat)+'">'+MATS[k].name+'</button>'; }).join('');
@@ -325,14 +326,14 @@
         var nt;
         if(!last) nt='Experiment: add 100 g masses one at a time. Each one adds 1 N. Read the '+(mat==='wire'?'scale':'ruler at the pointer, with your eye level with it')+'.';
         else if(!done) nt='Reading '+readings.length+': load '+last.F+' N, extension '+last.x.toFixed(dpx)+' '+M.unit+'. Add the next mass.';
-        else if(mat==='rubber') nt='All 10 readings taken. The points lie on a curve from the start, so a rubber band does not obey Hooke’s law.';
+        else if(mat==='rubber') nt='All 10 readings taken. The points do not lie on a straight line: the band stretches easily in the middle, then gets stiffer. A rubber band does not obey Hooke’s law.';
         else nt='All 10 readings taken. The points lie on a straight line through the origin up to '+M.lop+' N, then curve: that is the limit of proportionality.';
         $('#hk-note').textContent=nt;
         return;
       }
       $('#hk-eq').innerHTML='extension = new length − original length<br>extension = '+num(newL,dp)+' − '+num(M.orig)+' = <b>'+num(x,dp)+' '+M.unit+'</b>';
       var note;
-      if(mat==='rubber') note='A rubber band does not obey Hooke’s law: its graph is curved from the start.';
+      if(mat==='rubber') note='A rubber band does not obey Hooke’s law: its graph is never a straight line. It stretches easily in the middle, then gets stiffer.';
       else if(F===0) note='Add some load. In the straight-line region, doubling the force doubles the extension.';
       else if(F<=M.lop) note='Straight-line region: extension is directly proportional to force, so it obeys Hooke’s law.';
       else note='Past the limit of proportionality: the line curves, so extension is no longer proportional to force.';
