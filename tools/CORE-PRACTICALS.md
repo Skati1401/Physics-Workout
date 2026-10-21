@@ -44,9 +44,9 @@ The new chat should then:
    - Match the method steps, the Order and Match wording, the model answers (bullet points) and the Exam tab to the marking points' phrasing: the details that score (e.g. "ruler held vertically / set square / eye level", "interrupter card", "speed at bottom = 2 × average speed").
    - Where a mark scheme accepts more than one method, offer them with a "Method type" switch, as in the 1.5 page's Overview and Method tabs.
    - Note the papers used in the batch notes below. Never copy a question onto the site; the repo is public.
-4. **Review it critically**, using the skill's review list: numbers, wording, spec coverage, trims. Fix what you find before showing Alex.
-5. **Push the draft** to `main` and send Alex its link: `https://skati1401.github.io/Physics-Workout/<slug>-practical.html`.
-6. **Publish once Alex approves.**
+5. **Review it critically**, using the skill's review list: numbers, wording, spec coverage, trims. Fix what you find before showing Alex.
+6. **Push the draft** to `main` and send Alex its link: `https://skati1401.github.io/Physics-Workout/<slug>-practical.html`.
+7. **Publish once Alex approves.**
    - Set `"draft": false` and rebuild.
    - Add its card under "Core Practicals" in `igcse.html`, in spec order, with a TA tag if needed.
    - Add the `.cp-banner` to its workout tab's heading line, copying the one in `falling-stopping-springs.html#hooke`. If that workout can't open a tab from `#tab`, add hash support as in the 1b page. Units 2, 3 and 7 have no workouts yet: skip the banner and note it below.
