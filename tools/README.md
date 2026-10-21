@@ -21,6 +21,8 @@ python3 tools/practical-gen/gen.py --all --check        # rebuild every practica
 
 To change something on every practical page (a bug fix, a new factory), edit `template/`, rebuild with `--all`, and check each page.
 
+`check.py` answers every graded activity on a built page in Playwright and reports what the page says, then checks every tab for sideways scroll at 380px and each framed animation's height. Run `python3 -m http.server 8765` in the repo root first, then `python3 tools/practical-gen/check.py hookes-law-practical.html` (add `--shots DIR` for screenshots).
+
 ## experiment-kit: Experiment mode for animation pages
 
 - `kit.js`: copy into the animation page's script.

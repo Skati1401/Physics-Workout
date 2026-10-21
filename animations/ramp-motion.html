@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motion Graphs Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5;
+    --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff;
+    --panel-border:#d7dce4;
+    --ink:#182233;
+    --ink-soft:#4c5668;
+    --ink-faint:#8993a5;
+    --accent:#d9720c;
+    --accent-soft:#fdead2;
+    --good:#15803d;
+    --good-soft:#dcf5e3;
+    --bad:#c0311a;
+    --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+
+    --motion:#2158d1;      --motion-soft:#dfe8fc;
+    --calc:#0c8a76;        --calc-soft:#d6f3ee;
+    --measure:#0a7f96;     --measure-soft:#d7f0f4;
+    --force:#c2560c;       --force-soft:#fbe4cd;
+    --balance:#6d3bce;     --balance-soft:#e9e0fb;
+    --vector:#b8267a;      --vector-soft:#fbdeee;
+    --newton:#3d3aa8;      --newton-soft:#e3e2f8;
+    --units:#96660b;       --units-soft:#f6e8ca;
+
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --motion:#7da3ff; --motion-soft:#1a2440;
+      --calc:#4fd6bd; --calc-soft:#0f2e29;
+      --measure:#5fd0e6; --measure-soft:#0f2c33;
+      --force:#ff9f5c; --force-soft:#3a2413;
+      --balance:#b393f5; --balance-soft:#2a2148;
+      --vector:#ef83bd; --vector-soft:#3a1c2c;
+      --newton:#9d9af0; --newton-soft:#242259;
+      --units:#e0b64a; --units-soft:#332a10;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --motion:#7da3ff; --motion-soft:#1a2440;
+    --calc:#4fd6bd; --calc-soft:#0f2e29;
+    --measure:#5fd0e6; --measure-soft:#0f2c33;
+    --force:#ff9f5c; --force-soft:#3a2413;
+    --balance:#b393f5; --balance-soft:#2a2148;
+    --vector:#ef83bd; --vector-soft:#3a1c2c;
+    --newton:#9d9af0; --newton-soft:#242259;
+    --units:#e0b64a; --units-soft:#332a10;
+    color-scheme:dark;
+  }
+
+  :root{--c:var(--motion);--cs:var(--motion-soft);}
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; controls, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  /* the picture shrinks on short screens so the whole box fits in the window */
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 290px));}
+  .embed .view{max-height:460px;}
+  .under{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px;margin-top:12px;}
+  .under .btn-group{flex:0 1 auto;}
+  .mass{flex:1 1 220px;min-width:0;}
+  .sliders{flex:1 1 100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px 24px;}
+  .eq .why{font-family:var(--font-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;}
+  .view text{font-family:var(--font-mono);}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:flex;justify-content:space-between;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--c);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:var(--panel);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat strong{white-space:nowrap;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);}
+  .stat.up strong{color:var(--accent);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--c);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--c);background:var(--cs);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--c);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .eq{font-size:12.5px;padding:6px 8px;} }
+
+  /* inside a workout tab (skydiver.html?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .hint{font-size:13px;color:var(--ink-soft);}
+  .embed .hint{display:none;}
+  /* ===== Experiment kit (copy into the animation page's <style>) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+  /* ramp: picture, buttons, then the two graphs on the left; choices, note, readings, results and working on the right */
+  .rtable{--accent-soft:var(--motion-soft);}
+  html:not(.exp) .rx-only{display:none!important;}
+  #rm-pic{max-height:max(130px,calc((100vh - 300px)*0.42));margin-inline:auto;}
+  #rm-graphs{max-height:max(180px,calc((100vh - 300px)*0.58));margin:10px auto 0;}
+  .embed #rm-pic{max-height:200px;} .embed #rm-graphs{max-height:260px;}
+  .rm-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px;}
+  .exp .rtable-wrap{max-height:112px;}
+  @media (min-width:861px){ .stage{grid-template-columns:minmax(0,1fr) minmax(320px,470px);} }
+  .side{gap:10px;}
+  .exp .note{font-size:14px;min-height:0;}
+  .btn:disabled{opacity:.45;cursor:default;}
+  @media (max-width:860px){ #rm-pic,#rm-graphs{max-height:none;} }
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  (function(){
+    if (/[?&]embed\b/.test(location.search) || window.self !== window.top) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; motion</div>
+    <h1>A Toy Car on a Ramp</h1>
+  </header>
+
+  <section class="card stage">
+    <div class="rm-left">
+      <svg class="view" id="rm-pic" viewBox="0 0 560 150" role="img" aria-label="A toy car on a ramp, with distance markers, a stopwatch or light gates"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="rm-go" type="button">&#9654; Release</button>
+          <button class="btn rx-only" id="rm-one" type="button">One run</button>
+          <button class="btn" id="rm-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="rm-exp" type="button" aria-pressed="false">Experiment</button>
+        </div>
+      </div>
+      <svg class="view rm-graphs" id="rm-graphs" viewBox="0 0 560 190" role="img" aria-label="Distance–time and velocity–time graphs"></svg>
+    </div>
+    <div class="side">
+      <div class="rm-choices">
+        <div><div class="lab">Ramp height</div><div class="seg" id="rm-h"><button type="button" data-v="10" aria-pressed="false">10 cm</button><button type="button" data-v="20" aria-pressed="true">20 cm</button><button type="button" data-v="30" aria-pressed="false">30 cm</button></div></div>
+        <div class="rx-only"><div class="lab">Timing</div><div class="seg" id="rm-m"><button type="button" data-v="sw" aria-pressed="true">Stopwatch</button><button type="button" data-v="lg" aria-pressed="false">Light gates</button></div></div>
+      </div>
+      <p class="note" id="rm-note" aria-live="polite"></p>
+      <div class="stats">
+        <div class="stat"><small id="rm-tl">Time</small><strong id="rm-t">0.00 s</strong></div>
+        <div class="stat"><small id="rm-dl">Distance</small><strong id="rm-d">0.00 m</strong></div>
+        <div class="stat hi"><small id="rm-al">Speed</small><strong id="rm-a">0.00 m/s</strong></div>
+      </div>
+      <div class="rx-only"><div class="lab">Your results</div><div class="rtable-wrap" id="rm-table"></div></div>
+      <details class="working" id="working">
+        <summary>Show working</summary>
+        <div class="eq" id="rm-eq"></div>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+(function(){
+  // This page is the one copy of this animation. On its own it is the lesson version;
+  // with ?embed it drops its heading so a workout tab can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var wk=document.getElementById('working'); if(wk) wk.open = true;
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  function bindRange(id, fn){ var el=$('#'+id); el.addEventListener('input', fn); return el; }
+  function onAction(name, fn){ var b=$('[data-action="'+name+'"]'); if(b) b.addEventListener('click', fn); }
+  var REDUCED_MOTION=false;   // runs start only when pressed and always end, so they play even with reduced motion on
+  // Slow motion: every run multiplies its time step by SPEED()
+  function SPEED(){ var b=document.getElementById('slow'); return b && b.getAttribute('aria-pressed')==='true' ? 0.3 : 1; }
+  (function(){ var b=document.getElementById('slow'); if(b) b.addEventListener('click',function(){ b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed')!=='true')); }); })();
+  function num(n, dp){   // round, drop trailing zeros, group thousands with a space from 10 000
+    var f = Math.pow(10, dp||0), r = Math.round(n*f)/f, t = String(r);
+    if(Math.abs(r)>=10000) t = t.replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    return t;
+  }
+  function FR(t){
+    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1 ')
+      .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  function arrowHead(id, col){ return '<marker id="'+id+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+col+'"/></marker>'; }
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(sel){ Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }); }
+
+/* ================= Experiment kit (copy this block into an animation page's <script>) =================
+   The reusable parts of an animation's Experiment mode, taken from animations/hookes-law.html:
+   - expRun():     the run itself: step the independent variable up one interval at a time, then
+                   (optionally) back down again, measuring at every step
+   - expReading(): a reading with a small, fixed pattern of reading error, rounded to the instrument's
+                   resolution, that never goes the wrong way
+   - expTable():   the results table (sticky header, newest row highlighted, a column per run)
+   - expCross(), expRing(), expKey(): SVG marks for plotted readings (× first run, ○ return run)
+   The page keeps its own picture, physics, graph axes and notes. See tools/experiment-kit/README.md.
+   Plain ES5 so it can sit inside any animation page's IIFE. */
+
+// A fixed pattern of reading errors, in units of the instrument's resolution. Fixed (not random) so a
+// teacher sees the same results as the class, and a re-run gives the same table.
+var EXP_ERR = [0, 1, -1, 0, 2, -1, 1, -2, 0, 1, -1, 0, 1, -1, 2, 0, -1, 1, 0, -2, 1];
+function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP_ERR.length]; }
+
+// What the student reads off the instrument.
+//   trueVal  the value the physics gives at this step
+//   prevVal  the reading taken at the step before (or the start value)
+//   res      the instrument's resolution (0.1 cm ruler, 0.05 mm vernier, 0.01 A ammeter, 1° protractor)
+//   i        the step number (picks the error from the pattern)
+//   scale    how big the error is, in resolutions (default 1; 0.5 for a fine instrument)
+// The error is never more than a quarter of the change since the last reading, so a reading never
+// goes the wrong way (an extension never falls as the load rises, a current never drops as V rises).
+function expReading(trueVal, prevVal, res, i, scale){
+  var gap = Math.abs(trueVal - prevVal);
+  var err = i > 0 ? expErr(i) * Math.min(res * (scale == null ? 1 : scale), gap / 4) : 0;
+  var r = Math.round((trueVal + err) / res) * res;
+  var dp = Math.max(0, Math.ceil(-Math.log10(res) - 1e-9));
+  return +r.toFixed(dp);
+}
+
+// The run. cfg = {
+//   start: 0,                 value of the independent variable before the first step
+//   max: 10,                  last value of the first run (the run stops there)
+//   step: 1,                  the interval (the page can change it with setStep, which resets the run)
+//   reverse: true,            allow a return run (unloading, turning the voltage back down)
+//   measure: function(v, phase, prevReading){ return reading },   phase is 'up' or 'down'
+//   onChange: function(run, what){}  what is 'up', 'down' or 'reset'
+// }
+// run.up and run.down are arrays of {v, r}. run.phase is 'up' until the first step back, then 'down'.
+function expRun(cfg){
+  var run = { up: [], down: [], phase: 'up', value: cfg.start || 0, peak: cfg.start || 0, step: cfg.step || 1 };
+  var r6 = function(x){ return Math.round(x * 1e6) / 1e6; };
+  run.upDone = function(){ return run.phase === 'down' || run.peak >= cfg.max - 1e-9; };
+  run.downDone = function(){ return run.phase === 'down' && run.value <= (cfg.start || 0) + 1e-9; };
+  run.last = function(){ var a = run.phase === 'down' && run.down.length ? run.down : run.up; return a[a.length - 1] || null; };
+  run.stepUp = function(){
+    if(run.phase !== 'up' || run.upDone()) return false;
+    var prev = run.up.length ? run.up[run.up.length - 1].r : null;
+    var v = r6(Math.min(cfg.max, run.value + run.step));
+    run.value = run.peak = v;
+    run.up.push({ v: v, r: cfg.measure(v, 'up', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'up');
+    return true;
+  };
+  run.stepDown = function(){
+    if(!cfg.reverse || run.value <= (cfg.start || 0) + 1e-9 || !run.up.length) return false;
+    run.phase = 'down';
+    var prev = run.down.length ? run.down[run.down.length - 1].r : run.up[run.up.length - 1].r;
+    var v = r6(Math.max(cfg.start || 0, run.value - run.step));
+    run.value = v;
+    run.down.push({ v: v, r: cfg.measure(v, 'down', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'down');
+    return true;
+  };
+  run.reset = function(){ run.up = []; run.down = []; run.phase = 'up'; run.value = run.peak = cfg.start || 0; if(cfg.onChange) cfg.onChange(run, 'reset'); };
+  run.setStep = function(s){ run.step = s; run.reset(); };
+  return run;
+}
+
+// The results table. cols = [{label:'Load (N)', key:'v', dp:0}, {label:'Extension loading (cm)', key:'up', dp:1}, ...]
+// rows = [{v:1, up:1.6, down:''}, ...]. newKey/newV highlight the reading just taken (fades in).
+// Wrap it in .rtable-wrap so a long table scrolls under its sticky header.
+function expTable(el, cols, rows, newV){
+  var fmt = function(x, dp){ return (x === '' || x == null) ? '' : (+x).toFixed(dp || 0); };
+  var h = '<table class="rtable"><thead><tr>' + cols.map(function(c){ return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    h += '<tr' + (newV != null && row.v === newV ? ' class="new"' : '') + '>' + cols.map(function(c){ return '<td>' + fmt(row[c.key], c.dp) + '</td>'; }).join('') + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table>';
+}
+
+// Plotted readings, as SVG strings. Size 5 suits a 300px-wide graph.
+function expCross(cx, cy, s){ s = s || 5; return '<path d="M' + (cx - s) + ',' + (cy - s) + ' L' + (cx + s) + ',' + (cy + s) + ' M' + (cx + s) + ',' + (cy - s) + ' L' + (cx - s) + ',' + (cy + s) + '" stroke="var(--ink)" stroke-width="2"/>'; }
+function expRing(cx, cy, r){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r || 4.5) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+// A two-line key in the bottom-right corner of a graph: expKey(rightX, bottomY, 'loading', 'unloading')
+function expKey(x, y, upLabel, downLabel){
+  return '<text x="' + x + '" y="' + (y - 14) + '" text-anchor="end" font-size="10.5" fill="var(--ink)">× ' + upLabel + '</text>' +
+         '<text x="' + x + '" y="' + y + '" text-anchor="end" font-size="10.5" fill="var(--accent)">○ ' + downLabel + '</text>';
+}
+/* ================= end of Experiment kit ================= */
+
+  /* ===== A toy car released from rest down a 1.5 m ramp =====
+     Watch (lesson): Release lets the car roll; its distance–time and velocity–time graphs are drawn as it goes, and the
+     working reads the speed and acceleration off the graphs.
+     Experiment (core practical 1.5): markers every 0.20 m. For each distance the car is released from rest and timed to
+     the marker, by stopwatch (three repeats, with reaction-time scatter, to 0.01 s) or by light gates (to 0.001 s, and a
+     5.0 cm card on the car gives its speed at the gate). Each reading is plotted as it is taken; the curve, the
+     acceleration and the conclusion appear only when every distance has been timed. */
+  function initRamp(){
+    var A={10:0.40, 20:0.80, 30:1.20};       // acceleration (m/s²) for each ramp height: g × sin(angle), less the effects of friction
+    var DS=[0.2,0.4,0.6,0.8,1.0,1.2], CARD=0.050, TRACK=1.2;
+    var hgt=20, method='sw', EXP=false, slow=false;
+    var t=0, running=false, last=0, raf=0;                 // watch mode
+    var rows=[], di=0, rk=0, run=null, auto=false;         // experiment: rows of {d,ts:[],v}, distance index, repeat, current run
+    var pic=$('#rm-pic'), gr=$('#rm-graphs'), goBtn=$('#rm-go'), oneBtn=$('#rm-one'), expBtn=$('#rm-exp');
+    var a=function(){ return A[hgt]; };
+    var tFor=function(d){ return Math.sqrt(2*d/a()); };
+    var f2=function(n){ return (Math.round(n*100)/100).toFixed(2); };
+    var f3=function(n){ return (Math.round(n*1000)/1000).toFixed(3); };
+    var reps=function(){ return method==='sw'?3:1; };
+    var mean=function(r){ var s=0; r.ts.forEach(function(x){ s+=x; }); return s/r.ts.length; };
+    var done=function(){ return rows.length===DS.length && rows[DS.length-1].ts.length===reps(); };
+    // what the student reads. Stopwatch: start and stop by hand, so up to about ±0.1 s each run (to 0.01 s);
+    // light gates: to 0.001 s. The error stays under a quarter of the gap to the next distance, so no time goes the wrong way.
+    function measure(d, k){
+      var tt=tFor(d), i=DS.indexOf(d), gap=Math.min(i>0?tt-tFor(DS[i-1]):tt, i<DS.length-1?tFor(DS[i+1])-tt:tt);
+      // stopwatch: each run is off by up to about ±0.08 s (reaction time at the start and at the stop), and on average
+      // stopped 0.03 s late; the means still rise with distance (checked for every ramp height)
+      if(method==='sw') return +(Math.round((tt+0.03+0.04*expErr(5*i+3*k+2))*100)/100).toFixed(2);
+      return +expReading(tt, tt-gap, 0.001, 3*i+k+1, 0.5).toFixed(3);
+    }
+    function gateSpeed(d){ var v=a()*tFor(d), tb=Math.round(CARD/v*1000)/1000; return {tb:tb, v:CARD/tb}; }
+
+    // ---- picture: the ramp to scale (1 m = 333 px along it), the car, markers, stopwatch or gates
+    function drawPic(dCar, label){
+      var L=500, x0=36, y0=132, hpx=hgt/100*333, ang=Math.asin(hgt/150), ca=Math.cos(ang), sa=Math.sin(ang);
+      var top=[x0, y0-hpx], at=function(s){ return [top[0]+s*333*ca, top[1]+s*333*sa]; };
+      var g='<rect x="2" y="2" width="556" height="146" rx="10" fill="var(--panel)" stroke="var(--panel-border)"/>';
+      g+='<path d="M'+x0+' '+y0+' H546" stroke="var(--ink-faint)" stroke-width="1.5"/>';
+      g+='<rect x="'+(x0-14)+'" y="'+(y0-hpx)+'" width="16" height="'+hpx+'" fill="var(--panel-border)" stroke="var(--ink-faint)"/>';
+      g+='<line x1="'+top[0]+'" y1="'+top[1]+'" x2="'+at(1.5)[0]+'" y2="'+at(1.5)[1]+'" stroke="var(--ink-soft)" stroke-width="4" stroke-linecap="round"/>';
+      g+='<text x="'+(x0+6)+'" y="'+(y0-4)+'" font-size="10" fill="var(--ink-faint)">'+hgt+' cm</text>';
+      DS.concat([0]).forEach(function(s){ var p=at(s); g+='<line x1="'+(p[0]+5*sa)+'" y1="'+(p[1]-5*ca)+'" x2="'+(p[0]-5*sa)+'" y2="'+(p[1]+5*ca)+'" stroke="var(--ink-faint)" stroke-width="1.5"/><text x="'+(p[0]+10*sa)+'" y="'+(p[1]+16)+'" text-anchor="middle" font-size="9.5" fill="var(--ink-faint)">'+(s===0?'0':s.toFixed(1))+'</text>'; });
+      g+='<text x="'+at(1.32)[0]+'" y="'+(at(1.32)[1]+16)+'" font-size="9.5" fill="var(--ink-faint)">m</text>';
+      if(EXP){
+        var dm=DS[Math.min(di,DS.length-1)], pm=at(dm);
+        g+='<path d="M'+pm[0]+' '+(pm[1]-34)+' V'+(pm[1]-2)+'" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"/>';
+        if(method==='lg'){
+          [0,dm].forEach(function(s){ var p=at(s); g+='<rect x="'+(p[0]-3)+'" y="'+(p[1]-40)+'" width="6" height="34" fill="var(--ink-soft)"/><line x1="'+p[0]+'" y1="'+(p[1]-24)+'" x2="'+p[0]+'" y2="'+(p[1]-8)+'" stroke="var(--bad)" stroke-width="1.5" stroke-dasharray="2 2"/>'; });
+        }
+      }
+      // the car: its front edge is at distance dCar from the start line
+      var pc=at(Math.min(1.5,dCar)), deg=ang*180/Math.PI;
+      g+='<g transform="translate('+pc[0].toFixed(1)+' '+pc[1].toFixed(1)+') rotate('+deg.toFixed(2)+')"><rect x="-34" y="-17" width="34" height="12" rx="3" fill="var(--motion)"/><rect x="-26" y="-25" width="16" height="9" rx="2" fill="var(--motion)" opacity=".7"/>'+(EXP&&method==='lg'?'<rect x="-20" y="-35" width="12" height="11" fill="var(--ink)" opacity=".75"/>':'')+'<circle cx="-27" cy="-4" r="4" fill="var(--ink)"/><circle cx="-7" cy="-4" r="4" fill="var(--ink)"/></g>';
+      // the timer read-out
+      g+='<rect x="404" y="12" width="140" height="40" rx="6" fill="var(--panel)" stroke="var(--ink-soft)"/><text x="414" y="27" font-size="9.5" fill="var(--ink-faint)">'+(EXP?(method==='sw'?'stopwatch':'light gate timer'):'time')+'</text><text x="536" y="45" text-anchor="end" font-size="16" fill="var(--ink)">'+label+'</text>';
+      pic.innerHTML=g;
+    }
+
+    // ---- graphs: distance–time (left) and velocity–time (right)
+    function axes(x0,y0,w,h,xmax,ymax,xt,yt,yLab){
+      var gx=function(v){ return x0+v/xmax*w; }, gy=function(v){ return y0+h-v/ymax*h; }, g='';
+      xt.forEach(function(v){ g+='<line x1="'+gx(v)+'" x2="'+gx(v)+'" y1="'+y0+'" y2="'+(y0+h)+'" stroke="var(--panel-border)"/><text x="'+gx(v)+'" y="'+(y0+h+13)+'" text-anchor="middle" font-size="10" fill="var(--ink-faint)">'+v+'</text>'; });
+      yt.forEach(function(v){ g+='<line x1="'+x0+'" x2="'+(x0+w)+'" y1="'+gy(v)+'" y2="'+gy(v)+'" stroke="var(--panel-border)"/><text x="'+(x0-5)+'" y="'+(gy(v)+3.5)+'" text-anchor="end" font-size="10" fill="var(--ink-faint)">'+v+'</text>'; });
+      g+='<line x1="'+x0+'" x2="'+x0+'" y1="'+y0+'" y2="'+(y0+h)+'" stroke="var(--ink-soft)" stroke-width="2"/><line x1="'+x0+'" x2="'+(x0+w)+'" y1="'+(y0+h)+'" y2="'+(y0+h)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
+      g+='<text x="'+x0+'" y="'+(y0-7)+'" font-size="11" fill="var(--ink-soft)">'+yLab+'</text><text x="'+(x0+w)+'" y="'+(y0+h+27)+'" text-anchor="end" font-size="11" fill="var(--ink-soft)">time (s)</text>';
+      return {g:g,gx:gx,gy:gy};
+    }
+    function drawGraphs(){
+      var TM=2.5, VM=1.8, ttop=Math.min(tFor(TRACK),t);
+      // phones: the two graphs one above the other, so their labels stay readable
+      var narrow=window.innerWidth<=560;
+      gr.setAttribute('viewBox',narrow?'0 0 300 380':'0 0 560 190');
+      var L=axes(46,22,narrow?236:210,128,TM,1.2,[0,0.5,1,1.5,2,2.5],[0,0.4,0.8,1.2],'distance (m)');
+      var R=narrow?axes(46,212,236,128,TM,VM,[0,0.5,1,1.5,2,2.5],[0,0.6,1.2,1.8],'velocity (m/s)'):axes(330,22,210,128,TM,VM,[0,0.5,1,1.5,2,2.5],[0,0.6,1.2,1.8],'velocity (m/s)');
+      var g=L.g+R.g, k, pts=[], vp=[];
+      if(!EXP){
+        for(k=0;k<=60;k++){ var tt=ttop*k/60; pts.push(L.gx(tt).toFixed(1)+','+L.gy(0.5*a()*tt*tt).toFixed(1)); vp.push(R.gx(tt).toFixed(1)+','+R.gy(a()*tt).toFixed(1)); }
+        g+='<polygon points="'+R.gx(0)+','+R.gy(0)+' '+vp.join(' ')+' '+R.gx(ttop)+','+R.gy(0)+'" fill="var(--motion-soft)" opacity=".7"/>';
+        g+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--motion)" stroke-width="2.5"/><polyline points="'+vp.join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="2.5"/>';
+        if(t>0){ g+='<circle cx="'+L.gx(ttop)+'" cy="'+L.gy(0.5*a()*ttop*ttop)+'" r="4.5" fill="var(--motion)" stroke="var(--panel)" stroke-width="2"/><circle cx="'+R.gx(ttop)+'" cy="'+R.gy(a()*ttop)+'" r="4.5" fill="var(--accent)" stroke="var(--panel)" stroke-width="2"/>'; }
+      }else{
+        if(done()){
+          for(k=0;k<=60;k++){ var t2=tFor(TRACK)*k/60; pts.push(L.gx(t2).toFixed(1)+','+L.gy(0.5*a()*t2*t2).toFixed(1)); vp.push(R.gx(t2).toFixed(1)+','+R.gy(a()*t2).toFixed(1)); }
+          g+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--motion)" stroke-width="2" stroke-dasharray="7 5"/>';
+          if(method==='lg') g+='<polyline points="'+vp.join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="7 5"/>';
+        }
+        rows.forEach(function(r){
+          if(r.ts.length===reps()){ g+=expCross(L.gx(mean(r)),L.gy(r.d),5); if(method==='lg') g+=expCross(R.gx(r.ts[0]),R.gy(r.v),5); }
+        });
+        if(method==='sw') g+='<text x="'+R.gx(1.25)+'" y="'+R.gy(1.0)+'" text-anchor="middle" font-size="11" fill="var(--ink-faint)">a stopwatch cannot measure</text><text x="'+R.gx(1.25)+'" y="'+(R.gy(1.0)+15)+'" text-anchor="middle" font-size="11" fill="var(--ink-faint)">the speed at a point</text>';
+      }
+      gr.innerHTML=g;
+    }
+
+    function table(){
+      var el=$('#rm-table');
+      if(!rows.length){ el.innerHTML='<p style="font-size:13px;color:var(--ink-faint);padding:8px 10px;margin:0">No readings yet.</p>'; return; }
+      var h='<table class="rtable"><thead><tr><th>Distance (m)</th>'+(method==='sw'?'<th>Time 1 (s)</th><th>Time 2 (s)</th><th>Time 3 (s)</th><th>Mean (s)</th>':'<th>Time (s)</th><th>Speed (m/s)</th>')+'</tr></thead><tbody>';
+      rows.forEach(function(r,i){
+        h+='<tr'+(i===rows.length-1?' class="new"':'')+'><td>'+r.d.toFixed(2)+'</td>';
+        if(method==='sw'){ for(var k=0;k<3;k++) h+='<td>'+(r.ts[k]!=null?f2(r.ts[k]):'')+'</td>'; h+='<td>'+(r.ts.length===3?f2(mean(r)):'')+'</td>'; }
+        else h+='<td>'+(r.ts.length?f3(r.ts[0]):'')+'</td><td>'+(r.ts.length?f2(r.v):'')+'</td>';
+        h+='</tr>';
+      });
+      el.innerHTML=h+'</tbody></table>'; el.scrollTop=el.scrollHeight;
+    }
+
+    function readouts(){
+      var eq, note, tl='Time', dl='Distance', al='Speed', tv, dv, av;
+      if(!EXP){
+        var tt=Math.min(tFor(TRACK),t), v=a()*tt, d=0.5*a()*tt*tt;
+        tv=f2(tt)+' s'; dv=f2(d)+' m'; av=f2(v)+' m/s';
+        eq='acceleration = gradient of the velocity–time graph<br>acceleration = [[change in velocity|time taken]]'+(tt>0?'<br>acceleration = [['+f2(v)+' − 0|'+f2(tt)+' − 0]]<br>acceleration = <b>'+f2(a())+' m/s²</b>':'')+
+           '<br>distance = area under the velocity–time graph'+(tt>0?'<br>distance = ½ × '+f2(tt)+' × '+f2(v)+'<br>distance = <b>'+f2(d)+' m</b>':'');
+        if(t===0) note='Ready. The car will roll from rest down a ramp '+hgt+' cm high. Press Release.';
+        else if(t<tFor(TRACK)) note='The car is speeding up: the distance–time graph gets steeper and steeper, and the velocity–time graph is a straight line sloping up.';
+        else note='The car passed the 1.20 m mark after '+f2(tt)+' s. Equal distances took less and less time: it was accelerating, at '+f2(a())+' m/s². Try a higher ramp, or press Experiment to time it yourself.';
+      }else{
+        var r=rows[rows.length-1];
+        tl=method==='sw'?'Last time':'Last time'; dl='Distance'; al='Acceleration';
+        tv=r&&r.ts.length?(method==='sw'?f2(r.ts[r.ts.length-1]):f3(r.ts[0]))+' s':'–'; dv=DS[Math.min(di,DS.length-1)].toFixed(2)+' m';
+        if(run){ tv=(method==='sw'?f2(run.t):f3(run.t))+' s'; }
+        if(done()){
+          var R=rows[DS.length-1], tm=mean(R), vavg=TRACK/tm, vfin=2*vavg, acc=method==='sw'?vfin/tm:R.v/R.ts[0];
+          av=f2(acc)+' m/s²';
+          if(method==='sw'){
+            eq='average speed = [[distance|time]]<br>average speed = [['+TRACK.toFixed(2)+'|'+f2(tm)+']]<br>average speed = '+f2(vavg)+' m/s<br>final speed = 2 × average speed<br>final speed = '+f2(vfin)+' m/s<br>acceleration = [[change in velocity|time taken]]<br>acceleration = [['+f2(vfin)+' − 0|'+f2(tm)+']]<br>acceleration = <b>'+f2(acc)+' m/s²</b>';
+            note='Run complete. The distance–time graph curves upwards: each 0.20 m took less time than the one before, so the car was speeding up. It started from rest and sped up steadily, so its speed at 1.20 m was about twice its average speed: about '+f2(vfin)+' m/s, an acceleration of about '+f2(acc)+' m/s².';
+          }else{
+            eq='speed at the gate = [[card length|time the card blocks the beam]]<br>speed at the gate = [['+CARD.toFixed(3)+'|'+f3(CARD/R.v)+']]<br>speed at the gate = '+f2(R.v)+' m/s<br>acceleration = gradient of the velocity–time graph<br>acceleration = [['+f2(R.v)+' − 0|'+f3(R.ts[0])+' − 0]]<br>acceleration = <b>'+f2(acc)+' m/s²</b>';
+            note='Run complete. The distance–time graph curves upwards, and the velocity–time points lie on a straight line through the origin: the car accelerated steadily, at about '+f2(acc)+' m/s². The light gates time to 0.001 s, with no reaction time.';
+          }
+        }else{
+          av='?'; eq='acceleration = ?';
+          if(!rows.length&&!run) note='Experiment: the car is released from rest at the 0 line and timed to the marker at '+DS[0].toFixed(2)+' m'+(method==='sw'?', three times':'')+'. Press Release to time every distance in turn, or One run to time one run.';
+          else if(run) note='Run '+(rk+1)+(method==='sw'?' of 3':'')+' to '+DS[di].toFixed(2)+' m. '+(method==='sw'?'Start the stopwatch as you let go, and stop it as the front of the car passes the marker.':'The first gate starts the timer and the second stops it; the card blocks the beam to give the speed.');
+          else{ var lr=rows[rows.length-1]; note=(method==='sw'&&lr.ts.length<3?'Repeat '+(lr.ts.length+1)+' to '+lr.d.toFixed(2)+' m next. ':'')+(method==='sw'&&lr.ts.length===3?'Mean time to '+lr.d.toFixed(2)+' m: '+f2(mean(lr))+' s. The repeats differ: your reaction time changes each run. ':'')+(method==='lg'?'Time to '+lr.d.toFixed(2)+' m: '+f3(lr.ts[0])+' s; speed at the gate '+f2(lr.v)+' m/s. ':'')+'Next: '+DS[Math.min(di,DS.length-1)].toFixed(2)+' m.'; }
+        }
+      }
+      $('#rm-tl').textContent=tl; $('#rm-dl').textContent=dl; $('#rm-al').textContent=al;
+      $('#rm-t').textContent=tv; $('#rm-d').textContent=dv; $('#rm-a').textContent=av;
+      $('#rm-eq').innerHTML=FR(eq); $('#rm-note').textContent=note;
+    }
+    function drawAll(){
+      var dCar, lab;
+      if(!EXP){ var tt=Math.min(tFor(TRACK),t); dCar=0.5*a()*tt*tt; lab=f2(tt)+' s'; }
+      else if(run){ dCar=0.5*a()*run.t*run.t; lab=(method==='sw'?f2(run.t):f3(run.t))+' s'; }
+      else{ var r=rows[rows.length-1]; dCar=r&&r.ts.length?r.d:0; lab=r&&r.ts.length?(method==='sw'?f2(r.ts[r.ts.length-1]):f3(r.ts[0]))+' s':(method==='sw'?'0.00 s':'0.000 s'); }
+      drawPic(dCar, lab); drawGraphs(); if(EXP) table(); readouts(); buttons();
+    }
+    function buttons(){
+      if(!EXP) goBtn.innerHTML=running?'Pause':(t>0&&t<tFor(TRACK)?'Carry on':'&#9654; Release');
+      else goBtn.innerHTML=auto?'Pause':(done()?'&#9654; Release':'&#9654; Release');
+      oneBtn.disabled=EXP&&(done()||!!run);
+    }
+
+    // ---- the run loop: always ends (bottom of the track, or the last distance timed)
+    function stop(){ running=false; auto=false; cancelAnimationFrame(raf); }
+    function frame(now){
+      var dt=Math.min(0.05,(now-last)/1000)*SPEED(); last=now;
+      if(!EXP){
+        t=Math.min(tFor(TRACK), t+dt);
+        if(t>=tFor(TRACK)-1e-9){ running=false; }
+        drawAll(); if(running) raf=requestAnimationFrame(frame); return;
+      }
+      if(run){
+        run.t+=dt;
+        if(run.t>=run.tt){ finishRun(); if(!auto||done()){ auto=false; drawAll(); return; } }
+      }else if(auto){ startRun(); }
+      drawAll(); raf=requestAnimationFrame(frame);
+    }
+    function startRun(){
+      if(done()) return false;
+      if(!rows[di]) rows.push({d:DS[di], ts:[], v:0});
+      run={t:0, tt:tFor(DS[di])};
+      return true;
+    }
+    function finishRun(){
+      var r=rows[di]; r.ts.push(measure(r.d, r.ts.length));
+      if(method==='lg') r.v=gateSpeed(r.d).v;
+      run=null; rk=r.ts.length;
+      if(r.ts.length===reps()){ di=Math.min(DS.length, di+1); rk=0; }
+    }
+    goBtn.addEventListener('click',function(){
+      if(!EXP){
+        if(running){ stop(); drawAll(); return; }
+        if(t>=tFor(TRACK)) t=0;
+        running=true; last=performance.now(); raf=requestAnimationFrame(frame); return;
+      }
+      if(auto){ auto=false; cancelAnimationFrame(raf); drawAll(); return; }
+      if(done()) expReset();
+      auto=true; if(!run) startRun(); last=performance.now(); cancelAnimationFrame(raf); raf=requestAnimationFrame(frame); drawAll();
+    });
+    oneBtn.addEventListener('click',function(){
+      if(!EXP||run||done()) return;
+      auto=false; startRun(); last=performance.now(); cancelAnimationFrame(raf); raf=requestAnimationFrame(frame); drawAll();
+    });
+    function expReset(){ stop(); rows=[]; di=0; rk=0; run=null; drawAll(); }
+    $('#rm-reset').addEventListener('click',function(){ if(EXP) expReset(); else { stop(); t=0; drawAll(); } });
+    expBtn.addEventListener('click',function(){
+      EXP=!EXP; expBtn.setAttribute('aria-pressed',String(EXP)); document.documentElement.classList.toggle('exp',EXP);
+      stop(); t=0; expReset();
+    });
+    function seg(id, fn){ var el=$('#'+id); el.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; Array.prototype.forEach.call(el.querySelectorAll('button'),function(x){ x.setAttribute('aria-pressed',String(x===b)); }); fn(b.dataset.v); }); }
+    seg('rm-h',function(v){ hgt=+v; stop(); t=0; expReset(); });
+    seg('rm-m',function(v){ method=v; expReset(); });
+    $('#slow').addEventListener('click',function(){ var b=$('#slow'); b.setAttribute('aria-pressed',String(b.getAttribute('aria-pressed')!=='true')); });
+    window.addEventListener('resize',function(){ drawGraphs(); });
+    drawAll();
+  }
+
+  watchEquals('.eq');
+  initRamp();
+})();
+</script>
+</body>
+</html>
