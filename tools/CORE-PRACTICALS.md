@@ -62,12 +62,12 @@ The guide's PDF pages are those of the PDF Alex shared; in the Project doc, look
 | 6 | 3.25P | Speed of sound in air | 167–169 | 1.4, 3.23 | TA | new | none yet (Unit 3) | B | to do |
 | 7 | 3.27P | Frequency of sound with an oscilloscope | 170–173 | 3.24, 3.25, 3.26, 3.28, 3.29 | TA | new | none yet (Unit 3) | C | to do |
 | 8 | 4.9 | Thermal energy transfer (conduction, convection, radiation) | 174–178 | 4.6, 4.7, 4.8, 4.10, 5.3 | | new (check the 4b workout's Practicals tab for sims to move out) | `heat-transfer-igcse.html#practical` | C | to do |
-| 9 | 5.4 | Density from mass and volume | 179–183 | 1.2 | | new | `solids-liquids-gases.html#density` | B | to do |
-| 10 | 5.14P | Specific heat capacity | 184–187 | 5.12, 5.13 | TA | `specific-heat.html` (moved out of the Unit 5 Specific Heat tab, which now frames it) | `solids-liquids-gases.html#shc` | A | **published** (21 Oct 2026; Alex to review) |
+| 9 | 5.4 | Density from mass and volume | 179–183 | 1.2 | | new | `density-pressure-state.html#density` | B | to do |
+| 10 | 5.14P | Specific heat capacity | 184–187 | 5.12, 5.13 | TA | `specific-heat.html` (moved out of the Unit 5 Specific Heat tab, which now frames it) | `density-pressure-state.html#shc` | A | **published** (21 Oct 2026; Alex to review) |
 | 11 | 6.6 | Magnetic field of a bar magnet | 188–189 | 6.2, 6.3, 6.4, 6.5, 6.7 | | `magnetic-field-patterns.html` (Experiment mode added) | `magnetism-and-electromagnetism.html#fields` | A | **published** (21 Oct 2026; Alex to review) |
 | 12 | 7.6 | Penetrating power of radiation | 190–192 | 7.4, 7.5, 7.9, 7.10, 7.16 | | new (a simulation is acceptable for the real practical too) | none yet (Unit 7) | C | to do |
 | 13 | 2.9 | Current–voltage characteristics (wire, resistor, lamp, diode) | 193–196 | 2.10, 2.12, 2.13 | | new (the kit demo is a start) | none yet (Unit 2) | B | to do |
-| 14 | 5.11P | Temperature–time graph for melting ice | 197–200 | 5.8, 5.9, 5.10 | TA | `heating-curve.html` (Experiment mode added) | `solids-liquids-gases.html#heating` | A | **published** (21 Oct 2026; Alex to review) |
+| 14 | 5.11P | Temperature–time graph for melting ice | 197–200 | 5.8, 5.9, 5.10 | TA | `heating-curve.html` (Experiment mode added) | `density-pressure-state.html#heating` | A | **published** (21 Oct 2026; Alex to review) |
 
 **Batches:**
 - **A** (extend what exists): 1.5, 5.11P, 6.6, 5.14P.
