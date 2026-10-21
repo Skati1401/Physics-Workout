@@ -39,6 +39,11 @@ The new chat should then:
    - Run the Experiment for every case, in both directions.
    - Check the stage card fits 1366×657.
    - Serve the folder on localhost so the frames can be measured.
+4. **Check the wording against mark schemes** (Alex, 21 Oct 2026).
+   - Use the IGCSE Question Index (Alex's other project) to find every past-paper part tagged with the practical's spec points, then read those parts in the 4PH1 mark schemes uploaded to the "Animated activities for kids" project.
+   - Match the method steps, the Order and Match wording, the model answers (bullet points) and the Exam tab to the marking points' phrasing: the details that score (e.g. "ruler held vertically / set square / eye level", "interrupter card", "speed at bottom = 2 × average speed").
+   - Where a mark scheme accepts more than one method, offer them with a "Method type" switch, as in the 1.5 page's Overview and Method tabs.
+   - Note the papers used in the batch notes below. Never copy a question onto the site; the repo is public.
 4. **Review it critically**, using the skill's review list: numbers, wording, spec coverage, trims. Fix what you find before showing Alex.
 5. **Push the draft** to `main` and send Alex its link: `https://skati1401.github.io/Physics-Workout/<slug>-practical.html`.
 6. **Publish once Alex approves.**
@@ -95,3 +100,7 @@ All four were built as drafts, then published the same day. Spec numbers were ch
 - **1.5 method types (Alex, 21 Oct 2026):** the Overview and Method tabs have a "Method type" switch (Stopwatch, Light gates, Video camera), shared by both tabs and remembered in the browser. The light gate and video camera methods follow the January 2014 4PH0 Paper 1P mark scheme (Q5, speed of a toy car at the bottom of a slope), which also accepts ticker tape and a motion sensor. A shared Sort ("Which method?") stays visible under every choice. Worth reusing on other practicals that have more than one accepted method.
 - **Engine fix:** in `createPlot`, a point on the top gridline snapped to 1.2000000000000002 and was refused as off the graph. Fixed in `template/engine.js`; every practical rebuilt (Hooke's law changed by that one line only).
 - **Published on 21 Oct 2026** at Alex's "go live", before his review: cards under Core Practicals, banners on the workout tabs (1a Measure v, Unit 5 Heating Curve and Specific Heat, Unit 6 Magnetic Field Patterns), "Core practical" tags on the animation cards, new cards for `ramp-motion.html` (Unit 1) and `specific-heat.html` (Unit 5), and the ramp animation framed in the 1a Measure v tab. The 1a, Unit 5 and Unit 6 workouts (and the practical template) now let a `#tab` link win over the tab remembered in the browser.
+
+## Mark scheme wording check: published practicals
+
+Waiting for the IGCSE Question Index and the 4PH1 mark schemes to be added to the project. Then check, in this order: 1.22 Hooke's law, 1.5 (light gate and video methods already from the January 2014 4PH0 mark scheme), 5.11P, 5.14P, 6.6.
