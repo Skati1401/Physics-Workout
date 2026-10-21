@@ -10,7 +10,7 @@ python3 tools/practical-gen/gen.py --all --check        # rebuild every practica
 ```
 
 - `template/`: the page shell, styles, engine and tab wiring, copied from the Unit 5 workout plus `createPlot`.
-  - `head.html`: the head, fonts and visit counter.
+  - `head.html`: the head, fonts, visit counter and tab counter (`pwCountTab`, called from `applyTabUI` in `tail.js`).
   - `style.css`: the styles, with accent placeholders.
   - `engine.js`: helpers, drag engine and every activity factory (`act`, `bar`, `createBlankGame`, `createSortGame`, `createMatchGame`, `createMemoryGame`, `createCalc`, `createReorder`, `createPredict`, `createSpot`, `lineGraph`, `frameAct`, `createPlot`).
   - `tail.js`: pairs side-by-side Predicts, lines up = signs, and handles tabs, `#tab` links, restoring saved answers and the tab ticks.

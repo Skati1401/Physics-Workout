@@ -33,6 +33,7 @@ function applyTabUI(tab){
   reflowers.forEach(f=>{try{f(tab);}catch(e){console.error(e);}});
   try{history.replaceState(null,'','#'+tab);}catch(e){}
   writeSave();
+  try{const b=byId('tab-'+tab);window.pwCountTab&&pwCountTab(tab,b&&b.firstChild?b.firstChild.textContent.trim():tab);}catch(e){}
 }
 $$('.tab-btn').forEach(b=>b.addEventListener('click',()=>applyTabUI(b.dataset.tab)));
 byId('tab-{{FIRST_TAB}}').parentNode.addEventListener('keydown',e=>{
