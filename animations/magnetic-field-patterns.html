@@ -136,6 +136,23 @@
   .dragme:focus-visible .focus-ring{stroke:var(--accent);stroke-width:3;}
   @media (max-width:560px){ .stage{padding:12px;} .eq{font-size:12.5px;padding:6px 8px;} .note{font-size:14px;} }
 
+  /* ===== Experiment kit (copy into the animation page's <style>) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+  .rtable{--accent-soft:var(--topic-soft);}
+  .rtable td:last-child,.rtable th:last-child{text-align:left;}
+  html:not(.exp) .fx-only{display:none!important;}
+  .exp .fx-hide{display:none!important;}
+  .side-btns{display:flex;flex-wrap:wrap;gap:8px;}
+  .exp .rtable-wrap{max-height:108px;}
+  .exp .note{font-size:14px;}
   .embed body{background:transparent;}
   .embed .page{padding:0;max-width:none;display:flow-root;}
   .embed .home-link,.embed .page-head{display:none;}
@@ -169,14 +186,15 @@
       </div>
       <div class="under">
         <div class="btn-group">
-          <button class="btn btn-primary" id="fp-go" type="button">&#9654; Sprinkle filings</button>
-          <button class="btn" id="fp-lines" type="button" aria-pressed="false">Field lines</button>
-          <button class="btn" id="fp-compass" type="button" aria-pressed="false">Plotting compass</button>
-          <button class="btn" id="fp-reset" type="button">&#8634; Reset</button>
-          <button class="btn" id="fp-strong" type="button" aria-pressed="false">Stronger magnets</button>
+          <button class="btn btn-primary fx-hide" id="fp-go" type="button">&#9654; Sprinkle filings</button><button class="btn btn-primary fx-only" id="fx-play" type="button">&#9654; Plot a line</button><button class="btn fx-only" id="fx-step" type="button">One dot</button>
+          <button class="btn fx-hide" id="fp-lines" type="button" aria-pressed="false">Field lines</button>
+          <button class="btn fx-hide" id="fp-compass" type="button" aria-pressed="false">Plotting compass</button>
+          <button class="btn" id="fp-reset" type="button">&#8634; Reset</button><button class="btn fx-only" id="fx-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn fx-hide" id="fp-strong" type="button" aria-pressed="false">Stronger magnets</button>
+          <button class="btn" id="fp-exp" type="button" aria-pressed="false">Experiment</button>
         </div>
       </div>
-      <p class="hint" style="margin-top:8px">Drag the compass around the magnets (or select it and use the arrow keys).</p>
+      <p class="hint fx-hide" style="margin-top:8px">Drag the compass around the magnets (or select it and use the arrow keys).</p><p class="hint fx-only" style="margin-top:8px">Click the card to start a line somewhere else, or press New start point.</p>
     </div>
     <div class="side">
       <div>
@@ -184,10 +202,12 @@
         <div class="seg" id="fp-setup"><button type="button" data-v="bar" aria-pressed="true">One bar magnet</button><button type="button" data-v="like" aria-pressed="false">Like poles</button><button type="button" data-v="unlike" aria-pressed="false">Unlike poles</button><button type="button" data-v="close" aria-pressed="false">Unlike poles, close</button></div>
       </div>
       <p class="note" id="fp-note" aria-live="polite"></p>
-      <div class="stats">
+      <div class="side-btns fx-only"><button class="btn" id="fx-next" type="button">New start point</button><button class="btn" id="fx-cmp" type="button" disabled>Compare with field lines</button></div>
+      <div class="stats fx-hide">
         <div class="stat"><small>Field at compass</small><strong id="fp-str">&ndash;</strong></div>
         <div class="stat"><small>Needle&rsquo;s north end points</small><strong id="fp-dir">&ndash;</strong></div>
       </div>
+      <div class="fx-only"><div class="lab">Your results <span>Lines plotted: <output id="fx-n">0</output></span></div><div class="rtable-wrap" id="fx-table"></div></div>
     </div>
   </section>
 
@@ -355,6 +375,7 @@
     base.innerHTML=g;
   }
   function drawTop(){
+    if(EXP){ drawExp(); return; }
     var g='<defs>'+arrowHead('fp-lh','var(--topic)')+'<clipPath id="fp-clip"><rect x="2" y="2" width="'+(W-4)+'" height="'+(H-4)+'" rx="10"/></clipPath></defs><g clip-path="url(#fp-clip)">';
     if(pressed(linesBtn)){
       fieldLines.forEach(function(p){
@@ -385,7 +406,7 @@
   }
   var focusComp=false;
   function readings(){
-    if(!pressed(compBtn)){ $('#fp-str').textContent='–'; $('#fp-dir').textContent='–'; return; }
+    if(!pressed(compBtn)&&!EXP){ $('#fp-str').textContent='–'; $('#fp-dir').textContent='–'; return; }
     var b=field(comp.x,comp.y), s=Math.hypot(b[0],b[1]), atPole=field(SETUPS[setup].mags[0].x-12, SETUPS[setup].mags[0].y+SETUPS[setup].mags[0].h/2), ref=Math.hypot(atPole[0],atPole[1])/strength;
     var r=s/ref, word = r>0.7?'very strong':(r>0.35?'strong':(r>0.08?'medium':(r>0.012?'weak':'almost zero')));
     $('#fp-str').textContent=word;
@@ -419,6 +440,7 @@
   }
   var TEND=0.9+2.4;
   function note(){
+    if(EXP){ expNote(); return; }
     var s;
     if(!filings.length && !pressed(linesBtn)) s='Predict the pattern the iron filings will make, then press <b>Sprinkle filings</b>.';
     else if(running && t<0.9) s='The filings land on the card facing every way.';
@@ -432,7 +454,7 @@
     drawFilings(); note(); raf=requestAnimationFrame(frame); }
   function sprinkle(){ stop(); makeFilings(); t=0; done=false; running=true; goBtn.innerHTML='Sprinkling…'; last=performance.now(); note(); raf=requestAnimationFrame(frame); }
   function reset(){ stop(); filings=[]; t=0; done=false; linesBtn.setAttribute('aria-pressed','false'); goBtn.innerHTML='&#9654; Sprinkle filings'; drawFilings(); drawTop(); note(); }
-  function newSetup(v){ setup=v; makePoles(); makeLines(); comp={x:280,y:setup==='close'?60:70}; reset(); }
+  function newSetup(v){ setup=v; makePoles(); makeLines(); comp={x:280,y:setup==='close'?60:70}; reset(); if(EXP) expReset(); }
 
   // dragging the compass (mouse, touch and keyboard)
   function hookCompass(c){
@@ -455,6 +477,226 @@
     readings();
   }
 
+
+  /* ===== Experiment mode (core practical 6.6): the plotting compass method =====
+     The compass starts by a north pole. Each dot is marked at the north end of the needle, then the compass is moved
+     on so the south end of its needle sits on that dot, and so on, until the line reaches a pole, leaves the card or
+     the needle will not settle. The student plots several lines; the field lines (and the conclusion) appear only when
+     they press Compare. Each needle reading carries a small fixed error of a few degrees (the kit's error pattern). */
+/* ================= Experiment kit (copy this block into an animation page's <script>) =================
+   The reusable parts of an animation's Experiment mode, taken from animations/hookes-law.html:
+   - expRun():     the run itself: step the independent variable up one interval at a time, then
+                   (optionally) back down again, measuring at every step
+   - expReading(): a reading with a small, fixed pattern of reading error, rounded to the instrument's
+                   resolution, that never goes the wrong way
+   - expTable():   the results table (sticky header, newest row highlighted, a column per run)
+   - expCross(), expRing(), expKey(): SVG marks for plotted readings (× first run, ○ return run)
+   The page keeps its own picture, physics, graph axes and notes. See tools/experiment-kit/README.md.
+   Plain ES5 so it can sit inside any animation page's IIFE. */
+
+// A fixed pattern of reading errors, in units of the instrument's resolution. Fixed (not random) so a
+// teacher sees the same results as the class, and a re-run gives the same table.
+var EXP_ERR = [0, 1, -1, 0, 2, -1, 1, -2, 0, 1, -1, 0, 1, -1, 2, 0, -1, 1, 0, -2, 1];
+function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP_ERR.length]; }
+
+// What the student reads off the instrument.
+//   trueVal  the value the physics gives at this step
+//   prevVal  the reading taken at the step before (or the start value)
+//   res      the instrument's resolution (0.1 cm ruler, 0.05 mm vernier, 0.01 A ammeter, 1° protractor)
+//   i        the step number (picks the error from the pattern)
+//   scale    how big the error is, in resolutions (default 1; 0.5 for a fine instrument)
+// The error is never more than a quarter of the change since the last reading, so a reading never
+// goes the wrong way (an extension never falls as the load rises, a current never drops as V rises).
+function expReading(trueVal, prevVal, res, i, scale){
+  var gap = Math.abs(trueVal - prevVal);
+  var err = i > 0 ? expErr(i) * Math.min(res * (scale == null ? 1 : scale), gap / 4) : 0;
+  var r = Math.round((trueVal + err) / res) * res;
+  var dp = Math.max(0, Math.ceil(-Math.log10(res) - 1e-9));
+  return +r.toFixed(dp);
+}
+
+// The run. cfg = {
+//   start: 0,                 value of the independent variable before the first step
+//   max: 10,                  last value of the first run (the run stops there)
+//   step: 1,                  the interval (the page can change it with setStep, which resets the run)
+//   reverse: true,            allow a return run (unloading, turning the voltage back down)
+//   measure: function(v, phase, prevReading){ return reading },   phase is 'up' or 'down'
+//   onChange: function(run, what){}  what is 'up', 'down' or 'reset'
+// }
+// run.up and run.down are arrays of {v, r}. run.phase is 'up' until the first step back, then 'down'.
+function expRun(cfg){
+  var run = { up: [], down: [], phase: 'up', value: cfg.start || 0, peak: cfg.start || 0, step: cfg.step || 1 };
+  var r6 = function(x){ return Math.round(x * 1e6) / 1e6; };
+  run.upDone = function(){ return run.phase === 'down' || run.peak >= cfg.max - 1e-9; };
+  run.downDone = function(){ return run.phase === 'down' && run.value <= (cfg.start || 0) + 1e-9; };
+  run.last = function(){ var a = run.phase === 'down' && run.down.length ? run.down : run.up; return a[a.length - 1] || null; };
+  run.stepUp = function(){
+    if(run.phase !== 'up' || run.upDone()) return false;
+    var prev = run.up.length ? run.up[run.up.length - 1].r : null;
+    var v = r6(Math.min(cfg.max, run.value + run.step));
+    run.value = run.peak = v;
+    run.up.push({ v: v, r: cfg.measure(v, 'up', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'up');
+    return true;
+  };
+  run.stepDown = function(){
+    if(!cfg.reverse || run.value <= (cfg.start || 0) + 1e-9 || !run.up.length) return false;
+    run.phase = 'down';
+    var prev = run.down.length ? run.down[run.down.length - 1].r : run.up[run.up.length - 1].r;
+    var v = r6(Math.max(cfg.start || 0, run.value - run.step));
+    run.value = v;
+    run.down.push({ v: v, r: cfg.measure(v, 'down', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'down');
+    return true;
+  };
+  run.reset = function(){ run.up = []; run.down = []; run.phase = 'up'; run.value = run.peak = cfg.start || 0; if(cfg.onChange) cfg.onChange(run, 'reset'); };
+  run.setStep = function(s){ run.step = s; run.reset(); };
+  return run;
+}
+
+// The results table. cols = [{label:'Load (N)', key:'v', dp:0}, {label:'Extension loading (cm)', key:'up', dp:1}, ...]
+// rows = [{v:1, up:1.6, down:''}, ...]. newKey/newV highlight the reading just taken (fades in).
+// Wrap it in .rtable-wrap so a long table scrolls under its sticky header.
+function expTable(el, cols, rows, newV){
+  var fmt = function(x, dp){ return (x === '' || x == null) ? '' : (+x).toFixed(dp || 0); };
+  var h = '<table class="rtable"><thead><tr>' + cols.map(function(c){ return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    h += '<tr' + (newV != null && row.v === newV ? ' class="new"' : '') + '>' + cols.map(function(c){ return '<td>' + fmt(row[c.key], c.dp) + '</td>'; }).join('') + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table>';
+}
+
+// Plotted readings, as SVG strings. Size 5 suits a 300px-wide graph.
+function expCross(cx, cy, s){ s = s || 5; return '<path d="M' + (cx - s) + ',' + (cy - s) + ' L' + (cx + s) + ',' + (cy + s) + ' M' + (cx + s) + ',' + (cy - s) + ' L' + (cx - s) + ',' + (cy + s) + '" stroke="var(--ink)" stroke-width="2"/>'; }
+function expRing(cx, cy, r){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r || 4.5) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+// A two-line key in the bottom-right corner of a graph: expKey(rightX, bottomY, 'loading', 'unloading')
+function expKey(x, y, upLabel, downLabel){
+  return '<text x="' + x + '" y="' + (y - 14) + '" text-anchor="end" font-size="10.5" fill="var(--ink)">× ' + upLabel + '</text>' +
+         '<text x="' + x + '" y="' + y + '" text-anchor="end" font-size="10.5" fill="var(--accent)">○ ' + downLabel + '</text>';
+}
+/* ================= end of Experiment kit ================= */
+
+  var EXP=false, xLines=[], xCur=null, xStarts=[], xStartIdx=0, xPlaying=false, xSlow=false, xCompared=false, xRaf=0, xLast=0, xAcc=0;
+  var NEEDLE=26;   // the compass needle's length, in card units: one dot per needle length
+  var playBtn=$('#fx-play'), stepBtn=$('#fx-step'), slowBtn=$('#fx-slow'), cmpBtn=$('#fx-cmp'), expBtn=$('#fp-exp');
+  function fieldRef(){ var m=SETUPS[setup].mags[0], b=field(m.x-12, m.y+m.h/2); return Math.hypot(b[0],b[1]); }
+  function unit(x,y,err){ var b=field(x,y), a=Math.atan2(b[1],b[0])+(err||0); return [Math.cos(a),Math.sin(a),Math.hypot(b[0],b[1])]; }
+  function makeStarts(){
+    xStarts=[];
+    SETUPS[setup].mags.forEach(function(m){
+      var nLeft=m.left==='N', fx=nLeft?m.x-14:m.x+m.w+14, nk=setup==='close'?5:3, k;
+      for(k=0;k<nk;k++) xStarts.push([fx, m.y+m.h*(k+0.5)/nk]);
+      var hx=nLeft?m.x+m.w*0.12:m.x+m.w*0.88;
+      if(setup!=='close'){ xStarts.push([hx,m.y-14]); xStarts.push([hx,m.y+m.h+14]); }
+    });
+    xStarts=xStarts.filter(function(p){ return p[0]>10&&p[0]<W-10&&p[1]>10&&p[1]<H-10&&!inMag(p[0],p[1],4); });
+  }
+  function startLine(p){
+    if(xCur&&xCur.pts.length>1&&!xCur.end){ xCur.end='stopped'; xLines.push(xCur); }
+    xCur={pts:[[p[0],p[1]]], end:null, n:xLines.length+1};
+    var d=unit(p[0],p[1]); comp={x:p[0]+d[0]*NEEDLE/2, y:p[1]+d[1]*NEEDLE/2};
+  }
+  function poleAt(x,y){
+    var r=null; SETUPS[setup].mags.forEach(function(m){ if(x>m.x-2&&x<m.x+m.w+2&&y>m.y-2&&y<m.y+m.h+2){ var leftHalf=x<m.x+m.w/2; r=leftHalf?m.left:(m.left==='N'?'S':'N'); } }); return r;
+  }
+  function stepDot(){
+    if(!xCur||xCur.end) return false;
+    var pts=xCur.pts, p=pts[pts.length-1], k=pts.length+3*xLines.length;
+    var d0=unit(p[0],p[1]), c=[p[0]+d0[0]*NEEDLE/2, p[1]+d0[1]*NEEDLE/2];
+    var d=unit(c[0],c[1],expErr(k)*2.5*Math.PI/180);
+    comp={x:c[0],y:c[1]};
+    // near a neutral point the field is tiny, or the needle swings round to point back the way it came: it will not settle
+    if(d[2]<fieldRef()*0.006||(xCur.ld&&d[0]*xCur.ld[0]+d[1]*xCur.ld[1]<-0.2)){ xCur.end='weak'; xLines.push(xCur); return false; }
+    xCur.ld=[d[0],d[1]];
+    var tip=[p[0]+d[0]*NEEDLE, p[1]+d[1]*NEEDLE];
+    var pole=poleAt(tip[0],tip[1]);
+    if(pole){ xCur.end=pole==='S'?'S pole':'N pole'; pts.push(tip); xLines.push(xCur); return false; }
+    if(tip[0]<4||tip[0]>W-4||tip[1]<4||tip[1]>H-4){ xCur.end='edge'; pts.push([Math.max(4,Math.min(W-4,tip[0])),Math.max(4,Math.min(H-4,tip[1]))]); xLines.push(xCur); return false; }
+    pts.push(tip);
+    comp={x:tip[0]+d[0]*NEEDLE/2, y:tip[1]+d[1]*NEEDLE/2};
+    if(pts.length>90){ xCur.end='edge'; xLines.push(xCur); return false; }
+    return true;
+  }
+  function endText(e){ return {'S pole':'a south pole','N pole':'a north pole','edge':'the edge of the card','weak':'needle will not settle','stopped':'stopped early'}[e]||''; }
+  function expTableDraw(){
+    var all=xLines.slice(); if(xCur&&!xCur.end) all.push(xCur);
+    var el=$('#fx-table');
+    if(!all.length){ el.innerHTML='<p style="font-size:13px;color:var(--ink-faint);padding:8px 10px">No lines yet.</p>'; return; }
+    el.innerHTML='<table class="rtable"><thead><tr><th>Line</th><th>Dots</th><th>Ends at</th></tr></thead><tbody>'+all.map(function(l,i){ return '<tr'+(i===all.length-1?' class="new"':'')+'><td>'+l.n+'</td><td>'+(l.pts.length-1)+'</td><td>'+(l.end?endText(l.end):'…')+'</td></tr>'; }).join('')+'</tbody></table>';
+    el.scrollTop=el.scrollHeight;
+  }
+  function drawExp(){
+    var g='<defs>'+arrowHead('fx-ah','var(--ink)')+'<clipPath id="fp-clip"><rect x="2" y="2" width="'+(W-4)+'" height="'+(H-4)+'" rx="10"/></clipPath></defs><g clip-path="url(#fp-clip)">';
+    if(xCompared) fieldLines.forEach(function(p){ g+='<polyline points="'+p.map(function(q){return q[0].toFixed(1)+','+q[1].toFixed(1);}).join(' ')+'" fill="none" stroke="var(--topic)" stroke-width="1.6" stroke-dasharray="5 4" opacity="0.75"/>'; });
+    var all=xLines.slice(); if(xCur&&!xCur.end) all.push(xCur);
+    all.forEach(function(l){
+      var pts=l.pts;
+      if(pts.length>1){
+        g+='<polyline points="'+pts.map(function(q){return q[0].toFixed(1)+','+q[1].toFixed(1);}).join(' ')+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.4"/>';
+        if(l.end&&pts.length>2){ var i=Math.floor(pts.length/2), a=pts[i-1], b=pts[i]; g+='<line x1="'+a[0].toFixed(1)+'" y1="'+a[1].toFixed(1)+'" x2="'+((a[0]+b[0])/2).toFixed(1)+'" y2="'+((a[1]+b[1])/2).toFixed(1)+'" stroke="var(--ink)" stroke-width="2" marker-end="url(#fx-ah)"/>'; }
+      }
+      pts.forEach(function(q){ g+='<circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" r="2.6" fill="var(--ink)"/>'; });
+    });
+    if(!xCur||xCur.end){ var s=xStarts[xStartIdx%xStarts.length]; if(s) g+='<circle cx="'+s[0]+'" cy="'+s[1]+'" r="6" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="3 2"/>'; }
+    g+='</g>';
+    SETUPS[setup].mags.forEach(function(m){ var fs=setup==='close'?28:16, l=m.left, r=l==='N'?'S':'N'; g+=poleRect(m.x,m.y,m.w/2,m.h,l,fs)+poleRect(m.x+m.w/2,m.y,m.w/2,m.h,r,fs); });
+    if(xCur&&!xCur.end){
+      var b=field(comp.x,comp.y), an=Math.atan2(b[1],b[0])*180/Math.PI;
+      g+='<g transform="translate('+comp.x.toFixed(1)+','+comp.y.toFixed(1)+')" opacity="0.92"><circle r="15" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2" fill-opacity="0.7"/><g transform="rotate('+an.toFixed(1)+')"><path d="M0,-4 L13,0 L0,4 Z" fill="var(--north)"/><path d="M0,-4 L-13,0 L0,4 Z" fill="var(--south)"/></g><circle r="2" fill="var(--ink)"/></g>';
+    }
+    top.innerHTML=g;
+    $('#fx-n').textContent=String(xLines.length);
+    cmpBtn.disabled=xCompared||xLines.length<3;
+    expTableDraw(); readings(); expNote();
+  }
+  function expNote(){
+    var s, n=xLines.length, last=xLines[n-1];
+    if(xCompared) s=SETUPS[setup].text+' Your pencil lines follow the field lines (dashed).';
+    else if(!xCur&&!n) s='Experiment: a plotting compass will start by a north pole (the dashed circle). Press <b>Plot a line</b>: a dot is marked at the north end of the needle, the compass moves on so its south end sits on that dot, and so on. Plot several lines from different start points.';
+    else if(xCur&&!xCur.end) s='Line '+xCur.n+', dot '+(xCur.pts.length-1)+'. The north end of the needle shows the direction of the field here.';
+    else{
+      s='Line '+last.n+' ends at '+endText(last.end)+' after '+(last.pts.length-1)+' dots.';
+      if(last.end==='weak') s='Line '+last.n+': here the needle will not settle in any direction, so the field is almost zero.';
+      s+=n<3?' Press <b>New start point</b> (or click the card) and plot another line.':' Plot more lines, or press <b>Compare with field lines</b>.';
+    }
+    $('#fp-note').innerHTML=s;
+  }
+  function xStop(){ xPlaying=false; cancelAnimationFrame(xRaf); playBtn.innerHTML='&#9654; Plot a line'; }
+  function xFrame(now){
+    if(!xPlaying) return;
+    xAcc+=Math.min(0.1,(now-xLast)/1000); xLast=now;
+    var gap=xSlow?0.9:0.3;   // one dot every 0.3 s (0.9 s in slow motion); the line always ends
+    var more=true;
+    while(xAcc>=gap&&more){ xAcc-=gap; more=stepDot(); }
+    drawExp();
+    if(!more){ xStop(); xStartIdx++; drawExp(); return; }
+    xRaf=requestAnimationFrame(xFrame);
+  }
+  function ensureLine(){ if(!xCur||xCur.end){ var s=xStarts[xStartIdx%xStarts.length]; startLine(s); } }
+  function xPlay(){
+    if(xPlaying){ xStop(); drawExp(); return; }
+    ensureLine(); xPlaying=true; xAcc=0.3; xLast=performance.now(); playBtn.innerHTML='Pause'; xRaf=requestAnimationFrame(xFrame);
+  }
+  function xStep(){ xStop(); ensureLine(); if(!stepDot()) xStartIdx++; drawExp(); }
+  function expReset(){ xStop(); xLines=[]; xCur=null; xStartIdx=0; xCompared=false; makeStarts(); drawExp(); }
+  function setExp(on){
+    EXP=on; expBtn.setAttribute('aria-pressed',String(on)); document.documentElement.classList.toggle('exp',on);
+    xStop();
+    if(on){ filings=[]; drawFilings(); stop(); expReset(); }
+    else { comp={x:280,y:setup==='close'?60:70}; reset(); }
+  }
+  expBtn.addEventListener('click',function(){ setExp(!EXP); });
+  playBtn.addEventListener('click',xPlay);
+  stepBtn.addEventListener('click',xStep);
+  slowBtn.addEventListener('click',function(){ toggle(slowBtn); xSlow=pressed(slowBtn); });
+  $('#fx-next').addEventListener('click',function(){ xStop(); if(xCur&&!xCur.end&&xCur.pts.length>1){ xCur.end='stopped'; xLines.push(xCur); } xCur=null; xStartIdx++; drawExp(); });
+  cmpBtn.addEventListener('click',function(){ xStop(); xCompared=true; drawExp(); });
+  top.addEventListener('click',function(e){
+    if(!EXP) return;
+    var p=svgPoint(top,e); if(inMag(p.x,p.y,6)) return;
+    xStop(); startLine([p.x,p.y]); drawExp();
+  });
+
   var seg=segGroup($('#fp-setup'), newSetup);
   goBtn.addEventListener('click',sprinkle);
   linesBtn.addEventListener('click',function(){ toggle(linesBtn); drawTop(); note(); });
@@ -464,7 +706,7 @@
     if(filings.length) sprinkle(); else note();
     drawTop();
   });
-  $('#fp-reset').addEventListener('click',reset);
+  $('#fp-reset').addEventListener('click',function(){ if(EXP) expReset(); else reset(); });
   if(window.ResizeObserver) new ResizeObserver(fitCanvas).observe(wrap); else window.addEventListener('resize',fitCanvas);
   if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawFilings);
   drawStatic(); newSetup('bar'); fitCanvas();
