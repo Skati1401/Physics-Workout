@@ -54,7 +54,7 @@ The guide's PDF pages are those of the PDF Alex shared; in the Project doc, look
 
 | # | Spec | Practical | Guide PDF pages | Spec points it links to (guide) | TA | Animation | Workout tab | Batch | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 1.5 | Motion of everyday objects (toy car, tennis ball) | 143–148 | 1.6, 1.7, 1.8, 1.10, 1.21 | | new `ramp-motion.html` (draft) | `forces-and-motion.html#measuring` (Measure v tab; that page has no hash support yet) | A | **draft**, waiting for review: `motion-practical.html` |
+| 1 | 1.5 | Motion of everyday objects (toy car, tennis ball) | 143–148 | 1.6, 1.7, 1.8, 1.10, 1.21 | | new `ramp-motion.html` | `forces-and-motion.html#measuring` (Measure v tab) | A | **published** (21 Oct 2026; Alex to review) |
 | 2 | 1.22 | Extension of springs, wires, rubber bands | 149–152 | 1.18, 1.23, 1.24 | | `hookes-law.html` | `forces-momentum-moments.html#hooke` | done | **published** (the model) |
 | 3 | 2.23P | Charging insulators by friction | 153–155 | 2.22P, 2.24, 2.25, 2.26, 2.27, 2.28 | TA | new | none yet (Unit 2) | C | to do |
 | 4 | 3.17 | Refraction: rectangular, semicircular blocks, prisms | 156–162 | 3.14, 3.15, 3.16, 3.18, 3.21, 3.22 | | new (can share a light-box animation with 3.19) | none yet (Unit 3) | C | to do |
@@ -63,11 +63,11 @@ The guide's PDF pages are those of the PDF Alex shared; in the Project doc, look
 | 7 | 3.27P | Frequency of sound with an oscilloscope | 170–173 | 3.24, 3.25, 3.26, 3.28, 3.29 | TA | new | none yet (Unit 3) | C | to do |
 | 8 | 4.9 | Thermal energy transfer (conduction, convection, radiation) | 174–178 | 4.6, 4.7, 4.8, 4.10, 5.3 | | new (check the 4b workout's Practicals tab for sims to move out) | `heat-transfer-igcse.html#practical` | C | to do |
 | 9 | 5.4 | Density from mass and volume | 179–183 | 1.2 | | new | `solids-liquids-gases.html#density` | B | to do |
-| 10 | 5.14P | Specific heat capacity | 184–187 | 5.12, 5.13 | TA | `specific-heat.html` (draft; moved out of the Unit 5 Specific Heat tab, which now frames it) | `solids-liquids-gases.html#shc` | A | **draft**, waiting for review: `specific-heat-practical.html` |
-| 11 | 6.6 | Magnetic field of a bar magnet | 188–189 | 6.2, 6.3, 6.4, 6.5, 6.7 | | `magnetic-field-patterns.html` (Experiment mode added) | `magnetism-and-electromagnetism.html#fields` | A | **draft**, waiting for review: `magnetic-field-practical.html` |
+| 10 | 5.14P | Specific heat capacity | 184–187 | 5.12, 5.13 | TA | `specific-heat.html` (moved out of the Unit 5 Specific Heat tab, which now frames it) | `solids-liquids-gases.html#shc` | A | **published** (21 Oct 2026; Alex to review) |
+| 11 | 6.6 | Magnetic field of a bar magnet | 188–189 | 6.2, 6.3, 6.4, 6.5, 6.7 | | `magnetic-field-patterns.html` (Experiment mode added) | `magnetism-and-electromagnetism.html#fields` | A | **published** (21 Oct 2026; Alex to review) |
 | 12 | 7.6 | Penetrating power of radiation | 190–192 | 7.4, 7.5, 7.9, 7.10, 7.16 | | new (a simulation is acceptable for the real practical too) | none yet (Unit 7) | C | to do |
 | 13 | 2.9 | Current–voltage characteristics (wire, resistor, lamp, diode) | 193–196 | 2.10, 2.12, 2.13 | | new (the kit demo is a start) | none yet (Unit 2) | B | to do |
-| 14 | 5.11P | Temperature–time graph for melting ice | 197–200 | 5.8, 5.9, 5.10 | TA | `heating-curve.html` (Experiment mode added) | `solids-liquids-gases.html#heating` | A | **draft**, waiting for review: `melting-ice-practical.html` |
+| 14 | 5.11P | Temperature–time graph for melting ice | 197–200 | 5.8, 5.9, 5.10 | TA | `heating-curve.html` (Experiment mode added) | `solids-liquids-gases.html#heating` | A | **published** (21 Oct 2026; Alex to review) |
 
 **Batches:**
 - **A** (extend what exists): 1.5, 5.11P, 6.6, 5.14P.
@@ -86,13 +86,11 @@ The guide's PDF pages are those of the PDF Alex shared; in the Project doc, look
 
 ## Notes from batch A (21 Oct 2026)
 
-All four are drafts (noindex, no cards). Spec numbers were checked against the badges on the Unit 1, 5 and 6 workouts, which were taken from the spec.
+All four were built as drafts, then published the same day. Spec numbers were checked against the badges on the Unit 1, 5 and 6 workouts, which were taken from the spec.
 
 - **1.5:** a new animation, `animations/ramp-motion.html`, because `motion-graphs.html` is a car on a 200 m road, not the ramp apparatus. Watch mode draws the distance–time and velocity–time graphs live. Experiment mode times the car to marks every 0.20 m, by stopwatch (three repeats, reaction-time scatter, a small late-stop bias, so it gives a value 5–8% low) or by light gates (to 0.001 s, plus a 5.0 cm card for the speed at each gate). Ramp heights 10, 20 and 30 cm give 0.4, 0.8 and 1.2 m/s².
 - **5.14P:** the Unit 5 SHC explore (material, mass, comparison bars) became `animations/specific-heat.html`, and the Unit 5 Specific Heat tab now frames it. Experiment mode has a heater that warms itself first, energy lost to the room (lagged or not), readings to 0.5 °C, and keeps reading for 2 minutes after switch-off. Results come out 5–9% high lagged and 20–35% high unlagged, as in class.
 - **6.6:** observe-and-explain, so the Variables, Graphs and Calculate tabs became Iron Filings, Two Magnets (6.2, 6.7) and Magnetic Materials (6.2, 6.3, 6.5). The Experiment mode plots field lines dot by dot with a plotting compass; a line ends at a pole, at the edge of the card, or where the needle will not settle (the neutral point). The field lines appear only when the student presses Compare.
 - **5.11P:** Experiment mode on `heating-curve.html`: crushed ice heated in a water bath, or stearic acid cooling; readings every 30 s, 1 or 2 minutes; a small picture of the apparatus with a live thermometer.
 - **Engine fix:** in `createPlot`, a point on the top gridline snapped to 1.2000000000000002 and was refused as off the graph. Fixed in `template/engine.js`; every practical rebuilt (Hooke's law changed by that one line only).
-- **To do when publishing**, besides the usual steps:
-  - 1.5: give `animations/ramp-motion.html` a card under Unit 1 on `animations/igcse.html` (with "Core practical 1.5"), remove its noindex, add it to CLAUDE.md's list of animation pages, frame it in the `forces-and-motion.html` Measure v tab, and add hash support to that page so `#measuring` opens the tab.
-  - 5.14P: give `animations/specific-heat.html` a card under Unit 5 (with "Core practical 5.14P"), remove its noindex, and add it to CLAUDE.md's list of animation pages.
+- **Published on 21 Oct 2026** at Alex's "go live", before his review: cards under Core Practicals, banners on the workout tabs (1a Measure v, Unit 5 Heating Curve and Specific Heat, Unit 6 Magnetic Field Patterns), "Core practical" tags on the animation cards, new cards for `ramp-motion.html` (Unit 1) and `specific-heat.html` (Unit 5), and the ramp animation framed in the 1a Measure v tab. The 1a, Unit 5 and Unit 6 workouts (and the practical template) now let a `#tab` link win over the tab remembered in the browser.

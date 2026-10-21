@@ -43,8 +43,9 @@ byId('tab-{{FIRST_TAB}}').parentNode.addEventListener('keydown',e=>{
 // The open tab is remembered in this browser only, so a reload returns to it.
 function readSaved(){try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');return (s&&typeof s==='object')?s:{};}catch(e){return {};}}
 function start(data){
-  let t=data&&data.tab;
-  if(!t){try{t=location.hash.slice(1);}catch(e){}}
+  // a #tab link opens that tab, ahead of the tab remembered in this browser
+  let t='';try{t=location.hash.slice(1);}catch(e){}
+  if(TAB_IDS.indexOf(t)<0)t=data&&data.tab;
   if(TAB_IDS.indexOf(t)<0)t='{{FIRST_TAB}}';
   applyTabUI(t);raf(loop);
 }
