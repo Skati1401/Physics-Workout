@@ -311,6 +311,35 @@ svg text{font-family:var(--f-mono)}
 .panel{display:block}
 @media (max-width:420px){.eq{font-size:12px;padding:6px 8px}}
 @media (max-width:360px){.eq{font-size:11px}}
+  /* ===== Experiment kit (copy into the animation page's <style>) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+/* Experiment mode (core practical 5.11P): graph and choices on the left; particles, readings, note and results on the right */
+.rtable{--font-mono:var(--f-mono)}
+.rtable-wrap p{font-size:13px;color:var(--ink-faint);padding:8px 10px;margin:0}
+.hx-note{font-size:13.5px;line-height:1.45;color:var(--ink);padding:8px 11px;border-radius:6px;background:var(--panel-2);margin:0;min-height:4.4em}
+.act.hx .act-intro{display:none}
+.act.hx .sim{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)!important}
+.act.hx .ctl{display:grid;grid-template-columns:110px 96px minmax(0,1fr);gap:10px 12px;align-items:start}
+.act.hx .ctl>*{grid-column:1/-1}
+.act.hx .ctl>canvas.sim-canvas{grid-column:1;max-width:110px!important}
+.act.hx .ctl>#hx-app{grid-column:2;grid-row:1;width:96px;height:auto;display:block}
+#hx-app[hidden]{display:none}#hx-app .ap{fill:none;stroke:var(--ink-soft);stroke-width:1.6}#hx-app .wb{fill:var(--liquid-soft)}#hx-app .lq{fill:var(--liquid);opacity:.35}#hx-app .ic{fill:var(--panel);stroke:var(--solid);stroke-width:1.2}#hx-app .sa{fill:var(--solid);opacity:.55}#hx-app .th{fill:var(--panel);stroke:var(--ink-soft);stroke-width:1.2}#hx-app .col{fill:var(--bad)}#hx-app .fl{fill:#E8862A}#hx-app text{font-size:8px;fill:var(--ink-faint)}
+.act.hx .ctl>.stat-grid{grid-column:3;grid-template-columns:1fr;align-self:stretch;align-content:space-between}
+.act.hx .rtable-wrap{max-height:118px}
+.hx-setup{display:flex;flex-wrap:wrap;gap:8px 18px}
+.hx-row{display:flex;flex-direction:column;gap:4px}
+.hx-row .sub{margin:0}
+#hx-graph .graph,#hw-graph .graph{max-height:max(240px,calc(100vh - 300px));width:auto;max-width:100%;margin-inline:auto}
+.act.hx #hx-graph .graph{max-height:max(220px,calc(100vh - 345px))}
+@media (max-width:720px){.act.hx .sim{grid-template-columns:minmax(0,1fr)!important}.act.hx #hx-graph .graph{max-height:none;width:100%}}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -992,6 +1021,99 @@ function createGasSim(canvas){
   };
 }
 
+/* ================= Experiment kit (copy this block into an animation page's <script>) =================
+   The reusable parts of an animation's Experiment mode, taken from animations/hookes-law.html:
+   - expRun():     the run itself: step the independent variable up one interval at a time, then
+                   (optionally) back down again, measuring at every step
+   - expReading(): a reading with a small, fixed pattern of reading error, rounded to the instrument's
+                   resolution, that never goes the wrong way
+   - expTable():   the results table (sticky header, newest row highlighted, a column per run)
+   - expCross(), expRing(), expKey(): SVG marks for plotted readings (× first run, ○ return run)
+   The page keeps its own picture, physics, graph axes and notes. See tools/experiment-kit/README.md.
+   Plain ES5 so it can sit inside any animation page's IIFE. */
+
+// A fixed pattern of reading errors, in units of the instrument's resolution. Fixed (not random) so a
+// teacher sees the same results as the class, and a re-run gives the same table.
+var EXP_ERR = [0, 1, -1, 0, 2, -1, 1, -2, 0, 1, -1, 0, 1, -1, 2, 0, -1, 1, 0, -2, 1];
+function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP_ERR.length]; }
+
+// What the student reads off the instrument.
+//   trueVal  the value the physics gives at this step
+//   prevVal  the reading taken at the step before (or the start value)
+//   res      the instrument's resolution (0.1 cm ruler, 0.05 mm vernier, 0.01 A ammeter, 1° protractor)
+//   i        the step number (picks the error from the pattern)
+//   scale    how big the error is, in resolutions (default 1; 0.5 for a fine instrument)
+// The error is never more than a quarter of the change since the last reading, so a reading never
+// goes the wrong way (an extension never falls as the load rises, a current never drops as V rises).
+function expReading(trueVal, prevVal, res, i, scale){
+  var gap = Math.abs(trueVal - prevVal);
+  var err = i > 0 ? expErr(i) * Math.min(res * (scale == null ? 1 : scale), gap / 4) : 0;
+  var r = Math.round((trueVal + err) / res) * res;
+  var dp = Math.max(0, Math.ceil(-Math.log10(res) - 1e-9));
+  return +r.toFixed(dp);
+}
+
+// The run. cfg = {
+//   start: 0,                 value of the independent variable before the first step
+//   max: 10,                  last value of the first run (the run stops there)
+//   step: 1,                  the interval (the page can change it with setStep, which resets the run)
+//   reverse: true,            allow a return run (unloading, turning the voltage back down)
+//   measure: function(v, phase, prevReading){ return reading },   phase is 'up' or 'down'
+//   onChange: function(run, what){}  what is 'up', 'down' or 'reset'
+// }
+// run.up and run.down are arrays of {v, r}. run.phase is 'up' until the first step back, then 'down'.
+function expRun(cfg){
+  var run = { up: [], down: [], phase: 'up', value: cfg.start || 0, peak: cfg.start || 0, step: cfg.step || 1 };
+  var r6 = function(x){ return Math.round(x * 1e6) / 1e6; };
+  run.upDone = function(){ return run.phase === 'down' || run.peak >= cfg.max - 1e-9; };
+  run.downDone = function(){ return run.phase === 'down' && run.value <= (cfg.start || 0) + 1e-9; };
+  run.last = function(){ var a = run.phase === 'down' && run.down.length ? run.down : run.up; return a[a.length - 1] || null; };
+  run.stepUp = function(){
+    if(run.phase !== 'up' || run.upDone()) return false;
+    var prev = run.up.length ? run.up[run.up.length - 1].r : null;
+    var v = r6(Math.min(cfg.max, run.value + run.step));
+    run.value = run.peak = v;
+    run.up.push({ v: v, r: cfg.measure(v, 'up', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'up');
+    return true;
+  };
+  run.stepDown = function(){
+    if(!cfg.reverse || run.value <= (cfg.start || 0) + 1e-9 || !run.up.length) return false;
+    run.phase = 'down';
+    var prev = run.down.length ? run.down[run.down.length - 1].r : run.up[run.up.length - 1].r;
+    var v = r6(Math.max(cfg.start || 0, run.value - run.step));
+    run.value = v;
+    run.down.push({ v: v, r: cfg.measure(v, 'down', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'down');
+    return true;
+  };
+  run.reset = function(){ run.up = []; run.down = []; run.phase = 'up'; run.value = run.peak = cfg.start || 0; if(cfg.onChange) cfg.onChange(run, 'reset'); };
+  run.setStep = function(s){ run.step = s; run.reset(); };
+  return run;
+}
+
+// The results table. cols = [{label:'Load (N)', key:'v', dp:0}, {label:'Extension loading (cm)', key:'up', dp:1}, ...]
+// rows = [{v:1, up:1.6, down:''}, ...]. newKey/newV highlight the reading just taken (fades in).
+// Wrap it in .rtable-wrap so a long table scrolls under its sticky header.
+function expTable(el, cols, rows, newV){
+  var fmt = function(x, dp){ return (x === '' || x == null) ? '' : (+x).toFixed(dp || 0); };
+  var h = '<table class="rtable"><thead><tr>' + cols.map(function(c){ return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    h += '<tr' + (newV != null && row.v === newV ? ' class="new"' : '') + '>' + cols.map(function(c){ return '<td>' + fmt(row[c.key], c.dp) + '</td>'; }).join('') + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table>';
+}
+
+// Plotted readings, as SVG strings. Size 5 suits a 300px-wide graph.
+function expCross(cx, cy, s){ s = s || 5; return '<path d="M' + (cx - s) + ',' + (cy - s) + ' L' + (cx + s) + ',' + (cy + s) + ' M' + (cx + s) + ',' + (cy - s) + ' L' + (cx - s) + ',' + (cy + s) + '" stroke="var(--ink)" stroke-width="2"/>'; }
+function expRing(cx, cy, r){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r || 4.5) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+// A two-line key in the bottom-right corner of a graph: expKey(rightX, bottomY, 'loading', 'unloading')
+function expKey(x, y, upLabel, downLabel){
+  return '<text x="' + x + '" y="' + (y - 14) + '" text-anchor="end" font-size="10.5" fill="var(--ink)">× ' + upLabel + '</text>' +
+         '<text x="' + x + '" y="' + y + '" text-anchor="end" font-size="10.5" fill="var(--accent)">○ ' + downLabel + '</text>';
+}
+/* ================= end of Experiment kit ================= */
+
 const byId=id=>document.getElementById(id);
 function slider(id,fn){const e=byId(id);e.addEventListener('input',()=>fn(+e.value));return e;}
 function seg(host,opts,initial,fn){
@@ -1016,19 +1138,108 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   const wb=act('heating','Watch','Heating curve and particles together','Press Play, or drag the dot along the graph (or move the time slider) forwards and backwards. The particles show what is happening to the substance. At the end the gas escapes from the open beaker.');
   const g2=lineGraph(Object.assign({},GOPT,{segments:SEGS.map(s=>({pts:s.pts,cls:s.cls})),label:'Heating curve with a moving point',extra:'<circle id="hw-dot" class="g-dot" r="8" cx="0" cy="0"/>'}));
   wb.innerHTML=`
-  <div class="sim">
-    <div class="sim-view">${g2.svg}</div>
+  <div class="sim" id="hw-sim">
+    <div class="sim-view"><div id="hw-graph">${g2.svg}</div><div id="hx-graph" hidden></div><div class="hx-setup hx-only" hidden><div class="hx-row"><span class="sub">Substance</span><div class="seg" id="hx-sub"></div></div><div class="hx-row"><span class="sub">Read the thermometer every</span><div class="seg" id="hx-int"></div></div></div></div>
     <div class="ctl">
       <canvas class="sim-canvas" id="hw-canvas" aria-label="Particles during heating"></canvas>
+      <svg id="hx-app" class="hx-only" viewBox="0 0 96 130" role="img" aria-label="The apparatus and the thermometer" hidden></svg>
       <div class="stage-tabs" id="hw-pills"><span class="stage-pill" data-k="s">Solid</span><span class="stage-pill" data-k="m">Melting</span><span class="stage-pill" data-k="l">Liquid</span><span class="stage-pill" data-k="b">Boiling</span><span class="stage-pill" data-k="g">Gas</span></div>
-      <div class="stat-grid"><div class="stat"><small>Time</small><strong id="hw-time"></strong></div><div class="stat"><small>Temperature</small><strong id="hw-temp"></strong></div></div>
+      <div class="stat-grid"><div class="stat"><small>Time</small><strong id="hw-time"></strong></div><div class="stat"><small id="hw-tlab">Temperature</small><strong id="hw-temp"></strong></div></div>
       <div class="ctl-row"><label for="hw-e">Time <output id="hw-eo"></output></label><input type="range" id="hw-e" min="0" max="100" step="0.5" value="0"></div>
       <div class="seg" id="hw-btns"></div>
+      <p class="hx-note hx-only" id="hx-note" aria-live="polite" hidden></p>
+      <div id="hx-results" hidden><span class="sub">Results</span><div class="rtable-wrap" id="hx-table"></div></div>
     </div>
   </div>`;
   const sim=createParticleSim(byId('hw-canvas'));
   let E=0,auto=0,slow=false;const slid=byId('hw-e'),dot=byId('hw-dot');
+  // ===== Experiment mode (core practical 5.11P) =====
+  // No theory line: the stopwatch runs while the substance is heated (or cools), the thermometer is read at the chosen
+  // interval and each reading is plotted as it is taken. The line, the melting (freezing) point and the conclusion
+  // appear only once the run is complete. Crushed ice is heated in a water bath and stirred; stearic acid is melted
+  // first, then left to cool in its boiling tube.
+  const SUBS={
+    ice:{label:'Crushed ice, heated',xMax:16,yMin:-15,yMax:30,yTicks:[-10,0,10,20,30],mp:0,p0:2,p1:8,
+      T:t=>t<2?-10+5*t:t<8?0:3*(t-8),
+      E:t=>{const T=SUBS.ice.T(t);return t<2?15*(T+20)/20:t<8?15+10*(t-2)/6:25+25*T/100;}},
+    stearic:{label:'Stearic acid, cooling',xMax:16,yMin:30,yMax:90,yTicks:[30,45,60,75,90],mp:69,p0:2.5,p1:9.5,
+      T:t=>t<2.5?20+65*Math.exp(-t*Math.log(65/49)/2.5):t<9.5?69:20+49*Math.exp(-(t-9.5)/8),
+      E:t=>{const T=SUBS.stearic.T(t);return t<2.5?25+15*(T-69)/16:t<9.5?25-10*(t-2.5)/7:15-7.5*(69-T)/29;}}
+  };
+  let EXP=false,sub='ice',iv=1,xt=0,reads=[],xrun=0;
+  const RES=0.5;   // the thermometer reads to 0.5 °C
+  const S=()=>SUBS[sub];
+  const xg=()=>lineGraph({xMin:0,xMax:S().xMax,yMin:S().yMin,yMax:S().yMax,xTicks:[0,2,4,6,8,10,12,14,16],yTicks:S().yTicks,xLabel:'Time (minutes)',yLabel:'Temperature (°C)',points:[[0,S().yMin]]});
+  function crossAt(g,x,y){const cx=g.gx(x),cy=g.gy(y),s=6;return '<path d="M'+(cx-s)+','+(cy-s)+' L'+(cx+s)+','+(cy+s)+' M'+(cx+s)+','+(cy-s)+' L'+(cx-s)+','+(cy+s)+'" stroke="var(--ink)" stroke-width="2.2"/>';}
+  function xDone(){return xt>=S().xMax-1e-9;}
+  function xDraw(isNew){
+    const g=xg(),s=S();let ex='';
+    if(xDone()){
+      const pts=[];for(let t=0;t<=s.xMax+1e-9;t+=0.1)pts.push(g.gx(t).toFixed(1)+','+g.gy(s.T(t)).toFixed(1));
+      ex+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="8 6" opacity=".85"/>';
+      ex+='<text x="'+g.gx((s.p0+s.p1)/2)+'" y="'+(g.gy(s.mp)+(sub==='ice'?-12:22))+'" text-anchor="middle" font-size="14" fill="var(--accent)" stroke="var(--panel)" stroke-width="5" paint-order="stroke">'+(sub==='ice'?'melting point ':'freezing point ')+s.mp+' °C</text>';
+    }
+    reads.forEach(r=>{ex+=crossAt(g,r.t,r.T);});
+    byId('hx-graph').innerHTML=g.svg.replace(/<polyline class="g-line"[^>]*\/>/,'').replace('</svg>',ex+'</svg>');
+    const tw=byId('hx-table');
+    tw.innerHTML=reads.length?'<table class="rtable"><thead><tr><th>Time (min)</th><th>Temperature (°C)</th></tr></thead><tbody>'+reads.map((r,i)=>'<tr'+(isNew&&i===reads.length-1?' class="new"':'')+'><td>'+fmt(r.t,1).replace(/^(\d+)$/,'$1.0')+'</td><td>'+r.T.toFixed(1).replace('-','−')+'</td></tr>').join('')+'</tbody></table>':'<p>No readings yet.</p>';
+    tw.scrollTop=tw.scrollHeight;
+    const last=reads[reads.length-1];
+    byId('hw-time').textContent=xt.toFixed(1)+' min';
+    byId('hw-temp').textContent=last?last.T.toFixed(1).replace('-','−')+' °C':'–';
+    let n;
+    if(!reads.length)n='Experiment: choose the substance and how often to read the thermometer, then press Play to start the stopwatch. '+(sub==='ice'?'The ice is heated in a beaker of hot water and stirred all the time.':'The stearic acid has been melted; it now cools in its boiling tube.');
+    else if(!xDone())n='Reading at '+fmt(last.t,1)+' min: '+last.T.toFixed(1).replace('-','−')+' °C. '+(sub==='ice'?'Keep stirring, and keep the thermometer off the bottom of the beaker.':'Keep the thermometer in the middle of the acid.');
+    else if(sub==='ice')n='Run complete. The temperature rose to 0 °C, then stayed at 0 °C from about 2 to 8 minutes while the ice melted: the energy supplied was breaking the forces between the particles, not raising the temperature. Once all the ice had melted, the temperature rose again.';
+    else n='Run complete. The temperature fell to 69 °C, then stayed at 69 °C from about 2.5 to 9.5 minutes while the acid froze: the energy released as the particles settled into fixed positions replaced the energy lost to the surroundings, so the temperature did not fall. Once it was all solid, it cooled again.';
+    if(xDone()&&iv===2)n+=' With readings only every 2 minutes, the corners of the flat part are hard to place: a shorter interval shows them better.';
+    byId('hx-note').textContent=n;
+    sim.setE(s.E(Math.min(xt,s.xMax)));
+    appDraw(last?last.T:s.T(0));
+  }
+  // The apparatus beside the particles: the thermometer column shows the last reading, read to 0.5 °C.
+  // Ice: a beaker of crushed ice in a water bath over a Bunsen burner, with a stirrer. Stearic acid: a boiling tube cooling in a beaker.
+  function appDraw(T){
+    const s=S(),t=Math.min(xt,s.xMax),f=t<s.p0?0:t<s.p1?(t-s.p0)/(s.p1-s.p0):1;   // fraction melted (ice) or frozen (acid)
+    const ty=v=>86-(v-s.yMin)/(s.yMax-s.yMin)*76;
+    let h='';
+    if(sub==='ice'){
+      h+='<rect class="wb" x="8" y="52" width="80" height="52"/><path class="ap" d="M8 40 V104 H88 V40"/>';
+      h+='<rect class="lq" x="28" y="'+(98-46*Math.max(f,0.08))+'" width="40" height="'+(46*Math.max(f,0.08))+'"/>';
+      const n=Math.round(14*(1-f));for(let i=0;i<n;i++){const cx=31+(i%5)*7.4,cy=91-Math.floor(i/5)*7.5;h+='<rect class="ic" x="'+cx+'" y="'+cy+'" width="6" height="6" rx="1"/>';}
+      h+='<path class="ap" d="M28 30 V98 H68 V30"/><path class="ap" d="M38 14 L42 96"/>';
+      h+='<path class="ap" d="M4 108 H92 M14 108 L10 128 M82 108 L86 128"/><path class="fl" d="M48 128 C40 122 46 116 48 110 C50 116 56 122 48 128Z"/>';
+    }else{
+      h+='<path class="ap" d="M14 60 V112 H82 V60"/>';
+      h+='<path class="lq" d="M36 50 V104 A12 12 0 0 0 60 104 V50Z"/>';
+      if(f>0)h+='<path class="sa" d="M36 '+(116-66*f)+' V104 A12 12 0 0 0 60 104 V'+(116-66*f)+'Z"/>';
+      h+='<path class="ap" d="M36 8 V104 A12 12 0 0 0 60 104 V8"/>';
+    }
+    h+='<rect class="th" x="55" y="4" width="7" height="86" rx="3.5"/><circle class="th" cx="58.5" cy="90" r="5"/><circle class="col" cx="58.5" cy="90" r="3.4"/>';
+    h+='<rect class="col" x="57" y="'+ty(T).toFixed(1)+'" width="3" height="'+(90-ty(T)).toFixed(1)+'"/>';
+    s.yTicks.forEach(v=>{h+='<path class="ap" style="stroke-width:1" d="M62 '+ty(v)+' H66"/><text x="67" y="'+(ty(v)+3)+'">'+String(v).replace('-','−')+'</text>';});
+    byId('hx-app').innerHTML=h;
+  }
+  function xReset(){xt=0;reads=[];xrun=0;auto=0;takeReading(0);btns();xDraw();if(sim.isPaused())sim.redraw();}
+  function takeReading(t){
+    // the error is kept below a quarter of the change to the readings either side, so no reading goes the wrong way
+    // (and readings on the flat part, or next to it, are exact)
+    const s=S(),Tt=s.T(t),gap=Math.min(Math.abs(Tt-s.T(Math.max(0,t-iv))),Math.abs(s.T(Math.min(s.xMax,t+iv))-Tt));
+    reads.push({t:t,T:expReading(Tt,Tt-gap,RES,reads.length,1)});
+  }
+  seg(byId('hx-sub'),Object.keys(SUBS).map(k=>({key:k,label:SUBS[k].label})),'ice',k=>{sub=k;xReset();});
+  seg(byId('hx-int'),[{key:'0.5',label:'30 s'},{key:'1',label:'1 minute'},{key:'2',label:'2 minutes'}],'1',k=>{iv=+k;xReset();});
+  function setExp(on){
+    EXP=on;auto=0;
+    byId('hw-graph').hidden=on;byId('hx-graph').hidden=!on;byId('hx-results').hidden=!on;byId('hw-pills').hidden=on;
+    $$('.hx-only',wb).forEach(e=>e.toggleAttribute('hidden',!on));
+    const row=slid.closest('.ctl-row');if(row)row.hidden=on;
+    byId('hw-tlab').textContent=on?'Last reading':'Temperature';
+    const ac=wb.closest('.act');ac.classList.toggle('hx',on);const kd=ac.querySelector('.kind');if(kd)kd.textContent=on?'Experiment':'Watch';
+    if(on)xReset();else{E=0;slid.value=0;btns();ui();}
+  }
   function ui(){
+    if(EXP)return;
     const T=Tof(E),k=stageOf(E);
     dot.setAttribute('cx',g2.gx(E*0.3));dot.setAttribute('cy',g2.gy(T));
     byId('hw-time').textContent=(E*0.3).toFixed(1)+' min';byId('hw-temp').textContent=Math.round(T)+' °C';byId('hw-eo').textContent=(E*0.3).toFixed(1)+' min';
@@ -1038,7 +1249,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   function scrubTo(v){E=clamp(Math.round(v*2)/2,0,100);slid.value=E;auto=0;btns();ui();if(sim.isPaused())sim.redraw();}
   slid.addEventListener('input',()=>scrubTo(+slid.value));
   // Drag the dot (or press anywhere on the graph) to move through time; the slider gives the same control by keyboard.
-  const gsvg=wb.querySelector('.sim-view svg');gsvg.classList.add('scrub');
+  const gsvg=wb.querySelector('#hw-graph svg');gsvg.classList.add('scrub');
   const x0=g2.gx(0),x1=g2.gx(30);
   const toE=ev=>{const r=gsvg.getBoundingClientRect(),x=(ev.clientX-r.left)/r.width*g2.W;return (x-x0)/(x1-x0)*100;};
   let dragging=false;
@@ -1048,13 +1259,29 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   function btns(){
     const h=byId('hw-btns');h.innerHTML='';
     const play=mk('button',auto?'is-on':'',auto?'Pause':'Play');play.type='button';
-    play.addEventListener('click',()=>{if(auto)auto=0;else{if(E>=100)E=0;auto=1;sim.setPaused(false);}btns();});
-    const rs=mk('button','','Restart');rs.type='button';rs.addEventListener('click',()=>{E=0;slid.value=0;auto=1;sim.setPaused(false);btns();ui();});
+    play.addEventListener('click',()=>{
+      if(auto)auto=0;
+      else if(EXP){if(xDone())xReset();auto=1;sim.setPaused(false);}
+      else{if(E>=100)E=0;auto=1;sim.setPaused(false);}
+      btns();});
+    const rs=mk('button','',EXP?'Reset':'Restart');rs.type='button';
+    rs.addEventListener('click',()=>{if(EXP){xReset();return;}E=0;slid.value=0;auto=1;sim.setPaused(false);btns();ui();});
     const sl=mk('button',slow?'is-on':'','Slow motion');sl.type='button';sl.setAttribute('aria-pressed',String(slow));sl.addEventListener('click',()=>{slow=!slow;btns();});
-    h.appendChild(play);h.appendChild(rs);h.appendChild(sl);
+    const ex=mk('button',EXP?'is-on':'','Experiment');ex.type='button';ex.id='hw-exp';ex.setAttribute('aria-pressed',String(EXP));ex.addEventListener('click',()=>{setExp(!EXP);});
+    h.appendChild(play);h.appendChild(rs);h.appendChild(sl);h.appendChild(ex);
   }
   btns();ui();
   addTicker('heating',()=>{
+    if(EXP){
+      if(auto){
+        xt=Math.min(S().xMax,xt+(1/75)*(slow?0.3:1));
+        // a reading each time the stopwatch passes the next interval
+        while(reads.length&&reads[reads.length-1].t+iv<=xt+1e-9){takeReading(+(reads[reads.length-1].t+iv).toFixed(2));xDraw(true);}
+        if(xDone()){auto=0;btns();xDraw(true);}
+        else{byId('hw-time').textContent=xt.toFixed(1)+' min';sim.setE(S().E(xt));}
+      }
+      sim.tick();return;
+    }
     if(auto){E=Math.min(100,E+0.1*(slow?0.3:1));slid.value=E;if(E>=100){auto=0;btns();}ui();}
     sim.tick();
   });
