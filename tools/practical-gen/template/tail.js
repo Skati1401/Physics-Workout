@@ -32,7 +32,7 @@ function applyTabUI(tab){
   activeTab=tab;
   reflowers.forEach(f=>{try{f(tab);}catch(e){console.error(e);}});
   try{history.replaceState(null,'','#'+tab);}catch(e){}
-  try{localStorage.setItem(STORE_KEY,JSON.stringify({tab:tab}));}catch(e){}
+  writeSave();
 }
 $$('.tab-btn').forEach(b=>b.addEventListener('click',()=>applyTabUI(b.dataset.tab)));
 byId('tab-{{FIRST_TAB}}').parentNode.addEventListener('keydown',e=>{
@@ -41,8 +41,18 @@ byId('tab-{{FIRST_TAB}}').parentNode.addEventListener('keydown',e=>{
   applyTabUI(TAB_IDS[n]);byId('tab-'+TAB_IDS[n]).focus();
 });
 // The open tab is remembered in this browser only, so a reload returns to it.
-function readSaved(){try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');return (s&&typeof s==='object')?s:{};}catch(e){return {};}}
+// Answers and the open tab are remembered in this browser only, so a reload keeps them.
+// OLD_STORE_KEY held only the open tab; it is read once so a returning student lands on the same tab.
+function readSaved(){
+  for(const k of [STORE_KEY,OLD_STORE_KEY]){
+    try{const s=JSON.parse(localStorage.getItem(k)||'null');if(s&&typeof s==='object')return s;}catch(e){}
+  }
+  return {};
+}
 function start(data){
+  const v=(data&&data.v)||{};
+  games.forEach(g=>{if(v[g.key]&&typeof v[g.key]==='object'){try{g.setState(v[g.key]);}catch(e){console.error(e);}}});
+  saveReady=true;showProgress(false);
   // a #tab link opens that tab, ahead of the tab remembered in this browser
   let t='';try{t=location.hash.slice(1);}catch(e){}
   if(TAB_IDS.indexOf(t)<0)t=data&&data.tab;

@@ -13,9 +13,10 @@ python3 tools/practical-gen/gen.py --all --check        # rebuild every practica
   - `head.html`: the head, fonts and visit counter.
   - `style.css`: the styles, with accent placeholders.
   - `engine.js`: helpers, drag engine and every activity factory (`act`, `bar`, `createBlankGame`, `createSortGame`, `createMatchGame`, `createMemoryGame`, `createCalc`, `createReorder`, `createPredict`, `createSpot`, `lineGraph`, `frameAct`, `createPlot`).
-  - `tail.js`: pairs side-by-side Predicts, lines up = signs, and handles tabs, `#tab` links and the remembered tab.
+  - `tail.js`: pairs side-by-side Predicts, lines up = signs, and handles tabs, `#tab` links, restoring saved answers and the tab ticks.
+  - Every graded factory returns `track(host,{getState,setState,isDone})`, so its answers are saved and its tab can be ticked. A new graded factory must do the same.
 - `practicals/<slug>/page.json`:
-  - `file`, `title`, `unit`, `links` (header links to the animation and the workout tab), `storeKey` (bump it when questions move), `draft` (true adds noindex), `accent` (light and dark pairs), optional `extraCss`.
+  - `file`, `title`, `unit`, `links` (header links to the animation and the workout tab), `storeKey` (bump it when questions move) and `oldStoreKey` (the key before the last bump; only the open tab is carried over from it), `draft` (true adds noindex), `accent` (light and dark pairs), optional `extraCss`.
   - `tabs`: each has `id`, `label`, `title` and `spec`. A spec badge ending in P adds the TA badge, the tab's TA tag and the eyebrow note automatically.
 - `practicals/<slug>/content.js`: the activities, in tab order. Each `act(tab, kind, title, intro)` call adds a card to that tab. Two Predicts in a row are paired side by side automatically.
 

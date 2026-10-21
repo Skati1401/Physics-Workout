@@ -1,5 +1,17 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Heat Transfer Workout</title><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><style>
+<html lang="en"><head><meta charset="utf-8"><title>Heat Transfer Workout</title><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+  /* saved progress: tab ticks and the "tabs done" count */
+  .tab-tick{ display:inline-block; margin-left:4px; color: var(--good); }
+  .sr-only{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+  .tabs-done{ display:inline-block; margin-left:10px; padding:1px 8px; border-radius:999px; border:1px solid var(--panel-border); background: var(--panel); color: var(--ink-soft); font-weight:500; white-space:nowrap; }
+  .tabs-done.all-done{ color: var(--good); border-color: var(--good); background: var(--good-soft); }
+  @media (prefers-reduced-motion: no-preference){
+    .tab-tick.pop-in{ animation: tickin .3s ease-out; }
+    .tabs-done.pulse{ animation: donepulse .45s ease-out; }
+  }
+  @keyframes tickin{ from{ transform: scale(.3); opacity:0; } }
+  @keyframes donepulse{ 40%{ transform: scale(1.12); } }
+</style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
 .home-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
@@ -1655,7 +1667,8 @@
       }
     }
 
-    return { init: init, render: render, wire: wire, getState: getState, setState: setState };
+    function isDone(){ return Object.keys(locked).length === cfg.items.length; }
+    return { init: init, render: render, wire: wire, getState: getState, setState: setState, isDone: isDone };
   }
 
   /* ================= MATCH-THE-FEATURE GAME ================= */
@@ -1887,7 +1900,8 @@
       }
     }
 
-    return { init: init, render: render, wire: wire, getState: getState, setState: setState };
+    function isDone(){ return Object.keys(locked).length === cfg.items.length; }
+    return { init: init, render: render, wire: wire, getState: getState, setState: setState, isDone: isDone };
   }
 
   /* ================= FILL-IN-THE-BLANK GAME ================= */
@@ -2431,6 +2445,51 @@
   function saveSnapshot(){
     clearTimeout(saveTimer);
     saveTimer = setTimeout(writeSnapshot, 900);
+    showProgress(true);
+  }
+
+  // A tab gets a tick once its activity is complete, and the header shows how many tabs are done.
+  // Technique has nothing to mark, so it is left out of the count.
+  var TAB_DONE = {
+    fill: function(){ return blanksData.every(function(b){ return !!fillLocked[b.id]; }); },
+    sort: function(){ return sortGame.isDone(); },
+    conduct: function(){ return conductGame.isDone(); },
+    order: function(){ return orderChecked && orderList.length === correctOrder.length && orderList.every(function(id, i){ return correctOrder[i] === id; }); },
+    radiation: function(){ return radiationGame.isDone(); },
+    match: function(){ return matchGame.isDone(); },
+    diagram: function(){ return allHotspots().every(function(h){ return !!diagramLocked[h.id]; }); },
+    tf: function(){ return tfGame.isDone(); }
+  };
+  var progressOn = false;
+  function showProgress(animate){
+    if (!progressOn) return;
+    var ids = Object.keys(TAB_DONE), n = 0;
+    ids.forEach(function(t){
+      var d = false; try{ d = TAB_DONE[t](); }catch(e){}
+      if (d) n++;
+      var btn = document.querySelector('.tab-btn[data-tab="' + t + '"]');
+      if (!btn) return;
+      var tk = btn.querySelector('.tab-tick');
+      if (d && !tk){
+        tk = document.createElement('span'); tk.className = 'tab-tick' + (animate ? ' pop-in' : '');
+        tk.innerHTML = '<span aria-hidden="true">✓</span><span class="sr-only"> (done)</span>';
+        btn.appendChild(tk);
+      }
+      if (!d && tk) tk.parentNode.removeChild(tk);
+    });
+    var pill = document.getElementById('tabs-done');
+    if (!pill){
+      var eb = document.querySelector('.page-head .eyebrow'); if (!eb) return;
+      pill = document.createElement('span'); pill.id = 'tabs-done'; pill.className = 'tabs-done';
+      pill.setAttribute('aria-live', 'polite'); eb.appendChild(pill);
+    }
+    var txt = n + ' of ' + ids.length + ' tabs done';
+    if (pill.textContent !== txt){
+      var up = n > (+pill.getAttribute('data-n') || 0);
+      pill.textContent = txt; pill.setAttribute('data-n', n);
+      if (animate && up){ pill.classList.remove('pulse'); void pill.offsetWidth; pill.classList.add('pulse'); }
+    }
+    pill.classList.toggle('all-done', n === ids.length);
   }
   function readSnapshot(){
     try{
@@ -2523,6 +2582,8 @@
     tfGame.render();
     renderFill();
     renderDiagramActivity();
+    progressOn = true;
+    showProgress(false);
   }
 
   try { start(readSnapshot()); }

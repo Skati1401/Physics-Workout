@@ -488,6 +488,18 @@
   .cp-banner:hover{background:var(--panel)}
   .cp-banner:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
   .cp-badge{font:600 11.5px var(--font-mono,ui-monospace,monospace);color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:1px 7px;background:var(--panel)}
+
+  /* saved progress: tab ticks and the "tabs done" count */
+  .tab-tick{ display:inline-block; margin-left:5px; color:var(--good); font-weight:700; }
+  .tab-btn.is-active .tab-tick{ color:inherit; }
+  .tabs-done{ display:inline-block; margin-left:10px; padding:1px 8px; border-radius:999px; border:1px solid var(--panel-border); background:var(--panel); color:var(--ink-soft); white-space:nowrap; }
+  .tabs-done.all-done{ color:var(--good); border-color:var(--good); background:var(--good-soft); }
+  @media (prefers-reduced-motion: no-preference){
+    .tab-tick.pop-in{ animation:tickin .3s ease-out; }
+    .tabs-done.pulse{ animation:donepulse .45s ease-out; }
+  }
+  @keyframes tickin{ from{ transform:scale(.3); opacity:0; } }
+  @keyframes donepulse{ 40%{ transform:scale(1.12); } }
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -756,6 +768,7 @@
   function saveSnapshot(){
     clearTimeout(saveTimer);
     saveTimer = setTimeout(writeSnapshot, 900);
+    if(typeof showProgress==='function') showProgress(true);
   }
   // This page was split out of older workouts. On a first visit, carry over saved progress
   // for the activities that moved here unchanged (rewritten ones, like the Overview, start fresh).
@@ -959,6 +972,8 @@
     onAction(cfg.id+'-check', check);
     onAction(cfg.id+'-reset', reset);
     return {
+      el: cfg.hostEl,
+      isDone: function(){ return lockedCount()===cfg.slots.length; },
       render: render,
       getState: function(){ return {state:state, pool:pool}; },
       setState: function(s){
@@ -1083,6 +1098,8 @@
     onAction(cfg.id+'-check', check);
     onAction(cfg.id+'-reset', reset);
     return {
+      el: cfg.poolEl,
+      isDone: function(){ return lockedCount()===cfg.items.length; },
       render: render,
       getState: function(){ return {state:state, poolOrder:poolOrder}; },
       setState: function(s){
@@ -1195,6 +1212,8 @@
     onAction(cfg.id+'-reset', reset);
     window.addEventListener('resize', drawLines);
     return {
+      el: cfg.containerEl,
+      isDone: function(){ return lockedCount()===cfg.pairs.length; },
       render: render, reflow: drawLines,
       getState: function(){ return {pairs:pairs, leftOrder:leftOrder, rightOrder:rightOrder}; },
       setState: function(s){
@@ -1209,7 +1228,7 @@
            equivGroups?: arrays of step ids that may swap places with each other} */
   function createReorderGame(cfg){
     var correct = cfg.steps.map(function(s){ return s.id; });
-    var order = shuffle(correct), fkey = null;
+    var order = shuffle(correct), fkey = null, solved = false;
     function stepById(id){ return cfg.steps.filter(function(s){ return s.id===id; })[0]; }
     function render(){
       cfg.containerEl.innerHTML = '';
@@ -1267,7 +1286,7 @@
       render();
       saveSnapshot();
     });
-    function clearResult(){ cfg.resultEl.textContent = ''; cfg.resultEl.className = 'reorder-result'; }
+    function clearResult(){ solved = false; cfg.resultEl.textContent = ''; cfg.resultEl.className = 'reorder-result'; }
     function check(){
       var n = 0, consumed = {};
       (cfg.equivGroups||[]).forEach(function(g){
@@ -1280,6 +1299,7 @@
       var ok = n===order.length;
       cfg.resultEl.textContent = ok ? '✓ Perfect order!' : n+' of '+order.length+' steps in the right place. Try again.';
       cfg.resultEl.className = 'reorder-result'+(ok?' good':'');
+      solved = ok; saveSnapshot();
       announce(cfg.resultEl.textContent);
     }
     function reset(){ order = shuffle(correct); clearResult(); render(); saveSnapshot(); }
@@ -1287,8 +1307,13 @@
     onAction(cfg.id+'-reset', reset);
     return {
       render: render,
-      getState: function(){ return {order:order}; },
-      setState: function(s){ if(s && s.order && s.order.length===order.length) order = s.order; }
+      el: cfg.containerEl,
+      isDone: function(){ return solved; },
+      getState: function(){ return {order:order, solved:solved}; },
+      setState: function(s){
+        if(s && s.order && s.order.length===order.length) order = s.order;
+        if(s && s.solved){ check(); if(!solved){ clearResult(); } }
+      }
     };
   }
 
@@ -1344,6 +1369,8 @@
     });
     onAction(cfg.id+'-reset', function(){ newRound(); render(); saveSnapshot(); });
     return {
+      el: cfg.el,
+      isDone: function(){ return cfg.questions.every(function(q, qi){ return chosen[qi]!==undefined; }); },
       render: render,
       getState: function(){ return {chosen:chosen, tries:tries, orders:orders}; },
       setState: function(s){ if(s && s.orders && s.orders.length===orders.length){ chosen = s.chosen || {}; tries = s.tries || {}; orders = s.orders; } }
@@ -1423,6 +1450,8 @@
     }
     onAction(cfg.id+'-reset', reset);
     return {
+      el: cfg.el,
+      isDone: function(){ return cfg.questions.every(function(ex, i){ var r = info(i); return r.n===r.total; }); },
       getState: function(){
         var vals = {};
         cfg.questions.forEach(function(ex, i){ ex.blanks.forEach(function(b, bi){
@@ -1823,6 +1852,8 @@
     body.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); check(); } });
     render();
     return {
+      el: body,
+      isDone: function(){ return inputs.length>0 && lockedCount()===inputs.length; },
       getState: function(){
         var vals = {};
         inputs.forEach(function(inp){ var el = document.getElementById(inp.id); vals[inp.id] = {v:el.value, ok:el.classList.contains('is-correct')}; });
@@ -1872,6 +1903,47 @@
 
   /* ================= state ================= */
   var games = {};
+  /* ================= tab progress =================
+     A tab gets a tick once all its graded activities are complete, and the header shows how many tabs are done.
+     Worked out from the saved answers, so it needs nothing stored of its own. */
+  function tabOf(g){ var p = g.el && g.el.closest('.panel'); return p ? p.id.replace('panel-','') : ''; }
+  function tabDone(t){
+    var gs = Object.keys(games).map(function(k){ return games[k]; }).filter(function(g){ return g.isDone && tabOf(g)===t; });
+    return gs.length>0 && gs.every(function(g){ try{ return g.isDone(); }catch(e){ return false; } });
+  }
+  var progressOn = false;
+  function showProgress(animate){
+    if(!progressOn) return;
+    var graded = TAB_IDS.filter(function(t){ return Object.keys(games).some(function(k){ return games[k].isDone && tabOf(games[k])===t; }); });
+    var n = 0;
+    graded.forEach(function(t){
+      var d = tabDone(t), btn = document.querySelector('.tab-btn[data-tab="'+t+'"]');
+      if(d) n++;
+      if(!btn) return;
+      var tk = btn.querySelector('.tab-tick');
+      if(d && !tk){
+        tk = document.createElement('span'); tk.className = 'tab-tick'+(animate?' pop-in':'');
+        tk.innerHTML = '<span aria-hidden="true">✓</span><span class="sr-only"> (done)</span>';
+        btn.appendChild(tk);
+      }
+      if(!d && tk) tk.parentNode.removeChild(tk);
+    });
+    var pill = document.getElementById('tabs-done');
+    if(!pill){
+      var eb = document.querySelector('.page-head .eyebrow'); if(!eb) return;
+      pill = document.createElement('span'); pill.id = 'tabs-done'; pill.className = 'tabs-done';
+      pill.setAttribute('aria-live','polite'); eb.appendChild(pill);
+    }
+    var txt = n+' of '+graded.length+' tabs done';
+    if(pill.textContent!==txt){
+      var up = n > (+pill.getAttribute('data-n')||0);
+      pill.textContent = txt; pill.setAttribute('data-n', n);
+      if(animate && up){ pill.classList.remove('pulse'); void pill.offsetWidth; pill.classList.add('pulse'); }
+    }
+    pill.classList.toggle('all-done', n===graded.length);
+  }
+  document.addEventListener('click', function(){ requestAnimationFrame(function(){ showProgress(true); }); });
+
   function collectState(){
     var s = {activeTab: currentTab};
     Object.keys(games).forEach(function(k){ s[k] = games[k].getState(); });
@@ -1928,6 +2000,7 @@
     var hashTab = ''; try{ hashTab = location.hash.slice(1); }catch(e){}
     applyTabUI(TAB_IDS.indexOf(hashTab)!==-1 ? hashTab : TAB_IDS.indexOf(initial.activeTab)!==-1 ? initial.activeTab : 'overview');
     window.addEventListener('pagehide', function(){ clearTimeout(saveTimer); writeSnapshot(); });
+    progressOn = true; showProgress(false);
   }
 
   start(readSnapshot());

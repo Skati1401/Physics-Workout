@@ -71,6 +71,7 @@ def build(slug):
                 % (t['id'], t['id'], '' if i == 0 else ' hidden', t['title'], badges(t['spec'])))
 
     engine = (read(T, 'engine.js').replace('{{STORE_KEY}}', cfg['storeKey'])
+              .replace('{{OLD_STORE_KEY}}', cfg.get('oldStoreKey', ''))
               .replace('{{TAB_IDS}}', json.dumps(ids)).replace('{{FIRST_TAB}}', first))
     tail = read(T, 'tail.js').replace('{{FIRST_TAB}}', first)
 

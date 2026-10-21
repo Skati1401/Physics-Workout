@@ -14,7 +14,7 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='{{STORE_KEY}}';
+const STORE_KEY='{{STORE_KEY}}',OLD_STORE_KEY='{{OLD_STORE_KEY}}';
 const TAB_IDS={{TAB_IDS}};
 let activeTab='{{FIRST_TAB}}';
 const reflowers=[];
@@ -36,6 +36,51 @@ function bar(parent,buttons){
   parent.appendChild(b);
   return {el:b,msg:msg,say:(t,cls)=>{msg.textContent=t;msg.className='fb'+(cls?' '+cls:'');}};
 }
+
+/* ================= saved answers and tab progress =================
+   Every graded activity registers with track() and gives getState / setState / isDone.
+   Answers are kept in this browser only (localStorage, every call in try/catch), so a reload keeps them.
+   A tab gets a tick once all its graded activities are complete, and the header shows how many tabs are done. */
+const games=[];
+function track(host,g){
+  const p=host&&host.closest('.panel');
+  g.host=host;g.tab=p?p.id.slice(6):'';
+  g.key=g.tab+'-'+games.filter(x=>x.tab===g.tab).length;
+  games.push(g);return g;
+}
+let saveTimer=null,saveReady=false;
+function writeSave(){
+  if(!saveReady)return;
+  const v={};games.forEach(g=>{try{v[g.key]=g.getState();}catch(e){}});
+  try{localStorage.setItem(STORE_KEY,JSON.stringify({tab:activeTab,v:v}));}catch(e){}
+}
+// Saves wait a second, so wrong answers have bounced back to the pool first.
+function saveSoon(){if(!saveReady)return;clearTimeout(saveTimer);saveTimer=setTimeout(writeSave,1000);raf(()=>showProgress(true));}
+// An activity hidden inside its tab (e.g. one for a method type that is not chosen) does not count.
+function shown(g){let e=g.host;while(e&&!(e.classList&&e.classList.contains('panel'))){if(e.hidden)return false;e=e.parentElement;}return true;}
+function tabDone(t){const gs=games.filter(g=>g.tab===t&&shown(g));return gs.length>0&&gs.every(g=>{try{return g.isDone();}catch(e){return false;}});}
+function showProgress(animate){
+  const graded=TAB_IDS.filter(t=>games.some(g=>g.tab===t));
+  let n=0;
+  graded.forEach(t=>{
+    const d=tabDone(t),btn=document.getElementById('tab-'+t);if(d)n++;
+    if(!btn)return;
+    let tk=btn.querySelector('.tab-tick');
+    if(d&&!tk){tk=mk('span','tab-tick','<span aria-hidden="true">✓</span><span class="sr-only"> (done)</span>');btn.appendChild(tk);if(animate)tk.classList.add('pop-in');}
+    if(!d&&tk)tk.remove();
+    btn.classList.toggle('is-done',d);
+  });
+  let pill=document.getElementById('tabs-done');
+  if(!pill){const eb=$('.page-head .eyebrow');if(!eb||!graded.length)return;pill=mk('span','tabs-done');pill.id='tabs-done';pill.setAttribute('aria-live','polite');eb.appendChild(pill);}
+  const txt=n+' of '+graded.length+' tabs done';
+  if(pill.textContent!==txt){
+    const up=n>(+pill.dataset.n||0);pill.textContent=txt;pill.dataset.n=n;
+    if(animate&&up){pill.classList.remove('pulse');void pill.offsetWidth;pill.classList.add('pulse');}
+  }
+  pill.classList.toggle('all-done',n===graded.length);
+}
+['click','input','pointerup'].forEach(t=>document.addEventListener(t,saveSoon));
+window.addEventListener('pagehide',()=>{clearTimeout(saveTimer);writeSave();});
 
 /* ================= drag engine (pointer events, mouse + touch) ================= */
 function hitEl(ev,selector){
@@ -157,7 +202,17 @@ function createBlankGame(cfg){
   }
   function reset(){placed={};locked={};selected=null;order=shuffle(cfg.chips.map(c=>c.id));say('','');render();}
   render();
-  return {check:check,reset:reset,render:render};
+  return track(pool,{check:check,reset:reset,render:render,
+    getState:()=>({o:order,p:placed,l:Object.keys(locked)}),
+    setState:s=>{
+      if(Array.isArray(s.o)&&s.o.length===order.length&&s.o.every(id=>chipMap[id]))order=s.o.slice();
+      placed={};locked={};selected=null;
+      Object.keys(s.p||{}).forEach(k=>{if(slotMap[k]&&chipMap[s.p[k]])placed[k]=s.p[k];});
+      (s.l||[]).forEach(k=>{if(placed[k]&&cfg.isCorrect(chipMap[placed[k]],slotMap[k]))locked[k]=true;});
+      render();
+      if(Object.keys(locked).length===slots.length)say('All '+slots.length+' correct. Well done.','good');
+    },
+    isDone:()=>Object.keys(locked).length===slots.length});
 }
 
 /* ================= sort into bins ================= */
@@ -215,7 +270,17 @@ function createSortGame(cfg){
   }
   function reset(){where={};locked={};selected=null;items.forEach(i=>where[i.id]='pool');order=shuffle(items.map(i=>i.id));b.say('','');render();}
   reset();
-  return {reset:reset};
+  return track(host,{reset:reset,
+    getState:()=>({o:order,w:where,l:Object.keys(locked)}),
+    setState:s=>{
+      if(Array.isArray(s.o)&&s.o.length===items.length&&s.o.every(id=>itemMap[id]))order=s.o.slice();
+      where={};locked={};selected=null;
+      items.forEach(i=>{const w=s.w&&s.w[i.id];where[i.id]=cats.some(c=>c.id===w)?w:'pool';});
+      (s.l||[]).forEach(id=>{if(itemMap[id]&&where[id]===itemMap[id].cat)locked[id]=true;});
+      render();
+      if(Object.keys(locked).length===items.length)b.say('All correct. Well done.','good');
+    },
+    isDone:()=>Object.keys(locked).length===items.length});
 }
 
 /* ================= match (lines between two columns) ================= */
@@ -297,7 +362,19 @@ function createMatchGame(cfg){
   function reset(){L=shuffle(pairs.map(p=>p.id));R=shuffle(pairs.map(p=>p.id));link={};locked={};sel=null;wrongSet={};b.say('','');render();}
   window.addEventListener('resize',()=>raf(reflow));
   reset();
-  return {reflow:reflow,reset:reset};
+  const ok=a=>Array.isArray(a)&&a.length===pairs.length&&pairs.every(p=>a.indexOf(p.id)>=0);
+  return track(host,{reflow:reflow,reset:reset,
+    getState:()=>({L:L,R:R,k:link,l:Object.keys(locked)}),
+    setState:s=>{
+      if(ok(s.L))L=s.L.slice();if(ok(s.R))R=s.R.slice();
+      link={};locked={};sel=null;wrongSet={};
+      const used={};
+      Object.keys(s.k||{}).forEach(l=>{const r=s.k[l];if(pairs.some(p=>p.id===l)&&pairs.some(p=>p.id===r)&&!used[r]){link[l]=r;used[r]=1;}});
+      (s.l||[]).forEach(id=>{if(link[id]===id)locked[id]=true;});
+      render();
+      if(Object.keys(locked).length===pairs.length)b.say('All pairs correct. Well done.','good');
+    },
+    isDone:()=>Object.keys(locked).length===pairs.length});
 }
 
 /* ================= flip-card memory ================= */
@@ -369,7 +446,19 @@ function createCalc(cfg){
     qs.forEach((q,i)=>{const inp=$('#'+id+'-'+i);inp.value='';inp.disabled=false;inp.classList.remove('is-wrong');const fb=inp.closest('.calc-input-row').querySelector('.calc-fb');fb.textContent='';fb.className='calc-fb';inp.closest('.calc-input-row').querySelector('.calc-working').hidden=true;});
     b.say('','');
   }
-  return {reset:reset};
+  const inp=i=>document.getElementById(id+'-'+i);
+  return track(host,{reset:reset,
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    setState:s=>{
+      reset();
+      qs.forEach((q,i)=>{
+        const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
+        e.value=v;
+        if(s.ok&&s.ok[i]){e.disabled=true;const fb=e.closest('.calc-input-row').querySelector('.calc-fb');fb.textContent='Correct.';fb.className='calc-fb good';}
+      });
+      if(qs.every((q,i)=>inp(i).disabled))b.say('All '+qs.length+' correct.','good');
+    },
+    isDone:()=>qs.every((q,i)=>inp(i).disabled)});
 }
 
 /* ================= reorder (live reorder + up/down buttons) ================= */
@@ -416,7 +505,14 @@ function createReorder(cfg){
     order=o;b.say('','');build();
   }
   reset();
-  return {reset:reset};
+  return track(host,{reset:reset,
+    getState:()=>({o:order,d:done}),
+    setState:s=>{
+      if(!(Array.isArray(s.o)&&s.o.length===steps.length&&s.o.every(id=>map[id])))return;
+      order=s.o.slice();done=!!s.d&&valid(order)===cfg.constraints.length;b.say('','');build();
+      if(done){Object.keys(rows).forEach(k=>rows[k].classList.add('is-correct'));b.say('Correct order. '+(cfg.why||''),'good');}
+    },
+    isDone:()=>done});
 }
 
 /* ================= predict then reveal ================= */
@@ -430,7 +526,7 @@ function createPredict(cfg){
   const opts=mk('div','pred-opts');host.appendChild(opts);
   const out=mk('div','pred-out');out.hidden=true;host.appendChild(out);
   const b=bar(host,[{label:'Try again',fn:reset}]);b.el.hidden=true;
-  let order,tries=0;
+  let order,tries=0,picks=[],final=false;
   function render(){
     opts.innerHTML='';
     order.forEach(i=>{
@@ -443,7 +539,8 @@ function createPredict(cfg){
   // A first wrong answer lights up only that option and explains why it is wrong; the student tries again.
   // The right answer is shown once they find it, or after a second wrong answer.
   function choose(i){
-    const o=cfg.options[i];
+    if(final)return;
+    const o=cfg.options[i];picks.push(i);
     if(!o.correct&&tries===0){
       tries++;
       const btn=$$('.pred-opt',opts).find(x=>+x.dataset.i===i);
@@ -457,14 +554,22 @@ function createPredict(cfg){
       if(k.correct)btn.classList.add('is-right');
       if(+btn.dataset.i===i){btn.classList.add('is-chosen');if(!k.correct)btn.classList.add('is-wrong');}
     });
+    final=true;
     const right=cfg.options.find(x=>x.correct);
     out.innerHTML='<p><strong>'+(o.correct?'That is right.':'Not quite.')+'</strong> '+FR(o.correct?cfg.explain:o.why+' '+cfg.explain)+'</p>'+(cfg.reveal||'');
     out.hidden=false;out.classList.remove('go');b.el.hidden=false;
     raf(()=>raf(()=>out.classList.add('go')));
   }
-  function reset(){tries=0;order=shuffle(cfg.options.map((o,i)=>i));out.hidden=true;out.classList.remove('go');b.el.hidden=true;render();}
+  function reset(){picks=[];final=false;tries=0;order=shuffle(cfg.options.map((o,i)=>i));out.hidden=true;out.classList.remove('go');b.el.hidden=true;render();}
   reset();
-  return {reset:reset};
+  return track(host,{reset:reset,
+    getState:()=>({o:order,p:picks}),
+    setState:s=>{
+      reset();
+      if(Array.isArray(s.o)&&s.o.length===order.length&&cfg.options.every((x,i)=>s.o.indexOf(i)>=0)){order=s.o.slice();render();}
+      (s.p||[]).forEach(i=>{if(cfg.options[i])choose(i);});
+    },
+    isDone:()=>final});
 }
 
 /* ================= spot the error ================= */
@@ -476,6 +581,7 @@ function createSpot(cfg){
   const html=FR;
   const said=t=>t.replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'($1) over ($2)');
   cfg.host.classList.add('err-grid');
+  let picks=[],found=false;
   const blk=mk('div','err-block');cfg.host.appendChild(blk);
   blk.appendChild(mk('p','err-scn',nb(cfg.scenario)));
   const btns=cfg.lines.map((t,i)=>{
@@ -485,9 +591,12 @@ function createSpot(cfg){
     blk.appendChild(btn);return btn;
   });
   const fb=mk('p','err-fb');fb.setAttribute('aria-live','polite');blk.appendChild(fb);
-  const reset=()=>{btns.forEach(x=>{x.disabled=false;x.classList.remove('is-ok','is-bad','shake');});fb.textContent='Click the line that contains the mistake.';};
+  const reset=()=>{btns.forEach(x=>{x.disabled=false;x.classList.remove('is-ok','is-bad','shake');});fb.textContent='Click the line that contains the mistake.';picks=[];found=false;};
   function pick(i,btn){
+    if(found)return;
+    picks.push(i);
     if(i===cfg.wrong){
+      found=true;
       btn.classList.add('is-bad');btns.forEach(x=>x.disabled=true);
       fb.innerHTML='<strong style="color:var(--bad)">Found it: line '+(i+1)+'.</strong> '+html(cfg.explain)+
         '<span class="err-fix" style="display:block">'+cfg.fix.map(f=>'<span class="fix-line">'+html(f)+'</span>').join('')+'</span>';
@@ -499,6 +608,10 @@ function createSpot(cfg){
   }
   bar(blk,[{label:'Try Again',fn:reset}]);
   reset();
+  return track(cfg.host,{reset:reset,
+    getState:()=>({p:picks}),
+    setState:s=>{reset();(s.p||[]).forEach(i=>{if(btns[i])pick(i,btns[i]);});},
+    isDone:()=>found});
 }
 /* ================= SVG line graph ================= */
 function lineGraph(o){
@@ -590,5 +703,14 @@ function createPlot(cfg){
     else b.say(ok+' of '+pts.length+' correct so far. Plot the rest.','');
   }
   function reset(){placed=[];locked=[];cur={x:0,y:0};wrongIdx=-1;b.say('','');render();}
-  reset();
+  reset();  return track(host,{reset:reset,
+    getState:()=>({p:placed,l:locked}),
+    setState:s=>{
+      reset();
+      const good=v=>v&&typeof v.x==='number'&&typeof v.y==='number';
+      pts.forEach((p,i)=>{const v=s.p&&s.p[i];if(good(v)){placed[i]={x:v.x,y:v.y};if(s.l&&s.l[i])locked[i]=true;}});
+      render();
+      if(locked.filter(Boolean).length===pts.length)b.say('All '+pts.length+' points plotted correctly. Now choose the line of best fit below.','good');
+    },
+    isDone:()=>pts.every((p,i)=>locked[i])});
 }
