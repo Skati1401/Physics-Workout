@@ -30,6 +30,7 @@ function applyTabUI(tab){
   TAB_IDS.forEach(id=>{const p=byId('panel-'+id);if(p)p.hidden=(id!==tab);});
   $$('.tab-btn').forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('is-active',on);b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1;});
   activeTab=tab;
+  try{const b=byId('tab-'+tab),r=b&&b.parentNode;if(r&&r.scrollWidth>r.clientWidth)r.scrollLeft=b.offsetLeft-r.offsetLeft-32;}catch(e){}
   reflowers.forEach(f=>{try{f(tab);}catch(e){console.error(e);}});
   try{history.replaceState(null,'','#'+tab);}catch(e){}
   writeSave();

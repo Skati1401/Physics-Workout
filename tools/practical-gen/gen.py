@@ -49,9 +49,12 @@ def build(slug):
              .replace('{{ACCENT_DARK}}', acc['dark'][0]).replace('{{ACCENT_SOFT_DARK}}', acc['dark'][1]))
     style += cfg.get('extraCss', '')
 
-    eyebrow = 'Edexcel IGCSE Physics &middot; Core practical &middot; ' + cfg['unit']
-    if any_ta:
-        eyebrow += ' &middot; TA = Triple Award only'
+    sep = '<span class="sep" aria-hidden="true">›</span>'
+    crumbs = ('<nav class="eyebrow crumbs" aria-label="Breadcrumb">'
+              + ''.join('<a href="%s">%s</a>%s' % (h, t, sep) for h, t in
+                        [('index.html', 'Workouts'), ('igcse.html', 'IGCSE'), ('igcse.html#unit-cp', 'Core practicals')])
+              + '</nav>')
+    ta_note = '<span class="head-note">TA = Triple Award only</span>\n' if any_ta else ''
     links = ' &middot; '.join('%s: <a href="%s">%s</a>' % (l['label'], l['href'], l['text']) for l in cfg.get('links', []))
 
     def tab_btn(i, t):
@@ -76,8 +79,8 @@ def build(slug):
     tail = read(T, 'tail.js').replace('{{FIRST_TAB}}', first)
 
     out = (head + '<style>\n' + style + '</style>\n<div class="page">\n'
-           '  <a class="home-link" href="igcse.html">&larr; IGCSE workouts</a>\n<header class="page-head">\n'
-           '<p class="eyebrow">' + eyebrow + '</p>\n<h1>' + cfg['title'] + '</h1>\n'
+           '<header class="page-head">\n'
+           + crumbs + '\n<h1>' + cfg['title'] + '</h1>\n' + ta_note
            + ('<p class="cp-link">' + links + '</p>\n' if links else '') +
            '</header>\n<nav class="tabs" role="tablist" aria-label="Activities">\n'
            + '\n'.join(tab_btn(i, t) for i, t in enumerate(tabs)) + '\n</nav>\n'

@@ -17,7 +17,7 @@ python3 tools/practical-gen/gen.py --all --check        # rebuild every practica
   - Every graded factory returns `track(host,{getState,setState,isDone})`, so its answers are saved and its tab can be ticked. A new graded factory must do the same.
 - `practicals/<slug>/page.json`:
   - `file`, `title`, `unit`, `links` (header links to the animation and the workout tab), `storeKey` (bump it when questions move) and `oldStoreKey` (the key before the last bump; only the open tab is carried over from it), `draft` (true adds noindex), `accent` (light and dark pairs), optional `extraCss`.
-  - `tabs`: each has `id`, `label`, `title` and `spec`. A spec badge ending in P adds the TA badge, the tab's TA tag and the eyebrow note automatically.
+  - `tabs`: each has `id`, `label`, `title` and `spec`. A spec badge ending in P adds the TA badge, the tab's TA tag and the "TA = Triple Award only" header note automatically.
 - `practicals/<slug>/content.js`: the activities, in tab order. Each `act(tab, kind, title, intro)` call adds a card to that tab. Two Predicts in a row are paired side by side automatically.
 
 To change something on every practical page (a bug fix, a new factory), edit `template/`, rebuild with `--all`, and check each page.

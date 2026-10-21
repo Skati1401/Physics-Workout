@@ -29,7 +29,7 @@ The new chat should then:
    - For a practical that isn't measure-and-plot (charging, refraction rays, field lines, penetration), the Experiment mode still means the student takes the observations one at a time and records them, with the conclusion withheld until the end.
 2. **Practical page.**
    - Copy `tools/practical-gen/practicals/hookes-law/` to `practicals/<slug>/`.
-   - Edit `page.json`: title, unit, links, tabs and spec badges (a badge ending in P makes that tab and the eyebrow TA automatically), plus `storeKey` and `accent`. Set `"draft": true`.
+   - Edit `page.json`: title, unit, links, tabs and spec badges (a badge ending in P makes that tab TA and adds the header's TA note automatically), plus `storeKey` and `accent`. Set `"draft": true`.
    - Rewrite `content.js`: the same nine tabs, with new activities.
    - Build it: `python3 tools/practical-gen/gen.py --check <slug>`.
    - Check it: `python3 tools/practical-gen/check.py <slug>-practical.html` (with `python3 -m http.server 8765` running in the repo root) answers every graded activity and checks the frames and phone width.

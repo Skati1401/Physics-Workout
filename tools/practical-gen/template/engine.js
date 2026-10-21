@@ -71,7 +71,7 @@ function showProgress(animate){
     btn.classList.toggle('is-done',d);
   });
   let pill=document.getElementById('tabs-done');
-  if(!pill){const eb=$('.page-head .eyebrow');if(!eb||!graded.length)return;pill=mk('span','tabs-done');pill.id='tabs-done';pill.setAttribute('aria-live','polite');eb.appendChild(pill);}
+  if(!pill){const eb=$('.page-head .eyebrow');if(!eb||!graded.length)return;pill=mk('span','tabs-done');pill.id='tabs-done';pill.setAttribute('aria-live','polite');eb.parentNode.appendChild(pill);}
   const txt=n+' of '+graded.length+' tabs done';
   if(pill.textContent!==txt){
     const up=n>(+pill.dataset.n||0);pill.textContent=txt;pill.dataset.n=n;
