@@ -44,7 +44,7 @@ The new chat should then:
 6. **Publish once Alex approves.**
    - Set `"draft": false` and rebuild.
    - Add its card under "Core Practicals" in `igcse.html`, in spec order, with a TA tag if needed.
-   - Add the `.cp-banner` to its workout tab's heading line, copying the one in `forces-momentum-moments.html#hooke`. If that workout can't open a tab from `#tab`, add hash support as in the 1b page. Units 2, 3 and 7 have no workouts yet: skip the banner and note it below.
+   - Add the `.cp-banner` to its workout tab's heading line, copying the one in `falling-stopping-springs.html#hooke`. If that workout can't open a tab from `#tab`, add hash support as in the 1b page. Units 2, 3 and 7 have no workouts yet: skip the banner and note it below.
    - Add a "Core practical x.xx" tag on the animation's card in `animations/igcse.html`.
    - Update the status in this table.
 
@@ -54,8 +54,8 @@ The guide's PDF pages are those of the PDF Alex shared; in the Project doc, look
 
 | # | Spec | Practical | Guide PDF pages | Spec points it links to (guide) | TA | Animation | Workout tab | Batch | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 1.5 | Motion of everyday objects (toy car, tennis ball) | 143–148 | 1.6, 1.7, 1.8, 1.10, 1.21 | | new `ramp-motion.html` | `forces-and-motion.html#measuring` (Measure v tab) | A | **published** (21 Oct 2026; Alex to review) |
-| 2 | 1.22 | Extension of springs, wires, rubber bands | 149–152 | 1.18, 1.23, 1.24 | | `hookes-law.html` | `forces-momentum-moments.html#hooke` | done | **published** (the model) |
+| 1 | 1.5 | Motion of everyday objects (toy car, tennis ball) | 143–148 | 1.6, 1.7, 1.8, 1.10, 1.21 | | new `ramp-motion.html` | `motion.html#measuring` (Measure v tab) | A | **published** (21 Oct 2026; Alex to review) |
+| 2 | 1.22 | Extension of springs, wires, rubber bands | 149–152 | 1.18, 1.23, 1.24 | | `hookes-law.html` | `falling-stopping-springs.html#hooke` | done | **published** (the model) |
 | 3 | 2.23P | Charging insulators by friction | 153–155 | 2.22P, 2.24, 2.25, 2.26, 2.27, 2.28 | TA | new | none yet (Unit 2) | C | to do |
 | 4 | 3.17 | Refraction: rectangular, semicircular blocks, prisms | 156–162 | 3.14, 3.15, 3.16, 3.18, 3.21, 3.22 | | new (can share a light-box animation with 3.19) | none yet (Unit 3) | C | to do |
 | 5 | 3.19 | Refractive index of glass | 163–166 | 3.14–3.18, 3.20, 3.21, 3.22 | | new (light box, shared with 3.17) | none yet (Unit 3) | B | to do |
