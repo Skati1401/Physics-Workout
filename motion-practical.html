@@ -339,6 +339,9 @@ table.units.res-tbl{min-width:0}
 .plot-row.is-correct{border-color:var(--good);background:var(--good-soft);color:var(--good)}
 .plot-state{font-size:12px;color:var(--ink-faint)}
 
+.method-pick{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:0 0 14px}
+.method-lab{font:600 13px var(--f-mono);color:var(--ink-soft)}
+.method-pick .seg button{min-height:44px;padding:8px 14px;font-size:14px}
 </style>
 <div class="page">
   <a class="home-link" href="igcse.html">&larr; IGCSE workouts</a>
@@ -991,21 +994,39 @@ function createPlot(cfg){
   reset();
 }
 
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'Raise one end of a ramp on a block, and mark distances down it every 20 cm. Release a toy car from ',['b1','rest'],' at the start line, and time how long it takes to reach each mark with a ',
-    ['b2','stopwatch'],'. Time each distance three times and work out the ',['b3','mean'],'. Plot distance against ',['b4','time'],'. The graph curves upwards, because the car is ',['b5','accelerating'],
-    '. The gradient of a distance–time graph gives the ',['b6','speed'],'. To find the speed at one point, use a ',['b7','light gate'],' and a card of known length on the car. The acceleration is the ',
-    ['b8','gradient'],' of the velocity–time graph. A dropped tennis ball also speeds up as it falls, until air resistance balances its ',['b9','weight'],'.'
-  ];
+/* ================= METHOD TYPE: stopwatch, light gates or video camera =================
+   The January 2014 4PH0 mark scheme (toy car down a slope, speed at the bottom) accepts a light gate with an
+   interrupter card and a data logger, or a video camera with a scale behind the ramp played back frame by frame,
+   as well as timing with a stopwatch. The Overview and Method tabs each have a "Method type" switch; the choice is
+   shared by both tabs and remembered in this browser. */
+const METHODS=[{k:'sw',label:'Stopwatch'},{k:'lg',label:'Light gates'},{k:'vc',label:'Video camera'}];
+const MKEY='cp-motion-method';
+let method='sw';try{const v=localStorage.getItem(MKEY);if(METHODS.some(m=>m.k===v))method=v;}catch(e){}
+const methodGames=[];
+function methodPicker(panel){
+  const w=mk('div','method-pick');
+  w.innerHTML='<span class="method-lab" id="ml-'+panel+'">Method type</span><div class="seg" role="group" aria-labelledby="ml-'+panel+'">'+
+    METHODS.map(m=>'<button type="button" data-m="'+m.k+'">'+m.label+'</button>').join('')+'</div>';
+  $('#panel-'+panel+' .acts').prepend(w);
+  w.addEventListener('click',e=>{const b=e.target.closest('button[data-m]');if(b)setMethod(b.dataset.m);});
+}
+function forMethod(body,k){body.closest('.act').dataset.m=k;}
+function setMethod(k){
+  method=k;try{localStorage.setItem(MKEY,k);}catch(e){}
+  $$('.method-pick button').forEach(b=>{const on=b.dataset.m===k;b.classList.toggle('is-on',on);b.setAttribute('aria-pressed',String(on));});
+  $$('.act[data-m]').forEach(a=>{a.hidden=a.dataset.m!==k;});
+  raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow()));
+}
+reflowers.push(()=>raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow())));
+function clozeAct(panel,k,title,parts,distractors){
+  const body=act(panel,'Fill in the blanks',title,'Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
+  forMethod(body,k);
   const cloze=mk('div','cloze'),slots=[],chips=[];
   parts.forEach(p=>{
     if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
     else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
   });
-  ['slowing down','area','mass','a push'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
+  distractors.forEach((t,i)=>chips.push({id:'d'+i,text:t}));
   body.appendChild(cloze);
   body.appendChild(mk('div','pool-label','Word bank'));
   const pool=mk('div','chip-pool');body.appendChild(pool);
@@ -1014,12 +1035,34 @@ function createPlot(cfg){
   const score=mk('span','score');b.el.insertBefore(score,b.msg);
   Object.assign(g,createBlankGame({slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
 }
+const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.';
+const MATCH_INTRO='Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.';
+
+/* ================= 1. OVERVIEW ================= */
+methodPicker('overview');
+clozeAct('overview','sw','The practical with a stopwatch',[
+  'Raise one end of a ramp on a block, and mark distances down it every 20 cm. Release a toy car from ',['b1','rest'],' at the start line, and time how long it takes to reach each mark with a ',
+  ['b2','stopwatch'],'. Time each distance three times and work out the ',['b3','mean'],'. Your ',['b4','reaction time'],' is the biggest source of error. Plot distance against time: the graph curves upwards, because the car is ',
+  ['b5','accelerating'],'. Distance divided by time gives the ',['b6','average'],' speed. The car speeds up steadily from rest, so its speed at the bottom is ',['b7','twice'],' the average speed for the whole ramp.'
+],['slowing down','half','a push','instantaneous']);
+clozeAct('overview','lg','The practical with light gates',[
+  'Fix a card to the top of the car and measure its ',['b1','length'],'. Clamp a light gate at the bottom of the ramp and connect it to a ',['b2','data logger'],
+  '. Release the car from rest at the start line. As it passes, the card blocks the beam, and the data logger records how long it is ',['b3','blocked'],
+  '. Speed = length of the card divided by that time: the speed at one ',['b4','point'],'. A light gate has no ',['b5','reaction time'],', so the times are far more ',
+  ['b6','precise'],'. With a light gate at each mark, plot a velocity–time graph: its ',['b7','gradient'],' is the acceleration.'
+],['area','half','average','stopwatch']);
+clozeAct('overview','vc','The practical with a video camera',[
+  'Fix a metre rule along the ramp, so every frame of the video has a ',['b1','scale'],'. Set the camera on a ',['b2','tripod'],' side-on to the ramp, then start filming and release the car from rest. Play the video back ',
+  ['b3','frame by frame'],'. At 50 frames per second, each frame is ',['b4','0.02 s'],' after the last, so the frame number gives the ',['b5','time'],
+  '. Read the position of the front of the car in each frame, and plot distance against time. The speed at the bottom is the distance moved between two frames, divided by the ',['b6','time between'],' them.'
+],['50 s','reaction time','at double speed','mass']);
 
 /* ================= 2. METHOD ================= */
+methodPicker('method');
 {
-  const body=act('method','Order','Carry out the practical','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
+  const body=act('method','Order','Time the car with a stopwatch',ORDER_INTRO);forMethod(body,'sw');
   createReorder({host:body,steps:[
-    {id:'a',text:'Raise one end of the ramp on a block. Measure the height with a ruler held upright.'},
+    {id:'a',text:'Raise one end of the ramp on a block. Measure its height with a ruler held vertically (check with a set square), reading at eye level.'},
     {id:'b',text:'Mark the start line, then mark distances every 20 cm down the ramp with a metre rule.'},
     {id:'c',text:'Hold the car still with its front edge on the start line.'},
     {id:'d',text:'Let go without pushing, and start the stopwatch at the same moment.'},
@@ -1030,16 +1073,77 @@ function createPlot(cfg){
   why:'The ramp and the marks are set up first; the car starts from rest on the start line, and you need every mean time before you can plot the graph.'});
 }
 {
-  const body=act('method','Match','What each piece of equipment is for','Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.');
-  createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
+  const body=act('method','Order','Find the speed with a light gate',ORDER_INTRO);forMethod(body,'lg');
+  createReorder({host:body,steps:[
+    {id:'a',text:'Measure the length of the card with a ruler, then fix it to the top of the car.'},
+    {id:'b',text:'Clamp a light gate at the bottom of the ramp, with the card able to pass through its beam, and connect it to a data logger.'},
+    {id:'c',text:'Hold the car still with its front edge on the start line.'},
+    {id:'d',text:'Let go without pushing.'},
+    {id:'e',text:'Read from the data logger the time for which the card blocked the beam.'},
+    {id:'f',text:'Work out the speed = [[length of card|time the beam is blocked]].'},
+    {id:'g',text:'Repeat three times and find the mean speed.'}
+  ],constraints:[['a','f'],['b','d'],['c','d'],['d','e'],['e','f'],['f','g']],
+  why:'The card is measured and the gate set up before the run; the data logger gives the time only after the car has passed through the beam.'});
+}
+{
+  const body=act('method','Order','Film the car with a video camera',ORDER_INTRO);forMethod(body,'vc');
+  createReorder({host:body,steps:[
+    {id:'a',text:'Fix a metre rule along the side of the ramp, as a scale.'},
+    {id:'b',text:'Set up the camera on a tripod, side-on to the ramp and level with the car, so the whole ramp is in view.'},
+    {id:'c',text:'Start recording.'},
+    {id:'d',text:'Release the car from rest at the start line.'},
+    {id:'e',text:'Play the video back frame by frame.'},
+    {id:'f',text:'For each frame, note the frame number and read the position of the front of the car against the scale.'},
+    {id:'g',text:'Work out each time = [[frame number|frames per second]], and plot distance against time.'}
+  ],constraints:[['a','c'],['b','c'],['c','d'],['d','e'],['e','f'],['f','g']],
+  why:'The scale and the camera are in place before filming starts, and the camera must be recording before the car is released.'});
+}
+{
+  const body=act('method','Match','What each piece of equipment is for',MATCH_INTRO);forMethod(body,'sw');
+  methodGames.push(createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
     {id:'r',l:'Metre rule',r:'Measures the distances marked along the ramp'},
     {id:'s',l:'Stopwatch',r:'Times the car, but your reaction time adds an error'},
-    {id:'g',l:'Light gates',r:'Time the car to 0.001 s, with no reaction time'},
-    {id:'c',l:'Card on the car',r:'Lets a light gate find the speed at one point'},
+    {id:'q',l:'Set square',r:'Checks the ruler is vertical when measuring the height'},
     {id:'b',l:'Block under the ramp',r:'Raises the ramp to a measured height'},
     {id:'x',l:'Box at the bottom',r:'Catches the car when it leaves the ramp'}
+  ]}));
+}
+{
+  const body=act('method','Match','What each piece of equipment is for',MATCH_INTRO);forMethod(body,'lg');
+  methodGames.push(createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
+    {id:'g',l:'Light gate',r:'Detects when the card enters and leaves its beam'},
+    {id:'d',l:'Data logger',r:'Times how long the beam is blocked, to 0.001 s'},
+    {id:'c',l:'Card on the car',r:'Blocks the beam for longer when the car is slower'},
+    {id:'r',l:'Ruler',r:'Measures the length of the card'},
+    {id:'k',l:'Clamp and stand',r:'Holds the light gate still at the right point'}
+  ]}));
+}
+{
+  const body=act('method','Match','What each piece of equipment is for',MATCH_INTRO);forMethod(body,'vc');
+  methodGames.push(createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
+    {id:'v',l:'Video camera',r:'Records the car’s position many times each second'},
+    {id:'t',l:'Tripod',r:'Keeps the camera still and side-on to the ramp'},
+    {id:'m',l:'Metre rule along the ramp',r:'Gives a scale to read each position from'},
+    {id:'f',l:'Frame-by-frame playback',r:'Lets you read the position at each known time'},
+    {id:'n',l:'Frame rate (frames per second)',r:'Tells you the time between one frame and the next'}
+  ]}));
+}
+{
+  const body=act('method','Sort','Which method?','Which timing method is each card about? Sort each card, then press Check.');
+  createSortGame({host:body,cats:[
+    {id:'sw',label:'Stopwatch',hint:'',color:'--c1',soft:'--c1-soft'},
+    {id:'lg',label:'Light gates',hint:'',color:'--c2',soft:'--c2-soft'},
+    {id:'vc',label:'Video camera',hint:'',color:'--c3',soft:'--c3-soft'}
+  ],items:[
+    {id:'1',text:'Your reaction time adds an error to every time',cat:'sw'},
+    {id:'2',text:'The simplest kit: just a ruler and a timer in your hand',cat:'sw'},
+    {id:'3',text:'Needs a card of measured length on the car',cat:'lg'},
+    {id:'4',text:'Gives the speed at one point directly',cat:'lg'},
+    {id:'5',text:'Needs a scale in the picture',cat:'vc'},
+    {id:'6',text:'Records the whole run, to study afterwards',cat:'vc'}
   ]});
 }
+setMethod(method);
 
 /* ================= 3. VARIABLES ================= */
 {
