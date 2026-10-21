@@ -557,8 +557,9 @@ function createBlankGame(cfg){
     if(inSlot&&cfg.placedClass)e.classList.add(cfg.placedClass);
     e.dataset.chip=c.id;return e;
   }
+  // palette: chips stay in the bank and are copied into gaps, so one chip can fill several gaps
   function place(chipId,slotId){
-    Object.keys(placed).forEach(k=>{if(placed[k]===chipId)delete placed[k];});
+    if(!cfg.palette)Object.keys(placed).forEach(k=>{if(placed[k]===chipId)delete placed[k];});
     placed[slotId]=chipId;selected=null;render();
   }
   function unplace(slotId){if(!locked[slotId]){delete placed[slotId];render();}}
@@ -573,7 +574,7 @@ function createBlankGame(cfg){
     const fk=focusKey();
     pool.innerHTML='';
     const used=new Set(Object.keys(placed).map(k=>placed[k]));
-    order.filter(id=>!used.has(id)).forEach(id=>{
+    order.filter(id=>cfg.palette||!used.has(id)).forEach(id=>{
       const e=chipEl(chipMap[id],false);
       if(selected===id)e.classList.add('is-selected');
       pool.appendChild(e);
@@ -849,7 +850,7 @@ function createCalc(cfg){
   qs.forEach((q,i)=>{
     const row=mk('div','calc-input-row');
     row.innerHTML='<div class="calc-input-label"><label for="'+id+'-'+i+'">'+q.q+'</label></div>'+
-      '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
+      '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
     wrap.appendChild(row);
@@ -862,7 +863,7 @@ function createCalc(cfg){
       if(inp.disabled){ok++;return;}
       const raw=inp.value.trim();
       if(raw===''){blank++;fb.textContent='';fb.className='calc-fb';return;}
-      const clean=raw.replace(/[\s,\u2009]/g,'').replace(/[\u00D7x]10\^?(-?\d+)/i,'e$1');
+      const clean=raw.replace(/[\u2212\u2013]/g,'-').replace(/[\s,\u2009]/g,'').replace(/[\u00D7x]10\^?(-?\d+)/i,'e$1');
       const v=/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(clean)?parseFloat(clean):NaN;
       if(isFinite(v)&&numClose(v,q.answer)){inp.disabled=true;inp.classList.add('pop');inp.classList.remove('is-wrong');fb.textContent='Correct.';fb.className='calc-fb good';ok++;}
       else{bad++;inp.classList.add('is-wrong');inp.closest('.calc-input-row').querySelector('.calc-working').hidden=false;fb.textContent=q.hint||'Not quite. Check the rearrangement and the units, then try again.';fb.className='calc-fb bad';}

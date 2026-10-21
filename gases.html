@@ -7,6 +7,20 @@
   .cp-banner:hover{background:var(--panel)}
   .cp-banner:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
   .cp-badge{font:600 11.5px var(--font-mono,ui-monospace,monospace);color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:1px 7px;background:var(--panel)}
+/* keyboard focus and correct-answer feedback (same as the Unit 4 pages) */
+.chip-pool .chip{min-height:44px}
+.chip:focus-visible,.sort-item:focus-visible,.match-card:focus-visible,.blank:focus-visible,.bin:focus-visible,.graph-line-drop:focus-visible .drop-marker{outline:2px solid var(--accent);outline-offset:2px}
+.graph-line-drop:focus-visible{outline:none}
+.blank[tabindex]{cursor:pointer}
+@media (min-width:700px){.match-grid.narrow-left{grid-template-columns:minmax(0,1fr) minmax(0,2.6fr)}}
+@keyframes lockpop{50%{transform:scale(1.05)}}
+@keyframes pulse{0%,100%{transform:scale(1)}40%{transform:scale(1.18)}}
+@keyframes settle{from{transform:scale(.9);opacity:.6}}
+@media (prefers-reduced-motion: no-preference){
+  .pop,.slot.pop .chip{animation:lockpop .25s ease-out}
+  .celebrate{display:inline-block;animation:pulse .6s ease-out;color:var(--good)}
+  .slot .chip.is-placed{animation:settle .15s ease-out}
+}
 /* saved progress: tab ticks and the "tabs done" count */
 .tab-tick{display:inline-block;margin-left:5px;color:var(--good);font-weight:700}
 .tab-btn.is-active .tab-tick{color:inherit}
@@ -452,6 +466,24 @@ function showProgress(animate){
 ['click','input','pointerup'].forEach(t=>document.addEventListener(t,saveSoon));
 window.addEventListener('pagehide',()=>{clearTimeout(saveTimer);writeSave();});
 
+/* keyboard helpers: remember what had focus, find it again after a re-render */
+function focusKey(){
+  const a=document.activeElement;if(!a||a===document.body)return null;
+  const d=a.dataset||{};
+  if(d.chip)return '[data-chip="'+d.chip+'"]';
+  if(d.slotId)return '[data-slot-id="'+d.slotId+'"]';
+  if(d.item)return '[data-item="'+d.item+'"]';
+  if(d.side)return '.match-card[data-side="'+d.side+'"][data-id="'+d.id+'"]';
+  if(a.classList.contains('bin'))return '.bin[data-cat="'+a.dataset.cat+'"]';
+  return null;
+}
+function refocus(root,k){if(!k||!root)return;const e=root.querySelector(k);if(e&&e!==document.activeElement)e.focus({preventScroll:true});}
+function keyActivate(el,fn,label){
+  el.tabIndex=0;el.setAttribute('role','button');if(label)el.setAttribute('aria-label',label);
+  el.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target===el){e.preventDefault();fn(e);}});
+}
+function celebrate(el){if(!el)return;el.classList.remove('celebrate');void el.offsetWidth;el.classList.add('celebrate');}
+
 /* ================= drag engine (pointer events, mouse + touch) ================= */
 function hitEl(ev,selector){
   const t=document.elementFromPoint(ev.clientX,ev.clientY);
@@ -460,6 +492,13 @@ function hitEl(ev,selector){
 function makeDraggable(node,o){
   o=o||{};
   node.style.touchAction='none';
+  if(o.onClick){
+    if(!node.hasAttribute('tabindex'))node.tabIndex=0;
+    if(node.tagName!=='BUTTON'&&!node.getAttribute('role'))node.setAttribute('role','button');
+    node.addEventListener('keydown',function(e){
+      if((e.key==='Enter'||e.key===' ')&&e.target===node&&(!o.enabled||o.enabled())){e.preventDefault();e.stopPropagation();o.onClick(e);}
+    });
+  }
   node.addEventListener('pointerdown',function(e){
     if(e.button!==undefined&&e.button!==0)return;
     if(o.enabled&&!o.enabled())return;
@@ -500,8 +539,12 @@ function createBlankGame(cfg){
     s.el.dataset.slotId=s.id;s.el.classList.add('slot','is-empty');
     s.el.addEventListener('click',function(e){
       if(e.target.closest('.chip'))return;
-      if(selected&&!placed[s.id]&&!locked[s.id])place(selected,s.id);
+      if(selected&&!locked[s.id])place(selected,s.id);
     });
+    keyActivate(s.el,function(){
+      if(locked[s.id])return;
+      if(selected)place(selected,s.id);else if(placed[s.id])unplace(s.id);
+    },s.label||'Gap');
   });
   function say(t,c){if(cfg.msg)cfg.msg.say(t,c);}
   function chipEl(c,inSlot){
@@ -510,8 +553,9 @@ function createBlankGame(cfg){
     if(inSlot&&cfg.placedClass)e.classList.add(cfg.placedClass);
     e.dataset.chip=c.id;return e;
   }
+  // palette: chips stay in the bank and are copied into gaps, so one chip can fill several gaps
   function place(chipId,slotId){
-    Object.keys(placed).forEach(k=>{if(placed[k]===chipId)delete placed[k];});
+    if(!cfg.palette)Object.keys(placed).forEach(k=>{if(placed[k]===chipId)delete placed[k];});
     placed[slotId]=chipId;selected=null;render();
   }
   function unplace(slotId){if(!locked[slotId]){delete placed[slotId];render();}}
@@ -520,10 +564,13 @@ function createBlankGame(cfg){
     if(t&&slotMap[t.dataset.slotId]&&slotMap[t.dataset.slotId].el===t)return slotMap[t.dataset.slotId];
     return null;
   }
+  let fresh={};
+  const root=pool.closest('.act')||document;
   function render(){
+    const fk=focusKey();
     pool.innerHTML='';
     const used=new Set(Object.keys(placed).map(k=>placed[k]));
-    order.filter(id=>!used.has(id)).forEach(id=>{
+    order.filter(id=>cfg.palette||!used.has(id)).forEach(id=>{
       const e=chipEl(chipMap[id],false);
       if(selected===id)e.classList.add('is-selected');
       pool.appendChild(e);
@@ -536,6 +583,7 @@ function createBlankGame(cfg){
       const old=s.el.querySelector('.chip');if(old)old.remove();
       s.el.classList.toggle('is-empty',!placed[s.id]);
       s.el.classList.toggle('is-correct',!!locked[s.id]);
+      s.el.classList.toggle('pop',!!fresh[s.id]);
       s.el.classList.remove('is-wrong');
       if(placed[s.id]){
         const e=chipEl(chipMap[placed[s.id]],true);s.el.appendChild(e);
@@ -553,6 +601,7 @@ function createBlankGame(cfg){
     });
     if(cfg.score)cfg.score.textContent=Object.keys(locked).length+' / '+slots.length+' correct';
     if(cfg.onRender)cfg.onRender();
+    fresh={};refocus(root,fk);
   }
   function check(){
     const wrong=[];let empty=0,newRight=0;
@@ -560,12 +609,12 @@ function createBlankGame(cfg){
       if(locked[s.id])return;
       const cid=placed[s.id];
       if(!cid){empty++;return;}
-      if(cfg.isCorrect(chipMap[cid],s)){locked[s.id]=true;newRight++;}else wrong.push(s.id);
+      if(cfg.isCorrect(chipMap[cid],s)){locked[s.id]=true;fresh[s.id]=true;newRight++;}else wrong.push(s.id);
     });
     render();
     wrong.forEach(id=>{slotMap[id].el.classList.add('is-wrong');});
     const done=Object.keys(locked).length;
-    if(done===slots.length)say('All '+slots.length+' correct. Well done.','good');
+    if(done===slots.length){say('All '+slots.length+' correct. Well done.','good');celebrate(cfg.score);}
     else if(wrong.length)say(wrong.length+' in the wrong place. They will pop back so you can try again.'+(empty?' '+empty+' still empty.':''),'bad');
     else say(empty+' still to fill.','');
     if(wrong.length)setTimeout(()=>{wrong.forEach(id=>{if(!locked[id])delete placed[id];});render();},850);
@@ -596,7 +645,8 @@ function createSortGame(cfg){
   let where={},locked={},selected=null,order;
   const b=bar(host,[{label:'Check',primary:true,fn:check},{label:'Shuffle again',fn:reset}]);
   const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  function itemEl(i){const e=mk('div','sort-item',i.text);e.dataset.item=i.id;if(locked[i.id])e.classList.add('is-correct');return e;}
+  let fresh={};
+  function itemEl(i){const e=mk('div','sort-item',i.text);e.dataset.item=i.id;if(locked[i.id])e.classList.add('is-correct');if(fresh[i.id])e.classList.add('pop');return e;}
   function drop(id,ev){
     const bin=hitEl(ev,'.bin');
     if(bin&&binsEl.contains(bin))where[id]=bin.dataset.cat;
@@ -604,6 +654,7 @@ function createSortGame(cfg){
     selected=null;render();
   }
   function render(){
+    const fk=focusKey();
     binsEl.innerHTML='';
     cats.forEach(c=>{
       const bin=mk('div','bin');bin.dataset.cat=c.id;
@@ -615,6 +666,7 @@ function createSortGame(cfg){
         if(!locked[id])makeDraggable(e,{onEnd:ev=>drop(id,ev),onClick:()=>{where[id]='pool';render();}});
       });
       bin.addEventListener('click',ev=>{if(selected&&!ev.target.closest('.sort-item')){where[selected]=c.id;selected=null;render();}});
+      keyActivate(bin,()=>{if(selected){where[selected]=c.id;selected=null;render();}},c.label+' bin');
       binsEl.appendChild(bin);
     });
     poolEl.innerHTML='';
@@ -623,17 +675,18 @@ function createSortGame(cfg){
       makeDraggable(e,{onEnd:ev=>drop(id,ev),onClick:()=>{selected=selected===id?null:id;render();}});
     });
     score.textContent=Object.keys(locked).length+' / '+items.length+' correct';
+    fresh={};refocus(host,fk);
   }
   function check(){
     const wrong=[];let inPool=0;
     items.forEach(i=>{
       if(locked[i.id])return;
       if(where[i.id]==='pool'){inPool++;return;}
-      if(where[i.id]===i.cat)locked[i.id]=true;else wrong.push(i.id);
+      if(where[i.id]===i.cat){locked[i.id]=true;fresh[i.id]=true;}else wrong.push(i.id);
     });
     render();
     wrong.forEach(id=>{const e=binsEl.querySelector('[data-item="'+id+'"]');if(e)e.classList.add('is-wrong');});
-    if(Object.keys(locked).length===items.length)b.say('All correct. Well done.','good');
+    if(Object.keys(locked).length===items.length){b.say('All correct. Well done.','good');celebrate(score);}
     else if(wrong.length)b.say(wrong.length+' in the wrong bin. They will go back to the pool.'+(inPool?' '+inPool+' not sorted yet.':''),'bad');
     else b.say(inPool+' cards still to sort.','');
     if(wrong.length)setTimeout(()=>{wrong.forEach(id=>{if(!locked[id])where[id]='pool';});render();},850);
@@ -656,11 +709,11 @@ function createSortGame(cfg){
 /* ================= match (lines between two columns) ================= */
 function createMatchGame(cfg){
   const host=cfg.host,pairs=cfg.pairs;
-  const grid=mk('div','match-grid');
+  const grid=mk('div','match-grid'+(cfg.narrowLeft?' narrow-left':''));
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','match-lines');
   const colL=mk('div','match-col'),colR=mk('div','match-col');
   grid.appendChild(svg);grid.appendChild(colL);grid.appendChild(colR);host.appendChild(grid);
-  let L,R,link,locked,sel,wrongSet={};
+  let L,R,link,locked,sel,wrongSet={},fresh={};
   const b=bar(host,[{label:'Check matches',primary:true,fn:check},{label:'Shuffle again',fn:reset}]);
   const score=mk('span','score');b.el.insertBefore(score,b.msg);
   function card(side,id){
@@ -669,7 +722,7 @@ function createMatchGame(cfg){
     const linked=side==='L'?link[id]!==undefined:Object.values(link).indexOf(id)>=0;
     if(linked)e.classList.add('is-linked');
     const lid=side==='L'?id:Object.keys(link).find(k=>link[k]===id);
-    if(lid!==undefined&&locked[lid]){e.classList.remove('is-linked');e.classList.add('is-correct');}
+    if(lid!==undefined&&locked[lid]){e.classList.remove('is-linked');e.classList.add('is-correct');if(fresh[lid])e.classList.add('pop');}
     if(lid!==undefined&&wrongSet[lid])e.classList.add('is-wrong');
     if(sel&&sel.side===side&&sel.id===id)e.classList.add('is-selected');
     if(!(lid!==undefined&&locked[lid])){
@@ -694,9 +747,11 @@ function createMatchGame(cfg){
     Object.keys(link).forEach(k=>{if((side==='L'&&k===id)||(side==='R'&&link[k]===id))delete link[k];});
   }
   function render(){
+    const fk=focusKey();
     colL.innerHTML='<h4>'+cfg.leftTitle+'</h4>';colR.innerHTML='<h4>'+cfg.rightTitle+'</h4>';
     L.forEach(id=>colL.appendChild(card('L',id)));R.forEach(id=>colR.appendChild(card('R',id)));
     score.textContent=Object.keys(locked).length+' / '+pairs.length+' matched';
+    fresh={};refocus(grid,fk);
     raf(reflow);
   }
   function reflow(){
@@ -721,10 +776,10 @@ function createMatchGame(cfg){
   }
   function check(){
     const wrong=[];let unpaired=0;
-    pairs.forEach(p=>{if(locked[p.id])return;if(link[p.id]===undefined){unpaired++;return;}if(link[p.id]===p.id)locked[p.id]=true;else wrong.push(p.id);});
+    pairs.forEach(p=>{if(locked[p.id])return;if(link[p.id]===undefined){unpaired++;return;}if(link[p.id]===p.id){locked[p.id]=true;fresh[p.id]=true;}else wrong.push(p.id);});
     wrongSet={};wrong.forEach(id=>wrongSet[id]=true);
     render();
-    if(Object.keys(locked).length===pairs.length)b.say('All pairs correct. Well done.','good');
+    if(Object.keys(locked).length===pairs.length){b.say('All pairs correct. Well done.','good');celebrate(score);}
     else if(wrong.length)b.say(wrong.length+' pair'+(wrong.length>1?'s are':' is')+' wrong. They will come apart so you can try again.'+(unpaired?' '+unpaired+' not paired yet.':''),'bad');
     else b.say(unpaired+' still to pair.','');
     if(wrong.length)setTimeout(()=>{wrong.forEach(id=>{if(!locked[id])delete link[id];});wrongSet={};render();},900);
@@ -791,9 +846,9 @@ function createCalc(cfg){
   qs.forEach((q,i)=>{
     const row=mk('div','calc-input-row');
     row.innerHTML='<div class="calc-input-label"><label for="'+id+'-'+i+'">'+q.q+'</label></div>'+
-      '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
+      '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div>'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
     wrap.appendChild(row);
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
@@ -804,12 +859,12 @@ function createCalc(cfg){
       if(inp.disabled){ok++;return;}
       const raw=inp.value.trim();
       if(raw===''){blank++;fb.textContent='';fb.className='calc-fb';return;}
-      const clean=raw.replace(/[\s,\u2009]/g,'').replace(/[\u00D7x]10\^?(-?\d+)/i,'e$1');
+      const clean=raw.replace(/[\u2212\u2013]/g,'-').replace(/[\s,\u2009]/g,'').replace(/[\u00D7x]10\^?(-?\d+)/i,'e$1');
       const v=/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(clean)?parseFloat(clean):NaN;
-      if(isFinite(v)&&numClose(v,q.answer)){inp.disabled=true;inp.classList.remove('is-wrong');fb.textContent='Correct.';fb.className='calc-fb good';ok++;}
+      if(isFinite(v)&&numClose(v,q.answer)){inp.disabled=true;inp.classList.add('pop');inp.classList.remove('is-wrong');fb.textContent='Correct.';fb.className='calc-fb good';ok++;}
       else{bad++;inp.classList.add('is-wrong');inp.closest('.calc-input-row').querySelector('.calc-working').hidden=false;fb.textContent=q.hint||'Not quite. Check the rearrangement and the units, then try again.';fb.className='calc-fb bad';}
     });
-    if(ok===qs.length)b.say('All '+qs.length+' correct.','good');
+    if(ok===qs.length){b.say('All '+qs.length+' correct.','good');celebrate(b.msg);}
     else b.say(ok+' of '+qs.length+' correct'+(blank?', '+blank+' left blank':'')+'.',bad?'bad':'');
   }
   function reset(){
@@ -866,7 +921,7 @@ function createReorder(cfg){
   function check(){
     if(done)return;
     const n=valid(order),t=cfg.constraints.length;
-    if(n===t){done=true;Object.keys(rows).forEach(k=>rows[k].classList.add('is-correct'));b.say('Correct order. '+(cfg.why||''),'good');}
+    if(n===t){done=true;Object.keys(rows).forEach(k=>rows[k].classList.add('is-correct','pop'));b.say('Correct order. '+(cfg.why||''),'good');}
     else b.say(n+' of '+t+' sequence checks passed. Think about what must happen before what, then try again.','bad');
   }
   function reset(){
@@ -921,7 +976,7 @@ function createPredict(cfg){
     }
     $$('.pred-opt',opts).forEach(btn=>{
       btn.disabled=true;const k=cfg.options[btn.dataset.i];
-      if(k.correct)btn.classList.add('is-right');
+      if(k.correct){btn.classList.add('is-right');if(+btn.dataset.i===i)btn.classList.add('pop');}
       if(+btn.dataset.i===i){btn.classList.add('is-chosen');if(!k.correct)btn.classList.add('is-wrong');}
     });
     final=true;
