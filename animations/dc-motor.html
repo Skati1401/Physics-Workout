@@ -190,7 +190,7 @@
         <div class="seg" id="dm-view" role="group" aria-label="View"><button type="button" data-v="2d" aria-pressed="true">2D: end-on</button><button type="button" data-v="3d" aria-pressed="false">3D</button></div>
         <div class="sliders">
           <div class="motor-only"><label class="lab" for="dm-i">Current <output id="dm-io"></output></label><input type="range" id="dm-i" min="1" max="3" step="0.5" value="2"></div>
-          <div class="gen-only" hidden><label class="lab" for="dm-f">Turning speed <output id="dm-fo"></output></label><input type="range" id="dm-f" min="0.5" max="1.5" step="0.5" value="1"></div>
+          <div class="gen-only" hidden><label class="lab" for="dm-f">Turning speed <output id="dm-fo"></output></label><input type="range" id="dm-f" min="0.25" max="0.75" step="0.25" value="0.5"></div>
           <div><label class="lab" for="dm-n">Turns on the coil <output id="dm-no"></output></label><input type="range" id="dm-n" min="20" max="60" step="20" value="40"></div>
           <div><label class="lab" for="dm-b">Magnet strength <output id="dm-bo"></output></label><input type="range" id="dm-b" min="1" max="3" step="1" value="2"></div>
         </div>
@@ -291,7 +291,8 @@
   function svgPoint(svg, e){ var r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; return {x:vb.x+(e.clientX-r.left)/r.width*vb.width, y:vb.y+(e.clientY-r.top)/r.height*vb.height}; }
 
   var svg=$('#dm-svg'), playBtn=$('#dm-play'), slowBtn=$('#dm-slow'), iIn=$('#dm-i'), nIn=$('#dm-n'), bIn=$('#dm-b');
-  var CX=200, CY=165, R=92, HALF=0.04, LEN=0.05, J=0.01, B2=0.001, B1=0.0005, TMAX=20, DEG=Math.PI/180;
+  var CX=200, CY=165, R=92, HALF=0.04, LEN=0.05, J=0.04, B2=0.004, B1=0.001, TMAX=40, DEG=Math.PI/180;
+  // inertia and drag are set so the coil turns at about half the pace it first did (same motion, half speed)
   var th=20*DEG, w=0, t=0, on=false, running=false, raf=0, last=0;
   var cur=segGroup($('#dm-cur'), changed), mag=segGroup($('#dm-mag'), changed), pts=$('#dm-points');
   var fIn=$('#dm-f'), hist=[], modeG=segGroup($('#dm-mode'), setMode), dirT=function(){ return 1; };   // in generator mode you turn the coil anticlockwise; swap the magnet to see the meter reverse
@@ -364,7 +365,7 @@
   function P(a,r,cx,cy){ return [ (cx||CX)+r*Math.cos(a), (cy||CY)-r*Math.sin(a) ]; }
 
   function step(dt){
-    if(gen()){ w=dirT()*2*Math.PI*(+fIn.value); th+=w*dt; t+=dt; hist.push([t,vOut(th)]); while(hist.length && hist[0][0]<t-3) hist.shift(); return; }
+    if(gen()){ w=dirT()*2*Math.PI*(+fIn.value); th+=w*dt; t+=dt; hist.push([t,vOut(th)]); while(hist.length && hist[0][0]<t-6) hist.shift(); return; }
     var n=Math.ceil(dt/0.002), h=dt/n;
     for(var i=0;i<n;i++){ var a=(torque(th)-B1*w-B2*w*Math.abs(w))/J; w+=a*h; th+=w*h; t+=h; }
   }
@@ -386,7 +387,9 @@
     g+=txt(la[0],la[1]+4,'A',{a:'middle',c:'var(--copper)',w:600,fs:13})+txt(lb[0],lb[1]+4,'B',{a:'middle',c:'var(--ink-soft)',w:600,fs:13});
     if(on && Math.abs(w)>0.05){ var dir=w>0?1:-1, r2=R-34, s0=th+dir*0.5, s1=th+dir*1.2, p0=P(s0,r2), p1=P(s1,r2);
       g+='<path d="M'+p0[0].toFixed(1)+','+p0[1].toFixed(1)+' A'+r2+','+r2+' 0 0 '+(dir>0?0:1)+' '+p1[0].toFixed(1)+','+p1[1].toFixed(1)+'" fill="none" stroke="var(--ink-soft)" stroke-width="2" marker-end="url(#dm-ta)"/>'; }
-    g+=txt(CX,318,'the coil, seen end-on',{a:'middle'});
+    g+=txt(CX,302,'the coil, seen end-on',{a:'middle'});
+    // key for the dot and cross symbols
+    g+=wireEnd(CX-135,320,6,1,'var(--ink-soft)')+txt(CX-125,324,'current out of the page',{fs:10.5})+wireEnd(CX+48,320,6,-1,'var(--ink-soft)')+txt(CX+58,324,'into the page',{fs:10.5});
     }
     // split-ring commutator and brushes, seen from the front
     var KX=520, KY=128, KR=36, gp=0.16;
@@ -451,27 +454,28 @@
     var L=430, Rr=634, T=268, Bm=316, mid=(T+Bm)/2, full=emf(0)*1.15, g='';   // scaled to this run's biggest p.d.
     g+=line(L,T,L,Bm,'var(--ink-soft)',1.2)+line(L,mid,Rr,mid,'var(--ink-soft)',1.2);
     g+=txt(L-4,T+8,'+',{a:'end',fs:11})+txt(L-4,Bm,'−',{a:'end',fs:11})+txt(L-4,mid+4,'0',{a:'end',fs:10})+txt(Rr,Bm+12,'time →',{a:'end',fs:10})+txt(L+4,Bm+12,'p.d.',{a:'start',fs:10});
-    if(hist.length>1){ var t0=hist[hist.length-1][0]-3, ptsL=hist.map(function(h){ return (L+(h[0]-t0)/3*(Rr-L)).toFixed(1)+','+(mid-h[1]/full*(mid-T)).toFixed(1); });
+    if(hist.length>1){ var t0=hist[hist.length-1][0]-6, ptsL=hist.map(function(h){ return (L+(h[0]-t0)/6*(Rr-L)).toFixed(1)+','+(mid-h[1]/full*(mid-T)).toFixed(1); });
       g+='<polyline points="'+ptsL.join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
     else g+=txt((L+Rr)/2,mid-6,'output p.d. graph',{a:'middle',fs:10.5,c:'var(--ink-faint)'});
     return g;
   }
   function drawGenText(c){
     var vo=vOut(th), pk=emf(0), ac=Math.abs(Math.cos(th));
-    $('#dm-fo').textContent=num(+fIn.value,1)+' turns/s'; $('#dm-no').textContent=nIn.value; $('#dm-bo').textContent=STR[+bIn.value];
+    $('#dm-fo').textContent=num(+fIn.value,2)+' turns/s'; $('#dm-no').textContent=nIn.value; $('#dm-bo').textContent=STR[+bIn.value];
     $('#dm-sfl').textContent='Output p.d. now'; $('#dm-sml').textContent='Biggest p.d.';
-    $('#dm-sp').textContent=on?num(+fIn.value,1)+' turns/s':'0 turns/s';
+    $('#dm-sp').textContent=on?num(+fIn.value,2)+' turns/s':'0 turns/s';
     $('#dm-sf').textContent=on?mv(Math.abs(vo)):'0 mV';
     $('#dm-sm').textContent=on?mv(pk):'0 mV';
     $('#dm-eq').innerHTML='The induced p.d. is bigger when the coil turns faster, has more turns, or the magnet is stronger.<br>'+
-      'Now: '+num(+fIn.value,1)+' turns/s, '+nIn.value+' turns, '+STR[+bIn.value]+' magnet, so the biggest p.d. is <b>'+mv(pk)+'</b>.<br>'+
+      'Now: '+num(+fIn.value,2)+' turns/s, '+nIn.value+' turns, '+STR[+bIn.value]+' magnet, so the biggest p.d. is <b>'+mv(pk)+'</b>.<br>'+
       'Swap the magnet and the meter reads the other way.<br>'+
       'With slip rings instead of a split ring the output reverses every half turn: that is an <a href="ac-generator.html" target="_top">a.c. generator</a>.';
     var n;
     if(!on) n='No battery: <b>you</b> turn the coil. Its sides cut across the field lines, so a p.d. is induced. Press <b>Turn the coil</b>.';
     else if(!c) n='The coil is upright: its sides move <b>along</b> the field lines, not across them, so no p.d. is induced. The split ring swaps the connections here.';
-    else if(ac>0.92) n='The coil is flat: its sides cut across the field lines fastest, so the induced p.d. is <b>biggest</b>.';
-    else n='The split ring swaps the connections every half turn, so the meter always reads the <b>same way</b>: a direct current that rises and falls.';
+    else { // which way the induced current goes in each side (dot = out of the page, cross = into it)
+      n='Side A moves <b>'+(Math.cos(th)>0?'up':'down')+'</b> across the field, so the induced current in it is <b>'+(c>0?'out of':'into')+'</b> the page ('+(c>0?'⊙':'⊗')+'); in side B it flows the other way. ';
+      n+=ac>0.92?'The coil is flat, cutting the field lines fastest, so the p.d. is <b>biggest</b>.':'The split ring keeps the meter reading the <b>same way</b>.'; }
     if(on && !running && t>=TMAX) n+=' Paused: press Play to keep turning.';
     $('#dm-note').innerHTML=n;
     playBtn.innerHTML=running?'&#10074;&#10074; Pause':(on?'&#9654; Play':'&#9654; Turn the coil');
