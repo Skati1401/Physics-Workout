@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DC Motor Animation</title>
+<title>DC Motor and Generator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -143,6 +143,8 @@
 
   .view{max-height:max(240px,calc(100vh - 330px));}
   .under .sliders{flex-basis:100%;}
+  .pair2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .pair2 .seg button{padding:8px 10px;}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -173,11 +175,11 @@
   <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
   <header class="page-head">
     <div class="eyebrow">Animations &middot; magnetism</div>
-    <h1>How a DC Motor Works</h1>
+    <h1>DC Motor, and Running It as a Generator</h1>
   </header>
   <section class="card stage">
     <div>
-      <svg class="view" id="dm-svg" viewBox="0 0 640 330" role="img" aria-label="A DC motor seen end-on: a coil turning between the poles of a magnet, with the split-ring commutator and brushes"></svg>
+      <svg class="view" id="dm-svg" viewBox="0 0 640 330" role="img" aria-label="A DC motor seen end-on: a coil turning between the poles of a magnet, with the split-ring commutator and brushes. In generator mode a meter replaces the battery."></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="dm-play" type="button">&#9654; Switch on</button>
@@ -186,7 +188,8 @@
           <button class="btn" id="dm-slow" type="button" aria-pressed="false">Slow motion</button>
         </div>
         <div class="sliders">
-          <div><label class="lab" for="dm-i">Current <output id="dm-io"></output></label><input type="range" id="dm-i" min="1" max="3" step="0.5" value="2"></div>
+          <div class="motor-only"><label class="lab" for="dm-i">Current <output id="dm-io"></output></label><input type="range" id="dm-i" min="1" max="3" step="0.5" value="2"></div>
+          <div class="gen-only" hidden><label class="lab" for="dm-f">Turning speed <output id="dm-fo"></output></label><input type="range" id="dm-f" min="0.5" max="1.5" step="0.5" value="1"></div>
           <div><label class="lab" for="dm-n">Turns on the coil <output id="dm-no"></output></label><input type="range" id="dm-n" min="20" max="60" step="20" value="40"></div>
           <div><label class="lab" for="dm-b">Magnet strength <output id="dm-bo"></output></label><input type="range" id="dm-b" min="1" max="3" step="1" value="2"></div>
         </div>
@@ -194,22 +197,28 @@
     </div>
     <div class="side">
       <div>
+        <div class="lab">Use it as</div>
+        <div class="seg" id="dm-mode"><button type="button" data-v="motor" aria-pressed="true">Motor (battery)</button><button type="button" data-v="gen" aria-pressed="false">Generator (turn it)</button></div>
+      </div>
+      <div>
         <div class="lab">Jump to a point</div>
         <div class="seg" id="dm-points"><button type="button" data-v="flat" aria-pressed="false">Coil flat</button><button type="button" data-v="upright" aria-pressed="false">Coil upright</button><button type="button" data-v="half" aria-pressed="false">Half a turn on</button></div>
       </div>
-      <div>
-        <div class="lab">Current direction</div>
-        <div class="seg" id="dm-cur"><button type="button" data-v="1" aria-pressed="true">Normal</button><button type="button" data-v="-1" aria-pressed="false">Reversed</button></div>
-      </div>
-      <div>
-        <div class="lab">Magnet</div>
-        <div class="seg" id="dm-mag"><button type="button" data-v="1" aria-pressed="true">N on the left</button><button type="button" data-v="-1" aria-pressed="false">N on the right</button></div>
+      <div class="pair2">
+        <div class="motor-only">
+          <div class="lab">Current</div>
+          <div class="seg" id="dm-cur"><button type="button" data-v="1" aria-pressed="true">Normal</button><button type="button" data-v="-1" aria-pressed="false">Reversed</button></div>
+        </div>
+        <div>
+          <div class="lab">Magnet</div>
+          <div class="seg" id="dm-mag"><button type="button" data-v="1" aria-pressed="true">N left</button><button type="button" data-v="-1" aria-pressed="false">N right</button></div>
+        </div>
       </div>
       <p class="note" id="dm-note" aria-live="polite"></p>
       <div class="stats">
         <div class="stat"><small>Speed</small><strong id="dm-sp">0 turns/s</strong></div>
-        <div class="stat"><small>Force on each side</small><strong id="dm-sf">0 N</strong></div>
-        <div class="stat hi"><small>Turning effect</small><strong id="dm-sm">0 N m</strong></div>
+        <div class="stat"><small id="dm-sfl">Force on each side</small><strong id="dm-sf">0 N</strong></div>
+        <div class="stat hi"><small id="dm-sml">Turning effect</small><strong id="dm-sm">0 N m</strong></div>
       </div>
       <details class="working">
         <summary>Show working</summary>
@@ -221,7 +230,7 @@
 </div>
 <script>
 (function(){
-  // dc-motor.html is the one copy of this animation.
+  // dc-motor.html is the one copy of this animation. ?show=gen opens it in generator mode.
   // With ?embed the page drops its heading so a workout tab can show it in a frame, and tells that page its height.
   var EMBED = /[?&]embed\b/.test(location.search);
   if(EMBED){
@@ -284,6 +293,18 @@
   var CX=200, CY=165, R=92, HALF=0.04, LEN=0.05, J=0.01, B2=0.001, B1=0.0005, TMAX=20, DEG=Math.PI/180;
   var th=20*DEG, w=0, t=0, on=false, running=false, raf=0, last=0;
   var cur=segGroup($('#dm-cur'), changed), mag=segGroup($('#dm-mag'), changed), pts=$('#dm-points');
+  var fIn=$('#dm-f'), hist=[], modeG=segGroup($('#dm-mode'), setMode), dirT=function(){ return 1; };   // in generator mode you turn the coil anticlockwise; swap the magnet to see the meter reverse
+  fIn.addEventListener('input', function(){ hist=[]; draw(); });
+  function gen(){ return modeG.value()==='gen'; }
+  var AREA=2*HALF*LEN;                                             // area of the coil, m^2
+  // generator: the p.d. induced as the coil passes angle a at the chosen speed (biggest when flat, zero when upright)
+  function emf(a){ return (+nIn.value)*Bt()*AREA*2*Math.PI*(+fIn.value)*Math.abs(Math.cos(a)); }
+  // the split ring swaps the connections every half turn, so the meter always reads the same way
+  function vOut(a){ return (!on||gapNow(a)) ? 0 : bd()*dirT()*emf(a); }
+  function setMode(){ var g=gen();
+    Array.prototype.forEach.call(document.querySelectorAll('.gen-only'),function(e){ e.hidden=!g; });
+    Array.prototype.forEach.call(document.querySelectorAll('.motor-only'),function(e){ e.hidden=g; });
+    reset(); }
   [iIn,nIn,bIn].forEach(function(x){ x.addEventListener('input', function(){ draw(); }); });
   var STR=['','weak','medium','strong'];
 
@@ -291,11 +312,12 @@
   function Bt(){ return +bIn.value*0.1; }
   function F(){ return Bt()*(+iIn.value)*LEN*(+nIn.value); }        // force on each side of the coil, in N
   function gapNow(a){ return Math.abs(Math.cos(a))<0.03; }            // brushes on the gaps of the split ring: no current
-  function cA(a){ return (!on||gapNow(a)) ? 0 : sc()*(Math.cos(a)>=0?1:-1); }   // +1 = out of the page in side A
-  function torque(a){ return (!on||gapNow(a)) ? 0 : 2*F()*HALF*Math.abs(Math.cos(a))*sc()*bd(); }   // + = anticlockwise
+  function cA(a){ if(!on||gapNow(a)) return 0; var s=(Math.cos(a)>=0?1:-1); return gen() ? -s*bd()*dirT() : sc()*s; }   // +1 = out of the page in side A
+  function torque(a){ return (!on||gen()||gapNow(a)) ? 0 : 2*F()*HALF*Math.abs(Math.cos(a))*sc()*bd(); }   // + = anticlockwise
   function P(a,r,cx,cy){ return [ (cx||CX)+r*Math.cos(a), (cy||CY)-r*Math.sin(a) ]; }
 
   function step(dt){
+    if(gen()){ w=dirT()*2*Math.PI*(+fIn.value); th+=w*dt; t+=dt; hist.push([t,vOut(th)]); while(hist.length && hist[0][0]<t-3) hist.shift(); return; }
     var n=Math.ceil(dt/0.002), h=dt/n;
     for(var i=0;i<n;i++){ var a=(torque(th)-B1*w-B2*w*Math.abs(w))/J; w+=a*h; th+=w*h; t+=h; }
   }
@@ -310,7 +332,7 @@
     g+='<circle cx="'+CX+'" cy="'+CY+'" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>';
     // forces: out-of-page current in a rightward field is pushed up
     var fl=16+F()*26;
-    [[A,c],[Bp,-c]].forEach(function(s){ if(!s[1]) return; var up=s[1]*bd(); g+=line(s[0][0],s[0][1]-up*17,s[0][0],s[0][1]-up*(17+fl),'var(--accent)',4,' marker-end="url(#dm-fa)"'); });
+    if(!gen()) [[A,c],[Bp,-c]].forEach(function(s){ if(!s[1]) return; var up=s[1]*bd(); g+=line(s[0][0],s[0][1]-up*17,s[0][0],s[0][1]-up*(17+fl),'var(--accent)',4,' marker-end="url(#dm-fa)"'); });
     g+=wireEnd(A[0],A[1],14,c,'var(--copper)')+wireEnd(Bp[0],Bp[1],14,-c,'var(--ink-soft)');
     var la=P(th,R+26), lb=P(th+Math.PI,R+26);
     g+=txt(la[0],la[1]+4,'A',{a:'middle',c:'var(--copper)',w:600,fs:13})+txt(lb[0],lb[1]+4,'B',{a:'middle',c:'var(--ink-soft)',w:600,fs:13});
@@ -327,16 +349,30 @@
     g+=txt(ha[0],ha[1]+4,'A',{a:'middle',c:'var(--copper)',w:600})+txt(hb[0],hb[1]+4,'B',{a:'middle',c:'var(--ink-soft)',w:600});
     var plusR=sc()>0, live=on?'var(--accent)':'var(--ink-soft)';
     g+='<rect x="'+(KX+KR+5)+'" y="'+(KY-9)+'" width="22" height="18" rx="2" fill="var(--panel-border)" stroke="'+live+'" stroke-width="2"/><rect x="'+(KX-KR-27)+'" y="'+(KY-9)+'" width="22" height="18" rx="2" fill="var(--panel-border)" stroke="'+live+'" stroke-width="2"/>';
-    g+=txt(KX+KR+16,KY-16,plusR?'+':'−',{a:'middle',c:'var(--ink)',w:600,fs:14})+txt(KX-KR-16,KY-16,plusR?'−':'+',{a:'middle',c:'var(--ink)',w:600,fs:14});
+    if(!gen()) g+=txt(KX+KR+16,KY-16,plusR?'+':'−',{a:'middle',c:'var(--ink)',w:600,fs:14})+txt(KX-KR-16,KY-16,plusR?'−':'+',{a:'middle',c:'var(--ink)',w:600,fs:14});
     g+=txt(KX,KY+KR+22,'brushes',{a:'middle',fs:10.5});
     // wires to the battery
-    var BY=262; g+='<path d="M'+(KX+KR+27)+','+KY+' H'+(KX+70)+' V'+BY+' H'+(KX+12)+' M'+(KX-12)+','+BY+' H'+(KX-70)+' V'+KY+' H'+(KX-KR-27)+'" fill="none" stroke="'+live+'" stroke-width="2"/>';
+    var BY=262;
+    if(gen()){ BY=214;
+      // a centre-zero voltmeter instead of the battery
+      var MR=26, vo=vOut(th), full=0.7, ang=Math.max(-1,Math.min(1,vo/full))*55*DEG;
+      g+='<path d="M'+(KX+KR+27)+','+KY+' H'+(KX+70)+' V'+BY+' H'+(KX+MR)+' M'+(KX-MR)+','+BY+' H'+(KX-70)+' V'+KY+' H'+(KX-KR-27)+'" fill="none" stroke="'+(on?'var(--accent)':'var(--ink-soft)')+'" stroke-width="2"/>';
+      g+='<circle cx="'+KX+'" cy="'+BY+'" r="'+MR+'" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>';
+      for(var k=-2;k<=2;k++){ var ka=k*27.5*DEG, p1=[KX+(MR-4)*Math.sin(ka),BY+6-(MR-4)*Math.cos(ka)], p2=[KX+(MR-10)*Math.sin(ka),BY+6-(MR-10)*Math.cos(ka)]; g+=line(p1[0].toFixed(1),p1[1].toFixed(1),p2[0].toFixed(1),p2[1].toFixed(1),'var(--ink-soft)',k?1.2:2); }
+      g+=line(KX,BY+6,(KX+(MR-6)*Math.sin(ang)).toFixed(1),(BY+6-(MR-6)*Math.cos(ang)).toFixed(1),'var(--accent)',2.5,' stroke-linecap="round"')+'<circle cx="'+KX+'" cy="'+(BY+6)+'" r="3" fill="var(--ink)"/>';
+      g+=txt(KX,BY+18,'V',{a:'middle',c:'var(--ink)',w:600,fs:11})+txt(KX,BY+MR+13,'voltmeter',{a:'middle',fs:10.5});
+      g+=traceSVG();
+    } else {
+    g+='<path d="M'+(KX+KR+27)+','+KY+' H'+(KX+70)+' V'+BY+' H'+(KX+12)+' M'+(KX-12)+','+BY+' H'+(KX-70)+' V'+KY+' H'+(KX-KR-27)+'" fill="none" stroke="'+live+'" stroke-width="2"/>';
     var lp=plusR?KX+8:KX-8, sp=plusR?KX-8:KX+8;
     g+=line(lp,BY-16,lp,BY+16,'var(--ink)',2.5)+line(sp,BY-8,sp,BY+8,'var(--ink)',5)+txt(KX,BY+34,on?'switch on':'switched off',{a:'middle',fs:10.5,c:on?'var(--accent)':'var(--ink-faint)'});
+    }
     svg.innerHTML=g;
+    if(gen()){ drawGenText(c); return; }
 
     var f=F(), d=HALF*Math.abs(Math.cos(th)), m=f*d;
     $('#dm-io').textContent=num(+iIn.value,1)+' A'; $('#dm-no').textContent=nIn.value; $('#dm-bo').textContent=STR[+bIn.value];
+    $('#dm-sfl').textContent='Force on each side'; $('#dm-sml').textContent='Turning effect';
     $('#dm-sp').textContent=num(Math.abs(w)/(2*Math.PI),1)+' turns/s';
     $('#dm-sf').textContent=(on&&c)?num(f,2)+' N':'0 N';
     $('#dm-sm').textContent=(on&&c)?num(2*m,3)+' N m':'0 N m';
@@ -352,24 +388,55 @@
     $('#dm-note').innerHTML=n;
     playBtn.innerHTML=running?'&#10074;&#10074; Pause':(on?'&#9654; Play':'&#9654; Switch on');
   }
+  function mv(v){ return num(v*1000,0)+' mV'; }
+  // output p.d. against time, drawn under the meter
+  function traceSVG(){
+    var L=430, Rr=634, T=268, Bm=316, mid=(T+Bm)/2, full=emf(0)*1.15, g='';   // scaled to this run's biggest p.d.
+    g+=line(L,T,L,Bm,'var(--ink-soft)',1.2)+line(L,mid,Rr,mid,'var(--ink-soft)',1.2);
+    g+=txt(L-4,T+8,'+',{a:'end',fs:11})+txt(L-4,Bm,'−',{a:'end',fs:11})+txt(L-4,mid+4,'0',{a:'end',fs:10})+txt(Rr,Bm+12,'time →',{a:'end',fs:10})+txt(L+4,Bm+12,'p.d.',{a:'start',fs:10});
+    if(hist.length>1){ var t0=hist[hist.length-1][0]-3, ptsL=hist.map(function(h){ return (L+(h[0]-t0)/3*(Rr-L)).toFixed(1)+','+(mid-h[1]/full*(mid-T)).toFixed(1); });
+      g+='<polyline points="'+ptsL.join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+    else g+=txt((L+Rr)/2,mid-6,'output p.d. graph',{a:'middle',fs:10.5,c:'var(--ink-faint)'});
+    return g;
+  }
+  function drawGenText(c){
+    var vo=vOut(th), pk=emf(0), ac=Math.abs(Math.cos(th));
+    $('#dm-fo').textContent=num(+fIn.value,1)+' turns/s'; $('#dm-no').textContent=nIn.value; $('#dm-bo').textContent=STR[+bIn.value];
+    $('#dm-sfl').textContent='Output p.d. now'; $('#dm-sml').textContent='Biggest p.d.';
+    $('#dm-sp').textContent=on?num(+fIn.value,1)+' turns/s':'0 turns/s';
+    $('#dm-sf').textContent=on?mv(Math.abs(vo)):'0 mV';
+    $('#dm-sm').textContent=on?mv(pk):'0 mV';
+    $('#dm-eq').innerHTML='The induced p.d. is bigger when the coil turns faster, has more turns, or the magnet is stronger.<br>'+
+      'Now: '+num(+fIn.value,1)+' turns/s, '+nIn.value+' turns, '+STR[+bIn.value]+' magnet, so the biggest p.d. is <b>'+mv(pk)+'</b>.<br>'+
+      'Swap the magnet and the meter reads the other way.<br>'+
+      'With slip rings instead of a split ring the output reverses every half turn: that is an <a href="ac-generator.html" target="_top">a.c. generator</a>.';
+    var n;
+    if(!on) n='No battery: <b>you</b> turn the coil. Its sides cut across the field lines, so a p.d. is induced. Press <b>Turn the coil</b>.';
+    else if(!c) n='The coil is upright: its sides move <b>along</b> the field lines, not across them, so no p.d. is induced. The split ring swaps the connections here.';
+    else if(ac>0.92) n='The coil is flat: its sides cut across the field lines fastest, so the induced p.d. is <b>biggest</b>.';
+    else n='The split ring swaps the connections every half turn, so the meter always reads the <b>same way</b>: a direct current that rises and falls.';
+    if(on && !running && t>=TMAX) n+=' Paused: press Play to keep turning.';
+    $('#dm-note').innerHTML=n;
+    playBtn.innerHTML=running?'&#10074;&#10074; Pause':(on?'&#9654; Play':'&#9654; Turn the coil');
+  }
   function mark(v){ Array.prototype.forEach.call(pts.children,function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
   function rate(){ return pressed(slowBtn)?0.3:1; }
   function stop(){ running=false; cancelAnimationFrame(raf); }
   function frame(now){ if(!running) return; var dt=Math.min(0.05,(now-last)/1000)*rate(); last=now;
     step(dt); if(t>=TMAX){ stop(); } draw(); if(running) raf=requestAnimationFrame(frame); }
-  function run(){ on=true; if(t>=TMAX) t=0;
-    if(Math.abs(w)<0.01 && Math.abs(Math.cos(th))<0.05) th+=0.06*(sc()*bd());
+  function run(){ on=true; if(t>=TMAX){ t=0; hist=[]; }
+    if(!gen() && Math.abs(w)<0.01 && Math.abs(Math.cos(th))<0.05) th+=0.06*(sc()*bd());
     running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); }
-  function reset(){ stop(); th=20*DEG; w=0; t=0; on=false; mark(''); draw(); }
-  function changed(){ stop(); w=0; t=0; draw(); }
+  function reset(){ stop(); th=20*DEG; w=0; t=0; hist=[]; on=false; mark(''); draw(); }
+  function changed(){ stop(); w=0; t=0; hist=[]; draw(); }
   function jump(v){ stop(); on=true; w=0; t=0; th={flat:0, upright:90*DEG, half:180*DEG}[v]; mark(v); draw(); }
   playBtn.addEventListener('click',function(){ mark(''); if(running){ stop(); draw(); } else run(); });
-  $('#dm-step').addEventListener('click',function(){ stop(); on=true; mark(''); var dir=(sc()*bd())||1; w=0; th+=dir*45*DEG; th=Math.round(th/(45*DEG))*45*DEG; draw(); });
+  $('#dm-step').addEventListener('click',function(){ stop(); on=true; mark(''); var dir=gen()?dirT():((sc()*bd())||1); w=0; th+=dir*45*DEG; th=Math.round(th/(45*DEG))*45*DEG; draw(); });
   pts.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) jump(b.dataset.v); });
   slowBtn.addEventListener('click',function(){ toggle(slowBtn); });
   $('#dm-reset').addEventListener('click',reset);
   watchEquals($('#dm-eq'));
-  reset();
+  if(/[?&]show=gen\b/.test(location.search)){ modeG.pick('gen'); setMode(); } else reset();
 
 })();
 </script>

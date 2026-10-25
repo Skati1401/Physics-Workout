@@ -147,6 +147,15 @@
   .fbar{display:block;height:10px;margin-top:5px;border-radius:5px;background:var(--bg);overflow:hidden;}
   .fbar>span{display:block;height:100%;background:var(--accent);transform-origin:left center;transition:transform .25s ease-out;}
   @media (prefers-reduced-motion: reduce){ .fbar>span{transition:none;} }
+  /* Wire / Charged particles switch */
+  .modebar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:12px;}
+  .modebar .lab{margin:0;}
+  .ta{display:inline-block;font:600 10.5px var(--font-mono);padding:1px 6px;border-radius:5px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);margin-left:6px;}
+  .seg button[aria-pressed="true"] .ta{background:var(--panel);}
+  .fixed .modebar{display:none;}
+  #st-particles .view{max-height:max(240px,calc(100vh - 380px));}
+  .embed #st-particles .view{max-height:460px;}
+  #st-particles .under .sliders{flex-basis:100%;}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -177,9 +186,10 @@
   <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
   <header class="page-head">
     <div class="eyebrow">Animations &middot; magnetism</div>
-    <h1>The Motor Effect and Fleming’s Left-Hand Rule</h1>
+    <h1>The Motor Effect: Wires and Charged Particles</h1>
   </header>
-  <section class="card stage">
+  <div class="modebar"><span class="lab">Show</span><div class="seg" id="mode"><button type="button" data-v="wire" aria-pressed="true">A wire carrying a current</button><button type="button" data-v="particles" aria-pressed="false">Charged particles<span class="ta" title="Triple Award only">TA</span></button></div></div>
+  <section class="card stage" id="st-wire">
     <div>
       <div class="views">
         <figure><figcaption>2D: plan view from above</figcaption><svg class="view" id="me-plan" viewBox="0 0 260 300" role="img" aria-label="Plan view: the wire runs up the page between the poles of a magnet"></svg></figure>
@@ -224,16 +234,52 @@
       </details>
     </div>
   </section>
+  <section class="card stage" id="st-particles" hidden>
+    <div>
+      <svg class="view" id="cp-svg" viewBox="0 0 640 320" role="img" aria-label="A beam of charged particles fired into a magnetic field"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="cp-play" type="button">&#9654; Fire the beam</button>
+          <button class="btn" id="cp-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="cp-slow" type="button" aria-pressed="false">Slow motion</button>
+        </div>
+        <div class="sliders">
+          <div><label class="lab" for="cp-b"><span>Field strength</span> <output id="cp-bo"></output></label><input type="range" id="cp-b" min="1" max="3" step="1" value="2"></div>
+          <div><label class="lab" for="cp-v"><span>Speed of the particles</span> <output id="cp-vo"></output></label><input type="range" id="cp-v" min="1" max="3" step="1" value="2"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div>
+        <div class="lab">Particles</div>
+        <div class="seg" id="cp-q"><button type="button" data-v="-1" aria-pressed="true">Electrons (&minus;)</button><button type="button" data-v="1" aria-pressed="false">Positive ions (+)</button></div>
+      </div>
+      <div>
+        <div class="lab">Magnetic field</div>
+        <div class="seg" id="cp-fd"><button type="button" data-v="in" aria-pressed="true">Into the page</button><button type="button" data-v="out" aria-pressed="false">Out of the page</button><button type="button" data-v="along" aria-pressed="false">Along the beam</button></div>
+      </div>
+      <p class="note" id="cp-note" aria-live="polite"></p>
+      <div class="stats">
+        <div class="stat"><small>Force on particles</small><strong id="cp-sf">&ndash;</strong></div>
+        <div class="stat"><small>Path</small><strong id="cp-sp">&ndash;</strong></div>
+        <div class="stat hi"><small>Bends</small><strong id="cp-sb">&ndash;</strong></div>
+      </div>
+      <details class="working">
+        <summary>Show the left-hand rule</summary>
+        <div class="eq" id="cp-eq"></div>
+      </details>
+    </div>
+  </section>
 
 </div>
 <script>
 (function(){
-  // motor-effect.html is the one copy of this animation.
+  // motor-effect.html is the one copy of this animation (the wire and, since 25 Oct 2026, charged particles).
   // With ?embed the page drops its heading so a workout tab can show it in a frame, and tells that page its height.
   var EMBED = /[?&]embed\b/.test(location.search);
   if(EMBED){
     document.documentElement.classList.add('embed');
-    var wk = document.querySelector('details.working'); if(wk) wk.open = true;
+    Array.prototype.forEach.call(document.querySelectorAll('details.working'), function(wk){ wk.open = true; });
     var page = document.getElementById('page');
     var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
     if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
@@ -443,6 +489,155 @@
   watchEquals($('#me-eq'));
   reset();
 
+})();
+</script>
+<script>
+// Charged particles (6.11P): the second picture on this page.
+(function(){
+  function $(sel){ return document.querySelector(sel); }
+  function num(n, dp){   // round, drop trailing zeros, group thousands with a space from 10 000
+    var f = Math.pow(10, dp||0), r = Math.round(n*f)/f, t = String(Math.abs(r));
+    if(Math.abs(r)>=10000) t = t.replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    return (r<0?'−':'')+t;
+  }
+  function FR(t){
+    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1 ')
+      .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  function arrowHead(id, col){ return '<marker id="'+id+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+col+'"/></marker>'; }
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ if(!el) return; alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function toggle(b){ b.setAttribute('aria-pressed', String(!pressed(b))); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  // a pole of a magnet: coloured block with its letter
+  function poleRect(x,y,w,h,pole,fs){
+    var c = pole==='N' ? 'north' : 'south';
+    return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="var(--'+c+'-soft)" stroke="var(--'+c+')" stroke-width="2"/>'+
+      '<text x="'+(x+w/2)+'" y="'+(y+h/2+(fs||16)*0.36)+'" text-anchor="middle" font-size="'+(fs||16)+'" font-weight="600" fill="var(--'+c+')">'+pole+'</text>';
+  }
+  // a wire seen end-on: dot = current out of the page, cross = into the page
+  function wireEnd(x,y,r,dir,col){
+    var g='<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="var(--panel)" stroke="'+(col||'var(--copper)')+'" stroke-width="3"/>';
+    if(dir>0) g+='<circle cx="'+x+'" cy="'+y+'" r="'+(r*0.28)+'" fill="var(--ink)"/>';
+    else if(dir<0){ var d=r*0.55; g+='<path d="M'+(x-d)+','+(y-d)+' L'+(x+d)+','+(y+d)+' M'+(x+d)+','+(y-d)+' L'+(x-d)+','+(y+d)+'" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>'; }
+    return g;
+  }
+  function line(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+(w||2)+'"'+(extra||'')+'/>'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+x+'" y="'+y+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11.5)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  // pointer position in SVG user units
+  function svgPoint(svg, e){ var r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; return {x:vb.x+(e.clientX-r.left)/r.width*vb.width, y:vb.y+(e.clientY-r.top)/r.height*vb.height}; }
+
+  var svg=$('#cp-svg'), playBtn=$('#cp-play'), slowBtn=$('#cp-slow'), bIn=$('#cp-b'), vIn=$('#cp-v');
+  var X0=140, Y0=160, RX=[140,626], RY=[18,302], TMAX=6, EMIT=3.6, GAP=0.12, t=0, running=false, raf=0, last=0, path=[];
+  var qG=segGroup($('#cp-q'), changed), fG=segGroup($('#cp-fd'), changed);
+  [bIn,vIn].forEach(function(x){ x.addEventListener('input', changed); });
+  var LV=['','weak','medium','strong'], SP=['','slow','medium','fast'];
+
+  // F = qvB at right angles to the motion, so inside the field each particle moves on a circle.
+  // Radius grows with speed and shrinks with field strength (r = mv/qB, both kinds drawn with the same mass here).
+  // Which way: electrons moving right are a conventional current to the LEFT. With the field into the page the
+  // left-hand rule gives a force DOWN the page for electrons and UP for positive ions; out of the page reverses both.
+  function q(){ return +qG.value(); } function fd(){ return fG.value(); }
+  function speed(){ return 70+45*(+vIn.value); }                 // px/s on screen
+  function radius(){ return 70*(+vIn.value)/(+bIn.value)+18; }
+  function bendDown(){ var d=(q()<0?1:-1); return fd()==='out'?-d:d; } // +1: curves down the page
+  function inField(x,y){ return x>=RX[0]&&x<=RX[1]&&y>=RY[0]&&y<=RY[1]; }
+  function build(){
+    path=[]; var x=30, y=Y0, ang=0, ds=2, r=radius(), s=bendDown();
+    for(var k=0;k<1400;k++){
+      path.push([x,y,ang]);
+      if(fd()!=='along' && inField(x,y)) ang+=s*ds/r;
+      x+=ds*Math.cos(ang); y+=ds*Math.sin(ang);
+      if(x<-10||x>650||y<-10||y>330) break;
+    }
+  }
+  function at(d){ var i=Math.floor(d/2); return i<path.length?path[i]:null; }
+  function done(){ return t>=TMAX-1e-9; }
+
+  function draw(){
+    var g='<defs>'+arrowHead('cp-fa','var(--accent)')+arrowHead('cp-va','var(--ink)')+arrowHead('cp-ba','var(--topic)')+'</defs>';
+    g+='<rect x="'+RX[0]+'" y="'+RY[0]+'" width="'+(RX[1]-RX[0])+'" height="'+(RY[1]-RY[0])+'" fill="var(--topic-soft)" stroke="var(--topic)" stroke-dasharray="5 4" rx="6"/>';
+    var str=+bIn.value, step=str===1?48:str===2?36:27;
+    if(fd()==='along'){ for(var y=RY[0]+step/2;y<RY[1];y+=step) g+=line(RX[0]+8,y,RX[1]-10,y,'var(--topic)',1.4,' opacity="0.6" marker-end="url(#cp-ba)"'); }
+    else for(var x=RX[0]+step/2;x<RX[1];x+=step) for(var y2=RY[0]+step/2;y2<RY[1];y2+=step){
+      if(fd()==='in'){ var d=4.5; g+='<path d="M'+(x-d)+','+(y2-d)+' L'+(x+d)+','+(y2+d)+' M'+(x+d)+','+(y2-d)+' L'+(x-d)+','+(y2+d)+'" stroke="var(--topic)" stroke-width="1.6" opacity="0.6"/>'; }
+      else g+='<circle cx="'+x+'" cy="'+y2+'" r="5" fill="none" stroke="var(--topic)" stroke-width="1.4" opacity="0.6"/><circle cx="'+x+'" cy="'+y2+'" r="1.6" fill="var(--topic)" opacity="0.7"/>';
+    }
+    g+=txt(RX[1]-6,RY[1]-8,'magnetic field '+(fd()==='in'?'into the page':fd()==='out'?'out of the page':'along the beam'),{a:'end',fs:11,c:'var(--topic)'});
+    // the gun
+    g+='<rect x="4" y="146" width="44" height="28" rx="4" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2"/>'+txt(26,192,'source',{a:'middle',fs:10.5});
+    var col=q()<0?'var(--south)':'var(--north)', v=speed();
+    // trail of where the beam has been
+    var head=Math.min(t,EMIT+20)*v, trail=[];
+    if(t>0){ for(var i=0;i<path.length && i*2<=head;i+=2) trail.push(path[i][0].toFixed(1)+','+path[i][1].toFixed(1)); }
+    if(trail.length>1) g+='<polyline points="'+trail.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="2" opacity="0.3"/>';
+    // the particles
+    var lead=null;
+    for(var e=0;e*GAP<=Math.min(t,EMIT);e++){ var p=at((t-e*GAP)*v); if(!p) continue; if(!lead) lead=p;
+      g+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="5" fill="'+col+'"/>'+txt(p[0],p[1]+3.5,q()<0?'−':'+',{a:'middle',fs:9,c:'var(--panel)',w:600}); }
+    // velocity and force on the leading particle while it is in the field
+    if(lead && inField(lead[0],lead[1]) && running){
+      var c=Math.cos(lead[2]), s=Math.sin(lead[2]);
+      g+=line(lead[0],lead[1],lead[0]+30*c,lead[1]+30*s,'var(--ink)',2,' marker-end="url(#cp-va)"');
+      if(fd()!=='along'){ var b=bendDown(); g+=line(lead[0],lead[1],lead[0]-30*s*b,lead[1]+30*c*b,'var(--accent)',3,' marker-end="url(#cp-fa)"')+txt(lead[0]-40*s*b,lead[1]+40*c*b+4,'F',{a:'middle',c:'var(--accent)',w:600}); }
+    }
+    svg.innerHTML=g;
+
+    $('#cp-bo').textContent=LV[+bIn.value]; $('#cp-vo').textContent=SP[+vIn.value];
+    var along=fd()==='along', bd=bendDown();
+    $('#cp-sf').textContent=along?'none':'at 90° to path';
+    $('#cp-sp').textContent=along?'straight':(bd>0?'curves down':'curves up');
+    var r=radius(); $('#cp-sb').textContent=along?'not at all':(r<70?'sharply':r<130?'a fair bit':'gently');
+    var cur=q()<0?'to the <b>left</b> (electrons carry negative charge, so the current is opposite to their motion)':'to the <b>right</b>, the same way the positive ions move';
+    $('#cp-eq').innerHTML=along?'The particles move parallel to the field lines, so there is <b>no force</b> on them. They carry straight on.':
+      'First finger (field): '+(fd()==='in'?'into':'out of')+' the page<br>Second finger (current): '+cur+'<br>Thumb (force): <b>'+(bd>0?'down':'up')+'</b> the page, at right angles to the motion';
+    var n;
+    if(!running && t===0) n='Press <b>Fire the beam</b>. Moving charged particles are a current, so a magnetic field can push on them, just like the motor effect on a wire.';
+    else if(along) n='The beam moves <b>along</b> the field lines, so there is no force and it goes straight through. A force only acts when the motion crosses the field lines.';
+    else if(done()) n='The force is always at right angles to the motion, so the beam bends into a curve. A stronger field bends it more; faster particles bend less. Reversing the field, or the charge, reverses the force.';
+    else n='Inside the field the particles feel a force at right angles to their motion, so the beam curves <b>'+(bd>0?'down':'up')+'</b> the page.';
+    $('#cp-note').innerHTML=n;
+    playBtn.innerHTML=running?'&#10074;&#10074; Pause':(done()?'&#9654; Fire again':(t>0?'&#9654; Play':'&#9654; Fire the beam'));
+  }
+  function rate(){ return pressed(slowBtn)?0.3:1; }
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function frame(now){ if(!running) return; t=Math.min(TMAX,t+Math.min(0.05,(now-last)/1000)*rate()); last=now;
+    if(done()) stop(); draw(); if(running) raf=requestAnimationFrame(frame); }
+  function reset(){ stop(); t=0; build(); draw(); }
+  function changed(){ reset(); }
+  playBtn.addEventListener('click',function(){ if(running){ stop(); draw(); return; } if(done()) reset(); running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); });
+  slowBtn.addEventListener('click',function(){ toggle(slowBtn); });
+  $('#cp-reset').addEventListener('click',reset);
+  reset();
+
+})();
+</script>
+<script>
+// Wire / Charged particles switch. ?show=wire or ?show=particles opens one part and hides the switch (used by the workout tabs).
+(function(){
+  var q = location.search.match(/[?&]show=(wire|particles)\b/), modeEl = document.getElementById('mode');
+  function pick(v){
+    Array.prototype.forEach.call(modeEl.querySelectorAll('button'), function(b){ b.setAttribute('aria-pressed', String(b.dataset.v===v)); });
+    document.getElementById('st-wire').hidden = v!=='wire';
+    document.getElementById('st-particles').hidden = v!=='particles';
+  }
+  modeEl.addEventListener('click', function(e){ var b=e.target.closest('button'); if(b) pick(b.dataset.v); });
+  if(q){ document.documentElement.classList.add('fixed'); pick(q[1]); } else pick('wire');
 })();
 </script>
 </body>

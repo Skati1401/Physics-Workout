@@ -20,7 +20,7 @@ What Alex has checked, and what still needs checking. One row per published page
 | 4b `heat-transfer-igcse.html` | ❔ Not recorded | |
 | 5a `density-pressure-state.html` | 🔍 To review | New Overview passage. |
 | 5b `gases.html` | 🔍 To review | New Overview passage, Key Terms and units table. |
-| 6a `magnetism-and-motor-effect.html` | 🔍 To review | New Overview passage, Key Terms and units table. |
+| 6a `magnetism-and-motor-effect.html` | 🔍 To review | New Overview passage, Key Terms and units table. 25 Oct: Motor Effect no longer TA (6.12–6.14); new Charged Particles tab (TA, 6.11P) with a new Predict (electrons or ions) and Sort (force or no force); Motors and Loudspeakers split into two tabs, each with its own Match; new Predicts: Run it backwards (motor as generator), Double the frequency, A steady current. 9 tabs now (rule says 5–8). |
 | 6b `electromagnetic-induction.html` | 🔍 To review | New Overview passage, Key Terms and units table. |
 | `maths-skills.html` (draft, not listed) | ❔ Not recorded | Still a draft. |
 
@@ -57,9 +57,8 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `gas-molecules.html` | IGCSE | ❔ Not recorded | |
 | `magnetic-field-patterns.html` | IGCSE | ❔ Not recorded | |
 | `electromagnet-field-patterns.html` | IGCSE | ❔ Not recorded | |
-| `motor-effect.html` | IGCSE | ❔ Not recorded | |
-| `charged-particles.html` | IGCSE | ❔ Not recorded | |
-| `dc-motor.html` | IGCSE | ❔ Not recorded | |
+| `motor-effect.html` | IGCSE | 🔍 To review | 25 Oct: now holds charged particles too, behind a Wire / Charged particles switch (`?show=wire` or `?show=particles` hides the switch). |
+| `dc-motor.html` | IGCSE | 🔍 To review | 25 Oct: Generator mode (turn the coil, centre-zero voltmeter, output p.d. graph showing the split ring's rectified humps; `?show=gen` opens in it). Current and Magnet choices now share one row. |
 | `loudspeaker.html` | IGCSE | ❔ Not recorded | |
 | `magnet-and-coil.html` | IGCSE | ❔ Not recorded | |
 | `ac-generator.html` | IGCSE | ❔ Not recorded | |
