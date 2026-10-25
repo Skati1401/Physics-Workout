@@ -18,6 +18,8 @@ What Alex has checked, and what still needs checking. One row per published page
 | 1d `momentum-and-moments.html` | 🔍 To review | New Overview passage, Key Terms and units table; new Spot the Error examples (Momentum, Moments). |
 | 4a `energy-stores-efficiency.html` | ❔ Not recorded | |
 | 4b `heat-transfer-igcse.html` | ❔ Not recorded | |
+| 4c `work-and-power.html` | 🔍 To review | New page (25 Oct 2026), 6 tabs for 4.11–4.17: Overview passage, units table and key terms, Work Done, GPE and KE, Energy Link (the roller coaster animation in a frame, 4.15), Power (with an Order for measuring your own power on the stairs). Check the wording of the Predicts and the Calculate and Spot the Error numbers. |
+| 4d `energy-resources.html` (TA) | 🔍 To review | New page (25 Oct 2026), 7 tabs for 4.18P–4.19P: Power Stations (fossil fuel and nuclear Orders), Wind and Water (incl. geothermal), Solar, Pros and Cons, Choosing. Solar heating covers a solar power tower and a rooftop water-heating panel. Check the advantages and disadvantages chosen. |
 | 5a `density-pressure-state.html` | 🔍 To review | New Overview passage. |
 | 5b `gases.html` | 🔍 To review | New Overview passage, Key Terms and units table. |
 | 6a `magnetism-and-motor-effect.html` | 🔍 To review | New Overview passage, Key Terms and units table. 25 Oct: Motor Effect no longer TA (6.12–6.14); new Charged Particles tab (TA, 6.11P) with a new Predict (electrons or ions) and Sort (force or no force); Motors and Loudspeakers split into two tabs, each with its own Match; new Predicts: Run it backwards (motor as generator), Double the frequency, A steady current. 9 tabs now (rule says 5–8). |
@@ -43,6 +45,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | Page | List | Status | What to check |
 |---|---|---|---|
 | `film-badge.html` | IGCSE (Unit 7) + A Level / IB | ✅ Checked 25 Oct 2026 | |
+| `roller-coaster-energy.html` | IGCSE (Unit 4) | 🔍 To review | New (25 Oct 2026), framed in 4c Energy Link. A cart drops from h₁, tries to get over hill 2 (h₂) and runs to the end; sliders for mass, start speed, friction force and both heights. Bars for GPE, KE, work done against friction and the total; the working finds the speed from KE = total − GPE − work done, and once the cart reaches hill 2 an "Over hill 2?" check appears. Try h₂ above h₁, no friction, and big friction. |
 | `motion-graphs.html` | IGCSE | ❔ Not recorded | |
 | `ramp-motion.html` | IGCSE | ❔ Not recorded | |
 | `force-mass-acceleration.html` | IGCSE | ❔ Not recorded | |
