@@ -153,6 +153,20 @@
   .ta{display:inline-block;font:600 10.5px var(--font-mono);padding:1px 6px;border-radius:5px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);margin-left:6px;}
   .seg button[aria-pressed="true"] .ta{background:var(--panel);}
   .fixed .modebar{display:none;}
+  /* turning the 3D view, and the practice modes */
+  .view.turn{touch-action:pan-y;cursor:grab;}   /* sideways drags turn it; up and down still scroll the page on a phone */
+  .view.turn:active{cursor:grabbing;}
+  .cap-hint{font-weight:400;color:var(--ink-faint);}
+  .quiz .views{grid-template-columns:420fr 300fr;}
+  .quiz .views .vplan{display:none;}
+  .qstep{font:600 12px var(--font-mono);color:var(--accent);margin:0 0 4px;}
+  .qtext{font-size:15px;line-height:1.5;margin:0 0 10px;}
+  .qopts button{min-width:52px;font-weight:600;}
+  .qopts button.right{background:var(--good-soft);border-color:var(--good);color:var(--ink);}
+  .qopts button.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--ink);}
+  .qbtns{margin-top:10px;}
+  @media (prefers-reduced-motion: no-preference){ .qopts button.wrong{animation:shake .5s;} }
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
   #st-particles .view{max-height:max(240px,calc(100vh - 380px));}
   #st-particles .views{grid-template-columns:450fr 450fr 300fr;}
   #st-particles .stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}
@@ -195,18 +209,19 @@
   <section class="card stage" id="st-wire">
     <div>
       <div class="views">
-        <figure><figcaption>2D: plan view from above</figcaption><svg class="view" id="me-plan" viewBox="0 0 260 300" role="img" aria-label="Plan view: the wire runs up the page between the poles of a magnet"></svg></figure>
-        <figure class="v3d"><figcaption>3D view</figcaption><svg class="view" id="me-3d" viewBox="0 0 380 300" role="img" aria-label="3D view of the wire between the poles of the magnet, showing which way it moves"></svg></figure>
-        <figure><figcaption>Fleming&rsquo;s left-hand rule</figcaption><svg class="view" id="me-hand" viewBox="0 0 300 300" role="img" aria-label="Thumb, first finger and second finger at right angles: motion, field and current"></svg></figure>
+        <figure class="vplan"><figcaption>2D: plan view from above</figcaption><svg class="view" id="me-plan" viewBox="0 0 260 300" role="img" aria-label="Plan view: the wire runs up the page between the poles of a magnet"></svg></figure>
+        <figure class="v3d"><figcaption>3D view <span class="cap-hint">&middot; drag to turn it</span></figcaption><svg class="view turn" id="me-3d" viewBox="0 0 380 300" tabindex="0" role="img" aria-label="3D view of the wire between the poles of the magnet. Drag, or use the arrow keys, to turn it."></svg></figure>
+        <figure><figcaption>Fleming&rsquo;s left-hand rule</figcaption><svg class="view turn" id="me-hand" viewBox="0 0 300 300" role="img" aria-label="Thumb, first finger and second finger at right angles: motion, field and current"></svg></figure>
       </div>
       <div class="under">
         <div class="btn-group">
-          <button class="btn btn-primary" id="me-go" type="button">&#9654; Switch on</button>
-          <button class="btn" id="me-comb" type="button" aria-pressed="false">Combined field</button>
-          <button class="btn" id="me-reset" type="button">&#8634; Reset</button>
+          <button class="btn btn-primary explore-only" id="me-go" type="button">&#9654; Switch on</button>
+          <button class="btn explore-only" id="me-comb" type="button" aria-pressed="false">Combined field</button>
+          <button class="btn explore-only" id="me-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="me-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="me-view" type="button">Reset view</button>
         </div>
-        <div class="sliders">
+        <div class="sliders explore-only">
           <div><label class="lab" for="me-i">Current <output id="me-io"></output></label><input type="range" id="me-i" min="1" max="3" step="0.5" value="2"></div>
           <div><label class="lab" for="me-b">Magnet strength <output id="me-bo"></output></label><input type="range" id="me-b" min="1" max="3" step="1" value="2"></div>
         </div>
@@ -214,24 +229,33 @@
     </div>
     <div class="side">
       <div>
+        <div class="seg" id="me-qmode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="find" aria-pressed="false">Find the current</button><button type="button" data-v="exam" aria-pressed="false">Exam question</button></div>
+      </div>
+      <div class="quiz-only" id="me-quiz" hidden>
+        <p class="qstep" id="me-qstep"></p>
+        <p class="qtext" id="me-qtext"></p>
+        <div class="seg qopts" id="me-qopts" role="group" aria-label="Choose an arrow"></div>
+        <div class="btn-group qbtns"><button class="btn btn-primary" id="me-qcheck" type="button">Check</button><button class="btn" id="me-qnew" type="button">New question</button></div>
+      </div>
+      <div class="explore-only">
         <div class="lab">Magnet</div>
         <div class="seg" id="me-mag"><button type="button" data-v="L" aria-pressed="true">N on the left</button><button type="button" data-v="R" aria-pressed="false">N on the right</button></div>
       </div>
-      <div>
+      <div class="explore-only">
         <div class="lab">Current in the wire</div>
         <div class="seg" id="me-cur"><button type="button" data-v="up" aria-pressed="true">Up the page &uarr;</button><button type="button" data-v="down" aria-pressed="false">Down the page &darr;</button></div>
       </div>
-      <div>
+      <div class="explore-only">
         <div class="lab">Your prediction</div>
         <div class="seg" id="me-pred"><button type="button" data-v="up" aria-pressed="false">Moves up &odot;</button><button type="button" data-v="down" aria-pressed="false">Moves down &otimes;</button><button type="button" data-v="none" aria-pressed="false">Doesn&rsquo;t move</button></div>
       </div>
       <p class="note" id="me-note" aria-live="polite"></p>
-      <div class="stats">
+      <div class="stats explore-only">
         <div class="stat"><small>Current</small><strong id="me-si">0 A</strong></div>
         <div class="stat"><small>Force size</small><strong id="me-sf">&ndash;</strong></div>
         <div class="stat hi"><small>Motion</small><strong id="me-sd">&ndash;</strong></div>
       </div>
-      <details class="working">
+      <details class="working explore-only">
         <summary>Show Fleming&rsquo;s left-hand rule</summary>
         <div class="eq" id="me-eq"></div>
       </details>
@@ -354,19 +378,27 @@
   var STR=['','weak','medium','strong'];
 
   // one camera for the 3D view and the hand: a true (orthographic) view from the front left and above
-  var TH=28*Math.PI/180, PH=26*Math.PI/180, CT=Math.cos(TH), ST=Math.sin(TH), CP=Math.cos(PH), SP=Math.sin(PH);
+  // drag the 3D view (or use the arrow keys) to turn it; the hand turns with it
+  var DEG=Math.PI/180, TH, PH, CT, ST, CP, SP;
+  function setCam(th,ph){ TH=th; PH=Math.max(-20*DEG,Math.min(85*DEG,ph)); CT=Math.cos(TH); ST=Math.sin(TH); CP=Math.cos(PH); SP=Math.sin(PH); }
+  setCam(28*DEG,26*DEG);
+  function depthOf(X,Y,Z){ return (-X*ST+Y*CT)*CP-Z*SP; }           // bigger = further from you
+  function viewDir(){ return [-ST*CP, CT*CP, -SP]; }
   function proj(cx,cy,s){ return function(X,Y,Z){ var dep=-X*ST+Y*CT; return [cx+s*(X*CT+Y*ST), cy+s*(-Z*CP-dep*SP)]; }; }
   function pts(P,list){ return list.map(function(q){ var p=P(q[0],q[1],q[2]); return p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' '); }
   function poly(P,list,fill,stroke,extra){ return '<polygon points="'+pts(P,list)+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.6" stroke-linejoin="round"'+(extra||'')+'/>'; }
   function seg3(P,a,b,col,w,extra){ var p=P(a[0],a[1],a[2]), q=P(b[0],b[1],b[2]); return line(p[0].toFixed(1),p[1].toFixed(1),q[0].toFixed(1),q[1].toFixed(1),col,w,extra); }
-  // a pole block: visible faces are the top, the front (towards you) and the right-hand side
+  // a pole block: draws whichever faces point towards you, with the pole's letter on the ones facing you most
   function block(P,x0,x1,pole,op){
-    var c=pole==='N'?'north':'south', f='var(--'+c+'-soft)', s='var(--'+c+')', o=op?' fill-opacity="'+op+'"':'';
-    var g=poly(P,[[x0,-HA,HZ],[x1,-HA,HZ],[x1,HA,HZ],[x0,HA,HZ]],f,s,o)+
-          poly(P,[[x0,-HA,-HZ],[x1,-HA,-HZ],[x1,-HA,HZ],[x0,-HA,HZ]],f,s,o)+
-          poly(P,[[x1,-HA,-HZ],[x1,HA,-HZ],[x1,HA,HZ],[x1,-HA,HZ]],f,s,(o||'')+' style="filter:brightness(0.93)"');
-    var tp=P((x0+x1)/2,0,HZ), fp=P((x0+x1)/2,-HA,0);
-    g+=txt(tp[0].toFixed(1),(tp[1]+6).toFixed(1),pole,{a:'middle',c:s,w:600,fs:17})+txt(fp[0].toFixed(1),(fp[1]+7).toFixed(1),pole,{a:'middle',c:s,w:600,fs:20});
+    var c=pole==='N'?'north':'south', f='var(--'+c+'-soft)', st='var(--'+c+')', o=op?' fill-opacity="'+op+'"':'', v=viewDir(), g='';
+    var F=[[[0,0,1],[[x0,-HA,HZ],[x1,-HA,HZ],[x1,HA,HZ],[x0,HA,HZ]]],[[0,0,-1],[[x0,-HA,-HZ],[x1,-HA,-HZ],[x1,HA,-HZ],[x0,HA,-HZ]]],
+           [[0,-1,0],[[x0,-HA,-HZ],[x1,-HA,-HZ],[x1,-HA,HZ],[x0,-HA,HZ]]],[[0,1,0],[[x0,HA,-HZ],[x1,HA,-HZ],[x1,HA,HZ],[x0,HA,HZ]]],
+           [[1,0,0],[[x1,-HA,-HZ],[x1,HA,-HZ],[x1,HA,HZ],[x1,-HA,HZ]]],[[-1,0,0],[[x0,-HA,-HZ],[x0,HA,-HZ],[x0,HA,HZ],[x0,-HA,HZ]]]];
+    var best=null, bk=0;
+    F.forEach(function(fc){ var n=fc[0], k=n[0]*v[0]+n[1]*v[1]+n[2]*v[2]; if(k>=-0.02) return;
+      g+=poly(P,fc[1],f,st,(o||'')+' style="filter:brightness('+(0.86-0.14*k).toFixed(2)+')"'); if(k<bk){ bk=k; best=fc; } });
+    if(best){ var m=best[1].reduce(function(acc,q){ return [acc[0]+q[0]/4,acc[1]+q[1]/4,acc[2]+q[2]/4]; },[0,0,0]), pp=P(m[0],m[1],m[2]);
+      g+=txt(pp[0].toFixed(1),(pp[1]+7).toFixed(1),pole,{a:'middle',c:st,w:600,fs:20}); }
     return g;
   }
 
@@ -407,33 +439,34 @@
   }
 
   function draw3d(){
-    var P=proj(190,152,1.2);
-    var g='<defs>'+arrowHead('me-ta','var(--topic)')+arrowHead('me-tc','var(--copper)')+arrowHead('me-tf','var(--accent)')+'</defs>';
-    var nl=mag.value()==='L', comb=pressed(combBtn)&&on, x0=bdir()>0?-GAP:GAP;
-    g+=block(P,-GAP-POLE,-GAP,nl?'N':'S');
-    // the magnet's field lines across the gap (the back rows first)
-    function fieldRow(y,z){ var a=[x0,y,z], b=[-x0,y,z], m1=[x0*0.45,y,z], m2=[x0*0.25,y,z];
-      return seg3(P,a,b,'var(--topic)',1.3,' opacity="0.75"')+seg3(P,m1,m2,'var(--topic)',2,' marker-end="url(#me-ta)"'); }
-    if(!comb){ [HA*0.6,0].forEach(function(y){ [-30,0,30].forEach(function(z){ g+=fieldRow(y,z); }); }); }
-    // the wire, with arrows showing the current
-    var wb=[0,WL,d], wf=[0,-WL,d];
-    g+=seg3(P,wb,wf,'var(--ink)',10,' stroke-linecap="round"')+seg3(P,wb,wf,'var(--copper)',7,' stroke-linecap="round"');
-    if(on){ [-95,92].forEach(function(y){ g+=seg3(P,[0,y-cdir()*12,d+9],[0,y+cdir()*12,d+9],'var(--copper)',2.5,' marker-end="url(#me-tc)"'); });
-      var ti=P(0,-102,d+16); g+=txt(ti[0].toFixed(1),ti[1].toFixed(1),'I',{a:'end',c:'var(--copper)',w:600,fs:13}); }
+    var P=proj(190,152,1.1);
+    var g='<defs>'+arrowHead('me-ta','var(--topic)')+arrowHead('me-tc','var(--copper)')+arrowHead('me-tf','var(--accent)')+arrowHead('me-tq','var(--ink)')+'</defs>';
+    var nl=mag.value()==='L', comb=pressed(combBtn)&&on&&!quiz(), x0=bdir()>0?-GAP:GAP, items=[];
+    function add(X,Y,Z,svg){ items.push([depthOf(X,Y,Z),svg]); }
+    var showField=!quiz()||Q.type==='find'||Q.done.field, showCur=quiz()?Q.done.current:on;
+    add(-GAP-POLE/2,0,0,block(P,-GAP-POLE,-GAP,nl?'N':'S',0.9));
+    add(GAP+POLE/2,0,0,block(P,GAP,GAP+POLE,nl?'S':'N',0.9));
+    // the magnet's field lines across the gap
+    if(showField && !comb) [HA*0.6,0,-HA*0.6].forEach(function(y){ [-30,0,30].forEach(function(z){
+      add(0,y,z,seg3(P,[x0,y,z],[-x0,y,z],'var(--topic)',1.3,' opacity="0.75"')+seg3(P,[x0*0.45,y,z],[x0*0.25,y,z],'var(--topic)',2,' marker-end="url(#me-ta)"')); }); });
+    // the wire, in short pieces so the magnet can hide the right parts of it
+    for(var k=0;k<10;k++){ var y0=-WL+k*WL/5, y1=y0+WL/5;
+      add(0,(y0+y1)/2,d,seg3(P,[0,y0,d],[0,y1,d],'var(--ink)',10,' stroke-linecap="round"')+seg3(P,[0,y0,d],[0,y1,d],'var(--copper)',7,' stroke-linecap="round"')); }
+    if(showCur){ [-95,92].forEach(function(y){ add(0,y,d+9,seg3(P,[0,y-cdir()*12,d+9],[0,y+cdir()*12,d+9],'var(--copper)',2.5,' marker-end="url(#me-tc)"')); }); }
     if(comb){
-      g+='<polygon points="'+pts(P,[[-GAP,-HA,-HZ],[GAP,-HA,-HZ],[GAP,-HA,HZ],[-GAP,-HA,HZ]])+'" fill="var(--topic-soft)" fill-opacity="0.35" stroke="var(--topic)" stroke-dasharray="3 4" stroke-width="1"/>';
-      for(var z=-44;z<=44;z+=8){ g+='<polyline points="'+pts(P,trace(x0*0.98,z))+'" fill="none" stroke="var(--topic)" stroke-width="1.4"/>'; }
-    } else {
-      [-HA*0.6].forEach(function(y){ [-30,0,30].forEach(function(z){ g+=fieldRow(y,z); }); });
-      if(on){ for(var r=16;r<=34;r+=9){ var c=[]; for(var k=0;k<=48;k++){ var a=k/48*2*Math.PI; c.push([r*Math.cos(a),-HA,d+r*Math.sin(a)]); }
-        g+='<polyline points="'+pts(P,c)+'" fill="none" stroke="var(--copper)" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.85"/>';
-        // arrow on the wire's own field, from the right-hand grip rule
-        g+=seg3(P,[-3*cdir(),-HA,d+r],[3*cdir(),-HA,d+r],'var(--copper)',1.6,' marker-end="url(#me-tc)"'); } }
-    }
-    g+=block(P,GAP,GAP+POLE,nl?'S':'N',0.82);
-    if(on){ var L=16+fsize()*4.5, a0=P(0,-HA-20,d), a1=P(0,-HA-20,d+fup()*L);
+      add(0,-HA,0,'<polygon points="'+pts(P,[[-GAP,-HA,-HZ],[GAP,-HA,-HZ],[GAP,-HA,HZ],[-GAP,-HA,HZ]])+'" fill="var(--topic-soft)" fill-opacity="0.35" stroke="var(--topic)" stroke-dasharray="3 4" stroke-width="1"/>');
+      for(var z=-44;z<=44;z+=8) add(0,-HA,z,'<polyline points="'+pts(P,trace(x0*0.98,z))+'" fill="none" stroke="var(--topic)" stroke-width="1.4"/>');
+    } else if(on && !quiz()){ for(var r=16;r<=34;r+=9){ var c=[]; for(var j=0;j<=48;j++){ var a=j/48*2*Math.PI; c.push([r*Math.cos(a),-HA,d+r*Math.sin(a)]); }
+        add(0,-HA,d,'<polyline points="'+pts(P,c)+'" fill="none" stroke="var(--copper)" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.85"/>'+
+          seg3(P,[-3*cdir(),-HA,d+r],[3*cdir(),-HA,d+r],'var(--copper)',1.6,' marker-end="url(#me-tc)"')); } }
+    items.sort(function(u,v){ return v[0]-u[0]; });
+    g+=items.map(function(it){ return it[1]; }).join('');
+    if(showCur){ var ti=P(0,(depthOf(0,-100,0)<depthOf(0,100,0)?-1:1)*102,d+16); g+=txt(ti[0].toFixed(1),ti[1].toFixed(1),'I',{a:'end',c:'var(--copper)',w:600,fs:13}); }
+    // the force (or, in Find the current, the motion the question gives you)
+    if(on || (quiz()&&Q.type==='find')){ var L=16+fsize()*4.5, ey=(depthOf(0,-100,0)<depthOf(0,100,0)?-1:1)*(quiz()?18:HA+20), a0=P(0,ey,d), a1=P(0,ey,d+fup()*L);
       g+=line(a0[0].toFixed(1),a0[1].toFixed(1),a1[0].toFixed(1),a1[1].toFixed(1),'var(--accent)',4.5,' marker-end="url(#me-tf)"');
-      g+=txt((a1[0]+8).toFixed(1),(a1[1]+(fup()>0?8:4)).toFixed(1),'force',{a:'start',c:'var(--accent)',w:600}); }
+      g+=txt((a1[0]+8).toFixed(1),(a1[1]+(fup()>0?8:4)).toFixed(1),quiz()&&Q.type==='find'?'motion':'force',{a:'start',c:'var(--accent)',w:600}); }
+    if(quiz()) g+=quizOverlay(P);
     v3.innerHTML=g;
   }
 
@@ -441,7 +474,7 @@
     var P=proj(150,165,1.0), Lx=88, HW=300;
     var g='<defs>'+arrowHead('me-ha','var(--topic)')+arrowHead('me-hc','var(--copper)')+arrowHead('me-hf','var(--accent)')+'</defs>';
     // nothing to show until the current is switched on, so the rule doesn't give the answer away
-    if(!on){ hand.innerHTML=txt(150,150,'Switch on to see',{a:'middle',c:'var(--ink-faint)',fs:12})+txt(150,168,'the left-hand rule',{a:'middle',c:'var(--ink-faint)',fs:12}); return; }
+    if(!on){ hand.innerHTML=txt(150,150,quiz()?'Answer the question to see':'Switch on to see',{a:'middle',c:'var(--ink-faint)',fs:12})+txt(150,168,'the left-hand rule',{a:'middle',c:'var(--ink-faint)',fs:12}); return; }
     var bx=bdir(), cy=cdir(), fz=fup();
     // a faint floor and wall so the three directions read as 3D, with right-angle marks
     g+=poly(P,[[0,0,0],[bx*Lx,0,0],[bx*Lx,cy*Lx,0],[0,cy*Lx,0]],'var(--topic-soft)','var(--panel-border)',' fill-opacity="0.55"');
@@ -470,6 +503,7 @@
     $('#me-sf').innerHTML=on?'<span class="fbar"><span style="transform:scaleX('+(fsize()/9).toFixed(3)+')"></span></span>':'–';
     $('#me-sd').textContent=on?(fup()>0?'up':'down'):'–';
     $('#me-eq').innerHTML='First finger (Field): N to S, to the '+(bdir()>0?'right':'left')+'<br>Second finger (Current): '+(cdir()>0?'up the page, away from you':'down the page, towards you')+'<br>Thumb (Motion): <b>'+(fup()>0?'up, out of the page':'down, into the page')+'</b>';
+    if(quiz()){ goBtn.disabled=true; return; }
     var p=pred.value(), n;
     if(!on) n='Choose the magnet and the current, predict which way the wire will move, then <b>switch on</b>.';
     else if(running) n=pressed(combBtn)?'The wire’s own circular field adds to the magnet’s field on one side and cancels it on the other. The wire is pushed out of the stronger field towards the weaker one.':'The current makes a magnetic field around the wire. This interacts with the magnet’s field, so there is a force on the wire.';
@@ -489,6 +523,91 @@
   function go(){ if(running||finished) return; on=true; t=0; d=0; running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); }
   function reset(){ stop(); on=false; finished=false; t=0; d=0; draw(); }
   function changed(){ reset(); }
+  // ----- practice: Find the current, and an exam-style question (current, then field, then motion) -----
+  var Q=null, qSel=null, qmode=segGroup($('#me-qmode'), setQMode), stageW=$('#st-wire');
+  function quiz(){ return !!Q; }
+  function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), t2=a[i]; a[i]=a[j]; a[j]=t2; } return a; }
+  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  var STEPS={find:['current'], exam:['current','field','motion']};
+  function newQ(){
+    stop(); on=false; finished=false; t=0; d=0;
+    Q={type:qmode.value(), step:0, done:{}};
+    mag.pick(pick(['L','R'])); cur.pick(pick(['up','down']));
+    Q.cam=[pick([25,-25,45,-45,35,-35,150,-150])*DEG, pick([20,30,40])*DEG]; setCam(Q.cam[0],Q.cam[1]);
+    setStep(); }
+  function setStep(){
+    var name=STEPS[Q.type][Q.step], letters=shuffle(['a','b']);
+    qSel=null;
+    if(name==='current') Q.opts=[{k:letters[0],v:1},{k:letters[1],v:-1}];
+    else if(name==='field') Q.opts=shuffle([{k:'a',v:1},{k:'b',v:-1}]).map(function(o,i){ return {k:['a','b'][i],v:o.v}; });
+    else Q.opts=shuffle([[0,0,1],[0,0,-1],[1,0,0],[-1,0,0]]).map(function(v,i){ return {k:String(i+1),v:v}; });
+    Q.opts.sort(function(u,v){ return u.k<v.k?-1:1; });
+    var n=STEPS[Q.type].length;
+    $('#me-qstep').textContent=n>1?'Step '+(Q.step+1)+' of '+n+' \u00b7 '+(name==='current'?'Current':name==='field'?'Magnetic field':'Motion'):'Find the current';
+    $('#me-qtext').innerHTML=Q.type==='find'?'The wire moves the way the <b>motion</b> arrow shows. Which arrow shows the direction of the <b>current</b> in the wire?':
+      name==='current'?'The ends of the wire are connected to the <b>+</b> and <b>&minus;</b> terminals of a battery. Which arrow shows the direction of the <b>current</b> in the wire?':
+      name==='field'?'Which arrow shows the direction of the <b>magnetic field</b> between the poles?':'Predict the motion. Which arrow shows the direction of the <b>force</b> on the wire?';
+    $('#me-qopts').innerHTML=Q.opts.map(function(o){ return '<button type="button" data-k="'+o.k+'" aria-pressed="false">'+o.k+'</button>'; }).join('');
+    $('#me-qcheck').disabled=false;
+    $('#me-note').innerHTML='Drag the 3D view to turn it and look from another side. Then choose an arrow and press <b>Check</b>.';
+    draw(); }
+  // the answer arrows, drawn on top of the 3D view with their letters or numbers
+  function quizOverlay(P){
+    var name=STEPS[Q.type][Q.step], g='';
+    if(Q.type==='exam'){ // battery terminals at the ends of the wire: current leaves the + end
+      var plus=cdir()>0?-WL:WL; [[plus,'+'],[-plus,'−']].forEach(function(e){ var q=P(0,e[0]*1.06,d);
+        g+='<circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" r="9" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+txt(q[0].toFixed(1),(q[1]+4.5).toFixed(1),e[1],{a:'middle',c:'var(--ink)',w:600,fs:14}); }); }
+    if(Q.finished || !name) return g;
+    var ny=depthOf(0,-100,0)<depthOf(0,100,0)?-1:1;   // which end of the wire (and which face of the gap) is nearer to you
+    function arr(a,b,lab,off){ var p=P(a[0],a[1],a[2]), q=P(b[0],b[1],b[2]), dx=q[0]-p[0], dy=q[1]-p[1], n=Math.hypot(dx,dy)||1;
+      if(off){ var w0=P(0,-50,d), w1=P(0,50,d), wx=w1[0]-w0[0], wy=w1[1]-w0[1], wn=Math.hypot(wx,wy)||1, ox=-wy/wn*off, oy=wx/wn*off;
+        p=[p[0]+ox,p[1]+oy]; q=[q[0]+ox,q[1]+oy]; }   // shift sideways from the wire on the screen
+      return line(p[0].toFixed(1),p[1].toFixed(1),q[0].toFixed(1),q[1].toFixed(1),'var(--ink)',3,' marker-end="url(#me-tq)"')+
+        '<circle cx="'+(q[0]+dx/n*13).toFixed(1)+'" cy="'+(q[1]+dy/n*13).toFixed(1)+'" r="9" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>'+
+        txt((q[0]+dx/n*13).toFixed(1),(q[1]+dy/n*13+4).toFixed(1),lab,{a:'middle',c:'var(--ink)',w:600,fs:12}); }
+    Q.opts.forEach(function(o,i){
+      if(name==='current'){ var yc=ny*88; g+=arr([0,yc-o.v*24,d],[0,yc+o.v*24,d],o.k,i?20:-20); }
+      else if(name==='field'){ var z=i?-HZ*0.55:HZ*0.55; g+=arr([-o.v*(GAP-8),ny*(HA+6),z],[o.v*(GAP-8),ny*(HA+6),z],o.k); }
+      else { var v=o.v, b0=[v[0]*10,ny*WL*0.8,d+v[2]*10]; g+=arr(b0,[b0[0]+v[0]*34,b0[1],b0[2]+v[2]*34],o.k); } });
+    return g; }
+  function checkQ(){
+    if(!Q||Q.finished) return;
+    var name=STEPS[Q.type][Q.step], btns=Array.prototype.slice.call($('#me-qopts').children);
+    if(!qSel){ $('#me-note').innerHTML='Choose an arrow first.'; return; }
+    var o=Q.opts.filter(function(x){ return x.k===qSel; })[0], ok;
+    if(name==='current') ok=o.v===cdir(); else if(name==='field') ok=o.v===bdir(); else ok=o.v[2]===fup()&&o.v[0]===0;
+    var btn=btns.filter(function(b){ return b.dataset.k===qSel; })[0];
+    if(!ok){
+      btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong');
+      setTimeout(function(){ btn.classList.remove('wrong'); btn.setAttribute('aria-pressed','false'); }, 750); qSel=null;
+      $('#me-note').innerHTML='Not quite. '+(name==='current'?(Q.type==='find'?'Use Fleming’s left-hand rule: point your <b>first finger</b> along the field (N to S) and your <b>thumb</b> along the motion. Your <b>second finger</b> then points along the current.':'Conventional current flows <b>out of the + terminal</b>, through the wire, and back to the &minus; terminal.'):
+        name==='field'?'Magnetic field lines go <b>from N to S</b>.':'Use Fleming’s left-hand rule: <b>first finger</b> along the field, <b>second finger</b> along the current; your <b>thumb</b> gives the motion. Try turning the 3D view so your hand matches it.');
+      return; }
+    btn.classList.add('right'); btns.forEach(function(b){ b.disabled=true; });
+    Q.done[name]=true;
+    var said=name==='current'?(Q.type==='find'?'Right: the left-hand rule gives this current.':'Right: current flows from + to &minus;.'):name==='field'?'Right: the field goes from N to S.':'Right: the force is at right angles to both the field and the current.';
+    if(Q.step+1<STEPS[Q.type].length){ $('#me-note').innerHTML=said; setTimeout(function(){ Q.step++; setStep(); $('#me-note').innerHTML=said+' Now the next step.'; }, 900); draw(); return; }
+    Q.finished=true; $('#me-qcheck').disabled=true; on=true;
+    $('#me-note').innerHTML=said+' The left-hand rule is shown on the right. Turn the 3D view to check it from another side, or press <b>New question</b>.';
+    t=0; d=0; running=true; last=performance.now(); raf=requestAnimationFrame(frame);
+    draw(); }
+  $('#me-qopts').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return;
+    qSel=b.dataset.k; Array.prototype.forEach.call(this.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); });
+  $('#me-qcheck').addEventListener('click',checkQ);
+  $('#me-qnew').addEventListener('click',newQ);
+  function setQMode(v){
+    var q=v!=='explore';
+    stageW.classList.toggle('quiz',q);
+    Array.prototype.forEach.call(stageW.querySelectorAll('.explore-only'),function(e){ e.hidden=q; });
+    $('#me-quiz').hidden=!q;
+    if(q) newQ(); else { Q=null; setCam(28*DEG,26*DEG); mag.pick('L'); cur.pick('up'); reset(); } }
+  // turning the 3D view: drag it (the hand turns too), or arrow keys when it has focus
+  [v3,hand].forEach(function(el){ var drag=null;
+    el.addEventListener('pointerdown',function(e){ drag={x:e.clientX,y:e.clientY,th:TH,ph:PH}; try{ el.setPointerCapture(e.pointerId); }catch(x){} });
+    el.addEventListener('pointermove',function(e){ if(!drag) return; setCam(drag.th-(e.clientX-drag.x)*0.5*DEG, drag.ph+(e.clientY-drag.y)*0.4*DEG); draw(); });
+    ['pointerup','pointercancel'].forEach(function(ev){ el.addEventListener(ev,function(){ drag=null; }); }); });
+  v3.addEventListener('keydown',function(e){ var k={ArrowLeft:[10,0],ArrowRight:[-10,0],ArrowUp:[0,-8],ArrowDown:[0,8]}[e.key]; if(!k) return; e.preventDefault(); setCam(TH+k[0]*DEG,PH+k[1]*DEG); draw(); });
+  $('#me-view').addEventListener('click',function(){ if(Q) setCam(Q.cam[0],Q.cam[1]); else setCam(28*DEG,26*DEG); draw(); });
   goBtn.addEventListener('click',go);
   combBtn.addEventListener('click',function(){ toggle(combBtn); draw(); });
   slowBtn.addEventListener('click',function(){ toggle(slowBtn); });
