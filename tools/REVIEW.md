@@ -57,9 +57,9 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `gas-molecules.html` | IGCSE | ❔ Not recorded | |
 | `magnetic-field-patterns.html` | IGCSE | ❔ Not recorded | |
 | `electromagnet-field-patterns.html` | IGCSE | ❔ Not recorded | |
-| `motor-effect.html` | IGCSE | 🔍 To review | 25 Oct: now holds charged particles too, behind a Wire / Charged particles switch (`?show=wire` or `?show=particles` hides the switch). Charged particles: 2D, 3D and Fleming's left-hand rule pictures side by side, like the wire (3D shows the beam between N and S pole faces; the rule appears once the beam is fired and follows the leading particle). The field region is now half as wide, since the beam never reaches the far half. Wire: the Fleming's left-hand rule picture stays blank until Switch on; the plan view says "Force into page" in words; the 3D view (and the hand with it) can be dragged or turned with the arrow keys; new practice modes: Find the current (motion and field shown, pick arrow a or b for the current) and Exam question (a battery wired to both ends of the wire, beside the magnet; pick the current, then the field, then the force from arrows 1–4), each from a random viewpoint. Check the wording and the hints. |
-| `dc-motor.html` | IGCSE | 🔍 To review | 25 Oct: Generator mode (turn the coil, centre-zero voltmeter, output p.d. graph showing the split ring's rectified humps; `?show=gen` opens in it). Current and Magnet choices now share one row. New 2D / 3D view: the 3D view shows the coil turning between the poles, with current and force arrows on both sides (check the force directions in 3D match the end-on view). Motor mode no longer shows the force, turning effect or moment working (not on the IGCSE, IB or A Level specs); generator mode keeps its p.d. readings. The note box keeps a fixed height so the page doesn't jump as the coil turns. The coil now turns at half the pace (generator 0.25–0.75 turns/s); a key explains ⊙ and ⊗; the generator note says which way the induced current flows in side A. |
-| `loudspeaker.html` | IGCSE | 🔍 To review | 25 Oct: new Strength of magnet slider (stronger magnet → bigger force → cone moves further → louder) (the 3D view was tried and removed). |
+| `motor-effect.html` | IGCSE | ✅ Checked 25 Oct 2026 | |
+| `dc-motor.html` | IGCSE | ✅ Checked 25 Oct 2026 | |
+| `loudspeaker.html` | IGCSE | ✅ Checked 25 Oct 2026 | |
 | `magnet-and-coil.html` | IGCSE | ❔ Not recorded | |
 | `ac-generator.html` | IGCSE | ❔ Not recorded | |
 | `transformer.html` | IGCSE | ❔ Not recorded | |
