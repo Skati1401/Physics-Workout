@@ -243,6 +243,7 @@
           <button class="btn" id="cp-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="cp-slow" type="button" aria-pressed="false">Slow motion</button>
         </div>
+        <div class="seg" id="cp-view" role="group" aria-label="View"><button type="button" data-v="2d" aria-pressed="true">2D: from the front</button><button type="button" data-v="3d" aria-pressed="false">3D</button></div>
         <div class="sliders">
           <div><label class="lab" for="cp-b"><span>Field strength</span> <output id="cp-bo"></output></label><input type="range" id="cp-b" min="1" max="3" step="1" value="2"></div>
           <div><label class="lab" for="cp-v"><span>Speed of the particles</span> <output id="cp-vo"></output></label><input type="range" id="cp-v" min="1" max="3" step="1" value="2"></div>
@@ -435,6 +436,8 @@
   function drawHand(){
     var P=proj(150,165,1.0), Lx=88, HW=300;
     var g='<defs>'+arrowHead('me-ha','var(--topic)')+arrowHead('me-hc','var(--copper)')+arrowHead('me-hf','var(--accent)')+'</defs>';
+    // nothing to show until the current is switched on, so the rule doesn't give the answer away
+    if(!on){ hand.innerHTML=txt(150,150,'Switch on to see',{a:'middle',c:'var(--ink-faint)',fs:12})+txt(150,168,'the left-hand rule',{a:'middle',c:'var(--ink-faint)',fs:12}); return; }
     var bx=bdir(), cy=cdir(), fz=fup();
     // a faint floor and wall so the three directions read as 3D, with right-angle marks
     g+=poly(P,[[0,0,0],[bx*Lx,0,0],[bx*Lx,cy*Lx,0],[0,cy*Lx,0]],'var(--topic-soft)','var(--panel-border)',' fill-opacity="0.55"');
@@ -544,7 +547,7 @@
 
   var svg=$('#cp-svg'), playBtn=$('#cp-play'), slowBtn=$('#cp-slow'), bIn=$('#cp-b'), vIn=$('#cp-v');
   var X0=140, Y0=160, RX=[140,626], RY=[18,302], TMAX=6, EMIT=3.6, GAP=0.12, t=0, running=false, raf=0, last=0, path=[];
-  var qG=segGroup($('#cp-q'), changed), fG=segGroup($('#cp-fd'), changed);
+  var qG=segGroup($('#cp-q'), changed), fG=segGroup($('#cp-fd'), changed), vwG=segGroup($('#cp-view'), function(){ draw(); });
   [bIn,vIn].forEach(function(x){ x.addEventListener('input', changed); });
   var LV=['','weak','medium','strong'], SP=['','slow','medium','fast'];
 
@@ -568,6 +571,70 @@
   }
   function at(d){ var i=Math.floor(d/2); return i<path.length?path[i]:null; }
   function done(){ return t>=TMAX-1e-9; }
+
+  // 3D: the same beam seen from the front left and above. The page becomes an upright plane:
+  // X to the right (x on the page), Y away from you (into the page), Z up (y on the page, upside down)
+  var TH=22*Math.PI/180, PH=18*Math.PI/180, CT=Math.cos(TH), ST=Math.sin(TH), CP=Math.cos(PH), SP=Math.sin(PH), S3=0.82, DP=50;
+  function P(X,Y,Z){ var dep=-X*ST+Y*CT; return [300+S3*(X*CT+Y*ST), 164+S3*(-Z*CP-dep*SP)]; }
+  function Pp(x,y,Y){ return P(x-333,Y||0,160-y); }                // a point on the page, or Y in front of / behind it
+  function ps(list){ return list.map(function(q){ return q[0].toFixed(1)+','+q[1].toFixed(1); }).join(' '); }
+  function seg(a,b,col,w,extra){ return line(a[0].toFixed(1),a[1].toFixed(1),b[0].toFixed(1),b[1].toFixed(1),col,w,extra); }
+  function plate(Y,pole,op){   // a magnet pole face parallel to the page, covering the field region
+    var c=pole==='N'?'north':'south', m=Pp(RX[1]-24,RY[0]+30,Y);
+    return '<polygon points="'+ps([Pp(RX[0],RY[0],Y),Pp(RX[1],RY[0],Y),Pp(RX[1],RY[1],Y),Pp(RX[0],RY[1],Y)])+'" fill="var(--'+c+'-soft)" fill-opacity="'+op+'" stroke="var(--'+c+')" stroke-width="2"/>'+
+      txt(m[0].toFixed(1),m[1].toFixed(1),pole,{a:'middle',fs:18,c:'var(--'+c+')',w:600});
+  }
+  function draw3d(){
+    var g='<defs>'+arrowHead('cp-fa3','var(--accent)')+arrowHead('cp-va3','var(--ink)')+arrowHead('cp-ba3','var(--topic)')+'</defs>';
+    var str=+bIn.value, step=(str===1?48:str===2?36:27)*1.5, inn=fd()==='in', along=fd()==='along';
+    // the back pole (field goes from N to S)
+    if(!along) g+=plate(DP,inn?'S':'N',0.9);
+    // field lines: straight through the page from the front pole to the back one, or along the beam
+    if(along){ [-40,0,40].forEach(function(Y){ for(var y=RY[0]+30;y<RY[1];y+=step) g+=seg(Pp(RX[0]+8,y,Y),Pp(RX[1]-10,y,Y),'var(--topic)',1.3,' opacity="0.6" marker-end="url(#cp-ba3)"'); }); }
+    else for(var x=RX[0]+step/2;x<RX[1];x+=step) for(var y2=RY[0]+step/2;y2<RY[1];y2+=step)
+      g+=seg(Pp(x,y2,inn?-DP:DP),Pp(x,y2,inn?DP:-DP),'var(--topic)',1.3,' opacity="0.55" marker-end="url(#cp-ba3)"');
+    // the page the beam travels in
+    g+='<polygon points="'+ps([Pp(RX[0],RY[0]),Pp(RX[1],RY[0]),Pp(RX[1],RY[1]),Pp(RX[0],RY[1])])+'" fill="var(--topic-soft)" fill-opacity="0.35" stroke="var(--topic)" stroke-dasharray="5 4"/>';
+    // the source
+    g+='<polygon points="'+ps([Pp(4,146),Pp(48,146),Pp(48,174),Pp(4,174)])+'" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2"/>';
+    var sl=Pp(26,192); g+=txt(sl[0].toFixed(1),sl[1].toFixed(1),'source',{a:'middle',fs:10.5});
+    var col=q()<0?'var(--south)':'var(--north)', v=speed(), head=Math.min(t,EMIT+20)*v, trail=[];
+    if(t>0){ for(var i=0;i<path.length && i*2<=head;i+=2) trail.push(Pp(path[i][0],path[i][1])); }
+    if(trail.length>1) g+='<polyline points="'+ps(trail)+'" fill="none" stroke="'+col+'" stroke-width="2" opacity="0.3"/>';
+    var lead=null;
+    for(var e=0;e*GAP<=Math.min(t,EMIT);e++){ var p=at((t-e*GAP)*v); if(!p) continue; if(!lead) lead=p; var o=Pp(p[0],p[1]);
+      g+='<circle cx="'+o[0].toFixed(1)+'" cy="'+o[1].toFixed(1)+'" r="4.5" fill="'+col+'"/>'+txt(o[0].toFixed(1),(o[1]+3.2).toFixed(1),q()<0?'−':'+',{a:'middle',fs:8.5,c:'var(--panel)',w:600}); }
+    if(lead && inField(lead[0],lead[1]) && running){
+      var c=Math.cos(lead[2]), s=Math.sin(lead[2]), o0=Pp(lead[0],lead[1]);
+      g+=seg(o0,Pp(lead[0]+36*c,lead[1]+36*s),'var(--ink)',2,' marker-end="url(#cp-va3)"');
+      if(!along){ var b=bendDown(), f1=Pp(lead[0]-36*s*b,lead[1]+36*c*b), fl=Pp(lead[0]-48*s*b,lead[1]+48*c*b);
+        g+=seg(o0,f1,'var(--accent)',3,' marker-end="url(#cp-fa3)"')+txt(fl[0].toFixed(1),(fl[1]+4).toFixed(1),'F',{a:'middle',c:'var(--accent)',w:600}); }
+    }
+    // the front pole, see-through so the beam shows behind it
+    if(!along) g+=plate(-DP,inn?'N':'S',0.22);
+    g+=txt(634,314,along?'magnetic field along the beam':'magnetic field from N to S, '+(inn?'into':'out of')+' the page',{a:'end',fs:11,c:'var(--topic)'});
+    return g;
+  }
+
+  // the left-hand rule as three axes, once the beam is fired: top left in 2D, bottom left in 3D (where the picture leaves room)
+  var LT=Math.cos(40*Math.PI/180), LS=Math.sin(40*Math.PI/180), LC=Math.cos(25*Math.PI/180), LP=Math.sin(25*Math.PI/180);
+  function lhr(y0){
+    if(t===0) return '';
+    var v=speed(), p=at(t*v)||path[path.length-1], a=p[2], c=Math.cos(a), s=Math.sin(a), ox=62, oy=y0+76, L=46;
+    function L3(X,Y,Z){ var dep=-X*LS+Y*LT; return [ox+(X*LT+Y*LS), oy+(-Z*LC-dep*LP)]; }
+    // page directions (x right, y down) to world (X right, Y into the page, Z up)
+    var along=fd()==='along', fy=fd()==='in'?1:-1, qc=q();
+    var field=along?[c,0,-s]:[0,fy,0], curr=[qc*c,0,-qc*s], b=bendDown(), force=[-s*b,0,-c*b];
+    var g='<defs>'+arrowHead('cp-la','var(--topic)')+arrowHead('cp-lc','var(--copper)')+arrowHead('cp-lf','var(--accent)')+'</defs>';
+    g+='<rect x="2" y="'+y0+'" width="132" height="136" rx="8" fill="var(--panel)" fill-opacity="0.9" stroke="var(--panel-border)"/>';
+    g+=txt(68,y0+15,'left-hand rule',{a:'middle',fs:10.5,c:'var(--ink)',w:600});
+    function ax(d,col,mk,lab,k){ var e=L3(d[0]*L*k,d[1]*L*k,d[2]*L*k), dx=e[0]-ox, dy=e[1]-oy, n=Math.hypot(dx,dy)||1;
+      var lx=Math.max(8,Math.min(128,e[0]+dx/n*15)), ly=e[1]+dy/n*13+4, an=lx<30?'start':(lx>100?'end':'middle');
+      return line(ox,oy,e[0].toFixed(1),e[1].toFixed(1),col,3.5,' stroke-linecap="round" marker-end="url(#'+mk+')"')+txt(lx.toFixed(1),ly.toFixed(1),lab,{a:an,fs:10,c:col,w:600}); }
+    g+=ax(field,'var(--topic)','cp-la','field',along?1.15:1)+ax(curr,'var(--copper)','cp-lc','current',along?0.75:1);
+    g+=along?txt(68,y0+128,'parallel: no force',{a:'middle',fs:10,c:'var(--accent)',w:600}):ax(force,'var(--accent)','cp-lf','force',1);
+    return g+'<circle cx="'+ox+'" cy="'+oy+'" r="3" fill="var(--ink-soft)"/>';
+  }
 
   function draw(){
     var g='<defs>'+arrowHead('cp-fa','var(--accent)')+arrowHead('cp-va','var(--ink)')+arrowHead('cp-ba','var(--topic)')+'</defs>';
@@ -596,7 +663,9 @@
       g+=line(lead[0],lead[1],lead[0]+30*c,lead[1]+30*s,'var(--ink)',2,' marker-end="url(#cp-va)"');
       if(fd()!=='along'){ var b=bendDown(); g+=line(lead[0],lead[1],lead[0]-30*s*b,lead[1]+30*c*b,'var(--accent)',3,' marker-end="url(#cp-fa)"')+txt(lead[0]-40*s*b,lead[1]+40*c*b+4,'F',{a:'middle',c:'var(--accent)',w:600}); }
     }
-    svg.innerHTML=g;
+    var v3=vwG.value()==='3d';
+    svg.innerHTML=(v3?draw3d():g)+lhr(v3?182:2);
+    svg.setAttribute('aria-label', v3?'A beam of charged particles fired into a magnetic field, seen in 3D between the two poles of a magnet':'A beam of charged particles fired into a magnetic field');
 
     $('#cp-bo').textContent=LV[+bIn.value]; $('#cp-vo').textContent=SP[+vIn.value];
     var along=fd()==='along', bd=bendDown();

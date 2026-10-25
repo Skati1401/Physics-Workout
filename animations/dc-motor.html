@@ -187,6 +187,7 @@
           <button class="btn" id="dm-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="dm-slow" type="button" aria-pressed="false">Slow motion</button>
         </div>
+        <div class="seg" id="dm-view" role="group" aria-label="View"><button type="button" data-v="2d" aria-pressed="true">2D: end-on</button><button type="button" data-v="3d" aria-pressed="false">3D</button></div>
         <div class="sliders">
           <div class="motor-only"><label class="lab" for="dm-i">Current <output id="dm-io"></output></label><input type="range" id="dm-i" min="1" max="3" step="0.5" value="2"></div>
           <div class="gen-only" hidden><label class="lab" for="dm-f">Turning speed <output id="dm-fo"></output></label><input type="range" id="dm-f" min="0.5" max="1.5" step="0.5" value="1"></div>
@@ -307,6 +308,52 @@
     reset(); }
   [iIn,nIn,bIn].forEach(function(x){ x.addEventListener('input', function(){ draw(); }); });
   var STR=['','weak','medium','strong'];
+  var viewG=segGroup($('#dm-view'), function(){ draw(); });
+
+  // 3D: the same coil seen from the front right and above (the camera used on the motor effect page)
+  // world axes: X to the right, Y away from you (along the axle), Z up; the coil turns about the Y axis
+  var TH3=38*DEG, PH3=18*DEG, C3=Math.cos(TH3), S3=Math.sin(TH3), CP3=Math.cos(PH3), SP3=Math.sin(PH3), DL=100, PZ=100;
+  function Q(X,Y,Z){ var dep=-X*S3+Y*C3; return [CX+0.95*(X*C3+Y*S3), CY-6+0.95*(-Z*CP3-dep*SP3)]; }
+  function qs(list){ return list.map(function(q){ var p=Q(q[0],q[1],q[2]); return p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' '); }
+  function seg3(a,b,col,w,extra){ var p=Q(a[0],a[1],a[2]), q=Q(b[0],b[1],b[2]); return line(p[0].toFixed(1),p[1].toFixed(1),q[0].toFixed(1),q[1].toFixed(1),col,w,extra); }
+  function poly3(list,fill,stroke,extra){ return '<polygon points="'+qs(list)+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.6" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  // a pole block: visible faces are the top, the front (towards you) and the right-hand side
+  function block3(x0,x1,pole,op){
+    var c=pole==='N'?'north':'south', f='var(--'+c+'-soft)', st='var(--'+c+')', o=op?' fill-opacity="'+op+'"':'', HA=DL+12;
+    var g=poly3([[x0,-HA,PZ],[x1,-HA,PZ],[x1,HA,PZ],[x0,HA,PZ]],f,st,o)+
+          poly3([[x0,-HA,-PZ],[x1,-HA,-PZ],[x1,-HA,PZ],[x0,-HA,PZ]],f,st,o)+
+          poly3([[x1,-HA,-PZ],[x1,HA,-PZ],[x1,HA,PZ],[x1,-HA,PZ]],f,st,(o||'')+' style="filter:brightness(0.93)"');
+    var fp=Q((x0+x1)/2,-HA,0); return g+txt(fp[0].toFixed(1),(fp[1]+9).toFixed(1),pole,{a:'middle',c:st,w:600,fs:26});
+  }
+  function coil3d(c){
+    var g='', nl=bd()>0, x0=nl?-100:100, ca=Math.cos(th), sa=Math.sin(th);
+    function fieldRow(y,z){ return seg3([x0,y,z],[-x0,y,z],'var(--topic)',1.2,' opacity="0.45"')+seg3([x0*0.85,y,z],[x0*0.7,y,z],'var(--topic)',2,' opacity="0.7" marker-end="url(#dm-ba)"'); }
+    g+=block3(-162,-100,nl?'N':'S');
+    [-60,0,60].forEach(function(z){ g+=fieldRow(DL*0.6,z); });
+    var A=[R*ca,0,R*sa], Bq=[-R*ca,0,-R*sa];
+    function at(p,y){ return [p[0],y,p[2]]; }
+    // the coil: back end, the two long sides (the farther one first), the front end; then the axle out to the commutator
+    g+=seg3(at(A,DL),at(Bq,DL),'var(--copper)',3,' opacity="0.7"');
+    g+=seg3([0,DL,0],[0,DL+25,0],'var(--ink)',4,' stroke-linecap="round"');
+    // draw the side further from you (smaller X) first
+    var sides=[[A,c,'var(--copper)','A'],[Bq,-c,'var(--ink-soft)','B']];
+    sides.sort(function(u,v){ return u[0][0]-v[0][0]; });
+    var fl=16+F()*26;
+    sides.forEach(function(sd){ var p=sd[0];
+      g+=seg3(at(p,DL),at(p,-DL),'var(--ink)',8,' stroke-linecap="round"')+seg3(at(p,DL),at(p,-DL),sd[2],5,' stroke-linecap="round"');
+      if(sd[1]){ g+=seg3([p[0],sd[1]*50,p[2]+9],[p[0],sd[1]*18,p[2]+9],'var(--copper)',2.2,' marker-end="url(#dm-ca)"');
+        if(!gen()){ var up=sd[1]*bd(); g+=seg3([p[0],0,p[2]+up*12],[p[0],0,p[2]+up*(12+fl)],'var(--accent)',4,' marker-end="url(#dm-fa)"'); } }
+      var lp=Q(p[0]*1.18,-DL-8,p[2]*1.18); g+=txt(lp[0].toFixed(1),(lp[1]+4).toFixed(1),sd[3],{a:'middle',c:sd[2],w:600,fs:13});
+    });
+    g+=seg3(at(A,-DL),at(Bq,-DL),'var(--copper)',3);
+    g+=seg3([0,-DL,0],[0,-DL-38,0],'var(--ink)',4,' stroke-linecap="round"');
+    if(on && Math.abs(w)>0.05){ var dir=w>0?1:-1, list=[]; for(var k=0;k<=16;k++){ var a=th+dir*(0.5+0.7*k/16); list.push([46*Math.cos(a),-DL-30,46*Math.sin(a)]); }
+      g+='<polyline points="'+qs(list)+'" fill="none" stroke="var(--ink-soft)" stroke-width="2" marker-end="url(#dm-ta)"/>'; }
+    [-60,0,60].forEach(function(z){ g+=fieldRow(-DL*0.6,z); });
+    g+=block3(100,162,nl?'S':'N',0.45);
+    g+=txt(CX,318,'the coil in 3D (the axle goes into the page)',{a:'middle'});
+    return g;
+  }
 
   function sc(){ return +cur.value(); } function bd(){ return +mag.value(); }
   function Bt(){ return +bIn.value*0.1; }
@@ -322,12 +369,13 @@
     for(var i=0;i<n;i++){ var a=(torque(th)-B1*w-B2*w*Math.abs(w))/J; w+=a*h; th+=w*h; t+=h; }
   }
   function draw(){
-    var g='<defs>'+arrowHead('dm-fa','var(--accent)')+arrowHead('dm-ta','var(--ink-soft)')+arrowHead('dm-ba','var(--topic)')+'</defs>';
-    var nl=bd()>0;
+    var g='<defs>'+arrowHead('dm-fa','var(--accent)')+arrowHead('dm-ta','var(--ink-soft)')+arrowHead('dm-ba','var(--topic)')+arrowHead('dm-ca','var(--copper)')+'</defs>';
+    var nl=bd()>0, v3=viewG.value()==='3d', A, Bp, c=cA(th), tq=torque(th);
+    if(v3) g+=coil3d(c); else {
     g+=poleRect(18,58,62,214,nl?'N':'S',28)+poleRect(320,58,62,214,nl?'S':'N',28);
     for(var y=78;y<=252;y+=29){ var a0=nl?82:318, a1=nl?318:82; g+=line(a0,y,a1,y,'var(--topic)',1.2,' opacity="0.45"'); g+=line(a0+(a1-a0)*0.06,y,a0+(a1-a0)*0.09,y,'var(--topic)',2,' opacity="0.7" marker-end="url(#dm-ba)"'); }
     // the coil, seen end-on: side A and side B joined through the axle
-    var A=P(th,R), Bp=P(th+Math.PI,R), c=cA(th);
+    A=P(th,R); Bp=P(th+Math.PI,R);
     g+=line(A[0],A[1],Bp[0],Bp[1],'var(--copper)',5,' stroke-linecap="round" opacity="0.55"');
     g+='<circle cx="'+CX+'" cy="'+CY+'" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>';
     // forces: out-of-page current in a rightward field is pushed up
@@ -336,10 +384,10 @@
     g+=wireEnd(A[0],A[1],14,c,'var(--copper)')+wireEnd(Bp[0],Bp[1],14,-c,'var(--ink-soft)');
     var la=P(th,R+26), lb=P(th+Math.PI,R+26);
     g+=txt(la[0],la[1]+4,'A',{a:'middle',c:'var(--copper)',w:600,fs:13})+txt(lb[0],lb[1]+4,'B',{a:'middle',c:'var(--ink-soft)',w:600,fs:13});
-    var tq=torque(th);
     if(on && Math.abs(w)>0.05){ var dir=w>0?1:-1, r2=R-34, s0=th+dir*0.5, s1=th+dir*1.2, p0=P(s0,r2), p1=P(s1,r2);
       g+='<path d="M'+p0[0].toFixed(1)+','+p0[1].toFixed(1)+' A'+r2+','+r2+' 0 0 '+(dir>0?0:1)+' '+p1[0].toFixed(1)+','+p1[1].toFixed(1)+'" fill="none" stroke="var(--ink-soft)" stroke-width="2" marker-end="url(#dm-ta)"/>'; }
     g+=txt(CX,318,'the coil, seen end-on',{a:'middle'});
+    }
     // split-ring commutator and brushes, seen from the front
     var KX=520, KY=128, KR=36, gp=0.16;
     g+=txt(KX,30,'split-ring commutator',{a:'middle',c:'var(--ink)',w:600,fs:12.5});

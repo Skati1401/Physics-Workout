@@ -57,9 +57,9 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `gas-molecules.html` | IGCSE | ❔ Not recorded | |
 | `magnetic-field-patterns.html` | IGCSE | ❔ Not recorded | |
 | `electromagnet-field-patterns.html` | IGCSE | ❔ Not recorded | |
-| `motor-effect.html` | IGCSE | 🔍 To review | 25 Oct: now holds charged particles too, behind a Wire / Charged particles switch (`?show=wire` or `?show=particles` hides the switch). |
-| `dc-motor.html` | IGCSE | 🔍 To review | 25 Oct: Generator mode (turn the coil, centre-zero voltmeter, output p.d. graph showing the split ring's rectified humps; `?show=gen` opens in it). Current and Magnet choices now share one row. |
-| `loudspeaker.html` | IGCSE | ❔ Not recorded | |
+| `motor-effect.html` | IGCSE | 🔍 To review | 25 Oct: now holds charged particles too, behind a Wire / Charged particles switch (`?show=wire` or `?show=particles` hides the switch). Charged particles: new 2D / 3D view (3D shows the beam between N and S pole faces) and a left-hand-rule axes inset (field, current, force) that appears once the beam is fired. Wire: the Fleming's left-hand rule picture stays blank until Switch on. |
+| `dc-motor.html` | IGCSE | 🔍 To review | 25 Oct: Generator mode (turn the coil, centre-zero voltmeter, output p.d. graph showing the split ring's rectified humps; `?show=gen` opens in it). Current and Magnet choices now share one row. New 2D / 3D view: the 3D view shows the coil turning between the poles, with current and force arrows on both sides (check the force directions in 3D match the end-on view). |
+| `loudspeaker.html` | IGCSE | 🔍 To review | 25 Oct: new Strength of magnet slider (stronger magnet → bigger force → cone moves further → louder) and 2D / 3D view (3D: round magnet with N centre pole and S rim, radial field across the gap, coil in the gap, see-through cone). Check the 3D picture reads clearly. |
 | `magnet-and-coil.html` | IGCSE | ❔ Not recorded | |
 | `ac-generator.html` | IGCSE | ❔ Not recorded | |
 | `transformer.html` | IGCSE | ❔ Not recorded | |
