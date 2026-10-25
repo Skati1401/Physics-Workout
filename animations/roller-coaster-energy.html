@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roller Coaster Energy Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#7a3fc4;   --topic-soft:#eee3fb;
+    --grav:#2f63c9;    --grav-soft:#e0e9fa;
+    --kin:#c2560c;     --kin-soft:#fbe4cd;
+    --therm:#b8322a;   --therm-soft:#fbe2df;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#c29bff; --topic-soft:#2e1f4a;
+      --grav:#86a9ff; --grav-soft:#1a2b55; --kin:#ff9f5c; --kin-soft:#3a2413; --therm:#ff8a80; --therm-soft:#402023;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#c29bff; --topic-soft:#2e1f4a;
+    --grav:#86a9ff; --grav-soft:#1a2b55; --kin:#ff9f5c; --kin-soft:#3a2413; --therm:#ff8a80; --therm-soft:#402023;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; controls, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view-wrap{position:relative;}
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 290px));touch-action:pan-y;}
+  .view-wrap canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .embed .view{max-height:460px;}
+  .under{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px;margin-top:12px;}
+  .under .btn-group{flex:0 1 auto;}
+  .sliders{flex:1 1 300px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px 16px;min-width:0;}
+  .view text{font-family:var(--font-mono);}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--accent);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+  .hint{font-size:12.5px;color:var(--ink-soft);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  .dragme{cursor:grab;}
+  .dragme:focus{outline:none;}
+  .dragme:focus-visible .focus-ring{stroke:var(--accent);stroke-width:3;}
+  @media (max-width:560px){ .stage{padding:12px;} .eq{font-size:12.5px;padding:6px 8px;} .note{font-size:14px;} }
+
+  .ebars{display:flex;flex-direction:column;gap:7px;}
+  .ebar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;font-size:12.5px;color:var(--ink-soft);}
+  .ebar b{font:600 12.5px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .etrack{grid-column:1/-1;height:12px;background:var(--bg);border:1px solid var(--panel-border);border-radius:4px;overflow:hidden;}
+  .efill{height:100%;width:100%;transform-origin:left center;transform:scaleX(0);}
+  .over{margin-top:8px;}
+
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .hint{display:none;}
+
+  .view{max-height:max(240px,calc(100vh - 330px));}
+  .under .sliders{flex-basis:100%;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' \u00b7 ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; energy</div>
+    <h1>Energy on a Roller Coaster</h1>
+  </header>
+  <section class="card stage">
+    <div>
+      <svg class="view" id="rc-svg" viewBox="0 0 680 262" role="img" aria-label="A roller coaster cart at the top of a drop, with a second hill and a flat run to the end of the track">
+        <g id="rc-track"></g><g id="rc-fr"></g><g id="rc-car"></g>
+      </svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="rc-go" type="button">&#9654; Go</button>
+          <button class="btn" id="rc-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="rc-slow" type="button" aria-pressed="false">Slow motion</button>
+        </div>
+        <div class="sliders">
+          <div><label class="lab" for="rc-m"><span>Mass m</span> <output id="rc-mo"></output></label><input type="range" id="rc-m" min="200" max="600" step="50" value="300"></div>
+          <div><label class="lab" for="rc-u"><span>Start speed u</span> <output id="rc-uo"></output></label><input type="range" id="rc-u" min="0" max="10" step="1" value="0"></div>
+          <div><label class="lab" for="rc-f"><span>Friction F</span> <output id="rc-fo"></output></label><input type="range" id="rc-f" min="0" max="400" step="25" value="100"></div>
+          <div><label class="lab" for="rc-h1"><span>Start height h<sub>1</sub></span> <output id="rc-h1o"></output></label><input type="range" id="rc-h1" min="5" max="20" step="1" value="15"></div>
+          <div><label class="lab" for="rc-h2"><span>Hill 2 height h<sub>2</sub></span> <output id="rc-h2o"></output></label><input type="range" id="rc-h2" min="2" max="20" step="1" value="10"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div>
+        <div class="lab">Jump to a point</div>
+        <div class="seg" id="rc-points"><button type="button" data-p="start" aria-pressed="false">Start</button><button type="button" data-p="bottom" aria-pressed="false">Bottom</button><button type="button" data-p="top2" aria-pressed="false">Top of hill 2</button><button type="button" data-p="end" aria-pressed="false">Finish</button></div>
+      </div>
+      <p class="note" id="rc-note" aria-live="polite"></p>
+      <div class="stats">
+        <div class="stat"><small>Height</small><strong id="rc-h">0 m</strong></div>
+        <div class="stat hi"><small>Speed</small><strong id="rc-v">0 m/s</strong></div>
+        <div class="stat"><small>Distance travelled</small><strong id="rc-d">0 m</strong></div>
+      </div>
+      <div class="ebars" id="rc-bars"></div>
+      <p class="hint">Try it with no friction, then change the mass: the energies change, but does the speed?</p>
+      <details class="working" id="rc-working">
+        <summary>Show working</summary>
+        <div class="eq" id="rc-eq"></div>
+        <div class="eq over" id="rc-over" hidden></div>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+(function(){
+  // roller-coaster-energy.html is the one copy of this animation. On its own it is the lesson version;
+  // with ?embed it drops its heading so a workout tab can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  var page = document.getElementById('page');
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    document.getElementById('rc-working').open = true;
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  function num(n, dp){   // round, drop trailing zeros, group thousands with a space from 10 000
+    var f = Math.pow(10, dp||0), r = Math.round(n*f)/f, t = String(r);
+    if(Math.abs(r)>=10000) t = t.replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    return t;
+  }
+  function fix(n, dp){ return (Math.round(n*Math.pow(10,dp))/Math.pow(10,dp)).toFixed(dp); }
+  function sig4(n){ return n===0 ? '0' : num(n, Math.max(0, 3-Math.floor(Math.log10(Math.abs(n))))); }
+  function FR(t){
+    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1 ')
+      .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+
+  /* ---------- the track, in metres ----------
+     x = 0 to 4: the start platform at h1 (with a buffer at x = 0)
+     x = 4 to 22: the drop, a curve that starts steep and levels out at the bottom
+     x = 22 to 26: the valley; x = 26 to 46: hill 2, height h2, top at x = 36
+     x = 46 to 64: the flat run to the end of the track (buffer at x = 64) */
+  var G=10, X_TOP=4, X_DROP=22, X_HA=26, X_HB=46, X_H2=36, X_BOT=24, X_END=64, TMAX=120, DT=0.002;
+  var ins={m:$('#rc-m'), u:$('#rc-u'), f:$('#rc-f'), h1:$('#rc-h1'), h2:$('#rc-h2')};
+  var P={}, TX=[], TY=[], TS=[], S0=0, SEND=0, run=null;
+  var t=0, playing=false, last=0, raf=0, mark='';
+  var goBtn=$('#rc-go'), slowBtn=$('#rc-slow'), pointsEl=$('#rc-points');
+
+  function yAt(x){
+    if(x<=X_TOP) return P.h1;
+    if(x<X_DROP){ var q=(x-X_TOP)/(X_DROP-X_TOP); return P.h1*(1-q)*(1-q); }
+    if(x<X_HA || x>=X_HB) return 0;
+    return P.h2*(1-Math.cos(2*Math.PI*(x-X_HA)/(X_HB-X_HA)))/2;
+  }
+  function buildTrack(){
+    TX=[]; TY=[]; TS=[]; var s=0, n=6400;
+    for(var i=0;i<=n;i++){
+      var x=X_END*i/n, y=yAt(x);
+      if(i>0) s+=Math.hypot(x-TX[i-1], y-TY[i-1]);
+      TX.push(x); TY.push(y); TS.push(s);
+    }
+    SEND=s; S0=sAtX(X_TOP);
+  }
+  function idx(s){ var lo=0, hi=TS.length-1; while(hi-lo>1){ var mid=(lo+hi)>>1; if(TS[mid]<=s) lo=mid; else hi=mid; } return lo; }
+  function at(s){   // position on the track a distance s along it, and the sine of the slope (+ = uphill going right)
+    s=Math.max(0,Math.min(SEND,s)); var i=Math.min(idx(s),TS.length-2), ds=TS[i+1]-TS[i], f=ds>0?(s-TS[i])/ds:0;
+    return {x:TX[i]+f*(TX[i+1]-TX[i]), y:TY[i]+f*(TY[i+1]-TY[i]), sin:ds>0?(TY[i+1]-TY[i])/ds:0, slope:(TY[i+1]-TY[i])/(TX[i+1]-TX[i])};
+  }
+  function sAtX(x){ var i=Math.min(TX.length-1,Math.round(x/X_END*(TX.length-1))); return TS[i]; }
+
+  /* ---------- one run, worked out in advance so it can be played, paused and jumped through ----------
+     The friction force F always acts against the motion. Energy is kept exact:
+     KE = total energy − GPE − work done against friction (F × distance travelled). */
+  function simulate(){
+    var m=P.m, F=P.F, E0=m*G*P.h1+0.5*m*P.u*P.u, s=S0, v=P.u, d=0, tt=0, next=0, smp=[], out='forever';
+    var tBottom=null, tTop=null, tTurn=null, prevX=X_TOP;
+    function rec(){ smp.push({t:tt, s:s, d:d, v:v}); }
+    rec();
+    while(tt<TMAX){
+      var p=at(s), dir;
+      if(v===0){
+        if(F>=m*G*Math.abs(p.sin) && tt>0){ out='rest'; break; }
+        dir = p.sin>0 ? -1 : 1;
+      } else dir = v>0 ? 1 : -1;
+      var a=-G*p.sin - dir*F/m, vn=(v===0 ? a*DT : v+a*DT);
+      if(v!==0 && vn*v<0) vn=0;   // a turning point: it stops for a moment
+      var sn=s+(v+vn)/2*DT;
+      d+=Math.abs(sn-s); s=sn; tt+=DT;
+      if(s>=SEND){ s=SEND; out='end'; }
+      else if(s<=0){ s=0; out='buffer'; }
+      var q=at(s), KE=E0-m*G*q.y-F*d;
+      if(KE<=0 || vn===0){ v=0; } else { v=(vn>0?1:-1)*Math.sqrt(2*KE/m); }
+      if(tBottom===null && q.x>=X_BOT) tBottom=tt;
+      if(tTop===null && q.x>=X_H2) tTop=tt;
+      if(tTop===null && tTurn===null && q.x>X_HA && q.x<prevX) tTurn=tt;   // rolls back down hill 2
+      prevX=q.x;
+      if(out!=='forever'){ rec(); break; }
+      if(tt>=next){ rec(); next+=0.02; }
+    }
+    if(smp[smp.length-1].t<tt) rec();
+    var o={smp:smp, out:out, tEnd:smp[smp.length-1].t, E0:E0, tBottom:tBottom, tTop:tTop, tTurn:tTurn};
+    o.dTop=sAtX(X_H2)-S0;
+    return o;
+  }
+  function stateAt(tt){
+    var smp=run.smp, i=0, lo=0, hi=smp.length-1;
+    if(tt>=smp[hi].t) i=hi; else { while(hi-lo>1){ var mid=(lo+hi)>>1; if(smp[mid].t<=tt) lo=mid; else hi=mid; } i=lo; }
+    var A=smp[i], B=smp[Math.min(i+1,smp.length-1)], f=(B.t>A.t)?Math.min(1,(tt-A.t)/(B.t-A.t)):0;
+    var s=A.s+f*(B.s-A.s), d=A.d+f*(B.d-A.d), dirv=(f<0.5?A.v:B.v);
+    var p=at(s), h=Math.round(p.y*100)/100, dd=Math.round(d*100)/100;
+    var GPE=Math.round(P.m*G*h), W=Math.round(P.F*dd), KE=Math.max(0,run.E0-GPE-W);
+    var ended = tt>=run.tEnd;
+    if(ended && run.out==='rest'){ KE=0; W=run.E0-GPE; }   // at rest: nothing left in the kinetic store
+    return {p:p, h:h, d:dd, GPE:GPE, W:W, KE:KE, v:Math.sqrt(2*KE/P.m), dir:dirv, ended:ended};
+  }
+
+  /* ---------- drawing ---------- */
+  function px(x){ return 20+x*10; } function py(y){ return 232-y*10; }
+  function drawTrack(){
+    var g='<rect x="0" y="232" width="680" height="30" fill="var(--bg)"/><line x1="0" y1="232" x2="680" y2="232" stroke="var(--ink-faint)" stroke-width="1.5"/>';
+    for(var x=1;x<X_END;x+=2){ var y=yAt(x); if(y>0.3) g+='<line x1="'+px(x)+'" y1="'+py(y)+'" x2="'+px(x)+'" y2="232" stroke="var(--panel-border)" stroke-width="1.5"/>'; }
+    var pts=[]; for(var i=0;i<TX.length;i+=20) pts.push(px(TX[i]).toFixed(1)+','+py(TY[i]).toFixed(1));
+    g+='<line x1="'+px(0)+'" y1="'+py(P.h1)+'" x2="'+px(X_END)+'" y2="'+py(P.h1)+'" stroke="var(--grav)" stroke-width="1.2" stroke-dasharray="5 5" opacity=".7"/>';
+    g+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--ink-soft)" stroke-width="4" stroke-linejoin="round"/>';
+    g+='<rect x="'+(px(0)-6)+'" y="'+(py(P.h1)-14)+'" width="6" height="14" fill="var(--ink-soft)"/><rect x="'+px(X_END)+'" y="218" width="6" height="14" fill="var(--ink-soft)"/>';
+    g+='<text x="'+(px(X_END)-2)+'" y="'+(py(P.h1)-6)+'" font-size="12" text-anchor="end" fill="var(--grav)">start height h₁ = '+P.h1+' m</text>';
+    var ty=py(P.h2)-10; if(Math.abs(P.h2-P.h1)<2) ty=py(P.h2)+22;
+    g+='<text x="'+px(X_H2)+'" y="'+ty+'" font-size="12" text-anchor="middle" fill="var(--ink-soft)">h₂ = '+P.h2+' m</text>';
+    g+='<text x="'+(px(X_END)-4)+'" y="252" font-size="11" text-anchor="end" fill="var(--ink-faint)">end of the track</text>';
+    $('#rc-track').innerHTML=g;
+  }
+  function drawCar(st){
+    var a=-Math.atan2(yAt(Math.min(X_END,st.p.x+1.8))-yAt(Math.max(0,st.p.x-1.8)),3.6)*180/Math.PI,   // tilt with the track under the whole cart
+        X=px(st.p.x), Y=py(st.p.y);
+    var c='<g transform="translate('+X.toFixed(1)+' '+Y.toFixed(1)+') rotate('+a.toFixed(1)+')">'+
+      '<line x1="2" y1="-19" x2="2" y2="-30" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>'+
+      '<line x1="2" y1="-27" x2="12" y2="-22" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>'+
+      '<circle cx="2" cy="-36" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>'+
+      '<rect x="-18" y="-21" width="36" height="14" rx="4" fill="var(--topic-soft)" stroke="var(--topic)" stroke-width="2.5"/>'+
+      '<circle cx="-10" cy="-4" r="4" fill="var(--ink)"/><circle cx="10" cy="-4" r="4" fill="var(--ink)"/>';
+    var fr='';
+    if(P.F>0 && st.v>0.05 && !st.ended){   // friction acts against the motion
+      var L=12+P.F/400*34, s=st.dir>=0?-1:1, x0=s*20;
+      fr='<line x1="'+x0+'" y1="-12" x2="'+(x0+s*L)+'" y2="-12" stroke="var(--therm)" stroke-width="3.5"/>'+
+         '<path d="M'+(x0+s*(L+8))+',-12 L'+(x0+s*L)+',-17 L'+(x0+s*L)+',-7 Z" fill="var(--therm)"/>';
+    }
+    $('#rc-car').innerHTML=c+fr+'</g>';
+  }
+  var ROWS=[{k:'g',l:'Gravitational potential energy',c:'var(--grav)'},{k:'k',l:'Kinetic energy',c:'var(--kin)'},{k:'w',l:'Work done against friction (thermal store)',c:'var(--therm)'},{k:'t',l:'Total energy',c:'var(--ink-soft)'}];
+  $('#rc-bars').innerHTML=ROWS.map(function(r){ return '<div class="ebar"><span>'+r.l+'</span><b id="rc-v-'+r.k+'"></b><div class="etrack"><div class="efill" id="rc-f-'+r.k+'" style="background:'+r.c+'"></div></div></div>'; }).join('');
+
+  function note(st){
+    var F=P.F, fric=F>0?' Friction also does work, transferring energy to the thermal store of the track and the air.':'';
+    if(t===0) return 'The cart is at the top, '+P.h1+' m up, '+(P.u>0?'moving at '+P.u+' m/s.':'at rest.')+' Will it get over hill 2? Decide, then press Go.';
+    if(st.ended){
+      var over = run.tTop!==null;
+      if(run.out==='end') return 'The cart reaches the end of the track at '+num(st.v,1)+' m/s. Of the '+num(run.E0)+' J it started with, '+num(st.W)+' J has been transferred to the thermal store by friction and '+num(st.KE)+' J is still kinetic energy.';
+      if(run.out==='buffer') return 'The cart rolls all the way back and hits the buffer at the start'+(over?'':', having failed to get over hill 2')+'. Its start speed gave it more energy than its height alone.';
+      if(run.out==='rest' && P.F===0) return 'The cart cannot get over hill 2. It rolls back up to exactly its starting height and stops there: with no friction, no energy was transferred away.';
+      if(run.out==='rest') return (over?'The cart gets over hill 2, then':'The cart cannot get over hill 2. It rolls back and forth, then')+' comes to rest. Work done against friction = '+num(st.W)+' J'+(st.GPE>0?', and '+num(st.GPE)+' J is still GPE.':': all the energy it started with is now in the thermal store of the surroundings.');
+      if(P.F>0) return 'After two minutes the cart is still rolling back and forth, losing a little energy to friction on every pass.';
+      return over?'With no friction, no energy leaves the cart, so it keeps the same total energy all the way.':'With no friction the cart can never get above the height its total energy allows, so it rolls back and forth between the hills forever.';
+    }
+    if(st.v<0.05 && st.d>1) return 'The cart stops for a moment: all its energy is GPE (and work already done against friction). Now it rolls back.';
+    var up=st.p.sin*st.dir;
+    if(Math.abs(st.p.sin)<0.02) return F>0?'On the flat the GPE stays the same. Friction does work, so the kinetic energy falls and the cart slows down.':'On the flat the GPE stays the same, and with no friction the kinetic energy does too: a steady speed.';
+    return (up<0?'Going down: GPE is transferred to kinetic energy, so the cart speeds up.':'Going up: kinetic energy is transferred to GPE, so the cart slows down.')+fric;
+  }
+  function draw(){
+    var st=stateAt(t), E0=run.E0;
+    drawCar(st);
+    $('#rc-h').textContent=fix(st.h,1)+' m'; $('#rc-v').textContent=fix(st.v,1)+' m/s'; $('#rc-d').textContent=fix(st.d,1)+' m';
+    var v={g:st.GPE,k:st.KE,w:st.W,t:E0};
+    for(var k in v){ $('#rc-v-'+k).textContent=num(v[k])+' J'; $('#rc-f-'+k).style.transform='scaleX('+Math.max(0,Math.min(1,v[k]/E0))+')'; }
+    $('#rc-note').textContent=note(st);
+    var m=P.m, KE0=0.5*m*P.u*P.u, w='At the start:<br>GPE = m × g × h<br>GPE = '+m+' × 10 × '+P.h1+' = '+num(m*G*P.h1)+' J<br>KE = ½ × m × v²<br>KE = ½ × '+m+' × '+P.u+'² = '+num(KE0)+' J<br>total = '+num(m*G*P.h1)+' + '+num(KE0)+' = '+num(E0)+' J';
+    if(t>0){
+      w+='<br>Now:<br>GPE = '+m+' × 10 × '+num(st.h,2)+' = '+num(st.GPE)+' J<br>work done = F × d<br>work done = '+P.F+' × '+num(st.d,2)+' = '+num(st.W)+' J'+
+         '<br>KE = total − GPE − work done<br>KE = '+num(E0)+' − '+num(st.GPE)+' − '+num(st.W)+'<br>KE = '+num(st.KE)+' J';
+      if(st.KE>0){
+        var v2=2*st.KE/m;
+        w+='<br>KE = ½ × m × v²<br>'+num(st.KE)+' = ½ × '+m+' × v²<br>'+num(st.KE)+' = '+num(m/2)+' × v²<br>v² = [['+num(st.KE)+'|'+num(m/2)+']]<br>v² = '+sig4(v2)+'<br>v = √'+sig4(v2)+'<br>v = <b>'+num(Math.sqrt(v2),Math.sqrt(v2)>=10?1:2)+' m/s</b>';
+      } else w+='<br>v = <b>0 m/s</b>';
+    }
+    $('#rc-eq').innerHTML=FR(w);
+    // the hill 2 check is shown once the cart has reached hill 2's top or turned back, so it never gives the answer away
+    var showOver = (run.tTop!==null && t>=run.tTop) || (run.tTurn!==null && t>=run.tTurn) || st.ended;
+    var ov=$('#rc-over'); ov.hidden=!showOver;
+    if(showOver){
+      var Gt=m*G*P.h2, Wt=Math.round(P.F*run.dTop), need=Gt+Wt;
+      ov.innerHTML='Can it get over hill 2?<br>energy needed = GPE at the top + work done<br>GPE = '+m+' × 10 × '+P.h2+' = '+num(Gt)+' J<br>work done = '+P.F+' × '+num(run.dTop,2)+' = '+num(Wt)+' J<br>energy needed = '+num(Gt)+' + '+num(Wt)+' = '+num(need)+' J<br>'+
+        (E0>need?'The '+num(E0)+' J it has is more than '+num(need)+' J, so it gets over.':(E0===need?'It has exactly '+num(need)+' J, so it only just reaches the top.':'The '+num(E0)+' J it has is less than '+num(need)+' J, so it cannot get over.'));
+    }
+    goBtn.innerHTML = playing ? '&#10074;&#10074; Pause' : (t>0 && t<run.tEnd ? '&#9654; Play' : (t>=run.tEnd ? '&#9654; Go again' : '&#9654; Go'));
+  }
+
+  /* ---------- controls ---------- */
+  function read(){
+    P={m:+ins.m.value, u:+ins.u.value, F:+ins.f.value, h1:+ins.h1.value, h2:+ins.h2.value};
+    $('#rc-mo').textContent=P.m+' kg'; $('#rc-uo').textContent=P.u+' m/s'; $('#rc-fo').textContent=P.F+' N';
+    $('#rc-h1o').textContent=P.h1+' m'; $('#rc-h2o').textContent=P.h2+' m';
+  }
+  function setMark(p){
+    mark=p; Array.prototype.forEach.call(pointsEl.children,function(x){ x.setAttribute('aria-pressed', String(x.dataset.p===p)); });
+  }
+  function stop(){ playing=false; cancelAnimationFrame(raf); }
+  function reset(){
+    stop(); read(); buildTrack(); run=simulate(); t=0; setMark('');
+    var b=pointsEl.querySelector('[data-p="top2"]');
+    b.textContent = run.tTop!==null ? 'Top of hill 2' : 'Highest on hill 2';
+    b.disabled = run.tTop===null && run.tTurn===null;
+    drawTrack(); draw();
+  }
+  function frame(now){
+    if(!playing) return;
+    var dt=Math.min(0.05,(now-last)/1000)*(slowBtn.getAttribute('aria-pressed')==='true'?0.3:1)*(t>12?4:1); last=now;   // a long roll back and forth plays faster after 12 s
+    t=Math.min(run.tEnd,t+dt);
+    if(t>=run.tEnd) stop();
+    draw();
+    if(playing) raf=requestAnimationFrame(frame);
+  }
+  goBtn.addEventListener('click',function(){
+    if(playing){ stop(); draw(); return; }
+    if(t>=run.tEnd) t=0;
+    setMark(''); playing=true; last=performance.now(); raf=requestAnimationFrame(frame); draw();
+  });
+  $('#rc-reset').addEventListener('click',reset);
+  slowBtn.addEventListener('click',function(){ slowBtn.setAttribute('aria-pressed', String(slowBtn.getAttribute('aria-pressed')!=='true')); });
+  pointsEl.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b||b.disabled) return;
+    stop(); var p=b.dataset.p;
+    t = p==='start' ? 0 : p==='bottom' ? (run.tBottom!==null?run.tBottom:run.tEnd) : p==='top2' ? (run.tTop!==null?run.tTop:run.tTurn) : run.tEnd;
+    setMark(p); draw();
+  });
+  Object.keys(ins).forEach(function(k){ ins[k].addEventListener('input',reset); });
+
+  watchEquals($('#rc-eq')); watchEquals($('#rc-over'));
+  reset();
+})();
+</script>
+</body>
+</html>
