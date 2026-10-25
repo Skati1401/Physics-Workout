@@ -185,7 +185,6 @@
           <button class="btn" id="ls-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="ls-slow" type="button" aria-pressed="false">Slow motion</button>
         </div>
-        <div class="seg" id="ls-view" role="group" aria-label="View"><button type="button" data-v="2d" aria-pressed="true">2D: cut in half</button><button type="button" data-v="3d" aria-pressed="false">3D</button></div>
         <div class="sliders">
           <div><label class="lab" for="ls-i"><span>Size of current</span> <output id="ls-io"></output></label><input type="range" id="ls-i" min="1" max="3" step="1" value="2"></div>
           <div><label class="lab" for="ls-f"><span>Frequency of current</span> <output id="ls-fo"></output></label><input type="range" id="ls-f" min="0.5" max="2" step="0.25" value="1"></div>
@@ -280,7 +279,6 @@
   var svg=$('#ls-svg'), playBtn=$('#ls-play'), slowBtn=$('#ls-slow'), iIn=$('#ls-i'), fIn=$('#ls-f'), bIn=$('#ls-b'), ptsEl=$('#ls-points');
   var TMAX=6, t=0, running=false, raf=0, last=0, VW=150;   // VW: speed of the sound wave across the picture (px/s)
   var sup=segGroup($('#ls-sup'), changed);
-  var view=segGroup($('#ls-view'), function(){ draw(); });
   [iIn,fIn,bIn].forEach(function(x){ x.addEventListener('input', changed); });
   var SIZE=['','small','medium','large'], STR=['','weak','medium','strong'];
 
@@ -331,57 +329,9 @@
     return g+air(290);
   }
 
-  // 3D: the same speaker seen from the front left and above (one camera, as in the motor effect page)
-  // world axes: X along the speaker's axis (towards the air), Y away from you, Z up
-  var TH=40*Math.PI/180, PH=16*Math.PI/180, CT=Math.cos(TH), ST=Math.sin(TH), CP=Math.cos(PH), SP=Math.sin(PH);
-  function P(X,Y,Z){ var dep=-X*ST+Y*CT; return [150+1.3*(X*CT+Y*ST), 162+1.3*(-Z*CP-dep*SP)]; }
-  function ring(x,r,a0,a1,n){ var p=[]; n=n||48; for(var k=0;k<=n;k++){ var a=a0+(a1-a0)*k/n; p.push(P(x,r*Math.cos(a),r*Math.sin(a))); } return p; }
-  function ps(list){ return list.map(function(q){ return q[0].toFixed(1)+','+q[1].toFixed(1); }).join(' '); }
-  function hull(p){   // convex hull (monotone chain) of 2D points
-    p=p.slice().sort(function(a,b){ return a[0]-b[0]||a[1]-b[1]; });
-    function cr(o,a,b){ return (a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]); }
-    var lo=[],up=[],i;
-    for(i=0;i<p.length;i++){ while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p[i])<=0) lo.pop(); lo.push(p[i]); }
-    for(i=p.length-1;i>=0;i--){ while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p[i])<=0) up.pop(); up.push(p[i]); }
-    return lo.slice(0,-1).concat(up.slice(0,-1));
-  }
-  var TAU=2*Math.PI;
-  function solid(x0,r0,x1,r1,fill,stroke,extra){ return '<polygon points="'+ps(hull(ring(x0,r0,0,TAU).concat(ring(x1,r1,0,TAU))))+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.6" stroke-linejoin="round"'+(extra||'')+'/>'; }
-  function disc(x,r,fill,stroke,extra){ return '<polygon points="'+ps(ring(x,r,0,TAU))+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.6"'+(extra||'')+'/>'; }
-  function seg(a,b,col,w,extra){ return line(a[0].toFixed(1),a[1].toFixed(1),b[0].toFixed(1),b[1].toFixed(1),col,w,extra); }
-
-  function draw3d(cur,dx,cs){
-    var g='<defs>'+arrowHead('ls-tb','var(--topic)')+arrowHead('ls-tc','var(--copper)')+arrowHead('ls-tf','var(--accent)')+'</defs>';
-    var RM=78, RI=58, RP=28, XB=-70, RC=43;
-    // magnet: S outer rim and back plate, N centre pole, with the gap between them
-    g+=solid(XB,RM,0,RM,'var(--south-soft)','var(--south)',' style="filter:brightness(0.93)"');
-    g+=disc(0,RM,'var(--south-soft)','var(--south)')+disc(0,RI,'var(--core-soft)','var(--south)');
-    g+=solid(-14,RP,0,RP,'var(--north-soft)','var(--north)',' style="filter:brightness(0.93)"')+disc(0,RP,'var(--north-soft)','var(--north)');
-    var np=P(0,0,0), sp=P(0,0,-(RM+RI)/2);
-    g+=txt(np[0].toFixed(1),(np[1]+6).toFixed(1),'N',{a:'middle',fs:16,c:'var(--north)',w:600});
-    g+=txt(sp[0].toFixed(1),(sp[1]+5).toFixed(1),'S',{a:'middle',fs:13,c:'var(--south)',w:600});
-    // the field crosses the gap: outwards from the N centre pole to the S rim, all the way round
-    for(var k=0;k<8;k++){ var a=k/8*TAU+0.2; g+=seg(P(0,(RP+2)*Math.cos(a),(RP+2)*Math.sin(a)),P(0,(RI-3)*Math.cos(a),(RI-3)*Math.sin(a)),'var(--topic)',fieldW(),' marker-end="url(#ls-tb)"'); }
-    // the coil (wound on a tube) and the cone move together along the axis
-    var xs=[-6,0,6,12];
-    xs.forEach(function(x,i){ g+='<polyline points="'+ps(ring(x+dx,RC,0,TAU))+'" fill="none" stroke="var(--copper)" stroke-width="3"'+(x+dx<0?' opacity="0.55"':'')+'/>'; });
-    if(cs!==0){ [Math.PI*0.85,Math.PI,Math.PI*1.15].forEach(function(a){ var d=0.16*cs, x=12+dx;
-      g+=seg(P(x,(RC+6)*Math.cos(a-d),(RC+6)*Math.sin(a-d)),P(x,(RC+6)*Math.cos(a+d),(RC+6)*Math.sin(a+d)),'var(--copper)',2.5,' marker-end="url(#ls-tc)"'); });
-      var il=P(12+dx,-(RC+16),-6); g+=txt(il[0].toFixed(1),il[1].toFixed(1),'I',{a:'end',c:'var(--copper)',w:600,fs:13}); }
-    g+=solid(16+dx,RC,120+dx,100,'var(--accent-soft)','var(--ink-soft)',' fill-opacity="0.2"');
-    g+='<polyline points="'+ps(ring(120+dx,100,0,TAU))+'" fill="none" stroke="var(--ink-soft)" stroke-width="2.5"/>';
-    if(Math.abs(cur)>0.03){ var L=26+26*Math.abs(cur)*B()/2/2.25, d=cur>0?-1:1, f0=P(80+dx,0,0), f1=P(80+dx+d*L,0,0);
-      g+=seg(f0,f1,'var(--accent)',4,' marker-end="url(#ls-tf)"')+txt(((f0[0]+f1[0])/2).toFixed(1),((f0[1]+f1[1])/2-10).toFixed(1),'F',{a:'middle',c:'var(--accent)',w:600}); }
-    var cl=P(-45,0,-RM-14), co=P(120,0,-100); 
-    g+=txt(cl[0].toFixed(1),(cl[1]+14).toFixed(1),'magnet',{a:'middle'})+txt(co[0].toFixed(1),(co[1]+24).toFixed(1),'cone',{a:'middle'});
-    var cc=P(0,-RC*0.7,RC*0.7), cq=P(-40,-RM,RM+16); g+=seg(cc,[cq[0]+4,cq[1]+4],'var(--copper)',1)+txt(cq[0].toFixed(1),cq[1].toFixed(1),'coil',{a:'end',c:'var(--copper)'});
-    return g+air(340);
-  }
-
   function draw(){
-    var cur=on()?I(t):0, dx=on()?cone(t):0, cs=Math.abs(cur)<0.03?0:(cur>0?1:-1), v3=view.value()==='3d';
-    svg.innerHTML=v3?draw3d(cur,dx,cs):draw2d(cur,dx,cs);
-    svg.setAttribute('aria-label', v3?'A loudspeaker in 3D: a round magnet with an N centre pole and an S rim, a coil in the gap fixed to a cone, and the air in front of the cone':'A loudspeaker cut in half: a magnet, a coil fixed to a cone, and the air in front of the cone');
+    var cur=on()?I(t):0, dx=on()?cone(t):0, cs=Math.abs(cur)<0.03?0:(cur>0?1:-1);
+    svg.innerHTML=draw2d(cur,dx,cs);
     $('#ls-bo').textContent=STR[B()];
 
     $('#ls-io').textContent=SIZE[+iIn.value]; $('#ls-fo').textContent=num(f(),2)+' Hz (slowed)';
@@ -392,7 +342,7 @@
     $('#ls-sh').textContent=ac()?num(f(),2)+' Hz':'no sound';
     var e;
     if(cs===0) e='No current, so no force on the coil.';
-    else e='First finger (field): across the gap, from N (centre) to S (rim): up at the top of the coil (in the 2D view)<br>Second finger (current): '+(cs>0?'out of':'into')+' the page at the top of the coil<br>Thumb (force): to the <b>'+(cs>0?'left':'right')+'</b>, so the cone is '+(cs>0?'pulled in':'pushed out')+'<br>At the bottom of the coil the field and the current are both reversed, so the force is the same way.';
+    else e='First finger (field): across the gap, from N (centre) to S (rim): up at the top of the coil<br>Second finger (current): '+(cs>0?'out of':'into')+' the page at the top of the coil<br>Thumb (force): to the <b>'+(cs>0?'left':'right')+'</b>, so the cone is '+(cs>0?'pulled in':'pushed out')+'<br>At the bottom of the coil the field and the current are both reversed, so the force is the same way.';
     $('#ls-eq').innerHTML=e;
     var n;
     if(!on()) n=ac()?'Press <b>Switch on</b>. The amplifier sends an <b>alternating current</b> through the coil, which sits in the field of a permanent magnet.':'Press <b>Switch on</b> to connect a battery to the coil instead.';

@@ -154,6 +154,8 @@
   .seg button[aria-pressed="true"] .ta{background:var(--panel);}
   .fixed .modebar{display:none;}
   #st-particles .view{max-height:max(240px,calc(100vh - 380px));}
+  #st-particles .views{grid-template-columns:450fr 450fr 300fr;}
+  @media (max-width:640px){ #st-particles .views{grid-template-columns:1fr 1fr;} #st-particles .views figure:not(.hand){grid-column:1/-1;} }
   .embed #st-particles .view{max-height:460px;}
   #st-particles .under .sliders{flex-basis:100%;}
 </style>
@@ -236,14 +238,17 @@
   </section>
   <section class="card stage" id="st-particles" hidden>
     <div>
-      <svg class="view" id="cp-svg" viewBox="0 0 640 320" role="img" aria-label="A beam of charged particles fired into a magnetic field"></svg>
+      <div class="views">
+        <figure><figcaption>2D: from the front</figcaption><svg class="view" id="cp-svg" viewBox="0 0 450 320" role="img" aria-label="A beam of charged particles fired into a magnetic field"></svg></figure>
+        <figure><figcaption>3D view</figcaption><svg class="view" id="cp-3d" viewBox="0 0 450 320" role="img" aria-label="The same beam in 3D, between the two poles of a magnet"></svg></figure>
+        <figure class="hand"><figcaption>Fleming&rsquo;s left-hand rule</figcaption><svg class="view" id="cp-hand" viewBox="0 0 300 300" role="img" aria-label="Thumb, first finger and second finger at right angles: force, field and current"></svg></figure>
+      </div>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="cp-play" type="button">&#9654; Fire the beam</button>
           <button class="btn" id="cp-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="cp-slow" type="button" aria-pressed="false">Slow motion</button>
         </div>
-        <div class="seg" id="cp-view" role="group" aria-label="View"><button type="button" data-v="2d" aria-pressed="true">2D: from the front</button><button type="button" data-v="3d" aria-pressed="false">3D</button></div>
         <div class="sliders">
           <div><label class="lab" for="cp-b"><span>Field strength</span> <output id="cp-bo"></output></label><input type="range" id="cp-b" min="1" max="3" step="1" value="2"></div>
           <div><label class="lab" for="cp-v"><span>Speed of the particles</span> <output id="cp-vo"></output></label><input type="range" id="cp-v" min="1" max="3" step="1" value="2"></div>
@@ -546,8 +551,8 @@
   function svgPoint(svg, e){ var r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; return {x:vb.x+(e.clientX-r.left)/r.width*vb.width, y:vb.y+(e.clientY-r.top)/r.height*vb.height}; }
 
   var svg=$('#cp-svg'), playBtn=$('#cp-play'), slowBtn=$('#cp-slow'), bIn=$('#cp-b'), vIn=$('#cp-v');
-  var X0=140, Y0=160, RX=[140,626], RY=[18,302], TMAX=6, EMIT=3.6, GAP=0.12, t=0, running=false, raf=0, last=0, path=[];
-  var qG=segGroup($('#cp-q'), changed), fG=segGroup($('#cp-fd'), changed), vwG=segGroup($('#cp-view'), function(){ draw(); });
+  var X0=140, Y0=160, RX=[140,440], RY=[18,302], TMAX=6, EMIT=3.6, GAP=0.12, t=0, running=false, raf=0, last=0, path=[];
+  var qG=segGroup($('#cp-q'), changed), fG=segGroup($('#cp-fd'), changed);
   [bIn,vIn].forEach(function(x){ x.addEventListener('input', changed); });
   var LV=['','weak','medium','strong'], SP=['','slow','medium','fast'];
 
@@ -566,7 +571,7 @@
       path.push([x,y,ang]);
       if(fd()!=='along' && inField(x,y)) ang+=s*ds/r;
       x+=ds*Math.cos(ang); y+=ds*Math.sin(ang);
-      if(x<-10||x>650||y<-10||y>330) break;
+      if(x<-10||x>470||y<-10||y>330) break;
     }
   }
   function at(d){ var i=Math.floor(d/2); return i<path.length?path[i]:null; }
@@ -574,9 +579,9 @@
 
   // 3D: the same beam seen from the front left and above. The page becomes an upright plane:
   // X to the right (x on the page), Y away from you (into the page), Z up (y on the page, upside down)
-  var TH=22*Math.PI/180, PH=18*Math.PI/180, CT=Math.cos(TH), ST=Math.sin(TH), CP=Math.cos(PH), SP=Math.sin(PH), S3=0.82, DP=50;
-  function P(X,Y,Z){ var dep=-X*ST+Y*CT; return [300+S3*(X*CT+Y*ST), 164+S3*(-Z*CP-dep*SP)]; }
-  function Pp(x,y,Y){ return P(x-333,Y||0,160-y); }                // a point on the page, or Y in front of / behind it
+  var TH=22*Math.PI/180, PH=18*Math.PI/180, CT=Math.cos(TH), ST=Math.sin(TH), CP=Math.cos(PH), SP=Math.sin(PH), S3=0.85, DP=50;
+  function P(X,Y,Z){ var dep=-X*ST+Y*CT; return [238+S3*(X*CT+Y*ST), 164+S3*(-Z*CP-dep*SP)]; }
+  function Pp(x,y,Y){ return P(x-290,Y||0,160-y); }                // a point on the page, or Y in front of / behind it
   function ps(list){ return list.map(function(q){ return q[0].toFixed(1)+','+q[1].toFixed(1); }).join(' '); }
   function seg(a,b,col,w,extra){ return line(a[0].toFixed(1),a[1].toFixed(1),b[0].toFixed(1),b[1].toFixed(1),col,w,extra); }
   function plate(Y,pole,op){   // a magnet pole face parallel to the page, covering the field region
@@ -612,28 +617,30 @@
     }
     // the front pole, see-through so the beam shows behind it
     if(!along) g+=plate(-DP,inn?'N':'S',0.22);
-    g+=txt(634,314,along?'magnetic field along the beam':'magnetic field from N to S, '+(inn?'into':'out of')+' the page',{a:'end',fs:11,c:'var(--topic)'});
+    g+=txt(446,314,along?'field along the beam':'field from N to S',{a:'end',fs:11,c:'var(--topic)'});
     return g;
   }
 
-  // the left-hand rule as three axes, once the beam is fired: top right, where the beam never reaches
-  var LT=Math.cos(40*Math.PI/180), LS=Math.sin(40*Math.PI/180), LC=Math.cos(25*Math.PI/180), LP=Math.sin(25*Math.PI/180);
+  // Fleming's left-hand rule for the leading particle, in its own picture beside the 2D and 3D views (same layout as the wire's)
+  var LT=Math.cos(28*Math.PI/180), LS=Math.sin(28*Math.PI/180), LC=Math.cos(26*Math.PI/180), LP=Math.sin(26*Math.PI/180);
   function lhr(){
-    if(t===0) return '';
-    var v=speed(), p=at(t*v)||path[path.length-1], a=p[2], c=Math.cos(a), s=Math.sin(a), X0=440, Y0=8, ox=556, oy=84, L=52;
+    if(t===0) return txt(150,150,'Fire the beam to see',{a:'middle',c:'var(--ink-faint)',fs:12})+txt(150,168,'the left-hand rule',{a:'middle',c:'var(--ink-faint)',fs:12});
+    var v=speed(), p=at(t*v)||path[path.length-1], a=p[2], c=Math.cos(a), s=Math.sin(a), ox=150, oy=160, L=84, HW=300;
     function L3(X,Y,Z){ var dep=-X*LS+Y*LT; return [ox+(X*LT+Y*LS), oy+(-Z*LC-dep*LP)]; }
-    // page directions (x right, y down) to world (X right, Y into the page, Z up)
+    // page directions (x right, y down) to world (X right, Y into the page, Z up); electrons: current opposite to their motion
     var along=fd()==='along', fy=fd()==='in'?1:-1, qc=q();
     var field=along?[c,0,-s]:[0,fy,0], curr=[qc*c,0,-qc*s], b=bendDown(), force=[-s*b,0,-c*b];
     var g='<defs>'+arrowHead('cp-la','var(--topic)')+arrowHead('cp-lc','var(--copper)')+arrowHead('cp-lf','var(--accent)')+'</defs>';
-    g+='<rect x="'+X0+'" y="'+Y0+'" width="190" height="142" rx="8" fill="var(--panel)" fill-opacity="0.9" stroke="var(--panel-border)"/>';
-    g+=txt(X0+10,Y0+134,'left-hand rule',{fs:10.5,c:'var(--ink)',w:600});
-    function ax(d,col,mk,lab,k){ var e=L3(d[0]*L*k,d[1]*L*k,d[2]*L*k), dx=e[0]-ox, dy=e[1]-oy, n=Math.hypot(dx,dy)||1;
-      var lx=Math.max(X0+6,Math.min(X0+184,e[0]+dx/n*16)), ly=Math.min(Y0+136,Math.max(Y0+14,e[1]+dy/n*14+4)), an=lx<X0+40?'start':(lx>X0+150?'end':'middle');
-      return line(ox,oy,e[0].toFixed(1),e[1].toFixed(1),col,4.5,' stroke-linecap="round" marker-end="url(#'+mk+')"')+txt(lx.toFixed(1),ly.toFixed(1),lab,{a:an,fs:12,c:col,w:600}); }
-    g+=ax(field,'var(--topic)','cp-la','field',along?1.15:1)+ax(curr,'var(--copper)','cp-lc','current',along?0.75:1);
-    g+=along?txt(X0+180,Y0+116,'parallel: no force',{a:'end',fs:11,c:'var(--accent)',w:600}):ax(force,'var(--accent)','cp-lf','force',1);
-    return g+'<circle cx="'+ox+'" cy="'+oy+'" r="3" fill="var(--ink-soft)"/>';
+    function ax(d,col,mk,l1,l2,k){
+      var o=[ox,oy], e=L3(d[0]*L*k,d[1]*L*k,d[2]*L*k), dx=e[0]-o[0], dy=e[1]-o[1], n=Math.hypot(dx,dy)||1, lx=e[0]+dx/n*14, ly=e[1]+dy/n*14;
+      var an=dx>8?'start':(dx<-8?'end':'middle'), y0=Math.min(282,Math.max(14,ly+(dy>8?8:(dy<-8?-12:0)))), tw=Math.max(l1.length*6.4,l2.length*7.8);
+      if(an==='start') lx=Math.min(lx,HW-4-tw); else if(an==='end') lx=Math.max(lx,4+tw); else lx=Math.min(Math.max(lx,4+tw/2),HW-4-tw/2);
+      return line(o[0],o[1],e[0].toFixed(1),e[1].toFixed(1),col,5,' stroke-linecap="round" marker-end="url(#'+mk+')"')+
+        txt(lx.toFixed(1),y0.toFixed(1),l1,{a:an,c:col,fs:10.5})+txt(lx.toFixed(1),(y0+13).toFixed(1),l2,{a:an,c:col,fs:12.5,w:600});
+    }
+    g+=ax(field,'var(--topic)','cp-la','First finger','Field',along?1.1:1)+ax(curr,'var(--copper)','cp-lc','Second finger','Current',along?0.7:1);
+    g+=along?txt(150,290,'parallel to the field: no force',{a:'middle',fs:11.5,c:'var(--accent)',w:600}):ax(force,'var(--accent)','cp-lf','Thumb','Force',1);
+    return g+'<circle cx="'+ox+'" cy="'+oy+'" r="4" fill="var(--ink-soft)"/>';
   }
 
   function draw(){
@@ -663,9 +670,7 @@
       g+=line(lead[0],lead[1],lead[0]+30*c,lead[1]+30*s,'var(--ink)',2,' marker-end="url(#cp-va)"');
       if(fd()!=='along'){ var b=bendDown(); g+=line(lead[0],lead[1],lead[0]-30*s*b,lead[1]+30*c*b,'var(--accent)',3,' marker-end="url(#cp-fa)"')+txt(lead[0]-40*s*b,lead[1]+40*c*b+4,'F',{a:'middle',c:'var(--accent)',w:600}); }
     }
-    var v3=vwG.value()==='3d';
-    svg.innerHTML=(v3?draw3d():g)+lhr();
-    svg.setAttribute('aria-label', v3?'A beam of charged particles fired into a magnetic field, seen in 3D between the two poles of a magnet':'A beam of charged particles fired into a magnetic field');
+    svg.innerHTML=g; $('#cp-3d').innerHTML=draw3d(); $('#cp-hand').innerHTML=lhr();
 
     $('#cp-bo').textContent=LV[+bIn.value]; $('#cp-vo').textContent=SP[+vIn.value];
     var along=fd()==='along', bd=bendDown();
