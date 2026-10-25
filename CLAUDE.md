@@ -122,6 +122,10 @@ Fill in the blank (word bank with distractors; check every gap against every chi
 
 For team tasks (jigsaws, escape rooms), design so the group genuinely has to cooperate: each member holds information the others need, and answers are checked in a way that can't be guessed or copied from one person.
 
+## Review tracker
+
+`tools/REVIEW.md` lists every published page with its review status. Whenever you build or change a page, set its row to "🔍 To review" and say what Alex should look at. Only Alex marks a page "✅ Checked"; when he says one is checked, record it with the date.
+
 ## Check before you commit
 
 1. Extract the `<script>` contents and run `node --check` on it.
