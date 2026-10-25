@@ -439,7 +439,7 @@
   }
 
   function draw3d(){
-    var P=proj(190,152,1.1);
+    var P=quiz()&&Q.type==='exam'?proj(190,134,0.95):proj(190,152,1.1);
     var g='<defs>'+arrowHead('me-ta','var(--topic)')+arrowHead('me-tc','var(--copper)')+arrowHead('me-tf','var(--accent)')+arrowHead('me-tq','var(--ink)')+'</defs>';
     var nl=mag.value()==='L', comb=pressed(combBtn)&&on&&!quiz(), x0=bdir()>0?-GAP:GAP, items=[];
     function add(X,Y,Z,svg){ items.push([depthOf(X,Y,Z),svg]); }
@@ -459,6 +459,17 @@
     } else if(on && !quiz()){ for(var r=16;r<=34;r+=9){ var c=[]; for(var j=0;j<=48;j++){ var a=j/48*2*Math.PI; c.push([r*Math.cos(a),-HA,d+r*Math.sin(a)]); }
         add(0,-HA,d,'<polyline points="'+pts(P,c)+'" fill="none" stroke="var(--copper)" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.85"/>'+
           seg3(P,[-3*cdir(),-HA,d+r],[3*cdir(),-HA,d+r],'var(--copper)',1.6,' marker-end="url(#me-tc)"')); } }
+    // exam question: a battery beside the magnet on your side, joined to both ends of the wire (current leaves its + terminal)
+    if(quiz()&&Q.type==='exam'){ var ZB=-HZ-14, BL=38, pY=cdir()>0?-1:1, sx=depthOf(1,0,0)<depthOf(-1,0,0)?1:-1, XB=sx*(GAP+POLE+34), lw='var(--ink-soft)';
+      [1,-1].forEach(function(sg){
+        add(0,sg*WL,(d+ZB)/2,seg3(P,[0,sg*WL,d],[0,sg*WL,ZB],lw,2.5,' stroke-linecap="round"'));
+        add(XB/2,sg*WL,ZB,seg3(P,[0,sg*WL,ZB],[XB,sg*WL,ZB],lw,2.5,' stroke-linecap="round"'));
+        add(XB,sg*(WL+BL)/2,ZB,seg3(P,[XB,sg*WL,ZB],[XB,sg*BL,ZB],lw,2.5,' stroke-linecap="round"')); });
+      var bat=seg3(P,[XB,-BL,ZB],[XB,BL,ZB],'var(--ink)',26,' stroke-linecap="butt"')+seg3(P,[XB,-BL+2,ZB],[XB,BL-2,ZB],'var(--panel)',21,' stroke-linecap="butt"')+
+        seg3(P,[XB,pY*BL,ZB],[XB,pY*(BL+8),ZB],'var(--ink)',11,' stroke-linecap="butt"');
+      var lp=P(XB,pY*(BL-14),ZB), lm=P(XB,-pY*(BL-14),ZB);
+      bat+=txt(lp[0].toFixed(1),(lp[1]+6).toFixed(1),'+',{a:'middle',c:'var(--ink)',w:600,fs:18})+txt(lm[0].toFixed(1),(lm[1]+6).toFixed(1),'−',{a:'middle',c:'var(--ink)',w:600,fs:18});
+      add(XB,0,ZB,bat); }
     items.sort(function(u,v){ return v[0]-u[0]; });
     g+=items.map(function(it){ return it[1]; }).join('');
     if(showCur){ var ti=P(0,(depthOf(0,-100,0)<depthOf(0,100,0)?-1:1)*102,d+16); g+=txt(ti[0].toFixed(1),ti[1].toFixed(1),'I',{a:'end',c:'var(--copper)',w:600,fs:13}); }
@@ -545,7 +556,7 @@
     var n=STEPS[Q.type].length;
     $('#me-qstep').textContent=n>1?'Step '+(Q.step+1)+' of '+n+' \u00b7 '+(name==='current'?'Current':name==='field'?'Magnetic field':'Motion'):'Find the current';
     $('#me-qtext').innerHTML=Q.type==='find'?'The wire moves the way the <b>motion</b> arrow shows. Which arrow shows the direction of the <b>current</b> in the wire?':
-      name==='current'?'The ends of the wire are connected to the <b>+</b> and <b>&minus;</b> terminals of a battery. Which arrow shows the direction of the <b>current</b> in the wire?':
+      name==='current'?'The wire is connected to a <b>battery</b>. Which arrow shows the direction of the <b>current</b> in the wire?':
       name==='field'?'Which arrow shows the direction of the <b>magnetic field</b> between the poles?':'Predict the motion. Which arrow shows the direction of the <b>force</b> on the wire?';
     $('#me-qopts').innerHTML=Q.opts.map(function(o){ return '<button type="button" data-k="'+o.k+'" aria-pressed="false">'+o.k+'</button>'; }).join('');
     $('#me-qcheck').disabled=false;
@@ -554,9 +565,6 @@
   // the answer arrows, drawn on top of the 3D view with their letters or numbers
   function quizOverlay(P){
     var name=STEPS[Q.type][Q.step], g='';
-    if(Q.type==='exam'){ // battery terminals at the ends of the wire: current leaves the + end
-      var plus=cdir()>0?-WL:WL; [[plus,'+'],[-plus,'−']].forEach(function(e){ var q=P(0,e[0]*1.06,d);
-        g+='<circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" r="9" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+txt(q[0].toFixed(1),(q[1]+4.5).toFixed(1),e[1],{a:'middle',c:'var(--ink)',w:600,fs:14}); }); }
     if(Q.finished || !name) return g;
     var ny=depthOf(0,-100,0)<depthOf(0,100,0)?-1:1;   // which end of the wire (and which face of the gap) is nearer to you
     function arr(a,b,lab,off){ var p=P(a[0],a[1],a[2]), q=P(b[0],b[1],b[2]), dx=q[0]-p[0], dy=q[1]-p[1], n=Math.hypot(dx,dy)||1;
