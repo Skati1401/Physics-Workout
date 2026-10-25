@@ -130,9 +130,9 @@
   .pcell.ok .seg button[aria-pressed="true"]{background:var(--good);border-color:var(--good);}
   .pcell.no .seg button[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);}
   .seg.ans button{flex:1 1 0;}
-  .seg.ans button.a-ok{background:var(--good);border-color:var(--good);color:var(--panel);opacity:1;}
-  .seg.ans button.a-no{background:var(--bad);border-color:var(--bad);color:var(--panel);opacity:1;}
-  .seg.ans button.a-miss{border:2px dashed var(--good);opacity:1;}
+  #fb-ans button.a-ok,.seg.ans button.a-ok{background:var(--good);border-color:var(--good);color:var(--panel);opacity:1;}
+  #fb-ans button.a-no,.seg.ans button.a-no{background:var(--bad);border-color:var(--bad);color:var(--panel);opacity:1;}
+  #fb-ans button.a-miss,.seg.ans button.a-miss{border:2px dashed var(--good);opacity:1;}
   .note b.bad{color:var(--bad);}
   .stats{display:grid;grid-template-columns:repeat(3,minmax(96px,1fr));gap:6px;flex:1 1 330px;max-width:460px;}
   .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
@@ -246,8 +246,13 @@
         </div>
       </div>
       <div id="fb-myst-side" hidden>
-        <div class="lab">Which radiation did the source give out? Choose all that apply.</div>
-        <div class="seg ans" id="fb-ans"><button type="button" data-v="a" aria-pressed="false">&alpha; alpha</button><button type="button" data-v="b" aria-pressed="false">&beta; beta</button><button type="button" data-v="g" aria-pressed="false">&gamma; gamma</button></div>
+        <div class="lab">What is the source?</div>
+        <div class="cgrid" id="fb-ans">
+          <span class="rowlab">One type</span>
+          <div class="seg"><button type="button" data-v="a" aria-pressed="false">&alpha; alpha</button><button type="button" data-v="b" aria-pressed="false">&beta; beta</button><button type="button" data-v="g" aria-pressed="false">&gamma; gamma</button></div>
+          <span class="rowlab">Mixed</span>
+          <div class="seg"><button type="button" data-v="ab" aria-pressed="false">&alpha; + &beta;</button><button type="button" data-v="bg" aria-pressed="false">&beta; + &gamma;</button><button type="button" data-v="ag" aria-pressed="false">&alpha; + &gamma;</button><button type="button" data-v="abg" aria-pressed="false">&alpha; + &beta; + &gamma;</button></div>
+        </div>
         <div id="fb-ans-e-row" hidden style="margin-top:10px">
           <div class="lab">If there is beta: high or low energy?</div>
           <div class="seg ans" id="fb-ans-e"><button type="button" data-v="hi" aria-pressed="false">High energy</button><button type="button" data-v="lo" aria-pressed="false">Low energy</button></div>
@@ -344,9 +349,9 @@
   });
   function predRight(i){ return ks5() ? pred[i]===level(i) : (pred[i]==='d')===dark(i); }
 
-  // "What is the source?": answers are toggles, any number of them
-  $('#fb-ans').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; toggle(b); draw(); });
-  function ansTypes(){ var r=''; each($('#fb-ans').children, function(b){ if(pressed(b)) r+=b.dataset.v; }); return r; }
+  // "What is the source?": the same seven choices as the source picker
+  var ans=segGroup($('#fb-ans'), function(){ draw(); });
+  function ansTypes(){ return ans.value()||''; }
   var SOURCES=['a','b','g','ab','bg','ag','abg'];
   function newBadge(){
     var key;
@@ -493,12 +498,13 @@
       $('#fb-s3').textContent=tried?right+' of '+tried:'–';
       $('#fb-ans-e-row').hidden=!needEnergy();
       var at=ansTypes();
-      each($('#fb-ans').children, function(b){
+      // after checking: the chosen answer goes green or red, and a wrong one shows the right source outlined
+      each($('#fb-ans').querySelectorAll('button'), function(b){
         b.disabled=checked;
-        var inSrc=myst.src.indexOf(b.dataset.v)>=0;
-        b.classList.toggle('a-ok', checked && inSrc && pressed(b));
-        b.classList.toggle('a-miss', checked && inSrc && !pressed(b));
-        b.classList.toggle('a-no', checked && !inSrc && pressed(b));
+        var isSrc=b.dataset.v===myst.src;
+        b.classList.toggle('a-ok', checked && isSrc && pressed(b));
+        b.classList.toggle('a-miss', checked && isSrc && !pressed(b));
+        b.classList.toggle('a-no', checked && !isSrc && pressed(b));
       });
       each($('#fb-ans-e').children, function(b){ b.disabled=checked; });
       $('#fb-check').disabled=checked||!at;
