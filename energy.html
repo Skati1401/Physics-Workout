@@ -132,6 +132,33 @@ table.units tr:last-child td{border-bottom:0}
 table.units td.given{font-weight:600;padding-left:10px;background:var(--accent-soft);color:var(--ink)}
 table.units .blank{width:100%;min-width:100px;margin:0}
 .bins{display:grid;gap:12px}
+.bins-5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:1000px){.bins-5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.bins-5{grid-template-columns:minmax(0,1fr)}}
+/* Working scientifically tab: SLAPU method, data table and small graphs */
+.slapu-wrap{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.slapu-wrap{grid-template-columns:minmax(0,1fr)}}
+.method-steps{display:flex;flex-direction:column;gap:10px}
+.method-step{display:flex;gap:12px;background:var(--panel-2);border:1px solid var(--panel-border);border-radius:6px;padding:10px 14px}
+.method-num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font:700 15px var(--f-mono);display:flex;align-items:center;justify-content:center}
+.method-body{flex:1;min-width:0}
+.method-q{font-weight:700;font-size:15px;color:var(--ink);margin:0 0 2px}
+.method-desc{font-size:14px;color:var(--ink-soft);line-height:1.5;margin:0}
+.gsvg{display:block;width:100%;max-width:380px;height:auto;margin-inline:auto}
+.gsvg .grid{stroke:var(--panel-border);stroke-width:1}
+.gsvg .axis{stroke:var(--ink);stroke-width:1.6;fill:none}
+.gsvg .tick{fill:var(--ink-soft);font:11px var(--f-mono)}
+.gsvg .lab{fill:var(--ink);font:600 12px var(--f-body)}
+.gsvg .pt{stroke:var(--ink);stroke-width:1.8}
+.gsvg .bf{stroke:var(--therm);stroke-width:2;fill:none}
+.gsvg .ring{stroke:var(--bad);stroke-width:2;fill:none}
+.gsvg .tag circle{fill:var(--accent)} .gsvg .tag text{fill:#fff;font:700 11px var(--f-mono)}
+.gsvg .read{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 3;fill:none}
+.dtab-wrap{max-width:100%;overflow-x:auto}
+@media (max-width:480px){.dtab th,.dtab td{padding:4px 4px;font-size:12px}.dtab th{font-size:11px}}
+.dtab{border-collapse:collapse;margin:4px 0 2px;font:14px var(--f-mono)}
+.dtab th,.dtab td{border:1px solid var(--panel-border);padding:5px 12px;text-align:center}
+.dtab th{background:var(--panel-2);font:600 13px var(--f-body)}
 .bins-2{grid-template-columns:repeat(2,minmax(0,1fr))} .bins-3{grid-template-columns:repeat(3,minmax(0,1fr))} .bins-4{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media (max-width:640px){.bins-3,.bins-4{grid-template-columns:minmax(0,1fr)}}
 .bin{border:2px solid var(--cat);background:var(--cat-soft);border-radius:8px;display:flex;flex-direction:column;min-height:130px}
@@ -407,6 +434,7 @@ svg.sankey{background:var(--panel)}
 <button class="tab-btn" role="tab" id="tab-efficiency" data-tab="efficiency" data-grp="p" aria-selected="false" aria-controls="panel-efficiency">Efficiency</button>
 <button class="tab-btn" role="tab" id="tab-sankey" data-tab="sankey" data-grp="p" aria-selected="false" aria-controls="panel-sankey">Sankey</button>
 <button class="tab-btn" role="tab" id="tab-paying" data-tab="paying" data-grp="c" aria-selected="false" aria-controls="panel-paying">Energy Bills</button>
+<button class="tab-btn" role="tab" id="tab-skills" data-tab="skills" data-grp="b" aria-selected="false" aria-controls="panel-skills">Investigating</button>
 </nav>
 <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
 <div class="panel-head"><h2>Overview</h2></div>
@@ -432,6 +460,10 @@ svg.sankey{background:var(--panel)}
 <div class="panel-head"><h2>Paying for Energy</h2></div>
 <div class="acts"></div>
 </section>
+<section id="panel-skills" class="panel" role="tabpanel" aria-labelledby="tab-skills" hidden>
+<div class="panel-head"><h2>Working Scientifically</h2></div>
+<div class="acts"></div>
+</section>
 </div>
 <script>
 (function(){
@@ -451,7 +483,7 @@ const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim
 const raf=f=>requestAnimationFrame(f);
 
 const STORE_KEY='y9-energy-v2',OLD_STORE_KEY='y9-energy-v1';
-const TAB_IDS=['overview','heating','power','efficiency','sankey','paying'];
+const TAB_IDS=['overview','heating','power','efficiency','sankey','paying','skills'];
 let activeTab='overview';
 const reflowers=[];
 
@@ -1430,6 +1462,111 @@ function sankeySVG(o){
     fix:['price per kWh = [[36|120]]','price per kWh = £0.30, which is 30p']});
 }
 
+
+/* ================= 11. WORKING SCIENTIFICALLY ================= */
+{
+  // A small temperature–time graph: x 0–5 min, y 0–60 °C. Options: points, best-fit line, ringed point, SLAPU tags, a read-off line.
+  function tempGraph(o){
+    const X0=52,Y0=180,W=250,H=150,xs=t=>X0+t/5*W,ys=T=>Y0-T/60*H;
+    let g='<svg class="gsvg" viewBox="0 0 320 222" role="img" aria-label="'+(o.aria||'Graph of temperature against time')+'">';
+    for(let t=0;t<=5;t++)g+='<line class="grid" x1="'+xs(t)+'" y1="'+ys(0)+'" x2="'+xs(t)+'" y2="'+ys(60)+'"/><text class="tick" x="'+xs(t)+'" y="'+(Y0+15)+'" text-anchor="middle">'+t+'</text>';
+    for(let T=0;T<=60;T+=10)g+='<line class="grid" x1="'+xs(0)+'" y1="'+ys(T)+'" x2="'+xs(5)+'" y2="'+ys(T)+'"/><text class="tick" x="'+(X0-6)+'" y="'+(ys(T)+4)+'" text-anchor="end">'+T+'</text>';
+    g+='<path class="axis" d="M'+X0+' '+ys(60)+' V'+Y0+' H'+xs(5)+'"/>';
+    g+='<text class="lab" x="'+(X0+W/2)+'" y="'+(Y0+34)+'" text-anchor="middle">Time (min)</text>';
+    g+='<text class="lab" transform="translate(14 '+(Y0-H/2)+') rotate(-90)" text-anchor="middle">Temperature (°C)</text>';
+    if(o.fit)g+='<line class="bf" x1="'+xs(0)+'" y1="'+ys(20)+'" x2="'+xs(5)+'" y2="'+ys(55)+'"/>';
+    if(o.read)g+='<path class="read" d="M'+xs(2.5)+' '+Y0+' V'+ys(37.5)+' H'+X0+'"/>';
+    (o.pts||[]).forEach(p=>{const x=xs(p[0]),y=ys(p[1]);g+='<path class="pt" d="M'+(x-4)+' '+(y-4)+' L'+(x+4)+' '+(y+4)+' M'+(x-4)+' '+(y+4)+' L'+(x+4)+' '+(y-4)+'"/>';});
+    if(o.ring)g+='<circle class="ring" cx="'+xs(o.ring[0])+'" cy="'+ys(o.ring[1])+'" r="10"/>';
+    (o.tags||[]).forEach(t=>{g+='<g class="tag"><circle cx="'+t[1]+'" cy="'+t[2]+'" r="9"/><text x="'+t[1]+'" y="'+(t[2]+4)+'" text-anchor="middle">'+t[0]+'</text></g>';});
+    return g+'</svg>';
+  }
+  const DATA=[[0,20],[1,27],[2,34],[3,46],[4,48],[5,55]];
+  const table='<div class="dtab-wrap"><table class="dtab"><tr><th>Time (min)</th>'+DATA.map(d=>'<td>'+d[0]+'</td>').join('')+'</tr><tr><th>Temperature (°C)</th>'+DATA.map(d=>'<td>'+d[1]+'</td>').join('')+'</tr></table></div>';
+
+  const m=act('skills','Method','SLAPU: drawing a graph','Use SLAPU to check every graph you draw. The letters on the example graph show where each step goes.');
+  const steps=[
+    ['S','Scale','Number each axis in even steps (such as 0, 10, 20, 30) and choose a scale that spreads your points over more than half the grid.'],
+    ['L','Label','Write the name of the quantity along each axis, such as “Time” and “Temperature”.'],
+    ['A','Axes','Put the independent variable (what you changed) along the x-axis and the dependent variable (what you measured) up the y-axis.'],
+    ['P','Points','Plot each point accurately with a small cross, then draw a smooth line or curve of best fit. Do not join the dots.'],
+    ['U','Units','Put the unit in brackets after each label, such as Time (min) and Temperature (°C).']];
+  m.innerHTML='<div class="slapu-wrap"><div class="method-steps">'+steps.map(x=>'<div class="method-step"><span class="method-num" aria-hidden="true">'+x[0]+'</span><div class="method-body"><p class="method-q">'+x[0]+' is for '+x[1]+'</p><p class="method-desc">'+x[2]+'</p></div></div>').join('')+'</div>'+
+    tempGraph({pts:[[0,20],[1,27],[2,34],[3,41],[4,48],[5,55]],fit:true,aria:'Example graph of temperature against time, with SLAPU letters marking each step',
+      tags:[['S',277,195],['L',132,210],['A',290,166],['P',196,62],['U',222,210]]})+'</div>';
+
+  createPredict({
+    host:act('skills','Predict','Spot the anomalous result','Ali heats a beaker of water and reads the temperature every minute.'),
+    pre:table,
+    q:'Which reading is anomalous?',
+    options:[
+      {text:'The reading at 3 minutes, 46 °C',correct:true},
+      {text:'The reading at 0 minutes, 20 °C',why:'This is the starting temperature, and the rest of the readings carry on from it.'},
+      {text:'The reading at 5 minutes, 55 °C',why:'It is 7 °C more than the reading before, the same rise as most of the others, so it fits.'},
+      {text:'None, because they all go up',why:'They all go up, but one jumps by 12 °C when the others rise by about 7 °C each minute.'}
+    ],
+    explain:'The temperature rises by about 7 °C each minute, so at 3 minutes it should be about 41 °C. 46 °C does not fit the pattern, so it is an anomalous result. Repeat that reading, and leave it out when you draw the line of best fit.',
+    reveal:tempGraph({pts:DATA,fit:true,ring:[3,46],aria:'Graph of Ali’s results with the 3 minute reading ringed, above the line of best fit'})
+  });
+  createPredict({
+    host:act('skills','Predict','Reading off the graph','Ali draws a line of best fit through his results, leaving out the anomalous reading.'),
+    pre:tempGraph({pts:DATA,fit:true,aria:'Graph of Ali’s results with a line of best fit'}),
+    q:'What was the temperature after 2.5 minutes?',
+    options:[
+      {text:'About 37.5 °C, read from the line',correct:true},
+      {text:'40 °C, halfway between 34 and 46 °C',why:'That uses the anomalous reading at 3 minutes. Read the value from the line of best fit, which ignores it.'},
+      {text:'34 °C, the reading at 2 minutes',why:'That is the temperature at 2 minutes. Go up from 2.5 on the x-axis to the line, then across.'},
+      {text:'It can’t be found without a reading',why:'A line of best fit lets you estimate values between your readings.'}
+    ],
+    explain:'Go up from 2.5 minutes on the x-axis to the line of best fit, then across to the y-axis. It reads about 37.5 °C.',
+    reveal:tempGraph({pts:DATA,fit:true,read:true,aria:'Graph with a dashed line from 2.5 minutes up to the line of best fit and across to 37.5 °C'})
+  });
+
+  createSortGame({host:act('skills','Sort','Which SLAPU rule is broken?','Each card describes a mistake on a student’s graph. Drag it into the SLAPU rule that it breaks.'),
+    cats:[{id:'s',label:'S · Scale',hint:'even steps, fills the grid',color:'--grav',soft:'--grav-soft'},
+          {id:'l',label:'L · Label',hint:'name each axis',color:'--kin',soft:'--kin-soft'},
+          {id:'a',label:'A · Axes',hint:'which variable goes where',color:'--elec',soft:'--elec-soft'},
+          {id:'p',label:'P · Points',hint:'plot, then best fit',color:'--therm',soft:'--therm-soft'},
+          {id:'u',label:'U · Units',hint:'in brackets',color:'--rad',soft:'--rad-soft'}],
+    items:[
+      {id:'s1',text:'The numbers up the y-axis go 0, 10, 20, 50, 100.',cat:'s'},
+      {id:'s2',text:'All the points are squashed into one small corner of the grid.',cat:'s'},
+      {id:'l1',text:'The axes have numbers on them, but nothing says what was measured.',cat:'l'},
+      {id:'a1',text:'Time was the thing changed, but it is drawn up the y-axis.',cat:'a'},
+      {id:'p1',text:'The points are joined dot to dot with straight lines.',cat:'p'},
+      {id:'p2',text:'A reading of 46 °C has been marked at 36 °C.',cat:'p'},
+      {id:'u1',text:'The y-axis says “Temperature”, but not what it was measured in.',cat:'u'},
+      {id:'u2',text:'The x-axis says “Time” with no (s) or (min) after it.',cat:'u'}
+    ]});
+
+  createSortGame({host:act('skills','Sort','Independent, dependent or control?','Sophie wraps four beakers of hot water in different materials. She measures the temperature of each one after 20 minutes to find the best insulator.'),
+    cats:[{id:'i',label:'Independent',hint:'what she changes',color:'--grav',soft:'--grav-soft'},
+          {id:'d',label:'Dependent',hint:'what she measures',color:'--therm',soft:'--therm-soft'},
+          {id:'c',label:'Control',hint:'kept the same',color:'--rad',soft:'--rad-soft'}],
+    items:[
+      {id:'i1',text:'The type of material wrapped round each beaker',cat:'i'},
+      {id:'d1',text:'The temperature of the water after 20 minutes',cat:'d'},
+      {id:'d2',text:'How much the temperature of the water falls',cat:'d'},
+      {id:'c1',text:'The volume of water in each beaker',cat:'c'},
+      {id:'c2',text:'The temperature of the water at the start',cat:'c'},
+      {id:'c3',text:'The thickness of the material',cat:'c'},
+      {id:'c4',text:'The size and type of beaker',cat:'c'},
+      {id:'c5',text:'The temperature of the room',cat:'c'}
+    ]});
+
+  const mw=createMatchGame({host:act('skills','Match','Key words','Link each key word to what it means.'),
+    leftTitle:'Key word',rightTitle:'Meaning',narrowLeft:true,pairs:[
+    {id:'iv',l:'Independent variable',r:'The variable you change'},
+    {id:'dv',l:'Dependent variable',r:'The variable you measure'},
+    {id:'cv',l:'Control variable',r:'A variable you keep the same'},
+    {id:'ft',l:'Fair test',r:'Only the independent variable is changed'},
+    {id:'an',l:'Anomalous result',r:'A result that does not fit the pattern'},
+    {id:'ac',l:'Accurate',r:'Close to the true value'},
+    {id:'pr',l:'Precise',r:'Repeat readings are close to each other'},
+    {id:'dl',l:'Data logger',r:'Takes readings automatically and continuously'}
+  ]});
+  reflowers.push(tab=>{if(tab==='skills')raf(mw.reflow);});
+}
 
 /* ================= tabs, startup ================= */
 // Two Predict activities in a row sit side by side (they stack again on narrow screens).
