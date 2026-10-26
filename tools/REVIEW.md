@@ -10,6 +10,7 @@ What Alex has checked, and what still needs checking. One row per published page
 
 | Page | Status | What to check |
 |---|---|---|
+| IGCSE list `igcse.html` | 🔍 To review | Units collapse (remembered per browser), search, Workouts/Practicals filter, Triple Award switch, Open all; core practicals shown in their unit and in Core Practicals; links like `igcse.html#unit-1` open that unit |
 | Year 9 `heat-transfer.html` | 🔍 To review | The three new Predict pairs (Conduction, Convection Current, Radiation). |
 | Year 9 `energy.html` (8K) | 🔍 To review | Wording of the Work Done, Power and Energy Bills questions; is 10 tabs too many (Work Done and Power could merge)? |
 | 1a `motion.html` | 🔍 To review | New Overview passage; new Spot the Error examples (Calculate, suvat). |
