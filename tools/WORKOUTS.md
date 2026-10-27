@@ -8,7 +8,7 @@ Two whole-course pages made of the activities already in the workouts, like the 
 
 - [x] **How the sets stay in step (27 Oct 2026):** a set page holds no questions. It frames each workout in set mode (`page.html?set&tabs=…&kinds=…`, the workout's `setMode()`), which shows only those tabs' activities of those kinds. A fix in a workout reaches the set at once, and answers save to the workout's own `STORE_KEY`, so work done in a set also ticks the workout. Pages are built by `tools/sets/build.py` (edit its `SETS` list, then run it).
 - [x] **Drafts started (27 Oct 2026):** `calculations.html` (1a Calculate; 1b Resultant, F = ma, Weight: calcs and Spot the Error) and `graphs.html` (1a s–t and v–t: label the line + its calc). Both `noindex`, no card yet.
-- [ ] Alex to look at both drafts. Then add the cards to `igcse.html` (after the units, before Core Practicals) and remove `noindex` (in `build.py`).
+- [ ] Alex to look at both drafts. Then add the cards to `igcse.html` (below Core Practicals) and remove `noindex` (in `build.py`).
 - [ ] Graphs set: 1b has no graph activities; consider adding the 1.5 practical's plotting activities (practical pages need `setMode()` in `tools/practical-gen/template/`).
 - [ ] Each new workout added to a set needs `setMode()` copied in from `motion.html` (just above `start(readSaved())`, plus `if(setMode(data))return;` in `start`).
 - [ ] Add Forces Part 2 (1c with suvat, 1d), then Units 4, 5 and 6.
