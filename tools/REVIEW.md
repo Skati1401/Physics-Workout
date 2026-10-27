@@ -10,24 +10,24 @@ What Alex has checked, and what still needs checking. One row per published page
 
 | Page | Status | What to check |
 |---|---|---|
-| IGCSE list `igcse.html` | 🔍 To review | Units collapse (remembered per browser), search, Workouts/Practicals filter, Triple Award switch, Open all; core practicals shown in their unit and in Core Practicals; links like `igcse.html#unit-1` open that unit |
+| IGCSE list `igcse.html` | 🔍 To review | Units collapse (remembered per browser), search, Workouts/Practicals filter, Triple Award switch, Open all; Unit 1 cards under Part 1 / Part 2 headings (27 Oct 2026); core practicals shown in their unit and in Core Practicals; links like `igcse.html#unit-1` open that unit |
 | Year 9 `heat-transfer.html` | 🔍 To review | The three new Predict pairs (Conduction, Convection Current, Radiation). |
 | Year 9 `energy.html` (8K) | 🔍 To review | 26 Oct 2026: cut to the 8K content. Stores, Pathways, Conservation and Work Done tabs removed (all covered by IGCSE 4a and 4c). New Overview passage (heat transfer, power, efficiency, kWh), Work done memory card swapped for Thermal insulator, stairs Predict reworded without work done. Efficiency Calculate has two new two-step questions (energy = power × time with time in seconds, then efficiency). Check the wording of these. |
 | Year 9 `working-scientifically.html` | 🔍 To review | New (26 Oct 2026). Tabs: Overview (fill in the blanks, key words match), Variables (fair test and equipment Predicts, variables sort), Graphs (SLAPU = Scale, Label, Axes, Points, Units method card with example graph, order the steps, SLAPU mistakes sort), Results (anomalous result, read-off, accurate vs precise, which thermometer Predicts). Check the SLAPU wording matches your lessons. |
 | IB list `ib.html` | 🔍 To review | New (27 Oct 2026): IB Workouts list, linked from the front page (third student door), grouped by theme. |
 | IB E.2 `quantum-physics.html` | 🔍 To review | New (27 Oct 2026), HL only. 8 tabs: Overview (cloze, units table), Photons (E = hf, eV, photons per second), Photoelectric (framed animation, wave theory vs experiment sort, Einstein's explanation order), Einstein (Eₘₐₓ, f₀, λ₀, Vₛ, max speed, Φ from Vₛ), Graph (plot Eₘₐₓ against f, read h, f₀ and Φ), Matter Waves (λ = h/p, accelerated electrons, first minimum θ = λ/b), Compton (Δλ, recoil energy, angle, evidence match), Exam (Vₛ–f table with a missing reading, explain answers). No current calculations. Check every number, the Predict wording and the model answers. |
-| 1a `motion.html` | 🔍 To review | New Overview passage; new Spot the Error examples (Calculate, suvat). |
+| 1a `motion.html` | 🔍 To review | New Overview passage; new Spot the Error examples (Calculate). 27 Oct 2026: suvat tab moved to 1c, Overview loses its suvat gap. |
 | 1b `forces.html` | 🔍 To review | New Overview passage, Key Terms and units table; new Spot the Error examples (F = ma, Weight). |
-| 1c `falling-stopping-springs.html` | 🔍 To review | New Overview passage, Key Terms and units table. |
+| 1c `falling-stopping-springs.html` | 🔍 To review | New Overview passage, Key Terms and units table. 27 Oct 2026: suvat tab moved in from 1a (second tab); Overview gains a "constant acceleration" gap. |
 | 1d `momentum-and-moments.html` | 🔍 To review | New Overview passage, Key Terms and units table; new Spot the Error examples (Momentum, Moments). |
 | 4a `energy-stores-efficiency.html` | ❔ Not recorded | |
 | 4b `heat-transfer-igcse.html` | ❔ Not recorded | |
 | 4c `work-and-power.html` | 🔍 To review | New page (25 Oct 2026), 6 tabs for 4.11–4.17: Overview passage, units table and key terms, Work Done, GPE and KE, Energy Link (the roller coaster animation in a frame, 4.15), Power (with an Order for measuring your own power on the stairs). Check the wording of the Predicts and the Calculate and Spot the Error numbers. |
 | 4d `energy-resources.html` (TA) | 🔍 To review | New page (25 Oct 2026), 7 tabs for 4.18P–4.19P: Power Stations (fossil fuel and nuclear Orders), Wind and Water (incl. geothermal), Solar, Pros and Cons, Choosing. Solar heating covers a solar power tower and a rooftop water-heating panel. Check the advantages and disadvantages chosen. |
 | 5a `density-pressure-state.html` | 🔍 To review | New Overview passage. |
-| 5b `gases.html` | 🔍 To review | New Overview passage, Key Terms and units table. |
+| 5b `gases.html` | 🔍 To review | New Overview passage, Key Terms and units table. 27 Oct 2026: suvat tab moved in from 1a (second tab); Overview gains a "constant acceleration" gap. |
 | 6a `magnetism-and-motor-effect.html` | 🔍 To review | New Overview passage, Key Terms and units table. 25 Oct: Motor Effect no longer TA (6.12–6.14); new Charged Particles tab (TA, 6.11P) with a new Predict (electrons or ions) and Sort (force or no force); Motors and Loudspeakers split into two tabs, each with its own Match; new Predicts: Run it backwards (motor as generator), Double the frequency, A steady current. 9 tabs now (rule says 5–8). |
-| 6b `electromagnetic-induction.html` | 🔍 To review | New Overview passage, Key Terms and units table. |
+| 6b `electromagnetic-induction.html` | 🔍 To review | New Overview passage, Key Terms and units table. 27 Oct 2026: suvat tab moved in from 1a (second tab); Overview gains a "constant acceleration" gap. |
 | `maths-skills.html` (draft, not listed) | ❔ Not recorded | Still a draft. |
 
 All workouts and practicals also got the compact breadcrumb header, saved answers and tab ticks on 21 Oct 2026; worth a quick look on a phone.
