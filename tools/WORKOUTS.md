@@ -6,18 +6,11 @@ Started 27 Oct 2026. Tick items off here as they are done (and update `tools/REV
 
 Two whole-course pages made of the activities already in the workouts, like the Core Practicals heading on `igcse.html`. Build them now for Forces Part 1 (1a, 1b) and add each unit as it is finished.
 
-- [ ] **Decide how the sets stay in step with the workouts.** Each activity is written inside its workout's script (`calcAct`, `spotAct`, `labelGraphAct`), not on a page of its own. Plan: a small build script (like `tools/practical-gen/gen.py`) copies the marked activities from each workout into the set page, so the pages stay single-file and a fix in a workout reaches the set by re-running it. Agree this with Alex before building.
-- [ ] **Calculations set** (`calculations.html`), one tab per part/unit. Forces Part 1 holds:
-  - 1a Calculate: speed and acceleration calc, Spot the Error
-  - 1a s–t Graph and v–t Graph: "Work out the numbers" calcs
-  - 1b Resultant?: calc
-  - 1b F = ma: calc, Spot the Error
-  - 1b Weight: calc, Spot the Error
-- [ ] **Graphs set** (`graphs.html`). Forces Part 1 holds:
-  - 1a s–t Graph: label the line + its calc
-  - 1a v–t Graph: label the line + its calc
-  - (1b has no graph activities; consider the 1.5 practical's plotting activities)
-- [ ] Each set gets its own saved progress (`STORE_KEY`), the breadcrumb header and a card on `igcse.html` (after the units, before Core Practicals).
+- [x] **How the sets stay in step (27 Oct 2026):** a set page holds no questions. It frames each workout in set mode (`page.html?set&tabs=…&kinds=…`, the workout's `setMode()`), which shows only those tabs' activities of those kinds. A fix in a workout reaches the set at once, and answers save to the workout's own `STORE_KEY`, so work done in a set also ticks the workout. Pages are built by `tools/sets/build.py` (edit its `SETS` list, then run it).
+- [x] **Drafts started (27 Oct 2026):** `calculations.html` (1a Calculate; 1b Resultant, F = ma, Weight: calcs and Spot the Error) and `graphs.html` (1a s–t and v–t: label the line + its calc). Both `noindex`, no card yet.
+- [ ] Alex to look at both drafts. Then add the cards to `igcse.html` (after the units, before Core Practicals) and remove `noindex` (in `build.py`).
+- [ ] Graphs set: 1b has no graph activities; consider adding the 1.5 practical's plotting activities (practical pages need `setMode()` in `tools/practical-gen/template/`).
+- [ ] Each new workout added to a set needs `setMode()` copied in from `motion.html` (just above `start(readSaved())`, plus `if(setMode(data))return;` in `start`).
 - [ ] Add Forces Part 2 (1c with suvat, 1d), then Units 4, 5 and 6.
 
 ## 2. Remaining IGCSE units (spec order)
