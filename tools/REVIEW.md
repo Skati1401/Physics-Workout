@@ -14,6 +14,8 @@ What Alex has checked, and what still needs checking. One row per published page
 | Year 9 `heat-transfer.html` | 🔍 To review | The three new Predict pairs (Conduction, Convection Current, Radiation). |
 | Year 9 `energy.html` (8K) | 🔍 To review | 26 Oct 2026: cut to the 8K content. Stores, Pathways, Conservation and Work Done tabs removed (all covered by IGCSE 4a and 4c). New Overview passage (heat transfer, power, efficiency, kWh), Work done memory card swapped for Thermal insulator, stairs Predict reworded without work done. Efficiency Calculate has two new two-step questions (energy = power × time with time in seconds, then efficiency). Check the wording of these. |
 | Year 9 `working-scientifically.html` | 🔍 To review | New (26 Oct 2026). Tabs: Overview (fill in the blanks, key words match), Variables (fair test and equipment Predicts, variables sort), Graphs (SLAPU = Scale, Label, Axes, Points, Units method card with example graph, order the steps, SLAPU mistakes sort), Results (anomalous result, read-off, accurate vs precise, which thermometer Predicts). Check the SLAPU wording matches your lessons. |
+| IB list `ib.html` | 🔍 To review | New (27 Oct 2026): IB Workouts list, linked from the front page (third student door), grouped by theme. |
+| IB E.2 `quantum-physics.html` | 🔍 To review | New (27 Oct 2026), HL only. 8 tabs: Overview (cloze, units table), Photons (E = hf, eV, photons per second), Photoelectric (framed animation, wave theory vs experiment sort, Einstein's explanation order), Einstein (Eₘₐₓ, f₀, λ₀, Vₛ, max speed, Φ from Vₛ), Graph (plot Eₘₐₓ against f, read h, f₀ and Φ), Matter Waves (λ = h/p, accelerated electrons, first minimum θ = λ/b), Compton (Δλ, recoil energy, angle, evidence match), Exam (Vₛ–f table with a missing reading, explain answers). No current calculations. Check every number, the Predict wording and the model answers. |
 | 1a `motion.html` | 🔍 To review | New Overview passage; new Spot the Error examples (Calculate, suvat). |
 | 1b `forces.html` | 🔍 To review | New Overview passage, Key Terms and units table; new Spot the Error examples (F = ma, Weight). |
 | 1c `falling-stopping-springs.html` | 🔍 To review | New Overview passage, Key Terms and units table. |
@@ -75,4 +77,4 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `inclined-plane.html` | A Level / IB | ❔ Not recorded | |
 | `projectile-lab.html` | A Level / IB | ❔ Not recorded | |
 | `shoot-the-monkey.html` | A Level / IB | ❔ Not recorded | |
-| `photoelectric.html` | A Level / IB | ❔ Not recorded | |
+| `photoelectric.html` | A Level / IB | 🔍 To review | 27 Oct 2026: intensity in W/m² (photons/s = IA/hf, so at the same intensity a longer wavelength gives more current); f = and λ = in the frequency label; Hide line button (hides the line, dot, −Vₛ marker, Eₘₐₓ, Vₛ and working); `?embed` for its frame in the E.2 workout. |
