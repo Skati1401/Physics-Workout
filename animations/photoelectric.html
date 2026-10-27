@@ -108,8 +108,8 @@
   .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
   .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
   .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
-  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
-  .lab output{color:var(--ink);font-weight:600;text-align:right;}
+  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;flex-wrap:wrap;}
+  .lab output{color:var(--ink);font-weight:600;text-align:right;white-space:nowrap;margin-left:auto;}
   input[type=range]{width:100%;accent-color:var(--quantum);min-height:28px;}
   .seg{display:flex;flex-wrap:wrap;gap:6px;}
   .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
@@ -189,7 +189,7 @@
           </div>
           <div>
             <label class="lab" for="pe-i">Intensity <output id="pe-io"></output></label>
-            <input type="range" id="pe-i" min="0" max="100" step="10" value="60">
+            <input type="range" id="pe-i" min="0" max="10" step="0.5" value="6">
           </div>
           <div>
             <label class="lab" for="pe-v">Collector voltage <output id="pe-vo"></output></label>
@@ -268,10 +268,14 @@
   // Electrons leave with kinetic energies from 0 up to Emax; the fraction with more than K is (1 − K/Emax)^1.5.
   // At zero or small positive voltage a few electrons still miss the collector, so the current levels off a little above 0 V.
   function collect(V){ return V>=0 ? 1-0.25*Math.exp(-V/0.6) : 0.75; }
+  // Intensity I is in W/m² on a 1.0 cm² plate. Photons per second N = IA/(hf): at the same intensity a lower frequency
+  // means more photons (each with less energy). About 1 in 250 photons frees an electron, so current = 0.004 × eN.
+  var AREA=1.0e-4, YIELD=0.004;
+  function photonRate(fr, I){ return I*AREA/(H*fr); }
   function current(V, fr, I, m){   // in microamps
     var ek = emax(fr, m); if(ek<=0 || I<=0) return 0;
     var pass = V>=0 ? 1 : Math.pow(Math.max(0, 1+V/ek), 1.5);
-    return 0.02*I*collect(V)*pass;
+    return YIELD*E*photonRate(fr,I)*1e6*collect(V)*pass;
   }
 
   // ---- colour of the light
@@ -384,8 +388,8 @@
   var lastNote='';
   function readings(fr, ek, V, I, cur, on){
     var l=lam(fr), pe=photonEV(fr), J=H*fr, f0=metal.phi*E/H;
-    $('#pe-fo').textContent=sci(fr,1)+' Hz · '+Math.round(l)+' nm';
-    $('#pe-io').textContent=I+'%';
+    $('#pe-fo').textContent='f = '+sci(fr,1)+' Hz · λ = '+Math.round(l)+' nm';
+    $('#pe-io').textContent=sn(I,1)+' W/m² · '+(I>0 ? sci(photonRate(fr,I),1) : '0')+' photons/s';
     $('#pe-vo').textContent=(V>0?'+':'')+sn(V,1)+' V';
     $('#pe-e').textContent=pe.toFixed(2)+' eV';
     var hide = exp && !swept;
@@ -396,6 +400,8 @@
     var w='E = hf<br>E = 6.63 × 10⁻³⁴ × '+sci(fr,2)+'<br>E = '+sci(J,2)+' J<br>E = [['+sci(J,2)+'|1.60 × 10⁻¹⁹]] = '+pe.toFixed(2)+' eV'
       +'<br>E<sub>max</sub> = hf − Φ<br>E<sub>max</sub> = '+pe.toFixed(2)+' − '+metal.phi.toFixed(2)+'<br>E<sub>max</sub> = <b>'+sn(ek,2)+' eV</b>';
     if(ek<=0) w+='<br>Not positive: one photon cannot give an electron enough energy to leave '+metal.name+'.';
+    if(I>0){ var N=photonRate(fr,I);
+      w+='<br>Photons per second on the 1.0 cm² plate:<br>N = [[IA|E]]<br>N = [['+sn(I,1)+' × 1.0 × 10⁻⁴|'+sci(J,2)+']]<br>N = <b>'+sci(N,2)+' per s</b>'; }
     $('#pe-eq1').innerHTML=FR(w);
     var w2='';
     if(ek>0){
@@ -410,7 +416,7 @@
     if(!started) note='Press Switch on to shine the lamp on the '+metal.name+' plate. Change the frequency, intensity and voltage at any time.';
     else if(I===0) note='The lamp is off: no photons, so no photoelectrons.';
     else if(ek<=0) note='Each photon has only '+pe.toFixed(2)+' eV, less than the work function of '+metal.name+' ('+metal.phi.toFixed(2)+' eV). No electrons escape, however bright the light: more intensity means more photons, but each one still has too little energy.';
-    else if(V>=0) note='Each photon gives all its energy to one electron, which leaves at once with up to '+(hide?'E<sub>max</sub>':ek.toFixed(2)+' eV')+' of kinetic energy. The collector attracts them, so nearly all are collected: brighter light means more electrons per second, so more current.';
+    else if(V>=0) note='Each photon gives all its energy to one electron, which leaves at once with up to '+(hide?'E<sub>max</sub>':ek.toFixed(2)+' eV')+' of kinetic energy. The collector attracts them, so nearly all are collected: brighter light means more electrons per second, so more current. At the same intensity, a lower frequency means more photons per second (each with less energy), so more current.';
     else if(-V<ek) note='The collector is negative, so it repels the electrons. Only those with more than '+(-V).toFixed(2)+' eV of kinetic energy get across, so the current is smaller.';
     else note='The reverse voltage is at least the stopping voltage: even the fastest electrons'+(hide?'':' ('+ek.toFixed(2)+' eV)')+' turn back, so the current is zero. eV<sub>s</sub> = E<sub>max</sub>.';
     if(exp){
@@ -431,7 +437,7 @@
       if(expV<=VMIN){ sweeping=false; swept=true; }
     }
     var fr=f(), ek=emax(fr,metal), V=volts(), I=inten();
-    t+=dt; spawn+=dt*16*I/100;
+    t+=dt; spawn+=dt*photonRate(fr,I)/2e14;   // drawn photons ∝ real photon rate
     while(spawn>=1){ spawn--;
       photons.push({s:0, sx:LAMP.x+(Math.random()-0.5)*8, sy:LAMP.y+6, hx:PLATE_X, hy:88+Math.random()*58});
     }
@@ -481,10 +487,10 @@
     if(exp){ sweeping=false; expV=volts(); if(started) record(expV); }
     draw(); });
   var PRESETS={
-    red:{f:4.5, i:100, v:1},
-    dim:{f:6.5, i:20, v:1},
-    bright:{f:6.5, i:100, v:1},
-    stop:{f:10, i:100, v:null}   // the voltage is set to the stopping voltage for the chosen metal
+    red:{f:4.5, i:10, v:1},
+    dim:{f:6.5, i:2, v:1},
+    bright:{f:6.5, i:10, v:1},
+    stop:{f:10, i:10, v:null}   // the voltage is set to the stopping voltage for the chosen metal
   };
   presetsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return;
     var p=PRESETS[b.dataset.p]; fIn.value=p.f; iIn.value=p.i;
@@ -500,7 +506,7 @@
   slowBtn.addEventListener('click',function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); touched(); draw(); });
   $('#pe-reset').addEventListener('click',reset);
   function listKept(){
-    $('#pe-kept').innerHTML=kept.map(function(c,n){ return '<li><b>'+(n+1)+'</b>'+c.m.name+', '+sci(c.f,1)+' Hz, '+c.i+'%</li>'; }).join('');
+    $('#pe-kept').innerHTML=kept.map(function(c,n){ return '<li><b>'+(n+1)+'</b>'+c.m.name+', '+sci(c.f,1)+' Hz, '+c.i+' W/m²</li>'; }).join('');
     $('#pe-clear').disabled=!kept.length; $('#pe-keep').disabled=kept.length>=3;
   }
   $('#pe-keep').addEventListener('click',function(){ if(kept.length<3) kept.push({f:f(), i:inten(), m:metal, pts: exp ? expPoints(readings0) : null}); listKept(); draw(); });
