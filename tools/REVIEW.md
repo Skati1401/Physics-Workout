@@ -26,7 +26,7 @@ What Alex has checked, and what still needs checking. One row per published page
 | 4d `energy-resources.html` (TA) | 🔍 To review | New page (25 Oct 2026), 7 tabs for 4.18P–4.19P: Power Stations (fossil fuel and nuclear Orders), Wind and Water (incl. geothermal), Solar, Pros and Cons, Choosing. Solar heating covers a solar power tower and a rooftop water-heating panel. Check the advantages and disadvantages chosen. |
 | 5a `density-pressure-state.html` | 🔍 To review | New Overview passage. |
 | 5b `gases.html` | 🔍 To review | New Overview passage, Key Terms and units table. 27 Oct 2026: suvat tab moved in from 1a (second tab); Overview gains a "constant acceleration" gap. |
-| 6a `magnetism-and-motor-effect.html` | 🔍 To review | New Overview passage, Key Terms and units table. 25 Oct: Motor Effect no longer TA (6.12–6.14); new Charged Particles tab (TA, 6.11P) with a new Predict (electrons or ions) and Sort (force or no force); Motors and Loudspeakers split into two tabs, each with its own Match; new Predicts: Run it backwards (motor as generator), Double the frequency, A steady current. 9 tabs now (rule says 5–8). |
+| 6a `magnetism-and-motor-effect.html` | 🔍 To review | New Overview passage, Key Terms and units table. 25 Oct: Motor Effect no longer TA (6.12–6.14); new Charged Particles tab (TA, 6.11P) with a new Predict (electrons or ions) and Sort (force or no force); Motors and Loudspeakers split into two tabs, each with its own Match; new Predicts: Run it backwards (motor as generator), Double the frequency, A steady current. 9 tabs now (rule says 5–8). 27 Oct: the three left-hand rule Predicts in Motor Effect removed (the animation's Find what's missing replaces them); the Sort stays. |
 | 6b `electromagnetic-induction.html` | 🔍 To review | New Overview passage, Key Terms and units table. 27 Oct 2026: suvat tab moved in from 1a (second tab); Overview gains a "constant acceleration" gap. |
 | `maths-skills.html` (draft, not listed) | ❔ Not recorded | Still a draft. |
 
@@ -64,7 +64,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `gas-molecules.html` | IGCSE | ❔ Not recorded | |
 | `magnetic-field-patterns.html` | IGCSE | ❔ Not recorded | |
 | `electromagnet-field-patterns.html` | IGCSE | ❔ Not recorded | |
-| `motor-effect.html` | IGCSE | 🔍 To review | 27 Oct: current shown as arrowheads on the wire itself (plan and 3D views; shown clearly before switching on so students can predict, hidden in quiz until the current step is answered). |
+| `motor-effect.html` | IGCSE | 🔍 To review | 27 Oct: current shown as arrowheads on the wire (shown before switching on so students can predict). "Find the current" is now "Find what's missing": 9 kinds of question (3D, 2D with the wire across the page and its battery, 2D with the wire end-on) each hiding the poles (A/B), the battery's + (A/B) or the current, or the force; New question deals all 9 in a shuffled order with random layouts. Check the physics of a few of each and the 2D left-hand rule sketch. |
 | `dc-motor.html` | IGCSE | ✅ Checked 25 Oct 2026 | |
 | `loudspeaker.html` | IGCSE | ✅ Checked 25 Oct 2026 | |
 | `magnet-and-coil.html` | IGCSE | ❔ Not recorded | |

@@ -229,12 +229,12 @@
     </div>
     <div class="side">
       <div>
-        <div class="seg" id="me-qmode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="find" aria-pressed="false">Find the current</button><button type="button" data-v="exam" aria-pressed="false">Exam question</button></div>
+        <div class="seg" id="me-qmode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="find" aria-pressed="false">Find what&rsquo;s missing</button><button type="button" data-v="exam" aria-pressed="false">Exam question</button></div>
       </div>
       <div class="quiz-only" id="me-quiz" hidden>
         <p class="qstep" id="me-qstep"></p>
         <p class="qtext" id="me-qtext"></p>
-        <div class="seg qopts" id="me-qopts" role="group" aria-label="Choose an arrow"></div>
+        <div class="seg qopts" id="me-qopts" role="group" aria-label="Choose an answer"></div>
         <div class="btn-group qbtns"><button class="btn btn-primary" id="me-qcheck" type="button">Check</button><button class="btn" id="me-qnew" type="button">New question</button></div>
       </div>
       <div class="explore-only">
@@ -393,7 +393,7 @@
   function seg3(P,a,b,col,w,extra){ var p=P(a[0],a[1],a[2]), q=P(b[0],b[1],b[2]); return line(p[0].toFixed(1),p[1].toFixed(1),q[0].toFixed(1),q[1].toFixed(1),col,w,extra); }
   // a pole block: draws whichever faces point towards you, with the pole's letter on the ones facing you most
   function block(P,x0,x1,pole,op){
-    var c=pole==='N'?'north':'south', f='var(--'+c+'-soft)', st='var(--'+c+')', o=op?' fill-opacity="'+op+'"':'', v=viewDir(), g='';
+    var c=pole==='N'?'north':pole==='S'?'south':'', f=c?'var(--'+c+'-soft)':'var(--panel)', st=c?'var(--'+c+')':'var(--ink-soft)', o=op?' fill-opacity="'+op+'"':'', v=viewDir(), g='';
     var F=[[[0,0,1],[[x0,-HA,HZ],[x1,-HA,HZ],[x1,HA,HZ],[x0,HA,HZ]]],[[0,0,-1],[[x0,-HA,-HZ],[x1,-HA,-HZ],[x1,HA,-HZ],[x0,HA,-HZ]]],
            [[0,-1,0],[[x0,-HA,-HZ],[x1,-HA,-HZ],[x1,-HA,HZ],[x0,-HA,HZ]]],[[0,1,0],[[x0,HA,-HZ],[x1,HA,-HZ],[x1,HA,HZ],[x0,HA,HZ]]],
            [[1,0,0],[[x1,-HA,-HZ],[x1,HA,-HZ],[x1,HA,HZ],[x1,-HA,HZ]]],[[-1,0,0],[[x0,-HA,-HZ],[x0,HA,-HZ],[x0,HA,HZ],[x0,-HA,HZ]]]];
@@ -444,13 +444,16 @@
   }
 
   function draw3d(){
-    var P=quiz()&&Q.type==='exam'?proj(190,134,0.95):proj(190,152,1.1);
+    if(quiz()&&Q.type==='find'&&Q.v.view!=='3d'){ v3.innerHTML=drawQ2(); return; }
+    var P=quiz()?proj(190,134,0.95):proj(190,152,1.1), FQ=quiz()&&Q.type==='find', miss=FQ&&!Q.finished?Q.missing:'';
     var g='<defs>'+arrowHead('me-ta','var(--topic)')+arrowHead('me-tc','var(--copper)')+arrowHead('me-tf','var(--accent)')+arrowHead('me-tq','var(--ink)')+'</defs>';
     var nl=mag.value()==='L', comb=pressed(combBtn)&&on&&!quiz(), x0=bdir()>0?-GAP:GAP, items=[];
     function add(X,Y,Z,svg){ items.push([depthOf(X,Y,Z),svg]); }
-    var showField=!quiz()||Q.type==='find'||Q.done.field, showCur=quiz()?Q.done.current:on;
-    add(-GAP-POLE/2,0,0,block(P,-GAP-POLE,-GAP,nl?'N':'S',0.9));
-    add(GAP+POLE/2,0,0,block(P,GAP,GAP+POLE,nl?'S':'N',0.9));
+    var showField=!quiz()||(FQ?miss!=='poles':Q.done.field), showCur=FQ?miss!=='battery':(quiz()?Q.done.current:on);
+    // Find what's missing, poles: the blocks are labelled A and B instead of N and S
+    function pl(side,real){ return miss==='poles'?(side===Q.poleA?'A':'B'):real; }
+    add(-GAP-POLE/2,0,0,block(P,-GAP-POLE,-GAP,pl(-1,nl?'N':'S'),0.9));
+    add(GAP+POLE/2,0,0,block(P,GAP,GAP+POLE,pl(1,nl?'S':'N'),0.9));
     // the magnet's field lines across the gap
     if(showField && !comb) [HA*0.6,0,-HA*0.6].forEach(function(y){ [-30,0,30].forEach(function(z){
       add(0,y,z,seg3(P,[x0,y,z],[-x0,y,z],'var(--topic)',1.3,' opacity="0.75"')+seg3(P,[x0*0.45,y,z],[x0*0.25,y,z],'var(--topic)',2,' marker-end="url(#me-ta)"')); }); });
@@ -465,25 +468,26 @@
         add(0,-HA,d,'<polyline points="'+pts(P,c)+'" fill="none" stroke="var(--copper)" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.85"/>'+
           seg3(P,[-3*cdir(),-HA,d+r],[3*cdir(),-HA,d+r],'var(--copper)',1.6,' marker-end="url(#me-tc)"')); } }
     // exam question: a battery beside the magnet on your side, joined to both ends of the wire (current leaves its + terminal)
-    if(quiz()&&Q.type==='exam'){ var ZB=-HZ-14, BL=38, pY=cdir()>0?-1:1, sx=depthOf(1,0,0)<depthOf(-1,0,0)?1:-1, XB=sx*(GAP+POLE+34), lw='var(--ink-soft)';
+    if(quiz()){ var ZB=-HZ-14, BL=38, pY=cdir()>0?-1:1, sx=depthOf(1,0,0)<depthOf(-1,0,0)?1:-1, XB=sx*(GAP+POLE+34), lw='var(--ink-soft)';
       [1,-1].forEach(function(sg){
         add(0,sg*WL,(d+ZB)/2,seg3(P,[0,sg*WL,d],[0,sg*WL,ZB],lw,2.5,' stroke-linecap="round"'));
         add(XB/2,sg*WL,ZB,seg3(P,[0,sg*WL,ZB],[XB,sg*WL,ZB],lw,2.5,' stroke-linecap="round"'));
         add(XB,sg*(WL+BL)/2,ZB,seg3(P,[XB,sg*WL,ZB],[XB,sg*BL,ZB],lw,2.5,' stroke-linecap="round"')); });
-      var bat=seg3(P,[XB,-BL,ZB],[XB,BL,ZB],'var(--ink)',26,' stroke-linecap="butt"')+seg3(P,[XB,-BL+2,ZB],[XB,BL-2,ZB],'var(--panel)',21,' stroke-linecap="butt"')+
-        seg3(P,[XB,pY*BL,ZB],[XB,pY*(BL+8),ZB],'var(--ink)',11,' stroke-linecap="butt"');
-      var lp=P(XB,pY*(BL-14),ZB), lm=P(XB,-pY*(BL-14),ZB);
-      bat+=txt(lp[0].toFixed(1),(lp[1]+6).toFixed(1),'+',{a:'middle',c:'var(--ink)',w:600,fs:18})+txt(lm[0].toFixed(1),(lm[1]+6).toFixed(1),'−',{a:'middle',c:'var(--ink)',w:600,fs:18});
+      var bat=seg3(P,[XB,-BL,ZB],[XB,BL,ZB],'var(--ink)',26,' stroke-linecap="butt"')+seg3(P,[XB,-BL+2,ZB],[XB,BL-2,ZB],'var(--panel)',21,' stroke-linecap="butt"');
+      // Find what's missing, battery: no + nub, and the ends are labelled A and B
+      if(miss!=='battery') bat+=seg3(P,[XB,pY*BL,ZB],[XB,pY*(BL+8),ZB],'var(--ink)',11,' stroke-linecap="butt"');
+      var lp=P(XB,pY*(BL-14),ZB), lm=P(XB,-pY*(BL-14),ZB), tp=miss==='battery'?(Q.batA===1?'A':'B'):'+', tm=miss==='battery'?(Q.batA===1?'B':'A'):'−';
+      bat+=txt(lp[0].toFixed(1),(lp[1]+6).toFixed(1),tp,{a:'middle',c:'var(--ink)',w:600,fs:18})+txt(lm[0].toFixed(1),(lm[1]+6).toFixed(1),tm,{a:'middle',c:'var(--ink)',w:600,fs:18});
       add(XB,0,ZB,bat); }
     items.sort(function(u,v){ return v[0]-u[0]; });
     g+=items.map(function(it){ return it[1]; }).join('');
     // arrowheads near each end of the wire show the current, drawn on top so field lines never hide them (in Explore even before switching on)
     if(showCur||!quiz()) [-108,108].forEach(function(ym){ g+=chev(P(0,ym-cdir()*11,d),P(0,ym+cdir()*11,d),12,1); });
     if(showCur||!quiz()){ var ti=P(0,(depthOf(0,-100,0)<depthOf(0,100,0)?-1:1)*102,d+16); g+=txt(ti[0].toFixed(1),ti[1].toFixed(1),'I',{a:'end',c:'var(--copper)',w:600,fs:13}); }
-    // the force (or, in Find the current, the motion the question gives you)
-    if(on || (quiz()&&Q.type==='find')){ var L=16+fsize()*4.5, ey=(depthOf(0,-100,0)<depthOf(0,100,0)?-1:1)*(quiz()?18:HA+20), a0=P(0,ey,d), a1=P(0,ey,d+fup()*L);
+    // the force (given in Find what's missing, unless the force is the missing one)
+    if(on || (FQ&&miss!=='force')){ var L=16+fsize()*4.5, ey=(depthOf(0,-100,0)<depthOf(0,100,0)?-1:1)*(quiz()?18:HA+20), a0=P(0,ey,d), a1=P(0,ey,d+fup()*L);
       g+=line(a0[0].toFixed(1),a0[1].toFixed(1),a1[0].toFixed(1),a1[1].toFixed(1),'var(--accent)',4.5,' marker-end="url(#me-tf)"');
-      g+=txt((a1[0]+8).toFixed(1),(a1[1]+(fup()>0?8:4)).toFixed(1),quiz()&&Q.type==='find'?'motion':'force',{a:'start',c:'var(--accent)',w:600}); }
+      g+=txt((a1[0]+8).toFixed(1),(a1[1]+(fup()>0?8:4)).toFixed(1),'force',{a:'start',c:'var(--accent)',w:600}); }
     if(quiz()) g+=quizOverlay(P);
     v3.innerHTML=g;
   }
@@ -492,6 +496,7 @@
     var P=proj(150,165,1.0), Lx=88, HW=300;
     var g='<defs>'+arrowHead('me-ha','var(--topic)')+arrowHead('me-hc','var(--copper)')+arrowHead('me-hf','var(--accent)')+'</defs>';
     // nothing to show until the current is switched on, so the rule doesn't give the answer away
+    if(on&&quiz()&&Q.type==='find'&&Q.v.view!=='3d'){ hand.innerHTML=drawHand2(); return; }
     if(!on){ hand.innerHTML=txt(150,150,quiz()?'Answer the question to see':'Switch on to see',{a:'middle',c:'var(--ink-faint)',fs:12})+txt(150,168,'the left-hand rule',{a:'middle',c:'var(--ink-faint)',fs:12}); return; }
     var bx=bdir(), cy=cdir(), fz=fup();
     // a faint floor and wall so the three directions read as 3D, with right-angle marks
@@ -541,37 +546,72 @@
   function go(){ if(running||finished) return; on=true; t=0; d=0; running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); }
   function reset(){ stop(); on=false; finished=false; t=0; d=0; draw(); }
   function changed(){ reset(); }
-  // ----- practice: Find the current, and an exam-style question (current, then field, then motion) -----
+  // ----- practice: Find what's missing, and an exam-style question (current, then field, then motion) -----
   var Q=null, qSel=null, qmode=segGroup($('#me-qmode'), setQMode), stageW=$('#st-wire');
   function quiz(){ return !!Q; }
   function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), t2=a[i]; a[i]=a[j]; a[j]=t2; } return a; }
   function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
-  var STEPS={find:['current'], exam:['current','field','motion']};
+  var STEPS={exam:['current','field','motion']};
+  function stepName(){ return Q.type==='find'?Q.missing:STEPS.exam[Q.step]; }
+  function cross(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+  // Find what's missing: 3D, 2D with the wire across the page, and 2D with the wire end-on; each hides one of the poles, the battery's + and - (or the current) and the force.
+  // New question deals every one of the 9 kinds once (in a shuffled order) before any comes round again, each with its own random layout.
+  var KINDS=[['3d','poles'],['3d','battery'],['3d','force'],['plan','poles'],['plan','battery'],['plan','force'],['end','poles'],['end','current'],['end','force']], deck=[], dealt=0;
+  function nextKind(){ if(!deck.length){ deck=shuffle(KINDS.slice()); if(deck[deck.length-1]===lastKind) deck.unshift(deck.pop()); } lastKind=deck.pop(); dealt++; return lastKind; }
+  var lastKind=null;
+  var VIEWNAME={'3d':'3D view','plan':'2D view','end':'2D view, wire end-on'};
   function newQ(){
     stop(); on=false; finished=false; t=0; d=0;
     Q={type:qmode.value(), step:0, done:{}};
     mag.pick(pick(['L','R'])); cur.pick(pick(['up','down']));
     Q.cam=[pick([25,-25,45,-45,35,-35,150,-150])*DEG, pick([20,30,40])*DEG]; setCam(Q.cam[0],Q.cam[1]);
+    if(Q.type==='find'){ var k=nextKind(), v={view:k[0]}; Q.missing=k[1]; Q.poleA=pick([1,-1]); Q.batA=pick([1,-1]);
+      if(v.view==='plan'){ v.orient=pick(['v','h']); v.bside=pick([1,-1]); v.s=pick([1,-1]); v.b=pick([1,-1]);
+        var u=v.orient==='v'?[0,1,0]:[1,0,0], w=v.orient==='v'?[1,0,0]:[0,-1,0];
+        v.I=u.map(function(x){ return x*v.s; }); v.B=w.map(function(x){ return x*v.b; }); v.Nside=-v.b; v.plusU=-v.s; }
+      else if(v.view==='end'){ v.axis=pick(['h','v']); v.c=pick([1,-1]); v.b=pick([1,-1]);
+        var ax=v.axis==='h'?[1,0,0]:[0,1,0]; v.I=[0,0,v.c]; v.B=ax.map(function(x){ return x*v.b; }); v.Nside=-v.b; }
+      if(v.I) v.F=cross(v.I,v.B);
+      Q.v=v; Q.n=dealt; }
     setStep(); }
   function setStep(){
-    var name=STEPS[Q.type][Q.step], letters=shuffle(['a','b']);
-    qSel=null;
-    if(name==='current') Q.opts=[{k:letters[0],v:1},{k:letters[1],v:-1}];
-    else if(name==='field') Q.opts=shuffle([{k:'a',v:1},{k:'b',v:-1}]).map(function(o,i){ return {k:['a','b'][i],v:o.v}; });
-    else Q.opts=shuffle([[0,0,1],[0,0,-1],[1,0,0],[-1,0,0]]).map(function(v,i){ return {k:String(i+1),v:v}; });
-    Q.opts.sort(function(u,v){ return u.k<v.k?-1:1; });
-    var n=STEPS[Q.type].length;
-    $('#me-qstep').textContent=n>1?'Step '+(Q.step+1)+' of '+n+' \u00b7 '+(name==='current'?'Current':name==='field'?'Magnetic field':'Motion'):'Find the current';
-    $('#me-qtext').innerHTML=Q.type==='find'?'The wire moves the way the <b>motion</b> arrow shows. Which arrow shows the direction of the <b>current</b> in the wire?':
-      name==='current'?'The wire is connected to a <b>battery</b>. Which arrow shows the direction of the <b>current</b> in the wire?':
-      name==='field'?'Which arrow shows the direction of the <b>magnetic field</b> between the poles?':'Predict the motion. Which arrow shows the direction of the <b>force</b> on the wire?';
-    $('#me-qopts').innerHTML=Q.opts.map(function(o){ return '<button type="button" data-k="'+o.k+'" aria-pressed="false">'+o.k+'</button>'; }).join('');
+    var name=stepName(), letters=shuffle(['a','b']);
+    qSel=null; Q.ans=null;
+    if(Q.type==='find'){ var v=Q.v;
+      if(name==='poles'){ Q.opts=[{k:'A'},{k:'B'}]; Q.ans=(v.view==='3d'?(mag.value()==='L'?-1:1):v.Nside)===Q.poleA?'A':'B'; }
+      else if(name==='battery'){ Q.opts=[{k:'A'},{k:'B'}]; Q.ans=v.view==='3d'?(Q.batA===1?'A':'B'):(Q.batA===v.plusU?'A':'B'); }
+      else if(name==='current'){ Q.opts=[{k:'out',l:'&odot; Out of the page'},{k:'in',l:'&otimes; Into the page'}]; Q.ans=v.c>0?'out':'in'; }
+      else if(v.view==='plan'){ Q.opts=[{k:'out',l:'&odot; Out of the page'},{k:'in',l:'&otimes; Into the page'},{k:'S',l:'Towards the S pole'},{k:'none',l:'No force'}]; Q.ans=v.F[2]>0?'out':'in'; }
+      else if(v.view==='end'){ Q.opts=shuffle([[1,0],[-1,0],[0,1],[0,-1]]).map(function(dv,i){ return {k:String(i+1),v:dv}; });
+        Q.ans=Q.opts.filter(function(o){ return o.v[0]===v.F[0]&&o.v[1]===v.F[1]; })[0].k; }
+      else { Q.opts=shuffle([[0,0,1],[0,0,-1],[1,0,0],[-1,0,0]]).map(function(dv,i){ return {k:String(i+1),v:dv}; });
+        Q.ans=Q.opts.filter(function(o){ return o.v[2]===fup(); })[0].k; }
+      if(name==='poles'||name==='battery'||/^\d$/.test(Q.opts[0].k)) Q.opts.sort(function(u,w){ return u.k<w.k?-1:1; });
+      $('#me-qstep').textContent='Question '+Q.n+' · '+VIEWNAME[v.view];
+      $('#me-qtext').innerHTML={
+        poles:'The <b>force</b> on the wire is shown. Which pole is the <b>north pole</b>, A or B?',
+        battery:'The <b>force</b> on the wire is shown. Which end of the battery is the <b>+ terminal</b>, A or B?',
+        current:'The <b>force</b> on the wire is shown. Which way is the <b>current</b> in the wire?',
+        force:v.view==='plan'?'Which way is the <b>force</b> on the wire?':'Which arrow shows the direction of the <b>force</b> on the wire?'}[name];
+      $('#me-note').innerHTML=v.view==='3d'?'Drag the 3D view to turn it and look from another side. Then choose an answer and press <b>Check</b>.':'Use Fleming&rsquo;s left-hand rule on the diagram. Choose an answer and press <b>Check</b>.';
+      $('.v3d figcaption').innerHTML=v.view==='3d'?'3D view <span class="cap-hint">&middot; drag to turn it</span>':'2D view';
+    } else {
+      if(name==='current') Q.opts=[{k:letters[0],v:1},{k:letters[1],v:-1}];
+      else if(name==='field') Q.opts=shuffle([{k:'a',v:1},{k:'b',v:-1}]).map(function(o,i){ return {k:['a','b'][i],v:o.v}; });
+      else Q.opts=shuffle([[0,0,1],[0,0,-1],[1,0,0],[-1,0,0]]).map(function(v,i){ return {k:String(i+1),v:v}; });
+      Q.opts.sort(function(u,v){ return u.k<v.k?-1:1; });
+      $('#me-qstep').textContent='Step '+(Q.step+1)+' of 3 · '+(name==='current'?'Current':name==='field'?'Magnetic field':'Motion');
+      $('#me-qtext').innerHTML=name==='current'?'The wire is connected to a <b>battery</b>. Which arrow shows the direction of the <b>current</b> in the wire?':
+        name==='field'?'Which arrow shows the direction of the <b>magnetic field</b> between the poles?':'Predict the motion. Which arrow shows the direction of the <b>force</b> on the wire?';
+      $('#me-note').innerHTML='Drag the 3D view to turn it and look from another side. Then choose an arrow and press <b>Check</b>.';
+      $('.v3d figcaption').innerHTML='3D view <span class="cap-hint">&middot; drag to turn it</span>';
+    }
+    $('#me-qopts').innerHTML=Q.opts.map(function(o){ return '<button type="button" data-k="'+o.k+'" aria-pressed="false">'+(o.l||o.k)+'</button>'; }).join('');
     $('#me-qcheck').disabled=false;
-    $('#me-note').innerHTML='Drag the 3D view to turn it and look from another side. Then choose an arrow and press <b>Check</b>.';
     draw(); }
   // the answer arrows, drawn on top of the 3D view with their letters or numbers
   function quizOverlay(P){
-    var name=STEPS[Q.type][Q.step], g='';
+    var name=Q.type==='find'?(Q.missing==='force'?'motion':''):STEPS.exam[Q.step], g='';
     if(Q.finished || !name) return g;
     var ny=depthOf(0,-100,0)<depthOf(0,100,0)?-1:1;   // which end of the wire (and which face of the gap) is nearer to you
     function arr(a,b,lab,off){ var p=P(a[0],a[1],a[2]), q=P(b[0],b[1],b[2]), dx=q[0]-p[0], dy=q[1]-p[1], n=Math.hypot(dx,dy)||1;
@@ -585,26 +625,92 @@
       else if(name==='field'){ var z=i?-HZ*0.55:HZ*0.55; g+=arr([-o.v*(GAP-8),ny*(HA+6),z],[o.v*(GAP-8),ny*(HA+6),z],o.k); }
       else { var v=o.v, b0=[v[0]*10,ny*WL*0.8,d+v[2]*10]; g+=arr(b0,[b0[0]+v[0]*34,b0[1],b0[2]+v[2]*34],o.k); } });
     return g; }
+  // ----- the 2D questions, drawn in the big view: wire across the page (with its battery) or end-on -----
+  function dotCross(x,y,out,col,r){ r=r||11; var g='<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="var(--panel)" stroke="'+col+'" stroke-width="2.5"/>';
+    if(out) return g+'<circle cx="'+x+'" cy="'+y+'" r="'+(r*0.3).toFixed(1)+'" fill="'+col+'"/>';
+    var k=r*0.62, x0=(x-k).toFixed(1), x1=(x+k).toFixed(1), y0=(y-k).toFixed(1), y1=(y+k).toFixed(1);
+    return g+'<path d="M'+x0+','+y0+' L'+x1+','+y1+' M'+x0+','+y1+' L'+x1+','+y0+'" stroke="'+col+'" stroke-width="2.5"/>'; }
+  function box(x,y,w,h,lab,isN,known){
+    if(known) return poleRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h),isN?'N':'S',22);
+    return '<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+'" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2"/>'+txt((x+w/2).toFixed(1),(y+h/2+8).toFixed(1),lab,{a:'middle',c:'var(--ink)',w:600,fs:22}); }
+  function drawQ2(){
+    var v=Q.v, miss=Q.finished?'':Q.missing, g='<defs>'+arrowHead('q2-a','var(--topic)')+arrowHead('q2-f','var(--accent)')+arrowHead('q2-q','var(--ink)')+'</defs>';
+    function pole(r,side){ return box(r[0],r[1],r[2],r[3],side===Q.poleA?'A':'B',side===v.Nside,miss!=='poles'); }
+    if(v.view==='plan'){
+      var sd=v.bside, VB=sd*122;
+      var M=function(u,w){ w-=sd*20; return v.orient==='v'?[190+w,150-u]:[190+u,150+w]; };
+      var R=function(u0,u1,w0,w1){ var a=M(u0,w0), b=M(u1,w1); return [Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.abs(a[0]-b[0]),Math.abs(a[1]-b[1])]; };
+      var L=function(a,b,col,wd,ex){ return line(a[0].toFixed(1),a[1].toFixed(1),b[0].toFixed(1),b[1].toFixed(1),col,wd,ex); };
+      [1,-1].forEach(function(sg){ g+=pole(R(-55,55,sg*30,sg*85),sg); });
+      if(miss!=='poles') [-40,-20,0,20,40].forEach(function(u){ g+=L(M(u,-30),M(u,30),'var(--topic)',1.5);
+        g+=L(M(u,-v.b*24),M(u,-v.b*16),'var(--topic)',2,' marker-end="url(#q2-a)"')+L(M(u,v.b*12),M(u,v.b*20),'var(--topic)',2,' marker-end="url(#q2-a)"'); });
+      // the circuit: leads from both ends of the wire to the battery
+      [1,-1].forEach(function(e){ g+=L(M(e*120,0),M(e*120,VB),'var(--ink-soft)',2.5,' stroke-linecap="round"')+L(M(e*120,VB),M(e*36,VB),'var(--ink-soft)',2.5,' stroke-linecap="round"'); });
+      var br=R(-30,30,VB-11,VB+11);
+      g+='<rect x="'+br[0].toFixed(1)+'" y="'+br[1].toFixed(1)+'" width="'+br[2].toFixed(1)+'" height="'+br[3].toFixed(1)+'" rx="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>';
+      if(miss!=='battery') g+=L(M(v.plusU*30,VB),M(v.plusU*36,VB),'var(--ink)',10);
+      [1,-1].forEach(function(e){ var p=M(e*17,VB), lab=miss==='battery'?(e===Q.batA?'A':'B'):(e===v.plusU?'+':'−'); g+=txt(p[0].toFixed(1),(p[1]+6).toFixed(1),lab,{a:'middle',c:'var(--ink)',w:600,fs:17}); });
+      var wa=M(-120,0), wb=M(120,0);
+      g+=L(wa,wb,'var(--ink)',11,' stroke-linecap="round"')+L(wa,wb,'var(--copper)',8,' stroke-linecap="round"');
+      if(miss!=='battery'){ [-96,96].forEach(function(u){ g+=chev(M(u-v.s*10,0),M(u+v.s*10,0),11,1); }); var ti=M(96,-sd*18); g+=txt(ti[0].toFixed(1),(ti[1]+5).toFixed(1),'I',{a:'middle',c:'var(--copper)',w:600,fs:15}); }
+      if(miss!=='force'){ var fp=M(-80,-sd*30), away=v.orient==='v'?-sd:0, fx=fp[0]+(away?away*16:0), fy=away?fp[1]+5:fp[1]-sd*20+5;
+        g+=dotCross(+fp[0].toFixed(1),+fp[1].toFixed(1),v.F[2]>0,'var(--accent)',11)+txt(fx.toFixed(1),fy.toFixed(1),'force',{a:away>0?'start':away<0?'end':'middle',c:'var(--accent)',w:600,fs:13}); }
+    } else {
+      var N=function(a,p){ return v.axis==='h'?[190+a,150-p]:[190+p,150-a]; };
+      var RR=function(a0,a1,p0,p1){ var x=N(a0,p0), y=N(a1,p1); return [Math.min(x[0],y[0]),Math.min(x[1],y[1]),Math.abs(x[0]-y[0]),Math.abs(x[1]-y[1])]; };
+      var LL=function(a,b,col,wd,ex){ return line(a[0].toFixed(1),a[1].toFixed(1),b[0].toFixed(1),b[1].toFixed(1),col,wd,ex); };
+      var ext=v.axis==='h'?[70,145,80]:[66,124,100];
+      [1,-1].forEach(function(sg){ g+=pole(RR(sg*ext[0],sg*ext[1],-ext[2],ext[2]),sg); });
+      if(miss!=='poles') [-48,-24,0,24,48].forEach(function(p){ g+=LL(N(-ext[0],p),N(ext[0],p),'var(--topic)',1.5);
+        g+=LL(N(-v.b*54,p),N(-v.b*44,p),'var(--topic)',2,' marker-end="url(#q2-a)"')+LL(N(v.b*44,p),N(v.b*54,p),'var(--topic)',2,' marker-end="url(#q2-a)"'); });
+      g+='<circle cx="190" cy="150" r="17" fill="var(--copper)" stroke="var(--ink)" stroke-width="2"/>';
+      if(miss!=='current') g+=dotCross(190,150,v.c>0,'var(--ink)',10); else g+=txt(190,157,'?',{a:'middle',c:'var(--panel)',w:700,fs:19});
+      var F=[v.F[0],-v.F[1]];   // to SVG directions (y down)
+      if(miss!=='force') g+=line((190+F[0]*22).toFixed(1),(150+F[1]*22).toFixed(1),(190+F[0]*66).toFixed(1),(150+F[1]*66).toFixed(1),'var(--accent)',4.5,' marker-end="url(#q2-f)"')+
+        txt((190+F[0]*80+(F[1]?14:0)).toFixed(1),(150+F[1]*80+(F[0]?-10:5)).toFixed(1),'force',{a:'middle',c:'var(--accent)',w:600,fs:13});
+      else if(!Q.finished) Q.opts.forEach(function(o){ var dx=o.v[0], dy=-o.v[1];
+        g+=line((190+dx*22).toFixed(1),(150+dy*22).toFixed(1),(190+dx*46).toFixed(1),(150+dy*46).toFixed(1),'var(--ink)',3,' marker-end="url(#q2-q)"')+
+          '<circle cx="'+(190+dx*58)+'" cy="'+(150+dy*58)+'" r="10" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>'+txt(190+dx*58,150+dy*58+4,o.k,{a:'middle',c:'var(--ink)',w:600,fs:12}); });
+    }
+    g+=txt(8,294,'&odot; out of the page &nbsp; &otimes; into the page',{c:'var(--ink-faint)',fs:11});
+    return g; }
+  // the left-hand rule for a 2D question: out of the page is drawn towards the bottom left
+  function drawHand2(){
+    var v=Q.v, L=80, g='<defs>'+arrowHead('me-h2a','var(--topic)')+arrowHead('me-h2c','var(--copper)')+arrowHead('me-h2f','var(--accent)')+'</defs>';
+    function P2(w,k){ return [150+k*(w[0]-0.5*w[2]), 150+k*(-w[1]+0.5*w[2])]; }
+    function ax(w,col,mk,l1,l2){ var e=P2(w,L), dx=e[0]-150, dy=e[1]-150, n=Math.hypot(dx,dy)||1, lx=e[0]+dx/n*16, ly=e[1]+dy/n*16, an=dx>8?'start':(dx<-8?'end':'middle'), y0=ly+(dy>8?8:(dy<-8?-12:0)), tw=Math.max(l1.length*6.4,l2.length*7.8);
+      if(Math.abs(dy)<8){ an=dx>0?'end':'start'; lx=e[0]; y0=e[1]-32; }   // along the page: label above the arrow's tip
+      else if(an==='start') lx=Math.min(lx,296-tw); else if(an==='end') lx=Math.max(lx,4+tw); else lx=Math.min(Math.max(lx,4+tw/2),296-tw/2);
+      return line(150,150,e[0].toFixed(1),e[1].toFixed(1),col,5,' stroke-linecap="round" marker-end="url(#'+mk+')"')+txt(lx.toFixed(1),y0.toFixed(1),l1,{a:an,c:col,fs:10.5})+txt(lx.toFixed(1),(y0+13).toFixed(1),l2,{a:an,c:col,fs:12.5,w:600}); }
+    g+=ax(v.B,'var(--topic)','me-h2a','First finger','Field')+ax(v.I,'var(--copper)','me-h2c','Second finger','Current')+ax(v.F,'var(--accent)','me-h2f','Thumb','Force');
+    return g+'<circle cx="150" cy="150" r="4" fill="var(--ink-soft)"/>'+txt(150,292,'out of the page: drawn towards the bottom left',{a:'middle',c:'var(--ink-faint)',fs:10}); }
   function checkQ(){
     if(!Q||Q.finished) return;
-    var name=STEPS[Q.type][Q.step], btns=Array.prototype.slice.call($('#me-qopts').children);
-    if(!qSel){ $('#me-note').innerHTML='Choose an arrow first.'; return; }
+    var name=stepName(), btns=Array.prototype.slice.call($('#me-qopts').children), FQ=Q.type==='find';
+    if(!qSel){ $('#me-note').innerHTML='Choose an answer first.'; return; }
     var o=Q.opts.filter(function(x){ return x.k===qSel; })[0], ok;
-    if(name==='current') ok=o.v===cdir(); else if(name==='field') ok=o.v===bdir(); else ok=o.v[2]===fup()&&o.v[0]===0;
+    if(FQ) ok=qSel===Q.ans;
+    else if(name==='current') ok=o.v===cdir(); else if(name==='field') ok=o.v===bdir(); else ok=o.v[2]===fup()&&o.v[0]===0;
     var btn=btns.filter(function(b){ return b.dataset.k===qSel; })[0];
     if(!ok){
       btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong');
       setTimeout(function(){ btn.classList.remove('wrong'); btn.setAttribute('aria-pressed','false'); }, 750); qSel=null;
-      $('#me-note').innerHTML='Not quite. '+(name==='current'?(Q.type==='find'?'Use Fleming’s left-hand rule: point your <b>first finger</b> along the field (N to S) and your <b>thumb</b> along the motion. Your <b>second finger</b> then points along the current.':'Conventional current flows <b>out of the + terminal</b>, through the wire, and back to the &minus; terminal.'):
+      $('#me-note').innerHTML='Not quite. '+(FQ?{
+        poles:'Use Fleming&rsquo;s left-hand rule: <b>second finger</b> along the current (from +, round to &minus;), <b>thumb</b> along the force. Your <b>first finger</b> then gives the field, which goes <b>from N to S</b>.',
+        battery:'Use Fleming&rsquo;s left-hand rule: <b>first finger</b> along the field (N to S), <b>thumb</b> along the force. Your <b>second finger</b> gives the current, and the current leaves the battery from its <b>+</b> terminal.',
+        current:'Use Fleming&rsquo;s left-hand rule: <b>first finger</b> along the field (N to S), <b>thumb</b> along the force. Your <b>second finger</b> then gives the current.',
+        force:'Use Fleming&rsquo;s left-hand rule: <b>first finger</b> along the field (N to S), <b>second finger</b> along the current; your <b>thumb</b> gives the force. The force is always at right angles to both.'+(Q.v.view==='3d'?' Try turning the 3D view so your hand matches it.':'')}[name]:
+        name==='current'?'Conventional current flows <b>out of the + terminal</b>, through the wire, and back to the &minus; terminal.':
         name==='field'?'Magnetic field lines go <b>from N to S</b>.':'Use Fleming’s left-hand rule: <b>first finger</b> along the field, <b>second finger</b> along the current; your <b>thumb</b> gives the motion. Try turning the 3D view so your hand matches it.');
       return; }
     btn.classList.add('right'); btns.forEach(function(b){ b.disabled=true; });
     Q.done[name]=true;
-    var said=name==='current'?(Q.type==='find'?'Right: the left-hand rule gives this current.':'Right: current flows from + to &minus;.'):name==='field'?'Right: the field goes from N to S.':'Right: the force is at right angles to both the field and the current.';
-    if(Q.step+1<STEPS[Q.type].length){ $('#me-note').innerHTML=said; setTimeout(function(){ Q.step++; setStep(); $('#me-note').innerHTML=said+' Now the next step.'; }, 900); draw(); return; }
+    var said=FQ?{poles:'Right: that is the north pole, so the field goes from it to the south pole.',battery:'Right: that is the + terminal, so the current flows from it, through the wire, to the &minus; terminal.',current:'Right: the left-hand rule gives this current.',force:'Right: the force is at right angles to both the field and the current.'}[name]:
+      name==='current'?'Right: current flows from + to &minus;.':name==='field'?'Right: the field goes from N to S.':'Right: the force is at right angles to both the field and the current.';
+    if(!FQ&&Q.step+1<STEPS.exam.length){ $('#me-note').innerHTML=said; setTimeout(function(){ Q.step++; setStep(); $('#me-note').innerHTML=said+' Now the next step.'; }, 900); draw(); return; }
     Q.finished=true; $('#me-qcheck').disabled=true; on=true;
-    $('#me-note').innerHTML=said+' The left-hand rule is shown on the right. Turn the 3D view to check it from another side, or press <b>New question</b>.';
-    t=0; d=0; running=true; last=performance.now(); raf=requestAnimationFrame(frame);
+    $('#me-note').innerHTML=said+' The left-hand rule is shown on the right. Press <b>New question</b> for another one.';
+    if(!FQ||Q.v.view==='3d'){ t=0; d=0; running=true; last=performance.now(); raf=requestAnimationFrame(frame); }
     draw(); }
   $('#me-qopts').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return;
     qSel=b.dataset.k; Array.prototype.forEach.call(this.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); });
@@ -615,7 +721,7 @@
     stageW.classList.toggle('quiz',q);
     Array.prototype.forEach.call(stageW.querySelectorAll('.explore-only'),function(e){ e.hidden=q; });
     $('#me-quiz').hidden=!q;
-    if(q) newQ(); else { Q=null; setCam(28*DEG,26*DEG); mag.pick('L'); cur.pick('up'); reset(); } }
+    if(q) newQ(); else { Q=null; $('.v3d figcaption').innerHTML='3D view <span class="cap-hint">&middot; drag to turn it</span>'; setCam(28*DEG,26*DEG); mag.pick('L'); cur.pick('up'); reset(); } }
   // turning the 3D view: drag it (the hand turns too), or arrow keys when it has focus
   [v3,hand].forEach(function(el){ var drag=null;
     el.addEventListener('pointerdown',function(e){ drag={x:e.clientX,y:e.clientY,th:TH,ph:PH}; try{ el.setPointerCapture(e.pointerId); }catch(x){} });
