@@ -108,8 +108,8 @@
   .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
   .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
   .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
-  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;flex-wrap:wrap;}
-  .lab output{color:var(--ink);font-weight:600;text-align:right;white-space:nowrap;margin-left:auto;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{display:block;color:var(--ink);font-weight:600;white-space:nowrap;margin-top:2px;}
   input[type=range]{width:100%;accent-color:var(--quantum);min-height:28px;}
   .seg{display:flex;flex-wrap:wrap;gap:6px;}
   .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
@@ -179,6 +179,7 @@
           <button class="btn" id="pe-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="pe-slow" type="button" aria-pressed="false">Slow motion</button>
           <button class="btn" id="pe-exp" type="button" aria-pressed="false" title="Hide the theory curve and plot the readings as the voltage changes">Experiment</button>
+          <button class="btn" id="pe-hide" type="button" aria-pressed="false" title="Hide the graph line so the class can predict it first">Hide line</button>
           <button class="btn" id="pe-keep" type="button">Keep this curve</button>
           <button class="btn" id="pe-clear" type="button" disabled>Clear kept curves</button>
         </div>
@@ -310,7 +311,7 @@
   var photons=[], electrons=[], spawn=0, t=0, running=false, started=false, idle=0, last=0, raf=0, AUTO_PAUSE=40;
   // Experiment mode: no theory curve; the supply steps down from +2 V to −4 V and each ammeter reading is plotted.
   // The voltage lives in expV (not the stepped slider), and readings are kept every 0.1 V.
-  var exp=false, readings0={}, sweeping=false, swept=false, expV=2, SWEEP_RATE=0.5;   // volts per second
+  var hideLine=false, exp=false, readings0={}, sweeping=false, swept=false, expV=2, SWEEP_RATE=0.5;   // volts per second
   function expPoints(src){ return Object.keys(src).map(Number).sort(function(a,b){ return a-b; }).map(function(k){ return [k/10, src[k]]; }); }
   function pointsPath(p){ return p.map(function(q){ return gx(q[0]).toFixed(1)+','+gy(q[1]).toFixed(1); }).join(' '); }
   function record(V){ readings0[Math.round(V*10)] = started ? current(V,f(),inten(),metal) : 0; }
@@ -367,14 +368,14 @@
       var yEnd = c.pts && c.pts.length ? gy(c.pts[c.pts.length-1][1]) : gy(current(VMAX,c.f,c.i,c.m));
       g+='<circle cx="'+(GX+GW-10-n*20)+'" cy="'+(yEnd-12)+'" r="8" fill="var(--panel)" stroke="var(--ink-faint)" stroke-width="1.5"/><text x="'+(GX+GW-10-n*20)+'" y="'+(yEnd-8)+'" text-anchor="middle" font-size="10" fill="var(--ink)">'+(n+1)+'</text>';
     });
-    if(!exp) g+='<polyline points="'+curvePath(fr,I,metal)+'" fill="none" stroke="var(--quantum)" stroke-width="2.8" stroke-linejoin="round"/>';
+    if(!exp && !hideLine) g+='<polyline points="'+curvePath(fr,I,metal)+'" fill="none" stroke="var(--quantum)" stroke-width="2.8" stroke-linejoin="round"/>';
     else {
       var pts=expPoints(readings0);
       if(pts.length>1) g+='<polyline points="'+pointsPath(pts)+'" fill="none" stroke="var(--quantum)" stroke-width="1.5" opacity="0.6"/>';
       pts.forEach(function(q){ g+='<circle cx="'+gx(q[0]).toFixed(1)+'" cy="'+gy(q[1]).toFixed(1)+'" r="2.8" fill="var(--quantum)"/>'; });
       if(!started) g+='<text x="'+(GX+GW/2)+'" y="'+(GY+GH/2)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-faint)">readings appear here</text>';
     }
-    var reveal = !exp || swept;
+    var reveal = exp ? swept : !hideLine;
     if(reveal && ek>0 && -ek>=VMIN && I>0){
       g+='<line x1="'+gx(-ek)+'" x2="'+gx(-ek)+'" y1="'+(GY+GH-34)+'" y2="'+(GY+GH)+'" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"/>';
       g+='<text x="'+gx(-ek)+'" y="'+(GY+GH-38)+'" text-anchor="middle" font-size="10.5" fill="var(--accent)">−V<tspan font-size="8" dy="2">s</tspan></text>';
@@ -392,7 +393,7 @@
     $('#pe-io').textContent=sn(I,1)+' W/m² · '+(I>0 ? sci(photonRate(fr,I),1) : '0')+' photons/s';
     $('#pe-vo').textContent=(V>0?'+':'')+sn(V,1)+' V';
     $('#pe-e').textContent=pe.toFixed(2)+' eV';
-    var hide = exp && !swept;
+    var hide = exp ? !swept : hideLine;
     $('#pe-ek').textContent=hide ? '?' : (ek>0 ? ek.toFixed(2)+' eV' : 'none');
     $('#pe-vs').textContent=hide ? '?' : (ek>0 ? ek.toFixed(2)+' V' : 'none');
     $('#pe-cur').textContent=cur.toFixed(2)+' μA';
@@ -410,7 +411,7 @@
     }
     w2+='hf<sub>0</sub> = Φ<br>Φ = '+metal.phi.toFixed(2)+' × 1.60 × 10⁻¹⁹ = '+sci(metal.phi*E,2)+' J<br>f<sub>0</sub> = [[Φ|h]]<br>f<sub>0</sub> = [['+sci(metal.phi*E,2)+'|6.63 × 10⁻³⁴]] = <b>'+sci(f0,2)+' Hz</b>';
     $('#pe-eq2').innerHTML=FR(w2);
-    if(hide){ $('#pe-eq1').innerHTML='Finish the experiment to see the working.'; $('#pe-eq2').innerHTML='Read the stopping voltage off your graph first: where does the current reach zero?'; }
+    if(hide){ $('#pe-eq1').innerHTML=exp ? 'Finish the experiment to see the working.' : 'Press Show line to see the working.'; $('#pe-eq2').innerHTML='Read the stopping voltage off your graph first: where does the current reach zero?'; }
     // what is happening now
     var note;
     if(!started) note='Press Switch on to shine the lamp on the '+metal.name+' plate. Change the frequency, intensity and voltage at any time.';
@@ -497,9 +498,12 @@
     if(exp) clearExp();
     else vIn.value = p.v!==null ? p.v : Math.max(-4, -Math.ceil(emax(p.f*1e14,metal)*10)/10);
     markPreset(b.dataset.p); touched(); if(!running) run(); else { if(exp){ sweeping=true; record(VMAX); } draw(); } });
+  var hideBtn=$('#pe-hide');
+  function markHide(){ hideBtn.setAttribute('aria-pressed', String(hideLine)); hideBtn.textContent = hideLine ? 'Show line' : 'Hide line'; hideBtn.disabled = exp; }
+  hideBtn.addEventListener('click',function(){ hideLine=!hideLine; markHide(); touched(); draw(); });
   var expBtn=$('#pe-exp');
   expBtn.addEventListener('click',function(){
-    exp=!exp; expBtn.setAttribute('aria-pressed', String(exp)); clearExp();
+    exp=!exp; expBtn.setAttribute('aria-pressed', String(exp)); clearExp(); markHide();
     if(exp && running){ sweeping=true; record(VMAX); }
     touched(); draw(); });
   playBtn.addEventListener('click',function(){ if(running){ stop(); draw(); } else run(); });
