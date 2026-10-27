@@ -64,7 +64,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `gas-molecules.html` | IGCSE | ❔ Not recorded | |
 | `magnetic-field-patterns.html` | IGCSE | ❔ Not recorded | |
 | `electromagnet-field-patterns.html` | IGCSE | ❔ Not recorded | |
-| `motor-effect.html` | IGCSE | 🔍 To review | 27 Oct: current shown as arrowheads on the wire itself (plan and 3D views; faint until switched on, hidden in quiz until the current step is answered). |
+| `motor-effect.html` | IGCSE | 🔍 To review | 27 Oct: current shown as arrowheads on the wire itself (plan and 3D views; shown clearly before switching on so students can predict, hidden in quiz until the current step is answered). |
 | `dc-motor.html` | IGCSE | ✅ Checked 25 Oct 2026 | |
 | `loudspeaker.html` | IGCSE | ✅ Checked 25 Oct 2026 | |
 | `magnet-and-coil.html` | IGCSE | ❔ Not recorded | |
