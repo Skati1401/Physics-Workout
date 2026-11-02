@@ -21,6 +21,16 @@ For each: ask Alex for the spec page first (spec numbers from the spec, never me
 - [ ] **Unit 7 Radioactivity and Particles** (1–2 pages). Core practical 7.6; `animations/film-badge.html` already exists.
 - [ ] **Unit 8 Astrophysics** (1 page).
 
+## 3. Teaching animations to build
+
+Stand-alone pages in `animations/` (teaching-animations skill), one copy framed in the workouts. Added 2 Nov 2026 from the IAL 5.2 Nuclear Decay deck (spec 133–142); card on `animations/a-level-ib.html` (and `animations/igcse.html` where it fits Unit 7).
+
+- [ ] **Random decay and half-life:** a grid of nuclei decaying at random, with a live N–t graph and a ln N–t graph; read t½ and λ from them.
+- [ ] **α, β and γ deflection in fields:** paths in a magnetic or electric field, sliders for field direction and strength. `animations/motor-effect.html?show=particles` (6.11P) only shows a charged particle / electron in a magnetic field: extend it rather than make a second page, if that fits.
+- [ ] **Inverse-square law for gamma:** count rate against distance, background subtracted.
+- [ ] **IAL CP15 gamma absorption:** Experiment mode (experiment-kit): add lead sheets, read I, plot ln I against x (I = I₀e^−μx, gradient −μ, x½ = ln 2/μ).
+- [ ] **Film badge:** `animations/film-badge.html` exists (cards on both animation lists) but is not framed in any workout yet. Frame it in the Unit 7 workout tab for radiation types, with the full-screen link.
+
 ## Done
 
 - 27 Oct 2026: Forces split into Part 1 (1a, 1b) and Part 2 (1c with suvat, 1d) to match Alex's school.
