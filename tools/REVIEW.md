@@ -52,7 +52,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `random-decay.html` | IGCSE (Unit 7) + A Level / IB | ✅ Checked 2 Nov 2026 | |
 | `radiation-in-fields.html` | IGCSE (Unit 7) + A Level / IB | ✅ Checked 2 Nov 2026 | |
 | `gamma-radiation.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
-| `roller-coaster-energy.html` | IGCSE (Unit 4) | 🔍 To review | New (25 Oct 2026), framed in 4c Energy Link. A cart drops from h₁, tries to get over hill 2 (h₂) and runs to the end; sliders for mass, start speed, friction force and both heights. Bars for GPE, KE, work done against friction and the total; the working finds the speed from KE = total − GPE − work done, and once the cart reaches hill 2 an "Over hill 2?" check appears. Try h₂ above h₁, no friction, and big friction. |
+| `roller-coaster-energy.html` | IGCSE | 🔍 To review | Drag the start platform (h₁) and the top of hill 2 (h₂) up and down (1 m steps); dragging resets the run like the sliders. Check the faint ↕ drag labels and the feel on a phone (targets are small there). |
 | `motion-graphs.html` | IGCSE | ❔ Not recorded | |
 | `ramp-motion.html` | IGCSE | ❔ Not recorded | |
 | `force-mass-acceleration.html` | IGCSE | ❔ Not recorded | |

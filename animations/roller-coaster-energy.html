@@ -127,6 +127,9 @@
   .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
   .frac>span{padding:0 .25em;white-space:nowrap;}
   .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  /* drag the hill tops up and down to set h1 and h2 */
+  .grab{cursor:grab;touch-action:none;}
+  #rc-svg.dragging,#rc-svg.dragging *{cursor:grabbing;}
   .dragme{cursor:grab;}
   .dragme:focus{outline:none;}
   .dragme:focus-visible .focus-ring{stroke:var(--accent);stroke-width:3;}
@@ -181,7 +184,7 @@
   <section class="card stage">
     <div>
       <svg class="view" id="rc-svg" viewBox="0 0 680 262" role="img" aria-label="A roller coaster cart at the top of a drop, with a second hill and a flat run to the end of the track">
-        <g id="rc-track"></g><g id="rc-fr"></g><g id="rc-car"></g>
+        <g id="rc-track"></g><g id="rc-fr"></g><g id="rc-car"></g><g id="rc-grab"></g>
       </svg>
       <div class="under">
         <div class="btn-group">
@@ -347,8 +350,15 @@
     g+='<text x="'+(px(X_END)-2)+'" y="'+(py(P.h1)-6)+'" font-size="12" text-anchor="end" fill="var(--grav)">start height h₁ = '+P.h1+' m</text>';
     var ty=py(P.h2)-10; if(Math.abs(P.h2-P.h1)<2) ty=py(P.h2)+22;
     g+='<text x="'+px(X_H2)+'" y="'+ty+'" font-size="12" text-anchor="middle" fill="var(--ink-soft)">h₂ = '+P.h2+' m</text>';
+    // small "↕ drag" labels beside the two points students can drag
+    g+='<text x="'+(px(X_TOP)+36)+'" y="'+(py(P.h1)-8)+'" font-size="11" fill="var(--ink-faint)">↕ drag</text>';
+    g+='<text x="'+(px(X_H2)+44)+'" y="'+ty+'" font-size="11" fill="var(--ink-faint)">↕ drag</text>';
     g+='<text x="'+(px(X_END)-4)+'" y="252" font-size="11" text-anchor="end" fill="var(--ink-faint)">end of the track</text>';
     $('#rc-track').innerHTML=g;
+    // transparent hit areas (drawn above the cart): the start platform with its cart, and the top of hill 2
+    $('#rc-grab').innerHTML=
+      '<rect class="grab" data-k="h1" x="8" y="'+(py(P.h1)-48)+'" width="'+(px(X_TOP)+70)+'" height="64" fill="transparent"/>'+
+      '<rect class="grab" data-k="h2" x="'+(px(X_H2)-48)+'" y="'+(py(P.h2)-28)+'" width="140" height="58" fill="transparent"/>';
   }
   function drawCar(st){
     var a=-Math.atan2(yAt(Math.min(X_END,st.p.x+1.8))-yAt(Math.max(0,st.p.x-1.8)),3.6)*180/Math.PI,   // tilt with the track under the whole cart
@@ -454,6 +464,26 @@
     setMark(p); draw();
   });
   Object.keys(ins).forEach(function(k){ ins[k].addEventListener('input',reset); });
+
+  // drag a hill top up and down: the same as moving its height slider (which resets the run).
+  // The picture's scale is fixed (10 px per metre), so nothing needs freezing while dragging.
+  var svgEl=$('#rc-svg'), drag=null;
+  function svgPt(e){ var q=svgEl.createSVGPoint(); q.x=e.clientX; q.y=e.clientY; return q.matrixTransform(svgEl.getScreenCTM().inverse()); }
+  function metres(q){ return (232-q.y)/10; }
+  svgEl.addEventListener('pointerdown',function(e){
+    var r=e.target.closest && e.target.closest('.grab'); if(!r) return;
+    var el=ins[r.getAttribute('data-k')];
+    drag={el:el, off:metres(svgPt(e))-(+el.value)};
+    svgEl.setPointerCapture(e.pointerId); svgEl.classList.add('dragging'); e.preventDefault();
+  });
+  svgEl.addEventListener('pointermove',function(e){
+    if(!drag) return;
+    var el=drag.el, st=+el.step||1, v=Math.round((metres(svgPt(e))-drag.off)/st)*st;
+    v=Math.max(+el.min, Math.min(+el.max, v));
+    if(+el.value!==v){ el.value=v; reset(); }
+  });
+  function endDrag(){ if(!drag) return; drag=null; svgEl.classList.remove('dragging'); }
+  svgEl.addEventListener('pointerup',endDrag); svgEl.addEventListener('pointercancel',endDrag);
 
   watchEquals($('#rc-eq')); watchEquals($('#rc-over'));
   reset();
