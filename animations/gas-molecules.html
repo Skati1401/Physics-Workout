@@ -96,6 +96,7 @@ h1{font:800 clamp(34px,8vw,58px)/.92 var(--f-head);letter-spacing:0;margin:0 0 1
 .act-body{display:flex;flex-direction:column;gap:12px;min-width:0}
 .sub{font:500 11.5px var(--f-mono);letter-spacing:0;color:var(--ink-faint);margin:2px 0 -4px}
 .note{font-size:13px;color:var(--ink-soft);margin:0}
+.note-eq{display:block;margin:6px 0;font-family:'IBM Plex Mono',monospace;color:var(--ink)}
 .bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
 .btn{font:500 13px var(--f-body);padding:7px 14px;border:1px solid var(--panel-border);border-radius:6px;background:var(--panel-2);cursor:pointer}
 .btn:hover{border-color:var(--ink-faint)}
@@ -1036,9 +1037,13 @@ function createGasSim(canvas){
     ctx.fillStyle=pal.line;ctx.fillRect(boxW,0,7,H);
     ctx.fillRect(boxW+7,H/2-4,W-boxW-7,8);ctx.fillRect(W-8,H/2-22,8,44);
     for(let i=0;i<N;i++){const p=P[i];ctx.beginPath();ctx.arc(p.x,p.y,R,0,6.2832);ctx.fillStyle=pal.gas;ctx.fill();}
+    // the piston can be dragged: a small hint on the rod (or beside the piston when the rod is short)
+    ctx.fillStyle=pal.ink;ctx.font='12px "IBM Plex Mono", monospace';ctx.textAlign='center';
+    const hx=boxW+7+(W-8-boxW-7)/2;
+    if(W-boxW>70)ctx.fillText('← drag →',hx,H/2-12);
   }
   return{
-    setT:setT,setV:v=>{vol=v;},getT:()=>T,getV:()=>vol,
+    setT:setT,setV:v=>{vol=v;if(paused){boxW=BW*vol;P.forEach(p=>{if(p.x>boxW-R)p.x=boxW-R;});}},getT:()=>T,getV:()=>vol,pistonX:()=>boxW,W:W,BW:BW,
     setN:setN,getN:()=>N,setSpeedFactor:v=>{sf=v;speeds();},
     shares:()=>P.slice(0,N).map(p=>p.g*p.g),       // each molecule's kinetic energy as a multiple of the mean
     pressure:()=>ema*1e4,hitRate:()=>hitsEma*60,
@@ -1141,7 +1146,7 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
       byId('gs-eq').innerHTML=FR(eq);
       byId('gs-note').innerHTML=FR(Tk===0
         ?'Absolute zero, 0 K (−273 °C): the molecules have no kinetic energy, so they stop. Nothing hits the walls, so the pressure is zero. Nothing can be colder than this.'
-        :'Internal energy is the kinetic and potential energy of the molecules, shared out at random. In an ideal gas the molecules do not attract each other, so it is all kinetic: U = N × [[3|2]]'+S.k+'T. The mean kinetic energy is proportional to the kelvin temperature.'+(gas==='he'?' Helium molecules are lighter, so at the same temperature they move faster, with the same mean kinetic energy.':''));
+        :'Internal energy is the kinetic and potential energy of the molecules, shared out at random. In an ideal gas the molecules do not attract each other, so it is all kinetic:<span class="note-eq">U = N × [[3|2]] '+S.k+'T</span>The mean kinetic energy is proportional to the kelvin temperature.'+(gas==='he'?' Helium molecules are lighter, so at the same temperature they move faster, with the same mean kinetic energy.':''));
     }else byId('gs-note').innerHTML=NOTE4;
     if(sim.isPaused())sim.redraw();
   }
@@ -1176,7 +1181,33 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
     txt();
   }
   onLevel.push(level);
-  sim.setT(300);sim.setV(0.6);txt();btns();
+  // drag the piston (or its rod) left and right to set the volume; arrow keys on the focused picture do the same
+  const cv=byId('gs-canvas');
+  cv.tabIndex=0;cv.setAttribute('role','slider');cv.setAttribute('aria-label','Piston: drag left or right, or use the arrow keys, to change the volume');
+  function setVol(pc){
+    pc=Math.max(+V.min,Math.min(+V.max,Math.round(pc/ +V.step)* +V.step));
+    if(pc===+V.value)return;
+    V.value=pc;sim.setV(pc/100);txt();aria();
+  }
+  function aria(){cv.setAttribute('aria-valuemin',V.min);cv.setAttribute('aria-valuemax',V.max);cv.setAttribute('aria-valuenow',V.value);cv.setAttribute('aria-valuetext',byId('gs-vo').textContent);}
+  let drag=null;
+  const cx=e=>{const r=cv.getBoundingClientRect();return (e.clientX-r.left)*sim.W/r.width;};
+  const onPiston=x=>x>sim.pistonX()-14;
+  cv.addEventListener('pointermove',e=>{if(!drag)cv.style.cursor=onPiston(cx(e))?'grab':'';});
+  cv.addEventListener('pointerdown',e=>{
+    const x=cx(e);if(!onPiston(x))return;
+    drag={off:x-sim.pistonX()};cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing';e.preventDefault();
+  });
+  cv.addEventListener('pointermove',e=>{if(drag)setVol((cx(e)-drag.off)/sim.BW*100);});
+  const end=e=>{if(!drag)return;drag=null;cv.style.cursor='grab';try{cv.releasePointerCapture(e.pointerId);}catch(_){}};
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  cv.style.touchAction='pan-y';
+  cv.addEventListener('keydown',e=>{
+    const d={ArrowLeft:-1,ArrowDown:-1,ArrowRight:1,ArrowUp:1}[e.key];
+    if(d){e.preventDefault();setVol(+V.value+d* +V.step);}
+  });
+  V.addEventListener('input',aria);
+  sim.setT(300);sim.setV(0.6);txt();btns();aria();
   let fr=0;
   addTicker('gas',()=>{sim.tick();if(fr++%10===0&&!ks5()){byId('gs-p').textContent=sim.pressure().toFixed(1);byId('gs-h').textContent=Math.round(sim.hitRate());}});
   reflowers.push(tab=>{if(tab==='gas')sim.redraw();});
