@@ -307,6 +307,8 @@
   // A 5.0 MeV alpha particle; beta particles have a spread of energies, so a spread of momenta (kg m/s)
   var A_M=6.64e-27, A_Q=2*E, A_V=Math.sqrt(2*5.0e6*E/A_M), A_P=A_M*A_V;
   var B_PS=[1.5e-22, 2.5e-22, 3.5e-22, 5.0e-22, 6.5e-22, 8.0e-22], B_TYP=5.0e-22;
+  // KS4 shows one β path (a typical momentum); KS5 shows the fan of β energies
+  function bps(){ return ks5() ? B_PS : [B_TYP]; }
   function bv(p){ var en=Math.sqrt(p*p*C*C+ME*ME*C*C*C*C); return p*C*C/en; }   // speed of a beta particle (relativistic)
 
   var svg=$('#rf-svg'), playBtn=$('#rf-play'), slowBtn=$('#rf-slow'), trueBtn=$('#rf-true'), sIn=$('#rf-s');
@@ -356,7 +358,7 @@
     PATHS={};
     if(on('a')) PATHS.a = path(A_Q, A_P, A_V, magnetic() && !trueScale() ? ALPHA_X : 1);
     if(on('g')) PATHS.g = path(0, 1, C, 1);
-    if(on('b')) B_PS.forEach(function(p,i){ PATHS['b'+i] = path(-E, p, bv(p), 1); });
+    if(on('b')) bps().forEach(function(p,i){ PATHS['b'+i] = path(-E, p, bv(p), 1); });
     Object.keys(PATHS).forEach(function(k){ PATHS[k].reach=0; });
   }
 
@@ -367,7 +369,7 @@
     if(t<EMIT_T){ spawn+=dt; while(spawn>=0.14){ spawn-=0.14;
       if(PATHS.a) parts.push({k:'a', s:0});
       if(PATHS.g) parts.push({k:'g', s:0});
-      if(on('b')) parts.push({k:'b'+Math.floor(Math.random()*B_PS.length), s:0});
+      if(on('b')) parts.push({k:'b'+Math.floor(Math.random()*bps().length), s:0});
     } }
     parts=parts.filter(function(p){
       p.s+=SPEED*dt/3;                      // points are 3 px apart
@@ -412,7 +414,7 @@
     Object.keys(PATHS).forEach(function(k){
       var P=PATHS[k], n=Math.floor(P.reach); if(n<1) return;
       var pts=P.pts.slice(0,n+1).map(function(q){ return q[0].toFixed(1)+','+q[1].toFixed(1); }).join(' ');
-      g+='<polyline points="'+pts+'" fill="none" stroke="'+col(k[0])+'" stroke-width="'+(k[0]==='b'?1.3:2)+'" opacity="0.5"/>';
+      g+='<polyline points="'+pts+'" fill="none" stroke="'+col(k[0])+'" stroke-width="'+(k[0]==='b'&&ks5()?1.3:2)+'" opacity="0.5"/>';
     });
     parts.forEach(function(p){ var P=PATHS[p.k], xy=at(P,p.s);
       g+='<circle cx="'+xy[0].toFixed(1)+'" cy="'+xy[1].toFixed(1)+'" r="'+(p.k==='a'?4.2:(p.k==='g'?2.6:2.4))+'" fill="'+col(p.k[0])+'"/>';
@@ -423,7 +425,7 @@
       g+=txt(x, y, s, {a:'end', fs:12, w:600, c:col(k[0])}); }
     endLabel('a', magnetic() && !trueScale() ? 'α (bend × 20)' : 'α');
     endLabel('g', 'γ');
-    endLabel('b'+(B_PS.length-1), 'β');
+    endLabel('b'+(bps().length-1), 'β');
     if(running && slowOn()) g+=txt(592, 26, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
     svg.innerHTML=g;
     readings();

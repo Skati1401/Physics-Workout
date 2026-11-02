@@ -50,8 +50,8 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 |---|---|---|---|
 | `film-badge.html` | IGCSE (Unit 7) + A Level / IB | ✅ Checked 25 Oct 2026 | |
 | `random-decay.html` | IGCSE (Unit 7) + A Level / IB | ✅ Checked 2 Nov 2026 | |
-| `radiation-in-fields.html` | IGCSE (Unit 7) + A Level / IB | 🔍 To review | Checked 2 Nov 2026 as an A Level page. Since then (2 Nov) made two-level with KS4 and KS5 tabs and given a card under IGCSE Unit 7. Check the KS4 view: no units on the field slider, the field direction in place of B/E, and the working as three lines on charge and mass with no equations. |
-| `gamma-radiation.html` | A Level / IB | 🔍 To review | Changed 2 Nov 2026: drag the GM tube along the bench (or ← → with the picture focused) instead of a slider; in Experiment mode the Play button now takes the 60 s count where the tube is; button rows fill their width. C against 1/d² is curved on purpose (d is to the window, d₀ = 1.0 cm): it now has a dashed "straight if d₀ = 0" line and a note saying so, pointing to 1/√C against d. Check the drag, and whether you want d₀ kept. |
+| `radiation-in-fields.html` | IGCSE (Unit 7) + A Level / IB | 🔍 To review | 2 Nov 2026: two-level (KS4 default, KS5), card under IGCSE Unit 7 (deflection links to the TA charged-particles idea in magnetism). KS4 shows one β path, not the fan; no units on the field slider; field direction in place of B/E; working is three lines on charge and mass. |
+| `gamma-radiation.html` | A Level / IB | 🔍 To review | 2 Nov 2026: d₀ removed (C = k/d², k = 45 000 cm² min⁻¹, 1800 min⁻¹ at 5 cm), so C against 1/d² and 1/√C against d are both straight through the origin and either gives k in Experiment mode. Drag the GM tube along the bench (or ← → with the picture focused); in Experiment mode Play takes the 60 s count; full-width button rows; lead added with +1/+2/+5 mm buttons in the right column. |
 | `roller-coaster-energy.html` | IGCSE (Unit 4) | 🔍 To review | New (25 Oct 2026), framed in 4c Energy Link. A cart drops from h₁, tries to get over hill 2 (h₂) and runs to the end; sliders for mass, start speed, friction force and both heights. Bars for GPE, KE, work done against friction and the total; the working finds the speed from KE = total − GPE − work done, and once the cart reaches hill 2 an "Over hill 2?" check appears. Try h₂ above h₁, no friction, and big friction. |
 | `motion-graphs.html` | IGCSE | ❔ Not recorded | |
 | `ramp-motion.html` | IGCSE | ❔ Not recorded | |
@@ -76,8 +76,8 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `national-grid.html` | workout only | ❔ Not recorded | |
 | `friction.html` | lesson only | ❔ Not recorded | |
 | `newtons-laws.html` | A Level / IB | ❔ Not recorded | |
-| `free-body-diagrams.html` | A Level / IB | ❔ Not recorded | |
-| `inclined-plane.html` | A Level / IB | ❔ Not recorded | |
-| `projectile-lab.html` | A Level / IB | ❔ Not recorded | |
-| `shoot-the-monkey.html` | A Level / IB | ❔ Not recorded | |
+| `free-body-diagrams.html` | A Level / IB | 🔍 To review | 2 Nov 2026: every situation now has a "Motion:" line (at rest, constant velocity, speeding up…). Smooth ramp now says the block is let go from rest and speeds up, and its picture shows an acceleration arrow instead of a velocity arrow. Wall, ball on its way up wording made explicit too. |
+| `inclined-plane.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
+| `projectile-lab.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
+| `shoot-the-monkey.html` | A Level / IB | 🔍 To review | 2 Nov 2026: "Horizontal shot" now keeps the monkey at 10 m and puts the zookeeper on an 8.5 m cliff edge (muzzle level with the monkey, u = 30 m/s, D = 20 m). Every other preset puts her back on the ground. |
 | `photoelectric.html` | A Level / IB | 🔍 To review | 27 Oct 2026: intensity in W/m² (photons/s = IA/hf, so at the same intensity a longer wavelength gives more current); f = and λ = in the frequency label; Hide line button (hides the line, dot, −Vₛ marker, Eₘₐₓ, Vₛ and working); `?embed` for its frame in the E.2 workout. |
