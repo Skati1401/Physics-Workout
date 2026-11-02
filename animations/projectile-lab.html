@@ -155,6 +155,8 @@
   table.res th{color:var(--ink-faint);font-weight:500;font-size:11.5px;}
   table.res th:first-child,table.res td:first-child{text-align:left;}
   .hint{font-size:12.5px;color:var(--ink-faint);}
+  .grab{cursor:grab;touch-action:none;}
+  #pl-svg.dragging,#pl-svg.dragging *{cursor:grabbing;}
   h2{font-size:22px;}
   .eq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:10px 14px;align-items:start;}
   .eq-title{font:600 12px var(--font-mono);color:var(--ink-soft);margin:0 0 4px;}
@@ -207,6 +209,7 @@
           <button class="btn" id="pl-comp" type="button" aria-pressed="true">Velocity components</button>
           <button class="btn" id="pl-mark" type="button" aria-pressed="true">Max height and range</button>
         </div>
+        <p class="hint" style="margin:0">Drag the launch pad up or down to set h&#8320;, or drag the round handle on the barrel to aim.</p>
       </div>
     </div>
     <div class="side">
@@ -359,9 +362,11 @@
   function expOn(){ return pressed($('#pl-exp')); }
 
   // ---- the scene, drawn to scale (1 m across = 1 m up)
-  var SX0=60, SY0=300, SW=560, SH=262, sc=10, xMaxM=10, yMaxM=10;
+  var BL=44, SX0=60, SY0=300, SW=560, SH=262, sc=10, xMaxM=10, yMaxM=10;
   function niceStep(r){ var p=Math.pow(10,Math.floor(Math.log10(r))), f=r/p; return (f<1.5?1:f<3.5?2:f<7.5?5:10)*p; }
+  var frozen=null;   // the scale stays fixed while the launcher is being dragged
   function fitScene(){
+    if(frozen){ sc=frozen.sc; xMaxM=frozen.x; yMaxM=frozen.y; return; }
     var a=active(), xm=5, ym=5;
     a.forEach(function(m){ xm=Math.max(xm,m.range); ym=Math.max(ym,m.yMax,m.p.h); });
     xMaxM=xm*1.06; yMaxM=ym*1.12;
@@ -386,6 +391,13 @@
     var a=active(), hTop=0; a.forEach(function(m){ hTop=Math.max(hTop,m.p.h); });
     if(hTop>0) g+='<rect x="'+(SX0-14)+'" y="'+Y(hTop)+'" width="14" height="'+(hTop*sc)+'" fill="var(--ground)" opacity="0.7"/>';
     g+='<line x1="0" x2="640" y1="'+SY0+'" y2="'+SY0+'" stroke="var(--ink-soft)" stroke-width="2"/>';
+    // the selected projectile's launch pad and barrel, with grab areas (not while it is flying)
+    var ps=PJ[sel], ly=Y(ps.h), thr=ps.th*Math.PI/180, bx=SX0+BL*Math.cos(thr), by=ly-BL*Math.sin(thr), cs=COL[ps.id];
+    if(!running && ps.on){
+      if(ps.h>0) g+='<line x1="'+(SX0-8)+'" x2="'+(SX0+8)+'" y1="'+(ly+7.5).toFixed(1)+'" y2="'+(ly+7.5).toFixed(1)+'" stroke="var(--ink-soft)" stroke-width="3" stroke-linecap="round"/>';
+      g+='<line x1="'+SX0+'" y1="'+ly.toFixed(1)+'" x2="'+bx.toFixed(1)+'" y2="'+by.toFixed(1)+'" stroke="'+cs+'" stroke-width="5" stroke-linecap="round" opacity="0.45"/>';
+      g+='<circle cx="'+bx.toFixed(1)+'" cy="'+by.toFixed(1)+'" r="5.5" fill="var(--panel)" stroke="'+cs+'" stroke-width="2"/>';
+    }
     a.forEach(function(m){
       var id=m.p.id, c=COL[id], n=80, full=[], done_=[];
       for(var i=0;i<=n;i++){ var ti=m.tF*i/n, q=m.pos(ti); full.push(X(q[0]).toFixed(1)+','+Y(q[1]).toFixed(1)); }
@@ -416,6 +428,10 @@
     });
     g+='<text x="632" y="16" text-anchor="end" font-size="11" fill="var(--ink-faint)">g = '+grav.g+' m s⁻² ('+grav.name+')'+(drag?', drag on':'')+'</text>';
     if(running && pressed(slowBtn)) g+='<text x="632" y="32" text-anchor="end" font-size="11.5" fill="var(--accent)">slow motion</text>';
+    if(!running && ps.on){
+      g+='<rect class="grab" data-g="h" x="'+(SX0-30)+'" y="'+(ly-16).toFixed(1)+'" width="40" height="34" fill="transparent"/>';
+      g+='<rect class="grab" data-g="th" x="'+(bx-16).toFixed(1)+'" y="'+(by-16).toFixed(1)+'" width="32" height="32" fill="transparent"/>';
+    }
     $('#pl-svg').innerHTML=g;
     drawGraph(1); drawGraph(2); table(); readouts();
   }
@@ -607,6 +623,27 @@
   slowBtn.addEventListener('click',function(){ slowBtn.setAttribute('aria-pressed',String(!pressed(slowBtn))); draw(); });
   ['#pl-exp','#pl-comp','#pl-mark'].forEach(function(s){ $(s).addEventListener('click',function(){ var b=$(s); b.setAttribute('aria-pressed',String(!pressed(b))); if(s==='#pl-exp') changed(); else draw(); }); });
   $('#pl-reset').addEventListener('click',reset);
+  // drag the launch pad up and down to set h₀, or the barrel's handle round the launch point to set θ (the sliders do the same with the keyboard)
+  var svgEl=$('#pl-svg'), dragging=null;
+  function svgPt(e){ var q=svgEl.createSVGPoint(); q.x=e.clientX; q.y=e.clientY; return q.matrixTransform(svgEl.getScreenCTM().inverse()); }
+  function setRange(el, v, hi){ var st=+el.step; v=Math.max(+el.min, Math.min(hi==null?+el.max:hi, +el.max, Math.round(v/st)*st)); if(+el.value!==v){ el.value=v; el.dispatchEvent(new Event('input')); } }
+  function aimAt(q){ var p=PJ[sel]; return Math.atan2(Y(p.h)-q.y, q.x-SX0)*180/Math.PI; }
+  svgEl.addEventListener('pointerdown',function(e){
+    var gEl_=e.target.closest('.grab'); if(!gEl_ || running) return;
+    var q=svgPt(e), p=PJ[sel];
+    if(gEl_.dataset.g==='h') dragging={el:hIn, off:q.y-Y(p.h)};
+    else dragging={el:thIn, off:aimAt(q)-p.th};
+    frozen={sc:sc, x:xMaxM, y:yMaxM};
+    try{ svgEl.setPointerCapture(e.pointerId); }catch(_){}
+    svgEl.classList.add('dragging'); e.preventDefault();
+  });
+  svgEl.addEventListener('pointermove',function(e){
+    if(!dragging) return; var q=svgPt(e);
+    if(dragging.el===hIn) setRange(hIn, (SY0-(q.y-dragging.off))/sc, Math.floor((SY0-12)/sc));   // keep the pad inside the picture
+    else { var a=aimAt(q)-dragging.off; if(a>180) a-=360; if(a<-180) a+=360; a=Math.max(-90,Math.min(90,a)); setRange(thIn, a); }
+  });
+  function endDrag(){ if(!dragging) return; dragging=null; frozen=null; svgEl.classList.remove('dragging'); draw(); }
+  svgEl.addEventListener('pointerup',endDrag); svgEl.addEventListener('pointercancel',endDrag);
   document.addEventListener('keydown',function(e){ if(e.key===' ' && e.target===document.body){ e.preventDefault(); playBtn.click(); } });
 
   syncSliders(); reset();
