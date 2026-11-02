@@ -52,8 +52,8 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 |---|---|---|---|
 | `film-badge.html` | IGCSE (Unit 7) + IAL + IB | 🔍 To review | 2 Nov 2026: the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
 | `random-decay.html` | IGCSE (Unit 7) + IAL + IB | 🔍 To review | 2 Nov 2026: the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
-| `radiation-in-fields.html` | IGCSE (Unit 7) + IAL + IB | 🔍 To review | 2 Nov 2026: the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
-| `gamma-radiation.html` | IAL + IB | ✅ Checked 2 Nov 2026 | |
+| `radiation-in-fields.html` | IGCSE (Unit 7) + IAL (Unit 4) + IB (Theme D) | 🔍 To review | 2 Nov 2026: card moved from IAL Unit 5 / IB Theme E to IAL Unit 4 / IB Theme D, where the field physics is. the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
+| `gamma-radiation.html` | IAL | ✅ Checked 2 Nov 2026 | 2 Nov 2026: card taken off the IB list (not in the IB 2025 spec). |
 | `roller-coaster-energy.html` | IGCSE | ✅ Checked 2 Nov 2026 | Draggable objects. |
 | `motion-graphs.html` | IGCSE | ❔ Not recorded | |
 | `ramp-motion.html` | IGCSE | ❔ Not recorded | |
@@ -76,7 +76,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `ac-generator.html` | IGCSE | ❔ Not recorded | |
 | `transformer.html` | IGCSE | ❔ Not recorded | |
 | `national-grid.html` | workout only | ❔ Not recorded | |
-| `friction.html` | lesson only | ❔ Not recorded | |
+| `friction.html` | IGCSE + IB (Theme A) | 🔍 To review | 2 Nov 2026: card added to the IB list; back link follows `?level=`. Still IGCSE-pitched: no μ<sub>s</sub>, μ<sub>d</sub> or IB symbols yet. |
 | `newtons-laws.html` | IAL + IB | ✅ Checked 2 Nov 2026 | |
 | `free-body-diagrams.html` | IAL + IB | ✅ Checked 2 Nov 2026 | |
 | `inclined-plane.html` | IAL + IB | 🔍 To review | Checked 2 Nov 2026, then re-laid out to fit 1366×657: Symbols switch on the title line, friction setup and a 2-row "Try these" grid on the right, viewBox enlarged so arrows at θ = 0 are no longer cut off. Still 22px over at 1280×610. |
