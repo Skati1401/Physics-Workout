@@ -60,7 +60,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `stopping-distance.html` | IGCSE | ❔ Not recorded | |
 | `hookes-law.html` | IGCSE | ❔ Not recorded | |
 | `momentum-collision.html` | IGCSE | ❔ Not recorded | |
-| `seesaw-moments.html` | IGCSE | 🔍 To review | Drag each person along the beam (rounds to 0.25 m, 0.5–2.5 m); distance labels now tilt under the beam; hint line under the note. Try dragging on a phone/touch screen. |
+| `seesaw-moments.html` | IGCSE | ✅ Checked 2 Nov 2026 | Drag each person along the beam. |
 | `liquid-pressure.html` | IGCSE | ❔ Not recorded | |
 | `heating-curve.html` | IGCSE | ❔ Not recorded | |
 | `specific-heat.html` | IGCSE | ❔ Not recorded | |
