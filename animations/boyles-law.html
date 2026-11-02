@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boyle’s Law Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#0e7490;   --topic-soft:#d7f0f5;
+    --oil:#e8961f; --air:#f7fafd; --wood:#ead6ac; --tube:#c0392b; --beta:#2f62d6;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#4cc9e0; --topic-soft:#0f2c33;
+      --oil:#d0841a; --air:#2a3446; --wood:#4d4029; --tube:#e0675a; --beta:#7da3ff;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#4cc9e0; --topic-soft:#0f2c33;
+      --oil:#d0841a; --air:#2a3446; --wood:#4d4029; --tube:#e0675a; --beta:#7da3ff;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+  /* button rows fill their width (Alex, 2 Nov 2026) */
+  .btn-group>.btn,.exp-btns>.btn{flex:1 1 0;min-width:max-content;justify-content:center;}
+  .seg:not(.tabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));}
+  #bl-jump{grid-template-columns:repeat(4,minmax(0,1fr));}
+  .seg:not(.tabs)>button{padding-inline:4px;white-space:nowrap;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 300px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  #bl-svg.dragging,#bl-svg.dragging *{cursor:grabbing;}
+  #bl-svg:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  /* mystery-beaker answer box */
+  .guess{border:1px solid var(--panel-border);border-radius:8px;padding:8px 10px;}
+  .guess-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .guess-row input{width:110px;min-height:44px;font:600 15px var(--font-mono);padding:6px 8px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);}
+  .guess-row .unit{font:13px var(--font-mono);color:var(--ink-soft);}
+  .gfb{font-size:14px;margin-top:6px;min-height:1.4em;}
+  .gfb.ok{color:var(--good);font-weight:600;} .gfb.no{color:var(--bad);font-weight:600;}
+  .seg button sub,.stat sub{font-size:.75em;}
+  .cgrid>[hidden]{display:none!important;}
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="ial.html">&larr; IAL animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">Animations &middot; thermodynamics &middot; IAL CP14</div>
+      <h1>Boyle&rsquo;s Law: Pressure and Volume</h1>
+    </div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="bl-svg" viewBox="0 0 600 300" role="slider" tabindex="0" aria-valuemin="100" aria-valuemax="250" aria-label="Boyle’s law apparatus: trapped air above oil in a glass tube, a reservoir with a pressure gauge, and a hand pump. Drag the pump handle down, or use the arrow keys, to change the pressure"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="bl-play" type="button">&#9654; Play</button>
+          <button class="btn" id="bl-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="bl-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="bl-exp" type="button" aria-pressed="false" title="Take your own readings and plot them">Experiment</button>
+          <button class="btn" id="bl-clear" type="button" hidden>Clear readings</button>
+        </div>
+        <div class="cgrid"><span class="rowlab">Graph</span><div class="seg" id="bl-graph"></div></div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="cgrid">
+        <span class="rowlab" id="bl-plab">Pressure</span>
+        <div class="btn-group" id="bl-prow"><button class="btn" id="bl-pump" type="button">Pump + 25 kPa</button><button class="btn" id="bl-rel" type="button">Release &minus; 25 kPa</button></div>
+        <span class="rowlab" id="bl-jlab">Jump to (kPa)</span>
+        <div class="seg" id="bl-jump"><button type="button" data-v="100" aria-pressed="false">100</button><button type="button" data-v="150" aria-pressed="false">150</button><button type="button" data-v="200" aria-pressed="false">200</button><button type="button" data-v="250" aria-pressed="false">250</button></div>
+        <span class="rowlab" id="bl-ilab">Step</span>
+        <div class="seg" id="bl-int"><button type="button" data-v="25" aria-pressed="true">25 kPa</button><button type="button" data-v="50" aria-pressed="false">50 kPa</button></div>
+        <span class="rowlab" id="bl-wlab">Method</span>
+        <div class="seg" id="bl-wait"><button type="button" data-v="y" aria-pressed="true">Wait to cool</button><button type="button" data-v="n" aria-pressed="false">Read straight away</button></div>
+      </div>
+      <p class="note" id="bl-note" aria-live="polite"></p>
+      <div class="rtable-wrap" id="bl-tablewrap" hidden><div id="bl-table"></div></div>
+      <div class="stats" id="bl-stats"></div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="bl-eq1"></div>
+        <div class="eq" id="bl-eq2"></div>
+        <p class="eqnote" id="bl-eq3"></p>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    Array.prototype.forEach.call(document.querySelectorAll('details.working'), function(d){ d.open = true; });
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 4.97 × 10⁻¹⁹
+    if(x===0) return '0';
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+Math.abs(m).toFixed(dp)>=10){ m/=10; e++; }
+    return sn(m,dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function sig(x, n){   // n significant figures, as text, real minus sign
+    if(x===0) return '0';
+    var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
+    return sn(x, dp);
+  }
+  function grp(t){ return String(t).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }   // 12 345
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+(+x1).toFixed(1)+'" y1="'+(+y1).toFixed(1)+'" x2="'+(+x2).toFixed(1)+'" y2="'+(+y2).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||1.5)+'"'+(extra||'')+'/>'; }
+  // A small seeded random number generator (mulberry32), so the same setup gives the same readings.
+  function rng(seed){ var a = seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+  // A Poisson count with mean m (Knuth for small m, a normal approximation for large m)
+  function poisson(m, r){
+    if(m<=0) return 0;
+    if(m<60){ var L=Math.exp(-m), k=0, p=1; do{ k++; p*=r(); }while(p>L); return k-1; }
+    var u=Math.max(1e-12,r()), v=r(), z=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+    return Math.max(0, Math.round(m+Math.sqrt(m)*z));
+  }
+  // Least-squares straight line through points [[x,y],…]: {m, c}
+  function fitLine(p){
+    var n=p.length, sx=0, sy=0, sxx=0, sxy=0;
+    p.forEach(function(q){ sx+=q[0]; sy+=q[1]; sxx+=q[0]*q[0]; sxy+=q[0]*q[1]; });
+    var d=n*sxx-sx*sx; if(n<2 || d===0) return null;
+    var m=(n*sxy-sx*sy)/d; return {m:m, c:(sy-m*sx)/n};
+  }
+
+/* ================= Experiment kit (copy this block into an animation page's <script>) =================
+   The reusable parts of an animation's Experiment mode, taken from animations/hookes-law.html:
+   - expRun():     the run itself: step the independent variable up one interval at a time, then
+                   (optionally) back down again, measuring at every step
+   - expReading(): a reading with a small, fixed pattern of reading error, rounded to the instrument's
+                   resolution, that never goes the wrong way
+   - expTable():   the results table (sticky header, newest row highlighted, a column per run)
+   - expCross(), expRing(), expKey(): SVG marks for plotted readings (× first run, ○ return run)
+   The page keeps its own picture, physics, graph axes and notes. See tools/experiment-kit/README.md.
+   Plain ES5 so it can sit inside any animation page's IIFE. */
+
+// A fixed pattern of reading errors, in units of the instrument's resolution. Fixed (not random) so a
+// teacher sees the same results as the class, and a re-run gives the same table.
+var EXP_ERR = [0, 1, -1, 0, 2, -1, 1, -2, 0, 1, -1, 0, 1, -1, 2, 0, -1, 1, 0, -2, 1];
+function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP_ERR.length]; }
+
+// What the student reads off the instrument.
+//   trueVal  the value the physics gives at this step
+//   prevVal  the reading taken at the step before (or the start value)
+//   res      the instrument's resolution (0.1 cm ruler, 0.05 mm vernier, 0.01 A ammeter, 1° protractor)
+//   i        the step number (picks the error from the pattern)
+//   scale    how big the error is, in resolutions (default 1; 0.5 for a fine instrument)
+// The error is never more than a quarter of the change since the last reading, so a reading never
+// goes the wrong way (an extension never falls as the load rises, a current never drops as V rises).
+function expReading(trueVal, prevVal, res, i, scale){
+  var gap = Math.abs(trueVal - prevVal);
+  var err = i > 0 ? expErr(i) * Math.min(res * (scale == null ? 1 : scale), gap / 4) : 0;
+  var r = Math.round((trueVal + err) / res) * res;
+  var dp = Math.max(0, Math.ceil(-Math.log10(res) - 1e-9));
+  return +r.toFixed(dp);
+}
+
+// The run. cfg = {
+//   start: 0,                 value of the independent variable before the first step
+//   max: 10,                  last value of the first run (the run stops there)
+//   step: 1,                  the interval (the page can change it with setStep, which resets the run)
+//   reverse: true,            allow a return run (unloading, turning the voltage back down)
+//   measure: function(v, phase, prevReading){ return reading },   phase is 'up' or 'down'
+//   onChange: function(run, what){}  what is 'up', 'down' or 'reset'
+// }
+// run.up and run.down are arrays of {v, r}. run.phase is 'up' until the first step back, then 'down'.
+function expRun(cfg){
+  var run = { up: [], down: [], phase: 'up', value: cfg.start || 0, peak: cfg.start || 0, step: cfg.step || 1 };
+  var r6 = function(x){ return Math.round(x * 1e6) / 1e6; };
+  run.upDone = function(){ return run.phase === 'down' || run.peak >= cfg.max - 1e-9; };
+  run.downDone = function(){ return run.phase === 'down' && run.value <= (cfg.start || 0) + 1e-9; };
+  run.last = function(){ var a = run.phase === 'down' && run.down.length ? run.down : run.up; return a[a.length - 1] || null; };
+  run.stepUp = function(){
+    if(run.phase !== 'up' || run.upDone()) return false;
+    var prev = run.up.length ? run.up[run.up.length - 1].r : null;
+    var v = r6(Math.min(cfg.max, run.value + run.step));
+    run.value = run.peak = v;
+    run.up.push({ v: v, r: cfg.measure(v, 'up', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'up');
+    return true;
+  };
+  run.stepDown = function(){
+    if(!cfg.reverse || run.value <= (cfg.start || 0) + 1e-9 || !run.up.length) return false;
+    run.phase = 'down';
+    var prev = run.down.length ? run.down[run.down.length - 1].r : run.up[run.up.length - 1].r;
+    var v = r6(Math.max(cfg.start || 0, run.value - run.step));
+    run.value = v;
+    run.down.push({ v: v, r: cfg.measure(v, 'down', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'down');
+    return true;
+  };
+  run.reset = function(){ run.up = []; run.down = []; run.phase = 'up'; run.value = run.peak = cfg.start || 0; if(cfg.onChange) cfg.onChange(run, 'reset'); };
+  run.setStep = function(s){ run.step = s; run.reset(); };
+  return run;
+}
+
+// The results table. cols = [{label:'Load (N)', key:'v', dp:0}, {label:'Extension loading (cm)', key:'up', dp:1}, ...]
+// rows = [{v:1, up:1.6, down:''}, ...]. newKey/newV highlight the reading just taken (fades in).
+// Wrap it in .rtable-wrap so a long table scrolls under its sticky header.
+function expTable(el, cols, rows, newV){
+  var fmt = function(x, dp){ return (x === '' || x == null) ? '' : (+x).toFixed(dp || 0); };
+  var h = '<table class="rtable"><thead><tr>' + cols.map(function(c){ return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    h += '<tr' + (newV != null && row.v === newV ? ' class="new"' : '') + '>' + cols.map(function(c){ return '<td>' + fmt(row[c.key], c.dp) + '</td>'; }).join('') + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table>';
+}
+
+// Plotted readings, as SVG strings. Size 5 suits a 300px-wide graph.
+function expCross(cx, cy, s){ s = s || 5; return '<path d="M' + (cx - s) + ',' + (cy - s) + ' L' + (cx + s) + ',' + (cy + s) + ' M' + (cx + s) + ',' + (cy - s) + ' L' + (cx - s) + ',' + (cy + s) + '" stroke="var(--ink)" stroke-width="2"/>'; }
+function expRing(cx, cy, r){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r || 4.5) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+// A two-line key in the bottom-right corner of a graph: expKey(rightX, bottomY, 'loading', 'unloading')
+function expKey(x, y, upLabel, downLabel){
+  return '<text x="' + x + '" y="' + (y - 14) + '" text-anchor="end" font-size="10.5" fill="var(--ink)">× ' + upLabel + '</text>' +
+         '<text x="' + x + '" y="' + y + '" text-anchor="end" font-size="10.5" fill="var(--accent)">○ ' + downLabel + '</text>';
+}
+/* ================= end of Experiment kit ================= */
+
+  // ---- the physics: a fixed mass of air at room temperature, pV = 3000 kPa cm³ (30.0 cm³ at 100 kPa)
+  var C=3000, T0=293, KB=1.38e-23, PMIN=100, PMAX=250, SEED=20261102;
+  var HEAT=0.15*(1.4-1)/1.4;          // fraction of the adiabatic temperature change that the air keeps (glass and oil soak up the rest)
+  var TAU=15;                          // s: the air settles back to room temperature
+  function vol(p, dT){ return C*(1+dT/T0)/p; }   // cm³ (pV/T constant)
+
+  var svg=$('#bl-svg'), playBtn=$('#bl-play'), slowBtn=$('#bl-slow'), expBtn=$('#bl-exp');
+  var graphEl=$('#bl-graph');
+  graphEl.innerHTML=[['pv','p against V'],['inv','p against 1/V'],['prod','pV against p']].map(function(g,i){ return '<button type="button" data-v="'+g[0]+'" aria-pressed="'+(i===1)+'">'+g[1]+'</button>'; }).join('');
+  var graphSeg=segGroup(graphEl, function(){ draw(); });
+  var intSeg=segGroup($('#bl-int'), function(){ clearExp(); });
+  var waitSeg=segGroup($('#bl-wait'), function(){ clearExp(); });
+  var jumpSeg=segGroup($('#bl-jump'), function(v){ jumpTo(+v); });
+  function exp(){ return pressed(expBtn); }
+  function slowOn(){ return pressed(slowBtn); }
+  function waitOn(){ return waitSeg.value()==='y'; }
+  function step(){ return +intSeg.value(); }
+
+  // state: the true pressure (kPa) and how far the air is above room temperature (K)
+  var S={p:100, dT:0}, act=null;        // act: what is happening now {kind:'pump'|'release'|'wait', to, t}
+  function V(){ return vol(S.p, S.dT); }
+  function setP(p){                     // changing the pressure quickly warms (squash) or cools (expand) the air
+    if(p===S.p) return;
+    S.dT += HEAT*(T0+S.dT)*Math.log(p/S.p); S.p=p;
+  }
+
+  // ---- Experiment readings: gauge (to 5 kPa) and the volume scale (to 0.2 cm³)
+  var E={rd:[], justAdded:null};
+  function nextTarget(){ return E.rd.length ? E.rd[E.rd.length-1].p-step() : PMAX; }
+  function expDone(){ return E.rd.length && E.rd[E.rd.length-1].p<=PMIN; }
+  function takeReading(){
+    var i=E.rd.length, prev=i ? E.rd[i-1].V : vol(PMAX,0);
+    var pTrue=S.p+0.5*Math.max(-2,Math.min(2,expErr(i+3)));   // the needle is set to the mark by eye
+    var v=expReading(vol(pTrue, S.dT), prev, 0.2, i, 0.5);
+    E.rd.push({p:S.p, V:v, dT:S.dT}); E.justAdded=S.p;
+  }
+  function fitNow(){ if(!expDone() || E.rd.length<3) return null; return fitLine(E.rd.map(function(r){ return [1/r.V, r.p]; })); }
+
+  // ---- graphs
+  var G={x:368, y:20, w:214, h:226};
+  var narrowQ=window.matchMedia('(max-width:560px)');
+  function layout(){
+    if(narrowQ.matches){ G={x:62, y:322, w:262, h:200}; svg.setAttribute('viewBox','0 0 340 566'); }
+    else { G={x:368, y:20, w:214, h:226}; svg.setAttribute('viewBox','0 0 600 300'); }
+  }
+  if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ layout(); draw(); });
+  layout();
+  function axisSpec(){
+    var g=graphSeg.value();
+    if(g==='pv')   return {x0:0, x1:35, xs:5, y0:0, y1:300, ys:50, xl:'V (cm³)', yl:'p (kPa)', dpx:0, dpy:0, fx:function(p,v){ return v; }, fy:function(p,v){ return p; }};
+    if(g==='inv')  return {x0:0, x1:0.1, xs:0.02, y0:0, y1:300, ys:50, xl:'1/V (cm⁻³)', yl:'p (kPa)', dpx:2, dpy:0, fx:function(p,v){ return 1/v; }, fy:function(p,v){ return p; }};
+    return               {x0:0, x1:300, xs:50, y0:0, y1:4000, ys:1000, xl:'p (kPa)', yl:'pV (kPa cm³)', dpx:0, dpy:0, fx:function(p,v){ return p; }, fy:function(p,v){ return p*v; }};
+  }
+  function gx(a,v){ return G.x+(v-a.x0)/(a.x1-a.x0)*G.w; }
+  function gy(a,v){ return G.y+G.h-(v-a.y0)/(a.y1-a.y0)*G.h; }
+  function inG(a,u,v){ return u>=a.x0-1e-9 && u<=a.x1+1e-9 && v>=a.y0-1e-9 && v<=a.y1+1e-9; }
+  function drawGraph(){
+    var a=axisSpec(), g='', v, i, k=graphSeg.value();
+    for(v=a.x0; v<=a.x1+1e-9; v+=a.xs){ var X=gx(a,v); g+=ln(X, G.y, X, G.y+G.h, 'var(--panel-border)', 1)+txt(X, G.y+G.h+13, sn(v,a.dpx), {a:'middle', fs:9.5, c:'var(--ink-faint)'}); }
+    for(v=a.y0; v<=a.y1+1e-9; v+=a.ys){ var Y=gy(a,v); g+=ln(G.x, Y, G.x+G.w, Y, 'var(--panel-border)', 1)+txt(G.x-4, Y+3.5, sn(v,a.dpy), {a:'end', fs:9.5, c:'var(--ink-faint)'}); }
+    g+=ln(G.x, G.y, G.x, G.y+G.h, 'var(--ink-soft)', 2)+ln(G.x, G.y+G.h, G.x+G.w, G.y+G.h, 'var(--ink-soft)', 2);
+    g+=txt(G.x, G.y-7, a.yl, {fs:10.5})+txt(G.x+G.w/2, G.y+G.h+28, a.xl, {a:'middle', fs:10.5});
+    function curve(pts, col, dash){ return '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="'+(dash?1.6:2.4)+'"'+(dash?' stroke-dasharray="5 4"':'')+'/>'; }
+    function along(fn){ var pts=[]; for(i=0;i<=80;i++){ var p=PMIN*0.9+(300-PMIN*0.9)*i/80, q=fn(p); var u=a.fx(p,q), w=a.fy(p,q); if(inG(a,u,w)) pts.push(gx(a,u).toFixed(1)+','+gy(a,w).toFixed(1)); } return pts; }
+    if(!exp()){
+      g+=curve(along(function(p){ return vol(p,0); }), 'var(--topic)', false);
+      var cu=a.fx(S.p,V()), cw=a.fy(S.p,V());
+      if(inG(a,cu,cw)) g+='<circle cx="'+gx(a,cu).toFixed(1)+'" cy="'+gy(a,cw).toFixed(1)+'" r="5" fill="'+(Math.abs(S.dT)>0.3?'var(--accent)':'var(--topic)')+'" stroke="var(--panel)" stroke-width="2"/>';
+      if(Math.abs(S.dT)>0.3) g+=txt(G.x+G.w-4, G.y+12, S.dT>0?'air warmer than room':'air cooler than room', {a:'end', fs:10, c:'var(--accent)'});
+    } else {
+      if(!E.rd.length) g+=txt(G.x+G.w/2, G.y+G.h/2, 'readings appear here', {a:'middle', fs:11, c:'var(--ink-faint)'});
+      E.rd.forEach(function(r){ var u=a.fx(r.p,r.V), w=a.fy(r.p,r.V); if(inG(a,u,w)) g+=expCross(+gx(a,u).toFixed(1), +gy(a,w).toFixed(1), 4); });
+      var f=fitNow();
+      if(f){
+        if(k==='inv') g+=ln(gx(a,0), gy(a,f.c), gx(a,0.1), gy(a,f.m*0.1+f.c), 'var(--accent)', 1.6, ' stroke-dasharray="5 4"');
+        else if(k==='pv') g+=curve(along(function(p){ return f.m/(p-f.c); }), 'var(--accent)', true);
+        else { var mpv=E.rd.reduce(function(s,r){ return s+r.p*r.V; },0)/E.rd.length; g+=ln(G.x, gy(a,mpv), G.x+G.w, gy(a,mpv), 'var(--accent)', 1.6, ' stroke-dasharray="5 4"'); }
+        g+=txt(G.x+G.w-4, G.y+12, 'best fit', {a:'end', fs:10.5, c:'var(--accent)'});
+      }
+    }
+    return g;
+  }
+
+  // ---- the picture: tube on a scale, reservoir with a gauge, hand pump, release valve
+  var TOP=26, PX=6;                     // the scale: V = 0 at the sealed top, 6 px per cm³
+  var handleY=150, stroke=0, hiss=0, clock=null;
+  function gaugePt(p, r){ var an=(225-270*p/300)*Math.PI/180; return [188+r*Math.cos(an), 104-r*Math.sin(an)]; }
+  function drawScene(){
+    var g='', v=V(), yb=TOP+v*PX;
+    // board, scale and tube
+    g+=ln(10, 278, 334, 278, 'var(--ink-faint)', 2);
+    g+='<rect x="22" y="12" width="90" height="262" rx="4" fill="var(--wood)"/>';
+    for(var c=0;c<=38;c++){ var y=TOP+c*PX; g+=ln(c%5?50:44, y, 57, y, 'var(--ink-soft)', c%5?0.8:1.3); if(c%5===0) g+=txt(41, y+3, c, {a:'end', fs:8.5, c:'var(--ink-soft)'}); }
+    g+=txt(34, 20, 'cm³', {a:'middle', fs:8.5, c:'var(--ink-soft)'});
+    g+='<rect x="60" y="'+TOP+'" width="14" height="'+(yb-TOP).toFixed(1)+'" fill="var(--air)"/>';
+    g+='<rect x="60" y="'+yb.toFixed(1)+'" width="14" height="'+(268-yb).toFixed(1)+'" fill="var(--oil)"/>';
+    g+='<path d="M59,268 V24 Q59,20 63,20 H71 Q75,20 75,24 V268" fill="none" stroke="var(--ink)" stroke-width="1.6"/>';
+    g+=ln(58, yb, 84, yb, 'var(--accent)', 1.4); if(!exp()) g+=txt(86, yb+3.5, v.toFixed(1), {fs:9.5, w:600, c:'var(--accent)'});
+    g+=txt(118, (TOP+yb)/2+3, 'air', {fs:9.5, c:'var(--ink-soft)'})+ln(116, (TOP+yb)/2, 76, (TOP+yb)/2, 'var(--ink-faint)', 0.8);
+    g+=txt(118, Math.min(250, yb+26), 'oil', {fs:9.5, c:'var(--ink-soft)'})+ln(116, Math.min(250, yb+23), 76, Math.min(250, yb+23), 'var(--ink-faint)', 0.8);
+    // pipe to the reservoir
+    g+='<rect x="66" y="264" width="86" height="8" fill="var(--oil)" stroke="var(--ink-soft)" stroke-width="1"/>';
+    // reservoir with oil and the gauge on top
+    var lev=196+(30-v)*1.1;
+    g+='<rect x="150" y="170" width="76" height="104" rx="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>';
+    g+='<rect x="151" y="'+lev.toFixed(1)+'" width="74" height="'+(272-lev).toFixed(1)+'" fill="var(--oil)" opacity="0.85"/>';
+    g+='<rect x="185" y="148" width="6" height="22" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="1.2"/>';
+    g+='<circle cx="188" cy="104" r="44" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.2"/>';
+    for(var q=0;q<=300;q+=10){ var o=gaugePt(q,40), n=gaugePt(q, q%50?36:32); g+=ln(o[0],o[1],n[0],n[1],'var(--ink-soft)', q%50?0.8:1.4); if(q%50===0){ var t=gaugePt(q,24); g+=txt(t[0], t[1]+3, q, {a:'middle', fs:7.5, c:'var(--ink-soft)'}); } }
+    var nd=gaugePt(S.p, 34);
+    g+=ln(188, 104, nd[0], nd[1], 'var(--beta)', 2.2)+'<circle cx="188" cy="104" r="3.5" fill="var(--beta)"/>';
+    g+=txt(188, 128, 'kPa', {a:'middle', fs:8.5, w:600, c:'var(--ink)'})+txt(188, 54, 'pressure gauge', {a:'middle', fs:9.5, c:'var(--ink-soft)'});
+    // release valve
+    g+='<rect x="226" y="246" width="12" height="8" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.3"/>'+ln(238, 242, 238, 258, 'var(--ink)', 2.5)+txt(232, 291, 'valve', {a:'middle', fs:9, c:'var(--ink-soft)'});
+    if(hiss>0) g+='<path d="M244,244 q4,6 0,12 M249,241 q6,9 0,18" fill="none" stroke="var(--beta)" stroke-width="1.3" opacity="'+Math.min(1,hiss*3).toFixed(2)+'"/>';
+    // tubing and hand pump
+    g+='<path d="M226,190 C258,190 248,258 278,258" fill="none" stroke="var(--tube)" stroke-width="5"/>';
+    g+='<rect x="266" y="266" width="48" height="8" rx="3" fill="var(--ink-soft)"/><rect x="278" y="196" width="24" height="70" rx="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>';
+    g+='<rect x="288" y="'+handleY.toFixed(1)+'" width="4" height="'+(196-handleY).toFixed(1)+'" fill="var(--ink-soft)"/>';
+    g+='<rect x="266" y="'+(handleY-7).toFixed(1)+'" width="48" height="9" rx="4" fill="var(--ink)"/>';
+    g+=txt(290, handleY-14, exp() ? 'hand pump' : '↓ drag', {a:'middle', fs:9, c:exp()?'var(--ink-soft)':'var(--accent)'});
+    if(!exp()) g+='<rect x="258" y="'+(handleY-26)+'" width="64" height="40" fill="transparent" style="cursor:grab"/>';
+    if(clock!==null) g+=txt(300, 40, 'air cooling', {a:'middle', fs:9.5, c:'var(--accent)'})+txt(300, 56, Math.floor(clock/60)+':'+('0'+Math.floor(clock%60)).slice(-2), {a:'middle', fs:13, w:600, c:'var(--accent)'});
+    return g;
+  }
+
+  function draw(){
+    var g=drawScene()+drawGraph();
+    if(act && slowOn()) g+=txt(336, 14, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
+    svg.innerHTML=g;
+    readings();
+  }
+
+  // ---- readings, table, working and note
+  function stat(lab, val, hi){ return '<div class="stat'+(hi?' hi':'')+'"><small>'+lab+'</small><strong>'+val+'</strong></div>'; }
+  var lastNote='';
+  function readings(){
+    var ex=exp(), v=V();
+    svg.setAttribute('aria-valuenow', Math.round(S.p)); svg.setAttribute('aria-valuetext', 'p = '+Math.round(S.p)+' kPa, V = '+v.toFixed(1)+' cm³');
+    if(!ex) $('#bl-stats').innerHTML=stat('p', Math.round(S.p)+' kPa')+stat('V', v.toFixed(1)+' cm³')+stat('pV (kPa cm³)', grp(Math.round(S.p*v)), true)+stat('Air', sn(20+S.dT,1)+' °C');
+    if(ex) expTable($('#bl-table'), [{label:'p (kPa)', key:'v'}, {label:'V (cm³)', key:'V', dp:1}, {label:'1/V (cm⁻³)', key:'iv', dp:4}, {label:'pV (kPa cm³)', key:'pv'}],
+      E.rd.map(function(r){ return {v:r.p, V:r.V, iv:1/r.V, pv:Math.round(r.p*r.V)}; }), E.justAdded);
+
+    var w1='', w2='', w3='';
+    if(!ex){
+      var p=Math.round(S.p);
+      w1='p<sub>1</sub>V<sub>1</sub> = p<sub>2</sub>V<sub>2</sub><br>100 × 30.0 = '+p+' × V<br>3000 = '+p+' × V<br>V = [[3000|'+p+']]<br>V = <b>'+vol(p,0).toFixed(1)+' cm³</b>';
+      var pv=p*vol(p,0)*1e-3, kT=KB*T0;
+      w2='pV = NkT<br>('+p+' × 10<sup>3</sup>) × ('+vol(p,0).toFixed(1)+' × 10<sup>−6</sup>) = N × 1.38 × 10<sup>−23</sup> × '+T0+'<br>'+sig(pv,4)+' = N × '+sci(kT,3)+'<br>N = [['+sig(pv,4)+'|'+sci(kT,3)+']]<br>N = <b>'+sci(pv/kT,2)+'</b>';
+      w3 = Math.abs(S.dT)>0.3 ? 'The air is '+sn(Math.abs(S.dT),1)+' K '+(S.dT>0?'warmer':'cooler')+' than the room, so its volume is '+v.toFixed(1)+' cm³, not '+vol(p,0).toFixed(1)+' cm³. Boyle’s law needs a fixed temperature: wait for it to settle.'
+        : 'For a fixed mass of gas at a fixed temperature, p ∝ [[1|V]], so pV is constant. Here T = '+T0+' K (20 °C) and pV = 3000 kPa cm³ = 3.000 J.';
+    } else {
+      var f=fitNow();
+      if(f && graphSeg.value()==='inv'){
+        var pvJ=f.m*1e-3;
+        w1='p = pV × [[1|V]]<br>gradient = pV<br>gradient = <b>'+grp(Math.round(f.m))+' kPa cm³</b>';
+        w2='pV = NkT<br>'+grp(Math.round(f.m))+' × 10<sup>3</sup> × 10<sup>−6</sup> = N × 1.38 × 10<sup>−23</sup> × '+T0+'<br>'+sig(pvJ,4)+' = N × '+sci(KB*T0,3)+'<br>N = [['+sig(pvJ,4)+'|'+sci(KB*T0,3)+']]<br>N = <b>'+sci(pvJ/(KB*T0),2)+'</b>';
+        w3='A straight line through the origin shows p ∝ [[1|V]]: Boyle’s law. The model used pV = 3000 kPa cm³ (N = 7.42 × 10<sup>20</sup> molecules); your line’s intercept is '+sn(f.c,1)+' kPa.';
+      } else if(f && graphSeg.value()==='prod'){
+        var pvs=E.rd.map(function(r){ return r.p*r.V; }), mn=Math.min.apply(null,pvs), mx=Math.max.apply(null,pvs);
+        w1='pV for each reading: '+grp(Math.round(mn))+' to '+grp(Math.round(mx))+' kPa cm³';
+        w3='If pV is about the same for every reading, the data supports Boyle’s law. Yours varies by '+sig((mx-mn)/((mx+mn)/2)*100,2)+'%.';
+      } else if(f){ w1='p against V is a curve.'; w3='Choose “p against 1/V”: a straight line through the origin shows p ∝ 1/V.'; }
+      else w1='Pump to '+PMAX+' kPa, then release '+step()+' kPa at a time down to '+PMIN+' kPa, reading V each time.';
+    }
+    $('#bl-eq1').innerHTML=FR(w1); $('#bl-eq2').innerHTML=FR(w2); $('#bl-eq2').hidden=!w2; $('#bl-eq3').innerHTML=FR(w3); $('#bl-eq3').hidden=!w3;
+
+    var note;
+    if(act && act.kind==='wait') note='Waiting for the air to return to room temperature before reading the volume.';
+    else if(act && act.kind==='pump') note='Pumping: the oil is pushed up the tube and squashes the trapped air, which warms it a little.';
+    else if(act && act.kind==='release') note='Opening the valve: the pressure falls, the air expands and cools a little.';
+    else if(!ex){
+      if(S.dT>0.3) note='The air was warmed by being squashed quickly, so for now its volume is a little too big. <b>Wait</b>: as it cools to room temperature the point slides onto the line.';
+      else if(S.dT<-0.3) note='The air cooled as it expanded, so for now its volume is a little too small. It warms back to room temperature in about a minute.';
+      else note='Trapped air above oil. Pump (or drag the handle down) to raise the pressure: the volume falls. Double the pressure and the volume halves. <b>Play</b> runs the method.';
+    } else if(!E.rd.length) note='Experiment: pump to the maximum safe pressure, '+PMAX+' kPa, then release '+step()+' kPa at a time down to '+PMIN+' kPa, reading the volume each time. '+(waitOn()?'You wait for the air to cool before each reading.':'You read straight away.');
+    else if(!expDone()) note='You have '+E.rd.length+' reading'+(E.rd.length===1?'':'s')+'. Next: release to '+nextTarget()+' kPa and read.';
+    else {
+      var f2=fitNow();
+      if(graphSeg.value()!=='inv') note='Done. Choose <b>p against 1/V</b>: a straight line through the origin shows p ∝ 1/V.';
+      else if(waitOn()) note='Done: p against 1/V is a straight line through the origin, so p ∝ [[1|V]] and pV is constant: <b>Boyle’s law</b>. Gradient = pV = '+grp(Math.round(f2.m))+' kPa cm³.';
+      else { var worst=E.rd.reduce(function(m,r){ return Math.max(m, Math.abs(r.dT)); },0); note='Done, but you read straight away, before the air was back at room temperature (it warms when squashed and cools as it expands). It was up to '+sig(worst,2)+' K out, so the volumes, and pV, are off. Try <b>Wait to cool</b>.'; }
+    }
+    if(note!==lastNote){ $('#bl-note').innerHTML=FR(note); lastNote=note; }
+
+    if(ex){ playBtn.innerHTML = expDone() ? 'Done' : (!E.rd.length ? '&#9654; Pump to '+PMAX+' kPa and read' : '&#9654; Release to '+nextTarget()+' kPa and read'); playBtn.disabled = expDone() || !!act; }
+    else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
+    $('#bl-pump').disabled = !!act || S.p>=PMAX-1e-9; $('#bl-rel').disabled = !!act || S.p<=PMIN+1e-9;
+    $('#bl-clear').disabled=!!act;
+  }
+
+  // ---- motion
+  var running=false, raf=0, last=0, auto=null;   // auto: the Play run of the whole method (watch mode)
+  function stop(){ running=false; auto=null; cancelAnimationFrame(raf); }
+  function begin(kind, to){ act={kind:kind, to:to, t:0}; if(kind==='wait') clock=0; loop(); }
+  function afterAct(){
+    var k=act.kind; act=null;
+    if(k==='pump' || k==='release'){ if(exp() ? waitOn() : true){ begin('wait'); return; } }
+    clock=null;
+    if(exp()) takeReading();
+    else if(auto){ if(S.p>PMIN+1e-9) begin('release', S.p-25); else { running=false; auto=null; } }
+  }
+  function frame(now){
+    var real=Math.min(0.05,(now-last)/1000); last=now;
+    var dt=real*(slowOn()?0.3:1);
+    hiss=Math.max(0,hiss-dt);
+    if(act){
+      act.t+=dt;
+      if(act.kind!=='wait') S.dT*=Math.exp(-dt*4/TAU);   // some heat flows out while pumping or releasing
+      if(act.kind==='pump'){ stroke+=dt*5; handleY=150+36*(0.5-0.5*Math.cos(stroke*Math.PI)); setP(Math.min(act.to, S.p+dt*60)); if(S.p>=act.to-1e-9){ handleY=150; afterAct(); } }
+      else if(act.kind==='release'){ hiss=0.3; setP(Math.max(act.to, S.p-dt*30)); if(S.p<=act.to+1e-9) afterAct(); }
+      else { var sim=dt*20; clock+=sim; S.dT*=Math.exp(-sim/TAU); if(clock>=60){ S.dT=0; afterAct(); } }
+    } else if(!exp() && Math.abs(S.dT)>0.01){ S.dT*=Math.exp(-dt*4/TAU); }
+    draw();
+    if(act || hiss>0 || (!exp() && Math.abs(S.dT)>0.01) || running) raf=requestAnimationFrame(frame);
+    else draw();
+  }
+  function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
+  function run(){
+    running=true; auto=true; jumpSeg.pick(null);
+    if(S.p<PMAX-1e-9) begin('pump', PMAX); else if(S.p>PMIN) begin('release', S.p-25); else { S.p=PMIN; begin('pump', PMAX); }
+    draw();
+  }
+  function reset(){ stop(); act=null; clock=null; hiss=0; S={p:PMIN, dT:0}; handleY=150; jumpSeg.pick(null); draw(); }
+  function clearExp(){ stop(); act=null; clock=null; E={rd:[], justAdded:null}; S={p:PMIN, dT:0}; handleY=150; draw(); }
+  function jumpTo(v){ stop(); act=null; clock=null; S={p:v, dT:0}; draw(); }
+  function setRows(){
+    var ex=exp();
+    $('#bl-plab').hidden=$('#bl-prow').hidden=$('#bl-jlab').hidden=$('#bl-jump').hidden=ex;
+    $('#bl-ilab').hidden=$('#bl-int').hidden=$('#bl-wlab').hidden=$('#bl-wait').hidden=!ex;
+    $('#bl-clear').hidden=!ex; $('#bl-tablewrap').hidden=!ex; $('#bl-stats').hidden=ex;
+  }
+  function setExp(){ stop(); setRows(); clearExp(); }
+
+  playBtn.addEventListener('click', function(){
+    if(exp()){ if(act || expDone()) return; E.justAdded=null; if(!E.rd.length) begin('pump', PMAX); else begin('release', nextTarget()); draw(); return; }
+    if(running){ stop(); act=null; clock=null; draw(); } else run();
+  });
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
+  expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); setExp(); });
+  $('#bl-reset').addEventListener('click', function(){ if(exp()) clearExp(); else reset(); });
+  $('#bl-clear').addEventListener('click', clearExp);
+  $('#bl-pump').addEventListener('click', function(){ stop(); jumpSeg.pick(null); begin('pump', Math.min(PMAX, S.p+25)); draw(); });
+  $('#bl-rel').addEventListener('click', function(){ stop(); jumpSeg.pick(null); begin('release', Math.max(PMIN, S.p-25)); draw(); });
+
+  // drag the pump handle down to pump (each full stroke adds about 20 kPa); arrow keys pump or release 5 kPa
+  function svgY(e){ var pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+  var grab=null;
+  svg.addEventListener('pointerdown', function(e){
+    if(exp() || act) return;
+    var q=svgY(e); if(q.x<258 || q.x>322 || q.y<handleY-26 || q.y>handleY+14) return;
+    stop(); jumpSeg.pick(null); grab=q.y-handleY; svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
+  });
+  svg.addEventListener('pointermove', function(e){
+    if(grab===null) return;
+    var y=Math.max(150, Math.min(186, svgY(e).y-grab)), dy=y-handleY;
+    if(dy>0) setP(Math.min(PMAX, S.p+dy*20/36));
+    handleY=y; draw(); if(Math.abs(S.dT)>0.01) loop();
+  });
+  function endGrab(){ if(grab===null) return; grab=null; svg.classList.remove('dragging'); handleY=150; draw(); if(Math.abs(S.dT)>0.01) loop(); }
+  svg.addEventListener('pointerup', endGrab); svg.addEventListener('pointercancel', endGrab);
+  svg.addEventListener('keydown', function(e){
+    if(exp() || act) return;
+    var k=e.key, p=null;
+    if(k==='ArrowUp'||k==='ArrowRight') p=S.p+5; else if(k==='ArrowDown'||k==='ArrowLeft') p=S.p-5;
+    else if(k==='Home') p=PMIN; else if(k==='End') p=PMAX;
+    if(p===null) return;
+    e.preventDefault(); stop(); jumpSeg.pick(null); setP(Math.max(PMIN, Math.min(PMAX, p))); draw(); if(Math.abs(S.dT)>0.01) loop();
+  });
+
+  watchEquals($('#bl-eq1')); watchEquals($('#bl-eq2'));
+  setRows(); draw();
+})();
+</script>
+</body>
+</html>

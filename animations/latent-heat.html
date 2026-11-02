@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Specific Latent Heat Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#c2410c;   --topic-soft:#fde7d6;
+    --water:#d6e9fb;   --ice:#eef6fd;   --ice-edge:#9cc3e6;   --water-ink:#3b82c4;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#fb8a4c; --topic-soft:#3a1d0e;
+      --water:#1c3a5a; --ice:#2a3d52; --ice-edge:#6f9bc4; --water-ink:#7fb4ea;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#fb8a4c; --topic-soft:#3a1d0e;
+      --water:#1c3a5a; --ice:#2a3d52; --ice-edge:#6f9bc4; --water-ink:#7fb4ea;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+  /* button rows fill their width (Alex, 2 Nov 2026) */
+  .btn-group>.btn,.exp-btns>.btn{flex:1 1 0;min-width:max-content;justify-content:center;}
+  .seg:not(.tabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));}
+  .seg:not(.tabs)>button{padding-inline:4px;white-space:nowrap;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 300px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  #lh-svg.dragging,#lh-svg.dragging *{cursor:grabbing;}
+  #lh-svg:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  .seg button sub,.stat sub{font-size:.75em;}
+  #lh-graph button{white-space:normal;line-height:1.25;}
+  .cgrid>[hidden]{display:none!important;}
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="ial.html">&larr; IAL animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">Animations &middot; thermodynamics &middot; IAL CP13</div>
+      <h1>Specific Latent Heat</h1>
+    </div>
+    <div class="seg tabs" id="lh-mode" role="group" aria-label="Part"><button type="button" data-v="fus" aria-pressed="true">Fusion</button><button type="button" data-v="vap" aria-pressed="false">Vaporisation</button></div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="lh-svg" viewBox="0 0 600 300" role="img" aria-label=""></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="lh-play" type="button">&#9654; Play</button>
+          <button class="btn" id="lh-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="lh-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="lh-exp" type="button" aria-pressed="false" title="Take your own readings and plot them">Experiment</button>
+          <button class="btn" id="lh-clear" type="button" hidden>Clear readings</button>
+        </div>
+        <div class="cgrid"><span class="rowlab">Graph</span><div class="seg" id="lh-graph"></div></div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="cgrid">
+        <span class="rowlab" id="lh-jlab">Jump to</span>
+        <div class="seg" id="lh-jump"><button type="button" data-v="0" aria-pressed="false">Start</button><button type="button" data-v="5" aria-pressed="false">5 min</button><button type="button" data-v="10" aria-pressed="false">10 min</button></div>
+        <span class="rowlab" id="lh-ilab">Interval</span>
+        <div class="seg" id="lh-int"><button type="button" data-v="1" aria-pressed="false">1 min</button><button type="button" data-v="2" aria-pressed="true">2 min</button><button type="button" data-v="5" aria-pressed="false">5 min</button></div>
+        <span class="rowlab" id="lh-clab">Control</span>
+        <div class="seg" id="lh-con"><button type="button" data-v="y" aria-pressed="true">With control</button><button type="button" data-v="n" aria-pressed="false">No control</button></div>
+        <span class="rowlab" id="lh-flab">Ice</span>
+        <div class="seg" id="lh-ice"><button type="button" data-v="0" aria-pressed="true">Melting, 0 &deg;C</button><button type="button" data-v="f" aria-pressed="false">From freezer</button></div>
+        <span class="rowlab" id="lh-llab">Beaker</span>
+        <div class="seg" id="lh-lag"><button type="button" data-v="y" aria-pressed="true">Lagged</button><button type="button" data-v="n" aria-pressed="false">No lagging</button></div>
+      </div>
+      <p class="note" id="lh-note" aria-live="polite"></p>
+      <div class="rtable-wrap" id="lh-tablewrap" hidden><div id="lh-table"></div></div>
+      <div class="stats" id="lh-stats"></div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="lh-eq1"></div>
+        <div class="eq" id="lh-eq2"></div>
+        <p class="eqnote" id="lh-eq3"></p>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    Array.prototype.forEach.call(document.querySelectorAll('details.working'), function(d){ d.open = true; });
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 4.97 × 10⁻¹⁹
+    if(x===0) return '0';
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+Math.abs(m).toFixed(dp)>=10){ m/=10; e++; }
+    return sn(m,dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function sig(x, n){   // n significant figures, as text, real minus sign
+    if(x===0) return '0';
+    var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
+    return sn(x, dp);
+  }
+  function grp(t){ return String(t).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }   // 12 345
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+(+x1).toFixed(1)+'" y1="'+(+y1).toFixed(1)+'" x2="'+(+x2).toFixed(1)+'" y2="'+(+y2).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||1.5)+'"'+(extra||'')+'/>'; }
+  // A small seeded random number generator (mulberry32), so the same setup gives the same readings.
+  function rng(seed){ var a = seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+  // A Poisson count with mean m (Knuth for small m, a normal approximation for large m)
+  function poisson(m, r){
+    if(m<=0) return 0;
+    if(m<60){ var L=Math.exp(-m), k=0, p=1; do{ k++; p*=r(); }while(p>L); return k-1; }
+    var u=Math.max(1e-12,r()), v=r(), z=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+    return Math.max(0, Math.round(m+Math.sqrt(m)*z));
+  }
+  // Least-squares straight line through points [[x,y],…]: {m, c}
+  function fitLine(p){
+    var n=p.length, sx=0, sy=0, sxx=0, sxy=0;
+    p.forEach(function(q){ sx+=q[0]; sy+=q[1]; sxx+=q[0]*q[0]; sxy+=q[0]*q[1]; });
+    var d=n*sxx-sx*sx; if(n<2 || d===0) return null;
+    var m=(n*sxy-sx*sy)/d; return {m:m, c:(sy-m*sx)/n};
+  }
+
+/* ================= Experiment kit (copy this block into an animation page's <script>) =================
+   The reusable parts of an animation's Experiment mode, taken from animations/hookes-law.html:
+   - expRun():     the run itself: step the independent variable up one interval at a time, then
+                   (optionally) back down again, measuring at every step
+   - expReading(): a reading with a small, fixed pattern of reading error, rounded to the instrument's
+                   resolution, that never goes the wrong way
+   - expTable():   the results table (sticky header, newest row highlighted, a column per run)
+   - expCross(), expRing(), expKey(): SVG marks for plotted readings (× first run, ○ return run)
+   The page keeps its own picture, physics, graph axes and notes. See tools/experiment-kit/README.md.
+   Plain ES5 so it can sit inside any animation page's IIFE. */
+
+// A fixed pattern of reading errors, in units of the instrument's resolution. Fixed (not random) so a
+// teacher sees the same results as the class, and a re-run gives the same table.
+var EXP_ERR = [0, 1, -1, 0, 2, -1, 1, -2, 0, 1, -1, 0, 1, -1, 2, 0, -1, 1, 0, -2, 1];
+function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP_ERR.length]; }
+
+// What the student reads off the instrument.
+//   trueVal  the value the physics gives at this step
+//   prevVal  the reading taken at the step before (or the start value)
+//   res      the instrument's resolution (0.1 cm ruler, 0.05 mm vernier, 0.01 A ammeter, 1° protractor)
+//   i        the step number (picks the error from the pattern)
+//   scale    how big the error is, in resolutions (default 1; 0.5 for a fine instrument)
+// The error is never more than a quarter of the change since the last reading, so a reading never
+// goes the wrong way (an extension never falls as the load rises, a current never drops as V rises).
+function expReading(trueVal, prevVal, res, i, scale){
+  var gap = Math.abs(trueVal - prevVal);
+  var err = i > 0 ? expErr(i) * Math.min(res * (scale == null ? 1 : scale), gap / 4) : 0;
+  var r = Math.round((trueVal + err) / res) * res;
+  var dp = Math.max(0, Math.ceil(-Math.log10(res) - 1e-9));
+  return +r.toFixed(dp);
+}
+
+// The run. cfg = {
+//   start: 0,                 value of the independent variable before the first step
+//   max: 10,                  last value of the first run (the run stops there)
+//   step: 1,                  the interval (the page can change it with setStep, which resets the run)
+//   reverse: true,            allow a return run (unloading, turning the voltage back down)
+//   measure: function(v, phase, prevReading){ return reading },   phase is 'up' or 'down'
+//   onChange: function(run, what){}  what is 'up', 'down' or 'reset'
+// }
+// run.up and run.down are arrays of {v, r}. run.phase is 'up' until the first step back, then 'down'.
+function expRun(cfg){
+  var run = { up: [], down: [], phase: 'up', value: cfg.start || 0, peak: cfg.start || 0, step: cfg.step || 1 };
+  var r6 = function(x){ return Math.round(x * 1e6) / 1e6; };
+  run.upDone = function(){ return run.phase === 'down' || run.peak >= cfg.max - 1e-9; };
+  run.downDone = function(){ return run.phase === 'down' && run.value <= (cfg.start || 0) + 1e-9; };
+  run.last = function(){ var a = run.phase === 'down' && run.down.length ? run.down : run.up; return a[a.length - 1] || null; };
+  run.stepUp = function(){
+    if(run.phase !== 'up' || run.upDone()) return false;
+    var prev = run.up.length ? run.up[run.up.length - 1].r : null;
+    var v = r6(Math.min(cfg.max, run.value + run.step));
+    run.value = run.peak = v;
+    run.up.push({ v: v, r: cfg.measure(v, 'up', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'up');
+    return true;
+  };
+  run.stepDown = function(){
+    if(!cfg.reverse || run.value <= (cfg.start || 0) + 1e-9 || !run.up.length) return false;
+    run.phase = 'down';
+    var prev = run.down.length ? run.down[run.down.length - 1].r : run.up[run.up.length - 1].r;
+    var v = r6(Math.max(cfg.start || 0, run.value - run.step));
+    run.value = v;
+    run.down.push({ v: v, r: cfg.measure(v, 'down', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'down');
+    return true;
+  };
+  run.reset = function(){ run.up = []; run.down = []; run.phase = 'up'; run.value = run.peak = cfg.start || 0; if(cfg.onChange) cfg.onChange(run, 'reset'); };
+  run.setStep = function(s){ run.step = s; run.reset(); };
+  return run;
+}
+
+// The results table. cols = [{label:'Load (N)', key:'v', dp:0}, {label:'Extension loading (cm)', key:'up', dp:1}, ...]
+// rows = [{v:1, up:1.6, down:''}, ...]. newKey/newV highlight the reading just taken (fades in).
+// Wrap it in .rtable-wrap so a long table scrolls under its sticky header.
+function expTable(el, cols, rows, newV){
+  var fmt = function(x, dp){ return (x === '' || x == null) ? '' : (+x).toFixed(dp || 0); };
+  var h = '<table class="rtable"><thead><tr>' + cols.map(function(c){ return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    h += '<tr' + (newV != null && row.v === newV ? ' class="new"' : '') + '>' + cols.map(function(c){ return '<td>' + fmt(row[c.key], c.dp) + '</td>'; }).join('') + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table>';
+}
+
+// Plotted readings, as SVG strings. Size 5 suits a 300px-wide graph.
+function expCross(cx, cy, s){ s = s || 5; return '<path d="M' + (cx - s) + ',' + (cy - s) + ' L' + (cx + s) + ',' + (cy + s) + ' M' + (cx + s) + ',' + (cy - s) + ' L' + (cx - s) + ',' + (cy + s) + '" stroke="var(--ink)" stroke-width="2"/>'; }
+function expRing(cx, cy, r){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r || 4.5) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+// A two-line key in the bottom-right corner of a graph: expKey(rightX, bottomY, 'loading', 'unloading')
+function expKey(x, y, upLabel, downLabel){
+  return '<text x="' + x + '" y="' + (y - 14) + '" text-anchor="end" font-size="10.5" fill="var(--ink)">× ' + upLabel + '</text>' +
+         '<text x="' + x + '" y="' + y + '" text-anchor="end" font-size="10.5" fill="var(--accent)">○ ' + downLabel + '</text>';
+}
+/* ================= end of Experiment kit ================= */
+
+  // ---- the physics (Alex's deck: L_f = 334 kJ/kg, L_v = 2260 kJ/kg). Time t in minutes, masses in g, energy in J.
+  var LF=334, LV=2260;                 // J per g (= kJ per kg)
+  var PF=40, PV=100, TMAX=10;          // heater powers (W) and run length (min)
+  var ROOM=0.8;                        // g of ice melted by the room in each funnel, each minute
+  var EFF=0.98;                        // fusion: about 2% of the heater's energy warms the funnel and the melted water
+  var QW=3150, TF=3;                   // freezer ice (−10 °C): 3150 J to warm the heated funnel's ice; the room needs about 3 min
+  var LOSS={y:6, n:18};                // vaporisation: watts lost from the boiling water, lagged or not
+  var ICE0=150, BAL0=350.0;            // g of crushed ice in each funnel; balance reading with beaker, water and heater
+
+  var svg=$('#lh-svg'), playBtn=$('#lh-play'), slowBtn=$('#lh-slow'), expBtn=$('#lh-exp');
+  var modeSeg=segGroup($('#lh-mode'), function(){ setMode(); });
+  var graphEl=$('#lh-graph'), graphSeg=segGroup(graphEl, function(){ draw(); });
+  var intSeg=segGroup($('#lh-int'), function(){ clearRun(); });
+  var conSeg=segGroup($('#lh-con'), function(){ clearRun(); });
+  var iceSeg=segGroup($('#lh-ice'), function(){ clearRun(); });
+  var lagSeg=segGroup($('#lh-lag'), function(){ clearRun(); });
+  var jumpSeg=segGroup($('#lh-jump'), function(v){ stop(); t=+v; draw(); });
+  var showQ=location.search.match(/[?&]show=(fus|vap)\b/);
+  if(showQ){ modeSeg.pick(showQ[1]); $('#lh-mode').hidden=true; }
+  function fus(){ return modeSeg.value()==='fus'; }
+  function exp(){ return pressed(expBtn); }
+  function slowOn(){ return pressed(slowBtn); }
+  function step(){ return +intSeg.value(); }
+  // in Watch mode everything is ideal; in Experiment mode the student's choices and the real losses apply
+  function control(){ return !exp() || conSeg.value()==='y'; }
+  function freezer(){ return exp() && iceSeg.value()==='f'; }
+  function loss(){ return exp() ? LOSS[lagSeg.value()] : 0; }
+
+  function energy(tm){ return (fus()?PF:PV)*60*tm; }
+  function roomMelt(tm){ return ROOM*Math.max(0, tm-(freezer()?TF:0)); }
+  function heaterMelt(tm){ return Math.max(0, (exp()?EFF:1)*energy(tm)-(freezer()?QW:0))/LF; }
+  function mExp(tm){ return heaterMelt(tm)+roomMelt(tm); }
+  function mCon(tm){ return roomMelt(tm); }
+  function boiled(tm){ return (PV-loss())*60*tm/LV; }
+  function balance(tm){ return BAL0-boiled(tm); }
+  function dmTrue(tm){ return fus() ? (control()? mExp(tm)-mCon(tm) : mExp(tm)) : boiled(tm); }
+
+  var t=0;    // minutes since the heater was switched on
+  // ---- Experiment readings
+  var E={rd:[], run:null, justAdded:null};
+  function nextT(){ return E.rd.length ? Math.min(TMAX, E.rd[E.rd.length-1].t+step()) : 0; }
+  function done(){ return E.rd.length && E.rd[E.rd.length-1].t>=TMAX-1e-9; }
+  function takeReading(){
+    var i=E.rd.length, tm=nextT(), p=E.rd[i-1];
+    var r={t:tm, E:Math.round(energy(tm))};
+    if(fus()){
+      r.me=expReading(mExp(tm), p?p.me:0, 0.1, i, 1);
+      r.mc=expReading(mCon(tm), p?p.mc:0, 0.1, i+3, 1);
+      r.dm=control() ? +(r.me-r.mc).toFixed(1) : r.me;
+    } else {
+      r.b=expReading(balance(tm), p?p.b:BAL0, 0.1, i, 1);
+      r.dm=+(BAL0-r.b).toFixed(1);
+    }
+    E.rd.push(r); E.justAdded=tm; t=tm;
+  }
+  function fitNow(){
+    var pts=E.rd.filter(function(r){ return r.dm>0; }).map(function(r){ return [r.dm, r.E/1000]; });
+    return pts.length>=2 ? fitLine(pts) : null;
+  }
+
+  // ---- graphs
+  function setGraphButtons(){
+    var gs=[['em','ΔE against Δm'],['mt', fus()?'Mass against time':'Balance against time']];
+    var cur=graphSeg.value(), ok=gs.some(function(g){ return g[0]===cur; });
+    graphEl.innerHTML=gs.map(function(g,i){ return '<button type="button" data-v="'+g[0]+'" aria-pressed="'+(ok ? g[0]===cur : i===0)+'">'+g[1]+'</button>'; }).join('');
+  }
+  var G={x:368, y:20, w:214, h:226};
+  var narrowQ=window.matchMedia('(max-width:560px)');
+  function layout(){
+    if(narrowQ.matches){ G={x:62, y:322, w:262, h:200}; svg.setAttribute('viewBox','0 0 340 566'); }
+    else { G={x:368, y:20, w:214, h:226}; svg.setAttribute('viewBox','0 0 600 300'); }
+  }
+  if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ layout(); draw(); });
+  layout();
+  function axisSpec(){
+    var g=graphSeg.value();
+    if(g==='em') return fus() ? {x0:0, x1:90, xs:10, lx:2, y0:0, y1:30, ys:5, xl:'Δm (g)', yl:'ΔE (kJ)', dpx:0, dpy:0}
+                              : {x0:0, x1:30, xs:5, y0:0, y1:60, ys:10, xl:'Δm (g)', yl:'ΔE (kJ)', dpx:0, dpy:0};
+    return fus() ? {x0:0, x1:10, xs:1, lx:2, y0:0, y1:90, ys:10, xl:'t (min)', yl:'mass of water (g)', dpx:0, dpy:0}
+                 : {x0:0, x1:10, xs:1, lx:2, y0:320, y1:350, ys:5, xl:'t (min)', yl:'balance reading (g)', dpx:0, dpy:0};
+  }
+  function gx(a,v){ return G.x+(v-a.x0)/(a.x1-a.x0)*G.w; }
+  function gy(a,v){ return G.y+G.h-(v-a.y0)/(a.y1-a.y0)*G.h; }
+  function inG(a,u,v){ return u>=a.x0-1e-9 && u<=a.x1+1e-9 && v>=a.y0-1e-9 && v<=a.y1+1e-9; }
+
+  // ---- the picture
+  var drops=[], bubbles=[], clock=0, running=false, raf=0, last=0;
+  function meter(x, y, w, label, val){
+    return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="46" rx="7" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>'+
+      txt(x+7, y+13, label, {fs:9, c:'var(--ink-faint)'})+txt(x+w-7, y+37, val, {a:'end', fs:16, w:600, c:'var(--ink)'});
+  }
+  function shownE(){ return exp() && !E.run ? (E.rd.length ? E.rd[E.rd.length-1].E : 0) : energy(t); }
+  function funnel(cx, melted, on, lab){
+    var g='', top=78, apex=136, hw=36, frac=Math.max(0, 1-melted/ICE0), ih=(apex-top-6)*Math.sqrt(frac);
+    // crushed ice (its top drops as it melts)
+    var iy=apex-6-ih, w2=hw*(apex-iy)/(apex-top);
+    if(frac>0) g+='<path d="M'+(cx-w2).toFixed(1)+','+iy.toFixed(1)+' L'+(cx+w2).toFixed(1)+','+iy.toFixed(1)+' L'+cx+','+(apex-2)+' Z" fill="var(--ice)" stroke="var(--ice-edge)" stroke-width="1"/>';
+    for(var k=0;k<7 && frac>0;k++){ var yy=iy+4+k*((apex-iy-10)/7), ww=hw*(apex-yy)/(apex-top)-6; if(ww>4) g+=ln(cx-ww, yy, cx+ww*0.6, yy+3, 'var(--ice-edge)', 0.8); }
+    g+='<path d="M'+(cx-hw)+','+top+' L'+(cx-4)+','+apex+' V152 M'+(cx+4)+',152 V'+apex+' L'+(cx+hw)+','+top+'" fill="none" stroke="var(--ink)" stroke-width="1.8"/>';
+    // immersion heater
+    g+='<rect x="'+(cx-4)+'" y="54" width="8" height="64" rx="2" fill="'+(on?'var(--topic)':'var(--ink-faint)')+'"/>';
+    g+=txt(cx, 22, lab, {a:'middle', fs:10, c:'var(--ink-soft)'});
+    return g;
+  }
+  function beaker(cx, mass, maxM, lab){
+    var g='', y0=196, y1=252, wl=y1-(Math.min(mass,maxM)/maxM)*(y1-y0-6);
+    g+='<rect x="'+(cx-27)+'" y="'+wl.toFixed(1)+'" width="54" height="'+(y1-wl).toFixed(1)+'" fill="var(--water)"/>';
+    g+='<path d="M'+(cx-28)+','+y0+' V'+y1+' H'+(cx+28)+' V'+y0+'" fill="none" stroke="var(--ink)" stroke-width="1.8"/>';
+    g+=txt(cx, 272, lab, {a:'middle', fs:10.5, w:600, c:'var(--ink)'});
+    return g;
+  }
+  function sceneFus(){
+    var g='', con=control(), me, mc;
+    if(exp() && !E.run){ var L=E.rd[E.rd.length-1]; me=L?L.me:0; mc=L?L.mc:0; } else { me=mExp(t); mc=mCon(t); }
+    var ON = running || !!E.run;
+    // bench, stand
+    g+=ln(8, 254, 336, 254, 'var(--ink-faint)', 2);
+    g+='<rect x="'+(con?218:232)+'" y="40" width="5" height="214" fill="var(--ink-faint)"/>';
+    g+=ln(150, 140, con?296:236, 140, 'var(--ink-faint)', 3);
+    // joulemeter and supply, wired to the experimental heater
+    g+=meter(8, 30, 108, 'joulemeter', Math.round(shownE())+' J');
+    g+='<rect x="18" y="104" width="64" height="34" rx="5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.4"/>'+txt(50, 125, '12 V', {a:'middle', fs:10.5, c:'var(--ink)'});
+    g+='<path d="M116,46 C130,46 136,52 146,52 M116,60 C134,60 138,58 154,52 M50,104 V76" fill="none" stroke="var(--ink-soft)" stroke-width="1.3"/>';
+    g+=funnel(150, me, ON, 'experimental');
+    g+=beaker(150, me, 90, 'm = '+me.toFixed(1)+' g');
+    if(con){
+      g+=funnel(290, mc, false, 'control');
+      g+='<path d="M290,54 C304,40 318,46 322,62" fill="none" stroke="var(--ink-faint)" stroke-width="1.2" stroke-dasharray="3 3"/>'+txt(326, 74, 'off', {a:'end', fs:9, c:'var(--ink-faint)'});
+      g+=beaker(290, mc, 90, 'm = '+mc.toFixed(1)+' g');
+    }
+    drops.forEach(function(d){ g+='<circle cx="'+d.x+'" cy="'+d.y.toFixed(1)+'" r="2" fill="var(--water-ink)"/>'; });
+    if(E.run) g+=txt(326, 290, 'heater on…', {a:'end', fs:10.5, c:'var(--accent)'});
+    return g;
+  }
+  function sceneVap(){
+    var g='', lag=exp() && lagSeg.value()==='y', b;
+    if(exp() && !E.run){ var L=E.rd[E.rd.length-1]; b=L?L.b:BAL0; } else b=balance(t);
+    var ON = running || !!E.run, lost=BAL0-b, wl=150+lost*1.6;
+    g+=ln(8, 268, 336, 268, 'var(--ink-faint)', 2);
+    // balance
+    g+='<rect x="54" y="232" width="176" height="36" rx="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/><rect x="74" y="226" width="136" height="6" fill="var(--ink-faint)"/>';
+    g+='<rect x="150" y="240" width="72" height="22" rx="3" fill="var(--bg)"/>'+txt(216, 256, b.toFixed(1)+' g', {a:'end', fs:13, w:600, c:'var(--ink)'})+txt(62, 254, 'balance', {fs:9, c:'var(--ink-faint)'});
+    // beaker of boiling water
+    if(lag) g+='<rect x="76" y="108" width="132" height="118" rx="4" fill="none" stroke="var(--topic)" stroke-width="8" stroke-dasharray="3 3" opacity="0.6"/>';
+    g+='<rect x="84" y="'+wl.toFixed(1)+'" width="116" height="'+(224-wl).toFixed(1)+'" fill="var(--water)"/>';
+    g+='<path d="M82,112 V225 H202 V112" fill="none" stroke="var(--ink)" stroke-width="2"/>';
+    // heater
+    g+='<path d="M112,52 V200 q6,8 12,0 q6,-8 12,0 V52" fill="none" stroke="'+(ON?'var(--topic)':'var(--ink-faint)')+'" stroke-width="5"/>';
+    bubbles.forEach(function(p){
+      if(!p.steam && p.y<=wl){ p.steam=true; p.y=110; }
+      g+= !p.steam ? '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="2.4" fill="none" stroke="var(--water-ink)" stroke-width="1"/>'
+                   : '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(3+(110-p.y)*0.05).toFixed(1)+'" fill="var(--ink-faint)" opacity="'+Math.max(0,(p.y-36)/74*0.22).toFixed(2)+'"/>'; });
+    if(bubbles.some(function(p){ return p.steam; })) g+=txt(214, 96, 'steam', {fs:9.5, c:'var(--ink-faint)'});
+    // joulemeter and supply
+    g+=meter(228, 26, 108, 'joulemeter', Math.round(shownE())+' J');
+    g+='<rect x="250" y="96" width="64" height="34" rx="5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.4"/>'+txt(282, 117, '12 V', {a:'middle', fs:10.5, c:'var(--ink)'});
+    g+='<path d="M228,46 C200,46 132,40 112,52 M228,60 C200,60 156,50 136,52 M282,96 V72" fill="none" stroke="var(--ink-soft)" stroke-width="1.3"/>';
+    g+=txt(176, 104, lag?'lagged':'', {a:'middle', fs:9.5, c:'var(--topic)'});
+    if(E.run) g+=txt(326, 290, 'heater on…', {a:'end', fs:10.5, c:'var(--accent)'});
+    return g;
+  }
+
+  function drawGraph(){
+    var a=axisSpec(), g='', v, i, gs=graphSeg.value();
+    for(v=a.x0, i=0; v<=a.x1+1e-9; v+=a.xs, i++){ var X=gx(a,v); g+=ln(X, G.y, X, G.y+G.h, 'var(--panel-border)', 1); if(!a.lx || i%a.lx===0) g+=txt(X, G.y+G.h+13, sn(v,a.dpx), {a:'middle', fs:9.5, c:'var(--ink-faint)'}); }
+    for(v=a.y0; v<=a.y1+1e-9; v+=a.ys){ var Y=gy(a,v); g+=ln(G.x, Y, G.x+G.w, Y, 'var(--panel-border)', 1)+txt(G.x-4, Y+3.5, sn(v,a.dpy), {a:'end', fs:9.5, c:'var(--ink-faint)'}); }
+    g+=ln(G.x, G.y, G.x, G.y+G.h, 'var(--ink-soft)', 2)+ln(G.x, G.y+G.h, G.x+G.w, G.y+G.h, 'var(--ink-soft)', 2);
+    g+=txt(G.x, G.y-7, a.yl, {fs:10.5}); g+=txt(G.x+G.w/2, G.y+G.h+28, a.xl, {a:'middle', fs:10.5});
+    function curve(fx, fy, col, dash, upTo){
+      var pts=[]; for(var k=0;k<=100;k++){ var tm=(upTo==null?TMAX:upTo)*k/100, u=fx(tm), w=fy(tm); if(inG(a,u,w)) pts.push(gx(a,u).toFixed(1)+','+gy(a,w).toFixed(1)); }
+      return pts.length>1 ? '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="'+(dash?1.6:2.4)+'"'+(dash?' stroke-dasharray="5 4"':'')+'/>' : '';
+    }
+    var em=gs==='em';
+    if(!exp()){
+      if(em) g+=curve(dmTrue, function(tm){ return energy(tm)/1000; }, 'var(--topic)', false);
+      else if(fus()){ g+=curve(function(tm){return tm;}, mExp, 'var(--topic)', false)+curve(function(tm){return tm;}, mCon, 'var(--ink-soft)', false);
+        g+=txt(G.x+G.w-4, gy(a,mExp(TMAX))+14, 'experimental', {a:'end', fs:9.5, c:'var(--topic)'})+txt(G.x+G.w-4, gy(a,mCon(TMAX))-6, 'control', {a:'end', fs:9.5, c:'var(--ink-soft)'}); }
+      else g+=curve(function(tm){return tm;}, balance, 'var(--topic)', false);
+      var cx= em ? dmTrue(t) : t, cy= em ? energy(t)/1000 : (fus()? mExp(t) : balance(t));
+      if(inG(a,cx,cy)) g+='<circle cx="'+gx(a,cx).toFixed(1)+'" cy="'+gy(a,cy).toFixed(1)+'" r="5" fill="var(--topic)" stroke="var(--panel)" stroke-width="2"/>';
+    } else {
+      if(!E.rd.length) g+=txt(G.x+G.w/2, G.y+G.h/2, 'readings appear here', {a:'middle', fs:11, c:'var(--ink-faint)'});
+      E.rd.forEach(function(r){
+        if(em){ if(inG(a,r.dm,r.E/1000)) g+=expCross(+gx(a,r.dm).toFixed(1), +gy(a,r.E/1000).toFixed(1), 4); }
+        else if(fus()){ g+=expCross(+gx(a,r.t).toFixed(1), +gy(a,r.me).toFixed(1), 4); if(control()) g+=expRing(+gx(a,r.t).toFixed(1), +gy(a,r.mc).toFixed(1), 4); }
+        else g+=expCross(+gx(a,r.t).toFixed(1), +gy(a,r.b).toFixed(1), 4);
+      });
+      if(!em && fus() && control() && E.rd.length) g+=expKey(G.x+G.w-6, G.y+16+14, 'experimental', 'control');
+      if(em && done()){
+        var f=fitNow();
+        if(f){ var xb=a.x1; g+=ln(gx(a,Math.max(0,-f.c/f.m)), gy(a,Math.max(0,f.c)), gx(a,xb), gy(a,f.m*xb+f.c), 'var(--accent)', 1.6, ' stroke-dasharray="5 4"');
+          g+=txt(G.x+G.w-4, G.y+12, 'best fit', {a:'end', fs:10.5, c:'var(--accent)'}); }
+      }
+    }
+    return g;
+  }
+
+  function draw(){
+    var g=(fus() ? sceneFus() : sceneVap())+drawGraph();
+    if((running||E.run) && slowOn()) g+=txt(336, 14, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
+    svg.innerHTML=g;
+    readings();
+  }
+
+  // ---- readings, table, working and note
+  function stat(lab, val, hi){ return '<div class="stat'+(hi?' hi':'')+'"><small>'+lab+'</small><strong>'+val+'</strong></div>'; }
+  function kgTxt(g){ return sig(g/1000,3); }
+  function Lsci(Jkg){ return sci(Jkg,2)+' J kg⁻¹'; }
+  var lastNote='';
+  function readings(){
+    var F=fus(), ex=exp(), s='';
+    if(ex){
+      var L=E.rd[E.rd.length-1];
+      s=stat('Readings', E.rd.length+' of '+(TMAX/step()+1))+stat('ΔE', L? grp(L.E)+' J':'–')+stat('Δm', L? L.dm.toFixed(1)+' g':'–', true);
+    } else s=stat('t', sn(t,1)+' min')+stat('ΔE', grp(Math.round(energy(t)))+' J')+stat(F?'Δm melted':'Δm boiled off', dmTrue(t).toFixed(1)+' g', true);
+    $('#lh-stats').innerHTML=s;
+
+    if(ex){
+      var cols = F ? (control() ? [{label:'t (min)', key:'t'}, {label:'ΔE (J)', key:'E'}, {label:'m exp (g)', key:'me', dp:1}, {label:'m control (g)', key:'mc', dp:1}, {label:'Δm (g)', key:'dm', dp:1}]
+                                : [{label:'t (min)', key:'t'}, {label:'ΔE (J)', key:'E'}, {label:'m melted (g)', key:'me', dp:1}])
+                   : [{label:'t (min)', key:'t'}, {label:'ΔE (J)', key:'E'}, {label:'balance (g)', key:'b', dp:1}, {label:'Δm (g)', key:'dm', dp:1}];
+      expTable($('#lh-table'), cols, E.rd.map(function(r){ var o={v:r.t}; for(var k in r) o[k]=r[k]; return o; }), E.justAdded);
+    }
+
+    var w1='', w2='', w3='', Lname=F?'L<sub>f</sub>':'L<sub>v</sub>';
+    if(!ex){
+      if(t<0.05) w1='Press Play: the heater has supplied no energy yet.';
+      else {
+        var dm=dmTrue(t), En=Math.round(energy(t));
+        if(F) w1='Δm = m<sub>exp</sub> − m<sub>control</sub><br>Δm = '+mExp(t).toFixed(2)+' − '+mCon(t).toFixed(2)+'<br>Δm = '+dm.toFixed(2)+' g = '+kgTxt(dm)+' kg';
+        else w1='Δm = '+BAL0.toFixed(2)+' − '+balance(t).toFixed(2)+'<br>Δm = '+dm.toFixed(2)+' g = '+kgTxt(dm)+' kg';
+        w2='ΔE = LΔm<br>'+grp(En)+' = '+Lname+' × '+kgTxt(dm)+'<br>'+Lname+' = [['+grp(En)+'|'+kgTxt(dm)+']]<br>'+Lname+' = <b>'+Lsci(En/(dm/1000))+'</b>';
+      }
+      w3 = F ? 'The joulemeter measures the energy supplied to the heated funnel only. The control funnel has a heater too, switched off, so both lose ice to the room at the same rate: subtracting its mass leaves the ice melted by the heater.'
+             : 'The water must already be boiling before the joulemeter is reset, so all the energy goes into turning water into steam, not into warming it up. The balance reading falls as steam escapes.';
+    } else if(done()){
+      var f=fitNow(), Lg=f.m*1e6, last=E.rd[E.rd.length-1];
+      w1='gradient = [[ΔE|Δm]]<br>gradient = '+sig(f.m,4)+' kJ g⁻¹<br>'+Lname+' = <b>'+Lsci(Lg)+'</b>';
+      w2='From the last reading alone:<br>ΔE = LΔm<br>'+grp(last.E)+' = '+Lname+' × '+kgTxt(last.dm)+'<br>'+Lname+' = [['+grp(last.E)+'|'+kgTxt(last.dm)+']]<br>'+Lname+' = '+Lsci(last.E/(last.dm/1000));
+      w3='Accepted value: '+(F?'3.34':'2.26')+' × 10'+(F?'⁵':'⁶')+' J kg⁻¹. The gradient ignores any energy that went in before the first gram changed state (the line’s intercept), so it is better than one reading on its own.';
+    } else if(E.rd.length) w1='Keep going to '+TMAX+' minutes, then the best-fit line gives '+Lname+'.';
+    else w1= F ? 'Take the first reading at 0 min, then a reading every '+step()+' min: the joulemeter and both beakers.' : 'The water is already boiling. Take the first reading at 0 min, then every '+step()+' min: the joulemeter and the balance.';
+    $('#lh-eq1').innerHTML=FR(w1); $('#lh-eq2').innerHTML=FR(w2); $('#lh-eq2').hidden=!w2; $('#lh-eq3').innerHTML=FR(w3); $('#lh-eq3').hidden=!w3;
+
+    var note;
+    if(!ex){
+      note = F ? 'The heater melts ice in the experimental funnel. The room melts a little ice in <b>both</b> funnels, so the control tells you how much to take off. While the ice melts its temperature stays at 0 °C: the energy breaks bonds, raising the molecules’ <b>potential energy</b>, not their kinetic energy.'
+               : 'The heater keeps the water boiling at 100 °C. Each joule turns some water into steam, so the balance reading falls. The energy separates the molecules (more <b>potential energy</b>); their kinetic energy, and the temperature, stay the same.';
+    } else if(E.run) note='Heater on: running to '+E.run.to+' min.';
+    else if(!E.rd.length) note = F ? 'Experiment: reset the joulemeter and empty both beakers. Take a reading at 0 min, then every '+step()+' min to '+TMAX+' min.'
+                                   : 'Experiment: bring the water to the boil, then reset the joulemeter. Take a reading at 0 min, then every '+step()+' min to '+TMAX+' min.';
+    else if(!done()) note='You have '+E.rd.length+' reading'+(E.rd.length===1?'':'s')+'. Next: run the heater to '+nextT()+' min and read again.';
+    else {
+      var f2=fitNow(), Lk=f2.m*1000, acc=F?LF:LV, off=(Lk-acc)/acc*100, last2=E.rd[E.rd.length-1], Ls=last2.E/last2.dm;
+      if(graphSeg.value()!=='em') note='Done. Choose <b>ΔE against Δm</b>: the gradient is the specific latent heat.';
+      else if(F && !control()) note='Gradient: L<sub>f</sub> = <b>'+Math.round(Lk)+' kJ kg⁻¹</b>, '+sig(-off,2)+'% low. Without a control, ice melted by the <b>room</b> was counted as melted by the heater, so Δm is too big.';
+      else if(F && freezer()) note='Gradient: L<sub>f</sub> = <b>'+Math.round(Lk)+' kJ kg⁻¹</b>, but the last reading alone gives '+Math.round(Ls)+' kJ kg⁻¹. The first '+sig(QW/1000,2)+' kJ warmed the ice up to 0 °C before any melted: the line does not pass through the origin.';
+      else if(F) note='Gradient: L<sub>f</sub> = <b>'+Math.round(Lk)+' kJ kg⁻¹</b>, '+sig(off,1)+'% above 334 kJ kg⁻¹: a little of the heater’s energy warmed the funnel and the melted water instead.';
+      else note='Gradient: L<sub>v</sub> = <b>'+Math.round(Lk)+' kJ kg⁻¹</b>, '+sig(off,2)+'% above 2260 kJ kg⁻¹: energy is lost from the beaker to the room, so more ΔE is counted for each gram boiled off.'+(lagSeg.value()==='n'?' Try it lagged.':'');
+    }
+    if(note!==lastNote){ $('#lh-note').innerHTML=FR(note); lastNote=note; }
+
+    if(ex){ playBtn.innerHTML = done() ? 'Done' : (!E.rd.length ? '&#9654; Read at 0 min' : '&#9654; Run to '+nextT()+' min and read'); playBtn.disabled = done() || !!E.run; }
+    else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
+    $('#lh-clear').disabled=!!E.run;
+  }
+
+  // ---- motion: drops from the funnels, bubbles and steam from the beaker
+  function particles(dt, on){
+    clock+=dt;
+    if(fus()){
+      var rate = on ? 9 : 0;
+      if(on && Math.random()<rate*dt) drops.push({x:150, y:154, v:0});
+      if(on && control() && Math.random()<1.5*dt) drops.push({x:290, y:154, v:0});
+      drops=drops.filter(function(d){ d.v+=600*dt; d.y+=d.v*dt; return d.y<240; });
+    } else {
+      if(on && Math.random()<8*dt) bubbles.push({x:100+Math.random()*90, y:210, v:30+Math.random()*30, d:(Math.random()-0.5)*14});
+      bubbles=bubbles.filter(function(p){ p.y-=p.v*dt; if(p.y<150){ p.v=40; p.x+=p.d*dt; } return p.y>30; });
+    }
+  }
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function frame(now){
+    var real=Math.min(0.05,(now-last)/1000); last=now;
+    var dt=real*(slowOn()?0.3:1);
+    if(E.run){
+      t=Math.min(E.run.to, t+dt*E.run.rate); particles(dt, true);
+      if(t>=E.run.to-1e-9){ E.run=null; takeReading(); }
+    } else if(running){
+      t=Math.min(TMAX, t+dt*0.5); particles(dt, true);
+      if(t>=TMAX) stop();
+    } else particles(dt, false);
+    draw();
+    if(running || E.run || drops.length || bubbles.length) raf=requestAnimationFrame(frame);
+  }
+  function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
+  function run(){ if(t>=TMAX) t=0; running=true; jumpSeg.pick(null); loop(); draw(); }
+  function stepRun(){
+    if(!E.rd.length){ t=0; takeReading(); draw(); return; }
+    E.justAdded=null; E.run={to:nextT(), rate:1.6}; loop(); draw();
+  }
+  function reset(){ stop(); E.run=null; t=0; drops=[]; bubbles=[]; jumpSeg.pick(null); draw(); }
+  function clearRun(){ stop(); E={rd:[], run:null, justAdded:null}; t=0; drops=[]; bubbles=[]; draw(); }
+  function setRows(){
+    var F=fus(), ex=exp();
+    $('#lh-jlab').hidden=$('#lh-jump').hidden=ex;
+    $('#lh-ilab').hidden=$('#lh-int').hidden=!ex;
+    $('#lh-clab').hidden=$('#lh-con').hidden=$('#lh-flab').hidden=$('#lh-ice').hidden=!(ex && F);
+    $('#lh-llab').hidden=$('#lh-lag').hidden=!(ex && !F);
+    $('#lh-clear').hidden=!ex; $('#lh-tablewrap').hidden=!ex; $('#lh-stats').hidden=ex;
+    svg.setAttribute('aria-label', F ? 'Two funnels of crushed ice, each with an immersion heater. Only the experimental heater is switched on, through a joulemeter; the melted water drips into beakers. A graph of the readings is on the right.'
+      : 'A beaker of boiling water on a balance, kept boiling by an immersion heater connected through a joulemeter. A graph of the readings is on the right.');
+  }
+  function setMode(){ setGraphButtons(); setRows(); clearRun(); }
+  function setExp(){ setRows(); clearRun(); }
+
+  playBtn.addEventListener('click', function(){
+    if(exp()){ if(!E.run && !done()) stepRun(); return; }
+    if(running){ stop(); draw(); } else run();
+  });
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
+  expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); setExp(); });
+  $('#lh-reset').addEventListener('click', function(){ if(exp()) clearRun(); else reset(); });
+  $('#lh-clear').addEventListener('click', clearRun);
+
+  watchEquals($('#lh-eq1')); watchEquals($('#lh-eq2'));
+  setMode();
+})();
+</script>
+</body>
+</html>

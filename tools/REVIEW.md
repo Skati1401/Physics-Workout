@@ -11,7 +11,8 @@ What Alex has checked, and what still needs checking. One row per published page
 | Page | Status | What to check |
 |---|---|---|
 | IGCSE list `igcse.html` | 🔍 To review | Units collapse (remembered per browser), search, Workouts/Practicals filter, Triple Award switch, Open all (2 Nov 2026: a search no longer leaves units remembered as open); Unit 1 cards under Part 1 / Part 2 headings (27 Oct 2026); core practicals shown in their unit and in Core Practicals; links like `igcse.html#unit-1` open that unit |
-| IAL animations list `animations/ial.html` | 🔍 To review | 2 Nov 2026: cards under Unit 1, 2, 4 and 5, checked against the IAL spec (fields in Unit 4: 106, 115). Units now collapse like `igcse.html`, with search and Open all. Core Practicals section at the end (CP12 thermistor, CP15 gamma absorption). Later on 2 Nov 2026: Specific Heat Capacity and Gas Molecules and Pressure cards added to Unit 5 (5.3 Thermodynamics), either side of the thermistor. |
+| IAL animations list `animations/ial.html` | 🔍 To review | 2 Nov 2026: CP13 latent heat and CP14 Boyle's law cards added under Unit 5 (and Core Practicals). 2 Nov 2026: cards under Unit 1, 2, 4 and 5, checked against the IAL spec (fields in Unit 4: 106, 115). Units now collapse like `igcse.html`, with search and Open all. Core Practicals section at the end (CP12 thermistor, CP15 gamma absorption). Later on 2 Nov 2026: Specific Heat Capacity and Gas Molecules and Pressure cards added to Unit 5 (5.3 Thermodynamics), either side of the thermistor. |
+| IAL list `ial.html` | 🔍 To review | New (2 Nov 2026): IAL student list with a Core Practicals section (CP12, CP13, CP14), and an IAL door on the front page between IGCSE and IB. |
 | IB animations list `animations/ib.html` | 🔍 To review | 2 Nov 2026: cards under Theme A, D and E, checked against the IB guide (gamma radiation removed; radiation in fields under D.3; friction added to A). Themes now collapse like `igcse.html`, with search and Open all. Later on 2 Nov 2026: new Theme B section with Specific Heat Capacity (B.1) and Gas Molecules and Pressure (B.3). |
 | IGCSE animations list `animations/igcse.html` | 🔍 To review | 2 Nov 2026: units now collapse like `igcse.html`, with search and Open all; Core Practicals section at the end (1.5, 1.22, 5.11P, 5.14P, 6.6). |
 | Year 9 `heat-transfer.html` | 🔍 To review | The three new Predict pairs (Conduction, Convection Current, Radiation). |
@@ -37,6 +38,12 @@ All workouts and practicals also got the compact breadcrumb header, saved answer
 
 ## Core practicals
 
+| Page | Status | What to check |
+|---|---|---|
+| CP12 `thermistor-practical.html` (IAL) | 🔍 To review | New (2 Nov 2026), 10 tabs (Overview, Method, Variables, Experiment, Results, Graphs, Divider, Calculate, Accuracy, Exam). Check the data (Ali's table, the ln R graph through (2.80, 6.35) and (3.70, 9.86), b = 3900 K, ln R₀ = −4.57), the potential divider questions, and the exam parts. Spec badges 126 and 129 only. |
+| CP13 `latent-heat-practical.html` (IAL) | 🔍 To review | New (2 Nov 2026), 9 tabs. Check Zahra's fusion table, the anomalous balance reading, the exam table (404.8 g missing). Spec badges 125, 127, 128. |
+| CP14 `boyles-law-practical.html` (IAL) | 🔍 To review | New (2 Nov 2026), 9 tabs. Check the isotherms at 300 K and 450 K, the V against 1/p graph, the gauge-pressure Predict, exam parts (a)–(f). Large answers (N) are typed in e notation (7.42e20). Spec badges 129, 130, 131. |
+
 Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five published pages had the mark scheme wording check on 2 Nov 2026 (papers listed in `tools/CORE-PRACTICALS.md`).
 
 | Page | Status | What to check |
@@ -54,6 +61,8 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `film-badge.html` | IGCSE (Unit 7) + IAL + IB | 🔍 To review | 2 Nov 2026: the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
 | `random-decay.html` | IGCSE (Unit 7) + IAL + IB | 🔍 To review | 2 Nov 2026: the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
 | `radiation-in-fields.html` | IGCSE (Unit 7) + IAL (Unit 4) + IB (Theme D) | 🔍 To review | 2 Nov 2026: card moved from IAL Unit 5 / IB Theme E to IAL Unit 4 / IB Theme D, where the field physics is. the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
+| `latent-heat.html` | IAL | 🔍 To review | New (2 Nov 2026), IAL CP13. Check the 40 W heater, 0.8 g/min room melting in each funnel, the 2% fusion loss and the 6 W (lagged) / 18 W (unlagged) vaporisation losses; the "No control" and "Ice from the freezer" options; vaporisation is a beaker on a balance only (the condenser version from slide 61 is not animated). |
+| `boyles-law.html` | IAL | 🔍 To review | New (2 Nov 2026), IAL CP14. Check: the gauge reads absolute pressure; the warming on compression (about +11 K at 250 kPa, settling with a 15 s time constant) behind "Read straight away" (about 5% high) vs "Wait to cool"; the 50 kPa step option; dragging the pump handle. |
 | `thermistor.html` | IAL | 🔍 To review | New (2 Nov 2026), IAL CP12. Check: the model thermistor (b = 3900 K, 5.0 kΩ at 25 °C), 0–80 °C range (your slides) vs 0–100 °C (Pearson sheet), the ohmmeter and thermometer precision, the No stirring option, the potential divider working (R_T from V_T/V_R, then T = b/(ln R_T − ln R₀)), and the mystery-beaker game. |
 | `gamma-radiation.html` | IAL | ✅ Checked 2 Nov 2026 | 2 Nov 2026: card taken off the IB list (not in the IB 2025 spec). |
 | `roller-coaster-energy.html` | IGCSE | ✅ Checked 2 Nov 2026 | Draggable objects. |
