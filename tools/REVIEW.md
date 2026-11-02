@@ -34,15 +34,15 @@ All workouts and practicals also got the compact breadcrumb header, saved answer
 
 ## Core practicals
 
-Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five published pages still need the mark scheme wording check (handover in the project doc `claude/handover-mark-scheme-check.md`).
+Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five published pages had the mark scheme wording check on 2 Nov 2026 (papers listed in `tools/CORE-PRACTICALS.md`).
 
 | Page | Status | What to check |
 |---|---|---|
-| 1.22 `hookes-law-practical.html` | ❔ Not recorded | Mark scheme wording check pending. |
-| 1.5 `motion-practical.html` | ❔ Not recorded | Mark scheme wording check pending (light gate and video camera methods already done). |
-| 5.11P `melting-ice-practical.html` | ❔ Not recorded | Mark scheme wording check pending. |
-| 5.14P `specific-heat-practical.html` | ❔ Not recorded | Mark scheme wording check pending. |
-| 6.6 `magnetic-field-practical.html` | ❔ Not recorded | Mark scheme wording check pending. |
+| 1.22 `hookes-law-practical.html` | 🔍 To review | 2 Nov 2026: mark scheme wording (set square, same two points, parallax, gentle masses, vernier for a wire, feet), 7 Predicts evened up, new Exam (e) spring method and (f) wire method. Check the new exam parts and the extra vernier Sort card. |
+| 1.5 `motion-practical.html` | 🔍 To review | 2 Nov 2026: mark scheme wording on the stopwatch method, Overview (variables, mean, average speed not speed at the bottom), 5 Predicts evened up, Exam (e) four reasons and new (f) 6-mark ramp-height method. Check the longer Overview and (f). |
+| 5.11P `melting-ice-practical.html` | 🔍 To review | 2 Nov 2026: mark scheme wording (stir so the temperature is the same throughout, off the bottom of the beaker, horizontal section, bonds weakened/broken with kinetic energy constant), 10 Predicts evened up. Check "bonds" replacing "forces" in the Overview and the bonds-forming wording for freezing. |
+| 5.14P `specific-heat-practical.html` | 🔍 To review | 2 Nov 2026: new "Metal block / Water" switch on Overview and Method; mark scheme wording (maximum temperature after switch-off, mass by difference, stir, V × I × t), 5 Predicts evened up, new Exam (f) definition and (g) water method. Check the water passage, the 9-step Order and the new exam parts. |
+| 6.6 `magnetic-field-practical.html` | 🔍 To review | 2 Nov 2026: mark scheme wording (dot at the north end, tail at the dot, join the dots, filings need a compass for direction, opposite poles close but not touching, soft iron loses / steel retains magnetism), 4 Predicts evened up, new Exam (f) iron filings method. Check (f) and the longer Overview. |
 
 ## Animations (`animations/`)
 

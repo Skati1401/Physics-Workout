@@ -103,4 +103,12 @@ All four were built as drafts, then published the same day. Spec numbers were ch
 
 ## Mark scheme wording check: published practicals
 
-Waiting for the IGCSE Question Index and the 4PH1 mark schemes to be added to the project. Then check, in this order: 1.22 Hooke's law, 1.5 (light gate and video methods already from the January 2014 4PH0 mark scheme), 5.11P, 5.14P, 6.6.
+**Done 2 Nov 2026** for all five published practicals (1.22, 1.5, 5.11P, 5.14P, 6.6), from the Model Answers sheet and Answer column of Alex's IGCSE Physics Question Index (mark scheme points already extracted there). Method steps, model answers, Exam tab and Overview reworded; every flagged Predict evened up so the right option is never the longest. New Exam parts are in our own words, never copied. No STORE_KEY changed.
+
+- **1.22:** Jan 2022 P1 9(a), May 2026 P1 4(a), Nov 2021 P1 10(a), May 2018 P1 TZ1 2(b)(i), Jan 2022 P1 9(b)(iv), Jan 2023 P1 1(a). New Exam (e) spring method and (f) wire method.
+- **1.5:** Jan 2014 P1 5, May 2019 P1 TZ2 7(a), May 2022 P1 11(a), May 2024 P1R 3(a)(ii), Nov 2023 P1 12(b)(i). New Exam (f) ramp-height method. The page's cloze now draws `[[ | ]]` fractions.
+- **5.11P:** Nov 2020 P2R 6(b)(ii), Jan 2020 P2R 5(a), May 2021 P2 5(b)(ii), Nov 2021 P2 3(a), Nov 2023 P2 5(b)(iii), May 2024 P2 8(c)(ii), May 2026 P2R 5(a). Melting is "bonds weakened / broken, kinetic energy constant" (mark schemes reject KE changing while melting).
+- **5.14P:** Nov 2023 P2 3(a), Nov 2024 P2 5(a), May 2023 P2 8(a), Jan 2023 P2R 6(a), May 2022 P2 7(a), May 2023 P2R 5(b)(ii). New "Metal block / Water" method switch on Overview and Method (water adds mass by difference, stirring, voltmeter and ammeter). New Exam (f) definition and (g) water method.
+- **6.6:** Jan 2022 P1 1(d), May 2011 P2 2(a), May 2016 P2 TZ1 4(c), May 2019 P1 2(a), Nov 2025 P1 6(a)(ii), May 2021 P1 8(a), May 2024 P1 6(c), 6(d)(i), May 2025 P1R 2(b)(ii), May 2026 P1R 2(a)(i). New Exam (f) iron filings method. No method switch: the Iron Filings tab already covers it.
+
+Batches B and C do this check while they build (step 4 above).

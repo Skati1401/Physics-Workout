@@ -397,6 +397,9 @@ table.units.res-tbl{min-width:0}
   .celebrate{display:inline-block;animation:pulse .6s ease-out;color:var(--good)}
   .slot .chip.is-placed{animation:settle .15s ease-out}
 }
+.method-pick{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:0 0 14px}
+.method-lab{font:600 13px var(--f-mono);color:var(--ink-soft)}
+.method-pick .seg button{min-height:44px;padding:8px 14px;font-size:14px}
 </style>
 <div class="page">
 <header class="page-head">
@@ -1212,21 +1215,39 @@ function createPlot(cfg){
     isDone:()=>pts.every((p,i)=>locked[i])});
 }
 
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'Measure the mass of an aluminium block with a ',['b1','balance'],'. Put an immersion heater and a thermometer into the holes in the block, and wrap it in ',['b2','lagging'],
-    '. A ',['b3','joulemeter'],' measures the energy supplied by the heater. Record the starting temperature, switch on for 10 minutes, then keep reading the thermometer to find the ',['b4','highest'],
-    ' temperature. The specific heat capacity, c, is the energy needed to raise the temperature of ',['b5','1 kg'],' of a substance by ',['b6','1 °C'],'. Work it out from ΔQ = m × c × ',['b7','ΔT'],
-    ', in ',['b8','J/kg °C'],'. Water has a much ',['b9','higher'],' specific heat capacity than metals. Most results come out too high, because some of the energy heats the ',['b10','surroundings'],'.'
-  ];
+/* ================= METHOD TYPE: metal block or water =================
+   The 4PH1 mark schemes accept a solid block or water (or another liquid), and the energy from a joulemeter,
+   from voltmeter reading × ammeter reading × time, or from P × t for a heater of known power. The Overview and
+   Method tabs each have a "Method type" switch (copied from the 1.5 page); the choice is shared by both tabs and
+   remembered in this browser. The water activities come after the block ones, so saved answers keep their places. */
+const METHODS=[{k:'bl',label:'Metal block'},{k:'wa',label:'Water'}];
+const MKEY='cp-specific-heat-method';
+let method='bl';try{const v=localStorage.getItem(MKEY);if(METHODS.some(m=>m.k===v))method=v;}catch(e){}
+const methodGames=[];
+function methodPicker(panel){
+  const w=mk('div','method-pick');
+  w.innerHTML='<span class="method-lab" id="ml-'+panel+'">Method type</span><div class="seg" role="group" aria-labelledby="ml-'+panel+'">'+
+    METHODS.map(m=>'<button type="button" data-m="'+m.k+'">'+m.label+'</button>').join('')+'</div>';
+  $('#panel-'+panel+' .acts').prepend(w);
+  w.addEventListener('click',e=>{const b=e.target.closest('button[data-m]');if(b)setMethod(b.dataset.m);});
+}
+function forMethod(body,k){body.closest('.act').dataset.m=k;}
+function setMethod(k){
+  method=k;try{localStorage.setItem(MKEY,k);}catch(e){}
+  $$('.method-pick button').forEach(b=>{const on=b.dataset.m===k;b.classList.toggle('is-on',on);b.setAttribute('aria-pressed',String(on));});
+  $$('.act[data-m]').forEach(a=>{a.hidden=a.dataset.m!==k;});
+  raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow()));
+}
+reflowers.push(()=>raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow())));
+function clozeAct(panel,k,title,parts,distractors){
+  const body=act(panel,'Fill in the blanks',title,'Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
+  forMethod(body,k);
   const cloze=mk('div','cloze'),slots=[],chips=[];
   parts.forEach(p=>{
     if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
     else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
   });
-  ['1 g','lower','stopwatch','N/kg'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
+  distractors.forEach((t,i)=>chips.push({id:'d'+i,text:t}));
   body.appendChild(cloze);
   body.appendChild(mk('div','pool-label','Word bank'));
   const pool=mk('div','chip-pool');body.appendChild(pool);
@@ -1235,33 +1256,80 @@ function createPlot(cfg){
   const score=mk('span','score');b.el.insertBefore(score,b.msg);
   Object.assign(g,createBlankGame({slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
 }
+const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.';
+const MATCH_INTRO='Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.';
+
+/* ================= 1. OVERVIEW ================= */
+methodPicker('overview');
+clozeAct('overview','bl','The practical with a metal block',[
+  'Measure the mass of an aluminium block on a ',['b1','balance'],'. Put an immersion heater and a thermometer into the holes in the block, and wrap it in ',['b2','lagging'],
+  '. A ',['b3','joulemeter'],' measures the energy supplied by the heater. Record the starting temperature, switch on for 10 minutes, then keep reading the thermometer after switching off to find the ',['b4','maximum'],
+  ' temperature. The specific heat capacity, c, is the energy needed to change the temperature of ',['b5','1 kg'],' of a substance by ',['b6','1 °C'],'. Work it out from ΔQ = m × c × ',['b7','ΔT'],
+  ', in ',['b8','J/kg °C'],', where ΔT = final temperature − starting temperature. Water has a much ',['b9','higher'],' specific heat capacity than metals. Most results come out too high, because some of the energy also heats the thermometer and the ',['b10','surroundings'],'.'
+],['1 g','lower','stopwatch','N/kg']);
 
 /* ================= 2. METHOD ================= */
+methodPicker('method');
 {
-  const body=act('method','Order','Carry out the practical','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
+  const body=act('method','Order','Heat a metal block',ORDER_INTRO);forMethod(body,'bl');
   createReorder({host:body,steps:[
     {id:'a',text:'Measure the mass of the aluminium block on a balance.'},
     {id:'b',text:'Put the heater in one hole and the thermometer in the other, with a few drops of water round the bulb.'},
     {id:'c',text:'Wrap the block in lagging.'},
     {id:'d',text:'Read the starting temperature of the block.'},
     {id:'e',text:'Connect the heater to the joulemeter and the power supply. Switch on and start the stopwatch.'},
-    {id:'f',text:'After 10 minutes, switch off the heater and read the joulemeter.'},
-    {id:'g',text:'Keep reading the thermometer until the temperature stops rising. Record the highest reading.'},
-    {id:'h',text:'Work out ΔT, then use ΔQ = m × c × ΔT to find c.'}
-  ],constraints:[['a','h'],['b','d'],['c','e'],['d','e'],['e','f'],['f','g'],['g','h']],
-  why:'The starting temperature is read before the heater goes on, and the highest temperature comes after it is switched off, because the hot heater keeps passing energy to the block for a while.'});
+    {id:'f',text:'After 10 minutes, switch off the heater and read the joulemeter: this is the energy supplied, ΔQ.'},
+    {id:'g',text:'Keep reading the thermometer after switching off, until the temperature stops rising. Record the maximum temperature.'},
+    {id:'h',text:'Temperature change ΔT = maximum temperature − starting temperature. Then c = [[ΔQ|m × ΔT]].'},
+    {id:'i',text:'Repeat the experiment and find the mean value of c.'}
+  ],constraints:[['a','h'],['b','d'],['c','e'],['d','e'],['e','f'],['f','g'],['g','h'],['h','i']],
+  why:'The starting temperature is read before the heater goes on, and the maximum temperature comes after it is switched off, because the hot heater keeps passing energy to the block for a while. Without a joulemeter, measure the energy as voltmeter reading × ammeter reading × time.'});
 }
 {
-  const body=act('method','Match','What each piece of equipment is for','Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.');
-  createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
+  const body=act('method','Match','What each piece of equipment is for',MATCH_INTRO);forMethod(body,'bl');
+  methodGames.push(createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
     {id:'b',l:'Balance',r:'Measures the mass of the block'},
     {id:'j',l:'Joulemeter',r:'Measures the energy supplied by the heater'},
     {id:'h',l:'Immersion heater',r:'Transfers energy to the block'},
     {id:'t',l:'Thermometer',r:'Measures the temperature of the block'},
     {id:'l',l:'Lagging',r:'Cuts the energy lost to the surroundings'},
-    {id:'w',l:'Drops of water in the hole',r:'Give good thermal contact with the thermometer bulb'}
-  ]});
+    {id:'w',l:'Drops of water in the hole',r:'Give good thermal contact with the thermometer bulb'},
+    {id:'s',l:'Stopwatch',r:'Times how long the heater is on'}
+  ]}));
 }
+{
+  const body=act('method','Order','Heat some water',ORDER_INTRO);forMethod(body,'wa');
+  createReorder({host:body,steps:[
+    {id:'a',text:'Measure the mass of the empty polystyrene cup on a balance.'},
+    {id:'b',text:'Add the water and measure the mass again. Mass of water = mass of cup and water − mass of cup.'},
+    {id:'c',text:'Put the heater and the thermometer in the water. Connect a voltmeter across the heater and an ammeter in series with it.'},
+    {id:'d',text:'Stir the water and read its starting temperature.'},
+    {id:'e',text:'Switch on the heater and start the stopwatch. Read the voltmeter and the ammeter.'},
+    {id:'f',text:'Keep stirring, so all the water is at the same temperature. Read the temperature every minute.'},
+    {id:'g',text:'Switch off after 10 minutes. Keep stirring and reading until the temperature stops rising, and record the maximum.'},
+    {id:'h',text:'Energy supplied ΔQ = V × I × t, and ΔT = maximum temperature − starting temperature. Then c = [[ΔQ|m × ΔT]].'},
+    {id:'i',text:'Repeat the experiment and find the mean value of c.'}
+  ],constraints:[['a','b'],['b','c'],['c','d'],['d','e'],['e','f'],['f','g'],['g','h'],['h','i']],
+  why:'The mass of water is found by difference, so the empty cup is weighed first. Stirring makes the thermometer read the temperature of all the water. A joulemeter, or ΔQ = P × t for a heater of known power, would also give the energy.'});
+}
+{
+  const body=act('method','Match','What each piece of equipment is for',MATCH_INTRO);forMethod(body,'wa');
+  methodGames.push(createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
+    {id:'b',l:'Balance',r:'Measures the mass of the cup, then the cup and water'},
+    {id:'v',l:'Voltmeter',r:'Measures the potential difference across the heater'},
+    {id:'a',l:'Ammeter',r:'Measures the current in the heater'},
+    {id:'s',l:'Stopwatch',r:'Times how long the heater is on'},
+    {id:'r',l:'Stirrer',r:'Keeps all the water at the same temperature'},
+    {id:'t',l:'Thermometer',r:'Measures the temperature of the water'}
+  ]}));
+}
+clozeAct('overview','wa','The practical with water',[
+  'Measure the mass of an empty polystyrene cup on a ',['w1','balance'],', then add water and measure again: the mass of water = mass of cup and water − ',['w2','mass of cup'],
+  '. Put in an immersion heater and a thermometer. Connect a ',['w3','voltmeter'],' across the heater and an ',['w4','ammeter'],' in series with it. Read the starting temperature, then switch on and start a ',
+  ['w5','stopwatch'],'. ',['w6','Stir'],' the water all the time, so it is all at the same temperature. The energy supplied = voltmeter reading × ammeter reading × ',['w7','time'],
+  '. After switching off, keep reading the thermometer to find the ',['w8','maximum'],' temperature. Use ΔQ = m × c × ΔT to find c, then ',['w9','repeat'],' the experiment and find the mean.'
+],['mass of water','minimum','current','ruler']);
+setMethod(method);
 
 /* ================= 3. VARIABLES ================= */
 {
@@ -1292,7 +1360,7 @@ function createPlot(cfg){
 {
   const body=act('variables','Predict','Water in the thermometer hole','');
   createPredict({host:body,q:'Why does Zahra put a few drops of water in the hole before she puts the thermometer in?',options:[
-    {text:'Water conducts better than air, so the bulb reads the block',correct:true},
+    {text:'It conducts better than air, so the bulb reads the block',correct:true},
     {text:'It cools the thermometer so that the glass does not crack',why:'The block only gets to about 50 °C, far below anything that would harm the thermometer.'},
     {text:'It stops the block from losing energy to the air outside',why:'A few drops in the hole cannot insulate the block. That is the job of the lagging.'},
     {text:'It adds mass, so the temperature rises more slowly',why:'A few drops add almost no mass. They are there so the bulb is in good contact with the block.'}
@@ -1311,7 +1379,7 @@ frameAct('experiment','animations/specific-heat.html','','Specific heat capacity
     {text:'900 J raises the temperature of 1 g of it by 1 °C',why:'Specific heat capacity is for each kilogram, which is why the unit is J/kg °C. One gram would need only 0.9 J.'},
     {text:'900 J is the energy needed to melt 1 kg of it',why:'Melting is a change of state at a fixed temperature. Specific heat capacity is about raising the temperature.'},
     {text:'It can be heated to 900 °C before it starts to melt',why:'The number is an amount of energy, in joules, not a temperature.'}
-  ],explain:'Specific heat capacity is the energy needed to raise the temperature of 1 kg of a substance by 1 °C. For aluminium that is 900 J.'});
+  ],explain:'Specific heat capacity is the energy needed to change the temperature of 1 kg of a substance by 1 °C. For aluminium that is 900 J.'});
 }
 {
   const body=act('experiment','Predict','Water or copper?','');
@@ -1334,7 +1402,7 @@ function shTable(){
   const body=act('results','Calculate','Work out c from Sophie’s results','Sophie’s aluminium block has a mass of 1.00 kg. She switched the heater off at 10 minutes and kept reading the thermometer.');
   body.appendChild(shTable());
   createCalc({host:body,questions:[
-    {q:'What is the rise in temperature, from the start to the highest reading?',unit:'°C',answer:29,working:'ΔT = highest temperature − starting temperature<br>ΔT = 49.0 − 20.0<br>ΔT = 29.0 °C'},
+    {q:'What is the temperature change, from the start to the maximum reading?',unit:'°C',answer:29,working:'ΔT = maximum temperature − starting temperature<br>ΔT = 49.0 − 20.0<br>ΔT = 29.0 °C'},
     {q:'How much energy did the heater supply each minute?',unit:'J',answer:2880,working:'energy each minute = [[28 800|10]]<br>energy each minute = 2880 J'},
     {q:'Use ΔQ = 28 800 J and your ΔT to find the specific heat capacity of aluminium.',unit:'J/kg °C',answer:993,working:'ΔQ = m × c × ΔT<br>28 800 = 1.00 × c × 29.0<br>28 800 = 29.0 × c<br>c = [[28 800|29.0]]<br>c = 993 J/kg °C'},
     {q:'Now use only the readings from 2 to 8 minutes, while the temperature rises steadily. What value of c does this give?',unit:'J/kg °C',answer:960,working:'ΔQ = 23 040 − 5760<br>ΔQ = 17 280 J<br>ΔT = 42.5 − 24.5<br>ΔT = 18.0 °C<br>17 280 = 1.00 × c × 18.0<br>c = [[17 280|18.0]]<br>c = 960 J/kg °C'}
@@ -1350,7 +1418,7 @@ function shTable(){
 {
   const body=act('results','Predict','A slow start','');
   createPredict({host:body,q:'In the first 2 minutes the temperature rises 4.5 °C. After that it rises about 6 °C every 2 minutes. Why is the start slower?',options:[
-    {text:'The heater has to warm up itself before it heats the block',correct:true},
+    {text:'The heater must warm itself up before it heats the block',correct:true},
     {text:'The block is cold, so it needs more energy for each 1 °C',why:'The block’s specific heat capacity does not change with temperature here. The energy is going into the heater first.'},
     {text:'The joulemeter only starts counting after a minute',why:'The joulemeter counts from the moment the heater is switched on: 5760 J by 2 minutes, the same as every later 2 minutes.'},
     {text:'Energy is lost faster while the block is still cold',why:'A cold block loses the least energy, because it is closest to room temperature. The heater warming up is the cause.'}
@@ -1363,7 +1431,7 @@ function shTable(){
     {text:'The joulemeter was still supplying energy to the heater',why:'The joulemeter reading stayed at 28 800 J, so no more energy was supplied after 10 minutes.'},
     {text:'The room was warming the block up through the lagging',why:'The room is cooler than the block, so energy flows out of the block, not in.'},
     {text:'The thermometer needs 2 minutes to show each reading',why:'The thermometer kept up with the block before, rising about 6 °C every 2 minutes. The block really did get hotter.'}
-  ],explain:'When it is switched off, the heater is hotter than the block, so it keeps heating the block for a short while. That is why you keep reading until the temperature stops rising, and use the highest reading.'});
+  ],explain:'When it is switched off, the heater is hotter than the block, so it keeps heating the block for a short while. That is why you keep reading after switching off, until the temperature stops rising, and use the maximum reading.'});
 }
 {
   const body=act('results','Predict','The line of best fit','');
@@ -1372,7 +1440,7 @@ function shTable(){
     {text:'Short straight lines that join each point to the next',why:'Joining the dots follows every small reading error. A line of best fit shows the trend.'},
     {text:'A curve that passes exactly through every point',why:'These points lie close to a straight line, because the energy goes in at a steady rate. A curve hides that.'},
     {text:'A straight line from the origin through the points',why:'The graph starts at 20 °C, not 0 °C, so the line should not be forced through the origin.'}
-  ],explain:'While the heater is on, energy goes in at a steady rate, so the temperature rises steadily: draw one straight line of best fit through these points, with about as many above it as below.'});
+  ],explain:'While the heater is on, energy goes in at a steady rate, so the temperature rises steadily: draw one straight line of best fit through these points, with about as many above it as below. Its gradient = [[P|m × c]], where P is the heater’s power, so c = [[P|m × gradient]].'});
 }
 {
   const body=act('results','Predict','An anomalous result','');
@@ -1418,7 +1486,7 @@ function riseGraph(){
 {
   const body=act('graphs','Predict','Steeper line, bigger c?','');
   createPredict({host:body,q:'On this graph (rise in temperature up the side), what does a steeper line show about a 1.0 kg sample?',options:[
-    {text:'A smaller specific heat capacity',correct:true},
+    {text:'A lower specific heat capacity',correct:true},
     {text:'A bigger specific heat capacity',why:'A steeper line means a bigger rise for each kilojoule, so less energy is needed for each 1 °C.'},
     {text:'A bigger mass of the sample',why:'All three samples have the same mass, 1.0 kg. The slope shows how much energy each 1 °C needs.'},
     {text:'A more powerful heater was used',why:'The energy is along the bottom, so the heater’s power does not change the slope.'}
@@ -1493,7 +1561,7 @@ function energyGraph(){
     {id:'1',text:'Wrap the block in lagging',cat:'a'},
     {id:'2',text:'Put a few drops of water in the thermometer hole',cat:'a'},
     {id:'3',text:'Keep reading after switching off, to catch the highest temperature',cat:'a'},
-    {id:'4',text:'Put a lid on a beaker of water you are heating',cat:'a'},
+    {id:'4',text:'Stir water as it heats, so it is all at the same temperature',cat:'a'},
     {id:'5',text:'Let the heater cool down before you take it out',cat:'s'},
     {id:'6',text:'Stand the hot block on a heatproof mat',cat:'s'},
     {id:'7',text:'Keep water away from the power supply and its plugs',cat:'s'},
@@ -1503,19 +1571,19 @@ function energyGraph(){
 {
   const body=act('accuracy','Predict','Why is the value too high?','');
   createPredict({host:body,q:'Sophie’s value for aluminium is 993 J/kg °C. The accepted value is 900 J/kg °C. What is the most likely reason?',options:[
-    {text:'Energy heated the surroundings, so her ΔT was too small',correct:true},
+    {text:'Energy also heated the thermometer and surroundings',correct:true},
     {text:'The joulemeter counted less energy than was supplied',why:'Less energy counted would make ΔQ too small, and her value of c lower, not higher.'},
     {text:'Her block had more mass than the 1.00 kg she measured',why:'A balance measures mass very accurately. The big error is energy that never heated the block.'},
     {text:'She read the highest temperature far too early',why:'She kept reading until 12 minutes, after the temperature had stopped rising.'}
-  ],explain:'Some of the energy heats the air, the bench and the heater instead of the block. The block’s rise in temperature is smaller than it would be, and a smaller ΔT on the bottom of c = [[ΔQ|m × ΔT]] gives a bigger c.'});
+  ],explain:'Some of the energy also heats the thermometer, the heater and the surroundings (the air and the bench), not just the block. The block’s temperature change is smaller than it would be, and a smaller ΔT on the bottom of c = [[ΔQ|m × ΔT]] gives a bigger c.'});
 }
 {
   const body=act('accuracy','Predict','Thicker lagging','');
   createPredict({host:body,q:'Sophie repeats the test with thicker lagging round the block. How does her value of c change?',options:[
-    {text:'It is closer to 900, as less energy is lost',correct:true},
+    {text:'Closer to 900, as less energy is lost',correct:true},
     {text:'It goes up, as the lagging stores energy',why:'Lagging is an insulator. It cuts the energy lost, so more of it heats the block and ΔT is bigger.'},
     {text:'It stays the same: c belongs to aluminium',why:'The real c does not change, but her measured value does, because less energy escapes.'},
-    {text:'It drops well below 900 J/kg °C',why:'Lagging can only cut the losses, not stop them, so her value gets closer to 900 but stays a little above it.'}
+    {text:'It drops to well below 900 J/kg °C',why:'Lagging can only cut the losses, not stop them, so her value gets closer to 900 but stays a little above it.'}
   ],explain:'Less energy escapes to the surroundings, so more of it heats the block. The rise in temperature is bigger, and her value of c comes closer to the accepted 900 J/kg °C.'});
 }
 
@@ -1536,18 +1604,28 @@ function energyGraph(){
   body.appendChild(mk('p','sub','(c) 2 marks'));
   body.appendChild(mk('p','','The accepted value is 4200 J/kg °C. Explain why Ali’s value is higher. Write your answer, then check it.'));
   const d1=mk('details','');
-  d1.innerHTML='<summary>Check your answer</summary><div><ul><li>Some of the energy supplied heats the surroundings (the air, the cup and the heater), not the water.</li><li>So the water’s rise in temperature is smaller than it should be, and dividing by a smaller ΔT gives a bigger value of c.</li></ul></div>';
+  d1.innerHTML=FR('<summary>Check your answer</summary><div><ul><li>Some of the energy supplied also heats the cup, the thermometer and the surroundings, not just the water.</li><li>So the temperature change of the water is smaller than it should be.</li><li>A smaller ΔT on the bottom of c = [[ΔQ|m × ΔT]] gives a bigger value of c.</li></ul></div>');
   body.appendChild(d1);
   body.appendChild(mk('p','sub','(d) 2 marks'));
   body.appendChild(mk('p','','Suggest two ways Ali could get a value closer to 4200 J/kg °C.'));
   const d2=mk('details','');
-  d2.innerHTML='<summary>Check your answer</summary><div><ul><li>Put a lid on the cup, or add more insulation round it, to cut the energy lost to the surroundings.</li><li>Keep reading after the heater is switched off, and use the highest temperature; or use the gradient of the straight part of a temperature–time graph.</li></ul></div>';
+  d2.innerHTML='<summary>Check your answer</summary><div><ul><li>Put a lid on the cup, or add more insulation round it, to cut the energy lost to the surroundings.</li><li>Keep reading after the heater is switched off, and use the maximum temperature.</li><li>Or plot temperature against time and use the gradient of the straight part of the graph.</li><li>Repeat the experiment and find the mean value of c.</li></ul></div>';
   body.appendChild(d2);
   body.appendChild(mk('p','sub','(e) 2 marks'));
   body.appendChild(mk('p','','Ali repeats the test with 0.50 kg of copper instead of water, with the same heater for the same time. Describe how the copper’s rise in temperature compares with the water’s, and explain why.'));
   const d3=mk('details','');
-  d3.innerHTML='<summary>Check your answer</summary><div><ul><li>The copper’s temperature rises much more (about 11 times as much).</li><li>Copper has a much smaller specific heat capacity, so it needs less energy for each 1 °C rise for each kilogram.</li></ul></div>';
+  d3.innerHTML='<summary>Check your answer</summary><div><ul><li>The copper’s temperature rises much more (about 11 times as much).</li><li>Copper has a much smaller specific heat capacity, so it needs less energy to change the temperature of 1 kg by 1 °C.</li></ul></div>';
   body.appendChild(d3);
+  body.appendChild(mk('p','sub','(f) 3 marks'));
+  body.appendChild(mk('p','','State what is meant by the specific heat capacity of water.'));
+  const d4=mk('details','');
+  d4.innerHTML='<summary>Check your answer</summary><div><ul><li>The energy needed</li><li>to change the temperature of 1 kg of water</li><li>by 1 °C.</li></ul></div>';
+  body.appendChild(d4);
+  body.appendChild(mk('p','sub','(g) 6 marks'));
+  body.appendChild(mk('p','','Ali has no joulemeter. Describe how he could find the specific heat capacity of water with a voltmeter, an ammeter and the rest of his apparatus.'));
+  const d5=mk('details','');
+  d5.innerHTML=FR('<summary>Check your answer</summary><div><ul><li>Measure the mass of the empty cup on a balance, then of the cup and water.</li><li>Mass of water = mass of cup and water − mass of cup.</li><li>Read the starting temperature on the thermometer, then switch on and start a stopwatch.</li><li>Record the voltmeter reading and the ammeter reading.</li><li>Stir the water, so it is all at the same temperature.</li><li>Switch off after a measured time, and keep reading the thermometer to find the maximum temperature.</li><li>Temperature change ΔT = final temperature − starting temperature.</li><li>Energy supplied E = voltmeter reading × ammeter reading × time (E = VIt).</li><li>c = [[E|m × ΔT]]</li><li>Or plot temperature against time and find the gradient of the straight part.</li><li>gradient = [[P|m × c]], where P = VI</li><li>c = [[P|m × gradient]]</li><li>Repeat the experiment and find the mean value of c.</li></ul><p class="sub">Mark schemes also accept a joulemeter for the energy, or E = P × t for a heater of known power.</p></div>');
+  body.appendChild(d5);
 }
 
 function pairPredicts(){
