@@ -61,7 +61,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `hookes-law.html` | IGCSE | ❔ Not recorded | |
 | `momentum-collision.html` | IGCSE | ❔ Not recorded | |
 | `seesaw-moments.html` | IGCSE | ✅ Checked 2 Nov 2026 | Drag each person along the beam. |
-| `liquid-pressure.html` | IGCSE | ❔ Not recorded | |
+| `liquid-pressure.html` | IGCSE | 🔍 To review | Drag the point on the dam face up and down to set the depth (1 m steps, 0–40 m); hint under the depth slider. Check the drag on a touchscreen. |
 | `heating-curve.html` | IGCSE | ❔ Not recorded | |
 | `specific-heat.html` | IGCSE | ❔ Not recorded | |
 | `gas-molecules.html` | IGCSE | ❔ Not recorded | |

@@ -268,6 +268,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .stat strong{font:500 17px var(--f-mono)}
 canvas.sim-canvas{display:block;width:100%;height:auto;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
 svg.diagram{width:100%;height:auto;display:block;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
+/* drag the point up and down the dam face to set the depth */
+.grab{cursor:grab;touch-action:none;}
+.hint{font-size:12.5px;color:var(--ink-faint);margin:0;}
+#dm-svg.dragging,#dm-svg.dragging *{cursor:grabbing;}
 svg text{font-family:var(--f-mono)}
 .graph{width:100%;height:auto;display:block}
 .graph .g-grid{stroke:var(--panel-border);stroke-width:1}
@@ -1025,7 +1029,7 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   const guide=[10,20,30,40].map(h=>{const y=yOf(h)-(h===HMAX?7:0);return '<line x1="'+(FACE-lenOf(h*RHO*10))+'" x2="'+(FACE-2)+'" y1="'+y+'" y2="'+y+'" stroke="var(--ink-faint)" stroke-width="2" marker-end="url(#dm-headf)"/>';}).join('');
   body.innerHTML=`
   <div class="sim sim-small">
-    <div class="sim-view"><svg class="diagram" viewBox="0 0 360 330" role="img" aria-label="Water held back by a dam, with arrows showing the water pressure on the dam">
+    <div class="sim-view"><svg class="diagram" id="dm-svg" viewBox="0 0 360 330" role="img" aria-label="Water held back by a dam, with arrows showing the water pressure on the dam">
       <defs>
         <marker id="dm-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
         <marker id="dm-headf" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-faint)"/></marker>
@@ -1041,9 +1045,11 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       <text id="dm-dimt" x="48" font-size="13" fill="var(--ink)">h</text>
       <line id="dm-arrow" stroke="var(--accent)" stroke-width="4" marker-end="url(#dm-head)"/>
       <circle id="dm-pt" cx="${FACE}" r="6" fill="var(--accent)" stroke="var(--panel)" stroke-width="2"/>
+      <rect id="dm-grab" class="grab" x="${FACE-36}" width="60" height="32" fill="transparent"/>
     </svg></div>
     <div class="ctl">
       <div class="ctl-row"><label for="dm-h">Depth h <output id="dm-ho"></output></label><input type="range" id="dm-h" min="0" max="${HMAX}" step="1" value="12"></div>
+      <p class="hint">Drag the point up and down the dam, or use the depth slider.</p>
       <div class="eq" id="dm-eq"></div>
       <div class="vbars go"><div class="vbar"><span>Pressure difference</span><div class="vtrack"><div class="vfill" id="dm-bar" style="--c:var(--accent)"></div></div></div></div>
       <p class="note">Take g = 10 N/kg and ρ = 1000 kg/m³ for water. This is the extra pressure caused by the water; the air adds atmospheric pressure on top. The grey arrows show the pressure every 10 m. The water pushes hardest at the bottom, which is why a dam is built thicker at its base.</p>
@@ -1055,11 +1061,30 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     byId('dm-ho').textContent=fmt(h)+' m';
     byId('dm-eq').innerHTML='Pressure difference from the surface<br>p = h × ρ × g<br>p = '+fmt(h)+' × '+fmt(RHO)+' × 10 = <b>'+fmt(p)+' Pa</b>';
     const ar=byId('dm-arrow');ar.setAttribute('x1',FACE-lenOf(p));ar.setAttribute('x2',FACE-3);ar.setAttribute('y1',y);ar.setAttribute('y2',y);
-    byId('dm-pt').setAttribute('cy',y);
+    byId('dm-pt').setAttribute('cy',y);byId('dm-grab').setAttribute('y',y-16);
     byId('dm-dim').setAttribute('y2',y);const t=byId('dm-dimt');t.setAttribute('y',Y0+(y-Y0)/2+4);t.style.display=h<3?'none':'';
     const bar=byId('dm-bar');bar.style.width=Math.max(3,p/PMAX*100)+'%';bar.textContent=fmt(p)+' Pa';
   }
   upd();
+  // drag the point up and down the dam face: pointer height -> depth, rounded to the slider's step
+  {
+    const svgEl=byId('dm-svg');let drag=null;
+    const svgPt=e=>{const q=svgEl.createSVGPoint();q.x=e.clientX;q.y=e.clientY;return q.matrixTransform(svgEl.getScreenCTM().inverse());};
+    const hOf=q=>(q.y-Y0)/(YB-Y0)*HMAX;
+    svgEl.addEventListener('pointerdown',e=>{
+      if(!(e.target.closest&&e.target.closest('.grab')))return;
+      drag={off:hOf(svgPt(e))-(+H.value)};
+      svgEl.setPointerCapture(e.pointerId);svgEl.classList.add('dragging');e.preventDefault();
+    });
+    svgEl.addEventListener('pointermove',e=>{
+      if(!drag)return;
+      const st=+H.step||1;let v=Math.round((hOf(svgPt(e))-drag.off)/st)*st;
+      v=Math.max(+H.min,Math.min(+H.max,v));
+      if(+H.value!==v){H.value=v;upd();}
+    });
+    const endDrag=()=>{if(!drag)return;drag=null;svgEl.classList.remove('dragging');};
+    svgEl.addEventListener('pointerup',endDrag);svgEl.addEventListener('pointercancel',endDrag);
+  }
 
   /* ---------- U-tube manometer ---------- */
   {
