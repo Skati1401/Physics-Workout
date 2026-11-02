@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thermistor Calibration Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#c2410c;   --topic-soft:#fde7d6;
+    --water:#d6e9fb;   --ice:#ffffff;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#fb8a4c; --topic-soft:#3a1d0e;
+      --water:#1c3a5a; --ice:#c9d6e6;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#fb8a4c; --topic-soft:#3a1d0e;
+      --water:#1c3a5a; --ice:#c9d6e6;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+  /* button rows fill their width (Alex, 2 Nov 2026) */
+  .btn-group>.btn,.exp-btns>.btn{flex:1 1 0;min-width:max-content;justify-content:center;}
+  .seg:not(.tabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));}
+  .seg:not(.tabs)>button{padding-inline:4px;white-space:nowrap;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 300px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  #th-svg.dragging,#th-svg.dragging *{cursor:grabbing;}
+  #th-svg:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  /* mystery-beaker answer box */
+  .guess{border:1px solid var(--panel-border);border-radius:8px;padding:8px 10px;}
+  .guess-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .guess-row input{width:110px;min-height:44px;font:600 15px var(--font-mono);padding:6px 8px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);}
+  .guess-row .unit{font:13px var(--font-mono);color:var(--ink-soft);}
+  .gfb{font-size:14px;margin-top:6px;min-height:1.4em;}
+  .gfb.ok{color:var(--good);font-weight:600;} .gfb.no{color:var(--bad);font-weight:600;}
+  .seg button sub,.stat sub{font-size:.75em;}
+  .cgrid>[hidden]{display:none!important;}
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="ial.html">&larr; IAL animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">Animations &middot; thermodynamics &middot; IAL CP12</div>
+      <h1>Thermistor Calibration and Potential Divider</h1>
+    </div>
+    <div class="seg tabs" id="th-mode" role="group" aria-label="Part"><button type="button" data-v="cal" aria-pressed="true">1 Calibrate</button><button type="button" data-v="pd" aria-pressed="false">2 Potential divider</button></div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="th-svg" viewBox="0 0 600 300" role="img" aria-label="A thermistor and a thermometer in a beaker of water heated by a Bunsen burner, with an ohmmeter, and a graph of the readings on the right"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="th-play" type="button">&#9654; Play</button>
+          <button class="btn" id="th-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="th-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="th-exp" type="button" aria-pressed="false" title="Take your own readings and plot them">Experiment</button>
+          <button class="btn" id="th-new" type="button" hidden>New mystery beaker</button>
+          <button class="btn" id="th-clear" type="button" hidden>Clear readings</button>
+        </div>
+        <div class="cgrid" id="th-grow"><span class="rowlab">Graph</span><div class="seg" id="th-graph"></div></div>
+        <div class="sliders" id="th-sliders">
+          <div id="th-tbox"><label class="lab" for="th-t">Water temperature, &theta;<output id="th-to"></output></label><input type="range" id="th-t" min="0" max="100" step="1" value="40"></div>
+          <div id="th-rbox"><label class="lab" for="th-r">Variable resistor, R<output id="th-ro"></output></label><input type="range" id="th-r" min="0.5" max="10" step="0.1" value="5"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="cgrid">
+        <span class="rowlab" id="th-jlab">Jump to</span>
+        <div class="seg" id="th-jump"></div>
+        <span class="rowlab" id="th-ilab">Interval</span>
+        <div class="seg" id="th-int"><button type="button" data-v="5" aria-pressed="false">5 &deg;C</button><button type="button" data-v="10" aria-pressed="true">10 &deg;C</button><button type="button" data-v="20" aria-pressed="false">20 &deg;C</button></div>
+        <span class="rowlab" id="th-slab">Method</span>
+        <div class="seg" id="th-stir"><button type="button" data-v="y" aria-pressed="true">Stir and wait</button><button type="button" data-v="n" aria-pressed="false">No stirring</button></div>
+        <span class="rowlab" id="th-olab">Output</span>
+        <div class="seg" id="th-out"><button type="button" data-v="th" aria-pressed="true">Across thermistor</button><button type="button" data-v="res" aria-pressed="false">Across resistor</button></div>
+      </div>
+      <p class="note" id="th-note" aria-live="polite"></p>
+      <div class="rtable-wrap" id="th-tablewrap" hidden><div id="th-table"></div></div>
+      <div class="guess" id="th-guess" hidden>
+        <label class="lab" for="th-gin">Your mystery temperature</label>
+        <div class="guess-row"><input type="number" id="th-gin" step="0.1" inputmode="decimal" aria-describedby="th-gfb"><span class="unit">&deg;C</span><button class="btn" id="th-gcheck" type="button">Check</button></div>
+        <p class="gfb" id="th-gfb" aria-live="polite"></p>
+      </div>
+      <div class="stats" id="th-stats"></div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="th-eq1"></div>
+        <div class="eq" id="th-eq2"></div>
+        <p class="eqnote" id="th-eq3"></p>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    Array.prototype.forEach.call(document.querySelectorAll('details.working'), function(d){ d.open = true; });
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 4.97 × 10⁻¹⁹
+    if(x===0) return '0';
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+Math.abs(m).toFixed(dp)>=10){ m/=10; e++; }
+    return sn(m,dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function sig(x, n){   // n significant figures, as text, real minus sign
+    if(x===0) return '0';
+    var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
+    return sn(x, dp);
+  }
+  function grp(t){ return String(t).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }   // 12 345
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+(+x1).toFixed(1)+'" y1="'+(+y1).toFixed(1)+'" x2="'+(+x2).toFixed(1)+'" y2="'+(+y2).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||1.5)+'"'+(extra||'')+'/>'; }
+  // A small seeded random number generator (mulberry32), so the same setup gives the same readings.
+  function rng(seed){ var a = seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+  // A Poisson count with mean m (Knuth for small m, a normal approximation for large m)
+  function poisson(m, r){
+    if(m<=0) return 0;
+    if(m<60){ var L=Math.exp(-m), k=0, p=1; do{ k++; p*=r(); }while(p>L); return k-1; }
+    var u=Math.max(1e-12,r()), v=r(), z=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+    return Math.max(0, Math.round(m+Math.sqrt(m)*z));
+  }
+  // Least-squares straight line through points [[x,y],…]: {m, c}
+  function fitLine(p){
+    var n=p.length, sx=0, sy=0, sxx=0, sxy=0;
+    p.forEach(function(q){ sx+=q[0]; sy+=q[1]; sxx+=q[0]*q[0]; sxy+=q[0]*q[1]; });
+    var d=n*sxx-sx*sx; if(n<2 || d===0) return null;
+    var m=(n*sxy-sx*sy)/d; return {m:m, c:(sy-m*sx)/n};
+  }
+
+/* ================= Experiment kit (copy this block into an animation page's <script>) =================
+   The reusable parts of an animation's Experiment mode, taken from animations/hookes-law.html:
+   - expRun():     the run itself: step the independent variable up one interval at a time, then
+                   (optionally) back down again, measuring at every step
+   - expReading(): a reading with a small, fixed pattern of reading error, rounded to the instrument's
+                   resolution, that never goes the wrong way
+   - expTable():   the results table (sticky header, newest row highlighted, a column per run)
+   - expCross(), expRing(), expKey(): SVG marks for plotted readings (× first run, ○ return run)
+   The page keeps its own picture, physics, graph axes and notes. See tools/experiment-kit/README.md.
+   Plain ES5 so it can sit inside any animation page's IIFE. */
+
+// A fixed pattern of reading errors, in units of the instrument's resolution. Fixed (not random) so a
+// teacher sees the same results as the class, and a re-run gives the same table.
+var EXP_ERR = [0, 1, -1, 0, 2, -1, 1, -2, 0, 1, -1, 0, 1, -1, 2, 0, -1, 1, 0, -2, 1];
+function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP_ERR.length]; }
+
+// What the student reads off the instrument.
+//   trueVal  the value the physics gives at this step
+//   prevVal  the reading taken at the step before (or the start value)
+//   res      the instrument's resolution (0.1 cm ruler, 0.05 mm vernier, 0.01 A ammeter, 1° protractor)
+//   i        the step number (picks the error from the pattern)
+//   scale    how big the error is, in resolutions (default 1; 0.5 for a fine instrument)
+// The error is never more than a quarter of the change since the last reading, so a reading never
+// goes the wrong way (an extension never falls as the load rises, a current never drops as V rises).
+function expReading(trueVal, prevVal, res, i, scale){
+  var gap = Math.abs(trueVal - prevVal);
+  var err = i > 0 ? expErr(i) * Math.min(res * (scale == null ? 1 : scale), gap / 4) : 0;
+  var r = Math.round((trueVal + err) / res) * res;
+  var dp = Math.max(0, Math.ceil(-Math.log10(res) - 1e-9));
+  return +r.toFixed(dp);
+}
+
+// The run. cfg = {
+//   start: 0,                 value of the independent variable before the first step
+//   max: 10,                  last value of the first run (the run stops there)
+//   step: 1,                  the interval (the page can change it with setStep, which resets the run)
+//   reverse: true,            allow a return run (unloading, turning the voltage back down)
+//   measure: function(v, phase, prevReading){ return reading },   phase is 'up' or 'down'
+//   onChange: function(run, what){}  what is 'up', 'down' or 'reset'
+// }
+// run.up and run.down are arrays of {v, r}. run.phase is 'up' until the first step back, then 'down'.
+function expRun(cfg){
+  var run = { up: [], down: [], phase: 'up', value: cfg.start || 0, peak: cfg.start || 0, step: cfg.step || 1 };
+  var r6 = function(x){ return Math.round(x * 1e6) / 1e6; };
+  run.upDone = function(){ return run.phase === 'down' || run.peak >= cfg.max - 1e-9; };
+  run.downDone = function(){ return run.phase === 'down' && run.value <= (cfg.start || 0) + 1e-9; };
+  run.last = function(){ var a = run.phase === 'down' && run.down.length ? run.down : run.up; return a[a.length - 1] || null; };
+  run.stepUp = function(){
+    if(run.phase !== 'up' || run.upDone()) return false;
+    var prev = run.up.length ? run.up[run.up.length - 1].r : null;
+    var v = r6(Math.min(cfg.max, run.value + run.step));
+    run.value = run.peak = v;
+    run.up.push({ v: v, r: cfg.measure(v, 'up', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'up');
+    return true;
+  };
+  run.stepDown = function(){
+    if(!cfg.reverse || run.value <= (cfg.start || 0) + 1e-9 || !run.up.length) return false;
+    run.phase = 'down';
+    var prev = run.down.length ? run.down[run.down.length - 1].r : run.up[run.up.length - 1].r;
+    var v = r6(Math.max(cfg.start || 0, run.value - run.step));
+    run.value = v;
+    run.down.push({ v: v, r: cfg.measure(v, 'down', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'down');
+    return true;
+  };
+  run.reset = function(){ run.up = []; run.down = []; run.phase = 'up'; run.value = run.peak = cfg.start || 0; if(cfg.onChange) cfg.onChange(run, 'reset'); };
+  run.setStep = function(s){ run.step = s; run.reset(); };
+  return run;
+}
+
+// The results table. cols = [{label:'Load (N)', key:'v', dp:0}, {label:'Extension loading (cm)', key:'up', dp:1}, ...]
+// rows = [{v:1, up:1.6, down:''}, ...]. newKey/newV highlight the reading just taken (fades in).
+// Wrap it in .rtable-wrap so a long table scrolls under its sticky header.
+function expTable(el, cols, rows, newV){
+  var fmt = function(x, dp){ return (x === '' || x == null) ? '' : (+x).toFixed(dp || 0); };
+  var h = '<table class="rtable"><thead><tr>' + cols.map(function(c){ return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    h += '<tr' + (newV != null && row.v === newV ? ' class="new"' : '') + '>' + cols.map(function(c){ return '<td>' + fmt(row[c.key], c.dp) + '</td>'; }).join('') + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table>';
+}
+
+// Plotted readings, as SVG strings. Size 5 suits a 300px-wide graph.
+function expCross(cx, cy, s){ s = s || 5; return '<path d="M' + (cx - s) + ',' + (cy - s) + ' L' + (cx + s) + ',' + (cy + s) + ' M' + (cx + s) + ',' + (cy - s) + ' L' + (cx - s) + ',' + (cy + s) + '" stroke="var(--ink)" stroke-width="2"/>'; }
+function expRing(cx, cy, r){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r || 4.5) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+// A two-line key in the bottom-right corner of a graph: expKey(rightX, bottomY, 'loading', 'unloading')
+function expKey(x, y, upLabel, downLabel){
+  return '<text x="' + x + '" y="' + (y - 14) + '" text-anchor="end" font-size="10.5" fill="var(--ink)">× ' + upLabel + '</text>' +
+         '<text x="' + x + '" y="' + y + '" text-anchor="end" font-size="10.5" fill="var(--accent)">○ ' + downLabel + '</text>';
+}
+/* ================= end of Experiment kit ================= */
+
+  // ---- the physics: an NTC thermistor, R = R0 e^(b/T), about 5 kΩ at 25 °C (Pearson CP12 technician sheet)
+  var B=3900, TK=273, R25=5.000;                    // b in K; R in kΩ; T = θ + 273
+  var LNR0=Math.log(R25*1000)-B/(25+TK);            // ln(R0 / Ω) = −4.570
+  function Rth(th){ return R25*Math.exp(B*(1/(th+TK)-1/(25+TK))); }   // kΩ
+  var VSUP=6.0, VREAD=5.98, TMAX=80, SEED=20261102;
+  function vout(th, R, across){ var rt=Rth(th); return VSUP*(across==='res' ? R : rt)/(rt+R); }
+  // the ohmmeter: auto-ranging, 4 digits (0.361 kΩ, 5.000 kΩ, 16.56 kΩ)
+  function ohm(R){ return R<2 ? +R.toFixed(3) : +R.toFixed(2); }
+  function ohmTxt(R){ return R<2 ? R.toFixed(3) : R.toFixed(2); }
+
+  var svg=$('#th-svg'), playBtn=$('#th-play'), slowBtn=$('#th-slow'), expBtn=$('#th-exp');
+  var modeSeg=segGroup($('#th-mode'), function(){ setMode(); });
+  var graphEl=$('#th-graph'), graphSeg=segGroup(graphEl, function(){ draw(); });
+  var intSeg=segGroup($('#th-int'), function(){ clearCal(); });
+  var stirSeg=segGroup($('#th-stir'), function(){ clearCal(); });
+  var outSeg=segGroup($('#th-out'), function(){ draw(); });
+  var jumpEl=$('#th-jump'), jumpSeg=segGroup(jumpEl, function(v){ jumpTo(+v); });
+  var tIn=$('#th-t'), rIn=$('#th-r');
+  var showQ=location.search.match(/[?&]show=(cal|pd)\b/);
+  if(showQ){ modeSeg.pick(showQ[1]); $('#th-mode').hidden=true; }
+  function mode(){ return modeSeg.value(); }
+  function cal(){ return mode()==='cal'; }
+  function exp(){ return pressed(expBtn); }
+  function slowOn(){ return pressed(slowBtn); }
+  function stirOn(){ return stirSeg.value()==='y'; }
+  function step(){ return +intSeg.value(); }
+  function Rv(){ return +rIn.value; }
+
+  var thCal=0, thPd=40;                    // water temperatures (°C) in the two parts
+  function th(){ return cal() ? thCal : thPd; }
+
+  // ---- Part 1 Experiment: readings of the thermometer (θ, to 0.5 °C) and the ohmmeter (R, kΩ)
+  var E={rd:[], heat:null, justAdded:null};
+  function lag(t){ return stirOn() ? 0 : 0.08*t; }   // unstirred: the thermistor is cooler than the thermometer says
+  function nextTarget(){ return E.rd.length ? E.rd.length*step() : 0; }
+  function calDone(){ return E.rd.length && E.rd[E.rd.length-1].tt>=TMAX; }
+  function takeReading(){
+    var i=E.rd.length, tt=i*step();
+    var thr = i===0 ? 0 : tt+0.5*Math.max(-1, Math.min(1, expErr(i)));   // where the heating stopped, read to 0.5 °C
+    var R = ohm(Rth(thr-lag(thr))*(1+0.003*expErr(i+5)));
+    E.rd.push({tt:tt, th:thr, R:R}); E.justAdded=thr; thCal=thr;
+  }
+  function calPts(){ return E.rd.map(function(r){ return [1/(r.th+TK), Math.log(r.R*1000)]; }); }
+  function calFit(){ if(!calDone() || E.rd.length<4) return null; var f=fitLine(calPts()); return f ? {b:f.m, lnR0:f.c} : null; }
+  function calibration(){ var f=calFit(); return f ? {b:f.b, lnR0:f.lnR0, own:true} : {b:B, lnR0:LNR0, own:false}; }
+
+  // ---- Part 2 Experiment: a mystery beaker
+  var M={rep:0, theta:null, read:null, checked:false};
+  function newMystery(){ M.rep++; var r=rng(SEED+M.rep*7919); r(); M.theta=20+Math.floor(r()*56); M.read=null; M.checked=false; $('#th-gin').value=''; $('#th-gfb').textContent=''; $('#th-gfb').className='gfb'; }
+  function readMeters(){
+    var rt=Rth(M.theta), R=Rv();
+    M.read={VS:VREAD, VR:+(VREAD*R/(rt+R)).toFixed(2), VT:+(VREAD*rt/(rt+R)).toFixed(2), R:R};
+  }
+
+  // ---- graphs
+  function setGraphButtons(){
+    var gs = cal() ? [['r','R against θ'],['ln','ln R against 1/T']] : (exp() ? [['ln','Calibration: ln R against 1/T']] : [['v','V_out against θ']]);
+    var cur=graphSeg.value(), ok=gs.some(function(g){ return g[0]===cur; });
+    graphEl.innerHTML=gs.map(function(g,i){ return '<button type="button" data-v="'+g[0]+'" aria-pressed="'+(ok ? g[0]===cur : i===0)+'">'+g[1].replace('V_out','V<sub>out</sub>')+'</button>'; }).join('');
+  }
+  var G={x:368, y:20, w:214, h:226};
+  var narrowQ=window.matchMedia('(max-width:560px)');
+  function layout(){
+    if(narrowQ.matches){ G={x:62, y:322, w:262, h:200}; svg.setAttribute('viewBox','0 0 340 566'); }
+    else { G={x:368, y:20, w:214, h:226}; svg.setAttribute('viewBox','0 0 600 300'); }
+  }
+  if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ layout(); draw(); });
+  layout();
+  function axisSpec(){
+    var g=graphSeg.value();
+    if(g==='r')  return {x0:0, x1:80, xs:10, y0:0, y1:18, ys:3, xl:'θ (°C)', yl:'R (kΩ)', dpx:0, dpy:0,
+                         fx:function(t,R){ return t; }, fy:function(t,R){ return R; }, th:function(u){ return Rth(u); }, u0:0, u1:80};
+    if(g==='ln') return {x0:2.8, x1:3.7, xs:0.1, lx:2, y0:5.5, y1:10, ys:0.5, xl:'1/T (10⁻³ K⁻¹)', yl:'ln (R / Ω)', dpx:1, dpy:1,
+                         fx:function(t,R){ return 1000/(t+TK); }, fy:function(t,R){ return Math.log(R*1000); }, th:function(u){ return LNR0+B*u/1000; }, u0:2.8, u1:3.7, line:true};
+    return {x0:0, x1:100, xs:20, y0:0, y1:6, ys:1, xl:'θ (°C)', yl:'V_out (V)', dpx:0, dpy:0,
+            fx:function(t){ return t; }, fy:function(t){ return vout(t, Rv(), outSeg.value()); }, th:function(u){ return vout(u, Rv(), outSeg.value()); }, u0:0, u1:100};
+  }
+  function gx(a,v){ return G.x+(v-a.x0)/(a.x1-a.x0)*G.w; }
+  function gy(a,v){ return G.y+G.h-(v-a.y0)/(a.y1-a.y0)*G.h; }
+  function inG(a,u,v){ return u>=a.x0-1e-9 && u<=a.x1+1e-9 && v>=a.y0-1e-9 && v<=a.y1+1e-9; }
+
+  // ---- the picture
+  var stirT=0, running=false, raf=0, last=0;
+  function heating(){ return (running && !exp()) || !!E.heat; }
+  function sceneCal(){
+    var g='', t=thCal, wTop=116, live=E.heat ? E.heat.cur : t;
+    // bench, Bunsen burner, tripod and gauze
+    g+=ln(14, 288, 336, 288, 'var(--ink-faint)', 2);
+    g+='<rect x="66" y="276" width="48" height="12" rx="3" fill="var(--panel)" stroke="var(--ink-faint)" stroke-width="1.5"/><rect x="84" y="244" width="12" height="32" fill="var(--panel)" stroke="var(--ink-faint)" stroke-width="1.5"/>';
+    if(heating()) g+='<path d="M83,243 C80,236 88,230 90,222 C92,230 100,236 97,243 Z" fill="var(--topic)" opacity="0.85"/><path d="M87,243 C86,238 90,234 90,229 C91,234 94,238 93,243 Z" fill="#3b82f6" opacity="0.8"/>';
+    g+=ln(44, 219, 156, 219, 'var(--ink-soft)', 3)+ln(54, 219, 42, 288, 'var(--ink-faint)', 2)+ln(146, 219, 158, 288, 'var(--ink-faint)', 2);
+    // beaker of water
+    g+='<rect x="52" y="'+wTop+'" width="96" height="100" fill="var(--water)"/>';
+    g+='<path d="M50,92 L52,216 L148,216 L150,92" fill="none" stroke="var(--ink)" stroke-width="2"/>';
+    if(live<1){ [[62,118,14],[84,121,12],[118,117,15],[134,122,10]].forEach(function(c){ g+='<rect x="'+c[0]+'" y="'+c[1]+'" width="'+c[2]+'" height="'+c[2]+'" rx="2" fill="var(--ice)" stroke="var(--ink-faint)" stroke-width="1"/>'; }); g+=txt(100, 110, 'ice + water', {a:'middle', fs:9.5, c:'var(--ink-faint)'}); }
+    // thermometer, bulb beside the thermistor
+    var ty=196-(Math.max(0,Math.min(100,live))/100)*140;
+    g+='<rect x="71" y="44" width="10" height="160" rx="5" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="1.3"/><circle cx="76" cy="203" r="7" fill="var(--topic)" stroke="var(--ink-soft)" stroke-width="1.3"/>';
+    g+='<rect x="74" y="'+ty.toFixed(1)+'" width="4" height="'+(203-ty).toFixed(1)+'" fill="var(--topic)"/>';
+    // thermistor bead on its leads, up to the ohmmeter
+    g+='<path d="M98,203 V60 H210 M104,203 V74 H210" fill="none" stroke="var(--ink-soft)" stroke-width="1.4"/><circle cx="101" cy="204" r="5" fill="var(--ink)"/>';
+    g+=txt(160, 248, 'thermistor', {a:'middle', fs:9.5, c:'var(--ink-soft)'})+ln(132, 244, 106, 207, 'var(--ink-faint)', 1);
+    // stirrer (rocks while it is stirred)
+    var sw = (heating() && stirOn()) || (E.heat && E.heat.stir) ? Math.sin(stirT*9)*7 : 0;
+    g+=ln(128+sw, 84, 132-sw*0.3, 210, 'var(--ink-faint)', 3);
+    // ohmmeter and thermometer readouts
+    var R = E.heat ? Rth(live-lag(live)) : (exp() ? (E.rd.length ? E.rd[E.rd.length-1].R : Rth(0)) : Rth(t));
+    g+='<rect x="210" y="40" width="120" height="58" rx="8" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>';
+    g+=txt(220, 56, 'ohmmeter', {fs:9.5, c:'var(--ink-faint)'})+txt(320, 86, ohmTxt(R)+' kΩ', {a:'end', fs:19, w:600, c:'var(--ink)'});
+    g+='<rect x="210" y="112" width="120" height="58" rx="8" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>';
+    var shown = exp() && !E.heat ? (E.rd.length ? E.rd[E.rd.length-1].th : 0) : live;
+    g+=txt(220, 128, 'thermometer', {fs:9.5, c:'var(--ink-faint)'})+txt(320, 158, (exp()? (Math.round(shown*2)/2).toFixed(1) : shown.toFixed(1))+' °C', {a:'end', fs:19, w:600, c:'var(--ink)'});
+    if(E.heat) g+=txt(270, 196, E.heat.stir ? 'stirring, waiting…' : 'heating…', {a:'middle', fs:10.5, c:'var(--accent)'});
+    return g;
+  }
+  function resistorV(x, yc, lab){   // vertical resistor box, with the variable-resistor arrow
+    return '<rect x="'+(x-8)+'" y="'+(yc-22)+'" width="16" height="44" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>'+
+      '<path d="M'+(x-16)+','+(yc+18)+' L'+(x+14)+','+(yc-16)+'" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#th-ah)"/>';
+  }
+  function thermistorV(x, yc){      // vertical thermistor symbol: box with a diagonal line and a short foot
+    return '<rect x="'+(x-8)+'" y="'+(yc-22)+'" width="16" height="44" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>'+
+      '<path d="M'+(x-20)+','+(yc+20)+' H'+(x-14)+' L'+(x+14)+','+(yc-18)+'" fill="none" stroke="var(--ink)" stroke-width="1.5"/>';
+  }
+  function meterV(cx, cy){ return '<circle cx="'+cx+'" cy="'+cy+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>'+txt(cx, cy+4.5, 'V', {a:'middle', fs:13, w:600, c:'var(--ink)'}); }
+  function scenePd(){
+    var g='', R=Rv(), t=thPd, ex=exp(), rt=Rth(ex ? (M.theta||25) : t);
+    var VR=VSUP*R/(rt+R), VT=VSUP*rt/(rt+R), VS=VSUP;
+    if(ex){ if(M.read){ VS=M.read.VS; VR=M.read.VR; VT=M.read.VT; } else { VS=VR=VT=null; } }
+    // water bath round the thermistor
+    g+='<rect x="206" y="72" width="68" height="94" fill="var(--water)"/><path d="M204,58 L206,166 L274,166 L276,58" fill="none" stroke="var(--ink)" stroke-width="2"/>';
+    // thermometer in the bath (covered in the mystery beaker)
+    if(!ex){ var ty=150-(t/100)*80; g+='<rect x="258" y="50" width="8" height="106" rx="4" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="1.2"/><circle cx="262" cy="155" r="5.5" fill="var(--topic)"/><rect x="260.5" y="'+ty.toFixed(1)+'" width="3" height="'+(155-ty).toFixed(1)+'" fill="var(--topic)"/>'; }
+    else g+=txt(240, 160, M.checked ? 'θ = '+M.theta+' °C' : 'θ = ?', {a:'middle', fs:11, w:600, c:'var(--accent)'});
+    // the series circuit
+    g+='<path d="M60,34 H144 M156,34 H230 V90 M230,140 V188 H60 V137 M60,93 V34" fill="none" stroke="var(--ink)" stroke-width="1.8"/>';
+    g+=ln(144, 20, 144, 48, 'var(--ink)', 1.8)+ln(156, 27, 156, 41, 'var(--ink)', 4.5)+txt(150, 14, '6.0 V', {a:'middle', fs:10.5, c:'var(--ink-soft)'});
+    g+=resistorV(60, 115)+txt(78, 112, 'R', {fs:11, w:600, c:'var(--ink)'})+txt(78, 126, R.toFixed(1)+' kΩ', {fs:9.5, c:'var(--ink-soft)'});
+    g+=thermistorV(230, 115)+txt(200, 112, 'R', {a:'end', fs:11, w:600, c:'var(--ink)'}).replace('>R<','>R<tspan font-size="8" dy="3">T</tspan><');
+    // voltmeters across each part
+    g+='<path d="M60,70 H22 V102 M22,128 V160 H60" fill="none" stroke="var(--ink-soft)" stroke-width="1.3"/>'+meterV(22, 115);
+    g+='<path d="M230,62 H306 V102 M306,128 V178 H230" fill="none" stroke="var(--ink-soft)" stroke-width="1.3"/>'+meterV(306, 115);
+    g+='<circle cx="60" cy="70" r="2.5" fill="var(--ink)"/><circle cx="60" cy="160" r="2.5" fill="var(--ink)"/><circle cx="230" cy="62" r="2.5" fill="var(--ink)"/><circle cx="230" cy="178" r="2.5" fill="var(--ink)"/>';
+    // meter readings
+    var out=outSeg.value();
+    [['supply', VS], ['across R', VR], ['across R<tspan font-size="7" dy="2">T</tspan><tspan dy="-2"> </tspan>', VT]].forEach(function(m, i){
+      var x=8+i*110, hi = !ex && ((out==='th' && i===2) || (out==='res' && i===1));
+      g+='<rect x="'+x+'" y="214" width="104" height="62" rx="8" fill="var(--panel)" stroke="'+(hi?'var(--topic)':'var(--ink)')+'" stroke-width="'+(hi?2.4:1.6)+'"/>';
+      g+=txt(x+8, 229, m[0]+(hi?' = V<tspan font-size="8" dy="2">out</tspan>':''), {fs:9, c:'var(--ink-faint)'});
+      g+=txt(x+96, 263, m[1]===null ? '–' : m[1].toFixed(2)+' V', {a:'end', fs:17, w:600, c:'var(--ink)'});
+    });
+    return g;
+  }
+
+  function drawGraph(){
+    var a=axisSpec(), g='', v, i;
+    for(v=a.x0, i=0; v<=a.x1+1e-9; v+=a.xs, i++){ var X=gx(a,v); g+=ln(X, G.y, X, G.y+G.h, 'var(--panel-border)', 1); if(!a.lx || i%a.lx===0) g+=txt(X, G.y+G.h+13, sn(v,a.dpx), {a:'middle', fs:9.5, c:'var(--ink-faint)'}); }
+    for(v=a.y0; v<=a.y1+1e-9; v+=a.ys){ var Y=gy(a,v); g+=ln(G.x, Y, G.x+G.w, Y, 'var(--panel-border)', 1)+txt(G.x-4, Y+3.5, sn(v,a.dpy), {a:'end', fs:9.5, c:'var(--ink-faint)'}); }
+    g+=ln(G.x, G.y, G.x, G.y+G.h, 'var(--ink-soft)', 2)+ln(G.x, G.y+G.h, G.x+G.w, G.y+G.h, 'var(--ink-soft)', 2);
+    g+=txt(G.x, G.y-7, a.yl.replace('V_out','V<tspan font-size="8" dy="2">out</tspan><tspan dy="-2"> </tspan>'), {fs:10.5}); g+=txt(G.x+G.w/2, G.y+G.h+28, a.xl, {a:'middle', fs:10.5});
+    function curve(fn, col, dash){
+      var pts=[]; for(var k=0;k<=120;k++){ var u=a.u0+(a.u1-a.u0)*k/120, w=fn(u); if(inG(a,u,w)) pts.push(gx(a,u).toFixed(1)+','+gy(a,w).toFixed(1)); }
+      return '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="'+(dash?1.6:2.4)+'"'+(dash?' stroke-dasharray="5 4"':'')+'/>';
+    }
+    var g2=graphSeg.value();
+    if(cal() && exp()){
+      if(!E.rd.length) g+=txt(G.x+G.w/2, G.y+G.h/2, 'readings appear here', {a:'middle', fs:11, c:'var(--ink-faint)'});
+      E.rd.forEach(function(r){ var u=a.fx(r.th,r.R), w=a.fy(r.th,r.R); if(inG(a,u,w)) g+=expCross(+gx(a,u).toFixed(1), +gy(a,w).toFixed(1), 4); });
+      var f=calFit();
+      if(f){
+        g+= g2==='ln' ? curve(function(u){ return f.lnR0+f.b*u/1000; }, 'var(--accent)', true) : curve(function(t){ return Math.exp(f.lnR0+f.b/(t+TK))/1000; }, 'var(--accent)', true);
+        g+=txt(G.x+G.w-4, G.y+12, 'best fit', {a:'end', fs:10.5, c:'var(--accent)'});
+      }
+    } else if(!cal() && exp()){
+      // Part 2 Experiment: the calibration line from Part 1 (or the model's)
+      var c=calibration();
+      g+=curve(function(u){ return c.lnR0+c.b*u/1000; }, 'var(--accent)', true);
+      g+=txt(G.x+G.w-4, G.y+12, c.own ? 'your calibration' : 'model calibration', {a:'end', fs:10.5, c:'var(--accent)'});
+    } else {
+      g+=curve(a.th, 'var(--topic)', false);
+      if(!cal()){ var y3=gy(a,3); g+=ln(G.x, y3, G.x+G.w, y3, 'var(--ink-faint)', 1.2, ' stroke-dasharray="4 4"')+txt(G.x+G.w-4, y3-4, '3.0 V', {a:'end', fs:9.5, c:'var(--ink-faint)'}); }
+      var t=th(), cx=a.fx(t, Rth(t)), cy=a.fy(t, Rth(t));
+      if(inG(a,cx,cy)) g+='<circle cx="'+gx(a,cx).toFixed(1)+'" cy="'+gy(a,cy).toFixed(1)+'" r="5" fill="var(--topic)" stroke="var(--panel)" stroke-width="2"/>';
+    }
+    return g;
+  }
+
+  function draw(){
+    var g='<defs><marker id="th-ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker></defs>';
+    g+=(cal() ? sceneCal() : scenePd())+drawGraph();
+    if((running||E.heat) && slowOn()) g+=txt(336, 14, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
+    svg.innerHTML=g;
+    readings();
+  }
+
+  // ---- readings, table, working and note
+  function stat(lab, val, hi){ return '<div class="stat'+(hi?' hi':'')+'"><small>'+lab+'</small><strong>'+val+'</strong></div>'; }
+  var lastNote='';
+  function readings(){
+    var C=cal(), ex=exp(), t=th(), R=Rv(), out=outSeg.value();
+    $('#th-to').textContent=t.toFixed(0)+' °C'; $('#th-ro').textContent=R.toFixed(1)+' kΩ';
+    tIn.value=Math.round(thPd);
+    // readings row
+    var s='';
+    if(C){
+      var last=E.rd[E.rd.length-1];
+      if(ex){ s=stat('θ', last ? last.th.toFixed(1)+' °C' : '–')+stat('R', last ? ohmTxt(last.R)+' kΩ' : '–', true)+stat('Readings', E.rd.length+' of '+(TMAX/step()+1)); }
+      else s=stat('θ', t.toFixed(1)+' °C')+stat('T', (t+TK).toFixed(1)+' K')+stat('R', ohmTxt(Rth(t))+' kΩ', true);
+    } else if(ex){
+      var c=calibration();
+      s=stat('R', R.toFixed(1)+' kΩ')+stat('b'+(c.own?' (yours)':''), sig(c.b,4)+' K', true)+stat('ln (R₀ / Ω)', sig(c.lnR0,4), true);
+    } else {
+      var rt=Rth(t);
+      s=stat('R<sub>T</sub>', ohmTxt(rt)+' kΩ')+stat('Current', sig(VSUP/(rt+R),3)+' mA')+stat('V<sub>out</sub>', vout(t,R,out).toFixed(2)+' V', true);
+    }
+    $('#th-stats').innerHTML=s;
+
+    // results table (Part 1)
+    if(C && ex) expTable($('#th-table'), [{label:'θ (°C)', key:'v', dp:1}, {label:'R (kΩ)', key:'R', dp:3}, {label:'T (K)', key:'T', dp:1}, {label:'1/T (10⁻³ K⁻¹)', key:'x', dp:3}, {label:'ln (R / Ω)', key:'y', dp:3}],
+      E.rd.map(function(r){ return {v:r.th, R:r.R, T:r.th+TK, x:1000/(r.th+TK), y:Math.log(r.R*1000)}; }), E.justAdded);
+    if(C && ex) Array.prototype.forEach.call(document.querySelectorAll('#th-table td:nth-child(2)'), function(td, i){ td.textContent=ohmTxt(E.rd[i].R); });
+
+    // working
+    var w1='', w2='', w3='';
+    if(C && !ex){
+      var T=t+TK, lr=LNR0+B/T;
+      w1='T = θ + 273<br>T = '+sn(t,1)+' + 273<br>T = <b>'+sn(T,1)+' K</b>';
+      w2='ln R = [[b|T]] + ln R<sub>0</sub><br>ln R = [['+B+'|'+sn(T,1)+']] + ('+sig(LNR0,4)+')<br>ln R = '+sig(lr,4)+'<br>R = e<sup>'+sig(lr,4)+'</sup><br>R = <b>'+ohmTxt(Math.exp(lr)/1000)+' kΩ</b>';
+      w3='R = R₀e<sup>b/T</sup>, so ln R = b × (1/T) + ln R₀. A graph of ln R against 1/T is a straight line (y = mx + c): gradient b, y-intercept ln R₀. This model thermistor has b = '+B+' K and ln (R₀ / Ω) = '+sig(LNR0,4)+'.';
+    } else if(C){
+      var f=calFit();
+      if(f && graphSeg.value()==='ln'){
+        w1='ln R = b × [[1|T]] + ln R<sub>0</sub><br>gradient = b<br>b = <b>'+grp(Math.round(f.b))+' K</b>';
+        w2='y-intercept = ln R<sub>0</sub><br>ln R<sub>0</sub> = '+sig(f.lnR0,4)+'<br>R<sub>0</sub> = e<sup>'+sig(f.lnR0,4)+'</sup><br>R<sub>0</sub> = <b>'+sig(Math.exp(f.lnR0),3)+' Ω</b>';
+        w3='The intercept is far off the graph (at 1/T = 0), so work it out from c = y − mx at a point on the line, not by reading it. The model thermistor has b = '+B+' K; yours is '+sig(Math.abs(f.b-B)/B*100,2)+'% '+(f.b>B?'higher':'lower')+'.';
+      } else if(f){ w1='R falls steeply, then more slowly: a curve.'; w3='Choose “ln R against 1/T” to get a straight line and find b and R₀.'; }
+      else w1='Take a reading at 0 °C (ice and water), then every '+step()+' °C up to '+TMAX+' °C.';
+    } else if(!ex){
+      var rt2=Rth(t), T2=t+TK, top=out==='res' ? 'R' : 'R<sub>T</sub>', topv=out==='res' ? R.toFixed(1) : sig(rt2,3);
+      w1='ln R<sub>T</sub> = [[b|T]] + ln R<sub>0</sub><br>ln R<sub>T</sub> = [['+B+'|'+sn(T2,0)+']] + ('+sig(LNR0,4)+')<br>ln R<sub>T</sub> = '+sig(LNR0+B/T2,4)+'<br>R<sub>T</sub> = <b>'+sig(rt2,3)+' kΩ</b>';
+      w2='V<sub>out</sub> = [['+top+'|R<sub>T</sub> + R]] × V<br>V<sub>out</sub> = [['+topv+'|'+sig(rt2,3)+' + '+R.toFixed(1)+']] × '+VSUP.toFixed(1)+'<br>V<sub>out</sub> = <b>'+vout(t,R,out).toFixed(2)+' V</b>';
+      w3='The design (Pearson CP12): V<sub>out</sub> = 3.0 V at 40 °C from 6.0 V. Half the supply means R = R<sub>T</sub> at 40 °C = '+ohmTxt(Rth(40))+' kΩ.';
+    } else if(M.read){
+      var c2=calibration(), rd=M.read, rT=rd.R*rd.VT/rd.VR, lnRT=Math.log(rT*1000), Tm=c2.b/(lnRT-c2.lnR0);
+      w1='[[R<sub>T</sub>|R]] = [[V<sub>T</sub>|V<sub>R</sub>]]<br>[[R<sub>T</sub>|'+rd.R.toFixed(1)+']] = [['+rd.VT.toFixed(2)+'|'+rd.VR.toFixed(2)+']]<br>R<sub>T</sub> = [['+rd.VT.toFixed(2)+' × '+rd.R.toFixed(1)+'|'+rd.VR.toFixed(2)+']]<br>R<sub>T</sub> = '+sig(rT,4)+' kΩ';
+      if(M.checked){
+        w2='ln R<sub>T</sub> = [[b|T]] + ln R<sub>0</sub><br>ln '+grp(Math.round(rT*1000))+' = [['+grp(Math.round(c2.b))+'|T]] + ('+sig(c2.lnR0,4)+')<br>'+sig(lnRT,4)+' + '+sig(-c2.lnR0,4)+' = [['+grp(Math.round(c2.b))+'|T]]<br>T = [['+grp(Math.round(c2.b))+'|'+sig(lnRT-c2.lnR0,4)+']]<br>T = '+sig(Tm,4)+' K<br>θ = '+sig(Tm,4)+' − 273<br>θ = <b>'+sn(Tm-TK,1)+' °C</b>';
+        w3=c2.own ? 'Worked with your own b and R₀ from Part 1.' : 'Worked with the model calibration (b = '+B+' K): calibrate in Part 1 to use your own.';
+      } else w3='Next: ln R<sub>T</sub> = [[b|T]] + ln R<sub>0</sub>, with b and ln R₀ from your calibration. Check to see the rest.';
+    } else w1='Press “Read the voltmeters”.';
+    $('#th-eq1').innerHTML=FR(w1); $('#th-eq2').innerHTML=FR(w2); $('#th-eq2').hidden=!w2; $('#th-eq3').innerHTML=FR(w3); $('#th-eq3').hidden=!w3;
+
+    // note
+    var note;
+    if(C && !ex){
+      note = graphSeg.value()==='ln' ? 'Plotted as ln R against 1/T, the curve becomes a straight line: R = R₀e<sup>b/T</sup>. Hotter water is to the <b>left</b> (smaller 1/T).'
+        : 'The thermistor and the thermometer sit side by side in the water. As the water heats, R falls, steeply at first, then more slowly: a negative temperature coefficient (NTC) thermistor. <b>Play</b> to heat the water.';
+    } else if(C){
+      if(E.heat) note = E.heat.stir ? 'Stirring and waiting, so the thermistor reaches the same temperature as the water and the thermometer.' : 'Heating to about '+E.heat.to+' °C'+(stirOn()?'.':', with no stirring.');
+      else if(!E.rd.length) note='Experiment: start with ice and water at 0 °C. Read the thermometer and the ohmmeter, then heat '+step()+' °C at a time up to '+TMAX+' °C, '+(stirOn()?'stirring and waiting before each reading.':'reading straight away without stirring.');
+      else if(!calDone()) note='You have '+E.rd.length+' reading'+(E.rd.length===1?'':'s')+'. Next: heat to about '+nextTarget()+' °C and read again.';
+      else {
+        var f2=calFit(), off=Math.abs(f2.b-B)/B*100;
+        if(graphSeg.value()!=='ln') note='Done: R against θ is a curve. Choose <b>ln R against 1/T</b> to get a straight line and find b and R₀.';
+        else if(stirOn()) note='Done: ln R against 1/T is a straight line, so R = R₀e<sup>b/T</sup>. Gradient b = <b>'+grp(Math.round(f2.b))+' K</b>, within '+sig(Math.max(off,0.1),1)+'% of the model. Now try Part 2.';
+        else note='Done, but without stirring the thermistor lagged behind the thermometer, so each R is too high for the θ you wrote down: b = <b>'+grp(Math.round(f2.b))+' K</b>, '+sig(off,2)+'% out. Try again with <b>Stir and wait</b>.';
+      }
+    } else if(!ex){
+      var V=vout(t,R,out);
+      if(Math.round(t)===40 && Math.abs(V-3)<0.03) note='Design done: at 40 °C, R = R<sub>T</sub> = '+ohmTxt(Rth(40))+' kΩ, so the 6.0 V splits equally: <b>3.0 V</b> across each.';
+      else if(Math.round(t)===40) note='Design (Pearson CP12): set the variable resistor so V<sub>out</sub> = 3.0 V at 40 °C. Now it is '+V.toFixed(2)+' V.';
+      else if(out==='th') note='As the water warms, R<sub>T</sub> falls, so the thermistor takes a smaller share of the 6.0 V: V<sub>out</sub> across it <b>falls</b>. Same current through both, so V ∝ R.';
+      else note='Across the resistor, V<sub>out</sub> <b>rises</b> as the water warms (R<sub>T</sub> falls, so R takes a bigger share): this output could switch on a fan when it gets hot.';
+    } else {
+      var own=calibration().own;
+      if(!M.read) note='Mystery beaker: the thermistor is in water at an unknown temperature. <b>Read the voltmeters</b>, find R<sub>T</sub>, then use '+(own?'your calibration':'the calibration (do Part 1 to use your own)')+' to find θ. Closest wins!';
+      else if(!M.checked) note='Find R<sub>T</sub> from the two voltmeter readings, then T from ln R<sub>T</sub> = b/T + ln R₀. Type θ in °C and press <b>Check</b>.';
+      else note='The mystery beaker was at <b>'+M.theta+' °C</b>. Press <b>New mystery beaker</b> for another.';
+    }
+    if(note!==lastNote){ $('#th-note').innerHTML=FR(note); lastNote=note; }
+
+    // buttons
+    if(ex && C){ playBtn.innerHTML = calDone() ? 'Done' : (!E.rd.length ? '&#9654; Read at 0 &deg;C' : '&#9654; Heat to '+nextTarget()+' &deg;C and read'); playBtn.disabled = calDone() || !!E.heat; }
+    else if(ex){ playBtn.innerHTML='&#9654; Read the voltmeters'; playBtn.disabled=false; }
+    else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
+    $('#th-clear').disabled=!!E.heat;
+    $('#th-gcheck').disabled=!M.read || M.checked; $('#th-gin').disabled=!M.read || M.checked;
+  }
+
+  // ---- motion: heating the water (watch), or one heating step (experiment)
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function frame(now){
+    var real=Math.min(0.05,(now-last)/1000); last=now;
+    var dt=real*(slowOn()?0.3:1);
+    stirT+=dt;
+    if(E.heat){
+      var h=E.heat;
+      if(!h.stir){ h.cur=Math.min(h.to, h.cur+dt*h.rate); if(h.cur>=h.to-1e-9){ if(stirOn()){ h.stir=true; h.wait=0.9; } else { E.heat=null; takeReading(); } } }
+      else { h.wait-=dt; if(h.wait<=0){ E.heat=null; takeReading(); } }
+    } else if(running){
+      if(cal()){ thCal=Math.min(TMAX, thCal+dt*5); if(thCal>=TMAX) stop(); }
+      else { thPd=Math.min(100, thPd+dt*8); if(thPd>=100) stop(); }
+    }
+    draw();
+    if(running || E.heat) raf=requestAnimationFrame(frame);
+  }
+  function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
+  function run(){ if(cal() && thCal>=TMAX) thCal=0; if(!cal() && thPd>=100) thPd=0; running=true; jumpSeg.pick(null); loop(); draw(); }
+  function heatStep(){
+    if(!E.rd.length){ takeReading(); draw(); return; }
+    var from=E.rd[E.rd.length-1].th, to=nextTarget();
+    E.justAdded=null;
+    E.heat={from:from, to:to, cur:from, rate:6, stir:false}; loop(); draw();
+  }
+  function reset(){ stop(); E.heat=null; if(cal()) thCal=0; jumpSeg.pick(null); draw(); }
+  function clearCal(){ stop(); E={rd:[], heat:null, justAdded:null}; thCal=0; draw(); }
+  function jumpTo(v){ stop(); if(cal()) thCal=v; else thPd=v; draw(); }
+  function setJumps(){
+    var js = cal() ? [0,20,40,60,80] : [0,40,100];
+    jumpEl.innerHTML=js.map(function(v){ return '<button type="button" data-v="'+v+'" aria-pressed="false">'+v+' °C'+(!cal()&&v===40?' design':'')+'</button>'; }).join('');
+  }
+  function setRows(){
+    var C=cal(), ex=exp();
+    $('#th-jlab').hidden=jumpEl.hidden=ex;
+    $('#th-ilab').hidden=$('#th-int').hidden=$('#th-slab').hidden=$('#th-stir').hidden=!(C && ex);
+    $('#th-olab').hidden=$('#th-out').hidden=C || ex;
+    $('#th-sliders').hidden=C; $('#th-tbox').hidden=ex;
+    $('#th-clear').hidden=!(ex && C); $('#th-new').hidden=!(ex && !C);
+    $('#th-grow').hidden=!C; $('#th-stats').hidden=C && ex;
+    $('#th-tablewrap').hidden=!(C && ex); $('#th-guess').hidden=C || !ex;
+    svg.setAttribute('aria-label', C ? 'A thermistor and a thermometer in a beaker of water heated by a Bunsen burner, with an ohmmeter, and a graph of the readings on the right'
+      : 'A potential divider: a 6.0 V supply, a variable resistor and a thermistor in series, with voltmeters across each and the thermistor in a water bath, and a graph on the right');
+  }
+  function setMode(){ stop(); E.heat=null; setJumps(); setGraphButtons(); setRows(); if(!cal() && exp() && M.theta===null) newMystery(); draw(); }
+  function setExp(){ stop(); E.heat=null; if(exp() && !cal() && M.theta===null) newMystery(); if(cal()) thCal=0; setGraphButtons(); setRows(); draw(); }
+
+  playBtn.addEventListener('click', function(){
+    if(exp()){ if(cal()){ if(!E.heat && !calDone()) heatStep(); } else { readMeters(); draw(); } return; }
+    if(running){ stop(); draw(); } else run();
+  });
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
+  expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); setExp(); });
+  $('#th-reset').addEventListener('click', function(){ if(exp() && cal()) clearCal(); else if(exp()){ M.read=null; draw(); } else reset(); });
+  $('#th-clear').addEventListener('click', clearCal);
+  $('#th-new').addEventListener('click', function(){ newMystery(); draw(); });
+  tIn.addEventListener('input', function(){ stop(); thPd=+tIn.value; jumpSeg.pick(null); draw(); });
+  rIn.addEventListener('input', function(){ if(exp() && !M.checked) M.read=null; draw(); });
+  function check(){
+    var g=parseFloat($('#th-gin').value), fb=$('#th-gfb');
+    if(isNaN(g)){ fb.textContent='Type your temperature in °C first.'; fb.className='gfb'; return; }
+    var d=Math.abs(g-M.theta); M.checked=true;
+    fb.textContent = (d<=1 ? 'Spot on: ' : d<=3 ? 'Close: ' : 'Not quite: ')+'it was '+M.theta+' °C, you were '+sig(d,2)+' °C out.'+(d>3?' Open the working to see each step.':'');
+    fb.className='gfb '+(d<=3?'ok':'no');
+    if(d>3) document.querySelector('details.working').open=true;
+    draw();
+  }
+  $('#th-gcheck').addEventListener('click', check);
+  $('#th-gin').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); if(!$('#th-gcheck').disabled) check(); } });
+
+  watchEquals($('#th-eq1')); watchEquals($('#th-eq2'));
+  setMode();
+})();
+</script>
+</body>
+</html>

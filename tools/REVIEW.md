@@ -11,7 +11,7 @@ What Alex has checked, and what still needs checking. One row per published page
 | Page | Status | What to check |
 |---|---|---|
 | IGCSE list `igcse.html` | 🔍 To review | Units collapse (remembered per browser), search, Workouts/Practicals filter, Triple Award switch, Open all (2 Nov 2026: a search no longer leaves units remembered as open); Unit 1 cards under Part 1 / Part 2 headings (27 Oct 2026); core practicals shown in their unit and in Core Practicals; links like `igcse.html#unit-1` open that unit |
-| IAL animations list `animations/ial.html` | 🔍 To review | 2 Nov 2026: cards under Unit 1, 2, 4 and 5, checked against the IAL spec (fields in Unit 4: 106, 115). Units now collapse like `igcse.html`, with search and Open all. Core Practicals section at the end (CP15 gamma absorption, the only IAL core practical with an animation so far). |
+| IAL animations list `animations/ial.html` | 🔍 To review | 2 Nov 2026: cards under Unit 1, 2, 4 and 5, checked against the IAL spec (fields in Unit 4: 106, 115). Units now collapse like `igcse.html`, with search and Open all. Core Practicals section at the end (CP12 thermistor, CP15 gamma absorption). |
 | IB animations list `animations/ib.html` | 🔍 To review | 2 Nov 2026: cards under Theme A, D and E, checked against the IB guide (gamma radiation removed; radiation in fields under D.3; friction added to A). Themes now collapse like `igcse.html`, with search and Open all. |
 | IGCSE animations list `animations/igcse.html` | 🔍 To review | 2 Nov 2026: units now collapse like `igcse.html`, with search and Open all; Core Practicals section at the end (1.5, 1.22, 5.11P, 5.14P, 6.6). |
 | Year 9 `heat-transfer.html` | 🔍 To review | The three new Predict pairs (Conduction, Convection Current, Radiation). |
@@ -54,6 +54,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `film-badge.html` | IGCSE (Unit 7) + IAL + IB | 🔍 To review | 2 Nov 2026: the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
 | `random-decay.html` | IGCSE (Unit 7) + IAL + IB | 🔍 To review | 2 Nov 2026: the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
 | `radiation-in-fields.html` | IGCSE (Unit 7) + IAL (Unit 4) + IB (Theme D) | 🔍 To review | 2 Nov 2026: card moved from IAL Unit 5 / IB Theme E to IAL Unit 4 / IB Theme D, where the field physics is. the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
+| `thermistor.html` | IAL | 🔍 To review | New (2 Nov 2026), IAL CP12. Check: the model thermistor (b = 3900 K, 5.0 kΩ at 25 °C), 0–80 °C range (your slides) vs 0–100 °C (Pearson sheet), the ohmmeter and thermometer precision, the No stirring option, the potential divider working (R_T from V_T/V_R, then T = b/(ln R_T − ln R₀)), and the mystery-beaker game. |
 | `gamma-radiation.html` | IAL | ✅ Checked 2 Nov 2026 | 2 Nov 2026: card taken off the IB list (not in the IB 2025 spec). |
 | `roller-coaster-energy.html` | IGCSE | ✅ Checked 2 Nov 2026 | Draggable objects. |
 | `motion-graphs.html` | IGCSE | ❔ Not recorded | |
