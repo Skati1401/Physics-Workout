@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E.m.f. and Internal Resistance Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#b45309;   --topic-soft:#fdecc8;
+    --cur:#2563eb;     --hot:#dc2626;
+    --water:#d6e9fb;   --ice:#ffffff;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#fbbf24; --topic-soft:#3a2a0c;
+      --cur:#60a5fa; --hot:#f87171;
+      --water:#1c3a5a; --ice:#c9d6e6;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#fbbf24; --topic-soft:#3a2a0c;
+      --cur:#60a5fa; --hot:#f87171;
+      --water:#1c3a5a; --ice:#c9d6e6;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+  /* button rows fill their width (Alex, 2 Nov 2026) */
+  .btn-group>.btn,.exp-btns>.btn{flex:1 1 0;min-width:max-content;justify-content:center;}
+  .seg:not(.tabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));}
+  .seg:not(.tabs)>button{padding-inline:4px;white-space:nowrap;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 335px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  .view.dragging,.view.dragging *{cursor:grabbing;}
+  .grab{cursor:grab;}
+  .view:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  /* mystery-beaker answer box */
+  .guess{border:1px solid var(--panel-border);border-radius:8px;padding:8px 10px;}
+  .guess-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .guess-row input{width:110px;min-height:44px;font:600 15px var(--font-mono);padding:6px 8px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);}
+  .guess-row .unit{font:13px var(--font-mono);color:var(--ink-soft);}
+  .gfb{font-size:14px;margin-top:6px;min-height:1.4em;}
+  .gfb.ok{color:var(--good);font-weight:600;} .gfb.no{color:var(--bad);font-weight:600;}
+  .seg button sub,.stat sub{font-size:.75em;}
+  .cgrid>[hidden]{display:none!important;}
+
+  #ir-cell{grid-template-columns:repeat(auto-fit,minmax(min(100%,72px),1fr));}
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="ial.html">&larr; IAL animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow" id="ir-eye">Animations &middot; electric circuits &middot; IAL CP8</div>
+      <h1>E.m.f. and Internal Resistance</h1>
+    </div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="ir-svg" viewBox="0 0 600 300" tabindex="0" role="slider" aria-label="Rheostat contact: drag it along the track, or use the arrow keys, to change the external resistance R. The circuit is a cell with internal resistance, a switch, an ammeter, a rheostat and a voltmeter across the cell's terminals, with a graph of terminal p.d. against current on the right" aria-valuemin="0" aria-valuemax="20"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="ir-play" type="button">&#9654; Play</button>
+          <button class="btn" id="ir-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="ir-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="ir-exp" type="button" aria-pressed="false" title="Take your own readings and find the e.m.f. and internal resistance">Experiment</button>
+          <button class="btn" id="ir-clear" type="button" hidden>Clear readings</button>
+        </div>
+        <div class="sliders">
+          <div id="ir-ebox"><label class="lab" for="ir-e">E.m.f., &epsilon;<output id="ir-eo"></output></label><input type="range" id="ir-e" min="1" max="13" step="0.05" value="1.5"></div>
+          <div id="ir-rbox"><label class="lab" for="ir-r">Internal resistance, r<output id="ir-ro"></output></label><input type="range" id="ir-r" min="0" max="5" step="0.01" value="0.5"></div>
+          <div><label class="lab" for="ir-R">Rheostat, R<output id="ir-Ro"></output></label><input type="range" id="ir-R" min="0" max="20" step="0.1" value="2.5"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="cgrid">
+        <span class="rowlab">Cell</span>
+        <div class="seg" id="ir-cell"><button type="button" data-v="fresh" aria-pressed="true">Fresh</button><button type="button" data-v="worn" aria-pressed="false">Worn</button><button type="button" data-v="car" aria-pressed="false">Car battery</button><button type="button" data-v="myst" aria-pressed="false" hidden>Mystery</button></div>
+        <span class="rowlab" id="ir-mlab" hidden>Mystery</span>
+        <div class="seg" id="ir-guess" hidden><button type="button" id="ir-new">New mystery cell</button><button type="button" id="ir-reveal">Reveal it</button></div>
+        <span class="rowlab" id="ir-jlab">Jump to</span>
+        <div class="seg" id="ir-jump"><button type="button" data-v="open" aria-pressed="false">Open circuit</button><button type="button" data-v="std" aria-pressed="false">R = 2.5 &Omega;</button><button type="button" data-v="match" aria-pressed="false">R = r</button><button type="button" data-v="short" aria-pressed="false">Short circuit</button></div>
+      </div>
+      <p class="note" id="ir-note" aria-live="polite"></p>
+      <div class="stats" id="ir-stats"></div>
+      <div class="rtable-wrap" id="ir-tablewrap" hidden><div id="ir-table"></div></div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="ir-eq1"></div>
+        <div class="eq" id="ir-eq2"></div>
+        <p class="eqnote" id="ir-eq3"></p>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    Array.prototype.forEach.call(document.querySelectorAll('details.working'), function(d){ d.open = true; });
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 4.97 × 10⁻¹⁹
+    if(x===0) return '0';
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+Math.abs(m).toFixed(dp)>=10){ m/=10; e++; }
+    return sn(m,dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function sig(x, n){   // n significant figures, as text, real minus sign
+    if(x===0) return '0';
+    var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
+    return sn(x, dp);
+  }
+  function grp(t){ return String(t).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }   // 12 345
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+(+x1).toFixed(1)+'" y1="'+(+y1).toFixed(1)+'" x2="'+(+x2).toFixed(1)+'" y2="'+(+y2).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||1.5)+'"'+(extra||'')+'/>'; }
+  // A small seeded random number generator (mulberry32), so the same setup gives the same readings.
+  function rng(seed){ var a = seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+  // Least-squares straight line through points [[x,y],…]: {m, c}
+  function fitLine(p){
+    var n=p.length, sx=0, sy=0, sxx=0, sxy=0;
+    p.forEach(function(q){ sx+=q[0]; sy+=q[1]; sxx+=q[0]*q[0]; sxy+=q[0]*q[1]; });
+    var d=n*sxx-sx*sx; if(n<2 || d===0) return null;
+    var m=(n*sxy-sx*sy)/d; return {m:m, c:(sy-m*sx)/n};
+  }
+
+/* ================= Experiment kit (copy this block into an animation page's <script>) =================
+   The reusable parts of an animation's Experiment mode, taken from animations/hookes-law.html:
+   - expRun():     the run itself: step the independent variable up one interval at a time, then
+                   (optionally) back down again, measuring at every step
+   - expReading(): a reading with a small, fixed pattern of reading error, rounded to the instrument's
+                   resolution, that never goes the wrong way
+   - expTable():   the results table (sticky header, newest row highlighted, a column per run)
+   - expCross(), expRing(), expKey(): SVG marks for plotted readings (× first run, ○ return run)
+   The page keeps its own picture, physics, graph axes and notes. See tools/experiment-kit/README.md.
+   Plain ES5 so it can sit inside any animation page's IIFE. */
+
+// A fixed pattern of reading errors, in units of the instrument's resolution. Fixed (not random) so a
+// teacher sees the same results as the class, and a re-run gives the same table.
+var EXP_ERR = [0, 1, -1, 0, 2, -1, 1, -2, 0, 1, -1, 0, 1, -1, 2, 0, -1, 1, 0, -2, 1];
+function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP_ERR.length]; }
+
+// What the student reads off the instrument.
+//   trueVal  the value the physics gives at this step
+//   prevVal  the reading taken at the step before (or the start value)
+//   res      the instrument's resolution (0.1 cm ruler, 0.05 mm vernier, 0.01 A ammeter, 1° protractor)
+//   i        the step number (picks the error from the pattern)
+//   scale    how big the error is, in resolutions (default 1; 0.5 for a fine instrument)
+// The error is never more than a quarter of the change since the last reading, so a reading never
+// goes the wrong way (an extension never falls as the load rises, a current never drops as V rises).
+function expReading(trueVal, prevVal, res, i, scale){
+  var gap = Math.abs(trueVal - prevVal);
+  var err = i > 0 ? expErr(i) * Math.min(res * (scale == null ? 1 : scale), gap / 4) : 0;
+  var r = Math.round((trueVal + err) / res) * res;
+  var dp = Math.max(0, Math.ceil(-Math.log10(res) - 1e-9));
+  return +r.toFixed(dp);
+}
+
+// The run. cfg = {
+//   start: 0,                 value of the independent variable before the first step
+//   max: 10,                  last value of the first run (the run stops there)
+//   step: 1,                  the interval (the page can change it with setStep, which resets the run)
+//   reverse: true,            allow a return run (unloading, turning the voltage back down)
+//   measure: function(v, phase, prevReading){ return reading },   phase is 'up' or 'down'
+//   onChange: function(run, what){}  what is 'up', 'down' or 'reset'
+// }
+// run.up and run.down are arrays of {v, r}. run.phase is 'up' until the first step back, then 'down'.
+function expRun(cfg){
+  var run = { up: [], down: [], phase: 'up', value: cfg.start || 0, peak: cfg.start || 0, step: cfg.step || 1 };
+  var r6 = function(x){ return Math.round(x * 1e6) / 1e6; };
+  run.upDone = function(){ return run.phase === 'down' || run.peak >= cfg.max - 1e-9; };
+  run.downDone = function(){ return run.phase === 'down' && run.value <= (cfg.start || 0) + 1e-9; };
+  run.last = function(){ var a = run.phase === 'down' && run.down.length ? run.down : run.up; return a[a.length - 1] || null; };
+  run.stepUp = function(){
+    if(run.phase !== 'up' || run.upDone()) return false;
+    var prev = run.up.length ? run.up[run.up.length - 1].r : null;
+    var v = r6(Math.min(cfg.max, run.value + run.step));
+    run.value = run.peak = v;
+    run.up.push({ v: v, r: cfg.measure(v, 'up', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'up');
+    return true;
+  };
+  run.stepDown = function(){
+    if(!cfg.reverse || run.value <= (cfg.start || 0) + 1e-9 || !run.up.length) return false;
+    run.phase = 'down';
+    var prev = run.down.length ? run.down[run.down.length - 1].r : run.up[run.up.length - 1].r;
+    var v = r6(Math.max(cfg.start || 0, run.value - run.step));
+    run.value = v;
+    run.down.push({ v: v, r: cfg.measure(v, 'down', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'down');
+    return true;
+  };
+  run.reset = function(){ run.up = []; run.down = []; run.phase = 'up'; run.value = run.peak = cfg.start || 0; if(cfg.onChange) cfg.onChange(run, 'reset'); };
+  run.setStep = function(s){ run.step = s; run.reset(); };
+  return run;
+}
+
+// The results table. cols = [{label:'Load (N)', key:'v', dp:0}, {label:'Extension loading (cm)', key:'up', dp:1}, ...]
+// rows = [{v:1, up:1.6, down:''}, ...]. newKey/newV highlight the reading just taken (fades in).
+// Wrap it in .rtable-wrap so a long table scrolls under its sticky header.
+function expTable(el, cols, rows, newV){
+  var fmt = function(x, dp){ return (x === '' || x == null) ? '' : (+x).toFixed(dp || 0); };
+  var h = '<table class="rtable"><thead><tr>' + cols.map(function(c){ return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    h += '<tr' + (newV != null && row.v === newV ? ' class="new"' : '') + '>' + cols.map(function(c){ return '<td>' + fmt(row[c.key], c.dp) + '</td>'; }).join('') + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table>';
+}
+
+// Plotted readings, as SVG strings. Size 5 suits a 300px-wide graph.
+function expCross(cx, cy, s){ s = s || 5; return '<path d="M' + (cx - s) + ',' + (cy - s) + ' L' + (cx + s) + ',' + (cy + s) + ' M' + (cx + s) + ',' + (cy - s) + ' L' + (cx - s) + ',' + (cy + s) + '" stroke="var(--ink)" stroke-width="2"/>'; }
+function expRing(cx, cy, r){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r || 4.5) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+// A two-line key in the bottom-right corner of a graph: expKey(rightX, bottomY, 'loading', 'unloading')
+function expKey(x, y, upLabel, downLabel){
+  return '<text x="' + x + '" y="' + (y - 14) + '" text-anchor="end" font-size="10.5" fill="var(--ink)">× ' + upLabel + '</text>' +
+         '<text x="' + x + '" y="' + y + '" text-anchor="end" font-size="10.5" fill="var(--accent)">○ ' + downLabel + '</text>';
+}
+/* ================= end of Experiment kit ================= */
+
+
+  // ================= circuit helpers (shared by the electricity animations) =================
+  function f1(x){ return (+x).toFixed(1); }
+  function wire(pts, col, w){ return '<polyline points="'+pts.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' ')+'" fill="none" stroke="'+(col||'var(--ink)')+'" stroke-width="'+(w||1.8)+'" stroke-linejoin="round"/>'; }
+  function jdot(x,y){ return '<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="2.8" fill="var(--ink)"/>'; }
+  // a cell: long thin plate (+) on the left, short thick plate (−) on the right; wires meet the plates at x−4 and x+4
+  function cellH(x,y,flip){
+    var a=flip?x+4:x-4, b=flip?x-4:x+4;
+    return ln(a,y-15,a,y+15,'var(--ink)',1.8)+ln(b,y-8,b,y+8,'var(--ink)',4.5);
+  }
+  function cellV(x,y){ return ln(x-15,y-4,x+15,y-4,'var(--ink)',1.8)+ln(x-8,y+4,x+8,y+4,'var(--ink)',4.5); }   // + at the top
+  function resH(x,y,w,h,fill){ w=w||44; h=h||16; return '<rect x="'+f1(x-w/2)+'" y="'+f1(y-h/2)+'" width="'+w+'" height="'+h+'" fill="'+(fill||'var(--panel)')+'" stroke="var(--ink)" stroke-width="1.8"/>'; }
+  function resV(x,y,w,h,fill){ w=w||16; h=h||44; return '<rect x="'+f1(x-w/2)+'" y="'+f1(y-h/2)+'" width="'+w+'" height="'+h+'" fill="'+(fill||'var(--panel)')+'" stroke="var(--ink)" stroke-width="1.8"/>'; }
+  function meter(cx,cy,l,hi){ return '<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="13" fill="var(--panel)" stroke="'+(hi?'var(--topic)':'var(--ink)')+'" stroke-width="'+(hi?2.4:1.8)+'"/>'+txt(cx,cy+4.5,l,{a:'middle',fs:13,w:600,c:'var(--ink)'}); }
+  function lampH(x,y,glow){
+    var g='';
+    if(glow>0.02) g+='<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="'+f1(13+12*glow)+'" fill="#facc15" opacity="'+(0.15+0.45*glow).toFixed(2)+'"/>';
+    return g+'<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="12" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>'+ln(x-8.5,y-8.5,x+8.5,y+8.5,'var(--ink)',1.6)+ln(x-8.5,y+8.5,x+8.5,y-8.5,'var(--ink)',1.6);
+  }
+  function diodeH(x,y){   // conducts left to right
+    return '<path d="M'+f1(x-9)+','+f1(y-10)+' L'+f1(x+9)+','+f1(y)+' L'+f1(x-9)+','+f1(y+10)+' Z" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>'+ln(x+9,y-11,x+9,y+11,'var(--ink)',2.2);
+  }
+  function ldrV(x,y){   // resistor in a circle with two arrows coming in
+    return '<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="26" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>'+resV(x,y,14,36)+
+      '<path d="M'+f1(x-44)+','+f1(y-30)+' L'+f1(x-24)+','+f1(y-14)+' M'+f1(x-46)+','+f1(y-16)+' L'+f1(x-26)+','+f1(y)+'" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#ah-ink)"/>';
+  }
+  function thermV(x,y){ return resV(x,y)+'<path d="M'+f1(x-20)+','+f1(y+20)+' H'+f1(x-14)+' L'+f1(x+14)+','+f1(y-18)+'" fill="none" stroke="var(--ink)" stroke-width="1.5"/>'; }
+  function switchH(x,y,open){   // contacts at x−14 and x+14
+    return '<circle cx="'+f1(x-14)+'" cy="'+f1(y)+'" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/><circle cx="'+f1(x+14)+'" cy="'+f1(y)+'" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>'+
+      (open ? ln(x-12,y-1,x+11,y-14,'var(--ink)',1.8) : ln(x-12,y-1,x+12,y-2,'var(--ink)',1.8));
+  }
+  function arrowDefs(){
+    return '<defs><marker id="ah-ink" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker>'+
+      '<marker id="ah-top" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--topic)"/></marker></defs>';
+  }
+  // Current shown as dots moving along a path: the dots keep their spacing, so the number passing a
+  // point each second is proportional to the current (more dots per second in a bigger current).
+  function pathLen(pts){ var L=0; for(var i=1;i<pts.length;i++) L+=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]); return L; }
+  function pointAt(pts, s){
+    for(var i=1;i<pts.length;i++){
+      var d=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
+      if(s<=d || i===pts.length-1){ var t=d?Math.min(1,s/d):0; return [pts[i-1][0]+(pts[i][0]-pts[i-1][0])*t, pts[i-1][1]+(pts[i][1]-pts[i-1][1])*t]; }
+      s-=d;
+    }
+    return pts[0];
+  }
+  function flow(pts, dist, spacing, col){
+    // dist: how far the charge has moved along this path (grows with I × time); negative runs backwards
+    spacing=spacing||18; var L=pathLen(pts), g='';
+    if(L<1) return '';
+    var off=((dist%spacing)+spacing)%spacing;
+    for(var s=off; s<L; s+=spacing){ var p=pointAt(pts,s); g+='<circle cx="'+f1(p[0])+'" cy="'+f1(p[1])+'" r="2.6" fill="'+(col||'var(--cur)')+'"/>'; }
+    return g;
+  }
+  // Pointer position in the SVG's own units
+  function svgPoint(svg, e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+  // Drag something in the picture: o.hit(q) says whether the press grabbed it, o.move(q) moves it, o.ok() allows it now.
+  function svgDrag(svg, o){
+    var on=false, ctm=null;
+    svg.addEventListener('pointerdown', function(e){
+      if(o.ok && !o.ok()) return;
+      var q=svgPoint(svg,e); if(!o.hit(q)) return;
+      on=true; ctm=svg.getScreenCTM().inverse();   // freeze the scale while dragging
+      svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
+      if(o.start) o.start(q);
+    });
+    svg.addEventListener('pointermove', function(e){ if(!on) return; var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; o.move(p.matrixTransform(ctm)); });
+    function end(){ if(!on) return; on=false; svg.classList.remove('dragging'); if(o.end) o.end(); }
+    svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  }
+  // Graph axes. G = {x,y,w,h} in SVG units; a = {x0,x1,xs,y0,y1,ys,xl,yl,dpx,dpy,lx,ly}
+  function gx(G,a,v){ return G.x+(v-a.x0)/(a.x1-a.x0)*G.w; }
+  function gy(G,a,v){ return G.y+G.h-(v-a.y0)/(a.y1-a.y0)*G.h; }
+  function axes(G,a){
+    var g='', v, i;
+    for(v=a.x0, i=0; v<=a.x1+1e-9; v+=a.xs, i++){ var X=gx(G,a,v); g+=ln(X,G.y,X,G.y+G.h,'var(--panel-border)',1); if(!a.lx || i%a.lx===0) g+=txt(X, G.y+G.h+13, sn(v,a.dpx||0), {a:'middle',fs:9.5,c:'var(--ink-faint)'}); }
+    for(v=a.y0, i=0; v<=a.y1+1e-9; v+=a.ys, i++){ var Y=gy(G,a,v); g+=ln(G.x,Y,G.x+G.w,Y,'var(--panel-border)',1); if(!a.ly || i%a.ly===0) g+=txt(G.x-4, Y+3.5, sn(v,a.dpy||0), {a:'end',fs:9.5,c:'var(--ink-faint)'}); }
+    var X0 = a.x0<0 && a.x1>0 ? gx(G,a,0) : G.x, Y0 = a.y0<0 && a.y1>0 ? gy(G,a,0) : G.y+G.h;
+    g+=ln(X0,G.y,X0,G.y+G.h,'var(--ink-soft)',2)+ln(G.x,Y0,G.x+G.w,Y0,'var(--ink-soft)',2);
+    g+=txt(G.x, G.y-7, a.yl, {fs:10.5})+txt(G.x+G.w/2, G.y+G.h+28, a.xl, {a:'middle',fs:10.5});
+    return g;
+  }
+  function inBox(a,u,v){ return u>=a.x0-1e-9 && u<=a.x1+1e-9 && v>=a.y0-1e-9 && v<=a.y1+1e-9; }
+  function curve(G,a,fn,u0,u1,col,dash,n){
+    var pts=[]; n=n||160;
+    for(var k=0;k<=n;k++){ var u=u0+(u1-u0)*k/n, w=fn(u); if(isFinite(w) && inBox(a,u,w)) pts.push(f1(gx(G,a,u))+','+f1(gy(G,a,w))); }
+    return pts.length>1 ? '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="'+(dash?1.8:2.4)+'"'+(dash?' stroke-dasharray="5 4"':'')+'/>' : '';
+  }
+  function pdot(G,a,u,v,col){ return inBox(a,u,v) ? '<circle cx="'+f1(gx(G,a,u))+'" cy="'+f1(gy(G,a,v))+'" r="5" fill="'+(col||'var(--topic)')+'" stroke="var(--panel)" stroke-width="2"/>' : ''; }
+  // A tidy axis: max and step for a range 0..v, about n steps
+  function niceAxis(v, n){
+    n=n||5; if(v<=0) v=1;
+    var raw=v/n, p=Math.pow(10,Math.floor(Math.log10(raw))), m=raw/p;
+    var st=(m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p;
+    return {max:Math.ceil(v/st-1e-9)*st, step:st, dp:Math.max(0,-Math.floor(Math.log10(st)+1e-9)+(st/p===2.5?1:0))};
+  }
+  function stat(lab, val, hi){ return '<div class="stat'+(hi?' hi':'')+'"><small>'+lab+'</small><strong>'+val+'</strong></div>'; }
+  // The level switch (IGCSE | IAL | IB): opens on the level of the list the page came from
+  function levelGroup(el, onPick){
+    var sg=segGroup(el, onPick);
+    if(PW_LEVEL && el.querySelector('[data-v="'+PW_LEVEL+'"]')) sg.pick(PW_LEVEL);
+    return sg;
+  }
+  // keyboard for a focusable picture that sets one value: arrows, Page Up/Down, Home/End
+  function keySlider(svg, get, set, step, big, min, max, ok){
+    svg.addEventListener('keydown', function(e){
+      if(ok && !ok()) return;
+      var k=e.key, v=null, x=get();
+      if(k==='ArrowRight'||k==='ArrowUp') v=x+step; else if(k==='ArrowLeft'||k==='ArrowDown') v=x-step;
+      else if(k==='PageUp') v=x+big; else if(k==='PageDown') v=x-big; else if(k==='Home') v=min; else if(k==='End') v=max;
+      if(v!==null){ set(Math.max(min,Math.min(max,v))); e.preventDefault(); }
+    });
+  }
+  // ================= end of circuit helpers =================
+
+  // ===== E.m.f. and internal resistance: ε = I(R + r), V = ε − Ir =====
+  var CELLS={fresh:{e:1.5, r:0.5, name:'fresh AA cell'}, worn:{e:1.35, r:4.0, name:'worn AA cell'}, car:{e:12.6, r:0.02, name:'car battery'}};
+  var RMAX=20, STD_R=2.5, SEED=20261103;
+  var svg=$('#ir-svg'), playBtn=$('#ir-play'), slowBtn=$('#ir-slow'), expBtn=$('#ir-exp');
+  var eIn=$('#ir-e'), rIn=$('#ir-r'), RIn=$('#ir-R');
+  var R=STD_R, swClosed=true, running=false, raf=0, last=0, dist=0, trace=[];
+  var myst={n:0, e:1.5, r:1, shown:false};
+  var X={rd:[], reading:0, just:null};      // Experiment readings
+  function exp(){ return pressed(expBtn); }
+  function slowOn(){ return pressed(slowBtn); }
+  var cellSeg=segGroup($('#ir-cell'), function(v){ setCell(v); });
+  var jumpSeg=segGroup($('#ir-jump'), function(v){ jumpTo(v); });
+  function cellKind(){ return cellSeg.value(); }
+  function E(){ return cellKind()==='myst' ? myst.e : +eIn.value; }
+  function r(){ return cellKind()==='myst' ? myst.r : +rIn.value; }
+  function closed(){ return exp() ? X.reading>0 : swClosed; }
+  function I(){ return closed() ? E()/(R+r()) : 0; }
+  function V(){ return E()-I()*r(); }
+  function isCar(){ return E()>6; }
+  function ires(){ return isCar() ? 0.1 : 0.01; }      // ammeter resolution
+  function fmtI(x){ return isCar() ? (x>=100 ? x.toFixed(0) : x.toFixed(1)) : x.toFixed(x>=10?1:2); }
+
+  // the eyebrow says which course this is for
+  if(PW_LEVEL==='ib') $('#ir-eye').innerHTML='Animations &middot; B.5 current and circuits';
+
+  function setCell(v){
+    if(v==='myst'){ if(!myst.n) newMystery(); }
+    else { var c=CELLS[v]; eIn.value=c.e; rIn.value=c.r; }
+    R=STD_R; RIn.value=R; jumpSeg.pick(null); trace=[]; clearReadings();
+  }
+  function newMystery(){ myst.n++; var g=rng(SEED+myst.n*7919); g(); myst.e=+(1.35+0.25*g()).toFixed(2); myst.r=+(0.4+1.6*g()).toFixed(2); myst.shown=false; }
+
+  // ---- layout: wide picture, or tall on a phone with the graph underneath
+  var G, narrowQ=window.matchMedia('(max-width:560px)');
+  function layout(){
+    if(narrowQ.matches){ G={x:62, y:330, w:262, h:200}; svg.setAttribute('viewBox','0 0 340 566'); }
+    else { G={x:392, y:20, w:190, h:228}; svg.setAttribute('viewBox','0 0 600 300'); }
+  }
+  if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ layout(); draw(); });
+  layout();
+
+  // ---- the rheostat track (left end x=150, right end x=300; R grows to the right)
+  var TX0=150, TX1=300, TY=60;
+  function contactX(){ return TX0+(TX1-TX0)*R/RMAX; }
+  function setR(v, keepJump){ if(!exp()) swClosed=true; v=Math.round(Math.max(0,Math.min(RMAX,v))*10)/10; if(v===R) return; R=v; RIn.value=R; if(!keepJump) jumpSeg.pick(null); addTrace(); draw(); }
+  svgDrag(svg, {
+    ok:function(){ return X.reading===0; },
+    hit:function(q){
+      if(!exp() && Math.abs(q.x-90)<20 && Math.abs(q.y-TY)<18){ swClosed=!swClosed; jumpSeg.pick(swClosed?null:'open'); addTrace(); draw(); return false; }
+      return Math.abs(q.x-contactX())<22 && q.y>14 && q.y<76;
+    },
+    move:function(q){ setR((q.x-TX0)/(TX1-TX0)*RMAX); }
+  });
+  keySlider(svg, function(){ return R; }, function(v){ setR(v); }, 0.1, 1, 0, RMAX, function(){ return X.reading===0; });
+
+  // ---- trace of operating points (Watch mode)
+  function addTrace(){
+    if(exp() || !closed()) return;
+    var i=I(), v=V();
+    if(!trace.some(function(p){ return Math.abs(p[0]-i)<1e-6 && Math.abs(p[1]-v)<1e-6; })) trace.push([i,v]);
+    if(trace.length>60) trace.shift();
+  }
+  function traceSpread(){ if(trace.length<2) return 0; var lo=Infinity, hi=-Infinity; trace.forEach(function(p){ lo=Math.min(lo,p[0]); hi=Math.max(hi,p[0]); }); return hi-lo; }
+
+  // ---- graph axes: V up to ε, I up to the short-circuit current ε/r (capped at R = 0.1 Ω when r = 0)
+  function axisSpec(){
+    var e=E(), isc=e/Math.max(r(),0.1), ax=niceAxis(isc,5), ay=niceAxis(e,5);
+    if(exp() && cellKind()==='myst'){
+      var im=0; X.rd.forEach(function(p){ im=Math.max(im,p.I); });
+      ax=niceAxis(Math.max(1.6, im*1.15),4); ay=niceAxis(1.8,6);
+    }
+    return {x0:0, x1:ax.max, xs:ax.step, dpx:ax.dp, y0:0, y1:ay.max, ys:ay.step, dpy:ay.dp, xl:'I (A)', yl:'V (V)'};
+  }
+
+  // ---- best fit (Experiment)
+  function done(){
+    if(X.rd.length<6) return false;
+    var lo=Infinity, hi=-Infinity; X.rd.forEach(function(p){ lo=Math.min(lo,p.I); hi=Math.max(hi,p.I); });
+    return hi-lo>=0.4*hi;
+  }
+  function fit(){ return done() ? fitLine(X.rd.map(function(p){ return [p.I, p.V]; })) : null; }
+
+  // ---- the picture
+  function scene(){
+    var g='', cx=contactX(), on=closed(), i=I(), v=V(), e=E(), rr=r();
+    var L=30, Rt=320, Y=240, TOP=30;
+    // wires: left side with the ammeter, the switch, rheostat, slider, right side
+    g+=wire([[106,Y],[L,Y],[L,163]])+wire([[L,137],[L,TY],[76,TY]])+wire([[104,TY],[TX0,TY]]);
+    g+=wire([[cx,TY-8],[cx,TOP],[Rt,TOP],[Rt,Y],[230,Y]]);
+    g+=meter(L,150,'A');
+    g+=switchH(90,TY,!on)+(exp()?'':'<rect class="grab" x="70" y="'+(TY-20)+'" width="40" height="32" fill="transparent"/>')+txt(90,TY+22,on?'closed':'open',{a:'middle',fs:9.5,c:'var(--ink-faint)'});
+    // rheostat: the part of the track in use is shaded
+    g+='<rect x="'+TX0+'" y="'+(TY-8)+'" width="'+(TX1-TX0)+'" height="16" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>';
+    if(cx>TX0+0.5) g+='<rect x="'+TX0+'" y="'+(TY-8)+'" width="'+f1(cx-TX0)+'" height="16" fill="var(--topic-soft)" stroke="var(--ink)" stroke-width="1.8"/>';
+    g+='<path d="M'+f1(cx)+','+(TOP)+' L'+f1(cx)+','+(TY-9)+'" stroke="var(--ink)" stroke-width="1.8" marker-end="url(#ah-ink)"/>';
+    g+='<rect class="grab" x="'+f1(cx-9)+'" y="'+(TOP-9)+'" width="18" height="18" rx="4" fill="var(--topic)" opacity="0.9"/>';
+    if(X.reading===0) g+=txt(cx, TOP-14, '← drag →', {a:'middle', fs:9.5, c:'var(--topic)'});
+    g+=txt(TX0+4, TY+24, 'rheostat R = '+(R).toFixed(1)+' Ω', {fs:10, c:'var(--ink-soft)'});
+    // the cell: ideal e.m.f. plus internal resistance, in a dashed box
+    g+='<rect x="70" y="214" width="160" height="52" rx="8" fill="none" stroke="var(--ink-faint)" stroke-width="1.4" stroke-dasharray="5 4"/>';
+    g+=txt(150, 209, isCar() ? 'the battery' : 'the cell', {a:'middle', fs:10, c:'var(--ink-faint)'});
+    g+=wire([[114,Y],[160,Y]])+cellH(110,Y)+resH(180,Y,40,14,'var(--hot)')+txt(110,Y-20,'ε',{a:'middle',fs:13,w:600,c:'var(--ink)'})+txt(180,Y-12,'r',{a:'middle',fs:12,w:600,c:'var(--ink)'});
+    g+=wire([[200,Y],[230,Y]]);
+    g+=txt(98,Y+2,'+',{a:'end',fs:11,c:'var(--ink-soft)'});
+    // terminals and the voltmeter across them
+    g+='<circle cx="70" cy="'+Y+'" r="3.5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/><circle cx="230" cy="'+Y+'" r="3.5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>';
+    g+=wire([[50,Y],[50,283],[137,283]],'var(--ink-soft)',1.4)+wire([[163,283],[250,283],[250,Y]],'var(--ink-soft)',1.4)+jdot(50,Y)+jdot(250,Y)+meter(150,283,'V');
+    // meter readings
+    var showI = exp() ? (X.just ? X.just.I : null) : i, showV = exp() ? (X.just ? X.just.V : null) : v;
+    if(exp() && X.reading) { showI=null; showV=null; }
+    g+=txt(L+18, 154, showI===null ? 'A: –' : fmtI(showI)+' A', {fs:11, w:600, c:'var(--ink)'});
+    g+=txt(268, 288, showV===null ? '–' : showV.toFixed(2)+' V', {fs:11, w:600, c:'var(--ink)'});
+    // where each coulomb's energy goes: ε = V + Ir
+    var bx=96, bw=204, by=104, eMax=Math.max(e,0.01);
+    var wV = on ? bw*Math.max(0,v)/eMax : bw, wI = on ? bw*Math.max(0,i*rr)/eMax : 0;
+    if(!exp() || cellKind()!=='myst'){
+      g+=txt(bx, by-8, 'ε = '+e.toFixed(2)+' V: energy per coulomb', {fs:10, c:'var(--ink-soft)'});
+      g+='<rect x="'+bx+'" y="'+by+'" width="'+f1(wV)+'" height="20" fill="var(--topic)" opacity="0.85"/>';
+      g+='<rect x="'+f1(bx+wV)+'" y="'+by+'" width="'+f1(wI)+'" height="20" fill="var(--hot)" opacity="0.85"/>';
+      g+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="20" fill="none" stroke="var(--ink-soft)" stroke-width="1.2"/>';
+      g+=txt(bx, by+34, '■ V = '+v.toFixed(2)+' V across R (outside)', {fs:10, c:'var(--topic)', w:600});
+      g+=txt(bx, by+49, '■ Ir = '+(i*rr).toFixed(2)+' V lost inside the cell', {fs:10, c:'var(--hot)', w:600});
+    } else g+=txt(198, by+12, 'ε = ?   r = ?', {a:'middle', fs:14, w:600, c:'var(--accent)'});
+    // current dots (conventional current, out of the + terminal)
+    if(on){
+      var path=[[106,Y],[L,Y],[L,TY],[cx,TY],[cx,TOP],[Rt,TOP],[Rt,Y],[114,Y]];
+      g+=flow(path, dist, 18);
+    }
+    return g;
+  }
+  function graph(){
+    var a=axisSpec(), g=axes(G,a), e=E(), rr=r();
+    var line=function(x){ return e-x*rr; };
+    if(exp()){
+      if(!X.rd.length) g+=txt(G.x+G.w/2, G.y+G.h/2, 'readings appear here', {a:'middle', fs:11, c:'var(--ink-faint)'});
+      X.rd.forEach(function(p){ if(inBox(a,p.I,p.V)) g+=expCross(+f1(gx(G,a,p.I)), +f1(gy(G,a,p.V)), 4); });
+      var f=fit();
+      if(f){
+        var xEnd=Math.min(a.x1, f.c/-f.m);
+        g+=curve(G,a,function(x){ return f.m*x+f.c; }, 0, xEnd, 'var(--accent)', true);
+        g+=txt(G.x+6, gy(G,a,f.c)-6, 'intercept = ε', {fs:10, c:'var(--accent)'});
+        g+=txt(G.x+G.w-4, G.y+12, 'gradient = −r', {a:'end', fs:10, c:'var(--accent)'});
+      }
+      return g;
+    }
+    var show = traceSpread() > 0.15*a.x1 || jumpSeg.value()!==null;
+    if(show){
+      g+=curve(G,a,line,0,Math.min(a.x1, e/Math.max(rr,1e-9)),'var(--topic)',false);
+      g+=txt(G.x+6, gy(G,a,e)-6, 'intercept = ε', {fs:10, c:'var(--topic)'});
+      g+=txt(G.x+G.w-4, G.y+12, 'gradient = −r', {a:'end', fs:10, c:'var(--topic)'});
+    } else g+=txt(G.x+G.w/2, G.y+G.h-40, 'drag the rheostat to trace V against I', {a:'middle', fs:10, c:'var(--ink-faint)'});
+    trace.forEach(function(p){ if(inBox(a,p[0],p[1])) g+='<circle cx="'+f1(gx(G,a,p[0]))+'" cy="'+f1(gy(G,a,p[1]))+'" r="2.4" fill="var(--ink-soft)"/>'; });
+    g+=pdot(G,a,I(),V());
+    return g;
+  }
+  function draw(){
+    var g=arrowDefs()+scene()+graph();
+    if(running && slowOn()) g+=txt(336, 296, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
+    svg.innerHTML=g;
+    svg.setAttribute('aria-valuenow', R); svg.setAttribute('aria-valuetext', 'R = '+R.toFixed(1)+' ohms');
+    readings();
+  }
+
+  // ---- readings, working, note
+  var lastNote='';
+  function readings(){
+    var e=E(), rr=r(), i=I(), v=V(), ex=exp(), my=cellKind()==='myst';
+    $('#ir-eo').textContent=e.toFixed(2)+' V'; $('#ir-ro').textContent=rr.toFixed(2)+' Ω'; $('#ir-Ro').textContent=R.toFixed(1)+' Ω';
+    var s='', f=fit();
+    if(ex){
+      s=stat('Readings', X.rd.length+(done()?'':' (6+)'))+stat('ε', f ? f.c.toFixed(2)+' V' : '?', true)+stat('r', f ? sig(-f.m,3)+' Ω' : '?', true);
+    } else {
+      s=stat('I', closed() ? fmtI(i)+' A' : '0 A')+stat('V', v.toFixed(2)+' V', true)+stat('Lost volts Ir', (i*rr).toFixed(2)+' V')+stat('P in R', sig(i*i*R,3)+' W');
+    }
+    $('#ir-stats').innerHTML=s;
+    if(ex) expTable($('#ir-table'), [{label:'R (Ω)', key:'R', dp:1}, {label:'I (A)', key:'I', dp:isCar()?1:2}, {label:'V (V)', key:'V', dp:2}], X.rd.map(function(p,k){ return {v:k, R:p.R, I:p.I, V:p.V}; }), X.rd.length-1);
+
+    // working
+    var w1='', w2='', w3='';
+    if(!ex){
+      if(!closed()){
+        w1='Switch open: I = 0<br>V = ε − Ir<br>V = '+e.toFixed(2)+' − 0 × '+rr.toFixed(2)+'<br>V = <b>'+e.toFixed(2)+' V</b>';
+        w3='With no current there are no lost volts: a voltmeter across an open cell reads its e.m.f. (an ideal voltmeter takes no current).';
+      } else {
+        w1='ε = I(R + r)<br>'+e.toFixed(2)+' = I × ('+R.toFixed(1)+' + '+rr.toFixed(2)+')<br>'+e.toFixed(2)+' = I × '+sig(R+rr,4)+'<br>I = [['+e.toFixed(2)+'|'+sig(R+rr,4)+']]<br>I = <b>'+sig(i,3)+' A</b>';
+        w2='V = ε − Ir<br>V = '+e.toFixed(2)+' − '+sig(i,4)+' × '+rr.toFixed(2)+'<br>V = '+e.toFixed(2)+' − '+sig(i*rr,4)+'<br>V = <b>'+sig(v,3)+' V</b>';
+        w3='Check: V = IR = '+sig(i,4)+' × '+R.toFixed(1)+' = '+sig(i*R,3)+' V. The lost volts Ir = '+sig(i*rr,3)+' V are the energy per coulomb transferred inside the cell, warming it.';
+      }
+    } else if(f){
+      var x1=X.rd.reduce(function(m,p){ return Math.min(m,p.I); }, Infinity), x2=X.rd.reduce(function(m,p){ return Math.max(m,p.I); }, 0);
+      var y1=f.m*x1+f.c, y2=f.m*x2+f.c;
+      w1='V = −r × I + ε  (y = mx + c)<br>gradient = [['+sig(y2,3)+' − '+sig(y1,3)+'|'+sig(x2,3)+' − '+sig(x1,3)+']]<br>gradient = '+sig(f.m,3)+' Ω<br>r = <b>'+sig(-f.m,3)+' Ω</b>';
+      w2='y-intercept = ε<br>ε = <b>'+f.c.toFixed(2)+' V</b>';
+      w3='Two points read off the best-fit line (at the smallest and largest currents). '+(my && myst.shown ? 'The mystery cell: ε = '+myst.e.toFixed(2)+' V, r = '+myst.r.toFixed(2)+' Ω.' : (my ? 'Press Reveal it to compare.' : 'This cell: ε = '+e.toFixed(2)+' V, r = '+rr.toFixed(2)+' Ω.'));
+    } else w1='Set R, press Take reading, and record I and V. Take at least 6 readings over a wide range of current.';
+    $('#ir-eq1').innerHTML=FR(w1); $('#ir-eq2').innerHTML=FR(w2); $('#ir-eq2').hidden=!w2; $('#ir-eq3').innerHTML=FR(w3); $('#ir-eq3').hidden=!w3;
+
+    // note
+    var note, j=jumpSeg.value();
+    if(ex){
+      if(X.reading) note='Switch closed: reading the ammeter and voltmeter…';
+      else if(!X.rd.length) note='Experiment (CP8): drag the rheostat to set R, then press <b>Take reading</b>. The switch closes only while you read, so the cell does not warm up and change r.';
+      else if(R<0.3 && !done()) note='Careful: R is almost zero, a near short circuit. The current is large and the cell heats up. Use a bigger R.';
+      else if(!done()) note='You have '+X.rd.length+' reading'+(X.rd.length===1?'':'s')+'. '+(X.rd.length>=6 ? 'Spread them out more: you need a wide range of currents.' : 'Change R and take another.')+' Plot V against I.';
+      else note='Done: V against I is a straight line falling as I rises. Intercept ε = <b>'+f.c.toFixed(2)+' V</b>, gradient −r, so r = <b>'+sig(-f.m,3)+' Ω</b>.'+(my ? (myst.shown ? ' The mystery cell was ε = '+myst.e.toFixed(2)+' V, r = '+myst.r.toFixed(2)+' Ω.' : ' Press <b>Reveal it</b> to check.') : '');
+    } else if(!closed()) note='Open circuit: no current, so no lost volts. The voltmeter reads the e.m.f., <b>V = ε = '+e.toFixed(2)+' V</b>.';
+    else if(R===0) note='Short circuit: R = 0, so all of ε is lost inside the cell. V = 0 and I = ε/r = <b>'+(rr>0 ? fmtI(e/rr)+' A' : 'huge')+'</b>.'+(isCar() ? ' A car battery\'s tiny r is why it can start a motor, and why shorting one is dangerous.' : ' The cell gets hot.');
+    else if(j==='match' || Math.abs(R-rr)<0.051) note='R = r: the p.d. splits equally, V = Ir = ε/2 = <b>'+(e/2).toFixed(2)+' V</b>. This is when the rheostat takes the most power from the cell.';
+    else if(isCar()) note='A car battery has a tiny internal resistance (r = '+rr.toFixed(2)+' Ω), so the terminal p.d. hardly falls until the current is very large.';
+    else note='Lower R → bigger current I → more lost volts Ir, so the terminal p.d. <b>V = ε − Ir falls</b>. Drag the rheostat and watch the point move along the line.';
+    if(note!==lastNote){ $('#ir-note').innerHTML=FR(note); lastNote=note; }
+
+    // buttons
+    if(ex){ playBtn.innerHTML='&#9654; Take reading'; playBtn.disabled=X.reading>0; }
+    else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
+  }
+
+  // ---- motion: charge flowing; in Experiment, one reading
+  function speed(){ var e=E(), iref=e/(r()+STD_R); return Math.min(420, 60*I()/Math.max(iref,1e-9)); }
+  function frame(now){
+    var real=Math.min(0.05,(now-last)/1000); last=now;
+    var dt=real*(slowOn()?0.3:1);
+    dist+=speed()*dt;
+    if(X.reading){ X.reading-=real; if(X.reading<=0){ X.reading=0; takeReading(); } }
+    draw();
+    if(running || X.reading) raf=requestAnimationFrame(frame);
+  }
+  function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function takeReading(){
+    var i=E()/(R+r()), v=E()-i*r(), k=X.rd.length, prev=X.rd[k-1];
+    var p={R:R, I:expReading(i, prev?prev.I:0, ires(), k, 1), V:expReading(v, prev?prev.V:0, 0.01, k+3, 1)};
+    X.rd.push(p); X.just=p;
+  }
+  function clearReadings(){ stop(); X={rd:[], reading:0, just:null}; draw(); }
+  function jumpTo(v){
+    stop();
+    if(v==='open'){ swClosed=false;  }
+    else { swClosed=true;  R = v==='std' ? STD_R : v==='match' ? Math.round(r()*10)/10 : 0; if(v==='match' && r()<0.1) R=r(); RIn.value=R; }
+    addTrace(); draw();
+  }
+  function setExp(){
+    stop(); var on=exp();
+    $('#ir-cell [data-v="myst"]').hidden=!on;
+    if(on){ cellSeg.pick('myst'); if(!myst.n) newMystery(); swClosed=false; }
+    else { if(cellKind()==='myst') { cellSeg.pick('fresh'); eIn.value=1.5; rIn.value=0.5; } swClosed=true;  }
+    $('#ir-jlab').hidden=$('#ir-jump').hidden=on;
+    $('#ir-ebox').hidden=$('#ir-rbox').hidden=on;
+    $('#ir-clear').hidden=!on; $('#ir-tablewrap').hidden=!on; $('#ir-guess').hidden=$('#ir-mlab').hidden=!on || cellKind()!=='myst'; $('#ir-cell [data-v="car"]').textContent=on?'Car':'Car battery';
+    jumpSeg.pick(null); trace=[]; X={rd:[], reading:0, just:null}; lastNote=''; draw();
+  }
+
+  playBtn.addEventListener('click', function(){
+    if(exp()){ if(!X.reading){ X.reading=0.8; X.just=null; loop(); } return; }
+    if(running){ stop(); draw(); } else { running=true; loop(); }
+  });
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
+  expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); setExp(); });
+  $('#ir-reset').addEventListener('click', function(){
+    stop(); if(exp()){ clearReadings(); return; }
+    R=STD_R; RIn.value=R; swClosed=true;  jumpSeg.pick(null); trace=[]; dist=0; draw();
+  });
+  $('#ir-clear').addEventListener('click', clearReadings);
+  $('#ir-new').addEventListener('click', function(){ newMystery(); clearReadings(); });
+  $('#ir-reveal').addEventListener('click', function(){ myst.shown=true; lastNote=''; draw(); });
+  // cell picks: the mystery-cell buttons only show for the mystery cell
+  $('#ir-cell').addEventListener('click', function(){ $('#ir-guess').hidden=$('#ir-mlab').hidden=!exp() || cellKind()!=='myst'; });
+  eIn.addEventListener('input', function(){ cellSeg.pick(null); trace=[]; jumpSeg.pick(null); addTrace(); draw(); });
+  rIn.addEventListener('input', function(){ cellSeg.pick(null); trace=[]; jumpSeg.pick(null); addTrace(); draw(); });
+  RIn.addEventListener('input', function(){ setR(+RIn.value); });
+
+  watchEquals($('#ir-eq1')); watchEquals($('#ir-eq2'));
+  addTrace(); draw();
+
+})();
+</script>
+</body>
+</html>
