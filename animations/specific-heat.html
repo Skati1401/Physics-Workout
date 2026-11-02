@@ -309,6 +309,14 @@ svg text{font-family:var(--f-mono)}
 .embed .home-link,.embed .page-head{display:none}
 .embed .act{margin-bottom:12px}
 .panel{display:block}
+/* level switch on the title line */
+.title-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin-bottom:6px}
+.title-row h1{margin:0;font-size:clamp(30px,6vw,46px)}
+.lvl{display:inline-flex}
+.lvl button{font:500 12.5px var(--f-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);background:var(--panel);color:var(--ink);cursor:pointer;margin-left:-1px}
+.lvl button:first-child{border-radius:8px 0 0 8px;margin-left:0}
+.lvl button:last-child{border-radius:0 8px 8px 0}
+.lvl button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 @media (max-width:420px){.eq{font-size:12px;padding:6px 8px}}
 @media (max-width:360px){.eq{font-size:11px}}
   /* ===== Experiment kit (copy into the animation page's <style>) ===== */
@@ -367,13 +375,30 @@ details summary{cursor:pointer;font:500 13px var(--f-body);color:var(--ink-soft)
   <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
 <header class="page-head">
 <p class="eyebrow">Animations &middot; matter</p>
+<div class="title-row">
 <h1>Specific Heat Capacity</h1>
+<div class="lvl" id="lvl" role="group" aria-label="Level"><button type="button" data-v="igcse" aria-pressed="true">IGCSE</button><button type="button" data-v="ial" aria-pressed="false">IAL</button><button type="button" data-v="ib" aria-pressed="false">IB</button></div>
+</div>
 </header>
 <section id="panel-shc" class="panel"><div class="acts"></div></section>
 </div>
 <script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link and the starting level.
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
 (function(){
 'use strict';
+// IGCSE is the default view. IAL and IB: energy from V × I × t, c in J kg⁻¹ K⁻¹, and in Experiment mode c from the
+// gradient of the straight part of the temperature–time graph. IAL writes ΔE = mcΔθ, IB writes Q = mcΔT.
+let LEVEL=PW_LEVEL||'igcse';
+const ks5=()=>LEVEL!=='igcse';
+const onLevel=[];
 /* ================= helpers ================= */
 const $=(s,r)=>(r||document).querySelector(s);
 const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
@@ -1039,6 +1064,8 @@ function seg(host,opts,initial,fn){
   </div>`;
 
   const S=()=>MAT[mat];
+  const SY=()=>LEVEL==='ib'?{E:'Q',d:'ΔT',T:'T',cu:'J kg⁻¹ K⁻¹',du:'K'}:LEVEL==='ial'?{E:'ΔE',d:'Δθ',T:'θ',cu:'J kg⁻¹ K⁻¹',du:'K'}:{E:'ΔQ',d:'ΔT',T:'T',cu:'J/kg °C',du:'°C'};
+  const V0=12, I0=4;                       // the supply: 12.0 V, 4.00 A (48 W)
   // The heater stays on for 10 minutes, or less if the block would get more than about 50 °C hotter.
   const tOn=()=>Math.max(2,Math.min(10,Math.floor(50*m*S().c/P/60)));
   const tEnd=()=>tOn()+2;
@@ -1049,8 +1076,9 @@ function seg(host,opts,initial,fn){
     const step=rise*1.15<=6?1:rise*1.15<=12?2:rise*1.15<=30?5:10;
     const yMax=T0+Math.ceil(rise*1.12/step)*step, yMin=T0-step;
     const yTicks=[];for(let v=yMin;v<=yMax+1e-9;v+=step)yTicks.push(v);
-    const xTicks=[];for(let v=0;v<=tEnd();v+=tEnd()>8?2:1)xTicks.push(v);
-    return {xMin:0,xMax:tEnd(),yMin,yMax,yTicks,xTicks,xLabel:'Time (minutes)',yLabel:'Temperature (°C)',W:560,H:320};
+    const xTicks=[],k=ks5()?60:1;for(let v=0;v<=tEnd();v+=tEnd()>8?2:1)xTicks.push(v*k);
+    if(k===60)return {xMin:0,xMax:tEnd()*60,yMin,yMax,yTicks,xTicks,xLabel:'Time t (s)',yLabel:'Temperature '+SY().T+' (°C)',W:560,H:320};
+    return {xMin:0,xMax:tEnd(),yMin,yMax,yTicks,xTicks,xLabel:'Time (minutes)',yLabel:ks5()?'Temperature '+SY().T+' (°C)':'Temperature (°C)',W:560,H:320};
   }
   // the real run: heater and block exchange energy, and the block loses some to the room
   function stepReal(dtMin){
@@ -1071,8 +1099,21 @@ function seg(host,opts,initial,fn){
   }
   const done=()=>t>=tEnd()-1e-9;
   const n1=v=>v.toFixed(1);
+  // IAL / IB work the energy out as V × I × t with t in whole seconds, so the working and the reading agree
+  const eNow=()=>ks5()?P*Math.round(Math.min(t,tOn())*60):energy(t);
+  const tStr=()=>ks5()?fmt(Math.round(t*60))+' s':n1(t)+' min';
   const cExp=()=>{const mx=Math.max.apply(null,reads.map(r=>r.T)),dT=mx-reads[0].T;return {mx,dT,c:energy(tOn())/(m*dT)};};
   const sig3=v=>+v.toPrecision(3);
+  const sig4=v=>v.toPrecision(4);
+  // IAL / IB: best-fit straight line through the readings from 1 minute (the heater has warmed up) to switch-off
+  function fit(){
+    const pts=reads.filter(r=>r.t>=1-1e-9&&r.t<=tOn()+1e-9),n=pts.length;
+    const mx=pts.reduce((a,r)=>a+r.t,0)/n,my=pts.reduce((a,r)=>a+r.T,0)/n;
+    const a=pts.reduce((s,r)=>s+(r.t-mx)*(r.T-my),0)/pts.reduce((s,r)=>s+(r.t-mx)*(r.t-mx),0),b=my-a*mx;
+    const ta=pts[0].t,tb=pts[n-1].t,Ta=+(a*ta+b).toFixed(1),Tb=+(a*tb+b).toFixed(1);
+    const g=(Tb-Ta)/((tb-ta)*60);
+    return {a,b,ta,tb,Ta,Tb,g:+sig4(g),c:P/(m*+sig4(g))};
+  }
 
   function pic(Tshow){
     const rise=Tshow-T0, heat=Math.min(1,rise/50), glow=EXP?Math.min(1,(Th-Tb)/30):(t>0&&t<tOn()-1e-9?1:0);
@@ -1080,7 +1121,13 @@ function seg(host,opts,initial,fn){
     let h='';
     // power supply and joulemeter
     h+='<rect x="8" y="122" width="92" height="56" rx="6" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2"/><text x="54" y="146" text-anchor="middle" font-size="12" fill="var(--ink)">12 V supply</text><text x="54" y="166" text-anchor="middle" font-size="11" fill="var(--ink-faint)">'+((t>0||auto)&&t<tOn()-1e-9?'on':'off')+'</text>';
-    h+='<rect x="8" y="30" width="92" height="62" rx="6" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2"/><text x="54" y="48" text-anchor="middle" font-size="11" fill="var(--ink-faint)">joulemeter</text><rect x="16" y="56" width="76" height="26" rx="3" fill="var(--panel-2)" stroke="var(--panel-border)"/><text x="88" y="74" text-anchor="end" font-size="14" fill="var(--ink)">'+fmt(energy(t))+' J</text>';
+    if(ks5()){
+      // voltmeter and ammeter instead of a joulemeter: the energy is worked out from V × I × t
+      const on=t>0&&t<tOn()-1e-9;
+      h+='<rect x="8" y="22" width="92" height="76" rx="6" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2"/>';
+      h+='<circle cx="24" cy="42" r="9" fill="none" stroke="var(--ink-soft)" stroke-width="1.6"/><text x="24" y="46" text-anchor="middle" font-size="11" fill="var(--ink)">V</text><text x="92" y="47" text-anchor="end" font-size="13" fill="var(--ink)">'+(on?'12.0':'0.0')+' V</text>';
+      h+='<circle cx="24" cy="76" r="9" fill="none" stroke="var(--ink-soft)" stroke-width="1.6"/><text x="24" y="80" text-anchor="middle" font-size="11" fill="var(--ink)">A</text><text x="92" y="81" text-anchor="end" font-size="13" fill="var(--ink)">'+(on?'4.00':'0.00')+' A</text>';
+    }else h+='<rect x="8" y="30" width="92" height="62" rx="6" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2"/><text x="54" y="48" text-anchor="middle" font-size="11" fill="var(--ink-faint)">joulemeter</text><rect x="16" y="56" width="76" height="26" rx="3" fill="var(--panel-2)" stroke="var(--panel-border)"/><text x="88" y="74" text-anchor="end" font-size="14" fill="var(--ink)">'+fmt(energy(t))+' J</text>';
     h+='<path d="M100 150 H124 V20 H200 V44 M100 60 H116 V12 H208 V44" fill="none" stroke="var(--ink-faint)" stroke-width="2"/>';
     // lagging
     const lagOn=!EXP||lag==='on';
@@ -1105,7 +1152,9 @@ function seg(host,opts,initial,fn){
     byId('sh-pic').innerHTML=h;
   }
   function graph(){
-    const ax=axes(), g=lineGraph(Object.assign({points:[[0,T0]]},ax));
+    const ax=axes(), g0=lineGraph(Object.assign({points:[[0,T0]]},ax));
+    // the run is kept in minutes; IAL / IB draw the time axis in seconds
+    const g=Object.assign({},g0,{gx:ks5()?v=>g0.gx(v*60):g0.gx});
     let ex='';
     const line=[];for(let x=0;x<=tEnd()+1e-9;x+=0.05)line.push(g.gx(x).toFixed(1)+','+g.gy(ideal(x)).toFixed(1));
     if(!EXP){
@@ -1114,7 +1163,12 @@ function seg(host,opts,initial,fn){
     }else{
       if(done()){
         const r=[];const s={t,Th,Tb};t=0;Th=Tb=T0;for(let k=0;k<=tEnd()*20;k++){r.push(g.gx(t).toFixed(1)+','+g.gy(Tb).toFixed(1));stepReal(0.05);}t=s.t;Th=s.Th;Tb=s.Tb;
-        ex+='<polyline points="'+r.join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="8 6" opacity=".85"/>';
+        if(ks5()){
+          const f=fit(),x1=Math.max(0,f.ta-0.6),x2=Math.min(tEnd(),f.tb+0.4);
+          ex+='<line x1="'+g.gx(x1)+'" y1="'+g.gy(f.a*x1+f.b)+'" x2="'+g.gx(x2)+'" y2="'+g.gy(f.a*x2+f.b)+'" stroke="var(--gas)" stroke-width="2.5"/>';
+          ex+='<path d="M'+g.gx(f.ta)+' '+g.gy(f.Ta)+' H'+g.gx(f.tb)+' V'+g.gy(f.Tb)+'" fill="none" stroke="var(--ink-faint)" stroke-width="1.5" stroke-dasharray="4 4"/>';
+          [[f.ta,f.Ta],[f.tb,f.Tb]].forEach(q=>{ex+=expRing(g.gx(q[0]),g.gy(q[1]),6);});
+        }else ex+='<polyline points="'+r.join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="8 6" opacity=".85"/>';
       }
       reads.forEach(r=>{ex+=expCross(g.gx(r.t),g.gy(r.T),6);});
     }
@@ -1123,28 +1177,44 @@ function seg(host,opts,initial,fn){
   }
   function table(isNew){
     const tw=byId('sh-table');
-    tw.innerHTML=reads.length?'<table class="rtable"><thead><tr><th>Time (min)</th><th>Energy (J)</th><th>Temp (°C)</th></tr></thead><tbody>'+reads.map((r,i)=>'<tr'+(isNew&&i===reads.length-1?' class="new"':'')+'><td>'+n1(r.t)+'</td><td>'+r.E+'</td><td>'+n1(r.T)+'</td></tr>').join('')+'</tbody></table>':'<p>No readings yet.</p>';
+    const k5=ks5();
+    tw.innerHTML=reads.length?'<table class="rtable"><thead><tr>'+(k5?'<th>t (s)</th><th>'+SY().T+' (°C)</th>':'<th>Time (min)</th><th>Energy (J)</th><th>Temp (°C)</th>')+'</tr></thead><tbody>'+reads.map((r,i)=>'<tr'+(isNew&&i===reads.length-1?' class="new"':'')+'>'+(k5?'<td>'+Math.round(r.t*60)+'</td><td>'+n1(r.T)+'</td>':'<td>'+n1(r.t)+'</td><td>'+r.E+'</td><td>'+n1(r.T)+'</td>')+'</tr>').join('')+'</tbody></table>':'<p>No readings yet.</p>';
     tw.scrollTop=tw.scrollHeight;
   }
   function readouts(isNew){
-    const c=S().c, q=energy(t);
+    const c=S().c, q=eNow(), k5=ks5(), Y=SY(), ts=Math.round(t*60);
     byId('sh-mo').textContent=n1(m)+' kg';
-    byId('sh-t').textContent=n1(t)+' min';
+    byId('sh-t').textContent=tStr();
     byId('sh-e').textContent=fmt(q)+' J';
     let eq, note, Tshow;
     if(!EXP){
       Tshow=ideal(t);const dT=q/(m*c);
-      byId('sh-T').textContent=n1(Tshow)+' °C';byId('sh-c').textContent=n1(dT)+' °C';
+      byId('sh-T').textContent=n1(Tshow)+' °C';byId('sh-c').textContent=n1(dT)+' '+Y.du;
+      if(k5){
+        const tt=Math.round(Math.min(t,tOn())*60);
+        eq=Y.E+' = V × I × t<br>'+Y.E+' = 12.0 × 4.00 × '+fmt(tt)+'<br>'+Y.E+' = '+fmt(q)+' J<br>'+Y.E+' = m × c × '+Y.d+'<br>'+fmt(q)+' = '+n1(m)+' × '+fmt(c)+' × '+Y.d+'<br>'+fmt(q)+' = '+fmt(m*c)+' × '+Y.d+'<br>'+Y.d+' = [['+fmt(q)+'|'+fmt(m*c)+']]<br>'+Y.d+' = <b>'+n1(dT)+' K</b>';
+        if(t===0)note='Press Play to switch on the heater: 12.0 V and 4.00 A, so 48.0 W. The energy supplied is V × I × t. No energy is lost here, so all of it raises the internal energy of the '+S().n.toLowerCase()+'.';
+        else if(t<tOn()-1e-9)note=fmt(q)+' J supplied in '+fmt(ts)+' s. Its particles now have more random kinetic and potential energy: '+fmt(c)+' J for each kilogram and each kelvin, so it is '+n1(dT)+' K hotter.';
+        else note='Heater off after '+fmt(tOn()*60)+' s. '+fmt(q)+' J raised the temperature by '+n1(dT)+' K (the same as '+n1(dT)+' °C). Press Experiment to take real readings and find c from the gradient.';
+      }else{
       eq='ΔQ = m × c × ΔT<br>'+fmt(q)+' = '+n1(m)+' × '+fmt(c)+' × ΔT<br>'+fmt(q)+' = '+fmt(m*c)+' × ΔT<br>ΔT = [['+fmt(q)+'|'+fmt(m*c)+']]<br>ΔT = <b>'+n1(dT)+' °C</b>';
       if(t===0)note='Press Play to switch on the 48 W heater. The joulemeter counts the energy supplied; no energy is lost, so all of it heats the '+S().n.toLowerCase()+'.';
       else if(t<tOn()-1e-9)note='The '+S().n.toLowerCase()+' has received '+fmt(q)+' J. Each kilogram needs '+fmt(c)+' J for each 1 °C, so it is '+n1(dT)+' °C hotter.';
       else note='Heater off after '+tOn()+' minutes. '+fmt(q)+' J raised the temperature by '+n1(dT)+' °C. With no energy lost, the temperature stays there. Press Experiment to take real readings.';
+      }
       const all=Object.keys(MAT).map(k=>({k,d:q/(m*MAT[k].c)})),mx=Math.max.apply(null,all.map(x=>x.d))||1;
       byId('sh-cmp').innerHTML=all.map(x=>'<div class="vbar"><span>'+MAT[x.k].n+'</span><div class="vtrack"><div class="vfill" style="--w:'+Math.max(3,x.d/mx*100)+'%;--c:'+(x.k===mat?'var(--gas)':'var(--ink-faint)')+';width:'+Math.max(3,x.d/mx*100)+'%">'+n1(x.d)+' °C</div></div></div>').join('');
     }else{
       const last=reads[reads.length-1];Tshow=last.T;
       byId('sh-T').textContent=n1(last.T)+' °C';
-      if(done()){
+      if(done()&&k5){
+        const f=fit(),cc=sig3(f.c),pc=Math.round((f.c-c)/c*100),dts=fmt((f.tb-f.ta)*60);
+        byId('sh-c').textContent=fmt(cc)+' '+Y.cu;
+        eq='gradient = [['+Y.d+'|Δt]]<br>gradient = [['+n1(f.Tb)+' − '+n1(f.Ta)+'|'+fmt(f.tb*60)+' − '+fmt(f.ta*60)+']]<br>gradient = [['+n1(f.Tb-f.Ta)+'|'+dts+']]<br>gradient = '+sig4(f.g)+' K s⁻¹<br>P = V × I<br>P = 12.0 × 4.00<br>P = 48.0 W<br>'+
+          Y.E+' = m × c × '+Y.d+'<br>P × Δt = m × c × '+Y.d+'<br>48.0 × Δt = '+n1(m)+' × c × '+Y.d+'<br>48.0 = '+n1(m)+' × c × [['+Y.d+'|Δt]]<br>48.0 = '+n1(m)+' × c × '+sig4(f.g)+'<br>c = [[48.0|'+n1(m)+' × '+sig4(f.g)+']]<br>c = <b>'+fmt(cc)+' '+Y.cu+'</b>';
+        note='Run complete. The best-fit line uses the readings from '+fmt(f.ta*60)+' s (once the heater has warmed up) to switch-off. Its gradient is '+sig4(f.g)+' K s⁻¹, so c = '+fmt(cc)+' '+Y.cu+'. '+
+          (pc>=1?'That is '+pc+'% higher than the accepted '+fmt(c)+' '+Y.cu+': some energy heated the surroundings, so the temperature rose more slowly. '+(lag==='on'?'Lagging kept this small.':'Lagging would cut this.'):'That is close to the accepted '+fmt(c)+' '+Y.cu+'.');
+      }else if(done()){
         const r=cExp(),cc=sig3(r.c),pc=Math.round((r.c-c)/c*100);
         byId('sh-c').textContent=fmt(cc)+' J/kg °C';
         eq='ΔQ = m × c × ΔT<br>ΔQ = '+fmt(energy(tOn()))+' J<br>ΔT = '+n1(r.mx)+' − '+n1(reads[0].T)+'<br>ΔT = '+n1(r.dT)+' °C<br>'+fmt(energy(tOn()))+' = '+n1(m)+' × c × '+n1(r.dT)+'<br>c = [['+fmt(energy(tOn()))+'|'+n1(m)+' × '+n1(r.dT)+']]<br>c = <b>'+fmt(cc)+' J/kg °C</b>';
@@ -1152,9 +1222,10 @@ function seg(host,opts,initial,fn){
           (pc>=1?'That is '+pc+'% higher than the accepted '+fmt(c)+' J/kg °C: some of the energy heated the surroundings and the heater, not the '+S().n.toLowerCase()+'. '+(lag==='on'?'Lagging kept this small.':'Lagging would cut this.'):'That is close to the accepted '+fmt(c)+' J/kg °C.');
       }else{
         byId('sh-c').textContent='?';
-        eq='ΔQ = m × c × ΔT<br>c = ?';
-        if(reads.length===1)note='Experiment: choose the lagging and how often to read the thermometer, then press Play to switch on the heater and start the stopwatch. The heater goes off at '+tOn()+' minutes; keep reading for 2 more minutes.';
-        else note='Reading at '+n1(last.t)+' min: '+n1(last.T)+' °C, joulemeter '+fmt(last.E)+' J.'+(last.t>=tOn()-1e-9?' The heater is off; is the temperature still rising?':'');
+        eq=(k5?Y.E+' = m × c × '+Y.d:'ΔQ = m × c × ΔT')+'<br>c = ?';
+        if(reads.length===1)note=k5?'Experiment: choose the lagging and how often to read the thermometer, then press Play to switch on the heater (12.0 V, 4.00 A) and start the stopwatch. The heater goes off at '+tOn()+' minutes. c comes from the gradient of the straight part of the graph.'
+          :'Experiment: choose the lagging and how often to read the thermometer, then press Play to switch on the heater and start the stopwatch. The heater goes off at '+tOn()+' minutes; keep reading for 2 more minutes.';
+        else note='Reading at '+n1(last.t)+' min: '+n1(last.T)+' °C'+(k5?'.':', joulemeter '+fmt(last.E)+' J.')+(last.t>=tOn()-1e-9?' The heater is off; is the temperature still rising?':'');
       }
     }
     byId('sh-eq').innerHTML=FR(eq);byId('sh-note').textContent=note;
@@ -1175,11 +1246,17 @@ function seg(host,opts,initial,fn){
     $$('.sx',body).forEach(e=>e.hidden=!on);
     $('.sh-cmp-wrap',body).hidden=on;
     byId('sh-tl').textContent=on?'Last reading':'Temperature';
-    byId('sh-cl').textContent=on?'c from your results':'Rise ΔT';
+    labels();
     const ac=body.closest('.act');ac.classList.toggle('sh-x',on);const kd=ac.querySelector('.kind');if(kd)kd.textContent=on?'Experiment':'Watch';
     byId('sh-work').open=EMBED_OPEN&&!on;
     reset();
   }
+  function labels(){
+    const k5=ks5();
+    byId('sh-cl').textContent=EXP?'c from your results':'Rise '+SY().d;
+    byId('sh-e').previousElementSibling.textContent=k5?'Energy V × I × t':'Joulemeter';
+  }
+  onLevel.push(()=>{labels();reset();});
   seg(byId('sh-mat'),Object.keys(MAT).map(k=>({key:k,label:MAT[k].n})),mat,k=>{mat=k;reset();});
   seg(byId('sh-lag'),[{key:'on',label:'Lagged'},{key:'off',label:'No lagging'}],lag,k=>{lag=k;reset();});
   seg(byId('sh-iv'),[{key:'0.5',label:'30 s'},{key:'1',label:'1 minute'}],'1',k=>{iv=+k;reset();});
@@ -1195,7 +1272,7 @@ function seg(host,opts,initial,fn){
       else{stepReal(target-t);t=target;}
     }
     if(done()){auto=0;btns();readouts();}
-    else{byId('sh-t').textContent=n1(t)+' min';byId('sh-e').textContent=fmt(energy(t))+' J';pic(reads[reads.length-1].T);}
+    else{byId('sh-t').textContent=tStr();byId('sh-e').textContent=fmt(eNow())+' J';pic(reads[reads.length-1].T);}
   });
   byId('sh-work').open=EMBED_OPEN;
   btns();readouts();
@@ -1257,6 +1334,13 @@ function watchEquals(sel){
   });
 }
 watchEquals('.eq');
+function setLevel(v){
+  LEVEL=v;
+  $$('#lvl button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));
+  onLevel.forEach(f=>{try{f();}catch(e){console.error(e);}});
+}
+$$('#lvl button').forEach(b=>b.addEventListener('click',()=>setLevel(b.dataset.v)));
+setLevel(LEVEL);
 activeTab='shc';
 reflowers.forEach(f=>{try{f(activeTab);}catch(e){console.error(e);}});
 raf(loop);
