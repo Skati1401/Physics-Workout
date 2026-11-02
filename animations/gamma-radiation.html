@@ -88,6 +88,10 @@
   .btn-primary:hover{opacity:.88;border-color:var(--ink);}
   .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
   .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+  /* button rows fill their width (Alex, 2 Nov 2026) */
+  .btn-group>.btn,.exp-btns>.btn{flex:1 1 0;min-width:max-content;justify-content:center;}
+  .seg:not(.tabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));}
+  .seg:not(.tabs)>button{padding-inline:4px;white-space:nowrap;}
 
   /* picture on the left with its buttons under it; choices, readings and working on the right */
   .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
@@ -136,6 +140,8 @@
 
   /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
   .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  #gr-svg.dragging,#gr-svg.dragging *{cursor:grabbing;}
+  #gr-svg:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
   .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
   .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
   .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
@@ -197,24 +203,18 @@
           <button class="btn" id="gr-slow" type="button" aria-pressed="false">Slow motion</button>
           <button class="btn" id="gr-exp" type="button" aria-pressed="false" title="Take your own readings with the counter and plot them">Experiment</button>
         </div>
-        <div class="sliders" id="gr-drow">
-          <div><label class="lab" for="gr-d">Distance from source to tube, d <output id="gr-do"></output></label><input type="range" id="gr-d" min="5" max="50" step="1" value="10"></div>
-        </div>
-        <div class="cgrid" id="gr-arow" hidden>
-          <span class="rowlab">Lead sheets</span>
-          <div class="btn-group"><button class="btn" id="gr-add" type="button">+ Add a sheet</button><button class="btn" id="gr-rem" type="button">&minus; Take one off</button></div>
-          <span class="rowlab">Sheet size</span>
-          <div class="seg" id="gr-sheet"><button type="button" data-v="1" aria-pressed="false">1 mm</button><button type="button" data-v="2" aria-pressed="true">2 mm</button><button type="button" data-v="5" aria-pressed="false">5 mm</button></div>
+        <div id="gr-expctl" hidden>
+          <div class="exp-btns">
+            <button class="btn" id="gr-bg" type="button">Measure background</button>
+            <button class="btn" id="gr-clear" type="button">Clear readings</button>
+          </div>
         </div>
       </div>
     </div>
     <div class="side">
-      <div id="gr-expctl" hidden>
-        <div class="exp-btns">
-          <button class="btn btn-primary" id="gr-count" type="button">Count for 60 s</button>
-          <button class="btn" id="gr-bg" type="button">Measure background</button>
-          <button class="btn" id="gr-clear" type="button">Clear readings</button>
-        </div>
+      <div class="cgrid" id="gr-arow" hidden>
+        <span class="rowlab">Lead</span>
+        <div class="btn-group" id="gr-sheets"><button class="btn" type="button" data-s="1">+ 1 mm</button><button class="btn" type="button" data-s="2">+ 2 mm</button><button class="btn" type="button" data-s="5">+ 5 mm</button><button class="btn" id="gr-rem" type="button">&minus; Last</button></div>
       </div>
       <div class="cgrid">
         <span class="rowlab">Graph</span>
@@ -409,9 +409,8 @@ function expKey(x, y, upLabel, downLabel){
   function rateDist(d){ return K/((d+D0)*(d+D0)); }
   function rateAbs(x){ return rateDist(D_ABS)*Math.exp(-MU*x); }
 
-  var svg=$('#gr-svg'), playBtn=$('#gr-play'), slowBtn=$('#gr-slow'), expBtn=$('#gr-exp'), dIn=$('#gr-d');
+  var svg=$('#gr-svg'), playBtn=$('#gr-play'), slowBtn=$('#gr-slow'), expBtn=$('#gr-exp');
   var modeSeg=segGroup($('#gr-mode'), function(){ setMode(); });
-  var sheetSeg=segGroup($('#gr-sheet'), function(){});
   var graphEl=$('#gr-graph'), graphSeg=segGroup(graphEl, function(){ draw(); });
   var showQ=location.search.match(/[?&]show=(dist|abs)\b/);
   if(showQ){ modeSeg.pick(showQ[1]); $('#gr-mode').hidden=true; }
@@ -419,7 +418,8 @@ function expKey(x, y, upLabel, downLabel){
   function dist(){ return mode()==='dist'; }
   function exp(){ return pressed(expBtn); }
   function slowOn(){ return pressed(slowBtn); }
-  function d(){ return +dIn.value; }
+  var dVal=10;   // cm, set by dragging the tube (5 to 50)
+  function d(){ return dVal; }
   var sheets=[];
   function x(){ return sheets.reduce(function(a,b){ return a+b; },0); }
   function key(){ return dist() ? d() : x(); }
@@ -505,6 +505,7 @@ function expKey(x, y, upLabel, downLabel){
     g+='<rect x="'+tx+'" y="'+(BY-9)+'" width="46" height="18" rx="5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>';
     g+='<rect x="'+tx+'" y="'+(BY-9)+'" width="4" height="18" fill="'+(flash>0?'var(--gamma)':'var(--ink-faint)')+'"/>';
     g+=txt(tx+23, BY+4, 'GM', {a:'middle', fs:9.5, c:'var(--ink)'});
+    if(dist() && !counting) g+='<rect x="'+(tx-8)+'" y="'+(BY-24)+'" width="62" height="48" fill="transparent" style="cursor:grab"/>'+txt(tx+23, BY+20, '← drag →', {a:'middle', fs:9, c:'var(--accent)'});
     g+='<path d="M'+(tx+46)+','+BY+' C '+(tx+70)+','+BY+' 290,'+(BY+40)+' 260,'+(BY+80)+'" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>';
     // counter
     var cnt = counting ? counting.shown : (exp()? lastCount : clicks), tm = counting ? counting.t : (exp()? lastTime : liveT);
@@ -535,6 +536,7 @@ function expKey(x, y, upLabel, downLabel){
       g+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--topic)" stroke-width="2.4"/>';
       var cur={v:key(), cor:rateNow()}; cur.f = dist()? 1/Math.sqrt(cur.cor) : Math.log(cur.cor);
       var cx=a.fx(cur), cy=a.fy(cur); if(inG(a,cx,cy)) g+='<circle cx="'+gx(a,cx).toFixed(1)+'" cy="'+gy(a,cy).toFixed(1)+'" r="5" fill="var(--topic)" stroke="var(--panel)" stroke-width="2"/>';
+      if(graphSeg.value()==='inv'){ var uTop=a.y1/K; g+=ln(gx(a,0), gy(a,0), gx(a,Math.min(a.x1,uTop)), gy(a,K*Math.min(a.x1,uTop)), 'var(--ink-faint)', 1.4, ' stroke-dasharray="4 4"')+txt(gx(a,Math.min(a.x1,uTop))-6, gy(a,K*Math.min(a.x1,uTop))+12, 'straight if d₀ = 0', {a:'end', fs:9.5, c:'var(--ink-faint)'}); }
       if(graphSeg.value()==='root'){ g+=ln(gx(a,-D0), gy(a,0), gx(a,5), gy(a,a.th(5)), 'var(--topic)', 1.4, ' stroke-dasharray="4 4"'); }
     } else {
       var rs=rows();
@@ -561,17 +563,15 @@ function expKey(x, y, upLabel, downLabel){
   var lastNote='';
   function readings(){
     var D=dist(), b=bgRate();
-    $('#gr-do').textContent=d()+' cm';
     $('#gr-sxl').textContent = D ? 'Distance, d' : 'Lead, x';
     $('#gr-sx').textContent = D ? d()+' cm' : x()+' mm';
     $('#gr-sb').textContent = exp() ? (b===null ? '?' : sig(b,3)+' min⁻¹') : BG+' min⁻¹';
     $('#gr-scl').textContent = D ? 'Count rate, C' : 'Count rate, I';
     $('#gr-sc').textContent = exp() ? (lastCount!==null && !counting ? lastCount+' min⁻¹' : '–') : Math.round(rateNow()+BG)+' min⁻¹';
-    $('#gr-add').disabled = x()+(+sheetSeg.value())>MAX_X || !!counting;
+    Array.prototype.forEach.call(document.querySelectorAll('#gr-sheets [data-s]'), function(bt){ bt.disabled = x()+(+bt.dataset.s)>MAX_X || !!counting; });
     $('#gr-rem').disabled = !sheets.length || !!counting;
-    dIn.disabled=!!counting;
-    $('#gr-count').disabled = $('#gr-bg').disabled = !!counting;
-    $('#gr-count').textContent = R[mode()][key()] ? 'Count again' : 'Count for 60 s';
+    $('#gr-bg').disabled = $('#gr-clear').disabled = !!counting;
+    svg.setAttribute('aria-valuenow', d()); svg.setAttribute('aria-valuetext', 'd = '+d()+' cm');
 
     // results table
     if(exp()){
@@ -594,7 +594,7 @@ function expKey(x, y, upLabel, downLabel){
         w2='x-intercept = −d<sub>0</sub><br>−d<sub>0</sub> = −[['+sig(f.c,4)+'|'+sig(f.m,4)+']]<br>d<sub>0</sub> = <b>'+sig(d0,2)+' cm</b>';
         w3='A straight line shows C ∝ 1/(d + d₀)², the inverse-square law. The model used k = '+grp(K)+' cm² min⁻¹ and d₀ = '+D0.toFixed(1)+' cm; your values differ a little because the counts are random.';
       } else if(enough()){
-        w1='C = count in 60 s − background<br>Plot C against 1/d²: it should be close to a straight line through the origin.';
+        w1='C = count in 60 s − background<br>C against 1/d² is straight at large d but bends over at small d (large 1/d²), because d is measured to the window, about 1 cm short of where the tube detects.';
         w3='Choose “1/√C against d” to find k and d₀ from a straight line.';
       } else w1='Measure the background, then count at 5 or more distances (5 cm to 50 cm).';
     } else {
@@ -616,7 +616,7 @@ function expKey(x, y, upLabel, downLabel){
     var n=rows().length, note;
     if(counting) note = counting.kind==='bg' ? 'Counting the background for 5 minutes, with the source put away in its box.' : 'Counting for 60 s'+(D?' at d = '+d()+' cm.':' with '+x()+' mm of lead.');
     else if(!exp()){
-      if(D) note='Gamma rays leave the source in all directions. Move the tube further away: fewer of them reach its window, and the count rate falls with 1/d². <b>Play</b> to watch.';
+      if(D) note = graphSeg.value()==='inv' ? 'C against 1/d² is curved, not straight: d is measured to the tube’s window, but the gamma rays are detected about '+D0.toFixed(1)+' cm further in. The dashed line is what you would get with d₀ = 0. Plot 1/√C against d to allow for it.' : 'Gamma rays leave the source in all directions. Drag the tube further away: fewer of them reach its window, and the count rate falls with 1/d². <b>Play</b> to watch.';
       else note='Add lead sheets between the source and the tube. Each sheet absorbs a fixed fraction of the gamma rays that reach it, so the count rate falls exponentially. <b>Play</b> to watch.';
     }
     else if(bgRate()===null) note='Experiment: first <b>measure the background</b> (no source), then take a 60 s count at each '+(D?'distance':'thickness of lead')+'. Subtract the background from every count.';
@@ -624,7 +624,8 @@ function expKey(x, y, upLabel, downLabel){
     else if(D) note = graphSeg.value()==='root' ? 'Your 1/√C points lie on a straight line, so C ∝ 1/(d + d₀)²: the inverse-square law. The line crosses the d axis at −d₀ = '+sn(-fitNow().c/fitNow().m,1)+' cm.' : 'Done: now choose the graph that gives a straight line. Take more readings to improve it.';
     else note = graphSeg.value()==='ln' ? 'Your ln I points lie on a straight line, so I falls exponentially: μ = '+sig(-fitNow().m,3)+' mm⁻¹, half-thickness '+sig(LN2/-fitNow().m,3)+' mm.' : 'Done: plot ln I against x to get a straight line.';
     if(note!==lastNote){ $('#gr-note').innerHTML=note; lastNote=note; }
-    playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play';
+    if(exp()){ playBtn.innerHTML = R[mode()][key()] ? '&#9654; Count again' : '&#9654; Count for 60 s'; playBtn.disabled=!!counting; }
+    else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
   }
 
   // ---- motion: photons fly out from the source; the ones that reach the window make the counter click
@@ -682,7 +683,9 @@ function expKey(x, y, upLabel, downLabel){
   function reset(){ stop(); counting=null; photons=[]; clicks=0; liveT=0; lastCount=null; lastTime=0; justAdded=null; cancelAnimationFrame(raf); draw(); }
   function clearReadings(){ R={dist:{}, abs:{}}; BGR={count:null, rep:BGR.rep}; reset(); }
   function setMode(){
-    $('#gr-drow').hidden=!dist(); $('#gr-arow').hidden=dist();
+    $('#gr-arow').hidden=dist();
+    if(dist()){ svg.setAttribute('tabindex','0'); svg.setAttribute('role','slider'); svg.setAttribute('aria-valuemin','5'); svg.setAttribute('aria-valuemax','50'); svg.setAttribute('aria-label','Distance from the source to the GM tube: drag the tube, or use the arrow keys'); }
+    else { svg.removeAttribute('tabindex'); svg.setAttribute('role','img'); ['aria-valuemin','aria-valuemax','aria-valuenow','aria-valuetext'].forEach(function(a){ svg.removeAttribute(a); }); svg.setAttribute('aria-label','A gamma source and a Geiger–Müller tube with lead sheets between them, the counter below and a graph of the readings'); }
     setGraphButtons(); reset();
   }
   function setExp(){
@@ -690,16 +693,35 @@ function expKey(x, y, upLabel, downLabel){
     reset();
   }
 
-  playBtn.addEventListener('click', function(){ if(running){ stop(); draw(); } else run(); });
+  // in Experiment mode the main button takes a 60 s count where the tube is now
+  playBtn.addEventListener('click', function(){ if(exp()){ if(!counting) startCount('read'); return; } if(running){ stop(); draw(); } else run(); });
   slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
   expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); setExp(); });
   $('#gr-reset').addEventListener('click', reset);
-  $('#gr-count').addEventListener('click', function(){ startCount('read'); });
   $('#gr-bg').addEventListener('click', function(){ startCount('bg'); });
   $('#gr-clear').addEventListener('click', clearReadings);
-  dIn.addEventListener('input', function(){ photons=[]; lastCount=null; draw(); });
-  $('#gr-add').addEventListener('click', function(){ var s=+sheetSeg.value(); if(x()+s<=MAX_X){ sheets.push(s); photons=[]; lastCount=null; draw(); } });
-  $('#gr-rem').addEventListener('click', function(){ sheets.pop(); photons=[]; lastCount=null; draw(); });
+  // drag the GM tube along the bench (pointer), or ← → / Home / End when the picture has focus
+  function setD(v){ v=Math.max(5, Math.min(50, Math.round(v))); if(v===dVal) return; dVal=v; photons=[]; lastCount=null; justAdded=null; draw(); }
+  function svgX(e){ var pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()).x; }
+  var grab=null;
+  svg.addEventListener('pointerdown', function(e){
+    if(!dist() || counting) return;
+    var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; var q=p.matrixTransform(svg.getScreenCTM().inverse());
+    var tx=tubeX(); if(q.x<tx-14 || q.x>tx+60 || Math.abs(q.y-BY)>34) return;
+    grab=q.x-tx; svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
+  });
+  svg.addEventListener('pointermove', function(e){ if(grab===null) return; setD((svgX(e)-grab-SX)/PXCM); });
+  function endGrab(){ if(grab===null) return; grab=null; svg.classList.remove('dragging'); draw(); }
+  svg.addEventListener('pointerup', endGrab); svg.addEventListener('pointercancel', endGrab);
+  svg.addEventListener('keydown', function(e){
+    if(!dist() || counting) return;
+    var k=e.key, v=null;
+    if(k==='ArrowRight'||k==='ArrowUp') v=d()+1; else if(k==='ArrowLeft'||k==='ArrowDown') v=d()-1;
+    else if(k==='PageUp') v=d()+5; else if(k==='PageDown') v=d()-5; else if(k==='Home') v=5; else if(k==='End') v=50;
+    if(v!==null){ setD(v); e.preventDefault(); }
+  });
+  $('#gr-sheets').addEventListener('click', function(e){ var bt=e.target.closest('[data-s]'); if(!bt||bt.disabled) return; var s=+bt.dataset.s; if(x()+s<=MAX_X){ sheets.push(s); photons=[]; lastCount=null; justAdded=null; draw(); } });
+  $('#gr-rem').addEventListener('click', function(){ sheets.pop(); photons=[]; lastCount=null; justAdded=null; draw(); });
 
   watchEquals($('#gr-eq1')); watchEquals($('#gr-eq2'));
   setMode(); setExp();

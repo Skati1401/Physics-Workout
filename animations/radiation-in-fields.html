@@ -178,12 +178,13 @@
 </head>
 <body>
 <div class="page" id="page">
-  <a class="home-link" href="a-level-ib.html">&larr; A Level and IB animations</a>
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
   <header class="page-head">
     <div>
       <div class="eyebrow">Animations &middot; radioactivity</div>
       <h1>Alpha, Beta and Gamma in Fields</h1>
     </div>
+    <div class="seg tabs" id="rf-level" role="group" aria-label="Level"><button type="button" data-v="ks4" aria-pressed="true">KS4</button><button type="button" data-v="ks5" aria-pressed="false">KS5</button></div>
   </header>
 
   <section class="card stage">
@@ -234,6 +235,7 @@
   // can show it in a frame, and it tells that page its height.
   var EMBED = /[?&]embed\b/.test(location.search);
   var FROM_ALEVEL = /[?&]from=alevel\b/.test(location.search);
+  if(FROM_ALEVEL){ var hl=document.querySelector('.home-link'); hl.href='a-level-ib.html'; hl.innerHTML='&larr; A Level and IB animations'; }
   if(EMBED){
     document.documentElement.classList.add('embed');
     Array.prototype.forEach.call(document.querySelectorAll('details.working'), function(d){ d.open = true; });
@@ -315,14 +317,16 @@
   function on(k){ return pressed($('#rf-rad [data-v="'+k+'"]')); }
   function magnetic(){ return field==='min'||field==='mout'; }
   function electric(){ return field==='etop'||field==='ebot'; }
-  function trueScale(){ return pressed(trueBtn); }
+  function trueScale(){ return ks5() && pressed(trueBtn); }
+  var levelSeg=null;
+  function ks5(){ return !!levelSeg && levelSeg.value()==='ks5'; }
   function slowOn(){ return pressed(slowBtn); }
   var lastMag=0.1, lastV=200;
   function setupSlider(){
     var row=sIn.closest('div');
     row.hidden = field==='none';
-    trueBtn.hidden = !magnetic();
-    if(magnetic()){ $('#rf-sl').textContent='Magnetic flux density, B'; sIn.min=0.02; sIn.max=0.3; sIn.step=0.01; sIn.value=lastMag; }
+    trueBtn.hidden = !magnetic() || !ks5();
+    if(magnetic()){ $('#rf-sl').textContent=ks5()?'Magnetic flux density, B':'Magnetic field strength'; sIn.min=0.02; sIn.max=0.3; sIn.step=0.01; sIn.value=lastMag; }
     else if(electric()){ $('#rf-sl').textContent='Voltage across the plates'; sIn.min=0; sIn.max=400; sIn.step=10; sIn.value=lastV; }
   }
   function B(){ return +sIn.value; }
@@ -429,6 +433,7 @@
   function readings(){
     var mag=magnetic(), ele=electric();
     $('#rf-so').textContent = mag ? B().toFixed(2)+' T' : (ele ? sn(V()/1000,0)+' kV' : '');
+    if(!ks5()) $('#rf-so').textContent = '';
     var aDir='straight', bDir='straight';
     if(mag){ aDir = field==='min' ? 'up' : 'down'; bDir = field==='min' ? 'down' : 'up'; }
     if(ele){ aDir = field==='etop' ? 'down' : 'up'; bDir = field==='etop' ? 'up' : 'down'; }
@@ -438,6 +443,7 @@
     $('#rf-sg').textContent = on('g') ? 'straight' : '–';
     $('#rf-sfl').textContent = mag ? 'B' : (ele ? 'E' : 'Field');
     $('#rf-sf').textContent = mag ? B().toFixed(2)+' T' : (ele ? (Ef()/1e6).toFixed(2)+' MV/m' : 'none');
+    if(!ks5()){ $('#rf-sfl').textContent='Field'; $('#rf-sf').textContent = mag ? (field==='min'?'into page':'out of page') : (ele ? (field==='etop'?'+ on top':'+ below') : 'none'); }
 
     var w1='', w2='', w3='';
     if(mag){
@@ -453,7 +459,13 @@
     } else {
       w1='No field, so no force on any of them: all three go straight on.';
     }
-    w3+=(w3?' ':'')+'On screen every particle moves at the same speed; really β particles are about 15 times faster than α.';
+    if(!ks5()){
+      if(mag||ele){
+        w1='α: charge +2, mass 4 (a helium nucleus)<br>β⁻: charge −1, mass about [[1|1840]] (an electron)<br>γ: no charge, no mass (an electromagnetic wave)';
+        w2='';
+        w3='Opposite charges, so α and β bend opposite ways. β is much lighter, so it bends much more than α'+(mag?' (the α path here is drawn 20 times more curved than it really is, so you can see which way it goes)':'')+'. γ has no charge, so the field has no effect on it.';
+      } else { w1='No field, so no force on any of them: all three go straight on.'; w2=''; w3=''; }
+    } else w3+=(w3?' ':'')+'On screen every particle moves at the same speed; really β particles are about 15 times faster than α.';
     $('#rf-eq1').innerHTML=FR(w1); $('#rf-eq2').innerHTML=FR(w2); $('#rf-eq2').hidden=!w2; $('#rf-eq3').textContent=w3;
 
     var note;
@@ -493,6 +505,7 @@
     draw();
   });
 
+  levelSeg=segGroup($('#rf-level'), function(){ setupSlider(); reset(); });
   watchEquals($('#rf-eq1')); watchEquals($('#rf-eq2'));
   setupSlider(); reset();
 })();
