@@ -124,6 +124,10 @@
   .sliders{flex:1 1 100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px 24px;}
   .eq .why{font-family:var(--font-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;}
   .view text{font-family:var(--font-mono);}
+  /* drag a person along the beam to set their distance */
+  .grab{cursor:grab;touch-action:none;}
+  .hint{font-size:12.5px;color:var(--ink-faint);}
+  #ss-svg.dragging,#ss-svg.dragging *{cursor:grabbing;}
   .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
   .lab{display:flex;justify-content:space-between;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
   .lab output{color:var(--ink);font-weight:600;}
@@ -191,7 +195,7 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="ss-svg" viewBox="0 40 560 186" role="img" aria-label="A seesaw with a person on each side"></svg>
+      <svg class="view" id="ss-svg" viewBox="0 16 560 210" role="img" aria-label="A seesaw with a person on each side"></svg>
       <div class="under">
         <div class="sliders">
           <div><label class="lab" for="ss-w1">Left weight <output id="ss-w1o"></output></label><input type="range" id="ss-w1" min="100" max="800" step="50" value="400"></div>
@@ -203,6 +207,7 @@
     </div>
     <div class="side">
       <p class="note" id="ss-note" aria-live="polite"></p>
+      <p class="hint">Drag a person along the seesaw to move them, or use the distance sliders.</p>
       <details class="working" id="working">
         <summary>Show working</summary>
         <div class="eq" id="ss-eq"></div>
@@ -267,7 +272,11 @@
         var s='<rect x="'+(q.x-14)+'" y="'+(q.y-4-h)+'" width="28" height="'+h+'" rx="6" fill="var(--moments-soft)" stroke="var(--moments)" stroke-width="2"/>';
         s+='<line x1="'+q.x+'" x2="'+q.x+'" y1="'+(q.y-4-h-34)+'" y2="'+(q.y-4-h-6)+'" stroke="var(--moments)" stroke-width="3.5" marker-end="url(#ss-h)"/>';
         s+='<text x="'+q.x+'" y="'+(q.y-4-h-40)+'" text-anchor="middle" font-size="12.5" fill="var(--moments)">'+W+' N</text>';
-        var dy=CY+30; s+='<text x="'+(CX+d*PXM/2)+'" y="'+(dy+(side<0?0:0))+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">'+Math.abs(d)+' m</text>';
+        // distance label under the middle of its half of the beam, tilted with it
+        var m=pt(d/2), lx=m.x-18*sn, ly=m.y+18*c;
+        s+='<text x="'+lx+'" y="'+ly+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)" transform="rotate('+ang+' '+lx+' '+ly+')">'+Math.abs(d)+' m</text>';
+        // invisible grab area over the person and their weight arrow
+        s+='<rect class="grab" data-side="'+side+'" x="'+(q.x-26)+'" y="'+(q.y-4-h-52)+'" width="52" height="'+(h+80)+'" fill="transparent"/>';
         return s;
       }
       g+=person(-(+d1.value),+w1.value,'L',-1)+person(+d2.value,+w2.value,'R',1);
@@ -289,6 +298,24 @@
         FR('To balance with this right weight, it would need to sit at d = [['+num(acw,1)+'|'+w2.value+']] = '+num(need,2)+' m'+(need>2.5?', which is off the end of the seesaw.':'.'));
       animate();
     }
+    // drag a person along the beam: project the pointer onto the (tilted) beam, round to the slider's step
+    var svgEl=$('#ss-svg'), drag=null;
+    function svgPt(e){ var q=svgEl.createSVGPoint(); q.x=e.clientX; q.y=e.clientY; return q.matrixTransform(svgEl.getScreenCTM().inverse()); }
+    function along(q){ var a=ang*Math.PI/180; return ((q.x-CX)*Math.cos(a)+(q.y-CY)*Math.sin(a))/PXM; }
+    svgEl.addEventListener('pointerdown',function(e){
+      var r=e.target.closest && e.target.closest('.grab'); if(!r) return;
+      var side=+r.getAttribute('data-side'), el=side<0?d1:d2;
+      drag={el:el, side:side, off:along(svgPt(e))-side*(+el.value)};
+      svgEl.setPointerCapture(e.pointerId); svgEl.classList.add('dragging'); e.preventDefault();
+    });
+    svgEl.addEventListener('pointermove',function(e){
+      if(!drag) return;
+      var el=drag.el, v=drag.side*(along(svgPt(e))-drag.off);
+      v=Math.max(+el.min, Math.min(+el.max, Math.round(v*4)/4));
+      if(+el.value!==v){ el.value=v; upd(); }
+    });
+    function endDrag(){ if(!drag) return; drag=null; svgEl.classList.remove('dragging'); }
+    svgEl.addEventListener('pointerup',endDrag); svgEl.addEventListener('pointercancel',endDrag);
     upd();
   }
   watchEquals('.eq');
