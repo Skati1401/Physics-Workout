@@ -40,3 +40,11 @@ To change something on every practical page (a bug fix, a new factory), edit `te
 ## CORE-PRACTICALS.md
 
 The tracker for building the remaining practicals in batches, each in its own chat. It covers how to start a batch, the steps for each practical, and the status table.
+
+## crossword: layouts for createCrossword
+
+```
+node tools/crossword/layout.js 14 16 STORE PATHWAY CONSERVATION …   # prints the grid and one {a, r, c, d} line per word
+```
+
+Paste the lines into the page's `createCrossword({host, words:[…]})` and add a clue to each. Seeded, so the same words give the same grid.

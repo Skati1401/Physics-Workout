@@ -43,3 +43,11 @@ Stand-alone pages in `animations/` (teaching-animations skill), one copy framed 
 
 - 27 Oct 2026: Forces split into Part 1 (1a, 1b) and Part 2 (1c with suvat, 1d) to match Alex's school.
 - Unit 4 (4a–4d), Unit 5 (5a, 5b), Unit 6 (6a, 6b) workouts built to the size rule.
+
+## 4. Key-word crosswords
+
+`createCrossword` is in every copy of the act() engine (2 Nov 2026). Make the layout with `node tools/crossword/layout.js ROWS COLS WORD …`, then add each clue; a clue never contains its own answer, and a multi-word term drops to one word with the rest in the clue ("___ diagram").
+
+- [x] **4a + 4b (2 Nov 2026):** one crossword on 4b's new Key Terms tab (`heat-transfer-igcse.html#terms`), 15 words from the Energy deck slides 6 and 7. Reserves if a word is changed: KINETIC, THERMAL, NUCLEAR, ELASTIC, VACUUM, METALS, ABSORBER.
+- [ ] Other units, if Alex wants them.
+

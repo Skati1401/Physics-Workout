@@ -1112,6 +1112,160 @@ function createSpot(cfg){
     isDone:()=>found});
 }
 
+/* ================= crossword ================= */
+// cfg.words: [{a:'ANSWER', clue:'…', r:row, c:col, d:'a'|'d'}], positions from tools/crossword/layout.js.
+// Type into the grid; Check locks the right letters and clears the wrong ones after a moment.
+let xwN=0;
+function createCrossword(cfg){
+  if(!document.getElementById('xw-css')){
+    const st=document.createElement('style');st.id='xw-css';
+    st.textContent='.xw{display:grid;grid-template-columns:auto minmax(0,1fr);gap:22px;align-items:start}'+
+    '@media (max-width:860px){.xw{grid-template-columns:minmax(0,1fr)}}'+
+    '.xw-scroll{max-width:100%;overflow-x:auto;padding:2px}'+
+    // phones: squares stay at least 24px, and the grid scrolls sideways inside its own box
+    '.xw-grid{display:grid;grid-template-columns:repeat(var(--xw-c),1fr);gap:2px;width:calc(var(--xw-c) * 37px);max-width:100%;min-width:calc(var(--xw-c) * 24px);user-select:none}'+
+    '.xw-cell{position:relative;aspect-ratio:1}'+
+    '.xw-cell input{display:block;width:100%;height:100%;margin:0;padding:0;border:1.5px solid var(--ink-faint);border-radius:3px;background:var(--panel);color:var(--ink);text-align:center;text-transform:none;font:600 clamp(13px,2.2vw,19px)/1 var(--f-mono);caret-color:transparent;cursor:pointer}'+
+    '.xw-cell input:focus{outline:none}'+
+    '.xw-cell.is-word input{background:var(--accent-soft)}'+
+    '.xw-cell input:focus-visible,.xw-cell.is-cur input{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}'+
+    '.xw-cell.is-ok input{background:var(--good-soft);border-color:var(--good);color:var(--good)}'+
+    '.xw-cell.is-wrong input{background:var(--bad-soft);border-color:var(--bad)}'+
+    '.xw-now{grid-column:1/-1;min-height:44px;margin:0;padding:8px 12px;border-radius:6px;background:var(--accent-soft);font-size:14px;line-height:1.4}'+
+    '.xw-now b{font-family:var(--f-mono);margin-right:6px}'+
+    '.xw-num{position:absolute;top:1px;left:2px;font:500 clamp(7px,1vw,10px)/1 var(--f-mono);color:var(--ink-soft);pointer-events:none}'+
+    '.xw-clues{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:4px 18px;align-content:start}'+
+    '.xw-clues h4{margin:4px 0 4px;font:600 15px/1.2 var(--f-body)}'+
+    '.xw-clue{display:flex;gap:8px;width:100%;min-height:44px;padding:5px 8px;border:1px solid transparent;border-radius:6px;background:none;text-align:left;font-size:14px;line-height:1.35;cursor:pointer;align-items:flex-start}'+
+    '.xw-clue b{font:600 13px/1.5 var(--f-mono);min-width:2.8em;white-space:nowrap;color:var(--ink-soft)}'+
+    '.xw-clue:hover{border-color:var(--panel-border)}'+
+    '.xw-clue.is-on{background:var(--accent-soft);border-color:var(--accent)}'+
+    '.xw-clue.is-done{color:var(--ink-soft)}.xw-clue.is-done b::after{content:" ✓";color:var(--good)}'+
+    '@media (prefers-reduced-motion: no-preference){.xw-cell.is-wrong input{animation:xwshake .4s}.xw-cell.pop input{animation:xwpop .25s ease-out}}'+
+    '@keyframes xwshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}'+
+    '@keyframes xwpop{50%{transform:scale(1.08)}}';
+    document.head.appendChild(st);
+  }
+  const host=cfg.host,id='xw'+(++xwN);
+  const words=cfg.words.map(w=>({a:w.a.toUpperCase(),clue:w.clue,r:w.r,c:w.c,d:w.d==='d'?1:0}));
+  const R=Math.max(...words.map(w=>w.r+w.d*(w.a.length-1)))+1,C=Math.max(...words.map(w=>w.c+(1-w.d)*(w.a.length-1)))+1;
+  const cells={};   // 'r,c' -> {ch, words:[word indexes], el, inp}
+  words.forEach((w,wi)=>{w.cells=[];for(let k=0;k<w.a.length;k++){const key=(w.r+w.d*k)+','+(w.c+(1-w.d)*k);
+    const cl=cells[key]||(cells[key]={ch:w.a[k],words:[]});cl.words.push(wi);w.cells.push(key);}});
+  // number the squares that start a word, reading left to right, top to bottom
+  let n=0;const starts={};
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){if(words.some(w=>w.r===r&&w.c===c))starts[r+','+c]=++n;}
+  words.forEach(w=>{w.n=starts[w.r+','+w.c];});
+  const order=words.map((w,i)=>i).sort((x,y)=>words[x].d-words[y].d||words[x].n-words[y].n);
+  const keys=Object.keys(cells);
+  const wrap=mk('div','xw');host.appendChild(wrap);
+  const now=mk('p','xw-now','Click a square or a clue, then type. Space or a second click turns between across and down.');wrap.appendChild(now);
+  const grid=mk('div','xw-grid');grid.style.setProperty('--xw-c',C);grid.setAttribute('role','group');grid.setAttribute('aria-label','Crossword grid');
+  const scroller=mk('div','xw-scroll');scroller.appendChild(grid);wrap.appendChild(scroller);
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const key=r+','+c,cl=cells[key],d=mk('div','xw-cell');grid.appendChild(d);
+    if(!cl){d.setAttribute('aria-hidden','true');continue;}
+    if(starts[key])d.appendChild(mk('span','xw-num',''+starts[key])).setAttribute('aria-hidden','true');
+    const inp=document.createElement('input');inp.type='text';inp.maxLength=2;inp.autocomplete='off';inp.spellcheck=false;
+    inp.setAttribute('autocapitalize','characters');inp.id=id+'-'+r+'-'+c;
+    inp.setAttribute('aria-label',cl.words.map(wi=>{const w=words[wi];return w.n+(w.d?' down':' across')+', letter '+(w.cells.indexOf(key)+1)+' of '+w.a.length;}).join('; '));
+    d.appendChild(inp);cl.el=d;cl.inp=inp;cl.key=key;
+  }
+  keys.forEach(k=>{cells[k].inp.tabIndex=-1;});cells[words[order[0]].cells[0]].inp.tabIndex=0;
+  const clues=mk('div','xw-clues');wrap.appendChild(clues);
+  const clueBtn={};
+  [0,1].forEach(dd=>{
+    const col=mk('div');col.appendChild(mk('h4','',dd?'Down':'Across'));
+    order.filter(i=>words[i].d===dd).forEach(i=>{
+      const w=words[i],b=mk('button','xw-clue','<b>'+w.n+'</b><span>'+w.clue+' ('+w.a.length+')</span>');b.type='button';
+      b.addEventListener('click',()=>{dir=w.d;const k=w.cells.find(k=>!cells[k].inp.value&&!cells[k].ok)||w.cells[0];cells[k].inp.focus();});
+      col.appendChild(b);clueBtn[i]=b;
+    });
+    clues.appendChild(col);
+  });
+  const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Start again',fn:reset}]);
+  let cur=null,dir=0;
+  const wordOf=(key,d)=>{const cl=cells[key];return cl.words.find(wi=>words[wi].d===d);};
+  function highlight(){
+    keys.forEach(k=>cells[k].el.classList.remove('is-word','is-cur'));
+    Object.values(clueBtn).forEach(x=>x.classList.remove('is-on'));
+    if(!cur)return;
+    const wi=wordOf(cur,dir);
+    if(wi!=null){const w=words[wi];w.cells.forEach(k=>cells[k].el.classList.add('is-word'));clueBtn[wi].classList.add('is-on');
+      now.innerHTML='<b>'+w.n+(w.d?' down':' across')+'</b>'+w.clue+' ('+w.a.length+')';}
+    // only the current square is in the Tab order; the arrow keys move around the grid
+    keys.forEach(k=>{cells[k].inp.tabIndex=k===cur?0:-1;});
+    cells[cur].el.classList.add('is-cur');
+  }
+  function go(key){if(cells[key])cells[key].inp.focus();}
+  function step(key,s){   // next square along the current word
+    const wi=wordOf(key,dir);if(wi==null)return null;const w=words[wi],i=w.cells.indexOf(key)+s;
+    return i>=0&&i<w.cells.length?w.cells[i]:null;
+  }
+  function markDone(){words.forEach((w,i)=>clueBtn[i].classList.toggle('is-done',w.cells.every(k=>cells[k].ok)));}
+  keys.forEach(key=>{
+    const cl=cells[key],inp=cl.inp;
+    inp.addEventListener('focus',()=>{
+      if(wordOf(key,dir)==null)dir=1-dir;
+      cur=key;highlight();inp.select&&inp.select();
+    });
+    inp.addEventListener('blur',()=>{setTimeout(()=>{if(!grid.contains(document.activeElement)){cur=null;highlight();}},0);});
+    inp.addEventListener('mousedown',e=>{if(document.activeElement===inp&&cl.words.length>1){e.preventDefault();dir=1-dir;highlight();}});
+    inp.addEventListener('input',()=>{
+      const v=(inp.value.match(/[a-z]/ig)||[]).pop();
+      if(cl.ok){inp.value=cl.ch;}
+      else{inp.value=v?v.toUpperCase():'';cl.el.classList.remove('is-wrong');}
+      if(v){const nx=step(key,1);if(nx)go(nx);}
+    });
+    inp.addEventListener('keydown',e=>{
+      const k=e.key;let r=+key.split(',')[0],c=+key.split(',')[1];
+      if(k==='Backspace'){
+        if(inp.value&&!cl.ok){inp.value='';e.preventDefault();return;}
+        const pv=step(key,-1);if(pv){e.preventDefault();go(pv);if(!cells[pv].ok)cells[pv].inp.value='';}
+        return;
+      }
+      if(k==='Delete'){if(!cl.ok)inp.value='';e.preventDefault();return;}
+      if(k===' '){e.preventDefault();if(cl.words.length>1){dir=1-dir;highlight();}return;}
+      const mv={ArrowLeft:[0,-1],ArrowRight:[0,1],ArrowUp:[-1,0],ArrowDown:[1,0]}[k];
+      if(mv){
+        e.preventDefault();
+        const nd=mv[0]?1:0;if(nd!==dir&&wordOf(key,nd)!=null){dir=nd;highlight();return;}
+        for(let i=1;i<Math.max(R,C);i++){const nk=(r+mv[0]*i)+','+(c+mv[1]*i);if(cells[nk]){go(nk);return;}if(r+mv[0]*i<0||c+mv[1]*i<0||r+mv[0]*i>=R||c+mv[1]*i>=C)return;}
+        return;
+      }
+      if(cl.ok&&/^[a-z]$/i.test(k)){e.preventDefault();const nx=step(key,1);if(nx)go(nx);}
+    });
+  });
+  function lock(cl,pop){cl.ok=true;cl.inp.value=cl.ch;cl.inp.readOnly=true;cl.el.classList.remove('is-wrong');cl.el.classList.add('is-ok');if(pop){cl.el.classList.add('pop');setTimeout(()=>cl.el.classList.remove('pop'),300);}}
+  let wrongTimer=null;
+  function check(){
+    let wrong=[],blank=0;
+    keys.forEach(k=>{const cl=cells[k];if(cl.ok)return;const v=cl.inp.value;
+      if(!v){blank++;return;}
+      if(v===cl.ch)lock(cl,true);else{wrong.push(cl);cl.el.classList.add('is-wrong');}});
+    markDone();
+    const done=words.filter(w=>w.cells.every(k=>cells[k].ok)).length;
+    clearTimeout(wrongTimer);
+    wrongTimer=setTimeout(()=>{wrong.forEach(cl=>{if(!cl.ok){cl.inp.value='';cl.el.classList.remove('is-wrong');}});},750);
+    if(done===words.length){b.say('All '+words.length+' words correct. Well done.','good');celebrate(b.msg);}
+    else b.say(done+' of '+words.length+' words correct'+(wrong.length?', '+wrong.length+' wrong letter'+(wrong.length>1?'s':'')+' taken out':'')+(blank?', '+blank+' square'+(blank>1?'s':'')+' empty':'')+'.',wrong.length?'bad':'');
+  }
+  function reset(){
+    clearTimeout(wrongTimer);
+    keys.forEach(k=>{const cl=cells[k];cl.ok=false;cl.inp.value='';cl.inp.readOnly=false;cl.el.classList.remove('is-ok','is-wrong','pop');});
+    markDone();b.say('','');
+  }
+  return track(host,{reset:reset,
+    getState:()=>({v:keys.map(k=>cells[k].inp.value||'.').join(''),ok:keys.map(k=>cells[k].ok?1:0).join('')}),
+    setState:s=>{
+      reset();if(!s||typeof s.v!=='string')return;
+      keys.forEach((k,i)=>{const cl=cells[k],v=s.v[i];if(s.ok&&s.ok[i]==='1'&&v===cl.ch)lock(cl);else if(v&&/[A-Z]/.test(v))cl.inp.value=v;});
+      markDone();
+      if(keys.every(k=>cells[k].ok))b.say('All '+words.length+' words correct.','good');
+    },
+    isDone:()=>keys.every(k=>cells[k].ok)});
+}
+
 /* ================= SVG line graph ================= */
 function lineGraph(o){
   const W=o.W||560,H=o.H||340,pl=o.pl||58,pr=o.pr||18,pt=o.pt||16,pb=o.pb||50;
