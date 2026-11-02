@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resistivity Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#b45309;   --topic-soft:#fdecc8;
+    --cur:#2563eb;     --hot:#dc2626;
+    --water:#d6e9fb;   --ice:#ffffff;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#fbbf24; --topic-soft:#3a2a0c;
+      --cur:#60a5fa; --hot:#f87171;
+      --water:#1c3a5a; --ice:#c9d6e6;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#fbbf24; --topic-soft:#3a2a0c;
+      --cur:#60a5fa; --hot:#f87171;
+      --water:#1c3a5a; --ice:#c9d6e6;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+  /* button rows fill their width (Alex, 2 Nov 2026) */
+  .btn-group>.btn,.exp-btns>.btn{flex:1 1 0;min-width:max-content;justify-content:center;}
+  .seg:not(.tabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));}
+  .seg:not(.tabs)>button{padding-inline:4px;white-space:nowrap;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 335px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  .view.dragging,.view.dragging *{cursor:grabbing;}
+  .grab{cursor:grab;}
+  .view:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  /* mystery-beaker answer box */
+  .guess{border:1px solid var(--panel-border);border-radius:8px;padding:8px 10px;}
+  .guess-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .guess-row input{width:110px;min-height:44px;font:600 15px var(--font-mono);padding:6px 8px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);}
+  .guess-row .unit{font:13px var(--font-mono);color:var(--ink-soft);}
+  .gfb{font-size:14px;margin-top:6px;min-height:1.4em;}
+  .gfb.ok{color:var(--good);font-weight:600;} .gfb.no{color:var(--bad);font-weight:600;}
+  .seg button sub,.stat sub{font-size:.75em;}
+  .cgrid>[hidden]{display:none!important;}
+
+  #rs-mat,#rs-d,#rs-jump{display:flex;flex-wrap:nowrap;}
+  #rs-mat>button,#rs-d>button,#rs-jump>button{flex:1 1 auto;padding-inline:6px;}
+  @media (max-width:560px){ #rs-mat,#rs-d,#rs-jump{flex-wrap:wrap;} }
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="ial.html">&larr; IAL animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow" id="rs-eye">Animations &middot; electric circuits &middot; IAL CP7</div>
+      <h1>Resistivity of a Wire</h1>
+    </div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="rs-svg" viewBox="0 0 600 300" tabindex="0" role="slider" aria-label="Crocodile clip: drag it along the metre rule, or use the arrow keys, to set the length of wire L. A cell, protective resistor and ammeter drive a current through the wire between the clips, a voltmeter measures the p.d. across it, and a graph of resistance against length is on the right" aria-valuemin="0.05" aria-valuemax="1"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="rs-play" type="button">&#9654; Play</button>
+          <button class="btn" id="rs-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="rs-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="rs-exp" type="button" aria-pressed="false" title="Take your own readings and find the resistivity">Experiment</button>
+          <button class="btn" id="rs-clear" type="button" hidden>Clear readings</button>
+        </div>
+        <div class="sliders">
+          <div><label class="lab" for="rs-l">Length between the clips, L<output id="rs-lo"></output></label><input type="range" id="rs-l" min="0.05" max="1" step="0.01" value="0.5"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="cgrid">
+        <span class="rowlab">Material</span>
+        <div class="seg" id="rs-mat"><button type="button" data-v="con" aria-pressed="true">Constantan</button><button type="button" data-v="nic" aria-pressed="false">Nichrome</button><button type="button" data-v="cu" aria-pressed="false">Copper</button></div>
+        <span class="rowlab">Diameter</span>
+        <div class="seg" id="rs-d"><button type="button" data-v="0.20" aria-pressed="false">0.20 mm</button><button type="button" data-v="0.32" aria-pressed="true">0.32 mm</button><button type="button" data-v="0.45" aria-pressed="false">0.45 mm</button></div>
+        <span class="rowlab" id="rs-jlab">Jump to</span>
+        <div class="seg" id="rs-jump"><button type="button" data-v="0.25" aria-pressed="false">L = 0.25 m</button><button type="button" data-v="0.5" aria-pressed="false">L = 0.50 m</button><button type="button" data-v="1" aria-pressed="false">L = 1.00 m</button></div>
+      </div>
+      <p class="note" id="rs-note" aria-live="polite"></p>
+      <div class="stats" id="rs-stats"></div>
+      <div class="rtable-wrap" id="rs-tablewrap" hidden><div id="rs-table"></div></div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="rs-eq1"></div>
+        <div class="eq" id="rs-eq2"></div>
+        <p class="eqnote" id="rs-eq3"></p>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    Array.prototype.forEach.call(document.querySelectorAll('details.working'), function(d){ d.open = true; });
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 4.97 × 10⁻¹⁹
+    if(x===0) return '0';
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+Math.abs(m).toFixed(dp)>=10){ m/=10; e++; }
+    return sn(m,dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function sig(x, n){   // n significant figures, as text, real minus sign
+    if(x===0) return '0';
+    var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
+    return sn(x, dp);
+  }
+  function grp(t){ return String(t).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }   // 12 345
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+(+x1).toFixed(1)+'" y1="'+(+y1).toFixed(1)+'" x2="'+(+x2).toFixed(1)+'" y2="'+(+y2).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||1.5)+'"'+(extra||'')+'/>'; }
+  // A small seeded random number generator (mulberry32), so the same setup gives the same readings.
+  function rng(seed){ var a = seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+  // Least-squares straight line through points [[x,y],…]: {m, c}
+  function fitLine(p){
+    var n=p.length, sx=0, sy=0, sxx=0, sxy=0;
+    p.forEach(function(q){ sx+=q[0]; sy+=q[1]; sxx+=q[0]*q[0]; sxy+=q[0]*q[1]; });
+    var d=n*sxx-sx*sx; if(n<2 || d===0) return null;
+    var m=(n*sxy-sx*sy)/d; return {m:m, c:(sy-m*sx)/n};
+  }
+
+/* ================= Experiment kit (copy this block into an animation page's <script>) =================
+   The reusable parts of an animation's Experiment mode, taken from animations/hookes-law.html:
+   - expRun():     the run itself: step the independent variable up one interval at a time, then
+                   (optionally) back down again, measuring at every step
+   - expReading(): a reading with a small, fixed pattern of reading error, rounded to the instrument's
+                   resolution, that never goes the wrong way
+   - expTable():   the results table (sticky header, newest row highlighted, a column per run)
+   - expCross(), expRing(), expKey(): SVG marks for plotted readings (× first run, ○ return run)
+   The page keeps its own picture, physics, graph axes and notes. See tools/experiment-kit/README.md.
+   Plain ES5 so it can sit inside any animation page's IIFE. */
+
+// A fixed pattern of reading errors, in units of the instrument's resolution. Fixed (not random) so a
+// teacher sees the same results as the class, and a re-run gives the same table.
+var EXP_ERR = [0, 1, -1, 0, 2, -1, 1, -2, 0, 1, -1, 0, 1, -1, 2, 0, -1, 1, 0, -2, 1];
+function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP_ERR.length]; }
+
+// What the student reads off the instrument.
+//   trueVal  the value the physics gives at this step
+//   prevVal  the reading taken at the step before (or the start value)
+//   res      the instrument's resolution (0.1 cm ruler, 0.05 mm vernier, 0.01 A ammeter, 1° protractor)
+//   i        the step number (picks the error from the pattern)
+//   scale    how big the error is, in resolutions (default 1; 0.5 for a fine instrument)
+// The error is never more than a quarter of the change since the last reading, so a reading never
+// goes the wrong way (an extension never falls as the load rises, a current never drops as V rises).
+function expReading(trueVal, prevVal, res, i, scale){
+  var gap = Math.abs(trueVal - prevVal);
+  var err = i > 0 ? expErr(i) * Math.min(res * (scale == null ? 1 : scale), gap / 4) : 0;
+  var r = Math.round((trueVal + err) / res) * res;
+  var dp = Math.max(0, Math.ceil(-Math.log10(res) - 1e-9));
+  return +r.toFixed(dp);
+}
+
+// The run. cfg = {
+//   start: 0,                 value of the independent variable before the first step
+//   max: 10,                  last value of the first run (the run stops there)
+//   step: 1,                  the interval (the page can change it with setStep, which resets the run)
+//   reverse: true,            allow a return run (unloading, turning the voltage back down)
+//   measure: function(v, phase, prevReading){ return reading },   phase is 'up' or 'down'
+//   onChange: function(run, what){}  what is 'up', 'down' or 'reset'
+// }
+// run.up and run.down are arrays of {v, r}. run.phase is 'up' until the first step back, then 'down'.
+function expRun(cfg){
+  var run = { up: [], down: [], phase: 'up', value: cfg.start || 0, peak: cfg.start || 0, step: cfg.step || 1 };
+  var r6 = function(x){ return Math.round(x * 1e6) / 1e6; };
+  run.upDone = function(){ return run.phase === 'down' || run.peak >= cfg.max - 1e-9; };
+  run.downDone = function(){ return run.phase === 'down' && run.value <= (cfg.start || 0) + 1e-9; };
+  run.last = function(){ var a = run.phase === 'down' && run.down.length ? run.down : run.up; return a[a.length - 1] || null; };
+  run.stepUp = function(){
+    if(run.phase !== 'up' || run.upDone()) return false;
+    var prev = run.up.length ? run.up[run.up.length - 1].r : null;
+    var v = r6(Math.min(cfg.max, run.value + run.step));
+    run.value = run.peak = v;
+    run.up.push({ v: v, r: cfg.measure(v, 'up', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'up');
+    return true;
+  };
+  run.stepDown = function(){
+    if(!cfg.reverse || run.value <= (cfg.start || 0) + 1e-9 || !run.up.length) return false;
+    run.phase = 'down';
+    var prev = run.down.length ? run.down[run.down.length - 1].r : run.up[run.up.length - 1].r;
+    var v = r6(Math.max(cfg.start || 0, run.value - run.step));
+    run.value = v;
+    run.down.push({ v: v, r: cfg.measure(v, 'down', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'down');
+    return true;
+  };
+  run.reset = function(){ run.up = []; run.down = []; run.phase = 'up'; run.value = run.peak = cfg.start || 0; if(cfg.onChange) cfg.onChange(run, 'reset'); };
+  run.setStep = function(s){ run.step = s; run.reset(); };
+  return run;
+}
+
+// The results table. cols = [{label:'Load (N)', key:'v', dp:0}, {label:'Extension loading (cm)', key:'up', dp:1}, ...]
+// rows = [{v:1, up:1.6, down:''}, ...]. newKey/newV highlight the reading just taken (fades in).
+// Wrap it in .rtable-wrap so a long table scrolls under its sticky header.
+function expTable(el, cols, rows, newV){
+  var fmt = function(x, dp){ return (x === '' || x == null) ? '' : (+x).toFixed(dp || 0); };
+  var h = '<table class="rtable"><thead><tr>' + cols.map(function(c){ return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    h += '<tr' + (newV != null && row.v === newV ? ' class="new"' : '') + '>' + cols.map(function(c){ return '<td>' + fmt(row[c.key], c.dp) + '</td>'; }).join('') + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table>';
+}
+
+// Plotted readings, as SVG strings. Size 5 suits a 300px-wide graph.
+function expCross(cx, cy, s){ s = s || 5; return '<path d="M' + (cx - s) + ',' + (cy - s) + ' L' + (cx + s) + ',' + (cy + s) + ' M' + (cx + s) + ',' + (cy - s) + ' L' + (cx - s) + ',' + (cy + s) + '" stroke="var(--ink)" stroke-width="2"/>'; }
+function expRing(cx, cy, r){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r || 4.5) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+// A two-line key in the bottom-right corner of a graph: expKey(rightX, bottomY, 'loading', 'unloading')
+function expKey(x, y, upLabel, downLabel){
+  return '<text x="' + x + '" y="' + (y - 14) + '" text-anchor="end" font-size="10.5" fill="var(--ink)">× ' + upLabel + '</text>' +
+         '<text x="' + x + '" y="' + y + '" text-anchor="end" font-size="10.5" fill="var(--accent)">○ ' + downLabel + '</text>';
+}
+/* ================= end of Experiment kit ================= */
+
+
+  // ================= circuit helpers (shared by the electricity animations) =================
+  function f1(x){ return (+x).toFixed(1); }
+  function wire(pts, col, w){ return '<polyline points="'+pts.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' ')+'" fill="none" stroke="'+(col||'var(--ink)')+'" stroke-width="'+(w||1.8)+'" stroke-linejoin="round"/>'; }
+  function jdot(x,y){ return '<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="2.8" fill="var(--ink)"/>'; }
+  // a cell: long thin plate (+) on the left, short thick plate (−) on the right; wires meet the plates at x−4 and x+4
+  function cellH(x,y,flip){
+    var a=flip?x+4:x-4, b=flip?x-4:x+4;
+    return ln(a,y-15,a,y+15,'var(--ink)',1.8)+ln(b,y-8,b,y+8,'var(--ink)',4.5);
+  }
+  function cellV(x,y){ return ln(x-15,y-4,x+15,y-4,'var(--ink)',1.8)+ln(x-8,y+4,x+8,y+4,'var(--ink)',4.5); }   // + at the top
+  function resH(x,y,w,h,fill){ w=w||44; h=h||16; return '<rect x="'+f1(x-w/2)+'" y="'+f1(y-h/2)+'" width="'+w+'" height="'+h+'" fill="'+(fill||'var(--panel)')+'" stroke="var(--ink)" stroke-width="1.8"/>'; }
+  function resV(x,y,w,h,fill){ w=w||16; h=h||44; return '<rect x="'+f1(x-w/2)+'" y="'+f1(y-h/2)+'" width="'+w+'" height="'+h+'" fill="'+(fill||'var(--panel)')+'" stroke="var(--ink)" stroke-width="1.8"/>'; }
+  function meter(cx,cy,l,hi){ return '<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="13" fill="var(--panel)" stroke="'+(hi?'var(--topic)':'var(--ink)')+'" stroke-width="'+(hi?2.4:1.8)+'"/>'+txt(cx,cy+4.5,l,{a:'middle',fs:13,w:600,c:'var(--ink)'}); }
+  function lampH(x,y,glow){
+    var g='';
+    if(glow>0.02) g+='<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="'+f1(13+12*glow)+'" fill="#facc15" opacity="'+(0.15+0.45*glow).toFixed(2)+'"/>';
+    return g+'<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="12" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>'+ln(x-8.5,y-8.5,x+8.5,y+8.5,'var(--ink)',1.6)+ln(x-8.5,y+8.5,x+8.5,y-8.5,'var(--ink)',1.6);
+  }
+  function diodeH(x,y){   // conducts left to right
+    return '<path d="M'+f1(x-9)+','+f1(y-10)+' L'+f1(x+9)+','+f1(y)+' L'+f1(x-9)+','+f1(y+10)+' Z" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>'+ln(x+9,y-11,x+9,y+11,'var(--ink)',2.2);
+  }
+  function ldrV(x,y){   // resistor in a circle with two arrows coming in
+    return '<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="26" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>'+resV(x,y,14,36)+
+      '<path d="M'+f1(x-44)+','+f1(y-30)+' L'+f1(x-24)+','+f1(y-14)+' M'+f1(x-46)+','+f1(y-16)+' L'+f1(x-26)+','+f1(y)+'" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#ah-ink)"/>';
+  }
+  function thermV(x,y){ return resV(x,y)+'<path d="M'+f1(x-20)+','+f1(y+20)+' H'+f1(x-14)+' L'+f1(x+14)+','+f1(y-18)+'" fill="none" stroke="var(--ink)" stroke-width="1.5"/>'; }
+  function switchH(x,y,open){   // contacts at x−14 and x+14
+    return '<circle cx="'+f1(x-14)+'" cy="'+f1(y)+'" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/><circle cx="'+f1(x+14)+'" cy="'+f1(y)+'" r="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>'+
+      (open ? ln(x-12,y-1,x+11,y-14,'var(--ink)',1.8) : ln(x-12,y-1,x+12,y-2,'var(--ink)',1.8));
+  }
+  function arrowDefs(){
+    return '<defs><marker id="ah-ink" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker>'+
+      '<marker id="ah-top" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--topic)"/></marker></defs>';
+  }
+  // Current shown as dots moving along a path: the dots keep their spacing, so the number passing a
+  // point each second is proportional to the current (more dots per second in a bigger current).
+  function pathLen(pts){ var L=0; for(var i=1;i<pts.length;i++) L+=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]); return L; }
+  function pointAt(pts, s){
+    for(var i=1;i<pts.length;i++){
+      var d=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
+      if(s<=d || i===pts.length-1){ var t=d?Math.min(1,s/d):0; return [pts[i-1][0]+(pts[i][0]-pts[i-1][0])*t, pts[i-1][1]+(pts[i][1]-pts[i-1][1])*t]; }
+      s-=d;
+    }
+    return pts[0];
+  }
+  function flow(pts, dist, spacing, col){
+    // dist: how far the charge has moved along this path (grows with I × time); negative runs backwards
+    spacing=spacing||18; var L=pathLen(pts), g='';
+    if(L<1) return '';
+    var off=((dist%spacing)+spacing)%spacing;
+    for(var s=off; s<L; s+=spacing){ var p=pointAt(pts,s); g+='<circle cx="'+f1(p[0])+'" cy="'+f1(p[1])+'" r="2.6" fill="'+(col||'var(--cur)')+'"/>'; }
+    return g;
+  }
+  // Pointer position in the SVG's own units
+  function svgPoint(svg, e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+  // Drag something in the picture: o.hit(q) says whether the press grabbed it, o.move(q) moves it, o.ok() allows it now.
+  function svgDrag(svg, o){
+    var on=false, ctm=null;
+    svg.addEventListener('pointerdown', function(e){
+      if(o.ok && !o.ok()) return;
+      var q=svgPoint(svg,e); if(!o.hit(q)) return;
+      on=true; ctm=svg.getScreenCTM().inverse();   // freeze the scale while dragging
+      svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
+      if(o.start) o.start(q);
+    });
+    svg.addEventListener('pointermove', function(e){ if(!on) return; var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; o.move(p.matrixTransform(ctm)); });
+    function end(){ if(!on) return; on=false; svg.classList.remove('dragging'); if(o.end) o.end(); }
+    svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  }
+  // Graph axes. G = {x,y,w,h} in SVG units; a = {x0,x1,xs,y0,y1,ys,xl,yl,dpx,dpy,lx,ly}
+  function gx(G,a,v){ return G.x+(v-a.x0)/(a.x1-a.x0)*G.w; }
+  function gy(G,a,v){ return G.y+G.h-(v-a.y0)/(a.y1-a.y0)*G.h; }
+  function axes(G,a){
+    var g='', v, i;
+    for(v=a.x0, i=0; v<=a.x1+1e-9; v+=a.xs, i++){ var X=gx(G,a,v); g+=ln(X,G.y,X,G.y+G.h,'var(--panel-border)',1); if(!a.lx || i%a.lx===0) g+=txt(X, G.y+G.h+13, sn(v,a.dpx||0), {a:'middle',fs:9.5,c:'var(--ink-faint)'}); }
+    for(v=a.y0, i=0; v<=a.y1+1e-9; v+=a.ys, i++){ var Y=gy(G,a,v); g+=ln(G.x,Y,G.x+G.w,Y,'var(--panel-border)',1); if(!a.ly || i%a.ly===0) g+=txt(G.x-4, Y+3.5, sn(v,a.dpy||0), {a:'end',fs:9.5,c:'var(--ink-faint)'}); }
+    var X0 = a.x0<0 && a.x1>0 ? gx(G,a,0) : G.x, Y0 = a.y0<0 && a.y1>0 ? gy(G,a,0) : G.y+G.h;
+    g+=ln(X0,G.y,X0,G.y+G.h,'var(--ink-soft)',2)+ln(G.x,Y0,G.x+G.w,Y0,'var(--ink-soft)',2);
+    g+=txt(G.x, G.y-7, a.yl, {fs:10.5})+txt(G.x+G.w/2, G.y+G.h+28, a.xl, {a:'middle',fs:10.5});
+    return g;
+  }
+  function inBox(a,u,v){ return u>=a.x0-1e-9 && u<=a.x1+1e-9 && v>=a.y0-1e-9 && v<=a.y1+1e-9; }
+  function curve(G,a,fn,u0,u1,col,dash,n){
+    var pts=[]; n=n||160;
+    for(var k=0;k<=n;k++){ var u=u0+(u1-u0)*k/n, w=fn(u); if(isFinite(w) && inBox(a,u,w)) pts.push(f1(gx(G,a,u))+','+f1(gy(G,a,w))); }
+    return pts.length>1 ? '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="'+(dash?1.8:2.4)+'"'+(dash?' stroke-dasharray="5 4"':'')+'/>' : '';
+  }
+  function pdot(G,a,u,v,col){ return inBox(a,u,v) ? '<circle cx="'+f1(gx(G,a,u))+'" cy="'+f1(gy(G,a,v))+'" r="5" fill="'+(col||'var(--topic)')+'" stroke="var(--panel)" stroke-width="2"/>' : ''; }
+  // A tidy axis: max and step for a range 0..v, about n steps
+  function niceAxis(v, n){
+    n=n||5; if(v<=0) v=1;
+    var raw=v/n, p=Math.pow(10,Math.floor(Math.log10(raw))), m=raw/p;
+    var st=(m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p;
+    return {max:Math.ceil(v/st-1e-9)*st, step:st, dp:Math.max(0,-Math.floor(Math.log10(st)+1e-9)+(st/p===2.5?1:0))};
+  }
+  function stat(lab, val, hi){ return '<div class="stat'+(hi?' hi':'')+'"><small>'+lab+'</small><strong>'+val+'</strong></div>'; }
+  // The level switch (IGCSE | IAL | IB): opens on the level of the list the page came from
+  function levelGroup(el, onPick){
+    var sg=segGroup(el, onPick);
+    if(PW_LEVEL && el.querySelector('[data-v="'+PW_LEVEL+'"]')) sg.pick(PW_LEVEL);
+    return sg;
+  }
+  // keyboard for a focusable picture that sets one value: arrows, Page Up/Down, Home/End
+  function keySlider(svg, get, set, step, big, min, max, ok){
+    svg.addEventListener('keydown', function(e){
+      if(ok && !ok()) return;
+      var k=e.key, v=null, x=get();
+      if(k==='ArrowRight'||k==='ArrowUp') v=x+step; else if(k==='ArrowLeft'||k==='ArrowDown') v=x-step;
+      else if(k==='PageUp') v=x+big; else if(k==='PageDown') v=x-big; else if(k==='Home') v=min; else if(k==='End') v=max;
+      if(v!==null){ set(Math.max(min,Math.min(max,v))); e.preventDefault(); }
+    });
+  }
+  // ================= end of circuit helpers =================
+
+  // ===== Resistivity: R = ρL/A, ρ = gradient × A =====
+  var MATS={con:{rho:4.9e-7, name:'constantan', col:'#9ca3af'}, nic:{rho:1.1e-6, name:'nichrome', col:'#6b7280'}, cu:{rho:1.7e-8, name:'copper', col:'#c2410c'}};
+  var VSUP=3.0, RPRO=10, RC=0.10;            // two cells, 10 Ω protective resistor, about 0.10 Ω where the clips touch the wire
+  var svg=$('#rs-svg'), playBtn=$('#rs-play'), slowBtn=$('#rs-slow'), expBtn=$('#rs-exp'), lIn=$('#rs-l');
+  var L=0.5, running=false, raf=0, last=0, dist=0;
+  var X={rd:[], reading:0, just:null};
+  var matSeg=segGroup($('#rs-mat'), function(){ changed(); });
+  var dSeg=segGroup($('#rs-d'), function(){ changed(); });
+  var jumpSeg=segGroup($('#rs-jump'), function(v){ setL(+v, true); });
+  function exp(){ return pressed(expBtn); }
+  function slowOn(){ return pressed(slowBtn); }
+  function mat(){ return MATS[matSeg.value()]; }
+  function dmm(){ return +dSeg.value(); }
+  function area(d){ return Math.PI*Math.pow(d*1e-3,2)/4; }
+  function Rwire(l){ return mat().rho*l/area(dmm()); }
+  function circuit(l){ var R=Rwire(l)+RC, I=VSUP/(RPRO+R); return {R:R, I:I, V:I*R}; }
+  // micrometer: three readings in different places along the wire, to 0.01 mm
+  function micro(){ var d=dmm(); return [d, +(d-0.01).toFixed(2), +(d+0.01).toFixed(2)]; }
+  function dMean(){ var m=micro(); return (m[0]+m[1]+m[2])/3; }
+  if(PW_LEVEL==='ib') $('#rs-eye').innerHTML='Animations &middot; B.5 current and circuits';
+
+  // ---- layout
+  var G, narrowQ=window.matchMedia('(max-width:560px)');
+  function layout(){
+    if(narrowQ.matches){ G={x:62, y:330, w:262, h:200}; svg.setAttribute('viewBox','0 0 340 566'); }
+    else { G={x:392, y:20, w:190, h:228}; svg.setAttribute('viewBox','0 0 600 300'); }
+  }
+  if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ layout(); draw(); });
+  layout();
+
+  // ---- the picture: the wire taped along a metre rule, 3 px per cm
+  var R0=30, PX=300, WY=150;
+  function xAt(l){ return R0+PX*l; }
+  function clip(x, y, hi){
+    return '<path d="M'+f1(x-5)+','+(y-16)+' L'+f1(x+5)+','+(y-16)+' L'+f1(x+3)+','+(y+1)+' L'+f1(x-3)+','+(y+1)+' Z" fill="'+(hi?'var(--topic)':'var(--hot)')+'" stroke="var(--ink)" stroke-width="1.2"/>';
+  }
+  function scene(){
+    var g='', xL=xAt(L), c=circuit(L), m=mat(), ex=exp();
+    // metre rule
+    g+='<rect x="'+(R0-8)+'" y="'+(WY+6)+'" width="'+(PX+16)+'" height="22" fill="#f6e7b8" stroke="var(--ink-faint)" stroke-width="1"/>';
+    for(var cm=0; cm<=100; cm+=5){ var x=xAt(cm/100); g+=ln(x,WY+6,x,WY+6+(cm%10?5:9),'#5b4a1f',1); if(cm%20===0) g+=txt(x,WY+25,String(cm),{a:'middle',fs:8,c:'#5b4a1f'}); }
+    g+=txt(R0+PX+10,WY+25,'cm',{fs:8,c:'#5b4a1f'});
+    // the wire: bright where the current flows, dull beyond the clip
+    g+=ln(R0,WY,xL,WY,m.col,2.6)+ln(xL,WY,R0+PX,WY,m.col,2.6,' opacity="0.45"');
+    g+='<rect x="'+(R0-6)+'" y="'+(WY-5)+'" width="10" height="10" fill="var(--ink-faint)" opacity="0.5"/><rect x="'+(R0+PX-4)+'" y="'+(WY-5)+'" width="10" height="10" fill="var(--ink-faint)" opacity="0.5"/>';
+    // circuit above: cells, protective resistor, ammeter, and a flying lead to the moving clip
+    g+=wire([[R0,WY-16],[R0,60],[96,60]])+cellH(100,60)+wire([[104,60],[120,60]])+cellH(124,60)+wire([[128,60],[156,60]])+resH(178,60,40,14)+wire([[198,60],[232,60]])+meter(245,60,'A')+wire([[258,60],[300,60],[300,80]]);
+    g+=txt(112,40,VSUP.toFixed(1)+' V',{a:'middle',fs:9.5,c:'var(--ink-faint)'})+txt(178,44,RPRO+' Ω',{a:'middle',fs:9.5,c:'var(--ink-faint)'});
+    g+=wire([[300,80],[300,96],[xL,112],[xL,WY-16]]);
+    // voltmeter across the clips, below the rule
+    g+=wire([[R0,WY],[R0-14,WY],[R0-14,240],[167,240]],'var(--ink-soft)',1.4)+wire([[193,240],[f1(xL+10),240],[f1(xL+10),WY+2],[xL,WY]],'var(--ink-soft)',1.4)+meter(180,240,'V');
+    g+=clip(R0,WY,false)+clip(xL,WY,true);
+    g+='<rect class="grab" x="'+f1(xL-12)+'" y="'+(WY-34)+'" width="24" height="40" fill="transparent"/>';
+    if(!X.reading) g+=txt(xL, WY-38+ (xL>260?0:0), '← drag →', {a:xL>280?'end':xL<70?'start':'middle', fs:9.5, c:'var(--topic)'});
+    g+=txt(f1((R0+xL)/2), WY-8, 'L = '+L.toFixed(2)+' m', {a:'middle', fs:10, w:600, c:'var(--ink)'});
+    // meter readings
+    var rv = ex ? (X.just ? X.just.V : null) : c.V, ri = ex ? (X.just ? X.just.I : null) : c.I;
+    if(X.reading){ rv=null; ri=null; }
+    g+=txt(245,88, ri===null ? '–' : ri.toFixed(3)+' A',{a:'middle',fs:11,w:600,c:'var(--ink)'});
+    g+=txt(180,268, rv===null ? '–' : rv.toFixed(2)+' V',{a:'middle',fs:11,w:600,c:'var(--ink)'});
+    // micrometer reading of the diameter
+    g+='<g transform="translate(244,266)"><path d="M0,0 V-14 H34 V0" fill="none" stroke="var(--ink-soft)" stroke-width="3"/><rect x="34" y="-4" width="22" height="8" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="1.2"/><rect x="56" y="-6" width="14" height="12" fill="var(--panel-border)" stroke="var(--ink-soft)" stroke-width="1.2"/></g>';
+    g+=txt(272,292,'d = '+(ex ? dMean().toFixed(3) : dmm().toFixed(2))+' mm',{a:'middle',fs:9.5,c:'var(--ink-soft)'});
+    // current dots: cell → resistor → ammeter → flying lead → wire back to the fixed clip
+    var path=[[128,60],[156,60],[198,60],[232,60],[300,60],[300,96],[xL,112],[xL,WY],[R0,WY],[R0,60],[96,60]];
+    if(!ex || X.reading) g+=flow(path, dist, 18);
+    return g;
+  }
+  function axisSpec(){
+    var top=Rwire(1)+RC, ay=niceAxis(top*1.05,5);
+    return {x0:0, x1:1, xs:0.2, dpx:1, y0:0, y1:ay.max, ys:ay.step, dpy:ay.dp, xl:'L (m)', yl:'R (Ω)'};
+  }
+  function done(){
+    if(X.rd.length<6) return false;
+    var lo=Infinity, hi=-Infinity; X.rd.forEach(function(p){ lo=Math.min(lo,p.L); hi=Math.max(hi,p.L); });
+    return hi-lo>=0.5-1e-9;
+  }
+  function fit(){ return done() ? fitLine(X.rd.map(function(p){ return [p.L, p.V/p.I]; })) : null; }
+  function graph(){
+    var a=axisSpec(), g=axes(G,a);
+    if(exp()){
+      if(!X.rd.length) g+=txt(G.x+G.w/2, G.y+G.h/2, 'readings appear here', {a:'middle', fs:11, c:'var(--ink-faint)'});
+      X.rd.forEach(function(p){ var R=p.V/p.I; if(inBox(a,p.L,R)) g+=expCross(+f1(gx(G,a,p.L)), +f1(gy(G,a,R)), 4); });
+      var f=fit();
+      if(f){ g+=curve(G,a,function(x){ return f.m*x+f.c; },0,1,'var(--accent)',true); g+=txt(G.x+6, G.y+12, 'gradient = ρ/A', {fs:10, c:'var(--accent)'}); }
+      return g;
+    }
+    g+=curve(G,a,function(x){ return Rwire(x)+RC; },0,1,'var(--topic)',false);
+    g+=txt(G.x+6, G.y+12, 'gradient = ρ/A', {fs:10, c:'var(--topic)'});
+    g+=pdot(G,a,L,circuit(L).R);
+    return g;
+  }
+  function draw(){
+    var g=arrowDefs()+scene()+graph();
+    if(running && slowOn()) g+=txt(336, 296, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
+    svg.innerHTML=g;
+    svg.setAttribute('aria-valuenow', L); svg.setAttribute('aria-valuetext', 'L = '+L.toFixed(2)+' metres');
+    readings();
+  }
+
+  // ---- readings, working, note
+  var lastNote='';
+  function readings(){
+    var c=circuit(L), m=mat(), d=dmm(), A=area(d), ex=exp(), f=fit();
+    $('#rs-lo').textContent=L.toFixed(2)+' m';
+    var s='';
+    if(ex) s=stat('Readings', X.rd.length+(done()?'':' (6+)'))+stat('d (mean)', dMean().toFixed(3)+' mm')+stat('ρ (Ω m)', f ? sci(f.m*area(dMean()),2) : '?', true);
+    else s=stat('A (m²)', sci(A,3))+stat('R wire', sig(Rwire(L),3)+' Ω', true)+stat('V/I', sig(c.R,3)+' Ω');
+    $('#rs-stats').innerHTML=s;
+    if(ex) expTable($('#rs-table'), [{label:'L (m)', key:'v', dp:2}, {label:'V (V)', key:'V', dp:2}, {label:'I (A)', key:'I', dp:3}, {label:'R = V/I (Ω)', key:'R', dp:2}],
+      X.rd.map(function(p){ return {v:p.L, V:p.V, I:p.I, R:p.V/p.I}; }), X.just ? X.just.L : null);
+
+    var w1='', w2='', w3='';
+    if(!ex){
+      w1='A = [[πd²|4]]<br>A = [[π × ('+d.toFixed(2)+' × 10⁻³)²|4]]<br>A = <b>'+sci(A,3)+' m²</b>';
+      w2='R = [[ρL|A]]<br>R = [['+sci(m.rho,2)+' × '+L.toFixed(2)+'|'+sci(A,3)+']]<br>R = <b>'+sig(Rwire(L),3)+' Ω</b>';
+      w3='The meters give V/I = '+sig(c.R,3)+' Ω: about '+RC.toFixed(2)+' Ω more, from where the clips touch the wire. On the R–L graph that is the small intercept, so the gradient still gives ρ/A.';
+    } else if(f){
+      var Am=area(dMean()), x1=0.1, x2=1.0, y1=f.m*x1+f.c, y2=f.m*x2+f.c, rho=f.m*Am;
+      w1='A = [[πd²|4]]<br>A = [[π × ('+dMean().toFixed(3)+' × 10⁻³)²|4]]<br>A = '+sci(Am,3)+' m²';
+      w2='gradient = [['+sig(y2,3)+' − '+sig(y1,3)+'|'+x2.toFixed(2)+' − '+x1.toFixed(2)+']]<br>gradient = '+sig(f.m,3)+' Ω m⁻¹<br>ρ = gradient × A<br>ρ = '+sig(f.m,3)+' × '+sci(Am,3)+'<br>ρ = <b>'+sci(rho,2)+' Ω m</b>';
+      w3='d = [['+micro().map(function(x){ return x.toFixed(2); }).join(' + ')+'|3]] = '+dMean().toFixed(3)+' mm (micrometer, three places along the wire). Intercept = '+sig(f.c,2)+' Ω (the clips). Data book: ρ('+m.name+') = '+sci(m.rho,2)+' Ω m, so this is '+sig(Math.abs(rho-m.rho)/m.rho*100,2)+'% out.';
+    } else w1='Measure d with the micrometer in several places and take the mean. Then set L, press Take reading, and record V and I.';
+    $('#rs-eq1').innerHTML=FR(w1); $('#rs-eq2').innerHTML=FR(w2); $('#rs-eq2').hidden=!w2; $('#rs-eq3').innerHTML=FR(w3); $('#rs-eq3').hidden=!w3;
+
+    var note;
+    if(ex){
+      if(X.reading) note='Switch on: reading the voltmeter and ammeter… then switch off, so the wire does not warm up.';
+      else if(!X.rd.length) note='Experiment (CP7): drag the crocodile clip to a length L, then press <b>Take reading</b>. Switch off between readings so the wire stays cool.';
+      else if(!done()) note='You have '+X.rd.length+' reading'+(X.rd.length===1?'':'s')+'. Take at least 6, over at least 0.50 m of wire, and plot R against L.';
+      else note = matSeg.value()==='cu' ? 'Done, but copper\'s R is tiny, so the clips and the meters\' resolution matter: ρ = <b>'+sci(f.m*area(dMean()),2)+' Ω m</b>.'
+        : 'Done: R against L is a straight line with a small intercept (the clips). ρ = gradient × A = <b>'+sci(f.m*area(dMean()),2)+' Ω m</b>.';
+    } else if(matSeg.value()==='cu') note='Copper has a very low resistivity: a metre of this wire is only '+sig(Rwire(1),2)+' Ω, so the clips\' resistance is a big part of the reading. That is why constantan or nichrome is used.';
+    else note='Double the length → double the resistance: R ∝ L. A thinner wire has a smaller A, so a bigger R. The resistivity ρ belongs to the material, not the wire.';
+    if(note!==lastNote){ $('#rs-note').innerHTML=FR(note); lastNote=note; }
+    if(ex){ playBtn.innerHTML='&#9654; Take reading'; playBtn.disabled=X.reading>0; }
+    else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
+  }
+
+  // ---- motion
+  function frame(now){
+    var real=Math.min(0.05,(now-last)/1000); last=now;
+    dist+=Math.min(300, 260*circuit(L).I)*real*(slowOn()?0.3:1);
+    if(X.reading){ X.reading-=real; if(X.reading<=0){ X.reading=0; takeReading(); } }
+    draw();
+    if(running || X.reading) raf=requestAnimationFrame(frame);
+  }
+  function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function takeReading(){
+    var c=circuit(L), k=X.rd.length, prev=X.rd[k-1];
+    var p={L:L, V:expReading(c.V, prev?prev.V:0, 0.01, k, 1), I:expReading(c.I, prev?prev.I:0, 0.001, k+2, 1)};
+    X.rd.push(p); X.just=p;
+  }
+  function setL(v, keep){ L=Math.round(Math.max(0.05,Math.min(1,v))*100)/100; lIn.value=L; if(!keep) jumpSeg.pick(null); draw(); }
+  function changed(){ stop(); X={rd:[], reading:0, just:null}; lastNote=''; draw(); }
+  svgDrag(svg, {
+    ok:function(){ return !X.reading; },
+    hit:function(q){ return Math.abs(q.x-xAt(L))<20 && q.y>WY-50 && q.y<WY+30; },
+    move:function(q){ setL((q.x-R0)/PX); }
+  });
+  keySlider(svg, function(){ return L; }, function(v){ setL(v); }, 0.01, 0.1, 0.05, 1, function(){ return !X.reading; });
+  function setExp(){ stop(); var on=exp(); X={rd:[], reading:0, just:null}; $('#rs-jlab').hidden=$('#rs-jump').hidden=on; $('#rs-clear').hidden=!on; $('#rs-tablewrap').hidden=!on; jumpSeg.pick(null); lastNote=''; draw(); }
+
+  playBtn.addEventListener('click', function(){
+    if(exp()){ if(!X.reading){ X.reading=0.7; X.just=null; loop(); } return; }
+    if(running){ stop(); draw(); } else { running=true; loop(); }
+  });
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
+  expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); setExp(); });
+  $('#rs-reset').addEventListener('click', function(){ stop(); if(exp()){ changed(); return; } dist=0; setL(0.5); });
+  $('#rs-clear').addEventListener('click', changed);
+  lIn.addEventListener('input', function(){ setL(+lIn.value); });
+
+  watchEquals($('#rs-eq1')); watchEquals($('#rs-eq2'));
+  draw();
+
+})();
+</script>
+</body>
+</html>
