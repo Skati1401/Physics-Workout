@@ -49,6 +49,9 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | Page | List | Status | What to check |
 |---|---|---|---|
 | `film-badge.html` | IGCSE (Unit 7) + A Level / IB | ✅ Checked 25 Oct 2026 | |
+| `random-decay.html` | IGCSE (Unit 7) + A Level / IB | 🔍 To review | New (2 Nov 2026). KS4: the N–t graph, half-life guides, jump to 1–3 half-lives. KS5: ln N–t graph, λ, A = λN. Check the isotope half-lives (Rn-220 56 s, Pa-234m 70 s, Ba-137m 153 s), the working in Experiment mode, and whether KS4 wording fits Unit 7. |
+| `radiation-in-fields.html` | A Level / IB | 🔍 To review | New (2 Nov 2026). Check the directions in each field, the α path drawn 20× more curved (True scale button shows the real bend), the electric field voltages (up to 400 kV across 5.5 cm, needed for a visible bend), and the working. |
+| `gamma-radiation.html` | A Level / IB | 🔍 To review | New (2 Nov 2026), IAL 5.2. Inverse-square law (3 graph choices) and CP15 absorption by lead, each with Experiment mode (background, 60 s counts, table, best fit). Check the method matches how you teach CP15, the model values (1800 min⁻¹ at 5 cm, background 24 min⁻¹, μ = 0.0667 mm⁻¹) and the working. |
 | `roller-coaster-energy.html` | IGCSE (Unit 4) | 🔍 To review | New (25 Oct 2026), framed in 4c Energy Link. A cart drops from h₁, tries to get over hill 2 (h₂) and runs to the end; sliders for mass, start speed, friction force and both heights. Bars for GPE, KE, work done against friction and the total; the working finds the speed from KE = total − GPE − work done, and once the cart reaches hill 2 an "Over hill 2?" check appears. Try h₂ above h₁, no friction, and big friction. |
 | `motion-graphs.html` | IGCSE | ❔ Not recorded | |
 | `ramp-motion.html` | IGCSE | ❔ Not recorded | |

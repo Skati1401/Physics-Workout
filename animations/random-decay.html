@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Random Decay and Half-Life Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#4d7c0f;   --topic-soft:#e6f3d3;
+    --alpha:#d23b3b;   --beta:#2f62d6;   --gamma:#8a3fd1;
+    --lead:#5b6270;    --alu:#c4cad3;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#a3d65c; --topic-soft:#1f2e12;
+      --alpha:#ff7a7a; --beta:#7da3ff; --gamma:#c39bff;
+      --lead:#a7aebb; --alu:#7d8592;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#a3d65c; --topic-soft:#1f2e12;
+    --alpha:#ff7a7a; --beta:#7da3ff; --gamma:#c39bff;
+    --lead:#a7aebb; --alu:#7d8592;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 300px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+  .ta{color:var(--alpha);font-weight:600;} .tb{color:var(--beta);font-weight:600;} .tg{color:var(--gamma);font-weight:600;}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+  .toprow{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;}
+  @media (prefers-reduced-motion: no-preference){ .nu{transition:opacity .35s ease-out;} }
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">Animations &middot; radioactivity</div>
+      <h1>Random Decay and Half-Life</h1>
+    </div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="rd-svg" viewBox="0 0 600 300" role="img" aria-label="A grid of radioactive nuclei that decay one by one at random, beside a graph of the number of nuclei left against time"><g id="rd-grid"></g><g id="rd-graph"></g></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="rd-play" type="button">&#9654; Play</button>
+          <button class="btn" id="rd-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="rd-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="rd-exp" type="button" aria-pressed="false" title="Hide the theory curve and the half-life: find them from your own readings">Experiment</button>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="toprow">
+        <div class="seg tabs" id="rd-level" role="group" aria-label="Level"><button type="button" data-v="ks4" aria-pressed="true">KS4</button><button type="button" data-v="ks5" aria-pressed="false">KS5</button></div>
+      </div>
+      <div class="cgrid">
+        <span class="rowlab">Isotope</span>
+        <div class="seg" id="rd-iso"><button type="button" data-v="rn" aria-pressed="true" title="radon-220">Rn-220</button><button type="button" data-v="pa" aria-pressed="false" title="protactinium-234m">Pa-234m</button><button type="button" data-v="ba" aria-pressed="false" title="barium-137m">Ba-137m</button></div>
+        <span class="rowlab">Nuclei</span>
+        <div class="seg" id="rd-n"><button type="button" data-v="100" aria-pressed="false">100</button><button type="button" data-v="400" aria-pressed="true">400</button><button type="button" data-v="1600" aria-pressed="false">1600</button></div>
+        <span class="rowlab">Jump to</span>
+        <div class="seg" id="rd-jump"><button type="button" data-v="0" aria-pressed="false">Start</button><button type="button" data-v="1" aria-pressed="false">1 half-life</button><button type="button" data-v="2" aria-pressed="false">2</button><button type="button" data-v="3" aria-pressed="false">3</button></div>
+      </div>
+      <p class="note" id="rd-note" aria-live="polite"></p>
+      <div class="stats">
+        <div class="stat"><small>Time</small><strong id="rd-t">0 s</strong></div>
+        <div class="stat"><small>N left</small><strong id="rd-nn">400</strong></div>
+        <div class="stat hi"><small id="rd-hl-l">Half-life</small><strong id="rd-hl">56 s</strong></div>
+        <div class="stat" id="rd-act-box" hidden><small>Activity, A</small><strong id="rd-act">0 Bq</strong></div>
+      </div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="rd-eq1"></div>
+        <div class="eq" id="rd-eq2"></div>
+        <p class="eqnote" id="rd-eq3"></p>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+(function(){
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  var FROM_ALEVEL = /[?&]from=alevel\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    Array.prototype.forEach.call(document.querySelectorAll('details.working'), function(d){ d.open = true; });
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 4.97 × 10⁻¹⁹
+    if(x===0) return '0';
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+Math.abs(m).toFixed(dp)>=10){ m/=10; e++; }
+    return sn(m,dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function sig(x, n){   // n significant figures, as text, real minus sign
+    if(x===0) return '0';
+    var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
+    return sn(x, dp);
+  }
+  function grp(t){ return String(t).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }   // 12 345
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+(+x1).toFixed(1)+'" y1="'+(+y1).toFixed(1)+'" x2="'+(+x2).toFixed(1)+'" y2="'+(+y2).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||1.5)+'"'+(extra||'')+'/>'; }
+  // A small seeded random number generator (mulberry32), so the same setup gives the same readings.
+  function rng(seed){ var a = seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+  // A Poisson count with mean m (Knuth for small m, a normal approximation for large m)
+  function poisson(m, r){
+    if(m<=0) return 0;
+    if(m<60){ var L=Math.exp(-m), k=0, p=1; do{ k++; p*=r(); }while(p>L); return k-1; }
+    var u=Math.max(1e-12,r()), v=r(), z=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+    return Math.max(0, Math.round(m+Math.sqrt(m)*z));
+  }
+  // Least-squares straight line through points [[x,y],…]: {m, c}
+  function fitLine(p){
+    var n=p.length, sx=0, sy=0, sxx=0, sxy=0;
+    p.forEach(function(q){ sx+=q[0]; sy+=q[1]; sxx+=q[0]*q[0]; sxy+=q[0]*q[1]; });
+    var d=n*sxx-sx*sx; if(n<2 || d===0) return null;
+    var m=(n*sxy-sx*sy)/d; return {m:m, c:(sy-m*sx)/n};
+  }
+
+  // opened from the A Level / IB list: the back link returns there, and the page opens at KS5
+  if(FROM_ALEVEL){ var hl=$('.home-link'); hl.href='a-level-ib.html'; hl.innerHTML='&larr; A Level and IB animations'; }
+
+  // Real isotopes used in school half-life experiments
+  var ISO = {
+    rn:{name:'radon-220', th:56},
+    pa:{name:'protactinium-234m', th:70},
+    ba:{name:'barium-137m', th:153}
+  };
+  var LN2 = Math.log(2), RUN_HL = 5, REAL_SECS = 16;   // a run is 5 half-lives, played over about 16 s
+  var svg=$('#rd-svg'), gridG=$('#rd-grid'), graphG=$('#rd-graph'), playBtn=$('#rd-play'), slowBtn=$('#rd-slow'), expBtn=$('#rd-exp');
+  var levelSeg=segGroup($('#rd-level'), function(){ layout(); draw(); });
+  var isoSeg=segGroup($('#rd-iso'), function(){ reset(); });
+  var nSeg=segGroup($('#rd-n'), function(){ buildGrid(); reset(); });
+  var jumpSeg=segGroup($('#rd-jump'), function(v){ jumpTo(+v); });
+  if(FROM_ALEVEL) levelSeg.pick('ks5');
+  function ks5(){ return levelSeg.value()==='ks5'; }
+  function iso(){ return ISO[isoSeg.value()]; }
+  function th(){ return iso().th; }
+  function lam(){ return LN2/th(); }
+  function N0(){ return +nSeg.value(); }
+  function slowOn(){ return pressed(slowBtn); }
+  function exp(){ return pressed(expBtn); }
+
+  var alive=[], dots=[], N=0, t=0, samples=[], running=false, started=false, done=false, raf=0, last=0, jumpedTo=-1;
+
+  // ---- layout: grid on the left and graph(s) on the right; on a phone the graphs go underneath
+  var narrowQ = window.matchMedia('(max-width:560px)'), NARROW, GR, G1, G2;
+  function layout(){
+    NARROW = narrowQ.matches;
+    var two = ks5();
+    if(NARROW){
+      GR = {x:30, y:26, s:270};
+      G1 = two ? {x:52, y:330, w:262, h:150} : {x:52, y:330, w:262, h:200};
+      G2 = two ? {x:52, y:530, w:262, h:150} : null;
+      svg.setAttribute('viewBox', '0 0 330 '+(two?720:574));
+    } else {
+      GR = {x:8, y:26, s:262};
+      G1 = two ? {x:340, y:14, w:244, h:100} : {x:340, y:16, w:244, h:234};
+      G2 = two ? {x:340, y:160, w:244, h:100} : null;
+      svg.setAttribute('viewBox', '0 0 600 300');
+    }
+    buildGrid();
+  }
+  if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ layout(); draw(); });
+
+  // ---- the nuclei: a decayed one keeps a faint ring where it was; the coloured dot fades out (opacity only)
+  function buildGrid(){
+    var n=N0(), side=Math.round(Math.sqrt(n)), cell=GR.s/side, r=cell*0.36, g='';
+    g+=txt(GR.x, GR.y-10, '<tspan fill="var(--topic)">●</tspan> not yet decayed   <tspan fill="var(--ink-faint)">○</tspan> decayed', {fs:10.5});
+    for(var i=0;i<n;i++){
+      var cx=GR.x+(i%side+0.5)*cell, cy=GR.y+(Math.floor(i/side)+0.5)*cell;
+      g+='<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="'+(r*0.8).toFixed(2)+'" fill="none" stroke="var(--ink-faint)" stroke-width="'+(cell>10?1:0.7)+'"/>';
+      g+='<circle class="nu" cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="'+r.toFixed(2)+'" fill="var(--topic)"/>';
+    }
+    gridG.innerHTML=g;
+    dots=gridG.querySelectorAll('.nu');
+    if(alive.length===n) for(var k=0;k<n;k++) if(!alive[k]) dots[k].style.opacity=0;
+  }
+
+  // ---- the physics: in each time step dt, every nucleus left has the same chance 1 − e^(−λdt) of decaying
+  function resetRun(){
+    var n=N0(); alive=[]; for(var i=0;i<n;i++) alive.push(true);
+    N=n; t=0; samples=[[0,n]]; done=false; jumpedTo=-1;
+    Array.prototype.forEach.call(dots, function(d){ d.style.opacity=''; });
+  }
+  function sampleStep(){ return th()/4; }
+  function step(dt){
+    var end=RUN_HL*th(); if(t+dt>end) dt=end-t;
+    var p=1-Math.exp(-lam()*dt);
+    for(var i=0;i<alive.length;i++) if(alive[i] && Math.random()<p){ alive[i]=false; N--; dots[i].style.opacity=0; }
+    t+=dt;
+    var next=samples.length*sampleStep();
+    while(t>=next-1e-9 && samples.length<=RUN_HL*4){ samples.push([next, N]); next=samples.length*sampleStep(); }
+    if(t>=end-1e-9){ done=true; }
+  }
+
+  // ---- what the readings show (the experiment's own values once it has finished)
+  function measured(){
+    // half-life: where the readings first fall to N0/2, read between the two samples either side
+    var half=N0()/2, thm=null;
+    for(var i=1;i<samples.length;i++) if(samples[i][1]<=half){
+      var a=samples[i-1], b=samples[i]; thm = a[0]+(a[1]-half)/(a[1]-b[1])*(b[0]-a[0]); break;
+    }
+    var fit=fitLine(samples.filter(function(q){ return q[1]>0; }).map(function(q){ return [q[0], Math.log(q[1])]; }));
+    return {th:thm, fit:fit};
+  }
+
+  // ---- drawing
+  function axes(G, yMax, yStep, ylab, xlab, dp){
+    var g='', T=RUN_HL*th(), k;
+    for(k=0;k<=RUN_HL;k++){
+      var x=G.x+k/RUN_HL*G.w;
+      g+=ln(x, G.y, x, G.y+G.h, 'var(--panel-border)', 1);
+      if(xlab!==false) g+=txt(x, G.y+G.h+14, Math.round(k*th()), {a:'middle', fs:10, c:'var(--ink-faint)'});
+    }
+    for(var y=yStep; y<=yMax+1e-9; y+=yStep){
+      var yy=G.y+G.h-y/yMax*G.h;
+      g+=ln(G.x, yy, G.x+G.w, yy, 'var(--panel-border)', 1)+txt(G.x-5, yy+3.5, y.toFixed(dp||0), {a:'end', fs:10, c:'var(--ink-faint)'});
+    }
+    g+=ln(G.x, G.y, G.x, G.y+G.h, 'var(--ink-soft)', 2)+ln(G.x, G.y+G.h, G.x+G.w, G.y+G.h, 'var(--ink-soft)', 2);
+    g+=txt(G.x+5, G.y-4, ylab, {fs:11, c:'var(--ink-soft)'});
+    if(xlab) g+=txt(G.x+G.w/2, G.y+G.h+29, xlab, {a:'middle', fs:11, c:'var(--ink-soft)'});
+    return g;
+  }
+  function px(G, tt){ return G.x+tt/(RUN_HL*th())*G.w; }
+  function py(G, v, yMax){ return G.y+G.h-v/yMax*G.h; }
+  function niceMax(n){ return n<=100?100:(n<=400?400:1600); }
+  function lnMax(){ return Math.ceil(Math.log(N0())); }
+
+  function draw(){
+    var n=N0(), T=RUN_HL*th(), L=lam(), hide=exp() && !done, g='', k;
+    var y1=niceMax(n), y1s=n/4;
+    // number left against time
+    g+=axes(G1, y1, y1s, 'N', G2?false:'time (s)');
+    if(!exp()){
+      var c='';
+      for(k=0;k<=100;k++){ var tt=k/100*T; c+=(k?' ':'')+px(G1,tt).toFixed(1)+','+py(G1, n*Math.exp(-L*tt), y1).toFixed(1); }
+      g+='<polyline points="'+c+'" fill="none" stroke="var(--ink-faint)" stroke-width="2" stroke-dasharray="5 4"/>';
+      // half-life guides: N0/2 at one half-life, N0/4 at two
+      [1,2].forEach(function(h){
+        var yy=py(G1, n/Math.pow(2,h), y1), xx=px(G1, h*th());
+        g+=ln(G1.x, yy, xx, yy, 'var(--accent)', 1.2, ' stroke-dasharray="3 3"')+ln(xx, yy, xx, G1.y+G1.h, 'var(--accent)', 1.2, ' stroke-dasharray="3 3"');
+      });
+      g+=txt(px(G1,th())+3, G1.y+G1.h-5, 't½', {fs:10.5, c:'var(--accent)'});
+    }
+    var m = done ? measured() : null;
+    if(exp() && done && m.th){
+      var yh=py(G1, n/2, y1), xh=px(G1, m.th);
+      g+=ln(G1.x, yh, xh, yh, 'var(--accent)', 1.2, ' stroke-dasharray="3 3"')+ln(xh, yh, xh, G1.y+G1.h, 'var(--accent)', 1.2, ' stroke-dasharray="3 3"');
+      g+=txt(xh+3, G1.y+G1.h-5, 't½', {fs:10.5, c:'var(--accent)'});
+    }
+    samples.forEach(function(q){ g+='<circle cx="'+px(G1,q[0]).toFixed(1)+'" cy="'+py(G1,q[1],y1).toFixed(1)+'" r="2.8" fill="var(--topic)"/>'; });
+    if(started && !done) g+='<circle cx="'+px(G1,t).toFixed(1)+'" cy="'+py(G1,N,y1).toFixed(1)+'" r="5" fill="var(--topic)" stroke="var(--panel)" stroke-width="2"/>';
+    // KS5: ln N against time, a straight line with gradient −λ
+    if(G2){
+      var y2=lnMax();
+      g+=axes(G2, y2, 1, 'ln N', 'time (s)');
+      var l0=Math.log(n);
+      if(!exp()) g+=ln(px(G2,0), py(G2,l0,y2), px(G2,T), py(G2,l0-L*T,y2), 'var(--ink-faint)', 2, ' stroke-dasharray="5 4"');
+      if(exp() && done && m.fit) g+=ln(px(G2,0), py(G2,m.fit.c,y2), px(G2,T), py(G2,m.fit.c+m.fit.m*T,y2), 'var(--accent)', 1.6, ' stroke-dasharray="5 4"');
+      samples.forEach(function(q){ if(q[1]>0) g+='<circle cx="'+px(G2,q[0]).toFixed(1)+'" cy="'+py(G2,Math.log(q[1]),y2).toFixed(1)+'" r="2.8" fill="var(--topic)"/>'; });
+      if(exp() && done && m.fit) g+=txt(G2.x+G2.w-4, G2.y+14, 'best fit', {a:'end', fs:10.5, c:'var(--accent)'});
+    }
+    if(!started && exp()) g+=txt(G1.x+G1.w/2, G1.y+G1.h/2, 'readings appear here', {a:'middle', fs:11.5, c:'var(--ink-faint)'});
+    if(running && slowOn()) g+=txt(G1.x+G1.w, G1.y-2, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
+    graphG.innerHTML=g;
+    readings(hide, m);
+  }
+
+  var lastNote='';
+  function readings(hide, m){
+    var n=N0(), L=lam(), T=th(), name=iso().name;
+    $('#rd-t').textContent=t.toFixed(t<100?1:0)+' s';
+    $('#rd-nn').textContent=N;
+    $('#rd-hl-l').textContent = ks5() ? 'Decay constant, λ' : 'Half-life';
+    var useM = exp() && done;
+    if(ks5()){
+      var lm = useM && m.fit ? -m.fit.m : L;
+      $('#rd-hl').textContent = hide ? '?' : sig(lm,3)+' s⁻¹';
+      $('#rd-act').textContent = hide ? '?' : sig(lm*N,3)+' Bq';
+    } else {
+      $('#rd-hl').textContent = hide ? '?' : (useM ? (m.th ? sig(m.th,3) : '–') : T)+' s';
+    }
+    $('#rd-act-box').hidden=!ks5();
+
+    // working
+    var w1, w2, w3='';
+    if(!ks5()){
+      if(hide){ w1='Finish the experiment, then read the half-life off your graph: when has N fallen to half of N<sub>0</sub>?'; w2=''; }
+      else {
+        var tread = useM ? (m.th ? sig(m.th,3) : '–') : T;
+        w1='N<sub>0</sub> = '+n+' nuclei<br>Half of N<sub>0</sub> = [['+n+'|2]] = '+(n/2)+'<br>t<sub>½</sub> = time for N to fall to '+(n/2)+'<br>t<sub>½</sub> = <b>'+tread+' s</b>';
+        if(useM) w3='Read off your readings. The true half-life of '+name+' is '+T+' s: yours is a little different because decay is random.';
+        w2='Each half-life the number halves:';
+        for(var k=1;k<=3;k++) w2+='<br>N after '+k+' half-li'+(k>1?'ves':'fe')+' = '+n+' × '+(k>1?'(½)'+(k===2?'²':'³'):'½')+' = '+(n/Math.pow(2,k));
+      }
+    } else {
+      if(hide){ w1='Finish the experiment, then find λ from the gradient of the ln N–t graph: ln N = ln N<sub>0</sub> − λt, so the gradient is −λ.'; w2=''; }
+      else if(useM && m.fit){
+        var lm2=-m.fit.m, thm=LN2/lm2;
+        w1='ln N = ln N<sub>0</sub> − λt<br>gradient = −λ<br>Gradient of best-fit line = '+sig(m.fit.m,4)+' s⁻¹<br>λ = <b>'+sig(lm2,3)+' s⁻¹</b><br>t<sub>½</sub> = [[ln 2|λ]]<br>t<sub>½</sub> = [[0.6931|'+sig(lm2,4)+']]<br>t<sub>½</sub> = <b>'+sig(thm,3)+' s</b>';
+        w3='The true half-life of '+name+' is '+T+' s (λ is '+sig(L,3)+' s⁻¹). Your value is a little different because decay is random: more nuclei give a closer value.';
+        w2='A = λN<br>A = '+sig(lm2,4)+' × '+N+'<br>A = <b>'+sig(lm2*N,3)+' Bq</b>';
+      } else {
+        w1='t<sub>½</sub> = [[ln 2|λ]]<br>'+T+' = [[0.6931|λ]]<br>λ = [[0.6931|'+T+']]<br>λ = <b>'+sig(L,3)+' s⁻¹</b>';
+        var Ne=n*Math.exp(-L*t);
+        w2='N = N<sub>0</sub>e<sup>−λt</sup><br>N = '+n+' × e<sup>−'+sig(L,4)+' × '+t.toFixed(1)+'</sup><br>N = '+sig(Ne,4)+' expected ('+N+' counted)<br>A = λN<br>A = '+sig(L,4)+' × '+N+'<br>A = <b>'+sig(L*N,3)+' Bq</b>';
+      }
+    }
+    $('#rd-eq1').innerHTML=FR(w1); $('#rd-eq2').innerHTML=FR(w2); $('#rd-eq2').hidden=!w2; $('#rd-eq3').innerHTML=w3; $('#rd-eq3').hidden=!w3;
+
+    // what is happening now
+    var pct=((1-Math.exp(-L))*100).toFixed(1), note;
+    if(!started) note='Every '+name+' nucleus has the same chance of decaying each second, but nobody can say <b>which</b> one will decay next, or <b>when</b>. Press <b>Play</b>.';
+    else if(done){
+      note='After 5 half-lives about [[1|32]] of the nuclei are left: '+sig(n/32,3)+' expected, '+N+' counted.';
+      if(exp()) note = ks5() ? 'Experiment finished. The ln N points lie close to a straight line: its gradient is −λ, so λ = '+(m.fit?sig(-m.fit.m,3):'–')+' s⁻¹ and t<sub>½</sub> = '+(m.fit?sig(LN2/-m.fit.m,3):'–')+' s.'
+                          : 'Experiment finished. Your readings fall to '+(n/2)+' at about '+(m.th?sig(m.th,3):'–')+' s: that is the half-life. Run it again: the readings change a little each time.';
+      if(n===100) note+=' With only 100 nuclei the points are scattered: try 1600.';
+    }
+    else if(jumpedTo>0 && !running) note='After '+jumpedTo+' half-li'+(jumpedTo>1?'ves':'fe')+' ('+Math.round(jumpedTo*T)+' s): '+N+' of '+n+' left. The prediction is '+n+' × (½)'+(jumpedTo>1?'<sup>'+jumpedTo+'</sup>':'')+' = '+sig(n/Math.pow(2,jumpedTo),3)+'. The count is a little different because decay is random.';
+    else note='Decay is random: each second about '+pct+'% of the nuclei still there decay, so N falls fast at first, then more slowly. It halves every '+(hide?'half-life':T+' s')+', whatever N is.'+(ks5()?' The activity A = λN falls in the same way.':'');
+    if(started && !running && !done && jumpedTo<0) note='Paused. '+note;
+    note=FR(note);
+    if(note!==lastNote){ $('#rd-note').innerHTML=note; lastNote=note; }
+    playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : (done ? '&#8634; Run again' : '&#9654; Play');
+  }
+
+  // ---- the animation: it always ends after 5 half-lives
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function frame(now){
+    if(!running) return;
+    var real=Math.min(0.05,(now-last)/1000); last=now;
+    step(real*(slowOn()?0.3:1)*RUN_HL*th()/REAL_SECS);
+    if(done) stop();
+    draw(); if(running) raf=requestAnimationFrame(frame);
+  }
+  function run(){
+    if(done) resetRun();
+    started=true; running=true; jumpedTo=-1; jumpSeg.pick(''); last=performance.now();
+    raf=requestAnimationFrame(frame); draw();
+  }
+  function reset(){ stop(); started=false; resetRun(); jumpSeg.pick(''); draw(); }
+  // Fixed points: carry the run on to k half-lives (or start a fresh one if it is already past), then pause there
+  function jumpTo(k){
+    stop();
+    if(k===0){ reset(); jumpSeg.pick('0'); return; }
+    if(done || t>k*th()+1e-9) resetRun();
+    started=true;
+    while(t<k*th()-1e-9) step(Math.min(th()/100, k*th()-t));
+    jumpedTo=k; jumpSeg.pick(String(k)); draw();
+  }
+
+  playBtn.addEventListener('click', function(){ if(running){ stop(); draw(); } else run(); });
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
+  expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); reset(); });
+  $('#rd-reset').addEventListener('click', reset);
+
+  watchEquals($('#rd-eq1')); watchEquals($('#rd-eq2'));
+  layout(); reset();
+})();
+</script>
+</body>
+</html>
