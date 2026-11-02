@@ -66,8 +66,8 @@ The guide's PDF pages are those of the PDF Alex shared; in the Project doc, look
 | 5 | 3.19 | Refractive index of glass | 163–166 | 3.14–3.18, 3.20, 3.21, 3.22 | | new (light box, shared with 3.17) | none yet (Unit 3) | B | to do |
 | 6 | 3.25P | Speed of sound in air | 167–169 | 1.4, 3.23 | TA | new | none yet (Unit 3) | B | to do |
 | 7 | 3.27P | Frequency of sound with an oscilloscope | 170–173 | 3.24, 3.25, 3.26, 3.28, 3.29 | TA | new | none yet (Unit 3) | C | to do |
-| 8 | 4.9 | Thermal energy transfer (conduction, convection, radiation) | 174–178 | 4.6, 4.7, 4.8, 4.10, 5.3 | | new (check the 4b workout's Practicals tab for sims to move out) | `heat-transfer-igcse.html#practical` | C | to do |
-| 9 | 5.4 | Density from mass and volume | 179–183 | 1.2 | | new | `density-pressure-state.html#density` | B | to do |
+| 8 | 4.9 | Thermal energy transfer (conduction, convection, radiation) | 174–178 | 4.6, 4.7, 4.8, 4.10, 5.3 | | new `heat-transfer.html` (Conduction, Convection, Radiation) | `heat-transfer-igcse.html#practical` | C | **draft** (2 Nov 2026; Alex to review) |
+| 9 | 5.4 | Density from mass and volume | 179–183 | 1.2 | | new `density.html` (Regular block, Irregular object, Liquid) | `density-pressure-state.html#density` | B | **draft** (2 Nov 2026; Alex to review) |
 | 10 | 5.14P | Specific heat capacity | 184–187 | 5.12, 5.13 | TA | `specific-heat.html` (moved out of the Unit 5 Specific Heat tab, which now frames it) | `density-pressure-state.html#shc` | A | **published** (21 Oct 2026; Alex to review) |
 | 11 | 6.6 | Magnetic field of a bar magnet | 188–189 | 6.2, 6.3, 6.4, 6.5, 6.7 | | `magnetic-field-patterns.html` (Experiment mode added) | `magnetism-and-motor-effect.html#fields` | A | **published** (21 Oct 2026; Alex to review) |
 | 12 | 7.6 | Penetrating power of radiation | 190–192 | 7.4, 7.5, 7.9, 7.10, 7.16 | | new (a simulation is acceptable for the real practical too) | none yet (Unit 7) | C | to do |
@@ -112,3 +112,17 @@ All four were built as drafts, then published the same day. Spec numbers were ch
 - **6.6:** Jan 2022 P1 1(d), May 2011 P2 2(a), May 2016 P2 TZ1 4(c), May 2019 P1 2(a), Nov 2025 P1 6(a)(ii), May 2021 P1 8(a), May 2024 P1 6(c), 6(d)(i), May 2025 P1R 2(b)(ii), May 2026 P1R 2(a)(i). New Exam (f) iron filings method. No method switch: the Iron Filings tab already covers it.
 
 Batches B and C do this check while they build (step 4 above).
+
+## Notes from 4.9 and 5.4 (2 Nov 2026, drafts)
+
+Built ahead of their batches, as drafts (noindex, no cards, no banners, no "Core practical" tags yet). Spec numbers checked against the 2017 4PH1 spec PDF Alex uploaded. **Not done yet:** the Pearson practical guide pages and the mark scheme wording check (step 4) were not available in that chat; do both before publishing.
+
+- **4.9** `heat-transfer-practical.html` (store `cp-heat-transfer-v1`), 10 tabs: Overview, Method, Variables, Conduction, Convection, Radiation, Results, Insulation, Accuracy, Exam. New animation `animations/heat-transfer.html` with three parts (`?show=cond|conv|rad`), each framed once in its own tab.
+  - Conduction: copper, aluminium, iron and glass rods in 90 °C water, wax melts at 50 °C, pins 11 cm along: drop at about 1:37, 1:52, 11:00, glass still on at 15 min. Experiment mode records the stopwatch times.
+  - Convection: permanganate crystal, heat under the crystal, in the middle, or at the top (no current). Experiment mode marks the dye front, then Compare shows the current.
+  - Radiation: Leslie cube with a draggable infrared detector (4.0, 3.4, 2.7, 0.4 mV at 10 cm, matt black to shiny silver; a moved detector is flagged as unfair), and two cans by a radiant heater (black about 36.5 °C, shiny about 25.0 °C after 10 min) plotted × and ○.
+- **5.4** `density-practical.html` (store `cp-density-v1`, method switch `cp-density-method`), 9 tabs: Overview, Method, Variables, Experiment, Results, Graphs, Calculate, Accuracy, Exam. Spec badges 5.1, 5.3, 5.4 (1.2 left out: it is a TA units point that does not apply). New animation `animations/density.html` with three parts (`?show=reg|irr|liq`).
+  - Regular block: ruler 0.1 cm and balance 0.1 g; Experiment mode measures five blocks of one material and plots m against V (gradient = density). Mystery block is Perspex (1.18 g/cm³).
+  - Irregular object: stone (2.70 g/cm³) or plasticine, measuring cylinder or eureka can (catches 0.4 cm³ less: drops left in the spout), drag the object into the water; eye-level meniscus close-up.
+  - Liquid: cylinder (74.6 g) on the balance, 10 or 20 cm³ at a time; water, oil 0.92, salt water 1.15, mystery glycerol 1.26; total mass against volume, gradient = density, intercept = cylinder.
+- To publish: set `"draft": false` and rebuild, remove the noindex line from both animations, add the practical cards, the animation cards (Unit 4 and Unit 5, with "Core practical" tags) and the `.cp-banner` on `heat-transfer-igcse.html#practical` and `density-pressure-state.html#density`.

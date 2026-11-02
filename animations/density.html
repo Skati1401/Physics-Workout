@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Measuring Density Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#7c3aed; --accent-soft:#ede4fd;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#6d28d9;   --topic-soft:#ede4fd;
+    --water:#d6e9fb;   --ice:#eef6fd;   --ice-edge:#9cc3e6;   --water-ink:#3b82c4;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#b794f6; --accent-soft:#2a1d45;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#c4a5ff; --topic-soft:#2a1d45;
+      --water:#1c3a5a; --ice:#2a3d52; --ice-edge:#6f9bc4; --water-ink:#7fb4ea;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#b794f6; --accent-soft:#2a1d45;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#c4a5ff; --topic-soft:#2a1d45;
+      --water:#1c3a5a; --ice:#2a3d52; --ice-edge:#6f9bc4; --water-ink:#7fb4ea;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+  /* button rows fill their width (Alex, 2 Nov 2026) */
+  .btn-group>.btn,.exp-btns>.btn{flex:1 1 0;min-width:max-content;justify-content:center;}
+  .seg:not(.tabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));}
+  .seg:not(.tabs)>button{padding-inline:4px;white-space:nowrap;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 300px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  #dn-svg.dragging,#dn-svg.dragging *{cursor:grabbing;}
+  #dn-svg:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  .seg button sub,.stat sub{font-size:.75em;}
+  .cgrid>[hidden]{display:none!important;}
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+
+  #dn-svg.can-drag{touch-action:none;}
+  #dn-meth button{white-space:normal;line-height:1.2;}
+  #dn-jump,#dn-mat,#dn-liq{grid-template-columns:repeat(auto-fit,minmax(min(100%,74px),1fr));}
+  .rtable td.q{text-align:left;color:var(--ink-soft);}
+  .side>.seg.tabs{align-self:flex-start;}
+
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">Animations &middot; density &middot; core practical 5.4</div>
+      <h1>Measuring Density</h1>
+    </div>
+    <div class="seg tabs" id="dn-part" role="group" aria-label="Part"><button type="button" data-v="reg" aria-pressed="true">Regular block</button><button type="button" data-v="irr" aria-pressed="false">Irregular object</button><button type="button" data-v="liq" aria-pressed="false">Liquid</button></div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="dn-svg" viewBox="0 0 640 300" role="img" aria-label=""></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="dn-play" type="button">&#9654; Play</button>
+          <button class="btn" id="dn-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="dn-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="dn-exp" type="button" aria-pressed="false" title="Take your own readings">Experiment</button>
+          <button class="btn" id="dn-clear" type="button" hidden>Clear readings</button>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="cgrid">
+        <span class="rowlab" id="dn-matlab">Material</span>
+        <div class="seg" id="dn-mat"><button type="button" data-v="al" aria-pressed="true">Aluminium</button><button type="button" data-v="oak" aria-pressed="false">Oak</button><button type="button" data-v="br" aria-pressed="false">Brass</button><button type="button" data-v="my" aria-pressed="false">Mystery</button></div>
+        <span class="rowlab" id="dn-objlab">Object</span>
+        <div class="seg" id="dn-obj"><button type="button" data-v="st" aria-pressed="true">Stone</button><button type="button" data-v="pl" aria-pressed="false">Plasticine</button></div>
+        <span class="rowlab" id="dn-methlab">Method</span>
+        <div class="seg" id="dn-meth"><button type="button" data-v="cyl" aria-pressed="true">Measuring cylinder</button><button type="button" data-v="eur" aria-pressed="false">Eureka can</button></div>
+        <span class="rowlab" id="dn-liqlab">Liquid</span>
+        <div class="seg" id="dn-liq"><button type="button" data-v="wa" aria-pressed="true">Water</button><button type="button" data-v="oil" aria-pressed="false">Oil</button><button type="button" data-v="sw" aria-pressed="false">Salt water</button><button type="button" data-v="my" aria-pressed="false">Mystery</button></div>
+        <span class="rowlab" id="dn-intlab">Interval</span>
+        <div class="seg" id="dn-int"><button type="button" data-v="10" aria-pressed="false">10 cm&sup3;</button><button type="button" data-v="20" aria-pressed="true">20 cm&sup3;</button></div>
+        <span class="rowlab" id="dn-jlab">Jump to</span>
+        <div class="seg" id="dn-jump"></div>
+      </div>
+      <p class="note" id="dn-note" aria-live="polite"></p>
+      <div class="rtable-wrap" id="dn-tablewrap" hidden><div id="dn-table"></div></div>
+      <div class="stats" id="dn-stats"></div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="dn-eq1"></div>
+        <div class="eq" id="dn-eq2"></div>
+        <p class="eqnote" id="dn-eq3"></p>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    Array.prototype.forEach.call(document.querySelectorAll('details.working'), function(d){ d.open = true; });
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function sig(x, n){   // n significant figures, as text, real minus sign
+    if(x===0) return '0';
+    var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
+    return sn(x, dp);
+  }
+  function grp(t){ return String(t).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }   // 12 345
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+(+x1).toFixed(1)+'" y1="'+(+y1).toFixed(1)+'" x2="'+(+x2).toFixed(1)+'" y2="'+(+y2).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||1.5)+'"'+(extra||'')+'/>'; }
+  // Least-squares straight line through points [[x,y],…]: {m, c}
+  function fitLine(p){
+    var n=p.length, sx=0, sy=0, sxx=0, sxy=0;
+    p.forEach(function(q){ sx+=q[0]; sy+=q[1]; sxx+=q[0]*q[0]; sxy+=q[0]*q[1]; });
+    var d=n*sxx-sx*sx; if(n<2 || d===0) return null;
+    var m=(n*sxy-sx*sy)/d; return {m:m, c:(sy-m*sx)/n};
+  }
+
+/* ================= Experiment kit (copy this block into an animation page's <script>) =================
+   The reusable parts of an animation's Experiment mode, taken from animations/hookes-law.html:
+   - expRun():     the run itself: step the independent variable up one interval at a time, then
+                   (optionally) back down again, measuring at every step
+   - expReading(): a reading with a small, fixed pattern of reading error, rounded to the instrument's
+                   resolution, that never goes the wrong way
+   - expTable():   the results table (sticky header, newest row highlighted, a column per run)
+   - expCross(), expRing(), expKey(): SVG marks for plotted readings (× first run, ○ return run)
+   The page keeps its own picture, physics, graph axes and notes. See tools/experiment-kit/README.md.
+   Plain ES5 so it can sit inside any animation page's IIFE. */
+
+// A fixed pattern of reading errors, in units of the instrument's resolution. Fixed (not random) so a
+// teacher sees the same results as the class, and a re-run gives the same table.
+var EXP_ERR = [0, 1, -1, 0, 2, -1, 1, -2, 0, 1, -1, 0, 1, -1, 2, 0, -1, 1, 0, -2, 1];
+function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP_ERR.length]; }
+
+// What the student reads off the instrument.
+//   trueVal  the value the physics gives at this step
+//   prevVal  the reading taken at the step before (or the start value)
+//   res      the instrument's resolution (0.1 cm ruler, 0.05 mm vernier, 0.01 A ammeter, 1° protractor)
+//   i        the step number (picks the error from the pattern)
+//   scale    how big the error is, in resolutions (default 1; 0.5 for a fine instrument)
+// The error is never more than a quarter of the change since the last reading, so a reading never
+// goes the wrong way (an extension never falls as the load rises, a current never drops as V rises).
+function expReading(trueVal, prevVal, res, i, scale){
+  var gap = Math.abs(trueVal - prevVal);
+  var err = i > 0 ? expErr(i) * Math.min(res * (scale == null ? 1 : scale), gap / 4) : 0;
+  var r = Math.round((trueVal + err) / res) * res;
+  var dp = Math.max(0, Math.ceil(-Math.log10(res) - 1e-9));
+  return +r.toFixed(dp);
+}
+
+// The run. cfg = {
+//   start: 0,                 value of the independent variable before the first step
+//   max: 10,                  last value of the first run (the run stops there)
+//   step: 1,                  the interval (the page can change it with setStep, which resets the run)
+//   reverse: true,            allow a return run (unloading, turning the voltage back down)
+//   measure: function(v, phase, prevReading){ return reading },   phase is 'up' or 'down'
+//   onChange: function(run, what){}  what is 'up', 'down' or 'reset'
+// }
+// run.up and run.down are arrays of {v, r}. run.phase is 'up' until the first step back, then 'down'.
+function expRun(cfg){
+  var run = { up: [], down: [], phase: 'up', value: cfg.start || 0, peak: cfg.start || 0, step: cfg.step || 1 };
+  var r6 = function(x){ return Math.round(x * 1e6) / 1e6; };
+  run.upDone = function(){ return run.phase === 'down' || run.peak >= cfg.max - 1e-9; };
+  run.downDone = function(){ return run.phase === 'down' && run.value <= (cfg.start || 0) + 1e-9; };
+  run.last = function(){ var a = run.phase === 'down' && run.down.length ? run.down : run.up; return a[a.length - 1] || null; };
+  run.stepUp = function(){
+    if(run.phase !== 'up' || run.upDone()) return false;
+    var prev = run.up.length ? run.up[run.up.length - 1].r : null;
+    var v = r6(Math.min(cfg.max, run.value + run.step));
+    run.value = run.peak = v;
+    run.up.push({ v: v, r: cfg.measure(v, 'up', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'up');
+    return true;
+  };
+  run.stepDown = function(){
+    if(!cfg.reverse || run.value <= (cfg.start || 0) + 1e-9 || !run.up.length) return false;
+    run.phase = 'down';
+    var prev = run.down.length ? run.down[run.down.length - 1].r : run.up[run.up.length - 1].r;
+    var v = r6(Math.max(cfg.start || 0, run.value - run.step));
+    run.value = v;
+    run.down.push({ v: v, r: cfg.measure(v, 'down', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'down');
+    return true;
+  };
+  run.reset = function(){ run.up = []; run.down = []; run.phase = 'up'; run.value = run.peak = cfg.start || 0; if(cfg.onChange) cfg.onChange(run, 'reset'); };
+  run.setStep = function(s){ run.step = s; run.reset(); };
+  return run;
+}
+
+// The results table. cols = [{label:'Load (N)', key:'v', dp:0}, {label:'Extension loading (cm)', key:'up', dp:1}, ...]
+// rows = [{v:1, up:1.6, down:''}, ...]. newKey/newV highlight the reading just taken (fades in).
+// Wrap it in .rtable-wrap so a long table scrolls under its sticky header.
+function expTable(el, cols, rows, newV){
+  var fmt = function(x, dp){ return (x === '' || x == null) ? '' : (+x).toFixed(dp || 0); };
+  var h = '<table class="rtable"><thead><tr>' + cols.map(function(c){ return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    h += '<tr' + (newV != null && row.v === newV ? ' class="new"' : '') + '>' + cols.map(function(c){ return '<td>' + fmt(row[c.key], c.dp) + '</td>'; }).join('') + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table>';
+}
+
+// Plotted readings, as SVG strings. Size 5 suits a 300px-wide graph.
+function expCross(cx, cy, s){ s = s || 5; return '<path d="M' + (cx - s) + ',' + (cy - s) + ' L' + (cx + s) + ',' + (cy + s) + ' M' + (cx + s) + ',' + (cy - s) + ' L' + (cx - s) + ',' + (cy + s) + '" stroke="var(--ink)" stroke-width="2"/>'; }
+function expRing(cx, cy, r){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r || 4.5) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+// A two-line key in the bottom-right corner of a graph: expKey(rightX, bottomY, 'loading', 'unloading')
+function expKey(x, y, upLabel, downLabel){
+  return '<text x="' + x + '" y="' + (y - 14) + '" text-anchor="end" font-size="10.5" fill="var(--ink)">× ' + upLabel + '</text>' +
+         '<text x="' + x + '" y="' + y + '" text-anchor="end" font-size="10.5" fill="var(--accent)">○ ' + downLabel + '</text>';
+}
+/* ================= end of Experiment kit ================= */
+
+  // ---- the data. Masses in g, lengths in cm, volumes in cm³, densities in g/cm³.
+  var MAT={
+    al:{name:'aluminium', rho:2.70, fill:'#d3d8e0', edge:'#6f7a8c'},
+    oak:{name:'oak', rho:0.75, fill:'#d9b27c', edge:'#8a6233'},
+    br:{name:'brass', rho:8.50, fill:'#e3c45c', edge:'#94740f'},
+    my:{name:'the mystery block', rho:1.18, fill:'#cfe6ee', edge:'#4f8ea3', reveal:'Perspex (acrylic), 1.18 g/cm³'}
+  };
+  var STD=[5.0,4.0,3.0];                     // the block in Watch mode (60.0 cm³)
+  // Experiment: five blocks of one material. d = the size it is sold as, e = how far each true size is off (fraction),
+  // so ruler readings to 0.1 cm give a small scatter about the line.
+  var BLOCKS=[
+    {d:[2.0,2.0,2.0], e:[ 0.020,-0.012, 0.028]},
+    {d:[3.0,2.5,2.0], e:[-0.011, 0.024, 0.015]},
+    {d:[4.0,3.0,2.0], e:[ 0.014,-0.020,-0.030]},
+    {d:[4.0,3.0,3.0], e:[-0.016, 0.018, 0.012]},
+    {d:[5.0,4.0,2.5], e:[ 0.008, 0.014,-0.022]}
+  ];
+  var OBJ={
+    st:{name:'stone', rho:2.65, V:23.4, w:36, h:34, k:[1,0.86,0.95,0.8,0.92,1.02,0.88,0.97,0.83,0.94,1.0,0.9], fill:'#a8a29e', edge:'#57534e'},
+    pl:{name:'lump of plasticine', rho:1.75, V:31.6, w:38, h:44, k:[1,0.97,0.94,0.97,1,0.96,0.93,0.97,1,0.95,0.93,0.97], fill:'#f0a35e', edge:'#a4581b'}
+  };
+  var V1=50;                                 // water in the measuring cylinder before (cm³)
+  var SPOUT_LOSS=0.4;                        // cm³ left as drops in the eureka can's spout
+  var LIQ={
+    wa:{name:'water', rho:1.00, col:'#9cc8ef'},
+    oil:{name:'cooking oil', rho:0.92, col:'#f2d36b'},
+    sw:{name:'salt water', rho:1.15, col:'#b7d9ea'},
+    my:{name:'the mystery liquid', rho:1.26, col:'#bfe3b0', reveal:'glycerol, 1.26 g/cm³'}
+  };
+  var CYL=74.6;                              // mass of the empty 100 cm³ measuring cylinder (g)
+
+  var svg=$('#dn-svg'), playBtn=$('#dn-play'), slowBtn=$('#dn-slow'), expBtn=$('#dn-exp'), note=$('#dn-note');
+  var partSeg=segGroup($('#dn-part'), function(){ setPart(); });
+  var matSeg=segGroup($('#dn-mat'), function(){ clearAll(); });
+  var objSeg=segGroup($('#dn-obj'), function(){ clearAll(); });
+  var methSeg=segGroup($('#dn-meth'), function(){ clearAll(); });
+  var liqSeg=segGroup($('#dn-liq'), function(){ clearAll(); });
+  var intSeg=segGroup($('#dn-int'), function(){ clearAll(); });
+  var jumpSeg=segGroup($('#dn-jump'), function(v){ jump(+v); });
+
+  var showQ=location.search.match(/[?&]show=(reg|irr|liq)\b/);
+  if(showQ){ partSeg.pick(showQ[1]); $('#dn-part').hidden=true; }
+  else if(EMBED){ $('.side').insertBefore($('#dn-part'), $('.side').firstChild); }
+
+  function part(){ return partSeg.value(); }
+  function exp(){ return pressed(expBtn); }
+  function slowOn(){ return pressed(slowBtn); }
+  function mat(){ return MAT[matSeg.value()]; }
+  function obj(){ return OBJ[objSeg.value()]; }
+  function eur(){ return methSeg.value()==='eur'; }
+  function liq(){ return LIQ[liqSeg.value()]; }
+  function r1(x){ return Math.round(x*10)/10; }
+  function f1(x){ return (+x).toFixed(1); }
+  function ease(p){ return p<0?0:p>1?1:p*p*(3-2*p); }
+  function lerp(a,b,p){ return a+(b-a)*p; }
+
+  // ---- state
+  var S=0, P=1, hold=0;      // stage reached, and progress (0–1) of the move into it
+  var dep=0, dep0=0;         // irregular object: how far it has been lowered (0 just above the water, 1 at the bottom)
+  var vol=0;                 // liquid: volume poured (cm³)
+  var running=false, rafId=0, last=0;
+  var goal=null;             // {stage, speed, onEnd} or {pour, onEnd}
+  var E=null;                // experiment readings
+  var LAST={reg:4, irr:3};
+  var DUR={reg:[0,1.3,1.0,1.0,1.0], irr:[0,1.3,1.5,2.4]};
+
+  // ---- the true quantities
+  function blockTrue(i){ var b=BLOCKS[i]; return b.d.map(function(x,k){ return x*(1+b.e[k]); }); }
+  function blockRead(i){ return blockTrue(i).map(r1); }
+  function blockMass(i){ var t=blockTrue(i); return r1(mat().rho*t[0]*t[1]*t[2]); }
+  function curDims(){ return exp() && E.blk!=null ? blockRead(E.blk) : STD; }
+  function curMass(){ return exp() && E.blk!=null ? blockMass(E.blk) : r1(mat().rho*STD[0]*STD[1]*STD[2]); }
+  function objMass(){ return r1(obj().rho*obj().V); }
+
+  // ---- layout: wide (scene left, graph or close-up right) or phone (one under the other)
+  var W=640, H=300, OFF={x:0,y:0}, RB=null, narrow=false;
+  function layout(){
+    narrow = window.innerWidth<=560;
+    if(narrow){ W=400; H=575; OFF={x:10,y:0}; RB={x:52,y:330,w:330,h:190, bx:10,by:310,bw:380,bh:255}; }
+    else { W=640; H=300; OFF={x:0,y:0}; RB={x:448,y:24,w:176,h:208, bx:396,by:8,bw:238,bh:284}; }
+    svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  }
+
+  // ---- drawing helpers
+  function rect(x,y,w,h,fill,stroke,extra){ return '<rect x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'" width="'+Math.max(0,w).toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" fill="'+fill+'"'+(stroke?' stroke="'+stroke+'"':'')+(extra||'')+'/>'; }
+  function poly(pts,fill,stroke,extra){ return '<polygon points="'+pts.map(function(p){ return p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' ')+'" fill="'+fill+'" stroke="'+stroke+'"'+(extra||'')+'/>'; }
+  function bench(){ return ln(0,282,380,282,'var(--ink-faint)',2); }
+  // a top-pan balance: pan top at y = 246, reading on its display
+  function balance(cx, half, reading){
+    var g=rect(cx-half,252,half*2,30,'var(--panel)','var(--ink-faint)',' stroke-width="1.5" rx="6"');
+    g+=rect(cx-34,258,68,18,'#16202e','none',' rx="3"');
+    g+=txt(cx+30,272,reading,{a:'end',fs:12,c:'#7dffa8',w:600});
+    g+=rect(cx-5,248,10,5,'var(--ink-faint)','none');
+    g+=rect(cx-half+12,244,half*2-24,4,'var(--ink-soft)','none',' rx="2"');
+    return g;
+  }
+  // a measuring cylinder: inner bottom at y0, k px per cm³, scale from 0 to cap, ticks every tk, labels every lb
+  function cylinder(cx, hw, y0, k, cap, tk, lb, level, col, label){
+    var top=y0-k*cap-8, g='';
+    if(level>0){
+      var ly=y0-k*level;
+      g+='<path d="M'+(cx-hw)+','+(ly-3)+' Q'+cx+','+(ly+3)+' '+(cx+hw)+','+(ly-3)+' L'+(cx+hw)+','+y0+' L'+(cx-hw)+','+y0+' Z" fill="'+col+'" opacity="0.62"/>';
+    }
+    g+=ln(cx-hw,top,cx-hw,y0,'var(--ink-soft)',1.6)+ln(cx+hw,top,cx+hw,y0,'var(--ink-soft)',1.6)+ln(cx-hw,y0,cx+hw,y0,'var(--ink-soft)',1.6);
+    g+=rect(cx-hw-8,y0,hw*2+16,6,'var(--ink-faint)','none',' rx="2"');
+    for(var v=tk; v<=cap+1e-9; v+=tk){
+      var y=y0-k*v, big=Math.abs(v/lb-Math.round(v/lb))<1e-6;
+      g+=ln(cx-hw,y,cx-hw+(big?9:5),y,'var(--ink-soft)',1);
+      if(big) g+=txt(cx-hw+11,y+3.5,Math.round(v),{fs:8.5,c:'var(--ink-faint)'});
+    }
+    if(label) g+=txt(cx,top-4,label,{a:'middle',fs:9.5,c:'var(--ink-faint)'});
+    return g;
+  }
+  function blob(o, cx, cy){
+    var pts=o.k.map(function(f,i){ var a=i/o.k.length*2*Math.PI; return [cx+Math.cos(a)*o.w/2*f, cy+Math.sin(a)*o.h/2*f]; });
+    var d='M'+pts.map(function(p,i){ var q=pts[(i+1)%pts.length]; return p[0].toFixed(1)+','+p[1].toFixed(1)+' Q'+p[0].toFixed(1)+','+p[1].toFixed(1)+' '+((p[0]+q[0])/2).toFixed(1)+','+((p[1]+q[1])/2).toFixed(1); }).join(' L')+' Z';
+    return '<path d="'+d+'" fill="'+o.fill+'" stroke="'+o.edge+'" stroke-width="1.6"/>';
+  }
+  // a block drawn in oblique projection: front-bottom-left corner at (x, yb), s px per cm
+  var OBQ=[0.43,-0.25];
+  function block(x, yb, d, s, m){
+    var l=d[0]*s, h=d[2]*s, dx=OBQ[0]*d[1]*s, dy=OBQ[1]*d[1]*s, g='';
+    g+=poly([[x,yb-h],[x+l,yb-h],[x+l+dx,yb-h+dy],[x+dx,yb-h+dy]], m.fill, m.edge, ' stroke-width="1.5" stroke-linejoin="round"');
+    g+=poly([[x+l,yb],[x+l+dx,yb+dy],[x+l+dx,yb-h+dy],[x+l,yb-h]], m.fill, m.edge, ' stroke-width="1.5" stroke-linejoin="round" style="filter:brightness(0.85)"');
+    g+=rect(x,yb-h,l,h,m.fill,m.edge,' stroke-width="1.5"');
+    return g;
+  }
+  // a ruler laid along a line from A to B (cm marks every s px), on the side given by the unit normal n
+  function ruler(A, B, cm, n, op){
+    var dx=B[0]-A[0], dy=B[1]-A[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L, wd=13, g='';
+    var x0=A[0]-ux*6, y0=A[1]-uy*6, x1=B[0]+ux*6, y1=B[1]+uy*6;
+    g+=poly([[x0,y0],[x1,y1],[x1+n[0]*wd,y1+n[1]*wd],[x0+n[0]*wd,y0+n[1]*wd]], '#fff6cf', '#b59a3a', ' stroke-width="1"');
+    var per=L/cm, mm=per/10>=2.2;
+    for(var i=0; i<=Math.round(cm*(mm?10:2)); i++){
+      var t=i/(mm?10:2)*per, px=A[0]+ux*t, py=A[1]+uy*t, len=(mm? (i%10===0?8:(i%5===0?5.5:3.5)) : (i%2===0?8:5));
+      g+=ln(px,py,px+n[0]*len,py+n[1]*len,'#5c4a12',0.8);
+    }
+    return '<g opacity="'+op.toFixed(2)+'">'+g+'</g>';
+  }
+  function legend(lines){
+    var g='';
+    lines.forEach(function(l,i){ g+=txt(8,18+i*16,l,{fs:12,c:'var(--ink)'}); });
+    return g;
+  }
+
+  // ---- graph in the right-hand box
+  function niceTicks(max){
+    var raw=max/5, p=Math.pow(10,Math.floor(Math.log10(raw))), st=[1,2,2.5,5,10].map(function(m){ return m*p; }).filter(function(s){ return s>=raw; })[0];
+    var t=[]; for(var v=0; v<=max+st*0.999; v+=st) t.push(+v.toFixed(6));
+    return t;
+  }
+  function graphAxes(ax){
+    var b=RB, g='';
+    ax.gx=function(v){ return b.x+(v-ax.x0)/(ax.x1-ax.x0)*b.w; };
+    ax.gy=function(v){ return b.y+b.h-(v-ax.y0)/(ax.y1-ax.y0)*b.h; };
+    ax.xt.forEach(function(t){ var x=ax.gx(t); g+=ln(x,b.y,x,b.y+b.h,'var(--panel-border)',1)+txt(x,b.y+b.h+14,t,{a:'middle',fs:10}); });
+    ax.yt.forEach(function(t){ var y=ax.gy(t); g+=ln(b.x,y,b.x+b.w,y,'var(--panel-border)',1)+txt(b.x-5,y+3.5,t,{a:'end',fs:10}); });
+    g+=ln(b.x,b.y,b.x,b.y+b.h,'var(--ink-soft)',1.5)+ln(b.x,b.y+b.h,b.x+b.w,b.y+b.h,'var(--ink-soft)',1.5);
+    g+=txt(b.x+b.w/2,b.y+b.h+32,ax.xl,{a:'middle',fs:10.5,c:'var(--ink)'});
+    g+='<text transform="translate('+(b.x-34)+' '+(b.y+b.h/2)+') rotate(-90)" text-anchor="middle" font-size="10.5" fill="var(--ink)">'+ax.yl+'</text>';
+    return g;
+  }
+  function clipLine(ax, x0, y0, x1, y1, col, dash){
+    // draw y = line from (x0,y0) to (x1,y1), cut at the top of the graph
+    if(y1>ax.y1){ x1=x0+(x1-x0)*(ax.y1-y0)/(y1-y0); y1=ax.y1; }
+    return ln(ax.gx(x0),ax.gy(y0),ax.gx(x1),ax.gy(y1),col,2,dash?' stroke-dasharray="6 4"':'');
+  }
+
+  // ================= REGULAR BLOCK =================
+  var BCX=252;
+  function regScene(){
+    var m=mat(), d=curDims(), s=22, g=bench();
+    var mass=curMass();
+    var onPan = S>=1 ? (S===1?ease(P):1) : 0;
+    var shown = S>=1 && (S>1 || P>=1);
+    g+=balance(BCX, 96, shown ? f1(mass)+' g' : '0.0 g');
+    var wpx=d[0]*s+OBQ[0]*d[1]*s, x0=BCX-wpx/2;
+    var x=lerp(2, x0, onPan), yb=lerp(282, 244, onPan)-Math.sin(Math.PI*onPan)*50;
+    if(!(exp() && E.blk==null)) g+=block(x, yb, d, s, m);
+    var l=d[0]*s, h=d[2]*s, dx=OBQ[0]*d[1]*s, dy=OBQ[1]*d[1]*s;
+    var rop=function(k){ return S===k ? Math.min(1,P*3) : (S===k+1 ? Math.max(0,1-P*3) : 0); };
+    if(rop(2)>0) g+=ruler([x,yb-h],[x+l,yb-h],d[0],[0,-1],rop(2));
+    if(rop(3)>0) g+=ruler([x+l,yb-h],[x+l+dx,yb-h+dy],d[1],[-0.5,-0.87],rop(3));
+    if(rop(4)>0) g+=ruler([x,yb],[x,yb-h],d[2],[-1,0],S===4?Math.min(1,P*3):0);
+    var lines=[];
+    if(shown) lines.push('m = '+f1(mass)+' g');
+    if(S>=2 && (S>2||P>=1)) lines.push('l = '+f1(d[0])+' cm');
+    if(S>=3 && (S>3||P>=1)) lines.push('w = '+f1(d[1])+' cm');
+    if(S>=4 && P>=1) lines.push('h = '+f1(d[2])+' cm');
+    g+=legend(lines);
+    if(exp() && E.blk!=null) g+=txt(372,18,'block '+(E.blk+1)+' of 5',{a:'end',fs:11,c:'var(--topic)',w:600});
+    return g;
+  }
+  function regGraph(){
+    var m=mat(), ymax=niceTicks(m.rho*60*1.04), ax={x0:0,x1:60,y0:0,y1:ymax[ymax.length-1],xt:[0,10,20,30,40,50,60],yt:ymax,xl:'volume (cm³)',yl:'mass (g)'};
+    var g=graphAxes(ax);
+    if(!exp()){
+      g+=clipLine(ax,0,0,60,m.rho*60,'var(--topic)',false);
+      if(S===4 && P>=1) g+='<circle cx="'+ax.gx(STD[0]*STD[1]*STD[2]).toFixed(1)+'" cy="'+ax.gy(curMass()).toFixed(1)+'" r="4.5" fill="var(--topic)"/>';
+      g+=txt(RB.x+6,RB.y+12,'gradient = density',{fs:10,c:'var(--topic)'});
+    } else {
+      E.rows.forEach(function(r){ g+=expCross(+ax.gx(r.V).toFixed(1), +ax.gy(r.m).toFixed(1), 4.5); });
+      if(E.rows.length===5){ var k=regFit(); g+=clipLine(ax,0,0,60,k*60,'var(--topic)',true); g+=txt(RB.x+6,RB.y+12,'line of best fit',{fs:10,c:'var(--topic)'}); }
+    }
+    return g;
+  }
+  function regFit(){ var a=0,b=0; E.rows.forEach(function(r){ a+=r.m*r.V; b+=r.V*r.V; }); return a/b; }
+
+  // ================= IRREGULAR OBJECT =================
+  function irrGeo(){
+    var e=eur(), o=obj();
+    var G=e ? {cx:180, hw:30, y0:272, rim:110, armY:16, spoutY:130} : {cx:215, hw:25, y0:272, k:1.8, armY:16};
+    G.hang=(e?G.rim:G.y0-G.k*100-8)-o.h/2-7;
+    G.low=G.y0-2-o.h/2;
+    return G;
+  }
+  function objCentre(G){
+    var o=obj(), start=[132,282-o.h/2], pan=[62,244-o.h/2], hang=[G.cx,G.hang];
+    if(S===0) return P<1 ? lerp2(pan,start,ease(P)) : start;
+    if(S===1) return lerp2(start,pan,ease(P),true);
+    if(S===2 && P<1) return lerp2(pan,hang,ease(P),true);
+    return [G.cx, lerp(G.hang,G.low,dep)];
+  }
+  function lerp2(a,b,p,arc){ return [lerp(a[0],b[0],p), lerp(a[1],b[1],p)-(arc?Math.sin(Math.PI*p)*40:0)]; }
+  // how much of the object's volume is under water, and the water level (cm³ on the scale)
+  function irrWater(){
+    var G=irrGeo(), o=obj(), c=objCentre(G), bottom=c[1]+o.h/2, frac=0;
+    if(S<2 || (S===2 && P<1)) return {sub:0, level:eur()?0:V1, frac:0};
+    if(eur()){
+      frac=Math.max(0,Math.min(1,(bottom-G.spoutY)/o.h));
+      return {sub:o.V*frac, level:(o.V-SPOUT_LOSS)*frac, frac:frac};
+    }
+    var lv=V1;
+    for(var i=0;i<4;i++){ var wy=G.y0-G.k*lv; frac=Math.max(0,Math.min(1,(bottom-wy)/o.h)); lv=V1+o.V*frac; }
+    return {sub:o.V*frac, level:lv, frac:frac};
+  }
+  function irrScene(){
+    var G=irrGeo(), o=obj(), c=objCentre(G), w=irrWater(), g=bench();
+    g+=balance(62, 50, (S===1 && P>=1) ? f1(objMass())+' g' : '0.0 g');
+    // clamp stand and thread
+    var sx=eur()?338:318;
+    g+=rect(sx-14,276,40,6,'var(--ink-faint)','none',' rx="2"')+ln(sx,276,sx,G.armY-6,'var(--ink-faint)',4)+ln(sx,G.armY,G.cx-6,G.armY,'var(--ink-faint)',4);
+    var hung = S>=2 && P>=1 || S===3;
+    if(hung) g+=ln(G.cx,G.armY,c[0],c[1]-o.h/2+2,'var(--ink-soft)',1);
+    if(eur()){
+      var filled = S>=2 && (S>2 || P>=0.5);
+      var lev = filled ? G.spoutY : 148;
+      g+=blob(o,c[0],c[1]);
+      g+='<path d="M'+(G.cx-G.hw)+','+lev+' L'+(G.cx+G.hw)+','+lev+' L'+(G.cx+G.hw)+','+G.y0+' L'+(G.cx-G.hw)+','+G.y0+' Z" fill="var(--water)" opacity="0.7"/>';
+      g+=ln(G.cx-G.hw,G.rim,G.cx-G.hw,G.y0,'var(--ink-soft)',1.8)+ln(G.cx+G.hw,G.rim,G.cx+G.hw,G.spoutY-6,'var(--ink-soft)',1.8)+ln(G.cx+G.hw,G.spoutY+6,G.cx+G.hw,G.y0,'var(--ink-soft)',1.8)+ln(G.cx-G.hw,G.y0,G.cx+G.hw,G.y0,'var(--ink-soft)',1.8);
+      g+=ln(G.cx+G.hw,G.spoutY-6,G.cx+G.hw+46,G.spoutY+6,'var(--ink-soft)',1.6)+ln(G.cx+G.hw,G.spoutY+6,G.cx+G.hw+44,G.spoutY+13,'var(--ink-soft)',1.6);
+      if(filled) g+=ln(G.cx+G.hw,G.spoutY+2,G.cx+G.hw+40,G.spoutY+10,'var(--water-ink)',2.5);
+      if(running && S===3 && P<1 && w.frac>0) g+=ln(G.cx+G.hw+43,G.spoutY+12,G.cx+G.hw+43,272-2.3*w.level-2,'var(--water-ink)',1.5,' stroke-dasharray="2 5"');
+      g+=txt(G.cx,G.y0+18,'eureka can',{a:'middle',fs:9.5,c:'var(--ink-faint)'});
+      if(filled) g+=cylinder(G.cx+G.hw+46, 13, 272, 2.3, 50, 5, 10, w.level, 'var(--water)', '');
+    } else {
+      g+=blob(o,c[0],c[1]);
+      g+=cylinder(G.cx, G.hw, G.y0, G.k, 100, 5, 20, w.level, 'var(--water)', '100 cm³');
+    }
+    // drag hint
+    if(canDrag() && dep<1) g+=txt(c[0]+o.w/2+6, c[1]+4, '↕ drag', {fs:10,c:'var(--accent)'});
+    var lines=[];
+    if(S>=1 && (S>1 || P>=1)) lines.push('m = '+f1(objMass())+' g');
+    g+=legend(lines);
+    return g;
+  }
+  // a close-up of the scale at the water level, read at eye level
+  function irrInset(){
+    var b=RB, w=irrWater(), e=eur(), g='';
+    var empty = e && (S<2 || (S===2 && P<0.5));
+    var lev = empty ? 0 : w.level;
+    var cy=b.by+b.bh/2+8, k=15, cx=b.bx+b.bw/2+28, hw=52, view=Math.max(lev,6.5);
+    var yOf=function(v){ return cy-(v-view)*k; };
+    g+=rect(b.bx+2,b.by+2,b.bw-4,b.bh-4,'var(--panel)','var(--panel-border)',' rx="10"');
+    g+=txt(b.bx+b.bw/2,b.by+20,'Close-up of the '+(e?'collecting cylinder':'scale'),{a:'middle',fs:11,c:'var(--ink)',w:600});
+    g+='<clipPath id="dn-clip"><rect x="'+(b.bx+6)+'" y="'+(b.by+30)+'" width="'+(b.bw-12)+'" height="'+(b.bh-72)+'"/></clipPath><g clip-path="url(#dn-clip)">';
+    if(lev>0){
+      var ly=yOf(lev);
+      g+='<path d="M'+(cx-hw)+','+(ly-11)+' Q'+cx+','+(ly+11)+' '+(cx+hw)+','+(ly-11)+' L'+(cx+hw)+','+(b.by+b.bh)+' L'+(cx-hw)+','+(b.by+b.bh)+' Z" fill="var(--water)" opacity="0.8"/>';
+      g+='<path d="M'+(cx-hw)+','+(ly-11)+' Q'+cx+','+(ly+11)+' '+(cx+hw)+','+(ly-11)+'" fill="none" stroke="var(--water-ink)" stroke-width="1.5"/>';
+    }
+    for(var v=Math.floor(view-9); v<=Math.ceil(view+9); v++){
+      if(v<0) continue;
+      var y=yOf(v), big=v%5===0;
+      g+=ln(cx-hw,y,cx-hw+(big?26:14),y,'var(--ink)',1.2);
+      if(big) g+=txt(cx-hw+30,y+4,v,{fs:11,c:'var(--ink)'});
+    }
+    g+=ln(cx-hw,b.by,cx-hw,b.by+b.bh,'var(--ink-soft)',2)+ln(cx+hw,b.by,cx+hw,b.by+b.bh,'var(--ink-soft)',2);
+    if(lev>0){
+      var ey=yOf(lev), ex=b.bx+22;
+      g+=ln(ex+10,ey,cx,ey,'var(--accent)',1.3,' stroke-dasharray="4 3"');
+      g+='<path d="M'+(ex-9)+','+ey+' Q'+ex+','+(ey-8)+' '+(ex+9)+','+ey+' Q'+ex+','+(ey+8)+' '+(ex-9)+','+ey+' Z" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.3"/><circle cx="'+(ex+2)+'" cy="'+ey+'" r="3" fill="var(--ink)"/>';
+    }
+    g+='</g>';
+    g+=txt(b.bx+b.bw/2,b.by+b.bh-26,empty?'Nothing collected yet':'Eye level with the bottom',{a:'middle',fs:10,c:'var(--ink-soft)'});
+    g+=txt(b.bx+b.bw/2,b.by+b.bh-12,empty?'':'of the meniscus: '+Math.round(lev)+' cm³',{a:'middle',fs:10,c:'var(--ink-soft)'});
+    return g;
+  }
+
+  // ================= LIQUID =================
+  function liqMassTrue(v){ return CYL+liq().rho*v; }
+  function liqShownMass(){
+    if(exp() && E.rows.length && !goal){ var r=E.rows[E.rows.length-1]; return r.m; }
+    return r1(liqMassTrue(vol));
+  }
+  function liqScene(){
+    var L=liq(), g=bench(), cx=190, y0=238, k=1.4;
+    var onScale = !exp() || E.rows.length>0 || goal;
+    g+=balance(cx, 80, onScale ? f1(liqShownMass())+' g' : '0.0 g');
+    if(onScale) g+=cylinder(cx, 18, y0, k, 100, 10, 20, vol, L.col, '100 cm³');
+    else g+=cylinder(62, 18, 276, 1.4, 100, 10, 20, 0, L.col, '')+'';
+    // the beaker it is poured from
+    var pouring = running && goal && goal.pour!=null || (!exp() && running);
+    var bx=104, by=26;
+    g+='<g transform="rotate('+(pouring?-38:-8)+' '+(bx+44)+' '+(by+26)+')">'+rect(bx,by,44,50,'var(--panel)','var(--ink-soft)',' stroke-width="1.5" rx="3"')+rect(bx+2,by+20,40,28,L.col,'none',' opacity="0.75"')+'</g>';
+    if(pouring) g+='<path d="M'+(bx+46)+','+(by+12)+' Q'+(cx-4)+','+(by+10)+' '+(cx-2)+','+(y0-k*vol-4)+'" fill="none" stroke="'+L.col+'" stroke-width="3.5"/>';
+    var lines=['V = '+Math.round(vol)+' cm³'];
+    if(onScale) g+=legend(lines);
+    return g;
+  }
+  function liqGraph(){
+    var L=liq(), ymax=niceTicks(CYL+L.rho*100), ax={x0:0,x1:100,y0:0,y1:ymax[ymax.length-1],xt:[0,20,40,60,80,100],yt:ymax,xl:'volume of liquid (cm³)',yl:'total mass (g)'};
+    var g=graphAxes(ax);
+    if(!exp()){
+      g+=clipLine(ax,0,CYL,100,liqMassTrue(100),'var(--topic)',false);
+      g+='<circle cx="'+ax.gx(vol).toFixed(1)+'" cy="'+ax.gy(liqMassTrue(vol)).toFixed(1)+'" r="4.5" fill="var(--topic)"/>';
+      g+=txt(RB.x+6,RB.y+12,'gradient = density',{fs:10,c:'var(--topic)'});
+    } else {
+      E.rows.forEach(function(r){ g+=expCross(+ax.gx(r.v).toFixed(1), +ax.gy(r.m).toFixed(1), 4.5); });
+      if(liqDone()){ var f=liqFit(); g+=clipLine(ax,0,f.c,100,f.c+f.m*100,'var(--topic)',true); g+=txt(RB.x+6,RB.y+12,'line of best fit',{fs:10,c:'var(--topic)'}); }
+    }
+    return g;
+  }
+  function liqFit(){ return fitLine(E.rows.map(function(r){ return [r.v,r.m]; })); }
+  function liqDone(){ return exp() && E.rows.length && E.rows[E.rows.length-1].v>=100; }
+
+  // ================= draw =================
+  function draw(){
+    layout();
+    var p=part(), g='<g transform="translate('+OFF.x+' '+OFF.y+')">';
+    g+= p==='reg' ? regScene() : p==='irr' ? irrScene() : liqScene();
+    g+='</g>';
+    g+= p==='reg' ? regGraph() : p==='irr' ? irrInset() : liqGraph();
+    svg.innerHTML=g;
+    svg.classList.toggle('can-drag', canDrag());
+    svg.style.cursor = canDrag() ? 'grab' : '';
+    readings();
+    buttons();
+  }
+  function stat(lab, val, hi){ return '<div class="stat'+(hi?' hi':'')+'"><small>'+lab+'</small><strong>'+val+'</strong></div>'; }
+  function kgm3(r){ var v=Math.round(+r.toFixed(2)*1000); return v<10000?String(v):grp(v); }   // from ρ to 3 s.f., so it matches the g/cm³ line
+  function rho3(x){ return x.toFixed(2); }
+
+  function readings(){
+    var p=part(), ex=exp(), eq1=$('#dn-eq1'), eq2=$('#dn-eq2'), eq3=$('#dn-eq3'), n='', st='';
+    eq3.textContent='1 g/cm³ = 1000 kg/m³, because 1 m³ = 1 000 000 cm³ and 1 kg = 1000 g.';
+    if(p==='reg'){
+      var d=curDims(), V=r1(d[0]*d[1]*d[2]), m=curMass(), done=S===4 && P>=1;
+      if(!ex){
+        n=['The balance reads 0.0 g with nothing on it. Press Play to measure the '+mat().name+' block.',
+           'The balance gives the mass: <b>m = '+f1(m)+' g</b>.',
+           'The ruler gives the length: <b>l = '+f1(d[0])+' cm</b>. Read it at eye level, from the 0 mark.',
+           'The width: <b>w = '+f1(d[1])+' cm</b>.',
+           'The height: <b>h = '+f1(d[2])+' cm</b>. So V = l × w × h = '+f1(V)+' cm³, and ρ = '+FR('[[m|V]]')+' = <b>'+rho3(m/V)+' g/cm³</b>.'][S];
+        if(P<1 && S>0) n=['', 'Putting the block on the balance…', 'Measuring the length…', 'Measuring the width…', 'Measuring the height…'][S];
+        if(done && mat().reveal) n+=' That matches '+mat().reveal+'.';
+        st=stat('Volume V', done?f1(V)+' cm³':'?')+stat('Density ρ', done?rho3(m/V)+' g/cm³':'?', true)+stat('In kg/m³', done?kgm3(m/V):'?');
+        eq1.innerHTML = done ? 'V = l × w × h<br>V = '+f1(d[0])+' × '+f1(d[1])+' × '+f1(d[2])+'<br>V = '+f1(V)+' cm³' : 'V = l × w × h<br>Measure l, w and h first.';
+        eq2.innerHTML = done ? FR('ρ = [[m|V]]<br>ρ = [['+f1(m)+'|'+f1(V)+']]<br>ρ = '+rho3(m/V)+' g/cm³<br>ρ = '+rho3(m/V)+' × 1000<br>ρ = '+kgm3(m/V)+' kg/m³') : FR('ρ = [[m|V]]');
+      } else {
+        var k=E.rows.length;
+        if(goal) n='Measuring block '+(E.blk+1)+'…';
+        else if(k===0) n='Experiment: five '+mat().name+' blocks of different sizes. Press <b>Measure block 1</b>: the balance gives its mass and the ruler its sides.';
+        else if(k<5){ var r=E.rows[k-1]; n='Block '+k+': V = '+f1(r.V)+' cm³, m = '+f1(r.m)+' g. Plot it, then press <b>Measure block '+(k+1)+'</b>.'; }
+        else { var kk=regFit(); n='The points lie close to a straight line through the origin, so mass ∝ volume. Its gradient is the density: <b>'+rho3(kk)+' g/cm³</b> ('+kgm3(kk)+' kg/m³).'+(mat().reveal?' That matches '+mat().reveal+'.':''); }
+        var rows=E.rows.map(function(r){ return {v:r.n, l:r.l, w:r.w, h:r.h, V:r.V, m:r.m}; });
+        expTable($('#dn-table'), [{label:'Block',key:'v',dp:0},{label:'l (cm)',key:'l',dp:1},{label:'w (cm)',key:'w',dp:1},{label:'h (cm)',key:'h',dp:1},{label:'V (cm³)',key:'V',dp:1},{label:'m (g)',key:'m',dp:1}], rows, E.fresh);
+        if(k===5){
+          var kf=regFit(), mAt=r1(kf*50);
+          eq1.innerHTML='V = l × w × h for each block (the table).';
+          eq2.innerHTML=FR('ρ = gradient of the line<br>ρ = [[change in mass|change in volume]]<br>ρ = [['+f1(mAt)+' − 0|50.0 − 0]]<br>ρ = '+rho3(mAt/50)+' g/cm³<br>ρ = '+kgm3(mAt/50)+' kg/m³');
+        } else { eq1.innerHTML='V = l × w × h for each block (the table).'; eq2.innerHTML='ρ = gradient of the line of best fit<br>ρ = ? (measure all five blocks first)'; }
+      }
+    } else if(p==='irr'){
+      var o=obj(), w=irrWater(), mo=objMass(), e=eur(), full=S===3 && P>=1 && dep>=1;
+      var Vr = e ? Math.round(w.level) : Math.round(w.level)-V1, rr=mo/Vr;
+      if(!ex){
+        n=['Press Play: weigh the '+o.name+', then find its volume by '+(e?'collecting the water it pushes out of a eureka can.':'how far it makes the water rise.'),
+           'The balance gives the mass: <b>m = '+f1(mo)+' g</b>.',
+           e ? 'The can is filled until water runs out of the spout. Once the dripping stops, an empty measuring cylinder goes under the spout. <b>Drag</b> the '+o.name+' down, slowly.' : 'Read the water level before: <b>V₁ = '+V1+' cm³</b>, eye level with the bottom of the meniscus. <b>Drag</b> the '+o.name+' down into the water, slowly.',
+           e ? 'The water pushed out has the same volume as the '+o.name+': <b>V = '+Vr+' cm³</b>. So ρ = '+FR('[[m|V]]')+' = <b>'+rho3(rr)+' g/cm³</b>.' : 'Read the level after: <b>V₂ = '+Math.round(w.level)+' cm³</b>. V = V₂ − V₁ = '+Vr+' cm³, so ρ = '+FR('[[m|V]]')+' = <b>'+rho3(rr)+' g/cm³</b>.'][S];
+        if(S===2 && P>=1 && dep>0) n='Lowering the '+o.name+' on its thread… '+Math.round(w.frac*100)+'% of it is under water.';
+        if(S===3 && !full) n='Lowering the '+o.name+'…';
+        if(S===1 && P<1) n='Putting the '+o.name+' on the balance…';
+        if(S===2 && P<1) n= e ? 'Filling the eureka can…' : 'Hanging the '+o.name+' on a thread above the cylinder…';
+        st=stat('Volume V', full?Vr+' cm³':'?')+stat('Density ρ', full?rho3(rr)+' g/cm³':'?', true)+stat('In kg/m³', full?kgm3(rr):'?');
+        eq1.innerHTML = full ? (e?'V = volume of water collected<br>V = '+Vr+' cm³':'V = V₂ − V₁<br>V = '+Math.round(w.level)+' − '+V1+'<br>V = '+Vr+' cm³') : (e?'V = volume of water collected':'V = V₂ − V₁');
+        eq2.innerHTML = full ? FR('ρ = [[m|V]]<br>ρ = [['+f1(mo)+'|'+Vr+']]<br>ρ = '+rho3(rr)+' g/cm³<br>ρ = '+kgm3(rr)+' kg/m³') : FR('ρ = [[m|V]]');
+      } else {
+        var R=E.irr, got=e ? R.c!=null : R.v2!=null;
+        if(goal) n= goal.stage===1 ? 'Putting the '+o.name+' on the balance…' : goal.stage===2 ? (e?'Filling the eureka can until water runs out of the spout…':'Hanging the '+o.name+' on a thread above the water…') : 'Lowering the '+o.name+' gently into the water…';
+        else if(R.m==null) n='Experiment: press <b>Weigh it</b> to put the '+o.name+' on the balance.';
+        else if(e && !R.filled) n='m = '+f1(R.m)+' g. Now press <b>Fill the can</b>: fill it until water runs out of the spout, wait for the dripping to stop, then put an empty measuring cylinder under the spout.';
+        else if(!e && R.v1==null) n='m = '+f1(R.m)+' g. Now press <b>Read V₁</b> to hang it above the water and read the level before.';
+        else if(dep<1) n='<b>Drag</b> the '+o.name+' down into the water on its thread (or press <b>Lower it</b>). Lower it gently, so no water splashes out.';
+        else if(!got) n='It is fully under water and not touching the sides. Press <b>'+(e?'Read the volume':'Read V₂')+'</b>, eye level with the bottom of the meniscus.';
+        else n= e ? 'V = '+R.c+' cm³, so ρ = '+FR('[[m|V]]')+' = <b>'+rho3(R.m/R.c)+' g/cm³</b>. A few drops stay in the spout, so the volume collected can be a little low.' : 'V = V₂ − V₁ = '+(R.v2-R.v1)+' cm³, so ρ = '+FR('[[m|V]]')+' = <b>'+rho3(R.m/(R.v2-R.v1))+' g/cm³</b>.';
+        var VV = got ? (e?R.c:R.v2-R.v1) : null;
+        var t='<table class="rtable"><thead><tr><th style="text-align:left">Quantity</th><th>Reading</th></tr></thead><tbody>';
+        var row=function(q,v){ return '<tr><td class="q">'+q+'</td><td>'+(v==null?'':v)+'</td></tr>'; };
+        t+=row('Mass m (g)', R.m==null?null:f1(R.m));
+        if(e) t+=row('Water collected (cm³)', R.c);
+        else t+=row('Level before V₁ (cm³)', R.v1)+row('Level after V₂ (cm³)', R.v2)+row('Volume V (cm³)', VV==null?'?':VV);
+        t+=row('Density ρ (g/cm³)', VV==null?'?':rho3(R.m/VV));
+        $('#dn-table').innerHTML=t+'</tbody></table>';
+        eq1.innerHTML = VV==null ? (e?'V = volume of water collected<br>V = ?':'V = V₂ − V₁<br>V = ?') : (e?'V = volume of water collected<br>V = '+VV+' cm³':'V = V₂ − V₁<br>V = '+R.v2+' − '+R.v1+'<br>V = '+VV+' cm³');
+        eq2.innerHTML = VV==null ? FR('ρ = [[m|V]]<br>ρ = ?') : FR('ρ = [[m|V]]<br>ρ = [['+f1(R.m)+'|'+VV+']]<br>ρ = '+rho3(R.m/VV)+' g/cm³<br>ρ = '+kgm3(R.m/VV)+' kg/m³');
+      }
+    } else {
+      var L=liq(), M=r1(liqMassTrue(vol)), ml=r1(M-CYL);
+      if(!ex){
+        n = vol<=0 ? 'The empty measuring cylinder on the balance: <b>'+f1(CYL)+' g</b>. Press Play to pour in '+L.name+'.' :
+            (running ? 'Pouring in '+L.name+'… V = '+Math.round(vol)+' cm³, total mass '+f1(M)+' g.' :
+            'Mass of liquid = '+f1(M)+' − '+f1(CYL)+' = '+f1(ml)+' g, so ρ = '+FR('[[m|V]]')+' = <b>'+rho3(ml/vol)+' g/cm³</b>.'+(vol>=100 && L.reveal?' That matches '+L.reveal+'.':''));
+        var ok=vol>0;
+        st=stat('Mass of liquid', ok?f1(ml)+' g':'?')+stat('Density ρ', ok?rho3(ml/vol)+' g/cm³':'?', true)+stat('In kg/m³', ok?kgm3(ml/vol):'?');
+        eq1.innerHTML = ok ? 'mass of liquid = total mass − mass of cylinder<br>m = '+f1(M)+' − '+f1(CYL)+'<br>m = '+f1(ml)+' g' : 'mass of liquid = total mass − mass of cylinder';
+        eq2.innerHTML = ok ? FR('ρ = [[m|V]]<br>ρ = [['+f1(ml)+'|'+Math.round(vol)+']]<br>ρ = '+rho3(ml/vol)+' g/cm³<br>ρ = '+kgm3(ml/vol)+' kg/m³') : FR('ρ = [[m|V]]');
+      } else {
+        var k2=E.rows.length, st2=+intSeg.value();
+        if(goal) n='Pouring in '+st2+' cm³…';
+        else if(!k2) n='Experiment: press <b>Weigh the empty cylinder</b> first. Then add '+L.name+' '+st2+' cm³ at a time and record the total mass each time.';
+        else if(!liqDone()){ var lr=E.rows[k2-1]; n=(lr.v?lr.v+' cm³: ':'Empty cylinder: ')+'total mass '+f1(lr.m)+' g. Press <b>Add '+st2+' cm³</b>.'; }
+        else { var f=liqFit(); n='A straight line, but not through the origin: it meets the mass axis at '+f1(f.c)+' g, the mass of the empty cylinder. Its gradient is the density: <b>'+rho3(f.m)+' g/cm³</b>.'+(L.reveal?' That matches '+L.reveal+'.':''); }
+        expTable($('#dn-table'), [{label:'Volume (cm³)',key:'v',dp:0},{label:'Total mass (g)',key:'m',dp:1}], E.rows, E.fresh);
+        if(liqDone()){
+          var ff=liqFit(), a=r1(ff.c+ff.m*20), b=r1(ff.c+ff.m*100);
+          eq1.innerHTML='intercept = mass of the empty cylinder<br>intercept = '+f1(ff.c)+' g';
+          eq2.innerHTML=FR('ρ = gradient of the line<br>ρ = [[change in mass|change in volume]]<br>ρ = [['+f1(b)+' − '+f1(a)+'|100 − 20]]<br>ρ = [['+f1(b-a)+'|80]]<br>ρ = '+rho3((b-a)/80)+' g/cm³');
+        } else { eq1.innerHTML='intercept = mass of the empty cylinder<br>intercept = ?'; eq2.innerHTML='ρ = gradient of the line of best fit<br>ρ = ?'; }
+      }
+    }
+    note.innerHTML=n;
+    $('#dn-stats').innerHTML=st;
+  }
+
+  // ---- what the main button does now
+  function nextAction(){
+    var p=part();
+    if(!exp()) return running ? {label:'❚❚ Pause'} : {label:'▶ Play'};
+    if(goal) return {label:'…', off:true};
+    if(p==='reg'){ var k=E.rows.length; return k<5 ? {label:'▶ Measure block '+(k+1), fn:measureBlock} : {label:'Done', off:true}; }
+    if(p==='irr'){
+      var R=E.irr, e=eur();
+      if(R.m==null) return {label:'▶ Weigh it', fn:function(){ go(1, 1.6, function(){ R.m=objMass(); }); }};
+      if(e && !R.filled) return {label:'▶ Fill the can', fn:function(){ go(2, 1.6, function(){ R.filled=true; }); }};
+      if(!e && R.v1==null) return {label:'▶ Read V₁', fn:function(){ go(2, 1.6, function(){ R.v1=Math.round(irrWater().level); }); }};
+      if(dep<1) return {label:'▶ Lower it', fn:function(){ dep0=dep; S=3; P=0; goal={stage:3, speed:1}; start(); }};
+      var got=e ? R.c!=null : R.v2!=null;
+      if(!got) return {label: e?'▶ Read the volume':'▶ Read V₂', fn:function(){ var lv=Math.round(irrWater().level); if(e) R.c=lv; else R.v2=lv; draw(); }};
+      return {label:'Done', off:true};
+    }
+    if(!E.rows.length) return {label:'▶ Weigh the empty cylinder', fn:function(){ E.rows.push({v:0, m:CYL}); E.fresh=0; draw(); }};
+    if(liqDone()) return {label:'Done', off:true};
+    return {label:'▶ Add '+intSeg.value()+' cm³', fn:function(){ var to=Math.min(100, vol+(+intSeg.value())); goal={pour:to, onEnd:function(){ E.run.stepUp(); }}; start(); }};
+  }
+  function buttons(){
+    var a=nextAction();
+    playBtn.innerHTML=a.label.replace('▶','&#9654;'); playBtn.disabled=!!a.off;
+  }
+  function measureBlock(){
+    E.blk=E.rows.length; S=0; P=1; hold=0;
+    go(4, 2.6, function(){
+      var i=E.blk, d=blockRead(i);
+      E.rows.push({n:i+1, l:d[0], w:d[1], h:d[2], V:r1(d[0]*d[1]*d[2]), m:blockMass(i)}); E.fresh=i+1;
+    });
+  }
+  // move through the stages up to `stage`, then call onEnd
+  function go(stage, speed, onEnd){
+    goal={stage:stage, speed:speed, onEnd:onEnd};
+    if(S>=stage && P>=1){ finish(); return; }
+    if(P>=1){ S++; P=0; if(part()==='irr' && S===3) dep0=dep; }
+    start();
+  }
+  function finish(){ var g=goal; goal=null; stop(); if(g && g.onEnd) g.onEnd(); draw(); }
+
+  function tick(dt){
+    var p=part(), sp=(goal&&goal.speed)||1;
+    if(p==='liq'){
+      var to = goal ? goal.pour : 100, rate = goal ? 30 : 12;
+      vol=Math.min(to, vol+dt*rate);
+      if(vol>=to-1e-9){ vol=to; if(goal) finish(); else { stop(); } }
+      return;
+    }
+    if(P<1){
+      P=Math.min(1, P+dt*sp/DUR[p][S]);
+      if(p==='irr' && S===3) dep=dep0+(1-dep0)*ease(P);
+      return;
+    }
+    var target = goal ? goal.stage : LAST[p];
+    if(S<target){ hold+=dt*sp; if(hold>=0.5){ hold=0; S++; P=0; if(p==='irr' && S===3) dep0=dep; } return; }
+    if(goal) finish(); else stop();
+  }
+  function frame(now){
+    var dt=Math.min(0.05,(now-last)/1000)*(slowOn()?0.3:1); last=now;
+    tick(dt);
+    draw();
+    if(running) rafId=requestAnimationFrame(frame);
+  }
+  function start(){ running=true; cancelAnimationFrame(rafId); last=performance.now(); rafId=requestAnimationFrame(frame); jumpSeg.pick(null); draw(); }
+  function stop(){ running=false; cancelAnimationFrame(rafId); }
+
+  function play(){
+    if(running){ stop(); draw(); return; }
+    var p=part();
+    if(p==='liq'){ if(vol>=100) vol=0; start(); return; }
+    if(S>=LAST[p] && P>=1){ S=0; P=1; dep=0; }
+    if(P>=1 && S<LAST[p] && !(p==='irr' && S===2 && dep>0)){ S++; P=0; if(p==='irr' && S===3) dep0=dep; }
+    else if(p==='irr' && S===2 && P>=1){ S=3; P=0; dep0=dep; }
+    start();
+  }
+  function jump(k){
+    stop(); goal=null; hold=0;
+    var p=part();
+    if(p==='liq'){ vol=k; draw(); jumpSeg.pick(String(k)); return; }
+    S=k; P=1; dep = (p==='irr' && k===3) ? 1 : 0;
+    draw(); jumpSeg.pick(String(k));
+  }
+  function setJumps(){
+    var p=part(), J = p==='reg' ? [[0,'Start'],[1,'Weighed'],[4,'Measured']] : p==='irr' ? [[0,'Start'],[1,'Weighed'],[2,'Before'],[3,'Lowered']] : [[0,'Empty'],[50,'50 cm³'],[100,'100 cm³']];
+    $('#dn-jump').innerHTML=J.map(function(j){ return '<button type="button" data-v="'+j[0]+'" aria-pressed="false">'+j[1]+'</button>'; }).join('');
+  }
+  function clearAll(){
+    stop(); goal=null; S=0; P=1; hold=0; dep=0; dep0=0; vol=0;
+    E={rows:[], blk:null, fresh:null, irr:{m:null, v1:null, v2:null, c:null, filled:false}};
+    E.run=expRun({start:0, max:100, step:+intSeg.value(), measure:function(v, ph, prev){
+      var i=E.rows.length, r=expReading(liqMassTrue(v), prev==null?CYL:prev, 0.1, i, 4);
+      E.rows.push({v:v, m:r}); E.fresh=v; return r; }});
+    jumpSeg.pick(null);
+    draw();
+  }
+  function setRows(){
+    var p=part(), ex=exp();
+    $('#dn-matlab').hidden=$('#dn-mat').hidden=p!=='reg';
+    $('#dn-objlab').hidden=$('#dn-obj').hidden=$('#dn-methlab').hidden=$('#dn-meth').hidden=p!=='irr';
+    $('#dn-liqlab').hidden=$('#dn-liq').hidden=p!=='liq';
+    $('#dn-intlab').hidden=$('#dn-int').hidden=!(p==='liq' && ex);
+    $('#dn-jlab').hidden=$('#dn-jump').hidden=ex;
+    $('#dn-clear').hidden=!ex; $('#dn-tablewrap').hidden=!ex; $('#dn-stats').hidden=ex;
+    $('#dn-slow').hidden=false;
+    svg.setAttribute('aria-label', p==='reg' ? 'A rectangular block on a top-pan balance, measured with a ruler. A graph of mass against volume is on the right.'
+      : p==='irr' ? 'An irregular object, weighed on a balance, then lowered on a thread into '+(eur()?'a eureka can, with the water it pushes out collected in a measuring cylinder.':'a measuring cylinder of water.')+' A close-up of the scale is on the right.'
+      : 'A measuring cylinder on a top-pan balance, with liquid poured in. A graph of total mass against volume is on the right.');
+    if(p==='irr'){ svg.setAttribute('tabindex','0'); } else svg.removeAttribute('tabindex');
+  }
+  function setPart(){ setRows(); setJumps(); clearAll(); }
+
+  // ---- drag the object down into the water (pointer), or ↑ ↓ when the picture has focus
+  function canDrag(){
+    if(part()!=='irr' || running || goal) return false;
+    if(exp()){ var R=E.irr; if(R.m==null || (eur()? !R.filled : R.v1==null)) return false; if(eur()? R.c!=null : R.v2!=null) return false; return true; }
+    return S>=2;
+  }
+  function setDep(v){
+    v=Math.max(0, Math.min(1, v));
+    dep=v; P=1;
+    S = dep>=0.999 ? 3 : 2; if(S===3) dep=1;
+    jumpSeg.pick(null); draw();
+  }
+  function svgPt(e){ var pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+  var grab=null;
+  svg.addEventListener('pointerdown', function(e){
+    if(!canDrag()) return;
+    var q=svgPt(e), G=irrGeo(), o=obj(), c=objCentre(G);
+    if(Math.abs(q.x-OFF.x-c[0])>o.w/2+14 || Math.abs(q.y-OFF.y-c[1])>o.h/2+14) return;
+    grab={y:q.y, d:dep, span:G.low-G.hang}; svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
+  });
+  svg.addEventListener('pointermove', function(e){ if(!grab) return; var q=svgPt(e); setDep(grab.d+(q.y-grab.y)/grab.span); });
+  function endGrab(){ if(!grab) return; grab=null; svg.classList.remove('dragging'); draw(); }
+  svg.addEventListener('pointerup', endGrab); svg.addEventListener('pointercancel', endGrab);
+  svg.addEventListener('keydown', function(e){
+    if(!canDrag()) return;
+    var v=null;
+    if(e.key==='ArrowDown') v=dep+0.1; else if(e.key==='ArrowUp') v=dep-0.1; else if(e.key==='End') v=1; else if(e.key==='Home') v=0;
+    if(v!==null){ setDep(Math.round(v*10)/10); e.preventDefault(); }
+  });
+
+  playBtn.addEventListener('click', function(){ var a=nextAction(); if(a.off) return; if(exp()) a.fn(); else play(); });
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
+  expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); setRows(); clearAll(); });
+  $('#dn-reset').addEventListener('click', clearAll);
+  $('#dn-clear').addEventListener('click', clearAll);
+  window.addEventListener('resize', function(){ var was=narrow; layout(); if(was!==narrow) draw(); });
+
+  watchEquals($('#dn-eq1')); watchEquals($('#dn-eq2'));
+  setPart();
+})();
+</script>
+</body>
+</html>
