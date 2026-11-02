@@ -10,9 +10,10 @@ What Alex has checked, and what still needs checking. One row per published page
 
 | Page | Status | What to check |
 |---|---|---|
-| IGCSE list `igcse.html` | 🔍 To review | Units collapse (remembered per browser), search, Workouts/Practicals filter, Triple Award switch, Open all; Unit 1 cards under Part 1 / Part 2 headings (27 Oct 2026); core practicals shown in their unit and in Core Practicals; links like `igcse.html#unit-1` open that unit |
-| IAL animations list `animations/ial.html` | 🔍 To review | New 2 Nov 2026: the old A Level / IB list split; cards under Unit 1, Unit 2 and Unit 5. Check each animation is under the right unit. |
-| IB animations list `animations/ib.html` | 🔍 To review | New 2 Nov 2026: cards under Theme A and Theme E. Check each is in the IB guide (especially gamma radiation: inverse-square law and absorption by lead). |
+| IGCSE list `igcse.html` | 🔍 To review | Units collapse (remembered per browser), search, Workouts/Practicals filter, Triple Award switch, Open all (2 Nov 2026: a search no longer leaves units remembered as open); Unit 1 cards under Part 1 / Part 2 headings (27 Oct 2026); core practicals shown in their unit and in Core Practicals; links like `igcse.html#unit-1` open that unit |
+| IAL animations list `animations/ial.html` | 🔍 To review | 2 Nov 2026: cards under Unit 1, 2, 4 and 5, checked against the IAL spec (fields in Unit 4: 106, 115). Units now collapse like `igcse.html`, with search and Open all. |
+| IB animations list `animations/ib.html` | 🔍 To review | 2 Nov 2026: cards under Theme A, D and E, checked against the IB guide (gamma radiation removed; radiation in fields under D.3; friction added to A). Themes now collapse like `igcse.html`, with search and Open all. |
+| IGCSE animations list `animations/igcse.html` | 🔍 To review | 2 Nov 2026: units now collapse like `igcse.html`, with search and Open all. |
 | Year 9 `heat-transfer.html` | 🔍 To review | The three new Predict pairs (Conduction, Convection Current, Radiation). |
 | Year 9 `energy.html` (8K) | 🔍 To review | 26 Oct 2026: cut to the 8K content. Stores, Pathways, Conservation and Work Done tabs removed (all covered by IGCSE 4a and 4c). New Overview passage (heat transfer, power, efficiency, kWh), Work done memory card swapped for Thermal insulator, stairs Predict reworded without work done. Efficiency Calculate has two new two-step questions (energy = power × time with time in seconds, then efficiency). Check the wording of these. |
 | Year 9 `working-scientifically.html` | 🔍 To review | New (26 Oct 2026). Tabs: Overview (fill in the blanks, key words match), Variables (fair test and equipment Predicts, variables sort), Graphs (SLAPU = Scale, Label, Axes, Points, Units method card with example graph, order the steps, SLAPU mistakes sort), Results (anomalous result, read-off, accurate vs precise, which thermometer Predicts). Check the SLAPU wording matches your lessons. |
@@ -76,7 +77,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `ac-generator.html` | IGCSE | ❔ Not recorded | |
 | `transformer.html` | IGCSE | ❔ Not recorded | |
 | `national-grid.html` | workout only | ❔ Not recorded | |
-| `friction.html` | IGCSE + IB (Theme A) | 🔍 To review | 2 Nov 2026: card added to the IB list; back link follows `?level=`. Still IGCSE-pitched: no μ<sub>s</sub>, μ<sub>d</sub> or IB symbols yet. |
+| `friction.html` | IGCSE + IB (Theme A) | 🔍 To review | 2 Nov 2026: on the IB list; new IGCSE / IB switch. IB adds Static and Dynamic Friction: pull rises over 6 s, F<sub>f</sub>–F<sub>app</sub> graph, four surfaces (wood 0.50/0.30, rubber on concrete 1.00/0.80, steel 0.74/0.57, ice 0.10/0.03), mass slider, working, Experiment mode. Check the μ values and the working. |
 | `newtons-laws.html` | IAL + IB | ✅ Checked 2 Nov 2026 | |
 | `free-body-diagrams.html` | IAL + IB | ✅ Checked 2 Nov 2026 | |
 | `inclined-plane.html` | IAL + IB | 🔍 To review | Checked 2 Nov 2026, then re-laid out to fit 1366×657: Symbols switch on the title line, friction setup and a 2-row "Try these" grid on the right, viewBox enlarged so arrows at θ = 0 are no longer cut off. Still 22px over at 1280×610. |

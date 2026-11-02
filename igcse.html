@@ -473,23 +473,21 @@
   cards.forEach(function(a){a._ta=!!a.querySelector('.ta-tag'); a._txt=a.textContent.toLowerCase().replace(/\s+/g,' ');});
   var q=document.getElementById('q'), taBtn=document.getElementById('ta'), allBtn=document.getElementById('toggle-all'), empty=document.getElementById('empty');
   var seg=[].slice.call(document.querySelectorAll('[data-show]'));
-  var restoring=false;
   function apply(){
     var term=q.value.trim().toLowerCase(), any=false;
     cards.forEach(function(a){
       var ok=(st.show==='all'||a.dataset.type===st.show)&&(st.ta||!a._ta)&&(!term||a._txt.indexOf(term)>-1);
       a.parentNode.hidden=!ok;
     });
-    restoring=true;
     units.forEach(function(d){
       var vis=[].filter.call(d.querySelectorAll('a.act'),function(a){return !a.parentNode.hidden;});
       var w=vis.filter(function(a){return a.dataset.type==='workout';}).length, p=vis.length-w;
       d.hidden=!vis.length; if(vis.length) any=true;
       [].forEach.call(d.querySelectorAll('.part-head'),function(h){var g=h.nextElementSibling; h.hidden=g.hidden=![].some.call(g.querySelectorAll('a.act'),function(a){return !a.parentNode.hidden;});});
       d.querySelector('.count').textContent=[w?w+(w>1?' workouts':' workout'):'',p?p+(p>1?' practicals':' practical'):''].filter(Boolean).join(' · ');
-      d.open = term ? !!vis.length : st.open.indexOf(d.id)>-1;
+      var want = term ? !!vis.length : st.open.indexOf(d.id)>-1;
+      if(d.open!==want){ d._expect=want; d.open=want; }
     });
-    restoring=false;
     empty.hidden=any;
     seg.forEach(function(b){b.setAttribute('aria-pressed',b.dataset.show===st.show);});
     taBtn.setAttribute('aria-pressed',st.ta);
@@ -500,7 +498,8 @@
   function syncAll(){var s=shown(); allBtn.textContent=s.length&&s.every(function(d){return d.open;})?'Close all':'Open all';}
   units.forEach(function(d){
     d.addEventListener('toggle',function(){
-      if(restoring||q.value.trim()){syncAll();return;}
+      if(d._expect===d.open||q.value.trim()){d._expect=undefined;syncAll();return;}
+      d._expect=undefined;
       st.open=units.filter(function(x){return x.open;}).map(function(x){return x.id;}); save(); syncAll();
     });
   });
