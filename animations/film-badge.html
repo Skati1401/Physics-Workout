@@ -228,7 +228,7 @@
     <div class="side">
       <div class="toprow">
         <div class="seg tabs" id="fb-mode" role="group" aria-label="Mode"><button type="button" data-v="pred" aria-pressed="true">Predict the film</button><button type="button" data-v="myst" aria-pressed="false">What is the source?</button></div>
-        <div class="seg tabs" id="fb-level" role="group" aria-label="Level"><button type="button" data-v="ks4" aria-pressed="true">KS4</button><button type="button" data-v="ks5" aria-pressed="false">KS5</button></div>
+        <div class="seg tabs" id="fb-level" role="group" aria-label="Level"><button type="button" data-v="ks4" aria-pressed="true">IGCSE</button><button type="button" data-v="ial" aria-pressed="false">IAL</button><button type="button" data-v="ib" aria-pressed="false">IB</button></div>
       </div>
       <div id="fb-pred-side">
         <div>
@@ -267,12 +267,20 @@
   </section>
 </div>
 <script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
 (function(){
   // film-badge.html is the one copy of this animation.
   // With ?embed the page drops its heading so a workout tab can show it in a frame, and tells that page its height.
   var EMBED = /[?&]embed\b/.test(location.search);
   // opened from the A Level / IB list: the back link returns there
-  if(/[?&]from=alevel\b/.test(location.search)){ var hl=document.querySelector('.home-link'); hl.href='a-level-ib.html'; hl.innerHTML='&larr; A Level and IB animations'; }
   if(EMBED){
     document.documentElement.classList.add('embed');
     var page = document.getElementById('page');
@@ -311,7 +319,7 @@
   var mode='pred', myst={src:'a', lo:false}, lastMyst='';
   function types(){ return (mode==='myst'?myst.src:src.value()).split(''); }
   function lowBeta(){ return mode==='myst' ? myst.lo : (ks5() && energy.value()==='lo'); }
-  function ks5(){ return levelSeg.value()==='ks5'; }
+  function ks5(){ return levelSeg.value()!=='ks4'; }
   function dose(w){ return types().reduce(function(s,t){ return s+SENS[t]*T(t,w); },0); }
   // what the patch looks like: clear (nothing reached it), faint (clearly lighter than the open patch) or dark
   function level(w){ var d=dose(w); return d<0.15?'c':(d>=0.7*dose(0)?'d':'f'); }
@@ -579,6 +587,7 @@
     if(mode==='myst') newBadge();                  // KS5 badges can hold low-energy beta, so deal a fresh one
     reset();
   });
+  if(PW_LEVEL==='ial'||PW_LEVEL==='ib') levelSeg.pick(PW_LEVEL);   // IAL and IB show the same deeper view
   buildPred();
   reset();
 })();

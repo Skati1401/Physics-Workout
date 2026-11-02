@@ -11,6 +11,8 @@ What Alex has checked, and what still needs checking. One row per published page
 | Page | Status | What to check |
 |---|---|---|
 | IGCSE list `igcse.html` | 🔍 To review | Units collapse (remembered per browser), search, Workouts/Practicals filter, Triple Award switch, Open all; Unit 1 cards under Part 1 / Part 2 headings (27 Oct 2026); core practicals shown in their unit and in Core Practicals; links like `igcse.html#unit-1` open that unit |
+| IAL animations list `animations/ial.html` | 🔍 To review | New 2 Nov 2026: the old A Level / IB list split; cards under Unit 1, Unit 2 and Unit 5. Check each animation is under the right unit. |
+| IB animations list `animations/ib.html` | 🔍 To review | New 2 Nov 2026: cards under Theme A and Theme E. Check each is in the IB guide (especially gamma radiation: inverse-square law and absorption by lead). |
 | Year 9 `heat-transfer.html` | 🔍 To review | The three new Predict pairs (Conduction, Convection Current, Radiation). |
 | Year 9 `energy.html` (8K) | 🔍 To review | 26 Oct 2026: cut to the 8K content. Stores, Pathways, Conservation and Work Done tabs removed (all covered by IGCSE 4a and 4c). New Overview passage (heat transfer, power, efficiency, kWh), Work done memory card swapped for Thermal insulator, stairs Predict reworded without work done. Efficiency Calculate has two new two-step questions (energy = power × time with time in seconds, then efficiency). Check the wording of these. |
 | Year 9 `working-scientifically.html` | 🔍 To review | New (26 Oct 2026). Tabs: Overview (fill in the blanks, key words match), Variables (fair test and equipment Predicts, variables sort), Graphs (SLAPU = Scale, Label, Axes, Points, Units method card with example graph, order the steps, SLAPU mistakes sort), Results (anomalous result, read-off, accurate vs precise, which thermometer Predicts). Check the SLAPU wording matches your lessons. |
@@ -48,10 +50,10 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 
 | Page | List | Status | What to check |
 |---|---|---|---|
-| `film-badge.html` | IGCSE (Unit 7) + A Level / IB | ✅ Checked 25 Oct 2026 | |
-| `random-decay.html` | IGCSE (Unit 7) + A Level / IB | ✅ Checked 2 Nov 2026 | |
-| `radiation-in-fields.html` | IGCSE (Unit 7) + A Level / IB | ✅ Checked 2 Nov 2026 | |
-| `gamma-radiation.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
+| `film-badge.html` | IGCSE (Unit 7) + IAL + IB | 🔍 To review | 2 Nov 2026: the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
+| `random-decay.html` | IGCSE (Unit 7) + IAL + IB | 🔍 To review | 2 Nov 2026: the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
+| `radiation-in-fields.html` | IGCSE (Unit 7) + IAL + IB | 🔍 To review | 2 Nov 2026: the KS4/KS5 switch is now IGCSE / IAL / IB (IAL and IB show the same view); opens on the level of the list it came from. |
+| `gamma-radiation.html` | IAL + IB | ✅ Checked 2 Nov 2026 | |
 | `roller-coaster-energy.html` | IGCSE | ✅ Checked 2 Nov 2026 | Draggable objects. |
 | `motion-graphs.html` | IGCSE | ❔ Not recorded | |
 | `ramp-motion.html` | IGCSE | ❔ Not recorded | |
@@ -75,9 +77,9 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `transformer.html` | IGCSE | ❔ Not recorded | |
 | `national-grid.html` | workout only | ❔ Not recorded | |
 | `friction.html` | lesson only | ❔ Not recorded | |
-| `newtons-laws.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
-| `free-body-diagrams.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
-| `inclined-plane.html` | A Level / IB | 🔍 To review | Checked 2 Nov 2026, then re-laid out to fit 1366×657: Symbols switch on the title line, friction setup and a 2-row "Try these" grid on the right, viewBox enlarged so arrows at θ = 0 are no longer cut off. Still 22px over at 1280×610. |
-| `projectile-lab.html` | A Level / IB | 🔍 To review | Checked 2 Nov 2026, then re-laid out to fit 1366×657: choices in a labelled grid, sliders two to a row, wider right column. Still 47px over at 1280×610. |
-| `shoot-the-monkey.html` | A Level / IB | 🔍 To review | Checked 2 Nov 2026, then changed the same day: new Keeper Z slider (cliff height); drag the monkey (H up/down, D left/right) or the zookeeper (Z); "Aim at the monkey" now sits with the presets in one Aim row (the old "Aimed at the monkey" preset is gone); compact right column so the card fits 1366×657. |
-| `photoelectric.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
+| `newtons-laws.html` | IAL + IB | ✅ Checked 2 Nov 2026 | |
+| `free-body-diagrams.html` | IAL + IB | ✅ Checked 2 Nov 2026 | |
+| `inclined-plane.html` | IAL + IB | 🔍 To review | Checked 2 Nov 2026, then re-laid out to fit 1366×657: Symbols switch on the title line, friction setup and a 2-row "Try these" grid on the right, viewBox enlarged so arrows at θ = 0 are no longer cut off. Still 22px over at 1280×610. |
+| `projectile-lab.html` | IAL + IB | 🔍 To review | Checked 2 Nov 2026, then re-laid out to fit 1366×657: choices in a labelled grid, sliders two to a row, wider right column. Still 47px over at 1280×610. |
+| `shoot-the-monkey.html` | IAL + IB | 🔍 To review | Checked 2 Nov 2026, then changed the same day: new Keeper Z slider (cliff height); drag the monkey (H up/down, D left/right) or the zookeeper (Z); "Aim at the monkey" now sits with the presets in one Aim row (the old "Aimed at the monkey" preset is gone); compact right column so the card fits 1366×657. |
+| `photoelectric.html` | IAL + IB | ✅ Checked 2 Nov 2026 | |
