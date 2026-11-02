@@ -79,5 +79,5 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `free-body-diagrams.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
 | `inclined-plane.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
 | `projectile-lab.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
-| `shoot-the-monkey.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
+| `shoot-the-monkey.html` | A Level / IB | 🔍 To review | Checked 2 Nov 2026, then changed the same day: new Keeper Z slider (cliff height); drag the monkey (H up/down, D left/right) or the zookeeper (Z); "Aim at the monkey" now sits with the presets in one Aim row (the old "Aimed at the monkey" preset is gone); compact right column so the card fits 1366×657. |
 | `photoelectric.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
