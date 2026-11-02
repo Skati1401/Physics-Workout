@@ -164,6 +164,7 @@
   #pd-mode,#pd-load,#pd-jump{display:flex;flex-wrap:nowrap;}
   #pd-mode>button,#pd-load>button,#pd-jump>button{flex:1 1 auto;padding-inline:6px;}
   @media (max-width:560px){ #pd-mode,#pd-load,#pd-jump{flex-wrap:wrap;} }
+  .side{gap:10px;}
 
   /* inside a workout tab (?embed): no page heading, no outer margins */
   .embed body{background:transparent;}
@@ -283,6 +284,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
   function sig(x, n){   // n significant figures, as text, real minus sign
     if(x===0) return '0';
+    x=+x.toPrecision(n); if(x===0) return '0';
     var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
     return sn(x, dp);
   }
@@ -527,6 +529,8 @@ function expKey(x, y, upLabel, downLabel){
       if(v!==null){ set(Math.max(min,Math.min(max,v))); e.preventDefault(); }
     });
   }
+  // Play runs the current dots for at most 30 s, then pauses (nothing loops forever)
+  var RUN_MAX=30, runFor=0;
   // ================= end of circuit helpers =================
 
   // ===== Potential divider: V_out = R2/(R1 + R2) × V_in =====
@@ -548,7 +552,7 @@ function expKey(x, y, upLabel, downLabel){
   function slowOn(){ return pressed(slowBtn); }
   function Vin(){ return +vIn.value; }
   function lux(){ return Math.pow(10, +lIn.value); }
-  function RL(){ return ks5() ? +loadSeg.value() : 0; }     // 0 = no load
+  function RL(){ return ks5() && !sensor() ? +loadSeg.value() : 0; }     // 0 = no load
   // the two parts of the divider (kΩ) and what is between the output and 0 V
   function parts(o){
     o=o||{};
@@ -726,6 +730,7 @@ function expKey(x, y, upLabel, downLabel){
   // ---- motion: charge flowing round the circuit
   function frame(now){
     var real=Math.min(0.05,(now-last)/1000); last=now;
+    if(running){ runFor+=real; if(runFor>=RUN_MAX) running=false; }
     var dt=real*(slowOn()?0.3:1), p=parts(), k=55/0.2;   // 55 px per second for 0.2 mA
     var cap=function(x){ return Math.min(260, x); };
     dTop+=cap(k*p.I)*dt; dBot+=cap(k*p.I2)*dt; dLoad+=cap(k*p.IL)*dt;
@@ -757,7 +762,7 @@ function expKey(x, y, upLabel, downLabel){
     var m=mode(), K=ks5();
     Array.prototype.forEach.call(document.querySelectorAll('#pd-mode button'), function(b){ b.hidden = !K && (b.dataset.v==='fixed' || b.dataset.v==='pot'); });
     $('#pd-slab').hidden=$('#pd-swap').hidden=!sensor();
-    $('#pd-loadlab').hidden=$('#pd-load').hidden=!K;
+    $('#pd-loadlab').hidden=$('#pd-load').hidden=!K || sensor();
     $('#pd-r1box').hidden=m==='pot'; $('#pd-r2box').hidden=m!=='fixed';
     $('#pd-lbox').hidden=m!=='ldr'; $('#pd-tbox').hidden=m!=='therm'; $('#pd-wbox').hidden=m!=='pot';
     svg.setAttribute('role', m==='pot' ? 'slider' : 'img');
@@ -784,7 +789,7 @@ function expKey(x, y, upLabel, downLabel){
   keySlider(svg, function(){ return wiper; }, setW, 0.01, 0.1, 0, 1, function(){ return mode()==='pot'; });
   svg.setAttribute('aria-valuemin','0'); svg.setAttribute('aria-valuemax','1');
 
-  playBtn.addEventListener('click', function(){ if(running){ stop(); draw(); } else { running=true; last=performance.now(); raf=requestAnimationFrame(frame); } });
+  playBtn.addEventListener('click', function(){ if(running){ stop(); draw(); } else { running=true; runFor=0; last=performance.now(); raf=requestAnimationFrame(frame); } });
   slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
   $('#pd-reset').addEventListener('click', function(){ stop(); vIn.value=6; lIn.value=2; tIn.value=25; wiper=0.5; wIn.value=0.5; loadSeg.pick('0'); outSeg.pick('v'); dTop=dBot=dLoad=0; setMode(); });
   [vIn,r1In,r2In,lIn,tIn].forEach(function(el){ el.addEventListener('input', function(){ jumpSeg.pick(null); draw(); }); });

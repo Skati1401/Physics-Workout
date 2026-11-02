@@ -276,6 +276,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
   function sig(x, n){   // n significant figures, as text, real minus sign
     if(x===0) return '0';
+    x=+x.toPrecision(n); if(x===0) return '0';
     var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
     return sn(x, dp);
   }
@@ -520,6 +521,8 @@ function expKey(x, y, upLabel, downLabel){
       if(v!==null){ set(Math.max(min,Math.min(max,v))); e.preventDefault(); }
     });
   }
+  // Play runs the current dots for at most 30 s, then pauses (nothing loops forever)
+  var RUN_MAX=30, runFor=0;
   // ================= end of circuit helpers =================
 
   // ===== E.m.f. and internal resistance: ε = I(R + r), V = ε − Ir =====
@@ -743,6 +746,7 @@ function expKey(x, y, upLabel, downLabel){
   function speed(){ var e=E(), iref=e/(r()+STD_R); return Math.min(420, 60*I()/Math.max(iref,1e-9)); }
   function frame(now){
     var real=Math.min(0.05,(now-last)/1000); last=now;
+    if(running){ runFor+=real; if(runFor>=RUN_MAX) running=false; }
     var dt=real*(slowOn()?0.3:1);
     dist+=speed()*dt;
     if(X.reading){ X.reading-=real; if(X.reading<=0){ X.reading=0; takeReading(); } }
@@ -776,7 +780,7 @@ function expKey(x, y, upLabel, downLabel){
 
   playBtn.addEventListener('click', function(){
     if(exp()){ if(!X.reading){ X.reading=0.8; X.just=null; loop(); } return; }
-    if(running){ stop(); draw(); } else { running=true; loop(); }
+    if(running){ stop(); draw(); } else { running=true; runFor=0; loop(); }
   });
   slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
   expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); setExp(); });
