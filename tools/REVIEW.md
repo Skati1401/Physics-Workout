@@ -77,7 +77,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `friction.html` | lesson only | ❔ Not recorded | |
 | `newtons-laws.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
 | `free-body-diagrams.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
-| `inclined-plane.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
+| `inclined-plane.html` | A Level / IB | 🔍 To review | Checked 2 Nov 2026, then changed: drag the top of the slope for θ (0–60°) and the block along the slope for its start (0.5–9.5 m); dragging is off while a run plays. Check the handles are easy to find. |
 | `projectile-lab.html` | A Level / IB | 🔍 To review | Checked 2 Nov 2026, then changed: drag the launch pad up/down for h₀ and the round handle on the new barrel for θ. Check the barrel looks right; one drag only reaches the top of the current picture (rescales on release). |
 | `shoot-the-monkey.html` | A Level / IB | 🔍 To review | Checked 2 Nov 2026, then changed the same day: new Keeper Z slider (cliff height); drag the monkey (H up/down, D left/right) or the zookeeper (Z); "Aim at the monkey" now sits with the presets in one Aim row (the old "Aimed at the monkey" preset is gone); compact right column so the card fits 1366×657. |
 | `photoelectric.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |

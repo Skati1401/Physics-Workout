@@ -147,6 +147,9 @@
   table.res th{color:var(--ink-faint);font-weight:500;font-size:11.5px;}
   table.res th:first-child,table.res td:first-child{text-align:left;}
   .hint{font-size:12.5px;color:var(--ink-faint);margin-top:8px;}
+  .under .hint{margin:0;}
+  .grab{cursor:grab;touch-action:none;}
+  #ip-svg.dragging,#ip-svg.dragging *{cursor:grabbing;}
   .key{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;}
   .eq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px 14px;align-items:start;grid-column:1/-1;}
   .eq-title{font:600 12px var(--font-mono);color:var(--ink-soft);margin:0 0 4px;}
@@ -226,6 +229,7 @@
             <input type="range" id="ip-mk" min="0" max="1" step="0.05" value="0.4">
           </div>
         </div>
+        <p class="hint">Drag the top of the slope to change θ, or drag the block to set where it starts.</p>
       </div>
     </div>
     <div class="side">
@@ -422,10 +426,37 @@
     g+='<rect x="10" y="10" width="170" height="44" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';
     g+='<text x="20" y="28" font-size="11" fill="var(--ink-soft)">resultant force</text>';
     g+='<text x="20" y="46" font-size="12.5" font-weight="600" fill="var(--fn)">'+(Math.abs(Fnet)<0.005?'0 N':n3(Math.abs(Fnet))+' N '+(Fnet>0?'up':'down')+' the slope')+'</text>';
+    // grab areas (drawn last so they sit over the arrows): the top end of the ramp sets θ, the block sets its start
+    if(!running){
+      g+='<circle class="grab" data-drag="th" cx="'+topX.toFixed(1)+'" cy="'+topY.toFixed(1)+'" r="24" fill="transparent"/>';
+      g+='<rect class="grab" data-drag="s" x="'+(-B/2-6)+'" y="'+(-B/2-6)+'" width="'+(B+12)+'" height="'+(B+12)+'" fill="transparent" transform="translate('+bx.toFixed(1)+','+by.toFixed(1)+') rotate('+(-p.th)+')"/>';
+    }
     if(running && pressed(slowBtn)) g+='<text x="630" y="330" text-anchor="end" font-size="11.5" fill="var(--accent)">slow motion</text>';
     $('#ip-svg').innerHTML=g;
     graph(); table(f); readouts(f, st);
   }
+
+  // ---- drag the top of the ramp to set θ, or the block along the ramp to set its start (the sliders do the same with the keyboard)
+  var dragIp=null, ipSvg=$('#ip-svg'), OX=60, OY=300;
+  function svgPt(e){ var q=ipSvg.createSVGPoint(); q.x=e.clientX; q.y=e.clientY; return q.matrixTransform(ipSvg.getScreenCTM().inverse()); }
+  function setRange(el, v){ var st=+el.step; v=Math.round(v/st)*st; v=Math.max(+el.min, Math.min(+el.max, v)); v=+v.toFixed(2); if(+el.value!==v){ el.value=v; reset(); } }
+  function ptAngle(q){ return Math.atan2(OY-q.y, q.x-OX)*180/Math.PI; }
+  function lenPx(){ var s=Math.sin(+thIn.value*Math.PI/180); return Math.min(520, 230/Math.max(s,1e-6)); }
+  function along(q){ var th=+thIn.value*Math.PI/180; return ((q.x-OX)*Math.cos(th)+(OY-q.y)*Math.sin(th))/lenPx()*L; }   // metres up the slope
+  ipSvg.addEventListener('pointerdown', function(e){
+    var h=e.target.closest('.grab'); if(!h || running) return;
+    var q=svgPt(e), shown=at(t).s;   // after a run, grab the block where it is now; the drag resets the run as the sliders do
+    if(h.dataset.drag==='th') dragIp={el:thIn, off:ptAngle(q)-(+thIn.value)};
+    else dragIp={el:sIn, off:along(q)-shown};
+    ipSvg.setPointerCapture(e.pointerId); ipSvg.classList.add('dragging'); e.preventDefault();
+  });
+  ipSvg.addEventListener('pointermove', function(e){
+    if(!dragIp) return; var q=svgPt(e);
+    if(dragIp.el===thIn) setRange(thIn, ptAngle(q)-dragIp.off);
+    else setRange(sIn, along(q)-dragIp.off);
+  });
+  function endIpDrag(){ if(!dragIp) return; dragIp=null; ipSvg.classList.remove('dragging'); draw(); }
+  ipSvg.addEventListener('pointerup', endIpDrag); ipSvg.addEventListener('pointercancel', endIpDrag);
 
   // ---- velocity–time graph
   var GL=52, GR=508, GT=14, GB=180;
