@@ -52,7 +52,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `random-decay.html` | IGCSE (Unit 7) + A Level / IB | ✅ Checked 2 Nov 2026 | |
 | `radiation-in-fields.html` | IGCSE (Unit 7) + A Level / IB | ✅ Checked 2 Nov 2026 | |
 | `gamma-radiation.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
-| `roller-coaster-energy.html` | IGCSE | 🔍 To review | Drag the start platform (h₁) and the top of hill 2 (h₂) up and down (1 m steps); dragging resets the run like the sliders. Check the faint ↕ drag labels and the feel on a phone (targets are small there). |
+| `roller-coaster-energy.html` | IGCSE | ✅ Checked 2 Nov 2026 | Draggable objects. |
 | `motion-graphs.html` | IGCSE | ❔ Not recorded | |
 | `ramp-motion.html` | IGCSE | ❔ Not recorded | |
 | `force-mass-acceleration.html` | IGCSE | ❔ Not recorded | |
@@ -61,7 +61,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `hookes-law.html` | IGCSE | ❔ Not recorded | |
 | `momentum-collision.html` | IGCSE | ❔ Not recorded | |
 | `seesaw-moments.html` | IGCSE | ✅ Checked 2 Nov 2026 | Drag each person along the beam. |
-| `liquid-pressure.html` | IGCSE | 🔍 To review | Drag the point on the dam face up and down to set the depth (1 m steps, 0–40 m); hint under the depth slider. Check the drag on a touchscreen. |
+| `liquid-pressure.html` | IGCSE | ✅ Checked 2 Nov 2026 | Draggable objects. |
 | `heating-curve.html` | IGCSE | ❔ Not recorded | |
 | `specific-heat.html` | IGCSE | ❔ Not recorded | |
 | `gas-molecules.html` | IGCSE | ❔ Not recorded | |
@@ -77,7 +77,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `friction.html` | lesson only | ❔ Not recorded | |
 | `newtons-laws.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
 | `free-body-diagrams.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
-| `inclined-plane.html` | A Level / IB | 🔍 To review | Checked 2 Nov 2026, then changed: drag the top of the slope for θ (0–60°) and the block along the slope for its start (0.5–9.5 m); dragging is off while a run plays. Check the handles are easy to find. |
-| `projectile-lab.html` | A Level / IB | 🔍 To review | Checked 2 Nov 2026, then changed: drag the launch pad up/down for h₀ and the round handle on the new barrel for θ. Check the barrel looks right; one drag only reaches the top of the current picture (rescales on release). |
+| `inclined-plane.html` | A Level / IB | ✅ Checked 2 Nov 2026 | Draggable objects. |
+| `projectile-lab.html` | A Level / IB | ✅ Checked 2 Nov 2026 | Draggable objects. |
 | `shoot-the-monkey.html` | A Level / IB | 🔍 To review | Checked 2 Nov 2026, then changed the same day: new Keeper Z slider (cliff height); drag the monkey (H up/down, D left/right) or the zookeeper (Z); "Aim at the monkey" now sits with the presets in one Aim row (the old "Aimed at the monkey" preset is gone); compact right column so the card fits 1366×657. |
 | `photoelectric.html` | A Level / IB | ✅ Checked 2 Nov 2026 | |
