@@ -91,7 +91,7 @@ def build(slug):
            + ('<p class="cp-link">' + links + '</p>\n' if links else '') +
            '</header>\n<nav class="tabs" role="tablist" aria-label="Activities">\n'
            + '\n'.join(tab_btn(i, t) for i, t in enumerate(tabs)) + '\n</nav>\n'
-           + '\n'.join(panel(i, t) for i, t in enumerate(tabs)) + '\n</div>\n<script>\n'
+           + '\n'.join(panel(i, t) for i, t in enumerate(tabs)) + '\n</div>\n' + read(REPO, 'tools', 'licence', 'footer.html') + '<script>\n'
            + engine + '\n' + content + '\n' + tail)
     leftover = re.findall(r'\{\{[A-Z_]+\}\}', out)
     assert not leftover, 'unfilled placeholders: %s' % leftover

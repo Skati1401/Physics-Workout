@@ -126,7 +126,7 @@ function keepKinds(pid){
       '<nav class="tabs" role="tablist" aria-label="Activities">\n' + '\n'.join(nav) + '\n</nav>\n' +
       '\n'.join(panels) + '\n</div>\n'
       '<!-- Built by tools/sets/build.py from the workouts. Do not edit by hand: edit the workout; the set rebuilds on push. -->\n'
-      '<script>\n(function(){\n' + engine + keep + ''.join(parts) + tail + '</script>\n</body></html>\n')
+      '<script>\n(function(){\n' + engine + keep + ''.join(parts) + tail + '</script>\n' + open(os.path.join(ROOT, 'tools', 'licence', 'footer.html'), encoding='utf-8').read() + '</body></html>\n')
     open(os.path.join(ROOT, fname), 'w', encoding='utf-8').write(page)
     print('built', fname, len(ids), 'tabs')
 
