@@ -10,9 +10,9 @@ The one list for everything still to do: the website, lesson decks, and anything
 
 The audit's fixes are done (see Done). What changed on each page is in `tools/REVIEW.md` (🔍 rows dated 3 Nov 2026). Still open:
 
-- [ ] 5a Units tab: is the J/kg °C point 5.2P (Triple Award)? If so, add the TA badge, or move the specific heat rows to the Specific Heat tab. Alex to send the spec page.
-- [ ] `animations/hookes-law.html` has slow-motion code but nothing that moves. Remove the code, or animate the spring stretching when a mass is added (Alex to choose).
-- [ ] Heating curve (5a and `animations/heating-curve.html`): melting is drawn shorter than the real energies give (about 0.3 × the time to warm the water, not 0.8), so the ice stretch shows clearly. Alex to say whether that's fine.
+- [ ] 5a Units tab (https://skati1401.github.io/Physics-Workout/density-pressure-state.html#units): is the J/kg °C point 5.2P (Triple Award)? If so, add the TA badge, or move the specific heat rows to the Specific Heat tab. Alex to send the spec page.
+- [ ] `animations/hookes-law.html` (https://skati1401.github.io/Physics-Workout/animations/hookes-law.html) has slow-motion code but nothing that moves. Remove the code, or animate the spring stretching when a mass is added (Alex to choose).
+- [ ] Heating curve (https://skati1401.github.io/Physics-Workout/density-pressure-state.html#heating and https://skati1401.github.io/Physics-Workout/animations/heating-curve.html): melting is drawn shorter than the real energies give (about 0.3 × the time to warm the water, not 0.8), so the ice stretch shows clearly. Alex to say whether that's fine.
 
 ## 2. Lesson decks (PPT reviews)
 
