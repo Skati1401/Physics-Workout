@@ -17,6 +17,16 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 - [ ] Move the open to-dos from the PPT-review project docs into this section (Alex, 3 Nov 2026).
 
+**Animation ideas from the reviews.** "Link" lines: the page exists, so put its link (Copperplate hyperlink, `?level=` for the course) on the slide. "Build" lines: build the page with the `teaching-animations` skill, add its card to the course list, then link it on the slide and tick the line. Each PPT review checks these lines before suggesting new ideas.
+
+- [ ] 4 Energy, Lesson 2 Sankey slides (24–49): link the 4a workout Sankey tab's "Sankey diagrams to scale" explore (`energy-stores-efficiency.html#sankey`) on a Sankey teaching slide; the L2 To Do slide (47) already links the tab (review row E26, added 3 Nov 2026).
+- [ ] 4 Energy, Lesson 3 conduction slides (50–66): link `animations/heat-transfer.html?level=igcse` (conduction and free electrons) (review row H26, added 3 Nov 2026).
+- [ ] 4 Energy, Lesson 4 convection slides (67–88): link `animations/heat-transfer.html?level=igcse` (convection) (review row H25, added 3 Nov 2026).
+- [ ] 4 Energy, Lessons 9–10 GPE → KE slides (190–222): link `animations/roller-coaster-energy.html?level=igcse` (review row W04, added 3 Nov 2026).
+- [ ] 5.2 Nuclear Decay (IAL), slide 42 Chain Reaction: build a chain-reaction animation set in a reactor (power-station theme): fuel rods of U-235, a moderator slowing the neutrons, control rods the student raises and lowers to set how many neutrons are absorbed, and the chain dying out, staying steady (critical) or growing, with a live graph of fissions per generation; then link it on slide 42 (review row S8, added 3 Nov 2026).
+- [ ] 6 Magnetism (IGCSE), slides 29–30: build an electromagnets and circuit-breaker animation (tab 1: coil picking up clips, with current, turns and iron core; tab 2: a circuit breaker that trips at a set current), then link it on slides 29–30 (review row M18, added 3 Nov 2026).
+- [ ] E2 Quantum (IB), slides 55–70: build an electron-diffraction tube animation (voltage slider, rings shrink as the voltage rises; second view: count against angle with the first minimum), then link it on slides 55–70 (review row Q28, added 3 Nov 2026).
+
 ## 3. Alex to review
 
 51 pages are 🔍 To review and 17 are ❔ Not recorded in `tools/REVIEW.md`. Go through that table; only Alex marks a page ✅.
