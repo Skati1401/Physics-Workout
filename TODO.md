@@ -10,8 +10,6 @@ The one list for everything still to do: the website, lesson decks, and anything
 
 The audit's fixes are done (see Done). What changed on each page is in `tools/REVIEW.md` (🔍 rows dated 3 Nov 2026). Still open:
 
-- [ ] `animations/hookes-law.html` (https://skati1401.github.io/Physics-Workout/animations/hookes-law.html) has slow-motion code but nothing that moves. Remove the code, or animate the spring stretching when a mass is added (Alex to choose).
-- [ ] Heating curve (https://skati1401.github.io/Physics-Workout/density-pressure-state.html#heating and https://skati1401.github.io/Physics-Workout/animations/heating-curve.html): melting is drawn shorter than the real energies give (about 0.3 × the time to warm the water, not 0.8), so the ice stretch shows clearly. Alex to say whether that's fine.
 
 ## 2. Lesson decks (PPT reviews)
 
@@ -59,6 +57,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## Done
 
+- 3 Nov 2026: Hooke's law animation animated, with draggable masses and a rubber band hysteresis loop. Heating-curve simplification accepted by Alex. TA tags on Triple Award units (1d, 5a).
 - 3 Nov 2026: specs uploaded. 5a Units tab: 5.2 (J/kg °C) is Double Award in the 4PH1 spec, so its badge is right and no change was needed. IAL thermistor practical: Divider tab now badged 75, 76 and Experiment tab 79 (resistance and temperature).
 - 3 Nov 2026: site audit fixes on 26 pages and 2 animations: wrong physics (5a and animation heating curve, Boyle's law Predict, thermistor explanation, light gates, Year 9 flask/aircon/thermometer), fractions now drawn in Predict options and activity titles (engine, every copy), right answers that were marked wrong, giveaways, missing working steps, Slow motion on `seesaw-moments.html`.
 - 3 Nov 2026: names spread across the site; each page uses its own course's names (Year 9 KS3, IAL practicals IAL, IGCSE pages IGCSE).
