@@ -35,6 +35,7 @@ Stand-alone pages in `animations/` (teaching-animations skill), one copy framed 
 - 27 Oct 2026: Forces split into Part 1 (1a, 1b) and Part 2 (1c with suvat, 1d) to match Alex's school.
 - Unit 4 (4a–4d), Unit 5 (5a, 5b), Unit 6 (6a, 6b) workouts built to the size rule.
 - 3 Nov 2026: Unit 2 (2a, 2b, 2c TA) built to the size rule, and its Calculate, Spot the error and graph activities added to the Calculations and Graphs sets under a "Unit 2 Electricity" heading.
+- 3 Nov 2026: Forces Part 2 (1c, 1d) and Units 4, 5 and 6 added to both sets. `build.py` now also: takes a tab's own `kinds` or `titles` (e.g. 4a Sankey keeps the drill's Label the diagram, which its Calculate refers to; 1b's graph tabs keep only "Read the graph"); tags a tab `'ta': True`; copies the page-only helpers a section uses (`sankeySVG`, `beamDiagram`, `COL`…) into that section's block; takes only the CSS rules motion.html lacks (Unit 4 pages keep their CSS in `<head>`); removes framed animations. 4b, 4d, 6a and 6b's Induction and Generators tabs have no Calculate, Spot the error or Label the graph activities, so they are not in the sets.
 
 ## 4. Key-word crosswords
 
