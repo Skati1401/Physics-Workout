@@ -85,7 +85,7 @@
 
 /* ================= EXPERIMENT ================= */
 {
-  act('experiment','Your turn','Take your own readings','Press Experiment, choose a component, then drag the potentiometer to each voltage and press Take reading. Take readings from −6 V to +6 V for the fixed resistor, the filament lamp and the diode. Which one has a constant resistance, which one’s resistance rises, and which one only conducts one way?');
+  act('experiment','Your turn','Take your own readings','Press Experiment, choose a component, then drag the potentiometer to each voltage and press Take reading. Take readings from 0 to 6 V, then reverse the battery and take them again, for the fixed resistor, the filament lamp and the diode. Which one has a constant resistance, which one’s resistance rises, and which one only conducts one way?');
 }
 frameAct('experiment','animations/iv-characteristics.html','','Current–voltage characteristics animation: a resistor, filament lamp or diode with its I–V graph','current–voltage characteristics',false);
 {

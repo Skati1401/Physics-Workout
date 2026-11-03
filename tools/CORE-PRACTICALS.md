@@ -135,5 +135,5 @@ Built ahead of their batches, as drafts (noindex, no cards, no banners, no "Core
 
 - `iv-characteristics-practical.html` (store `cp-iv-characteristics-v1`), built with gen.py from `practicals/iv-characteristics/`, published with the Unit 2 workouts (card under Core Practicals, `.cp-banner` on `circuits.html#iv`). The animation already had its "Core practical 2.9" tag.
 - Spec badges from the 4PH1 spec PDF: 2.9 with 2.10, 2.12, 2.13.
-- The method uses a variable resistor and reversing the connections (the usual mark scheme method); the animation uses a potentiometer across two cells, which gives negative voltages without reversing (Alex's open question in `TODO.md`).
+- The method uses a variable resistor and reversing the connections (the usual mark scheme method); the animation uses a potentiometer across one 6 V battery, with a "Reverse the battery" button for the negative readings (Alex, 3 Nov 2026).
 - Not done in that chat: the guide pages (PDF 193–196) and the mark scheme wording check (step 4); neither the guide doc nor the Question Index was available.

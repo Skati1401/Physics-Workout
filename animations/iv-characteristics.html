@@ -100,6 +100,7 @@
   .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 335px));}
   .view text{font-family:var(--font-mono);}
   .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .revbox{display:flex;align-items:end;}
   .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
   .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
   .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
@@ -210,7 +211,7 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="iv-svg" viewBox="0 0 600 300" tabindex="0" role="slider" aria-label="Potentiometer wiper: drag it along the track, or use the arrow keys, to set the voltage from −6 V to +6 V. The component, an ammeter and a voltmeter are in the circuit, with the current–voltage graph on the right" aria-valuemin="-6" aria-valuemax="6"></svg>
+      <svg class="view" id="iv-svg" viewBox="0 0 600 300" tabindex="0" role="slider" aria-label="Potentiometer wiper: drag it along the track, or use the arrow keys, to set the voltage from 0 to 6 V. Click the battery to reverse it. The component, an ammeter and a voltmeter are in the circuit, with the current–voltage graph on the right" aria-valuemin="0" aria-valuemax="6"></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="iv-play" type="button">&#9654; Play</button>
@@ -220,7 +221,8 @@
           <button class="btn" id="iv-clear" type="button" hidden>Clear readings</button>
         </div>
         <div class="sliders">
-          <div><label class="lab" for="iv-v">Potentiometer: supply to the component<output id="iv-vo"></output></label><input type="range" id="iv-v" min="-6" max="6" step="0.1" value="3"></div>
+          <div><label class="lab" for="iv-v">Potentiometer: supply to the component<output id="iv-vo"></output></label><input type="range" id="iv-v" min="0" max="6" step="0.1" value="3"></div>
+          <div class="revbox"><button class="btn" id="iv-rev" type="button" aria-pressed="false">&#8644; Reverse the battery</button></div>
         </div>
       </div>
     </div>
@@ -527,8 +529,8 @@ function expKey(x, y, upLabel, downLabel){
   // ================= end of circuit helpers =================
 
   // ===== I–V characteristics: fixed resistor, filament lamp, diode =====
-  // The potentiometer sits across two 6 V cells with the component returned to the join between them,
-  // so the wiper gives any p.d. from −6 V to +6 V without swapping wires round.
+  // The potentiometer sits across a 6 V battery (two cells) with the component returned to its left-hand end,
+  // so the wiper gives 0 to 6 V. Reversing the battery makes the p.d. across the component negative.
   var RFIX=20, RP=22;                                     // fixed resistor 20 Ω; protective resistor in the diode circuit 22 Ω
   function lampR(v){ return 4+16*Math.pow(Math.abs(v)/6,0.8); }   // cold 4 Ω, 20 Ω at 6 V (6 V, 0.3 A lamp)
   var IS=1e-8, NVT=0.05;                                  // diode: I = Is(e^(V/0.05) − 1)
@@ -537,8 +539,8 @@ function expKey(x, y, upLabel, downLabel){
     if(vs<=0) return vs;
     var lo=0, hi=vs; for(var k=0;k<60;k++){ var m=(lo+hi)/2; if(m+diodeI(m)*RP>vs) hi=m; else lo=m; } return (lo+hi)/2;
   }
-  var svg=$('#iv-svg'), playBtn=$('#iv-play'), slowBtn=$('#iv-slow'), expBtn=$('#iv-exp'), vIn=$('#iv-v');
-  var VS=3, running=false, raf=0, last=0, dist=0, trace=[];
+  var revBtn=$('#iv-rev'), svg=$('#iv-svg'), playBtn=$('#iv-play'), slowBtn=$('#iv-slow'), expBtn=$('#iv-exp'), vIn=$('#iv-v');
+  var VS=3, REV=false, running=false, raf=0, last=0, dist=0, trace=[];
   var X={rd:[], reading:0, just:null};
   var levelSeg=levelGroup($('#iv-level'), function(){ setRows(); lastNote=''; draw(); });
   var compSeg=segGroup($('#iv-comp'), function(){ trace=[]; X={rd:[], reading:0, just:null}; setJumps(); jumpSeg.pick(null); addTrace(); lastNote=''; draw(); });
@@ -568,23 +570,25 @@ function expKey(x, y, upLabel, downLabel){
   layout();
 
   // ---- the picture
-  var TL=60, TR=300, TY=50, CX=180, YC=262;            // track ends, track height, the join between the cells
-  function wiperX(){ return CX+(TR-CX)*VS/6; }
+  var TL=60, TR=300, TY=50, CX=180, YC=262, BX=258;     // track ends, track height, the bottom wire, the battery
+  function wiperX(){ return TL+(TR-TL)*Math.abs(VS)/6; }
   function diodeV(x,y){   // conducts downwards
     return '<path d="M'+(x-10)+','+(y-9)+' L'+(x+10)+','+(y-9)+' L'+x+','+(y+9)+' Z" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>'+ln(x-11,y+9,x+11,y+9,'var(--ink)',2.2);
   }
   function scene(){
     var g='', xw=wiperX(), o=op(VS), c=comp(), ex=exp();
-    // two 6 V cells in series below, the potentiometer track across both
-    g+=wire([[TL,TY],[30,TY],[30,YC],[106,YC]])+cellH(110,YC,true)+wire([[114,YC],[246,YC]])+cellH(250,YC,true)+wire([[254,YC],[330,YC],[330,TY],[TR,TY]]);
-    g+=txt(110,YC+26,'6 V',{a:'middle',fs:9.5,c:'var(--ink-faint)'})+txt(250,YC+26,'6 V',{a:'middle',fs:9.5,c:'var(--ink-faint)'});
+    // a 6 V battery (two cells) below, the potentiometer track across it; click the battery to reverse it
+    g+=wire([[TL,TY],[30,TY],[30,YC],[BX-16,YC]])+cellH(BX-12,YC,!REV)+wire([[BX-8,YC],[BX+8,YC]])+cellH(BX+12,YC,!REV)+wire([[BX+16,YC],[330,YC],[330,TY],[TR,TY]]);
+    g+='<rect class="grab" x="'+(BX-26)+'" y="'+(YC-22)+'" width="52" height="44" fill="transparent"/>';
+    g+=txt(BX-24,YC-12,REV?'+':'−',{a:'middle',fs:13,w:600,c:'var(--ink)'})+txt(BX+24,YC-12,REV?'−':'+',{a:'middle',fs:13,w:600,c:'var(--ink)'});
+    g+=txt(BX,YC+28,'6 V battery'+(REV?' (reversed)':''),{a:'middle',fs:9.5,c:REV?'var(--topic)':'var(--ink-faint)'});
     g+='<rect x="'+TL+'" y="'+(TY-8)+'" width="'+(TR-TL)+'" height="16" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>';
-    g+=txt(TL,TY-14,'−6 V',{fs:9.5,c:'var(--ink-faint)'})+txt(TR,TY-14,'+6 V',{a:'end',fs:9.5,c:'var(--ink-faint)'})+txt(CX,TY-14,'potentiometer',{a:'middle',fs:9.5,c:'var(--ink-faint)'});
+    g+=txt(CX,TY-14,'potentiometer',{a:'middle',fs:9.5,c:'var(--ink-faint)'});
     // wiper (drag it)
     g+='<path d="M'+f1(xw)+',96 L'+f1(xw)+','+(TY+10)+'" stroke="var(--ink)" stroke-width="1.8" marker-end="url(#ah-ink)"/>';
     g+='<rect class="grab" x="'+f1(xw-9)+'" y="72" width="18" height="18" rx="4" fill="var(--topic)" opacity="0.9"/>';
     if(!X.reading) g+=txt(xw+(xw>250?-14:14), 85, '← drag →', {a:xw>250?'end':'start', fs:9.5, c:'var(--topic)'});
-    // the component branch: wiper → component → (protective resistor) → ammeter → join between the cells
+    // the component branch: wiper → component → (protective resistor) → ammeter → left-hand end of the track
     var yc=134, ya=c==='diode'?226:210;
     g+=wire([[xw,96],[xw,100],[CX,100],[CX,yc-22]]);
     if(c==='res'){ g+=resV(CX,yc,16,40)+txt(CX-14,yc+4,'20 Ω',{a:'end',fs:9.5,c:'var(--ink-soft)'}); }
@@ -634,7 +638,8 @@ function expKey(x, y, upLabel, downLabel){
     var g=arrowDefs()+scene()+graph();
     if(running && slowOn()) g+=txt(336, 296, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
     svg.innerHTML=g;
-    svg.setAttribute('aria-valuenow', VS); svg.setAttribute('aria-valuetext', sn(VS,1)+' volts from the potentiometer');
+    svg.setAttribute('aria-valuenow', Math.abs(VS)); svg.setAttribute('aria-valuetext', sn(VS,1)+' volts across the component'+(REV?', battery reversed':''));
+    revBtn.setAttribute('aria-pressed', String(REV));
     readings();
   }
 
@@ -669,7 +674,7 @@ function expKey(x, y, upLabel, downLabel){
 
     // working
     var w1='', w3='';
-    if(ex){ w1 = X.just ? 'R = [[V|I]]<br>R = [['+sn(X.just.v,2)+'|'+sn(X.just.i,3)+']]<br>R = <b>'+rTxt(X.just.v,X.just.i)+'</b>' : 'Take readings from −6 V to +6 V (the potentiometer gives negative values without swapping the wires).'; }
+    if(ex){ w1 = X.just ? 'R = [[V|I]]<br>R = [['+sn(X.just.v,2)+'|'+sn(X.just.i,3)+']]<br>R = <b>'+rTxt(X.just.v,X.just.i)+'</b>' : 'Take readings from 0 to 6 V, then reverse the battery and take them again: the readings come out negative.'; }
     else if(Math.abs(o.i)<1e-5){ w1='I = 0, so R = [[V|I]] has no value: no current flows.'; }
     else if(K){
       w1='R = [[V|I]]<br>R = [['+sn(o.v,2)+'|'+sn(o.i,4)+']]<br>R = <b>'+sig(o.v/o.i,3)+' Ω</b>';
@@ -690,8 +695,8 @@ function expKey(x, y, upLabel, downLabel){
     var note;
     if(ex){
       if(X.reading) note='Reading the voltmeter and ammeter…';
-      else if(!X.rd.length) note='Experiment (2.9): drag the wiper to set the voltage, then press <b>Take reading</b>. Take readings from −6 V to +6 V, including some negative ones'+(c==='diode'?', and plenty between 0 and +1 V where the current starts.':'.');
-      else if(!done()) note='You have '+X.rd.length+' reading'+(X.rd.length===1?'':'s')+'. Plot I against V. You need at least 8, from −3 V or below to +3 V or above.';
+      else if(!X.rd.length) note='Experiment (2.9): drag the wiper to set the voltage, then press <b>Take reading</b>. Take readings from 0 to 6 V'+(c==='diode'?', with plenty between 0 and 1 V where the current starts':'')+', then <b>reverse the battery</b> and take readings again.';
+      else if(!done()) note='You have '+X.rd.length+' reading'+(X.rd.length===1?'':'s')+'. Plot I against V. You need at least 8, up to 3 V or more each way round (reverse the battery for the negative ones).';
       else note = c==='res' ? 'Done: a straight line through the origin. I ∝ V, so the resistance is constant, about <b>20 Ω</b>.'
         : c==='lamp' ? 'Done: an S-shaped curve. R = V/I rises from about 4 Ω cold to <b>20 Ω</b> at 6 V, as the filament heats up.'
         : 'Done: no current in reverse, and almost none forwards until about <b>0.6 V</b>; then it rises steeply. A diode lets current flow one way only.';
@@ -720,14 +725,19 @@ function expKey(x, y, upLabel, downLabel){
   var JUMPS={res:[[-6,'−6 V'],[0,'0 V'],[3,'+3 V'],[6,'+6 V']], lamp:[[-6,'−6 V'],[0.5,'Cold, 0.5 V'],[6,'Hot, 6 V']], diode:[[-3,'Reverse −3 V'],[0.6,'0.6 V'],[0.8,'0.8 V']]};
   function setJumps(){ jumpEl.innerHTML=JUMPS[comp()].map(function(j){ return '<button type="button" data-v="'+j[0]+'" aria-pressed="false">'+j[1]+'</button>'; }).join(''); }
   function jumpTo(v){ stop(); var vs = comp()==='diode' && v>0 ? v+diodeI(v)*RP : v; setVS(vs, true); }
-  function setVS(v, keep){ VS=Math.round(Math.max(-6,Math.min(6,v))*1000)/1000; vIn.value=VS; if(!keep) jumpSeg.pick(null); addTrace(); draw(); }
+  function setVS(v, keep){ if(v!==0) REV=v<0; var m=Math.round(Math.min(6,Math.abs(v))*1000)/1000; VS=REV?-m:m; vIn.value=m; if(!keep) jumpSeg.pick(null); addTrace(); draw(); }
 
   svgDrag(svg, {
     ok:function(){ return !X.reading; },
     hit:function(q){ return Math.abs(q.x-wiperX())<20 && q.y>TY-12 && q.y<100; },
-    move:function(q){ setVS(Math.round((q.x-CX)/(TR-CX)*6*10)/10); }
+    move:function(q){ setMag(Math.round((q.x-TL)/(TR-TL)*6*10)/10); }
   });
-  keySlider(svg, function(){ return VS; }, function(v){ setVS(Math.round(v*10)/10); }, 0.1, 1, -6, 6, function(){ return !X.reading; });
+  keySlider(svg, function(){ return Math.abs(VS); }, function(v){ setMag(Math.round(v*10)/10); }, 0.1, 1, 0, 6, function(){ return !X.reading; });
+  // the wiper sets the size of the p.d.; the battery's way round sets its sign
+  function setMag(m){ m=Math.max(0,Math.min(6,m)); VS=REV?-m:m; setVS(VS); }
+  function reverse(){ if(X.reading) return; REV=!REV; setMag(Math.abs(VS)); }
+  revBtn.addEventListener('click', reverse);
+  svg.addEventListener('click', function(e){ var q=svgPoint(svg,e); if(Math.abs(q.x-BX)<28 && Math.abs(q.y-YC)<24) reverse(); });
 
   function setRows(){
     var K=ks5(), ex=exp(), lv=levelSeg.value();
@@ -746,7 +756,7 @@ function expKey(x, y, upLabel, downLabel){
   expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); setExp(); });
   $('#iv-reset').addEventListener('click', function(){ stop(); if(exp()){ X={rd:[], reading:0, just:null}; draw(); return; } trace=[]; dist=0; setVS(3); });
   $('#iv-clear').addEventListener('click', function(){ stop(); X={rd:[], reading:0, just:null}; draw(); });
-  vIn.addEventListener('input', function(){ setVS(+vIn.value); });
+  vIn.addEventListener('input', function(){ setMag(+vIn.value); });
 
   watchEquals($('#iv-eq1'));
   setJumps(); setRows(); addTrace(); draw();

@@ -32,7 +32,7 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 51 pages are 🔍 To review and 17 are ❔ Not recorded in `tools/REVIEW.md`. Go through that table; only Alex marks a page ✅.
 
 - [ ] Look at the drafts `calculations.html` and `graphs.html`. If they're fine, add their cards to `igcse.html` below Core Practicals and remove `noindex` (in `tools/sets/build.py`).
-- [ ] `iv-characteristics.html`: is the two-cell potentiometer set-up how you teach it, or should Experiment mode have a "reverse the connections" step instead?
+- [x] `iv-characteristics.html`: reversible 6 V battery instead of the two-cell −6 V to +6 V potentiometer (3 Nov 2026).
 
 ## 4. Build: workouts (IGCSE, spec order)
 
