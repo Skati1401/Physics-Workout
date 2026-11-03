@@ -38,11 +38,10 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the cards to `igcse.html`, then add the unit's activities to the Calculations and Graphs sets.
 
-- [ ] Unit 2 Electricity (about 2 pages). Frame the five electricity animations in it.
 - [ ] Unit 3 Waves (about 2 pages).
 - [ ] Unit 7 Radioactivity and Particles (1–2 pages). Frame `film-badge.html` and `random-decay.html` in it.
 - [ ] Unit 8 Astrophysics (1 page).
-- [ ] Calculations and Graphs sets: add Forces Part 2 (1c with suvat, 1d), then Units 4, 5 and 6.
+- [ ] Calculations and Graphs sets: add Forces Part 2 (1c with suvat, 1d), then Units 4, 5 and 6 (Unit 2 added 3 Nov 2026).
 - [ ] Graphs set: 1b has no graph activities. Consider using the 1.5 practical's plotting activities (`build.py` would need to read its `content.js`).
 - [ ] Key-word crosswords for other units, if Alex wants them.
 
@@ -50,10 +49,10 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 
 How to build one: `tools/CORE-PRACTICALS.md`.
 
-- [ ] 2.9 I–V characteristics: practical page (the animation is done).
+- [ ] 2.9 I–V characteristics: guide pages (PDF 193–196) and mark scheme wording check, as for the other practicals (added 3 Nov 2026).
 - [ ] 3.19 Refractive index of glass (batch B; do 3.17 first so they share the light box).
 - [ ] 3.25P Speed of sound in air (batch B).
-- [ ] 2.23P Charging insulators by friction (batch C).
+- [ ] 2.23P Charging insulators by friction (batch C). Add its `.cp-banner` to `electric-charge.html#charging` when built.
 - [ ] 3.17 Refraction (batch C).
 - [ ] 3.27P Frequency of sound with an oscilloscope (batch C).
 - [ ] 7.6 Penetrating power of radiation (batch C).
@@ -67,6 +66,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## Done
 
+- 3 Nov 2026: Unit 2 Electricity workouts: 2a `mains-electricity.html`, 2b `circuits.html`, 2c `electric-charge.html` (TA), cards on `igcse.html`, the three IGCSE electricity animations framed in 2b, Unit 2 tabs in the Calculations and Graphs sets. 2.9 practical page `iv-characteristics-practical.html` published, with its `.cp-banner` on 2b I–V Graphs. All marked 🔍 in `tools/REVIEW.md`.
 - 3 Nov 2026: Hooke's law animation animated, with draggable masses and a rubber band hysteresis loop. Heating-curve simplification accepted by Alex. TA tags on Triple Award units (1d, 5a).
 - 3 Nov 2026: specs uploaded. 5a Units tab: 5.2 (J/kg °C) is Double Award in the 4PH1 spec, so its badge is right and no change was needed. IAL thermistor practical: Divider tab now badged 75, 76 and Experiment tab 79 (resistance and temperature).
 - 3 Nov 2026: site audit fixes on 26 pages and 2 animations: wrong physics (5a and animation heating curve, Boyle's law Predict, thermistor explanation, light gates, Year 9 flask/aircon/thermometer), fractions now drawn in Predict options and activity titles (engine, every copy), right answers that were marked wrong, giveaways, missing working steps, Slow motion on `seesaw-moments.html`.

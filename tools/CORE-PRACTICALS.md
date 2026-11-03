@@ -61,7 +61,7 @@ The guide's PDF pages are those of the PDF Alex shared; in the Project doc, look
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | 1.5 | Motion of everyday objects (toy car, tennis ball) | 143–148 | 1.6, 1.7, 1.8, 1.10, 1.21 | | new `ramp-motion.html` | `motion.html#measuring` (Measure v tab) | A | **published** (21 Oct 2026; Alex to review) |
 | 2 | 1.22 | Extension of springs, wires, rubber bands | 149–152 | 1.18, 1.23, 1.24 | | `hookes-law.html` | `falling-stopping-springs.html#hooke` | done | **published** (the model) |
-| 3 | 2.23P | Charging insulators by friction | 153–155 | 2.22P, 2.24, 2.25, 2.26, 2.27, 2.28 | TA | new | none yet (Unit 2) | C | to do |
+| 3 | 2.23P | Charging insulators by friction | 153–155 | 2.22P, 2.24, 2.25, 2.26, 2.27, 2.28 | TA | new | `electric-charge.html#charging` (2c Charging tab; add the banner when the page is built) | C | to do |
 | 4 | 3.17 | Refraction: rectangular, semicircular blocks, prisms | 156–162 | 3.14, 3.15, 3.16, 3.18, 3.21, 3.22 | | new (can share a light-box animation with 3.19) | none yet (Unit 3) | C | to do |
 | 5 | 3.19 | Refractive index of glass | 163–166 | 3.14–3.18, 3.20, 3.21, 3.22 | | new (light box, shared with 3.17) | none yet (Unit 3) | B | to do |
 | 6 | 3.25P | Speed of sound in air | 167–169 | 1.4, 3.23 | TA | new | none yet (Unit 3) | B | to do |
@@ -71,7 +71,7 @@ The guide's PDF pages are those of the PDF Alex shared; in the Project doc, look
 | 10 | 5.14P | Specific heat capacity | 184–187 | 5.12, 5.13 | TA | `specific-heat.html` (moved out of the Unit 5 Specific Heat tab, which now frames it) | `density-pressure-state.html#shc` | A | **published** (21 Oct 2026; Alex to review) |
 | 11 | 6.6 | Magnetic field of a bar magnet | 188–189 | 6.2, 6.3, 6.4, 6.5, 6.7 | | `magnetic-field-patterns.html` (Experiment mode added) | `magnetism-and-motor-effect.html#fields` | A | **published** (21 Oct 2026; Alex to review) |
 | 12 | 7.6 | Penetrating power of radiation | 190–192 | 7.4, 7.5, 7.9, 7.10, 7.16 | | new (a simulation is acceptable for the real practical too) | none yet (Unit 7) | C | to do |
-| 13 | 2.9 | Current–voltage characteristics (wire, resistor, lamp, diode) | 193–196 | 2.10, 2.12, 2.13 | | `iv-characteristics.html` (built 2 Nov 2026, with Experiment mode) | none yet (Unit 2) | B | animation done; practical page to do |
+| 13 | 2.9 | Current–voltage characteristics (wire, resistor, lamp, diode) | 193–196 | 2.10, 2.12, 2.13 | | `iv-characteristics.html` (built 2 Nov 2026, with Experiment mode) | `circuits.html#iv` (2b I–V Graphs tab) | B | **published** (3 Nov 2026; Alex to review; guide pages and mark scheme wording check still to do) |
 | 14 | 5.11P | Temperature–time graph for melting ice | 197–200 | 5.8, 5.9, 5.10 | TA | `heating-curve.html` (Experiment mode added) | `density-pressure-state.html#heating` | A | **published** (21 Oct 2026; Alex to review) |
 
 **Batches:**
@@ -130,3 +130,10 @@ Built ahead of their batches, as drafts (noindex, no cards, no banners, no "Core
   - Irregular object: stone (2.70 g/cm³) or plasticine, measuring cylinder or eureka can (catches 0.4 cm³ less: drops left in the spout), drag the object into the water; eye-level meniscus close-up.
   - Liquid: cylinder (74.6 g) on the balance, 10 or 20 cm³ at a time; water, oil 0.92, salt water 1.15, mystery glycerol 1.26; total mass against volume, gradient = density, intercept = cylinder.
 - **Published on 2 Nov 2026** at Alex's request, before his review and before the mark scheme check: practical cards under Core Practicals, animation cards in `animations/igcse.html` (Unit 4 and Unit 5, with "Core practical" tags), `.cp-banner` and the framed animation on `heat-transfer-igcse.html#practical` (which gained `frameAct` and the frame-height listener) and `density-pressure-state.html#density`.
+
+## Notes from 2.9 (3 Nov 2026)
+
+- `iv-characteristics-practical.html` (store `cp-iv-characteristics-v1`), built with gen.py from `practicals/iv-characteristics/`, published with the Unit 2 workouts (card under Core Practicals, `.cp-banner` on `circuits.html#iv`). The animation already had its "Core practical 2.9" tag.
+- Spec badges from the 4PH1 spec PDF: 2.9 with 2.10, 2.12, 2.13.
+- The method uses a variable resistor and reversing the connections (the usual mark scheme method); the animation uses a potentiometer across two cells, which gives negative voltages without reversing (Alex's open question in `TODO.md`).
+- Not done in that chat: the guide pages (PDF 193–196) and the mark scheme wording check (step 4); neither the guide doc nor the Question Index was available.

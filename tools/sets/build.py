@@ -26,6 +26,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 CALC = ['Calculate', 'Spot the error']
 GRAPH = ['Label the graph', 'Calculate']
 P1 = 'Forces Part 1 (Year 10)'
+U2 = 'Unit 2 Electricity'
 
 # Each tab of a set page = one workout section. part = the label its tabs sit under.
 SETS = {
@@ -36,12 +37,19 @@ SETS = {
       {'part': P1, 'page': 'forces.html', 'src': '1b', 'section': 'RESULTANT FORCE', 'tab': 'balanced', 'label': 'Resultant Force'},
       {'part': P1, 'page': 'forces.html', 'src': '1b', 'section': 'F = ma', 'tab': 'fma', 'label': 'F = ma'},
       {'part': P1, 'page': 'forces.html', 'src': '1b', 'section': 'WEIGHT', 'tab': 'weight', 'label': 'Weight'},
+      {'part': U2, 'page': 'mains-electricity.html', 'src': '2a', 'section': 'POWER AND FUSES', 'tab': 'power', 'label': 'P = IV'},
+      {'part': U2, 'page': 'mains-electricity.html', 'src': '2a', 'section': 'ENERGY, a.c. AND d.c.', 'tab': 'energy', 'label': 'E = IVt'},
+      {'part': U2, 'page': 'circuits.html', 'src': '2b', 'section': 'CHARGE AND ENERGY', 'tab': 'charge', 'label': 'Q = It, E = QV'},
+      {'part': U2, 'page': 'circuits.html', 'src': '2b', 'section': 'SERIES AND PARALLEL', 'tab': 'series', 'label': 'Series and Parallel'},
+      {'part': U2, 'page': 'circuits.html', 'src': '2b', 'section': 'RESISTANCE', 'tab': 'resistance', 'label': 'V = IR'},
+      {'part': U2, 'page': 'circuits.html', 'src': '2b', 'section': 'SERIES CIRCUIT CALCULATIONS', 'tab': 'seriescalc', 'label': 'Series Calculations'},
     ]},
   'graphs.html': {
     'title': 'Graphs Set', 'key': 'set-graphs-v1', 'kinds': GRAPH,
     'tabs': [
       {'part': P1, 'page': 'motion.html', 'src': '1a', 'section': 'DISTANCE–TIME GRAPHS', 'tab': 'stgraph', 'label': 's–t Graph'},
       {'part': P1, 'page': 'motion.html', 'src': '1a', 'section': 'VELOCITY–TIME GRAPHS', 'tab': 'vtgraph', 'label': 'v–t Graph'},
+      {'part': U2, 'page': 'circuits.html', 'src': '2b', 'section': 'CURRENT–VOLTAGE GRAPHS', 'tab': 'iv', 'label': 'I–V Graphs'},
     ]},
 }
 
