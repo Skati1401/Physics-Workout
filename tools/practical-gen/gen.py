@@ -14,7 +14,7 @@ Change the engine there, then rebuild every practical with --all, so all the pag
 The finished pages are ordinary self-contained HTML files committed to the repo root: the site has
 no build step, this script only saves copying the engine by hand.
 """
-import json, os, re, subprocess, sys, tempfile
+import html, json, os, re, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
@@ -49,6 +49,7 @@ def build(slug):
     any_ta = any(is_ta(s) for t in tabs for s in t['spec'])
 
     head = read(T, 'head.html').replace('{{TITLE}}', cfg['title'])
+    head = head.replace('{{DESCRIPTION}}', ('\n<meta name="description" content="%s">' % html.escape(cfg['description'], quote=True)) if cfg.get('description') else '')
     head = head.replace('{{NOINDEX}}', '<meta name="robots" content="noindex">' if cfg.get('draft') else '')
 
     acc = cfg.get('accent', {'light': ['#0C7A68', '#D6F3EE'], 'dark': ['#4FD6BD', '#0F2E29']})
