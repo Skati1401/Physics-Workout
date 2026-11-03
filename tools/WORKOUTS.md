@@ -1,6 +1,8 @@
-# Workout pages: to-do list
+# Workout pages: build notes
 
-Started 27 Oct 2026. Tick items off here as they are done (and update `tools/REVIEW.md` and the repo CLAUDE.md as usual). Core practicals have their own list in `tools/CORE-PRACTICALS.md`.
+**The to-do list is now `TODO.md` in the repo root (3 Nov 2026).** The open items here moved there; this file keeps the notes on what was built and how.
+
+Started 27 Oct 2026.
 
 ## 1. Calculations and Graphs sets (start now, Forces Part 1 only)
 
@@ -8,18 +10,11 @@ Two whole-course pages made of the activities already in the workouts, like the 
 
 - [x] **How the sets work (27 Oct 2026):** the workouts are never changed. `tools/sets/build.py` copies the chosen workout sections into each set page and keeps only the activities of that set's kinds (Calculate and Spot the error; Label the graph and Calculate). Each set has its own saved answers. A GitHub Action (`.github/workflows/build-sets.yml`) re-runs the script on every push to `main`, so a fix to a workout reaches the sets a minute or two later. To add a tab, add a line to `SETS` in `build.py`.
 - [x] **Drafts started (27 Oct 2026):** `calculations.html` (1a Speed and Acceleration; 1b Resultant Force, F = ma, Weight) and `graphs.html` (1a s–t and v–t Graph). Both `noindex`, no card yet.
-- [ ] Alex to look at both drafts. Then add the cards to `igcse.html` (below Core Practicals) and remove `noindex` (in `build.py`).
-- [ ] Graphs set: 1b has no graph activities; consider the 1.5 practical's plotting activities (practical pages are built by `gen.py`, so `build.py` would need to read their `content.js`).
-- [ ] Add Forces Part 2 (1c with suvat, 1d), then Units 4, 5 and 6.
 
 ## 2. Remaining IGCSE units (spec order)
 
 For each: ask Alex for the spec page first (spec numbers from the spec, never memory), build to the size rule in CLAUDE.md (one workout per spec sub-section, 5–8 tabs), add the cards under a new unit heading on `igcse.html`, then add the unit's activities to both sets.
 
-- [ ] **Unit 2 Electricity** (about 2 pages). Core practicals 2.9 and 2.23P are in batches B and C.
-- [ ] **Unit 3 Waves** (about 2 pages). Core practicals 3.17, 3.19, 3.25P, 3.27P.
-- [ ] **Unit 7 Radioactivity and Particles** (1–2 pages). Core practical 7.6; `animations/film-badge.html` already exists.
-- [ ] **Unit 8 Astrophysics** (1 page).
 
 ## 3. Teaching animations to build
 
@@ -34,11 +29,6 @@ Stand-alone pages in `animations/` (teaching-animations skill), one copy framed 
 - [x] **IAL CP12–CP14 practical pages (2 Nov 2026):** `thermistor-practical.html` (10 tabs, incl. Divider), `latent-heat-practical.html` and `boyles-law-practical.html` (9 tabs each), built by gen.py with `"course": "ial"`, listed on the new student list `ial.html` (Core Practicals) with an IAL door on the front page. New animations `animations/latent-heat.html` (CP13) and `animations/boyles-law.html` (CP14), tagged on `animations/ial.html` Unit 5. Spec badges from the IAL spec rows 125–132 (Alex's 5.1 deck, slide 3). Not done: the IAL Unit 2 spec points for potential dividers and thermistors (numbers not to hand), no mark-scheme wording check yet (no IAL question index).
 - [x] **Friction at IB level (2 Nov 2026):** `animations/friction.html` has an "IGCSE | IB" switch; IB adds the static and dynamic friction pull with μ<sub>s</sub> and μ<sub>d</sub>.
 - [x] **IAL 5.3 / IB B.1, B.3 thermal physics (2 Nov 2026):** IAL and IB levels added to `animations/specific-heat.html` (125: ΔE = VIt, ΔE = mcΔθ, c from the θ–t gradient) and `animations/gas-molecules.html` (128 internal energy, 129 absolute zero and mean kinetic energy, 130 pV = NkT, 132 ½m⟨c²⟩ = 3/2 kT). Not covered yet: the derivation of ½m⟨c²⟩ = 3/2 kT (132 says "derive"); it could be an Order activity or a step-by-step reveal.
-- [ ] **IAL 5.3 core practicals CP13 and CP14 (for a new chat; Alex is finding the practical sheets; CP12 is done, see above).** Spec (IAL 2018, Issue 2, p. 34): CP12 "Calibrate a thermistor in a potential divider circuit as a thermostat" (126), CP13 "Determine the specific latent heat of a phase change" (127), CP14 "Investigate the relationship between pressure and volume of a gas at fixed temperature" (131). Plan agreed 2 Nov 2026: one copy of each animation, with an Experiment mode and a "Core practical 13" (etc.) `.cp-tag` on its IAL card, so it also appears in the IAL list's Core Practicals section.
-  - **CP13 specific latent heat:** extend `animations/heating-curve.html` (it already has an Experiment mode) with an IAL / IB level: ΔE = LΔm, ice melted by an immersion heater (V, I, t), mass of water collected, and a control funnel with no heater to correct for melting by the room. IB B.1 also has Q = mL, so give it an IB card under Theme B.
-  - **CP14 pressure and volume:** extend `animations/gas-molecules.html` (its "How pressure changes" part already has Pressure and volume): a syringe or Bourdon gauge apparatus with an Experiment mode, readings of p and V, then graphs of p against V and p against 1/V; the gradient of p against 1/V gives NkT. Wait between readings so the temperature stays fixed. IB B.3 has the gas laws too.
-  - Use Alex's practical sheets for the method and apparatus; check every point against the spec, not other boards.
-- [ ] **Film badge:** `animations/film-badge.html` exists (cards on both animation lists) but is not framed in any workout yet. Frame it in the Unit 7 workout tab for radiation types, with the full-screen link. Waiting for the Unit 7 workout (section 2); frame `random-decay.html` there too.
 
 ## Done
 
@@ -50,5 +40,4 @@ Stand-alone pages in `animations/` (teaching-animations skill), one copy framed 
 `createCrossword` is in every copy of the act() engine (2 Nov 2026). Make the layout with `node tools/crossword/layout.js ROWS COLS WORD …`, then add each clue; a clue never contains its own answer, and a multi-word term drops to one word with the rest in the clue ("___ diagram").
 
 - [x] **4a + 4b (2 Nov 2026):** one crossword on 4b's new Key Terms tab (`heat-transfer-igcse.html#terms`), 15 words from the Energy deck slides 6 and 7. Reserves if a word is changed: KINETIC, THERMAL, NUCLEAR, ELASTIC, VACUUM, METALS, ABSORBER.
-- [ ] Other units, if Alex wants them.
 
