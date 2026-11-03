@@ -33,6 +33,7 @@
 }
 @keyframes tickin{from{transform:scale(.3);opacity:0}}
 @keyframes donepulse{40%{transform:scale(1.12)}}
+.act-title b.ta{font:500 11px var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px;white-space:nowrap;vertical-align:2px}
 </style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
@@ -417,20 +418,20 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 </header>
 <nav class="tabs" role="tablist" aria-label="Activities">
 <button class="tab-btn is-active" role="tab" id="tab-overview" data-tab="overview" data-grp="" aria-selected="true" aria-controls="panel-overview">Overview</button>
-<button class="tab-btn" role="tab" id="tab-terms" data-tab="terms" data-grp="" aria-selected="false" aria-controls="panel-terms">Key Terms</button>
 <button class="tab-btn" role="tab" id="tab-charge" data-tab="charge" data-grp="" aria-selected="false" aria-controls="panel-charge">Charge and Energy</button>
 <button class="tab-btn" role="tab" id="tab-series" data-tab="series" data-grp="" aria-selected="false" aria-controls="panel-series">Series and Parallel</button>
 <button class="tab-btn" role="tab" id="tab-resistance" data-tab="resistance" data-grp="" aria-selected="false" aria-controls="panel-resistance">Resistance</button>
 <button class="tab-btn" role="tab" id="tab-iv" data-tab="iv" data-grp="" aria-selected="false" aria-controls="panel-iv">I–V Graphs</button>
 <button class="tab-btn" role="tab" id="tab-ldr" data-tab="ldr" data-grp="" aria-selected="false" aria-controls="panel-ldr">LDR and Thermistor</button>
 <button class="tab-btn" role="tab" id="tab-seriescalc" data-tab="seriescalc" data-grp="" aria-selected="false" aria-controls="panel-seriescalc">Series Calculations</button>
+<button class="tab-btn" role="tab" id="tab-terms" data-tab="terms" data-grp="" aria-selected="false" aria-controls="panel-terms">Units and Terms</button>
 </nav>
 <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
 <div class="panel-head"><h2>Overview</h2><div class="spec"><b>All of 2b</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-terms" class="panel" role="tabpanel" aria-labelledby="tab-terms" hidden>
-<div class="panel-head"><h2>Key Terms</h2></div>
+<div class="panel-head"><h2>Unit 2 Units and Key Terms</h2></div>
 <div class="acts"></div>
 </section>
 <section id="panel-charge" class="panel" role="tabpanel" aria-labelledby="tab-charge" hidden>
@@ -475,8 +476,8 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='unit2b-v2',OLD_STORE_KEY='unit2b-v1';
-const TAB_IDS=["overview","terms","charge","series","resistance","iv","ldr","seriescalc"];
+const STORE_KEY='unit2b-v3',OLD_STORE_KEY='unit2b-v2';
+const TAB_IDS=["overview","charge","series","resistance","iv","ldr","seriescalc","terms"];
 let activeTab='overview';
 const reflowers=[];
 const tickers=[];
@@ -1438,8 +1439,58 @@ clozeAct('overview','Unit 2b in one passage','Drag a word into each gap, or tap 
   '. The resistance of a thermistor decreases as its ',['b5','temperature'],' increases, and a ',['b6','diode'],' lets current flow in one direction only. One volt is one ',['b7','joule'],' of energy transferred for each coulomb of charge.'
 ],['protons','bigger','current','resistor','watt']);
 
-/* ================= 2. KEY TERMS ================= */
-createMemoryGame({host:act('terms','Memory','Key terms','Flip two cards at a time to find each term and its meaning. Try to finish in as few flips as you can.'),pairs:[
+/* ================= 2. UNITS AND KEY TERMS (ALL OF UNIT 2) ================= */
+// The one Units and Key Terms tab for the whole unit (3 Nov 2026). Activities from other workouts are named after them.
+{
+  function unitTable(panel,title,intro,rows,extras){
+    const body=act(panel,'Quantity, symbol, unit',title,intro);
+    const KEYS=['q','s','u','us'],NAMES={q:'quantity',s:'symbol',u:'unit',us:'unit symbol'};
+    const wrap=mk('div','table-scroll'),tbl=mk('table','units');
+    tbl.innerHTML='<thead><tr><th>Quantity</th><th>Symbol</th><th>Unit</th><th>Unit symbol</th></tr></thead>';
+    const tb=mk('tbody');tbl.appendChild(tb);wrap.appendChild(tbl);
+    const slots=[],chips=[];
+    rows.forEach((r,i)=>{
+      const tr=mk('tr');
+      KEYS.forEach(k=>{
+        const td=mk('td');
+        if(r.g===k){td.className='given';td.textContent=r[k];if(r.ta)td.insertAdjacentHTML('beforeend',' <b class="ta" title="Triple Award only">TA</b>');}
+        else{const s=mk('div','blank');td.appendChild(s);slots.push({id:i+'-'+k,el:s,answer:r[k],label:r[r.g]+': '+NAMES[k]});chips.push({id:'u'+i+k,text:r[k]});}
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    extras.forEach((t,i)=>chips.push({id:'ux'+i,text:t}));
+    body.appendChild(wrap);body.appendChild(mk('div','pool-label','Chips: quantities, symbols, units and unit symbols'));
+    const pool=mk('div','chip-pool');body.appendChild(pool);
+    let g;
+    const b=bar(body,[{label:'Check table',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
+    const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
+    g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
+  }
+  unitTable('terms','Unit 2 quantities','Each row gives you one cell. Drag the other three into place. The letter V is a symbol and a unit symbol, so work from the quantity.',[
+    {q:'Current',s:'I',u:'ampere',us:'A',g:'us'},
+    {q:'Charge',s:'Q',u:'coulomb',us:'C',g:'u'},
+    {q:'Energy transferred',s:'E',u:'joule',us:'J',g:'q'},
+    {q:'Resistance',s:'R',u:'ohm',us:'Ω',g:'us'},
+    {q:'Time',s:'t',u:'second',us:'s',g:'q'},
+    {q:'Voltage',s:'V',u:'volt',us:'V',g:'q'},
+    {q:'Power',s:'P',u:'watt',us:'W',g:'u'}
+  ],['newton','N','kg']);
+  const mg4=createMatchGame({host:act('terms','Match','What each unit means','Select a unit, then select what it means. Select a joined card to undo it.'),
+  leftTitle:'Unit',rightTitle:'Means',narrowLeft:true,pairs:[
+    {id:'a',l:'1 ampere',r:'1 coulomb of charge flowing past each second'},
+    {id:'v',l:'1 volt',r:'1 joule of energy transferred for each coulomb of charge'},
+    {id:'w',l:'1 watt',r:'1 joule of energy transferred each second'},
+    {id:'o',l:'1 ohm',r:'1 volt needed for each ampere of current'}
+  ]});
+  reflowers.push(t=>{if(t==='terms')raf(mg4.reflow);});
+  calcAct('terms','Convert the units','Write each value in the unit shown. Milli (m) means a thousandth; kilo (k) means a thousand.',[
+  {q:'250 mA in amperes is',unit:'A',answer:0.25,working:'1 mA = [[1|1000]] A<br>250 mA = [[250|1000]] A<br>250 mA = 0.25 A'},
+  {q:'2.4 kW in watts is',unit:'W',answer:2400,working:'1 kW = 1000 W<br>2.4 kW = 2.4 × 1000 W<br>2.4 kW = 2400 W'},
+  {q:'5 minutes in seconds is',unit:'s',answer:300,working:'1 minute = 60 s<br>5 minutes = 5 × 60 s<br>5 minutes = 300 s'},
+  {q:'1.5 kJ in joules is',unit:'J',answer:1500,working:'1 kJ = 1000 J<br>1.5 kJ = 1.5 × 1000 J<br>1.5 kJ = 1500 J'}
+]);
+  createMemoryGame({host:act('terms','Memory','2b Key terms','Flip two cards at a time to find each term and its meaning. Try to finish in as few flips as you can.'),pairs:[
   {id:'cur',a:'Current',b:'The rate of flow of charge'},
   {id:'vol',a:'Voltage',b:'Energy transferred per unit charge'},
   {id:'res',a:'Resistance',b:'How much a component opposes the current'},
@@ -1450,13 +1501,33 @@ createMemoryGame({host:act('terms','Memory','Key terms','Flip two cards at a tim
   {id:'ldr',a:'LDR',b:'Resistance falls as the light gets brighter'},
   {id:'the',a:'Thermistor',b:'Resistance falls as it gets hotter'}
 ]});
-createMatchGame({host:act('terms','Match','Equations in words','Select an equation, then select it written in words. Select a joined card to undo it.'),
+  const mg5=createMatchGame({host:act('terms','Match','Equations in words','Select an equation, then select it written in words. Select a joined card to undo it.'),
   leftTitle:'Equation',rightTitle:'In words',narrowLeft:true,pairs:[
     {id:'q',l:'Q = I × t',r:'charge = current × time'},
     {id:'v',l:'V = I × R',r:'voltage = current × resistance'},
     {id:'e',l:'E = Q × V',r:'energy transferred = charge × voltage'},
     {id:'p',l:'P = I × V',r:'power = current × voltage'}
   ]});
+  reflowers.push(t=>{if(t==='terms')raf(mg5.reflow);});
+  createMemoryGame({host:act('terms','Memory','2c Key terms <b class="ta" title="Triple Award only">TA</b>','Flip two cards at a time to find each term and its meaning. Try to finish in as few flips as you can.'),pairs:[
+  {id:'con',a:'Conductor',b:'A material that lets charge flow through it easily'},
+  {id:'ins',a:'Insulator',b:'A material that charge cannot flow through easily'},
+  {id:'ele',a:'Electron',b:'Negatively charged particle that moves when objects are charged'},
+  {id:'sta',a:'Static charge',b:'Charge that builds up on an insulator and stays there'},
+  {id:'fri',a:'Charging by friction',b:'Rubbing two materials so electrons move from one to the other'},
+  {id:'ear',a:'Earthing',b:'Connecting an object to the ground so charge can flow away'},
+  {id:'spa',a:'Spark',b:'Charge jumping through the air when the voltage is very large'},
+  {id:'rep',a:'Repulsion',b:'The force between two objects with like charges'}
+]});
+  const mg6=createMatchGame({host:act('terms','Match','2c Charge words <b class="ta" title="Triple Award only">TA</b>','Select a word, then select what it means. Select a joined card to undo it.'),
+  leftTitle:'Word',rightTitle:'Meaning',narrowLeft:true,pairs:[
+    {id:'n',l:'Negatively charged',r:'Has gained electrons'},
+    {id:'p',l:'Positively charged',r:'Has lost electrons'},
+    {id:'u',l:'Uncharged',r:'Has equal amounts of positive and negative charge'},
+    {id:'a',l:'Attraction',r:'The force between a positive and a negative charge'}
+  ]});
+  reflowers.push(t=>{if(t==='terms')raf(mg6.reflow);});
+}
 
 /* ================= 3. CHARGE AND ENERGY ================= */
 predictAct('charge','Inside a copper wire','Decide first, then see the answer.',{
@@ -1818,6 +1889,22 @@ function readSaved(){
   try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
   return {};
 }
+// Units merge (3 Nov 2026): answers saved before it are copied across once. This page's own answers come
+// with them, except on the tabs whose activities changed, and so do the answers of activities that moved here.
+const MERGE_FROM='unit2b-v2',MERGE_DROP=['terms'],MERGE_MOVES=[
+  [['unit2a-v2','unit2a-v1'],'units-0','terms-0'],
+  [['unit2a-v2','unit2a-v1'],'units-1','terms-1'],
+  [['unit2a-v2','unit2a-v1'],'units-2','terms-2'],
+  [['unit2b-v2'],'terms-0','terms-3'],
+  [['unit2c-v2','unit2c-v1'],'terms-0','terms-4']];
+function carrySaved(s){
+  try{if(localStorage.getItem(STORE_KEY))return s;}catch(e){return s;}
+  const load=k=>{try{const x=JSON.parse(localStorage.getItem(k)||'null');return x&&typeof x==='object'?x:null;}catch(e){return null;}};
+  const old=load(MERGE_FROM)||s||{},v={};
+  Object.keys(old.v||{}).forEach(k=>{if(MERGE_DROP.indexOf(k.replace(/-\d+$/,''))<0)v[k]=old.v[k];});
+  MERGE_MOVES.forEach(m=>{for(const k of m[0]){const x=load(k);if(x&&x.v&&x.v[m[1]]){v[m[2]]=x.v[m[1]];break;}}});
+  return {tab:old.tab,v:v};
+}
 function start(data){
   const v=(data&&data.v)||{};
   games.forEach(g=>{if(v[g.key]&&typeof v[g.key]==='object'){try{g.setState(v[g.key]);}catch(e){console.error(e);}}});
@@ -1828,7 +1915,7 @@ function start(data){
   if(TAB_IDS.indexOf(t)<0)t='overview';
   applyTabUI(t);raf(loop);
 }
-start(readSaved());
+start(carrySaved(readSaved()));
 })();
 </script>
 

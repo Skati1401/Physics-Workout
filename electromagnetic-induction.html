@@ -34,6 +34,8 @@
 }
 @keyframes tickin{from{transform:scale(.3);opacity:0}}
 @keyframes donepulse{40%{transform:scale(1.12)}}
+.act-title b.ta{font:500 11px var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px;white-space:nowrap;vertical-align:2px}
+table.units td.given b.ta{font:500 11px var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:4px;white-space:nowrap;vertical-align:1px}
 </style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
@@ -387,18 +389,18 @@ svg text{font-family:var(--f-mono)}
 </header>
 <nav class="tabs" role="tablist" aria-label="Activities">
 <button class="tab-btn is-active" role="tab" id="tab-overview" data-tab="overview" data-grp="" aria-selected="true" aria-controls="panel-overview">Overview</button>
-<button class="tab-btn" role="tab" id="tab-terms" data-tab="terms" data-grp="" aria-selected="false" aria-controls="panel-terms">Key Terms</button>
 <button class="tab-btn" role="tab" id="tab-induction" data-tab="induction" data-grp="d" aria-selected="false" aria-controls="panel-induction">Induction</button>
 <button class="tab-btn" role="tab" id="tab-generators" data-tab="generators" data-grp="d" aria-selected="false" aria-controls="panel-generators">Generators</button>
 <button class="tab-btn" role="tab" id="tab-transformers" data-tab="transformers" data-ta data-grp="d" aria-selected="false" aria-controls="panel-transformers">Transformers</button>
 <button class="tab-btn" role="tab" id="tab-grid" data-tab="grid" data-ta data-grp="d" aria-selected="false" aria-controls="panel-grid">National Grid</button>
+<button class="tab-btn" role="tab" id="tab-terms" data-tab="terms" data-grp="" aria-selected="false" aria-controls="panel-terms">Units and Terms</button>
 </nav>
 <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
 <div class="panel-head"><h2>Overview</h2><div class="spec"><b>All of 6b</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-terms" class="panel" role="tabpanel" aria-labelledby="tab-terms" hidden>
-<div class="panel-head"><h2>Key Terms and Units</h2><div class="spec"><b>6.1</b></div></div>
+<div class="panel-head"><h2>Unit 6 Units and Key Terms</h2></div>
 <div class="acts"></div>
 </section>
 <section id="panel-induction" class="panel" role="tabpanel" aria-labelledby="tab-induction" hidden>
@@ -436,8 +438,8 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='unit6b-v2',OLD_STORE_KEY='unit6b-v1';
-const TAB_IDS=['overview','terms','induction','generators','transformers','grid'];
+const STORE_KEY='unit6b-v3',OLD_STORE_KEY='unit6b-v2';
+const TAB_IDS=['overview','induction','generators','transformers','grid','terms'];
 let activeTab='overview';
 const reflowers=[];
 const tickers=[];
@@ -1320,9 +1322,51 @@ const LHR_OPTS=up=>[
   const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
   g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
 }
-/* ================= 2. KEY TERMS AND UNITS ================= */
+/* ================= 6. UNITS AND KEY TERMS (ALL OF UNIT 6) ================= */
+// The one Units and Key Terms tab for the whole unit (3 Nov 2026). Activities from other workouts are named after them.
 {
-  createMemoryGame({host:act('terms','Memory','Key terms','Flip two cards at a time to find each term and its meaning. Try to finish in as few flips as you can.'),pairs:[
+  function unitTable(panel,title,intro,rows,extras){
+    const body=act(panel,'Quantity, symbol, unit',title,intro);
+    const KEYS=['q','s','u','us'],NAMES={q:'quantity',s:'symbol',u:'unit',us:'unit symbol'};
+    const wrap=mk('div','table-scroll'),tbl=mk('table','units');
+    tbl.innerHTML='<thead><tr><th>Quantity</th><th>Symbol</th><th>Unit</th><th>Unit symbol</th></tr></thead>';
+    const tb=mk('tbody');tbl.appendChild(tb);wrap.appendChild(tbl);
+    const slots=[],chips=[];
+    rows.forEach((r,i)=>{
+      const tr=mk('tr');
+      KEYS.forEach(k=>{
+        const td=mk('td');
+        if(r.g===k){td.className='given';td.textContent=r[k];if(r.ta)td.insertAdjacentHTML('beforeend',' <b class="ta" title="Triple Award only">TA</b>');}
+        else{const s=mk('div','blank');td.appendChild(s);slots.push({id:i+'-'+k,el:s,answer:r[k],label:r[r.g]+': '+NAMES[k]});chips.push({id:'u'+i+k,text:r[k]});}
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    extras.forEach((t,i)=>chips.push({id:'ux'+i,text:t}));
+    body.appendChild(wrap);body.appendChild(mk('div','pool-label','Chips: quantities, symbols, units and unit symbols'));
+    const pool=mk('div','chip-pool');body.appendChild(pool);
+    let g;
+    const b=bar(body,[{label:'Check table',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
+    const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
+    g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
+  }
+  unitTable('terms','Unit 6 quantities','Each row gives you one cell. Drag the other three into place. The letter V is both a symbol and a unit symbol here, so work from the quantity.',[
+    {q:'Current',s:'I',u:'ampere',us:'A',g:'us'},
+    {q:'Voltage',s:'V',u:'volt',us:'V',g:'u'},
+    {q:'Force',s:'F',u:'newton',us:'N',g:'q'},
+    {q:'Power',s:'P',u:'watt',us:'W',g:'q'}
+  ],['energy','joule','C']);
+  createMemoryGame({host:act('terms','Memory','6a Key terms','Flip two cards at a time to find each term and its meaning. Try to finish in as few flips as you can.'),pairs:[
+    {id:'fl',a:'Field line',b:'Shows the direction of the force on a north pole'},
+    {id:'ind',a:'Induced magnetism',b:'Magnetism of a material while it is in a magnetic field'},
+    {id:'uni',a:'Uniform field',b:'Same strength and direction everywhere'},
+    {id:'hard',a:'Magnetically hard',b:'Keeps its magnetism once it has been magnetised, like steel'},
+    {id:'soft',a:'Magnetically soft',b:'Loses its magnetism quickly, like soft iron'},
+    {id:'sol',a:'Solenoid',b:'A long coil of wire'},
+    {id:'me',a:'Motor effect',b:'Force on a current-carrying wire in a magnetic field'},
+    {id:'com',a:'Split-ring commutator',b:'Reverses the current in a motor coil every half turn'}
+  ]});
+  createMemoryGame({host:act('terms','Memory','6b Key terms','Flip two cards at a time to find each term and its meaning. Try to finish in as few flips as you can.'),pairs:[
     {id:'emi',a:'Electromagnetic induction',b:'A voltage made by a changing magnetic field'},
     {id:'ac',a:'Alternating current',b:'Current that keeps changing direction'},
     {id:'pri',a:'Primary coil',b:'Transformer coil connected to the input supply'},
@@ -1332,34 +1376,6 @@ const LHR_OPTS=up=>[
     {id:'sd',a:'Step-down transformer',b:'Output voltage smaller than the input voltage'},
     {id:'grid',a:'National Grid',b:'Network of cables and transformers that carries electricity around the country'}
   ]});
-  const body=act('terms','Quantity, symbol, unit','Complete the table','Each row gives you one cell. Drag the other three into place. The letter V is both a symbol and a unit symbol here, so work from the quantity.');
-  const ROWS=[
-    {q:'Current',s:'I',u:'ampere',us:'A',g:'us'},
-    {q:'Voltage',s:'V',u:'volt',us:'V',g:'u'},
-    {q:'Power',s:'P',u:'watt',us:'W',g:'q'}
-  ];
-  const KEYS=['q','s','u','us'];
-  const wrap=mk('div','table-scroll'),tbl=mk('table','units');
-  tbl.innerHTML='<thead><tr><th>Quantity</th><th>Symbol</th><th>Unit</th><th>Unit symbol</th></tr></thead>';
-  const tb=mk('tbody');tbl.appendChild(tb);wrap.appendChild(tbl);
-  const slots=[],chips=[];
-  ROWS.forEach((r,i)=>{
-    const tr=mk('tr');
-    KEYS.forEach(k=>{
-      const td=mk('td');
-      if(r.g===k){td.className='given';td.textContent=r[k];}
-      else{const s=mk('div','blank');td.appendChild(s);slots.push({id:i+'-'+k,el:s,answer:r[k]});chips.push({id:'u'+i+k,text:r[k]});}
-      tr.appendChild(td);
-    });
-    tb.appendChild(tr);
-  });
-  ['energy','joule','C'].forEach((t,i)=>chips.push({id:'ux'+i,text:t}));
-  body.appendChild(wrap);body.appendChild(mk('div','pool-label','Chips: quantities, symbols, units and unit symbols'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  let g;
-  const b=bar(body,[{label:'Check table',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
-  g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
 }
 
 /* ================= 8. INDUCTION ================= */
@@ -1692,6 +1708,18 @@ function readSaved(){
   }
   return {};
 }
+// Units merge (3 Nov 2026): answers saved before it are copied across once. This page's own answers come
+// with them, except on the tabs whose activities changed, and so do the answers of activities that moved here.
+const MERGE_FROM='unit6b-v2',MERGE_DROP=['terms'],MERGE_MOVES=[
+  ];
+function carrySaved(s){
+  try{if(localStorage.getItem(STORE_KEY))return s;}catch(e){return s;}
+  const load=k=>{try{const x=JSON.parse(localStorage.getItem(k)||'null');return x&&typeof x==='object'?x:null;}catch(e){return null;}};
+  const old=load(MERGE_FROM)||s||{},v={};
+  Object.keys(old.v||{}).forEach(k=>{if(MERGE_DROP.indexOf(k.replace(/-\d+$/,''))<0)v[k]=old.v[k];});
+  MERGE_MOVES.forEach(m=>{for(const k of m[0]){const x=load(k);if(x&&x.v&&x.v[m[1]]){v[m[2]]=x.v[m[1]];break;}}});
+  return {tab:old.tab,v:v};
+}
 function start(data){
   const v=(data&&data.v)||{};
   games.forEach(g=>{if(v[g.key]&&typeof v[g.key]==='object'){try{g.setState(v[g.key]);}catch(e){console.error(e);}}});
@@ -1702,7 +1730,7 @@ function start(data){
   if(TAB_IDS.indexOf(t)<0)t='overview';
   applyTabUI(t);raf(loop);
 }
-start(readSaved());
+start(carrySaved(readSaved()));
 })();
 </script>
 

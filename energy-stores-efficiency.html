@@ -391,7 +391,6 @@ svg.sankey{background:var(--panel)}
 </header>
 <nav class="tabs" role="tablist" aria-label="Activities">
 <button class="tab-btn is-active" role="tab" id="tab-overview" data-tab="overview" data-grp="" aria-selected="true" aria-controls="panel-overview">Overview</button>
-<button class="tab-btn" role="tab" id="tab-units" data-tab="units" data-grp="" aria-selected="false" aria-controls="panel-units">Units</button>
 <button class="tab-btn" role="tab" id="tab-stores" data-tab="stores" data-grp="b" aria-selected="false" aria-controls="panel-stores">Stores</button>
 <button class="tab-btn" role="tab" id="tab-conserve" data-tab="conserve" data-grp="b" aria-selected="false" aria-controls="panel-conserve">Conservation</button>
 <button class="tab-btn" role="tab" id="tab-efficiency" data-tab="efficiency" data-grp="b" aria-selected="false" aria-controls="panel-efficiency">Efficiency</button>
@@ -399,10 +398,6 @@ svg.sankey{background:var(--panel)}
 </nav>
 <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
 <div class="panel-head"><h2>Overview</h2><div class="spec"><b>4.1 to 4.5</b></div></div>
-<div class="acts"></div>
-</section>
-<section id="panel-units" class="panel" role="tabpanel" aria-labelledby="tab-units" hidden>
-<div class="panel-head"><h2>Units</h2><div class="spec"><b>4.1</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-stores" class="panel" role="tabpanel" aria-labelledby="tab-stores" hidden>
@@ -439,8 +434,10 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
+// Units merge (3 Nov 2026): this unit's Units and Key Terms tabs are now one tab, so old links go there.
+try{const to={units:'work-and-power.html#units'}[location.hash.slice(1)];if(to){if(to[0]==='#')history.replaceState(null,'',to);else{location.replace(to);return;}}}catch(e){}
 const STORE_KEY='unit4a-energy-v2',OLD_STORE_KEY='unit4a-energy-v1';
-const TAB_IDS=['overview','units','stores','conserve','efficiency','sankey'];
+const TAB_IDS=['overview','stores','conserve','efficiency','sankey'];
 let activeTab='overview';
 const reflowers=[];
 
@@ -1295,42 +1292,6 @@ function sankeySVG(o){
   g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
 }
 
-/* ================= 2. UNITS ================= */
-{
-  const body=act('units','Quantity, symbol, unit','Complete the table','Each row gives you one cell. Drag the other three into place. Some chips are not needed.');
-  const ROWS=[
-    {q:'Energy',s:'E',u:'joule',us:'J',g:'us'},
-    {q:'Power',s:'P',u:'watt',us:'W',g:'u'},
-    {q:'Force',s:'F',u:'newton',us:'N',g:'q'},
-    {q:'Mass',s:'m',u:'kilogram',us:'kg',g:'us'},
-    {q:'Time',s:'t',u:'second',us:'s',g:'u'},
-    {q:'Speed',s:'v',u:'metre per second',us:'m/s',g:'q'},
-    {q:'Acceleration',s:'a',u:'metre per second squared',us:'m/s²',g:'us'}
-  ];
-  const KEYS=['q','s','u','us'];
-  const wrap=mk('div','table-scroll'),tbl=mk('table','units');
-  tbl.innerHTML='<thead><tr><th>Quantity</th><th>Symbol</th><th>Unit</th><th>Unit symbol</th></tr></thead>';
-  const tb=mk('tbody');tbl.appendChild(tb);wrap.appendChild(tbl);
-  const slots=[],chips=[];
-  ROWS.forEach((r,i)=>{
-    const tr=mk('tr');
-    KEYS.forEach(k=>{
-      const td=mk('td');
-      if(r.g===k){td.className='given';td.textContent=r[k];}
-      else{const s=mk('div','blank');td.appendChild(s);slots.push({id:i+'-'+k,el:s,answer:r[k]});chips.push({id:'u'+i+k,text:r[k]});}
-      tr.appendChild(td);
-    });
-    tb.appendChild(tr);
-  });
-  ['pascal','Pa','kelvin'].forEach((t,i)=>chips.push({id:'ux'+i,text:t}));
-  body.appendChild(wrap);body.appendChild(mk('div','pool-label','Chips: quantities, symbols, units and unit symbols'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  let g;
-  const b=bar(body,[{label:'Check table',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
-  g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
-}
-
 /* ================= 3. STORES AND TRANSFERS ================= */
 {
   const mg=createMatchGame({host:act('stores','Match','Eight energy stores','Link each store to the example where most of the energy is held. Drag a card onto its partner, or tap one card then the other.'),
@@ -1762,8 +1723,9 @@ function start(data){
   const v=(data&&data.v)||{};
   games.forEach(g=>{if(v[g.key]&&typeof v[g.key]==='object'){try{g.setState(v[g.key]);}catch(e){console.error(e);}}});
   saveReady=true;showProgress(false);
-  let t=data&&data.tab;
-  if(!t){try{t=location.hash.slice(1);}catch(e){}}
+  // a link such as page.html#units opens that tab, ahead of the tab remembered in this browser
+  let t='';try{t=location.hash.slice(1);}catch(e){}
+  if(TAB_IDS.indexOf(t)<0)t=data&&data.tab;
   if(TAB_IDS.indexOf(t)<0)t='overview';
   applyTabUI(t);
 }

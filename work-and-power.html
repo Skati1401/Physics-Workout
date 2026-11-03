@@ -358,6 +358,8 @@ svg.sankey{background:var(--panel)}
 .anim-frame{display:block;width:100%;height:600px;border:0}
 .anim-open{font:600 13px var(--f-mono);margin:4px 0 18px}
 .anim-open a{color:var(--accent)}
+.act-title b.ta{font:500 11px var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px;white-space:nowrap;vertical-align:2px}
+table.units td.given b.ta{font:500 11px var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:4px;white-space:nowrap;vertical-align:1px}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -391,18 +393,18 @@ svg.sankey{background:var(--panel)}
 </header>
 <nav class="tabs" role="tablist" aria-label="Activities">
 <button class="tab-btn is-active" role="tab" id="tab-overview" data-tab="overview" aria-selected="true" aria-controls="panel-overview">Overview</button>
-<button class="tab-btn" role="tab" id="tab-units" data-tab="units" aria-selected="false" aria-controls="panel-units">Units</button>
 <button class="tab-btn" role="tab" id="tab-work" data-tab="work" aria-selected="false" aria-controls="panel-work">Work Done</button>
 <button class="tab-btn" role="tab" id="tab-gpeke" data-tab="gpeke" aria-selected="false" aria-controls="panel-gpeke">GPE and KE</button>
 <button class="tab-btn" role="tab" id="tab-link" data-tab="link" aria-selected="false" aria-controls="panel-link">Energy Link</button>
 <button class="tab-btn" role="tab" id="tab-power" data-tab="power" aria-selected="false" aria-controls="panel-power">Power</button>
+<button class="tab-btn" role="tab" id="tab-units" data-tab="units" aria-selected="false" aria-controls="panel-units">Units and Terms</button>
 </nav>
 <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
 <div class="panel-head"><h2>Overview</h2><div class="spec"><b>4.11 to 4.17</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-units" class="panel" role="tabpanel" aria-labelledby="tab-units" hidden>
-<div class="panel-head"><h2>Units and Key Terms</h2></div>
+<div class="panel-head"><h2>Unit 4 Units and Key Terms</h2></div>
 <div class="acts"></div>
 </section>
 <section id="panel-work" class="panel" role="tabpanel" aria-labelledby="tab-work" hidden>
@@ -439,8 +441,8 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='unit4c-work-power-v1',OLD_STORE_KEY='unit4c-work-power-v1';
-const TAB_IDS=['overview','units','work','gpeke','link','power'];
+const STORE_KEY='unit4c-work-power-v2',OLD_STORE_KEY='unit4c-work-power-v1';
+const TAB_IDS=['overview','work','gpeke','link','power','units'];
 let activeTab='overview';
 const reflowers=[];
 
@@ -1281,10 +1283,36 @@ window.addEventListener('message',e=>{
   g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
 }
 
-/* ================= 2. UNITS AND KEY TERMS ================= */
+/* ================= 4. UNITS AND KEY TERMS (ALL OF UNIT 4) ================= */
+// The one Units and Key Terms tab for the whole unit (3 Nov 2026). Activities from other workouts are named after them.
 {
-  const body=act('units','Quantity, symbol, unit','Complete the table','Each row gives you one cell. Drag the other three into place. Some chips are not needed.');
-  const ROWS=[
+  function unitTable(panel,title,intro,rows,extras){
+    const body=act(panel,'Quantity, symbol, unit',title,intro);
+    const KEYS=['q','s','u','us'],NAMES={q:'quantity',s:'symbol',u:'unit',us:'unit symbol'};
+    const wrap=mk('div','table-scroll'),tbl=mk('table','units');
+    tbl.innerHTML='<thead><tr><th>Quantity</th><th>Symbol</th><th>Unit</th><th>Unit symbol</th></tr></thead>';
+    const tb=mk('tbody');tbl.appendChild(tb);wrap.appendChild(tbl);
+    const slots=[],chips=[];
+    rows.forEach((r,i)=>{
+      const tr=mk('tr');
+      KEYS.forEach(k=>{
+        const td=mk('td');
+        if(r.g===k){td.className='given';td.textContent=r[k];if(r.ta)td.insertAdjacentHTML('beforeend',' <b class="ta" title="Triple Award only">TA</b>');}
+        else{const s=mk('div','blank');td.appendChild(s);slots.push({id:i+'-'+k,el:s,answer:r[k],label:r[r.g]+': '+NAMES[k]});chips.push({id:'u'+i+k,text:r[k]});}
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    extras.forEach((t,i)=>chips.push({id:'ux'+i,text:t}));
+    body.appendChild(wrap);body.appendChild(mk('div','pool-label','Chips: quantities, symbols, units and unit symbols'));
+    const pool=mk('div','chip-pool');body.appendChild(pool);
+    let g;
+    const b=bar(body,[{label:'Check table',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
+    const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
+    g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
+  }
+  unitTable('units','Unit 4 quantities','Each row gives you one cell. Drag the other three into place. W is the symbol for work done and the unit symbol for the watt, so work from the quantity. Some chips are not needed.',[
+    {q:'Energy',s:'E',u:'joule',us:'J',g:'q'},
     {q:'Work done',s:'W',u:'joule',us:'J',g:'q'},
     {q:'Force',s:'F',u:'newton',us:'N',g:'us'},
     {q:'Distance moved',s:'d',u:'metre',us:'m',g:'q'},
@@ -1293,31 +1321,24 @@ window.addEventListener('message',e=>{
     {q:'Speed',s:'v',u:'metre per second',us:'m/s',g:'u'},
     {q:'Power',s:'P',u:'watt',us:'W',g:'q'},
     {q:'Time',s:'t',u:'second',us:'s',g:'u'}
-  ];
-  const KEYS=['q','s','u','us'];
-  const wrap=mk('div','table-scroll'),tbl=mk('table','units');
-  tbl.innerHTML='<thead><tr><th>Quantity</th><th>Symbol</th><th>Unit</th><th>Unit symbol</th></tr></thead>';
-  const tb=mk('tbody');tbl.appendChild(tb);wrap.appendChild(tbl);
-  const slots=[],chips=[];
-  ROWS.forEach((r,i)=>{
-    const tr=mk('tr');
-    KEYS.forEach(k=>{
-      const td=mk('td');
-      if(r.g===k){td.className='given';td.textContent=r[k];}
-      else{const s=mk('div','blank');td.appendChild(s);slots.push({id:i+'-'+k,el:s,answer:r[k]});chips.push({id:'u'+i+k,text:r[k]});}
-      tr.appendChild(td);
-    });
-    tb.appendChild(tr);
-  });
-  ['pascal','kg/m³','minute'].forEach((t,i)=>chips.push({id:'ux'+i,text:t}));
-  body.appendChild(wrap);body.appendChild(mk('div','pool-label','Chips: quantities, symbols, units and unit symbols'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  let g;
-  const b=bar(body,[{label:'Check table',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
-  g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
-
-  createMemoryGame({host:act('units','Memory','Key terms','Flip two cards at a time to find each term and its meaning. Try to finish in as few flips as you can.'),pairs:[
+  ],['pascal','kg/m³','minute']);
+  createCrossword({host:act('units','Crossword','4a and 4b Energy and heat transfer key words','Click a square or a clue and type. Check takes out any wrong letters.'),words:[
+  {a:'CONSERVATION',r:3,c:0,d:'a',clue:'___ of energy: energy is never created or destroyed, only transferred'},
+  {a:'CONDUCTION',r:3,c:0,d:'d',clue:'Vibrating particles pass energy on to their neighbours; the main way energy is transferred through solids'},
+  {a:'INSULATOR',r:10,c:0,d:'a',clue:'A material that energy is transferred through slowly by heating'},
+  {a:'INSULATION',r:2,c:11,d:'d',clue:'Material that slows down energy transfer by heating, usually by trapping air'},
+  {a:'EFFICIENCY',r:0,c:9,d:'d',clue:'The fraction of the input energy that is transferred usefully'},
+  {a:'INFRARED',r:6,c:5,d:'d',clue:'___ radiation: electromagnetic waves that transfer energy and need no particles, so can cross a vacuum'},
+  {a:'CONDUCTOR',r:13,c:2,d:'a',clue:'A material that energy is transferred through quickly by heating; metals are good ones because of their free electrons'},
+  {a:'CONVECTION',r:0,c:5,d:'a',clue:'Heated fluid expands, becomes less dense and rises, and cooler fluid sinks to take its place'},
+  {a:'DISSIPATE',r:0,c:3,d:'d',clue:'To spread out into the surroundings, as wasted energy does'},
+  {a:'PATHWAY',r:2,c:7,d:'d',clue:'Energy transfer ___: how energy moves between stores, e.g. mechanically, electrically, by heating or by radiation'},
+  {a:'STORE',r:4,c:11,d:'a',clue:'Energy ___: a reserve of energy, such as kinetic, gravitational or chemical'},
+  {a:'SANKEY',r:11,c:9,d:'a',clue:'___ diagram: a to-scale flow diagram where the width of each arrow shows the amount of energy'},
+  {a:'FLUID',r:1,c:0,d:'a',clue:'A liquid or a gas'},
+  {a:'EMITTER',r:4,c:15,d:'d',clue:'A dull black surface is the best ___ of infrared: it gives out infrared fastest'},
+  {a:'WASTED',r:7,c:13,d:'d',clue:'___ energy: energy not transferred usefully, usually by heating the surroundings'}]});
+  createMemoryGame({host:act('units','Memory','4c Key terms','Flip two cards at a time to find each term and its meaning. Try to finish in as few flips as you can.'),pairs:[
     {id:'wd',a:'Work done',b:'Force × distance moved in the direction of the force'},
     {id:'et',a:'Energy transferred',b:'Always equal to the work done'},
     {id:'gpe',a:'Gravitational potential energy',b:'Energy an object has because of its height'},
@@ -1327,6 +1348,18 @@ window.addEventListener('message',e=>{
     {id:'jl',a:'One joule',b:'The work done when 1 N moves an object 1 m'},
     {id:'co',a:'Conservation of energy',b:'Energy cannot be created or destroyed'}
   ]});
+  const mg7=createMatchGame({host:act('units','Match','4d Key terms <b class="ta" title="Triple Award only">TA</b>','Link each term to its meaning. Drag a card onto its partner, or tap one card then the other.'),
+    leftTitle:'Term',rightTitle:'Meaning',narrowLeft:true,pairs:[
+    {id:'tu',l:'Turbine',r:'A wheel of blades that is spun round by moving steam, air or water'},
+    {id:'ge',l:'Generator',r:'Turned by the turbine, it transfers the energy electrically'},
+    {id:'re',l:'Renewable',r:'A resource that is replaced naturally and will not run out'},
+    {id:'nr',l:'Non-renewable',r:'A resource that will run out, because it is not replaced'},
+    {id:'ff',l:'Fossil fuel',r:'Coal, oil or natural gas, formed from plants and animals over millions of years'},
+    {id:'fi',l:'Nuclear fission',r:'Splitting uranium nuclei, which releases energy in a reactor'},
+    {id:'gt',l:'Geothermal',r:'Using the thermal store of hot rocks deep underground'},
+    {id:'rl',l:'Reliable',r:'Able to supply energy whenever it is needed, whatever the weather'}
+  ]});
+  reflowers.push(t=>{if(t==='units')raf(mg7.reflow);});
 }
 
 /* ================= 3. WORK DONE ================= */
@@ -1694,16 +1727,30 @@ function readSaved(){
   }
   return {};
 }
+// Units merge (3 Nov 2026): answers saved before it are copied across once. This page's own answers come
+// with them, except on the tabs whose activities changed, and so do the answers of activities that moved here.
+const MERGE_FROM='unit4c-work-power-v1',MERGE_DROP=['units'],MERGE_MOVES=[
+  [['unit4b-heat-v2','unit4b-heat-v1'],'terms-0','units-1'],
+  [['unit4d-energy-resources-v2','unit4d-energy-resources-v1'],'terms-0','units-2']];
+function carrySaved(s){
+  try{if(localStorage.getItem(STORE_KEY))return s;}catch(e){return s;}
+  const load=k=>{try{const x=JSON.parse(localStorage.getItem(k)||'null');return x&&typeof x==='object'?x:null;}catch(e){return null;}};
+  const old=load(MERGE_FROM)||s||{},v={};
+  Object.keys(old.v||{}).forEach(k=>{if(MERGE_DROP.indexOf(k.replace(/-\d+$/,''))<0)v[k]=old.v[k];});
+  MERGE_MOVES.forEach(m=>{for(const k of m[0]){const x=load(k);if(x&&x.v&&x.v[m[1]]){v[m[2]]=x.v[m[1]];break;}}});
+  return {tab:old.tab,v:v};
+}
 function start(data){
   const v=(data&&data.v)||{};
   games.forEach(g=>{if(v[g.key]&&typeof v[g.key]==='object'){try{g.setState(v[g.key]);}catch(e){console.error(e);}}});
   saveReady=true;showProgress(false);
-  let t=data&&data.tab;
-  if(!t){try{t=location.hash.slice(1);}catch(e){}}
+  // a link such as page.html#units opens that tab, ahead of the tab remembered in this browser
+  let t='';try{t=location.hash.slice(1);}catch(e){}
+  if(TAB_IDS.indexOf(t)<0)t=data&&data.tab;
   if(TAB_IDS.indexOf(t)<0)t='overview';
   applyTabUI(t);
 }
-start(readSaved());
+start(carrySaved(readSaved()));
 })();
 </script>
 

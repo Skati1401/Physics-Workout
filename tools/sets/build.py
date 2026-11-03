@@ -84,6 +84,7 @@ def build(fname, cfg):
     # engine: everything up to the first section, with this set's own keys and tabs
     engine = bjs[bjs.index('/* ================= helpers'):bjs.index('/* ================= 1. OVERVIEW')]
     engine = re.sub(r"// The suvat tab moved.*?\n.*?\n", '', engine, count=1)
+    engine = re.sub(r"// Units merge \(3 Nov 2026\).*?\n.*?\n", '', engine, count=1)
     engine = re.sub(r"const STORE_KEY=[^;]+;", "const STORE_KEY='%s',OLD_STORE_KEY='';" % cfg['key'], engine, count=1)
     engine = re.sub(r"const TAB_IDS=\[[^\]]*\];", 'const TAB_IDS=%s;' % repr(ids).replace(' ', ''), engine, count=1)
     old = "$('#panel-'+panel+' .acts').appendChild(a);"

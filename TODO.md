@@ -43,8 +43,6 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 - [ ] Unit 8 Astrophysics (1 page).
 - [ ] Calculations and Graphs sets: add Forces Part 2 (1c with suvat, 1d), then Units 4, 5 and 6 (Unit 2 added 3 Nov 2026).
 - [ ] Graphs set: 1b has no graph activities. Consider using the 1.5 practical's plotting activities (`build.py` would need to read its `content.js`).
-- [ ] Merge each unit's Units/Key Terms tabs into one tab in its last non-TA workout (rule in `CLAUDE.md`, "How big a workout is"): Unit 1 → 1c, Unit 4 → 4c (move 4b's crossword there), Unit 5 → 5b, Unit 6 → 6b. Bump `STORE_KEY` on every page that loses or gains a tab, and forward old `page.html#units`/`#terms` links to the new tab (added 3 Nov 2026).
-- [ ] Unit 2: same merge into 2b `circuits.html` (2a has Units, 2b and 2c have Key Terms). Another chat is working on Unit 2 (3 Nov 2026): do it there, or after it has pushed (added 3 Nov 2026).
 - [ ] Update the interactive-revision-lab skill: it still says one Units/Key Terms tab per page (claude.ai project, not this repo; added 3 Nov 2026).
 - [ ] Key-word crosswords for other units, if Alex wants them.
 
@@ -68,6 +66,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## Done
 
+- 3 Nov 2026: one Units and Key Terms tab per unit ("Units and Terms", last tab) on 1c, 2b, 4c, 5b and 6b; the other workouts' Units/Key Terms tabs removed, old links forwarded, saved answers carried over. 4b's crossword is on 4c; 4d's renewable sort moved to its Renewable tab. Unit 5 gained two units tables from the SLG deck and a key-terms match. Marked 🔍 in `tools/REVIEW.md`.
 - 3 Nov 2026: 2.9 I–V characteristics practical: guide pages and mark scheme wording check; same check on the Unit 2 workouts 2a, 2b, 2c. Details in `tools/REVIEW.md` and `tools/CORE-PRACTICALS.md`.
 - 3 Nov 2026: Unit 2 Electricity workouts: 2a `mains-electricity.html`, 2b `circuits.html`, 2c `electric-charge.html` (TA), cards on `igcse.html`, the three IGCSE electricity animations framed in 2b, Unit 2 tabs in the Calculations and Graphs sets. 2.9 practical page `iv-characteristics-practical.html` published, with its `.cp-banner` on 2b I–V Graphs. All marked 🔍 in `tools/REVIEW.md`.
 - 3 Nov 2026: Hooke's law animation animated, with draggable masses and a rubber band hysteresis loop. Heating-curve simplification accepted by Alex. TA tags on Triple Award units (1d, 5a).

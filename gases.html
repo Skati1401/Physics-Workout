@@ -34,6 +34,8 @@
 }
 @keyframes tickin{from{transform:scale(.3);opacity:0}}
 @keyframes donepulse{40%{transform:scale(1.12)}}
+.act-title b.ta{font:500 11px var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px;white-space:nowrap;vertical-align:2px}
+table.units td.given b.ta{font:500 11px var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:4px;white-space:nowrap;vertical-align:1px}
 </style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
@@ -382,18 +384,18 @@ svg text{font-family:var(--f-mono)}
 </header>
 <nav class="tabs" role="tablist" aria-label="Activities">
 <button class="tab-btn is-active" role="tab" id="tab-overview" data-tab="overview" data-grp="" aria-selected="true" aria-controls="panel-overview">Overview</button>
-<button class="tab-btn" role="tab" id="tab-units" data-tab="units" data-grp="" aria-selected="false" aria-controls="panel-units">Units</button>
 <button class="tab-btn" role="tab" id="tab-gas" data-tab="gas" data-grp="d" aria-selected="false" aria-controls="panel-gas">Gas Motion</button>
 <button class="tab-btn" role="tab" id="tab-gaspress" data-tab="gaspress" data-grp="d" aria-selected="false" aria-controls="panel-gaspress">Gas Pressure</button>
 <button class="tab-btn" role="tab" id="tab-kelvin" data-tab="kelvin" data-grp="d" aria-selected="false" aria-controls="panel-kelvin">Kelvin</button>
 <button class="tab-btn" role="tab" id="tab-laws" data-tab="laws" data-grp="d" aria-selected="false" aria-controls="panel-laws">Gas Laws</button>
+<button class="tab-btn" role="tab" id="tab-units" data-tab="units" data-grp="" aria-selected="false" aria-controls="panel-units">Units and Terms</button>
 </nav>
 <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
 <div class="panel-head"><h2>Overview</h2><div class="spec"><b>All of 5b</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-units" class="panel" role="tabpanel" aria-labelledby="tab-units" hidden>
-<div class="panel-head"><h2>Units</h2></div>
+<div class="panel-head"><h2>Unit 5 Units and Key Terms</h2></div>
 <div class="acts"></div>
 </section>
 <section id="panel-gas" class="panel" role="tabpanel" aria-labelledby="tab-gas" hidden>
@@ -430,8 +432,8 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='unit5b-v2',OLD_STORE_KEY='unit5b-v1';
-const TAB_IDS=['overview','units','gas','gaspress','kelvin','laws'];
+const STORE_KEY='unit5b-v3',OLD_STORE_KEY='unit5b-v2';
+const TAB_IDS=['overview','gas','gaspress','kelvin','laws','units'];
 let activeTab='overview';
 const reflowers=[];
 const tickers=[];
@@ -1427,38 +1429,62 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
   const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
   g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
 }
-/* ================= 2. UNITS ================= */
+/* ================= 5. UNITS AND KEY TERMS (ALL OF UNIT 5) ================= */
+// The one Units and Key Terms tab for the whole unit (3 Nov 2026). Activities from other workouts are named after them.
 {
-  const body=act('units','Quantity, symbol, unit','Complete the table','Each row gives you one cell. Drag the other three into place. In gas law questions, temperature is always in kelvin.');
-  const ROWS=[
-    {q:'Pressure',s:'p',u:'pascal',us:'Pa',g:'us'},
-    {q:'Volume',s:'V',u:'cubic metre',us:'m³',g:'us'},
-    {q:'Temperature',s:'T',u:'kelvin',us:'K',g:'us'},
-    {q:'Force',s:'F',u:'newton',us:'N',g:'u'},
-    {q:'Area',s:'A',u:'square metre',us:'m²',g:'u'}
-  ];
-  const KEYS=['q','s','u','us'];
-  const wrap=mk('div','table-scroll'),tbl=mk('table','units');
-  tbl.innerHTML='<thead><tr><th>Quantity</th><th>Symbol</th><th>Unit</th><th>Unit symbol</th></tr></thead>';
-  const tb=mk('tbody');tbl.appendChild(tb);wrap.appendChild(tbl);
-  const slots=[],chips=[];
-  ROWS.forEach((r,i)=>{
-    const tr=mk('tr');
-    KEYS.forEach(k=>{
-      const td=mk('td');
-      if(r.g===k){td.className='given';td.textContent=r[k];}
-      else{const s=mk('div','blank');td.appendChild(s);slots.push({id:i+'-'+k,el:s,answer:r[k]});chips.push({id:'u'+i+k,text:r[k]});}
-      tr.appendChild(td);
+  function unitTable(panel,title,intro,rows,extras){
+    const body=act(panel,'Quantity, symbol, unit',title,intro);
+    const KEYS=['q','s','u','us'],NAMES={q:'quantity',s:'symbol',u:'unit',us:'unit symbol'};
+    const wrap=mk('div','table-scroll'),tbl=mk('table','units');
+    tbl.innerHTML='<thead><tr><th>Quantity</th><th>Symbol</th><th>Unit</th><th>Unit symbol</th></tr></thead>';
+    const tb=mk('tbody');tbl.appendChild(tb);wrap.appendChild(tbl);
+    const slots=[],chips=[];
+    rows.forEach((r,i)=>{
+      const tr=mk('tr');
+      KEYS.forEach(k=>{
+        const td=mk('td');
+        if(r.g===k){td.className='given';td.textContent=r[k];if(r.ta)td.insertAdjacentHTML('beforeend',' <b class="ta" title="Triple Award only">TA</b>');}
+        else{const s=mk('div','blank');td.appendChild(s);slots.push({id:i+'-'+k,el:s,answer:r[k],label:r[r.g]+': '+NAMES[k]});chips.push({id:'u'+i+k,text:r[k]});}
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
     });
-    tb.appendChild(tr);
-  });
-  ['degree Celsius','°C','watt'].forEach((t,i)=>chips.push({id:'ux'+i,text:t}));
-  body.appendChild(wrap);body.appendChild(mk('div','pool-label','Chips: quantities, symbols, units and unit symbols'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  let g;
-  const b=bar(body,[{label:'Check table',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
-  g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
+    extras.forEach((t,i)=>chips.push({id:'ux'+i,text:t}));
+    body.appendChild(wrap);body.appendChild(mk('div','pool-label','Chips: quantities, symbols, units and unit symbols'));
+    const pool=mk('div','chip-pool');body.appendChild(pool);
+    let g;
+    const b=bar(body,[{label:'Check table',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
+    const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
+    g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
+  }
+  unitTable('units','Density and pressure','Each row gives you one cell. Drag the other three into place. Some letters, such as p and V, stand for different quantities in other topics, so work from the quantity.',[
+    {q:'Mass',s:'m',u:'kilogram',us:'kg',g:'us'},
+    {q:'Volume',s:'V',u:'cubic metre',us:'m³',g:'us'},
+    {q:'Density',s:'ρ',u:'kilogram per cubic metre',us:'kg/m³',g:'q'},
+    {q:'Force',s:'F',u:'newton',us:'N',g:'u'},
+    {q:'Area',s:'A',u:'square metre',us:'m²',g:'u'},
+    {q:'Pressure',s:'p',u:'pascal',us:'Pa',g:'us'},
+    {q:'Height',s:'h',u:'metre',us:'m',g:'q'},
+    {q:'Gravitational field strength',s:'g',u:'newton per kilogram',us:'N/kg',g:'q'}
+  ],['watt','W','work done']);
+  unitTable('units','Temperature and energy','Each row gives you one cell. Drag the other three into place. Temperature has two units here: in gas law questions it is always in kelvin.',[
+    {q:'Temperature',s:'T',u:'degree Celsius',us:'°C',g:'u'},
+    {q:'Temperature',s:'T',u:'kelvin',us:'K',g:'u'},
+    {q:'Thermal energy',ta:1,s:'Q',u:'joule',us:'J',g:'q'},
+    {q:'Specific heat capacity',ta:1,s:'c',u:'joule per kilogram degree Celsius',us:'J/kg °C',g:'q'}
+  ],['watt','°F','kg/m³']);
+  const mg5=createMatchGame({host:act('units','Match','5a and 5b Key terms','Select a term, then select what it means. Select a joined card to undo it.'),
+    leftTitle:'Term',rightTitle:'Meaning',narrowLeft:true,pairs:[
+    {id:'de',l:'Density',r:'The mass of each cubic metre of a substance'},
+    {id:'pr',l:'Pressure',r:'The force acting on each square metre of a surface'},
+    {id:'fl',l:'Fluid',r:'A liquid or a gas, which can flow'},
+    {id:'gp',l:'Gas pressure',r:'Caused by gas particles hitting the walls of their container'},
+    {id:'az',l:'Absolute zero',r:'−273 °C, where the particles stop moving'},
+    {id:'ks',l:'Kelvin scale',r:'Starts at absolute zero; a change of 1 K is a change of 1 °C'},
+    {id:'bl',l:'Boyle’s law',r:'At constant temperature, pressure is inversely proportional to volume'},
+    {id:'pl',l:'Pressure law',r:'At constant volume, pressure is directly proportional to the kelvin temperature'}
+  ]});
+  reflowers.push(t=>{if(t==='units')raf(mg5.reflow);});
 }
 
 /* ================= 9. GAS MOTION ================= */
@@ -1710,6 +1736,18 @@ function readSaved(){
   }
   return {};
 }
+// Units merge (3 Nov 2026): answers saved before it are copied across once. This page's own answers come
+// with them, except on the tabs whose activities changed, and so do the answers of activities that moved here.
+const MERGE_FROM='unit5b-v2',MERGE_DROP=['units'],MERGE_MOVES=[
+  ];
+function carrySaved(s){
+  try{if(localStorage.getItem(STORE_KEY))return s;}catch(e){return s;}
+  const load=k=>{try{const x=JSON.parse(localStorage.getItem(k)||'null');return x&&typeof x==='object'?x:null;}catch(e){return null;}};
+  const old=load(MERGE_FROM)||s||{},v={};
+  Object.keys(old.v||{}).forEach(k=>{if(MERGE_DROP.indexOf(k.replace(/-\d+$/,''))<0)v[k]=old.v[k];});
+  MERGE_MOVES.forEach(m=>{for(const k of m[0]){const x=load(k);if(x&&x.v&&x.v[m[1]]){v[m[2]]=x.v[m[1]];break;}}});
+  return {tab:old.tab,v:v};
+}
 function start(data){
   const v=(data&&data.v)||{};
   games.forEach(g=>{if(v[g.key]&&typeof v[g.key]==='object'){try{g.setState(v[g.key]);}catch(e){console.error(e);}}});
@@ -1720,7 +1758,7 @@ function start(data){
   if(TAB_IDS.indexOf(t)<0)t='overview';
   applyTabUI(t);raf(loop);
 }
-start(readSaved());
+start(carrySaved(readSaved()));
 })();
 </script>
 

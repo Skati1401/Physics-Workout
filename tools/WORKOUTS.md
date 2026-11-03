@@ -40,5 +40,5 @@ Stand-alone pages in `animations/` (teaching-animations skill), one copy framed 
 
 `createCrossword` is in every copy of the act() engine (2 Nov 2026). Make the layout with `node tools/crossword/layout.js ROWS COLS WORD …`, then add each clue; a clue never contains its own answer, and a multi-word term drops to one word with the rest in the clue ("___ diagram").
 
-- [x] **4a + 4b (2 Nov 2026):** one crossword on 4b's new Key Terms tab (`heat-transfer-igcse.html#terms`), 15 words from the Energy deck slides 6 and 7. Reserves if a word is changed: KINETIC, THERMAL, NUCLEAR, ELASTIC, VACUUM, METALS, ABSORBER.
+- [x] **4a + 4b (2 Nov 2026):** one crossword on 4b's Key Terms tab, moved on 3 Nov 2026 to Unit 4's Units and Terms tab (`work-and-power.html#units`), 15 words from the Energy deck slides 6 and 7. Reserves if a word is changed: KINETIC, THERMAL, NUCLEAR, ELASTIC, VACUUM, METALS, ABSORBER.
 

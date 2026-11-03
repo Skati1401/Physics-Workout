@@ -392,7 +392,6 @@ svg.sankey{background:var(--panel)}
 </header>
 <nav class="tabs" role="tablist" aria-label="Activities">
 <button class="tab-btn is-active" role="tab" id="tab-overview" data-tab="overview" aria-selected="true" aria-controls="panel-overview">Overview</button>
-<button class="tab-btn" role="tab" id="tab-terms" data-tab="terms" data-ta aria-selected="false" aria-controls="panel-terms">Key Terms</button>
 <button class="tab-btn" role="tab" id="tab-stations" data-tab="stations" data-ta aria-selected="false" aria-controls="panel-stations">Power Stations</button>
 <button class="tab-btn" role="tab" id="tab-renew" data-tab="renew" data-ta aria-selected="false" aria-controls="panel-renew">Wind and Water</button>
 <button class="tab-btn" role="tab" id="tab-solar" data-tab="solar" data-ta aria-selected="false" aria-controls="panel-solar">Solar</button>
@@ -401,10 +400,6 @@ svg.sankey{background:var(--panel)}
 </nav>
 <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
 <div class="panel-head"><h2>Overview</h2><div class="spec"><b class="ta" title="Triple Award only">TA</b><b>4.18P</b><b>4.19P</b></div></div>
-<div class="acts"></div>
-</section>
-<section id="panel-terms" class="panel" role="tabpanel" aria-labelledby="tab-terms" hidden>
-<div class="panel-head"><h2>Key Terms</h2><div class="spec"><b class="ta" title="Triple Award only">TA</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-stations" class="panel" role="tabpanel" aria-labelledby="tab-stations" hidden>
@@ -445,8 +440,10 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='unit4d-energy-resources-v2',OLD_STORE_KEY='unit4d-energy-resources-v1';
-const TAB_IDS=['overview','terms','stations','renew','solar','pros','choose'];
+// Units merge (3 Nov 2026): this unit's Units and Key Terms tabs are now one tab, so old links go there.
+try{const to={terms:'work-and-power.html#units'}[location.hash.slice(1)];if(to){if(to[0]==='#')history.replaceState(null,'',to);else{location.replace(to);return;}}}catch(e){}
+const STORE_KEY='unit4d-energy-resources-v3',OLD_STORE_KEY='unit4d-energy-resources-v2';
+const TAB_IDS=['overview','stations','renew','solar','pros','choose'];
 let activeTab='overview';
 const reflowers=[];
 
@@ -1274,28 +1271,6 @@ const COL={a:'var(--accent)',g:'var(--grav)',k:'var(--kin)',t:'var(--therm)',e:'
   g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
 }
 
-/* ================= 2. KEY TERMS ================= */
-{
-  const mg=createMatchGame({host:act('terms','Match','Key terms','Link each term to its meaning. Drag a card onto its partner, or tap one card then the other.'),
-    leftTitle:'Term',rightTitle:'Meaning',narrowLeft:true,pairs:[
-    {id:'tu',l:'Turbine',r:'A wheel of blades that is spun round by moving steam, air or water'},
-    {id:'ge',l:'Generator',r:'Turned by the turbine, it transfers the energy electrically'},
-    {id:'re',l:'Renewable',r:'A resource that is replaced naturally and will not run out'},
-    {id:'nr',l:'Non-renewable',r:'A resource that will run out, because it is not replaced'},
-    {id:'ff',l:'Fossil fuel',r:'Coal, oil or natural gas, formed from plants and animals over millions of years'},
-    {id:'fi',l:'Nuclear fission',r:'Splitting uranium nuclei, which releases energy in a reactor'},
-    {id:'gt',l:'Geothermal',r:'Using the thermal store of hot rocks deep underground'},
-    {id:'rl',l:'Reliable',r:'Able to supply energy whenever it is needed, whatever the weather'}
-  ]});
-  reflowers.push(tab=>{if(tab==='terms')raf(mg.reflow);});
-  createSortGame({host:act('terms','Sort','Renewable or non-renewable?','Drag each energy resource into the right bin.'),
-    cats:[{id:'r',label:'Renewable',hint:'will not run out',color:'--rad',soft:'--rad-soft'},{id:'n',label:'Non-renewable',hint:'will run out',color:'--therm',soft:'--therm-soft'}],
-    items:[
-      {id:'r1',text:'Wind',cat:'r'},{id:'r2',text:'Hydroelectric',cat:'r'},{id:'r3',text:'Geothermal',cat:'r'},{id:'r4',text:'Solar cells',cat:'r'},
-      {id:'n1',text:'Coal',cat:'n'},{id:'n2',text:'Natural gas',cat:'n'},{id:'n3',text:'Oil',cat:'n'},{id:'n4',text:'Nuclear (uranium)',cat:'n'}
-    ]});
-}
-
 /* ================= 3. POWER STATIONS (FOSSIL FUEL AND NUCLEAR) ================= */
 {
   createReorder({
@@ -1360,6 +1335,12 @@ const COL={a:'var(--accent)',g:'var(--grav)',k:'var(--kin)',t:'var(--therm)',e:'
 
 /* ================= 4. WIND, WATER AND GEOTHERMAL ================= */
 {
+  createSortGame({host:act('renew','Sort','Renewable or non-renewable?','Drag each energy resource into the right bin.'),
+    cats:[{id:'r',label:'Renewable',hint:'will not run out',color:'--rad',soft:'--rad-soft'},{id:'n',label:'Non-renewable',hint:'will run out',color:'--therm',soft:'--therm-soft'}],
+    items:[
+      {id:'r1',text:'Wind',cat:'r'},{id:'r2',text:'Hydroelectric',cat:'r'},{id:'r3',text:'Geothermal',cat:'r'},{id:'r4',text:'Solar cells',cat:'r'},
+      {id:'n1',text:'Coal',cat:'n'},{id:'n2',text:'Natural gas',cat:'n'},{id:'n3',text:'Oil',cat:'n'},{id:'n4',text:'Nuclear (uranium)',cat:'n'}
+    ]});
   const mg=createMatchGame({host:act('renew','Match','How each one works','Link each resource to the energy transfers it uses.'),
     leftTitle:'Resource',rightTitle:'Energy transfers',narrowLeft:true,pairs:[
     {id:'w',l:'Wind',r:'Moving air pushes on the blades, so they spin and turn a generator'},
@@ -1635,16 +1616,33 @@ function readSaved(){
   }
   return {};
 }
+// Units merge (3 Nov 2026): answers saved before it are copied across once. This page's own answers come
+// with them, except on the tabs whose activities changed, and so do the answers of activities that moved here.
+const MERGE_FROM='unit4d-energy-resources-v2',MERGE_DROP=['terms','renew'],MERGE_MOVES=[
+  [['unit4d-energy-resources-v2'],'terms-1','renew-0'],
+  [['unit4d-energy-resources-v2'],'renew-0','renew-1'],
+  [['unit4d-energy-resources-v2'],'renew-1','renew-2'],
+  [['unit4d-energy-resources-v2'],'renew-2','renew-3'],
+  [['unit4d-energy-resources-v2'],'renew-3','renew-4']];
+function carrySaved(s){
+  try{if(localStorage.getItem(STORE_KEY))return s;}catch(e){return s;}
+  const load=k=>{try{const x=JSON.parse(localStorage.getItem(k)||'null');return x&&typeof x==='object'?x:null;}catch(e){return null;}};
+  const old=load(MERGE_FROM)||s||{},v={};
+  Object.keys(old.v||{}).forEach(k=>{if(MERGE_DROP.indexOf(k.replace(/-\d+$/,''))<0)v[k]=old.v[k];});
+  MERGE_MOVES.forEach(m=>{for(const k of m[0]){const x=load(k);if(x&&x.v&&x.v[m[1]]){v[m[2]]=x.v[m[1]];break;}}});
+  return {tab:old.tab,v:v};
+}
 function start(data){
   const v=(data&&data.v)||{};
   games.forEach(g=>{if(v[g.key]&&typeof v[g.key]==='object'){try{g.setState(v[g.key]);}catch(e){console.error(e);}}});
   saveReady=true;showProgress(false);
-  let t=data&&data.tab;
-  if(!t){try{t=location.hash.slice(1);}catch(e){}}
+  // a link such as page.html#units opens that tab, ahead of the tab remembered in this browser
+  let t='';try{t=location.hash.slice(1);}catch(e){}
+  if(TAB_IDS.indexOf(t)<0)t=data&&data.tab;
   if(TAB_IDS.indexOf(t)<0)t='overview';
   applyTabUI(t);
 }
-start(readSaved());
+start(carrySaved(readSaved()));
 })();
 </script>
 

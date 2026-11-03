@@ -34,6 +34,7 @@
 }
 @keyframes tickin{from{transform:scale(.3);opacity:0}}
 @keyframes donepulse{40%{transform:scale(1.12)}}
+.act-title b.ta{font:500 11px var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px;white-space:nowrap;vertical-align:2px}
 </style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
@@ -413,8 +414,7 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 <button class="tab-btn" role="tab" id="tab-falling" data-tab="falling" data-grp="" aria-selected="false" aria-controls="panel-falling">Falling</button>
 <button class="tab-btn" role="tab" id="tab-stopping" data-tab="stopping" data-grp="" aria-selected="false" aria-controls="panel-stopping">Stopping</button>
 <button class="tab-btn" role="tab" id="tab-hooke" data-tab="hooke" data-grp="" aria-selected="false" aria-controls="panel-hooke">Hooke&rsquo;s Law</button>
-<button class="tab-btn" role="tab" id="tab-terms" data-tab="terms" data-grp="" aria-selected="false" aria-controls="panel-terms">Key Terms</button>
-<button class="tab-btn" role="tab" id="tab-units" data-tab="units" data-grp="" aria-selected="false" aria-controls="panel-units">Units</button>
+<button class="tab-btn" role="tab" id="tab-terms" data-tab="terms" data-grp="" aria-selected="false" aria-controls="panel-terms">Units and Terms</button>
 </nav>
 <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
 <div class="panel-head"><h2>Overview</h2><div class="spec"><b>All of 1c</b></div></div>
@@ -437,11 +437,7 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 <div class="acts"></div>
 </section>
 <section id="panel-terms" class="panel" role="tabpanel" aria-labelledby="tab-terms" hidden>
-<div class="panel-head"><h2>Key Terms</h2></div>
-<div class="acts"></div>
-</section>
-<section id="panel-units" class="panel" role="tabpanel" aria-labelledby="tab-units" hidden>
-<div class="panel-head"><h2>Units</h2></div>
+<div class="panel-head"><h2>Unit 1 Units and Key Terms</h2></div>
 <div class="acts"></div>
 </section>
 </div>
@@ -462,8 +458,10 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='unit1c-v3',OLD_STORE_KEY='unit1c-v2';
-const TAB_IDS=['overview','suvat','falling','stopping','hooke','terms','units'];
+// Units merge (3 Nov 2026): this unit's Units and Key Terms tabs are now one tab, so old links go there.
+try{const to={units:'#terms'}[location.hash.slice(1)];if(to){if(to[0]==='#')history.replaceState(null,'',to);else{location.replace(to);return;}}}catch(e){}
+const STORE_KEY='unit1c-v4',OLD_STORE_KEY='unit1c-v3';
+const TAB_IDS=['overview','suvat','falling','stopping','hooke','terms'];
 let activeTab='overview';
 const reflowers=[];
 const tickers=[];
@@ -1575,8 +1573,60 @@ calcAct('hooke','Use the results','Fatimah hangs loads on a spring and records i
   {q:'Using the proportional region, the extension for a 2.5 N load is',unit:'cm',answer:3.75,working:'extension = 2.5 × 1.5<br>extension = 3.75 cm'}
 ],dataTable([['Load (N)','0','1','2','3','4','5'],['Length (cm)','4.0','5.5','7.0','8.5','10.0','12.2']]));
 
-/* ================= 5. KEY TERMS ================= */
-createMatchGame({host:act('terms','Match','Key terms','Select a term, then select what it means. Select a joined card to undo it.'),
+/* ================= 1. UNITS AND KEY TERMS (ALL OF UNIT 1) ================= */
+// The one Units and Key Terms tab for the whole unit (3 Nov 2026). Activities from other workouts are named after them.
+{
+  function unitTable(panel,title,intro,rows,extras){
+    const body=act(panel,'Quantity, symbol, unit',title,intro);
+    const KEYS=['q','s','u','us'],NAMES={q:'quantity',s:'symbol',u:'unit',us:'unit symbol'};
+    const wrap=mk('div','table-scroll'),tbl=mk('table','units');
+    tbl.innerHTML='<thead><tr><th>Quantity</th><th>Symbol</th><th>Unit</th><th>Unit symbol</th></tr></thead>';
+    const tb=mk('tbody');tbl.appendChild(tb);wrap.appendChild(tbl);
+    const slots=[],chips=[];
+    rows.forEach((r,i)=>{
+      const tr=mk('tr');
+      KEYS.forEach(k=>{
+        const td=mk('td');
+        if(r.g===k){td.className='given';td.textContent=r[k];if(r.ta)td.insertAdjacentHTML('beforeend',' <b class="ta" title="Triple Award only">TA</b>');}
+        else{const s=mk('div','blank');td.appendChild(s);slots.push({id:i+'-'+k,el:s,answer:r[k],label:r[r.g]+': '+NAMES[k]});chips.push({id:'u'+i+k,text:r[k]});}
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    extras.forEach((t,i)=>chips.push({id:'ux'+i,text:t}));
+    body.appendChild(wrap);body.appendChild(mk('div','pool-label','Chips: quantities, symbols, units and unit symbols'));
+    const pool=mk('div','chip-pool');body.appendChild(pool);
+    let g;
+    const b=bar(body,[{label:'Check table',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
+    const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
+    g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
+  }
+  unitTable('terms','Motion','Each row gives you one cell. Drag the other three into place. The two velocities share a unit, so work from the quantity or the symbol.',[
+    {q:'Distance',s:'s',u:'metre',us:'m',g:'q'},
+    {q:'Initial velocity',s:'u',u:'metre per second',us:'m/s',g:'s'},
+    {q:'Final velocity',s:'v',u:'metre per second',us:'m/s',g:'s'},
+    {q:'Acceleration',s:'a',u:'metre per second squared',us:'m/s²',g:'u'},
+    {q:'Time',s:'t',u:'second',us:'s',g:'q'}
+  ],['mass','kg','m/s³']);
+  unitTable('terms','Forces, momentum and moments','Each row gives you one cell. Drag the other three into place. Force and weight share a unit, so work from the symbol. Watch the m: it is the symbol for mass and the unit symbol for metre.',[
+    {q:'Mass',s:'m',u:'kilogram',us:'kg',g:'us'},
+    {q:'Force',s:'F',u:'newton',us:'N',g:'s'},
+    {q:'Weight',s:'W',u:'newton',us:'N',g:'s'},
+    {q:'Gravitational field strength',s:'g',u:'newton per kilogram',us:'N/kg',g:'u'},
+    {q:'Momentum',ta:1,s:'p',u:'kilogram metre per second',us:'kg m/s',g:'q'},
+    {q:'Moment',ta:1,s:'M',u:'newton metre',us:'N m',g:'q'},
+    {q:'Perpendicular distance from the pivot',ta:1,s:'d',u:'metre',us:'m',g:'q'}
+  ],['kg m/s²','J','N/m']);
+  const mg1=createMatchGame({host:act('terms','Match','1b Laws and definitions','Match each law, quantity or formula to what it says. Select a card on each side; select a joined card to undo it.'),
+  leftTitle:'Law or quantity',rightTitle:'What it says',narrowLeft:true,pairs:[
+    {id:'n1',l:'Newton’s first law',r:'No resultant force → stays at rest or at a constant velocity'},
+    {id:'n2',l:'Newton’s second law',r:'F = m × a'},
+    {id:'n3',l:'Weight',r:'W = m × g'},
+    {id:'n4',l:'Gravitational field strength, g',r:'10 N/kg on Earth'},
+    {id:'n5',l:'Resultant force',r:'A single force that has the same effect as all the forces acting on a body'}
+  ]});
+  reflowers.push(t=>{if(t==='terms')raf(mg1.reflow);});
+  const mg2=createMatchGame({host:act('terms','Match','1c Key terms','Select a term, then select what it means. Select a joined card to undo it.'),
   leftTitle:'Term',rightTitle:'Meaning',narrowLeft:true,pairs:[
     {id:'k1',l:'Thinking distance',r:'Distance travelled during the driver’s reaction time, before the brakes are applied'},
     {id:'k2',l:'Braking distance',r:'Distance travelled from when the brakes are applied until the vehicle stops'},
@@ -1586,17 +1636,19 @@ createMatchGame({host:act('terms','Match','Key terms','Select a term, then selec
     {id:'k6',l:'Limit of proportionality',r:'The point after which extension is no longer directly proportional to the force'},
     {id:'k7',l:'Elastic behaviour',r:'Ability of a material to recover its original shape once the deforming forces are removed'}
   ]});
-
-/* ================= 6. UNITS ================= */
-// Quantities from this page's own topics, so the table doesn't repeat 1a's.
-unitsAct('units','Each row gives you one cell. Drag the other three into place. Weight and air resistance share a unit, so work from the quantity or the symbol.',[
-  {q:'Reaction time',s:'t',u:'second',us:'s',g:'q'},
-  {q:'Braking distance',s:'s',u:'metre',us:'m',g:'q'},
-  {q:'Terminal velocity',s:'v',u:'metre per second',us:'m/s',g:'q'},
-  {q:'Deceleration',s:'a',u:'metre per second squared',us:'m/s²',g:'us'},
-  {q:'Weight',s:'W',u:'newton',us:'N',g:'s'},
-  {q:'Air resistance',s:'F',u:'newton',us:'N',g:'q'}
-],['kg','mass','N/kg']);
+  reflowers.push(t=>{if(t==='terms')raf(mg2.reflow);});
+  const mg3=createMatchGame({host:act('terms','Match','1d Key terms <b class="ta" title="Triple Award only">TA</b>','Select a term, then select what it means. Select a joined card to undo it.'),
+  leftTitle:'Term',rightTitle:'Meaning',narrowLeft:true,pairs:[
+    {id:'k1',l:'Momentum',r:'Mass × velocity; a vector measured in kg m/s'},
+    {id:'k2',l:'Conservation of momentum',r:'With no external forces, the total momentum before an event equals the total after'},
+    {id:'k3',l:'Newton’s second law',r:'Resultant force equals the rate of change of momentum'},
+    {id:'k4',l:'Newton’s third law',r:'If A pushes or pulls on B, B exerts an equal force of the same type on A, in the opposite direction'},
+    {id:'k5',l:'Moment',r:'Force × perpendicular distance from the pivot'},
+    {id:'k6',l:'Principle of moments',r:'In equilibrium, total clockwise moment = total anticlockwise moment'},
+    {id:'k7',l:'Centre of gravity',r:'The single point through which the weight of a body acts'}
+  ]});
+  reflowers.push(t=>{if(t==='terms')raf(mg3.reflow);});
+}
 
 /* ================= tabs, startup ================= */
 // Two Predict activities in a row sit side by side (they stack again on narrow screens).
@@ -1709,6 +1761,20 @@ function readSaved(){
   if(old||m)return {tab:old&&old.tab,v:v};
   return get('falling-stopping-springs-v1')||{};
 }
+// Units merge (3 Nov 2026): answers saved before it are copied across once. This page's own answers come
+// with them, except on the tabs whose activities changed, and so do the answers of activities that moved here.
+const MERGE_FROM='unit1c-v3',MERGE_DROP=['terms','units'],MERGE_MOVES=[
+  [['unit1b-forces-v2','forces-v1'],'definitions-0','terms-2'],
+  [['unit1c-v3'],'terms-0','terms-3'],
+  [['unit1d-v2','momentum-and-moments-v1'],'terms-0','terms-4']];
+function carrySaved(s){
+  try{if(localStorage.getItem(STORE_KEY))return s;}catch(e){return s;}
+  const load=k=>{try{const x=JSON.parse(localStorage.getItem(k)||'null');return x&&typeof x==='object'?x:null;}catch(e){return null;}};
+  const old=load(MERGE_FROM)||s||{},v={};
+  Object.keys(old.v||{}).forEach(k=>{if(MERGE_DROP.indexOf(k.replace(/-\d+$/,''))<0)v[k]=old.v[k];});
+  MERGE_MOVES.forEach(m=>{for(const k of m[0]){const x=load(k);if(x&&x.v&&x.v[m[1]]){v[m[2]]=x.v[m[1]];break;}}});
+  return {tab:old.tab,v:v};
+}
 function start(data){
   const v=(data&&data.v)||{};
   games.forEach(g=>{if(v[g.key]&&typeof v[g.key]==='object'){try{g.setState(v[g.key]);}catch(e){console.error(e);}}});
@@ -1719,7 +1785,7 @@ function start(data){
   if(TAB_IDS.indexOf(t)<0)t='overview';
   applyTabUI(t);raf(loop);
 }
-start(readSaved());
+start(carrySaved(readSaved()));
 })();
 </script>
 
