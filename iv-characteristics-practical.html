@@ -470,7 +470,7 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='cp-iv-characteristics-v1',OLD_STORE_KEY='';
+const STORE_KEY='cp-iv-characteristics-v2',OLD_STORE_KEY='cp-iv-characteristics-v1';
 const TAB_IDS=["overview", "method", "variables", "experiment", "results", "graphs", "calculate", "accuracy", "exam"];
 let activeTab='overview';
 const reflowers=[];
@@ -1370,9 +1370,9 @@ function createPlot(cfg){
 {
   const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
   const parts=[
-    'Connect the component in series with an ',['b1','ammeter'],' and a variable resistor, and connect a ',['b2','voltmeter'],' in parallel across the component. Change the variable resistor in steps, recording the voltage and the current each time, then reverse the connections to take readings with ',['b3','negative'],
+    'Connect the component in series with an ',['b1','ammeter'],' and a variable resistor, and connect a ',['b2','voltmeter'],' in parallel across the component. Change the variable resistor in steps, recording the voltage and the current each time and repeating to find a mean, then reverse the connections to take readings with ',['b3','negative'],
     ' voltages. Plot current against voltage. For a fixed resistor, or a wire at constant temperature, the graph is a straight line through the origin: the current is ',['b4','directly proportional'],
-    ' to the voltage, so the resistance stays the same. For a filament lamp the line curves, because the filament gets hotter and its resistance ',['b5','increases'],
+    ' to the voltage, so the resistance stays the same. For a filament lamp the current increases at a decreasing rate, so the line curves, because the filament gets hotter and its resistance ',['b5','increases'],
     '. A diode lets current flow in one direction only: in reverse there is almost no current. At any point, the resistance is found from V = I × ',['b6','R'],'.'
   ];
   const cloze=mk('div','cloze'),slots=[],chips=[];
@@ -1394,15 +1394,16 @@ function createPlot(cfg){
 {
   const body=act('method','Order','Carry out the practical','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
   createReorder({host:body,steps:[
-    {id:'a',text:'Connect the component in series with an ammeter, a variable resistor and the power supply.'},
+    {id:'a',text:'Connect the component in series with an ammeter, a variable resistor and the power supply (or use a variable power supply).'},
     {id:'b',text:'Connect a voltmeter in parallel across the component.'},
     {id:'c',text:'Set the variable resistor so the voltage is small. Record the voltage and the current.'},
     {id:'d',text:'Change the variable resistor in steps, recording the voltage and current each time, for a range of voltages.'},
+    {id:'h',text:'Repeat each reading and work out the mean current at each voltage.'},
     {id:'e',text:'Reverse the connections to the component (or the supply) and repeat, to get negative readings.'},
     {id:'f',text:'Switch off between readings, so the component does not heat up.'},
     {id:'g',text:'Plot current (y-axis) against voltage (x-axis), and draw a line of best fit.'}
-  ],constraints:[['a','c'],['b','c'],['c','d'],['d','e'],['e','g']],
-  why:'Build the circuit with both meters before taking any readings, take readings over a range in both directions, then plot. Switching off between readings can happen at any point while you take them.'});
+  ],constraints:[['a','c'],['b','c'],['c','d'],['d','h'],['d','e'],['h','g'],['e','g']],
+  why:'Build the circuit with both meters before taking any readings, take readings over a range in both directions, repeating them to find a mean, then plot. Switching off between readings can happen at any point while you take them.'});
 }
 {
   const body=act('method','Match','What each piece of equipment is for','Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.');
@@ -1534,11 +1535,21 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
   createPredict({host:body,q:'Ananya tests a fixed resistor. Which result is anomalous, and what should she do?',
     pre:'<div class="table-scroll"><table class="units res-tbl"><thead><tr><th>Voltage (V)</th><th>1.0</th><th>2.0</th><th>3.0</th><th>4.0</th><th>5.0</th></tr></thead><tbody><tr><th>Current (A)</th><td>0.05</td><td>0.10</td><td>0.18</td><td>0.20</td><td>0.25</td></tr></tbody></table></div>',
     options:[
-    {text:'3.0 V: repeat that reading, and leave it out of the line',correct:true},
+    {text:'3.0 V: repeat it, and leave it out of the line',correct:true},
     {text:'5.0 V: it is the biggest, so leave it out',why:'0.25 A fits the pattern: 0.05 A for each volt. Being the biggest does not make a result anomalous.'},
     {text:'3.0 V: keep it, and average it with the other results',why:'Averaging it in drags the answer away from the true value. Repeat it, and ignore it when drawing the line.'},
     {text:'None: every reading counts, so use them all',why:'One result breaks the pattern of 0.05 A for each volt, so it is probably a mistake.'}
   ],explain:'Each volt adds 0.05 A, so 3.0 V should give 0.15 A, not 0.18 A. Repeat the reading if you can, and leave it out when drawing the line of best fit.'});
+}
+
+{
+  const body=act('results','Predict','Resistance against voltage','');
+  createPredict({host:body,q:'Ananya works out the resistance of her fixed resistor at each voltage, then plots resistance against voltage. What shape is the graph?',options:[
+    {text:'A horizontal straight line above the axis',correct:true},
+    {text:'A straight line rising from the origin',why:'That is the shape of its current against voltage. Its resistance is the same at every voltage.'},
+    {text:'A curve that rises more steeply each time',why:'The resistor stays at the same temperature, so its resistance does not change with voltage.'},
+    {text:'A straight line falling towards zero',why:'More voltage gives more current in proportion, so the resistance [[V|I]] stays the same.'}
+  ],explain:'For a fixed resistor at constant temperature, the current is directly proportional to the voltage, so R = [[V|I]] is the same at every voltage: a horizontal line.'});
 }
 
 /* ================= 5. GRAPHS ================= */
@@ -1642,10 +1653,12 @@ function swapGraph(label){
     {id:'2',text:'Take readings over a wide range of voltages, in both directions',cat:'a'},
     {id:'3',text:'Take extra readings where the graph changes shape, such as near 0.6 V for a diode',cat:'a'},
     {id:'4',text:'Repeat each reading and find the mean',cat:'a'},
+    {id:'9',text:'Keep a wire in a water bath, so its temperature stays the same',cat:'a'},
     {id:'5',text:'Do not touch the lamp: it gets hot',cat:'s'},
     {id:'6',text:'Use a protective resistor in series with a diode',cat:'s'},
     {id:'7',text:'Keep the supply voltage low',cat:'s'},
-    {id:'8',text:'Switch off if a wire starts to get hot',cat:'s'}
+    {id:'8',text:'Switch off if a wire starts to get hot',cat:'s'},
+    {id:'10',text:'Use a wire long enough that it does not get too hot',cat:'s'}
   ]});
 }
 {
@@ -1655,12 +1668,12 @@ function swapGraph(label){
     {text:'So the meters can reset to zero between readings',why:'Meters do not need resetting each time. The point is to stop the resistor heating up.'},
     {text:'To save energy in the power supply between readings',why:'The energy saved is tiny. Switching off stops the resistor’s temperature changing.'},
     {text:'So the voltmeter can measure the current instead',why:'A voltmeter always measures voltage. Switching off is about temperature.'}
-  ],explain:'A current heats the resistor. A hotter resistor has a bigger resistance, so the readings would not be a fair test of a fixed resistance. Its temperature is a control variable.'});
+  ],explain:'A current heats the resistor. A hotter resistor has a bigger resistance, so the readings would not be a fair test of a fixed resistance. Its temperature is a control variable: keep it constant by using small currents, switching off between readings, or putting the resistor or wire in a water bath.'});
 }
 {
   const body=act('accuracy','Predict','A zero error','');
   createPredict({host:body,q:'Before switching on, Fatimah’s ammeter reads 0.02 A. What should she do with her readings?',options:[
-    {text:'Subtract 0.02 A from every current she records',correct:true},
+    {text:'Take 0.02 A off every current she records',correct:true},
     {text:'Add 0.02 A on to every current she records',why:'The meter already reads 0.02 A too high, so adding more makes it worse.'},
     {text:'Nothing: 0.02 A is far too small to matter',why:'For a small current such as 0.10 A, 0.02 A is a 20% error.'},
     {text:'Only correct the first reading that she takes',why:'The zero error is there for every reading, so correct them all.'}
@@ -1684,23 +1697,28 @@ function swapGraph(label){
   body.appendChild(mk('p','sub','(c) 3 marks'));
   body.appendChild(mk('p','','Zahra says the lamp’s current is directly proportional to the voltage. Discuss whether she is right. Use data from the table. Write your answer, then check it.'));
   const d1=mk('details','');
-  d1.innerHTML='<summary>Check your answer</summary><div><ul><li>If it were proportional, doubling the voltage would double the current.</li><li>From 2.0 V to 4.0 V the current only goes from 0.16 A to 0.25 A, not 0.32 A.</li><li>The resistance rises from 10 Ω (at 0.5 V) to 20 Ω (at 6.0 V), so the I–V graph would curve, not be a straight line through the origin.</li><li>So she is wrong (except at the lowest voltages, where the lamp is still cool).</li></ul></div>';
+  d1.innerHTML='<summary>Check your answer</summary><div><ul><li>The current increases as the voltage increases, but at a decreasing rate (non-linear).</li><li>If it were proportional, doubling the voltage would double the current.</li><li>From 2.0 V to 4.0 V the current only goes from 0.16 A to 0.25 A, not 0.32 A.</li><li>The resistance rises from 10 Ω (at 0.5 V) to 20 Ω (at 6.0 V), so the I–V graph would curve, not be a straight line through the origin.</li><li>So she is wrong (except at the lowest voltages, where the lamp is still cool).</li></ul></div>';
   body.appendChild(d1);
   body.appendChild(mk('p','sub','(d) 2 marks'));
   body.appendChild(mk('p','','Explain why the resistance of the lamp increases as the current increases.'));
   const d2=mk('details','');
-  d2.innerHTML='<summary>Check your answer</summary><div><ul><li>A bigger current heats the filament, so its temperature rises.</li><li>The metal ions vibrate more, so the electrons collide with them more often, which increases the resistance.</li></ul></div>';
+  d2.innerHTML='<summary>Check your answer</summary><div><ul><li>A bigger current heats the filament, so its temperature rises.</li><li>The lattice ions vibrate more, so the electrons collide with them more often: the resistance increases with temperature.</li></ul></div>';
   body.appendChild(d2);
   body.appendChild(mk('p','sub','(e) 5 marks'));
   body.appendChild(mk('p','','Describe how Zahra could take readings to plot the full I–V graph for the lamp. Include the circuit she should use.'));
   const d3=mk('details','');
-  d3.innerHTML='<summary>Check your answer</summary><div><ul><li>Connect the lamp in series with an ammeter, a variable resistor and a power supply.</li><li>Connect a voltmeter in parallel across the lamp.</li><li>Change the variable resistor to change the voltage, in steps.</li><li>Record the voltage and current at each step, for a range of voltages.</li><li>Reverse the connections to the lamp (or the supply) and repeat, to get negative values.</li><li>Plot current against voltage and draw a smooth curve of best fit.</li></ul><p class="sub">Any five points score. A circuit diagram with the ammeter in series and the voltmeter in parallel also scores.</p></div>';
+  d3.innerHTML='<summary>Check your answer</summary><div><ul><li>Connect the lamp in series with an ammeter, a variable resistor and a power supply (or use a variable power supply).</li><li>Connect a voltmeter in parallel across the lamp.</li><li>Change the voltage with the variable resistor, in steps.</li><li>Record the ammeter and voltmeter readings at each step, for a range of voltages.</li><li>Repeat the readings and find the mean current at each voltage.</li><li>Switch off between readings, so the lamp does not overheat.</li><li>Reverse the connections to the lamp (or the supply) and repeat, to get negative values.</li><li>Plot current against voltage and draw a smooth curve of best fit.</li></ul><p class="sub">Any five points score. A circuit diagram with the ammeter in series and the voltmeter in parallel also scores.</p></div>';
   body.appendChild(d3);
   body.appendChild(mk('p','sub','(f) 2 marks'));
   body.appendChild(mk('p','','Zahra repeats the practical with a diode. Describe how its I–V graph is different from the lamp’s.'));
   const d4=mk('details','');
   d4.innerHTML='<summary>Check your answer</summary><div><ul><li>In reverse the diode lets almost no current through (very high resistance), while the lamp conducts both ways.</li><li>Forwards, there is very little current until about 0.6 V, then the current rises quickly.</li></ul></div>';
   body.appendChild(d4);
+  body.appendChild(mk('p','sub','(g) 2 marks'));
+  body.appendChild(mk('p','','Zahra then tests a length of metal wire. She must keep the wire at a constant temperature. Suggest why, and suggest how she could do this.'));
+  const d5=mk('details','');
+  d5.innerHTML='<summary>Check your answer</summary><div><ul><li>Why: the resistance of the wire changes with temperature, so temperature is a control variable.</li><li>How: use small currents, or switch off between readings (only let the current flow for a short time), or put the wire in a water bath.</li></ul><p class="sub">Covering the wire with insulation does not work: it stops the wire losing heat, so it gets hotter.</p></div>';
+  body.appendChild(d5);
 }
 
 function pairPredicts(){

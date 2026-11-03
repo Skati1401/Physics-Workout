@@ -49,7 +49,6 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 
 How to build one: `tools/CORE-PRACTICALS.md`.
 
-- [ ] 2.9 I–V characteristics: guide pages (PDF 193–196) and mark scheme wording check, as for the other practicals (added 3 Nov 2026).
 - [ ] 3.19 Refractive index of glass (batch B; do 3.17 first so they share the light box).
 - [ ] 3.25P Speed of sound in air (batch B).
 - [ ] 2.23P Charging insulators by friction (batch C). Add its `.cp-banner` to `electric-charge.html#charging` when built.
@@ -66,6 +65,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## Done
 
+- 3 Nov 2026: 2.9 I–V characteristics practical: guide pages and mark scheme wording check; same check on the Unit 2 workouts 2a, 2b, 2c. Details in `tools/REVIEW.md` and `tools/CORE-PRACTICALS.md`.
 - 3 Nov 2026: Unit 2 Electricity workouts: 2a `mains-electricity.html`, 2b `circuits.html`, 2c `electric-charge.html` (TA), cards on `igcse.html`, the three IGCSE electricity animations framed in 2b, Unit 2 tabs in the Calculations and Graphs sets. 2.9 practical page `iv-characteristics-practical.html` published, with its `.cp-banner` on 2b I–V Graphs. All marked 🔍 in `tools/REVIEW.md`.
 - 3 Nov 2026: Hooke's law animation animated, with draggable masses and a rubber band hysteresis loop. Heating-curve simplification accepted by Alex. TA tags on Triple Award units (1d, 5a).
 - 3 Nov 2026: specs uploaded. 5a Units tab: 5.2 (J/kg °C) is Double Award in the 4PH1 spec, so its badge is right and no change was needed. IAL thermistor practical: Divider tab now badged 75, 76 and Experiment tab 79 (resistance and temperature).
