@@ -56,7 +56,6 @@ Automated checks were clean: no script errors, no broken links, and no sideways 
 - [ ] 1a ~1427: two identical "Moving backwards" captions; heading says distance–time, but the graph shows displacement.
 - [ ] `animations/hookes-law.html`, `animations/seesaw-moments.html`: no Slow motion button (the code looks for one).
 - [ ] Three ÷ signs in `latent-heat` content.js (~176, ~188, ~272).
-- [ ] Is "Hana" (1d third-law sort) on the approved names list?
 
 ## 2. Lesson decks (PPT reviews)
 
