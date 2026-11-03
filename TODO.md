@@ -43,6 +43,9 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 - [ ] Unit 8 Astrophysics (1 page).
 - [ ] Calculations and Graphs sets: add Forces Part 2 (1c with suvat, 1d), then Units 4, 5 and 6 (Unit 2 added 3 Nov 2026).
 - [ ] Graphs set: 1b has no graph activities. Consider using the 1.5 practical's plotting activities (`build.py` would need to read its `content.js`).
+- [ ] Merge each unit's Units/Key Terms tabs into one tab in its last non-TA workout (rule in `CLAUDE.md`, "How big a workout is"): Unit 1 → 1c, Unit 4 → 4c (move 4b's crossword there), Unit 5 → 5b, Unit 6 → 6b. Bump `STORE_KEY` on every page that loses or gains a tab, and forward old `page.html#units`/`#terms` links to the new tab (added 3 Nov 2026).
+- [ ] Unit 2: same merge into 2b `circuits.html` (2a has Units, 2b and 2c have Key Terms). Another chat is working on Unit 2 (3 Nov 2026): do it there, or after it has pushed (added 3 Nov 2026).
+- [ ] Update the interactive-revision-lab skill: it still says one Units/Key Terms tab per page (claude.ai project, not this repo; added 3 Nov 2026).
 - [ ] Key-word crosswords for other units, if Alex wants them.
 
 ## 5. Build: core practicals
