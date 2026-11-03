@@ -24,7 +24,7 @@ function loop(t){if(!document.hidden){for(const k of tickers){if(k.tab===activeT
 
 function act(panel,kind,title,intro){
   const a=mk('article','act');
-  a.innerHTML='<h3 class="act-title"><span class="kind">'+kind+'</span><span>'+title+'</span></h3>'+(intro?'<p class="act-intro">'+FR(intro)+'</p>':'');
+  a.innerHTML='<h3 class="act-title"><span class="kind">'+kind+'</span><span>'+FR(title)+'</span></h3>'+(intro?'<p class="act-intro">'+FR(intro)+'</p>':'');
   const body=mk('div','act-body');a.appendChild(body);
   $('#panel-'+panel+' .acts').appendChild(a);
   return body;
@@ -572,7 +572,7 @@ function createPredict(cfg){
     opts.innerHTML='';
     order.forEach(i=>{
       const o=cfg.options[i];
-      const btn=mk('button','pred-opt',o.text);btn.type='button';
+      const btn=mk('button','pred-opt',FR(o.text));btn.type='button';
       btn.addEventListener('click',()=>choose(i));
       btn.dataset.i=i;opts.appendChild(btn);
     });

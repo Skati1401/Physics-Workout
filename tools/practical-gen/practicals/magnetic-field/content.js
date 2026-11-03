@@ -50,9 +50,9 @@
   ]});
 }
 {
-  const body=act('method','Spot the error','Find the mistake in a method','Zahra’s method has exactly one wrong step. Click the step with the mistake.');
+  const body=act('method','Spot the error','Find the mistake in a method','Julia’s method has exactly one wrong step. Click the step with the mistake.');
   const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Zahra writes down how she plotted one field line.',
+  createSpot({host:grid,scenario:'Julia writes down how she plotted one field line.',
     lines:['Place the compass next to the north pole of the magnet.','Mark a dot where the north end of the needle points.','Move the compass so the north end of the needle is on the dot.','Mark a new dot where the north end of the needle points.','Join the dots to form a field line, with an arrow from N to S.'],wrong:2,
     explain:'The tail (south end) of the needle goes on the last dot. Then the needle points on along the field, and the next dot carries the line forward. With the north end on the dot, the line doubles back.',
     fix:['Move the compass on so the tail (south end) of the needle is on the dot.']});
@@ -72,7 +72,7 @@
 }
 {
   const body=act('filings','Predict','Tapping the card','');
-  createPredict({host:body,q:'Why does Ali tap the card after sprinkling the iron filings?',options:[
+  createPredict({host:body,q:'Why does Nabil tap the card after sprinkling the iron filings?',options:[
     {text:'It lets the filings turn to line up with the field',correct:true},
     {text:'It magnetises the filings so they stick to each other',why:'The magnet’s field magnetises the filings. Tapping just frees them to turn.'},
     {text:'It spreads the filings out evenly so no part is missed',why:'Sprinkling spreads them. Tapping frees them from the friction of the card so they can turn.'},
@@ -110,7 +110,7 @@
 frameAct('experiment','animations/magnetic-field-patterns.html','','Magnetic field patterns animation: iron filings, field lines and a plotting compass','magnetic field patterns',false);
 {
   const body=act('experiment','Predict','Next to the south pole','');
-  createPredict({host:body,q:'A bar magnet lies with its N pole on the left. Sophie puts a compass just to the right of the S pole. Which way does the north end of its needle point?',options:[
+  createPredict({host:body,q:'A bar magnet lies with its N pole on the left. Poppy puts a compass just to the right of the S pole. Which way does the north end of its needle point?',options:[
     {text:'Left, towards the south pole',correct:true},
     {text:'Right, away from the south pole',why:'Field lines go into a south pole. The north end of a needle points along the field, so it points into the S pole.'},
     {text:'Up the page, along the magnet',why:'Right next to a pole, the field points straight into (or out of) the pole, not along the magnet.'},
@@ -119,7 +119,7 @@ frameAct('experiment','animations/magnetic-field-patterns.html','','Magnetic fie
 }
 {
   const body=act('experiment','Predict','Lines that never cross','');
-  createPredict({host:body,q:'Ali notices that his field lines never cross each other. Why not?',options:[
+  createPredict({host:body,q:'Nabil notices that his field lines never cross each other. Why not?',options:[
     {text:'At each point the field has only one direction',correct:true},
     {text:'Field lines repel, so they push each other apart',why:'Field lines are a picture of the field; they do not push on each other.'},
     {text:'Where two lines meet, their fields cancel out',why:'If two lines crossed, a compass there would have to point two ways at once, which is impossible.'},
@@ -154,13 +154,13 @@ function barFieldSVG(marks){
   return s+'</svg>';
 }
 {
-  const body=act('results','Look','Sophie’s field pattern','Sophie plotted these field lines round a bar magnet. Use them to answer the questions below.');
+  const body=act('results','Look','Poppy’s field pattern','Poppy plotted these field lines round a bar magnet. Use them to answer the questions below.');
   const box=mk('div','graph-box',barFieldSVG([['P',148,112],['Q',260,30],['R',260,108]]));box.style.maxWidth='560px';
   body.appendChild(box);
 }
 {
   const body=act('results','Predict','Where is the field strongest?','');
-  createPredict({host:body,q:'Look at Sophie’s pattern. At which point is the magnetic field strongest?',options:[
+  createPredict({host:body,q:'Look at Poppy’s pattern. At which point is the magnetic field strongest?',options:[
     {text:'P: the lines are closest together there',correct:true},
     {text:'Q: the lines there are the longest ones',why:'Long lines far from the magnet are spread out, so the field there is weak.'},
     {text:'R: it is closest to the middle of the magnet',why:'Beside the middle of the magnet the lines are more spread out than near the poles.'},
@@ -169,7 +169,7 @@ function barFieldSVG(marks){
 }
 {
   const body=act('results','Predict','A compass at R','');
-  createPredict({host:body,q:'Sophie puts a plotting compass at R. Which way does the north end of its needle point?',options:[
+  createPredict({host:body,q:'Poppy puts a plotting compass at R. Which way does the north end of its needle point?',options:[
     {text:'To the right, towards the S end',correct:true},
     {text:'To the left, towards the N end',why:'Field lines go from N to S, so above the magnet they point from left to right.'},
     {text:'Straight up, away from the magnet',why:'At R the field line runs along the magnet, from the N end towards the S end.'},
@@ -177,9 +177,9 @@ function barFieldSVG(marks){
   ],explain:'A compass needle lines up along the field line, with its north end pointing the way of the arrow: from N to S. Above the middle of the magnet that is to the right.'});
 }
 {
-  const body=act('results','Spot the error','Find the mistake in a description','Ali’s description has exactly one wrong statement. Every statement after it follows from it. Click the wrong one.');
+  const body=act('results','Spot the error','Find the mistake in a description','Nabil’s description has exactly one wrong statement. Every statement after it follows from it. Click the wrong one.');
   const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Ali describes the field pattern he plotted round a bar magnet.',
+  createSpot({host:grid,scenario:'Nabil describes the field pattern he plotted round a bar magnet.',
     lines:['The field lines come out of the north pole.','They loop round and go into the south pole.','The lines are furthest apart near the poles.','So the field is weakest near the poles.'],wrong:2,
     explain:'Near the poles the lines are closest together, not furthest apart. That is where the field is strongest.',
     fix:['The lines are closest together near the poles.','So the field is strongest near the poles.']});
@@ -204,7 +204,7 @@ function barFieldSVG(marks){
 }
 {
   const body=act('twomag','Predict','Two north poles','');
-  createPredict({host:body,q:'Zahra plots the field between two north poles facing each other. What does she find halfway between them?',options:[
+  createPredict({host:body,q:'Julia plots the field between two north poles facing each other. What does she find halfway between them?',options:[
     {text:'A neutral point, where the field is zero',correct:true},
     {text:'The strongest field, as both poles add up',why:'The two fields point in opposite directions halfway between, so they cancel rather than add.'},
     {text:'Lines going straight across from one pole',why:'Field lines go from N to S. Lines from the two N poles push away from each other and never join.'},
@@ -244,7 +244,7 @@ function barFieldSVG(marks){
 }
 {
   const body=act('materials','Predict','Iron or steel?','');
-  createPredict({host:body,q:'Ali repeats this with steel paper clips instead of iron nails, then pulls the magnet away. The iron nails fall apart, but the steel clips stay stuck for a while. Why?',options:[
+  createPredict({host:body,q:'Nabil repeats this with steel paper clips instead of iron nails, then pulls the magnet away. The iron nails fall apart, but the steel clips stay stuck for a while. Why?',options:[
     {text:'Steel is magnetically hard, so it keeps some magnetism',correct:true},
     {text:'Steel is not a magnetic material, so it is not affected',why:'Steel is a magnetic material: it is attracted to a magnet, and the clips were held by it.'},
     {text:'Iron is magnetically hard, so it lets go more quickly',why:'Iron is magnetically soft: it loses its induced magnetism as soon as the field is gone.'},
@@ -280,7 +280,7 @@ function barFieldSVG(marks){
 }
 {
   const body=act('accuracy','Predict','Far from the magnet','');
-  createPredict({host:body,q:'Far from the magnet, Sophie’s field lines curve off and all point the same way across the page. Why?',options:[
+  createPredict({host:body,q:'Far from the magnet, Poppy’s field lines curve off and all point the same way across the page. Why?',options:[
     {text:'The Earth’s field is stronger than the magnet’s',correct:true},
     {text:'The magnet’s own field changes direction far away',why:'The magnet’s lines keep looping round to its S pole. Far away its field is weak, so another field takes over.'},
     {text:'Her compass has lost all of its magnetism by then',why:'A compass does not lose its magnetism while you use it. It is lining up with a different field.'},
@@ -292,7 +292,7 @@ function barFieldSVG(marks){
 {
   const body=act('exam','Exam style','The field of a bar magnet','Write each answer, then check it against the model answer.');
   body.appendChild(mk('p','sub','(a) 4 marks'));
-  body.appendChild(mk('p','','Describe how Sophie can use a plotting compass to show the shape and direction of the magnetic field round a bar magnet.'));
+  body.appendChild(mk('p','','Describe how Poppy can use a plotting compass to show the shape and direction of the magnetic field round a bar magnet.'));
   const d1=mk('details','');
   d1.innerHTML='<summary>Check your answer</summary><div><ul><li>Put the magnet on a sheet of paper and draw round it.</li><li>Place a plotting compass next to the N pole and mark a dot where the north end of the needle points.</li><li>Move the compass on so the tail of the needle is at the dot, mark the next dot, and repeat until the S pole (or the edge of the paper).</li><li>Join the dots to form a field line, with an arrow from N to S to show the direction.</li><li>Draw several lines from other starting points (use many compasses, or move one compass repeatedly).</li></ul></div>';
   body.appendChild(d1);
@@ -302,7 +302,7 @@ function barFieldSVG(marks){
   d2.innerHTML='<summary>Check your answer</summary><div><ul><li>At the poles (the ends of the magnet).</li><li>The field lines are closest together there (further apart means a weaker field).</li></ul></div>';
   body.appendChild(d2);
   body.appendChild(mk('p','sub','(c) 2 marks'));
-  body.appendChild(mk('p','','Sophie places two bar magnets end to end with their north poles 6 cm apart. Describe the field pattern between them.'));
+  body.appendChild(mk('p','','Poppy places two bar magnets end to end with their north poles 6 cm apart. Describe the field pattern between them.'));
   const d3=mk('details','');
   d3.innerHTML='<summary>Check your answer</summary><div><ul><li>The lines from each N pole curve away from each other and do not cross or join, with arrows pointing away from both N poles.</li><li>Halfway between the poles there is a neutral point, where the field is zero (no line passes through it).</li></ul></div>';
   body.appendChild(d3);
@@ -317,7 +317,7 @@ function barFieldSVG(marks){
   d5.innerHTML='<summary>Check your answer</summary><div><ul><li>The clip became an induced magnet while it was in the magnet’s field.</li><li>Steel is magnetically hard, so it retains its induced magnetism.</li><li>Iron is magnetically soft, so it loses its magnetism once the field is gone.</li></ul></div>';
   body.appendChild(d5);
   body.appendChild(mk('p','sub','(f) 3 marks'));
-  body.appendChild(mk('p','','Ali uses iron filings instead of a compass. Describe how he can show the shape of the field, and explain why he still needs a plotting compass.'));
+  body.appendChild(mk('p','','Nabil uses iron filings instead of a compass. Describe how he can show the shape of the field, and explain why he still needs a plotting compass.'));
   const d6=mk('details','');
   d6.innerHTML='<summary>Check your answer</summary><div><ul><li>Place a sheet of card over the magnet and sprinkle iron filings thinly onto it.</li><li>Tap the card gently, so the filings line up to show the shape of the field.</li><li>Filings show only the shape: a plotting compass is needed to show the direction of the field.</li></ul></div>';
   body.appendChild(d6);

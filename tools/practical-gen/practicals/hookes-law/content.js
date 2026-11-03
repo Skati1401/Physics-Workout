@@ -74,7 +74,7 @@ frameAct('experiment','animations/hookes-law.html','','Hooke’s law animation: 
 }
 {
   const body=act('variables','Predict','A new question to test','');
-  createPredict({host:body,q:'Sophie wants to find out whether springs made of thicker wire stretch less. What is her independent variable?',options:[
+  createPredict({host:body,q:'Elizabeth wants to find out whether springs made of thicker wire stretch less. What is her independent variable?',options:[
     {text:'The thickness of the spring’s wire',correct:true},
     {text:'The load she hangs on each spring',why:'The load is what she changes in the basic practical. Here she must keep it the same for every spring, so it is a control variable.'},
     {text:'The extension of each spring',why:'The extension is what she measures, so it is the dependent variable.'},
@@ -198,7 +198,7 @@ function swapGraph(label){
 }
 {
   const body=act('graphs','Predict','Is steeper always stiffer?','');
-  createPredict({host:body,q:'Sophie says, “The steeper line is always the stiffer spring.” Is she right?',options:[
+  createPredict({host:body,q:'Elizabeth says, “The steeper line is always the stiffer spring.” Is she right?',options:[
     {text:'Only when force is up the side of the graph',correct:true},
     {text:'Yes, on every force–extension graph',why:'Look at P and Q: with extension up the side, the steeper line (P) is the easier spring to stretch.'},
     {text:'Only when extension is up the side of the graph',why:'With extension up the side, the steeper line stretches more for each newton, so it is less stiff.'},
@@ -258,7 +258,7 @@ function swapGraph(label){
 }
 {
   const body=act('results','Predict','An anomalous result','');
-  createPredict({host:body,q:'Zahra’s results are below. Which result is anomalous, and what should she do?',
+  createPredict({host:body,q:'Fatimah’s results are below. Which result is anomalous, and what should she do?',
     pre:'<div class="table-scroll"><table class="units res-tbl"><thead><tr><th>Load (N)</th><th>0</th><th>2</th><th>4</th><th>6</th><th>8</th></tr></thead><tbody><tr><th>Extension (cm)</th><td>0</td><td>1.6</td><td>3.2</td><td>5.9</td><td>6.4</td></tr></tbody></table></div>',
     options:[
     {text:'6 N: repeat that reading, and leave it out of the line',correct:true},
@@ -281,9 +281,9 @@ function swapGraph(label){
 {
   const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
   const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Zahra works out the mass that puts a 7 N load on a spring. g = 10 N/kg.',
+  createSpot({host:grid,scenario:'Fatimah works out the mass that puts a 7 N load on a spring. g = 10 N/kg.',
     lines:['W = m × g','7 = m × 10','m = [[10|7]]','m = 1.4 kg'],wrong:2,
-    explain:'To get m on its own, divide 7 by 10. Zahra divided 10 by 7, so the fraction is upside down.',
+    explain:'To get m on its own, divide 7 by 10. Fatimah divided 10 by 7, so the fraction is upside down.',
     fix:['m = [[7|10]]','m = 0.7 kg']});
   createSpot({host:grid,scenario:'A 2.0 N load stretches a spring by 1.6 cm. The spring obeys Hooke’s law. What load gives an extension of 4.0 cm?',
     lines:['extension per newton = [[1.6|2.0]]','extension per newton = 0.8 cm per N','4.0 = 0.8 × load','load = 4.0 × 0.8','load = 3.2 N'],wrong:3,
@@ -330,31 +330,31 @@ function swapGraph(label){
 
 /* ================= EXAM PRACTICE ================= */
 {
-  const body=act('exam','Exam style','Does the spring obey Hooke’s law?','Sophie loads a spring and records these results. One reading is missing.');
+  const body=act('exam','Exam style','Does the spring obey Hooke’s law?','Elizabeth loads a spring and records these results. One reading is missing.');
   const tbl=mk('div','table-scroll');
   tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Load (N)</th><th>0</th><th>2</th><th>4</th><th>6</th><th>8</th><th>10</th></tr></thead><tbody><tr><th>Extension (cm)</th><td>0</td><td>1.5</td><td>3.0</td><td><b>?</b></td><td>6.0</td><td>8.9</td></tr></tbody></table>';
   body.appendChild(tbl);
   body.appendChild(mk('p','sub','(a) 2 marks'));
   createCalc({host:body,questions:[
-    {q:'Sophie forgot to write down the extension at 6 N. Predict the missing result.',unit:'cm',answer:4.5,working:'From 0 to 8 N, each extra 2 N adds 1.5 cm.<br>extension at 6 N = 3.0 + 1.5<br>extension at 6 N = 4.5 cm'}
+    {q:'Elizabeth forgot to write down the extension at 6 N. Predict the missing result.',unit:'cm',answer:4.5,working:'From 0 to 8 N, each extra 2 N adds 1.5 cm.<br>extension at 6 N = 3.0 + 1.5<br>extension at 6 N = 4.5 cm'}
   ]});
   body.appendChild(mk('p','sub','(b) 3 marks'));
-  body.appendChild(mk('p','','Sophie says the spring obeys Hooke’s law for every load she used. Discuss whether she is right. Use data from the table. Write your answer, then check it.'));
+  body.appendChild(mk('p','','Elizabeth says the spring obeys Hooke’s law for every load she used. Discuss whether she is right. Use data from the table. Write your answer, then check it.'));
   const d1=mk('details','');
   d1.innerHTML='<summary>Check your answer</summary><div><ul><li>From 0 to 8 N, each extra 2 N adds 1.5 cm, so extension is directly proportional to load.</li><li>From 8 N to 10 N the extension goes up by 2.9 cm, much more than 1.5 cm, so it is no longer proportional.</li><li>A spring that obeys Hooke’s law gives a straight line through the origin; these points would lie on one only up to 8 N.</li><li>So she is wrong: the spring obeys Hooke’s law to at least 8 N, and its limit of proportionality is somewhere between 8 N and 10 N.</li></ul></div>';
   body.appendChild(d1);
   body.appendChild(mk('p','sub','(c) 2 marks'));
-  body.appendChild(mk('p','','When Sophie takes all the masses off, the spring is 0.4 cm longer than at the start. Explain what this shows.'));
+  body.appendChild(mk('p','','When Elizabeth takes all the masses off, the spring is 0.4 cm longer than at the start. Explain what this shows.'));
   const d2=mk('details','');
   d2.innerHTML='<summary>Check your answer</summary><div><ul><li>The spring did not return to its original length when the load was removed.</li><li>So it was stretched past its elastic limit and has been permanently deformed: above that load its behaviour was not elastic.</li></ul></div>';
   body.appendChild(d2);
   body.appendChild(mk('p','sub','(d) 2 marks'));
-  body.appendChild(mk('p','','Sophie repeats the test with a rubber band. Describe how its force–extension graph would be different from the spring’s.'));
+  body.appendChild(mk('p','','Elizabeth repeats the test with a rubber band. Describe how its force–extension graph would be different from the spring’s.'));
   const d3=mk('details','');
   d3.innerHTML='<summary>Check your answer</summary><div><ul><li>The rubber band’s graph is curved, with no straight-line part.</li><li>So its extension is not directly proportional to the force: it does not obey Hooke’s law.</li></ul></div>';
   body.appendChild(d3);
   body.appendChild(mk('p','sub','(e) 5 marks'));
-  body.appendChild(mk('p','','Describe how Sophie should measure the extension of the spring for each load. Include how to make her readings accurate and one safety precaution.'));
+  body.appendChild(mk('p','','Describe how Elizabeth should measure the extension of the spring for each load. Include how to make her readings accurate and one safety precaution.'));
   const d4=mk('details','');
   d4.innerHTML='<summary>Check your answer</summary><div><ul><li>Measure the original length of the spring with a ruler, before any load is added.</li><li>Add the masses one at a time, gently, and measure the new length for a range of loads.</li><li>Extension = new length − original length.</li><li>Measure between the same two points each time, using a pointer fixed to the bottom of the spring.</li><li>Avoid parallax: read the ruler with your eye level with the pointer.</li><li>Clamp the ruler vertically, and check it with a set square.</li><li>Also measure the length as the masses are taken off.</li><li>Safety: wear goggles to protect your eyes if the spring snaps, and keep your feet clear of the masses (or put a crash pad under them).</li></ul><p class="sub">Any five points score. “Be careful” or “wear protective clothing” scores nothing: say what protects what.</p></div>';
   body.appendChild(d4);
