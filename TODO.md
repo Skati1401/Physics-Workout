@@ -46,10 +46,7 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 
 How to build one: `tools/CORE-PRACTICALS.md`.
 
-- [ ] 3.19 Refractive index: draft built 4 Nov 2026 (`refractive-index-practical.html`, no card yet). Alex to review (plotting to 2 d.p. on a 0.02 grid, the swapped-axes gradient = 1/n, the inverse-sine Spot the Error, Exam (b) and (c)), then publish per `tools/CORE-PRACTICALS.md` step 7.
-- [ ] 3.25P Speed of sound: draft built 4 Nov 2026 (`speed-of-sound-practical.html`, no card yet). Alex to review the draft (method switch Orders and Matches, Henry's graph that misses the origin, Exam model answers), then publish per `tools/CORE-PRACTICALS.md` step 7.
-- [ ] 3.17 Refraction: draft built 4 Nov 2026 (`refraction-practical.html`, no card yet). Alex to review (block-by-block tabs instead of Variables/Results/Graphs, the semicircle Sort around c = 42°, Exam (b) glass-to-air n), then publish per step 7.
-- [ ] Review the three practicals published 4 Nov 2026: 2.23P `charging-practical.html`, 3.27P `sound-frequency-practical.html`, 7.6 `penetrating-power-practical.html` (what to check is in `tools/REVIEW.md`).
+- [ ] Review the six practicals published 4 Nov 2026: 3.17 `refraction-practical.html`, 3.19 `refractive-index-practical.html`, 3.25P `speed-of-sound-practical.html`, 2.23P `charging-practical.html`, 3.27P `sound-frequency-practical.html`, 7.6 `penetrating-power-practical.html` (what to check is in `tools/REVIEW.md`).
 - [ ] IAL CP7 resistivity and CP8 internal resistance practical pages, if Alex wants them (the animations are done).
 - [ ] IAL CP12–14: mark scheme wording check (no IAL question index yet).
 
@@ -60,6 +57,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## Done
 
+- 4 Nov 2026: core practicals 3.17, 3.19 and 3.25P published (cards on `igcse.html`, workout links and `.cp-banner`s on 3b Refraction and Speed of Sound).
 - 4 Nov 2026: core practicals 2.23P, 3.27P and 7.6 built and published, with new animations `electrostatic-charging.html` (framed in 2c Charging, with the banner), `oscilloscope.html` (framed in 3b Pitch and Loudness) and `penetrating-power.html` (framed in 7a Alpha, Beta, Gamma), each with its banner; mark scheme wording from the IGCSE Question Index.
 - 4 Nov 2026: Unit 7 (7a `radioactivity.html`, 7b `fission-and-fusion.html`) and Unit 8 (8a `universe-and-stars.html`, 8b `cosmology.html`, TA) workouts as drafts, with cards on `igcse.html`, Units and Terms on 7b and 8a, tabs in the Calculations and Graphs sets. `film-badge.html` and `random-decay.html` framed in 7a, `chain-reaction.html` in 7b (and now on the IGCSE animation list). Marked 🔍 in `tools/REVIEW.md`.
 - 4 Nov 2026: Unit 3 Waves workouts (draft): 3a `waves.html` and 3b `light-and-sound.html` (Units and Terms for Unit 3 on 3b), cards on `igcse.html` under a Draft Unit 3 heading, Unit 3 tabs added to the Calculations and Graphs sets. `refraction.html` and `speed-of-sound.html` framed in 3b. Marked 🔍 in `tools/REVIEW.md`.
