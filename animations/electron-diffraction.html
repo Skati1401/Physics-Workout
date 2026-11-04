@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Electron Diffraction Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation for IAL and IB: an electron diffraction tube. Raise the accelerating voltage and watch the rings shrink as the de Broglie wavelength λ = h/p gets shorter. Experiment mode.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5;
+    --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff;
+    --panel-border:#d7dce4;
+    --ink:#182233;
+    --ink-soft:#4c5668;
+    --ink-faint:#8993a5;
+    --accent:#d9720c;
+    --accent-soft:#fdead2;
+    --good:#15803d;
+    --good-soft:#dcf5e3;
+    --bad:#c0311a;
+    --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --quantum:#6d38d6;     --quantum-soft:#ece4fc;
+    --electron:#2158d1;
+    --metal:#8a94a6;
+    --screen:#0f1a14;      --glow:#5cf08a;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --quantum:#b392ff; --quantum-soft:#2a1f45;
+      --electron:#7da3ff;
+      --metal:#9aa4b6;
+      --screen:#070d09; --glow:#5cf08a;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --quantum:#b392ff; --quantum-soft:#2a1f45;
+    --electron:#7da3ff;
+    --metal:#9aa4b6;
+    --screen:#070d09; --glow:#5cf08a;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; controls, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  /* the picture shrinks on short screens so the whole box fits in the window */
+  .view{display:block;width:100%;height:auto;max-height:max(240px,calc(100vh - 385px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{display:block;color:var(--ink);font-weight:600;white-space:nowrap;margin-top:2px;}
+  input[type=range]{width:100%;accent-color:var(--quantum);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--quantum);border-color:var(--quantum);color:var(--panel);}
+  .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--quantum);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:5.2em;}
+  .model{font:12px/1.5 var(--font-mono);color:var(--ink-faint);}
+  .kept-list{margin:0;padding:0;list-style:none;font:12px var(--font-mono);color:var(--ink-soft);display:flex;flex-wrap:wrap;gap:4px 18px;}
+  .kept-list:empty{display:none;}
+  .kept-list b{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--ink-faint);font-size:11px;margin-right:6px;color:var(--ink);}
+  .results{font:12px/1.5 var(--font-mono);color:var(--ink-soft);}
+  .results:empty{display:none;}
+  .results table{border-collapse:collapse;width:fit-content;max-width:100%;}
+  .results th,.results td{padding:1px 8px;border-bottom:1px solid var(--panel-border);text-align:right;white-space:nowrap;}
+  .results th{font-weight:600;color:var(--ink);}
+  .results-wrap{max-height:104px;overflow:auto;}
+  .results-wrap th{position:sticky;top:0;background:var(--panel);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--quantum);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--quantum);background:var(--quantum-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--quantum);}
+  .eq + .eq{margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} }
+  /* inside a workout tab (electron-diffraction.html?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="ib.html">&larr; IB animations</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; matter waves &middot; IAL Unit 2 &middot; IB E.2 (HL)</div>
+    <h1>Electron Diffraction</h1>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="ed-svg" viewBox="0 0 760 205" role="img" aria-label="An electron diffraction tube: electrons from a heated cathode are accelerated by the anode, pass through thin graphite and make rings on a fluorescent screen. The screen is also shown from the front with a centimetre scale, beside a graph."></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="ed-play" type="button">&#9654; Switch on</button>
+          <button class="btn" id="ed-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="ed-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="ed-exp" type="button" aria-pressed="false" title="Measure the ring diameters at several voltages and plot them">Experiment</button>
+          <button class="btn" id="ed-keep" type="button">Keep these rings</button>
+          <button class="btn" id="ed-clear" type="button" disabled>Clear kept rings</button>
+        </div>
+        <div class="sliders">
+          <div>
+            <label class="lab" for="ed-v">Accelerating voltage <output id="ed-vo"></output></label>
+            <input type="range" id="ed-v" min="2" max="5" step="0.1" value="3">
+          </div>
+        </div>
+        <ul class="kept-list" id="ed-kept"></ul>
+        <p class="model">Model: rings at &theta; &asymp; &lambda;/d for graphite spacings d = 0.213 nm and 0.123 nm; flat screen L = 13.5 cm from the graphite, ring radius r = L tan &theta;.</p>
+      </div>
+    </div>
+    <div class="side">
+      <div>
+        <div class="lab">Try these</div>
+        <div class="seg" id="ed-presets"><button type="button" data-v="2" aria-pressed="false">2.0 kV (slowest)</button><button type="button" data-v="3.5" aria-pressed="false">3.5 kV</button><button type="button" data-v="5" aria-pressed="false">5.0 kV (fastest)</button></div>
+      </div>
+      <p class="note" id="ed-note" aria-live="polite"></p>
+      <div class="stats">
+        <div class="stat"><small>Speed v</small><strong id="ed-sv">0</strong></div>
+        <div class="stat hi"><small>Wavelength &lambda;</small><strong id="ed-sl">0</strong></div>
+        <div class="stat"><small id="ed-s3l">First ring &theta;</small><strong id="ed-s3">0</strong></div>
+        <div class="stat"><small id="ed-s4l">First ring D</small><strong id="ed-s4">0</strong></div>
+      </div>
+      <div class="results" id="ed-results"></div>
+      <details class="working" id="ed-working">
+        <summary>Show working</summary>
+        <div class="eq" id="ed-eq1"></div>
+        <div class="eq" id="ed-eq2"></div>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // electron-diffraction.html is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    document.getElementById('ed-working').open = true;
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 2.242 × 10⁻¹¹
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+m.toFixed(dp)>=10){ m/=10; e++; }
+    return m.toFixed(dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sf(x, n){ return (+x.toPrecision(n)).toFixed(Math.max(0, n-1-Math.floor(Math.log10(Math.abs(+x.toPrecision(n)))))); }
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+
+  // ---- the physics (SI units; V in volts). Non-relativistic: at 5 kV the error is about 0.5 %.
+  var H = 6.63e-34, E = 1.60e-19, ME = 9.11e-31;
+  var L = 0.135;                        // graphite to screen (m): the tube is about 13.5 cm across
+  var D1 = 2.13e-10, D2 = 1.23e-10;     // the two graphite spacings that give the inner and outer rings
+  var vIn=$('#ed-v'), playBtn=$('#ed-play'), slowBtn=$('#ed-slow');
+  function kV(){ return +vIn.value; }
+  function speed(V){ return Math.sqrt(2*E*V/ME); }
+  function mom(V){ return ME*speed(V); }
+  function lam(V){ return H/mom(V); }
+  function theta(V, d){ return lam(V)/d; }                     // rad, small-angle form of the Bragg condition
+  function ringD(V, d){ return 2*L*Math.tan(theta(V,d)); }     // ring diameter on the screen (m)
+  var DEG = 180/Math.PI;
+
+  // ---- the picture
+  // Side view of the tube: axis y = AY; cathode, anode, graphite target at GXT, a glass bulb of radius BR centred at (BCX, AY).
+  var AY=76, CATH=30, ANODE=72, GXT=128, BCX=198, BR=70;
+  var FACE, PXCM=20, FR_CM=3.8, GX, GY, GW, GH, NARROW;
+  var narrowQ = window.matchMedia('(max-width:560px)');
+  function layout(){
+    NARROW = narrowQ.matches;
+    if(NARROW){ FACE={x:170,y:234}; GX=50; GY=340; GW=270; GH=220; $('#ed-svg').setAttribute('viewBox','0 0 340 640'); }
+    else { FACE={x:372,y:90}; GX=512; GY=16; GW=236; GH=150; $('#ed-svg').setAttribute('viewBox','0 0 760 205'); }
+  }
+  if(narrowQ.addEventListener) narrowQ.addEventListener('change',function(){ layout(); draw(); });
+  layout();
+
+  // graphs: count against angle (normal) or D against 1/√V (experiment)
+  var AMAX=14;                                  // degrees
+  function ax(a){ return GX+a/AMAX*GW; }
+  function ay(c){ return GY+GH-Math.min(c,1.08)/1.1*GH; }
+  function count(a, V){   // relative electron count at angle a (degrees) from the beam
+    var t1=theta(V,D1)*DEG, t2=theta(V,D2)*DEG, w=0.42;
+    return 1.8*Math.exp(-Math.pow(a/0.7,2)) + 0.55*Math.exp(-Math.pow((a-t1)/w,2)) + 0.34*Math.exp(-Math.pow((a-t2)/w,2)) + 0.10*Math.exp(-a/5);
+  }
+  function countPath(V){
+    var p=[]; for(var a=0; a<=AMAX+1e-9; a+=0.05) p.push(ax(a).toFixed(1)+','+ay(count(a,V)).toFixed(1));
+    return p.join(' ');
+  }
+  var XMAX=2.5, YMAX=7;                         // 1/√V in 10⁻² V^−½ ; D in cm
+  function ex(x){ return GX+x/XMAX*GW; }
+  function ey(y){ return GY+GH-y/YMAX*GH; }
+
+  var electrons=[], spawn=0, t=0, running=false, started=false, idle=0, last=0, raf=0, AUTO_PAUSE=40, kept=[];
+  // Experiment mode: the supply steps from 2.0 kV to 5.0 kV, 0.5 kV at a time; at each voltage both ring diameters
+  // are read off the scale to 0.1 cm. Dragging the slider takes a reading at that voltage too.
+  var exp=false, readings={}, sweeping=false, swept=false, dwell=0, DWELL=1.2;
+  function readErr(v, ring){ return 0.03*Math.sin(v*4+ring*1.7); }   // small fixed reading error (cm), never enough to reverse the order
+  function reading(v){
+    var V=v*1000;
+    return { d1: Math.round((ringD(V,D1)*100+readErr(v,1))*10)/10, d2: Math.round((ringD(V,D2)*100+readErr(v,2))*10)/10 };
+  }
+  function record(v){ readings[Math.round(v*10)] = reading(v); }
+  function readList(){ return Object.keys(readings).map(Number).sort(function(a,b){ return a-b; }).map(function(k){ var r=readings[k]; return {v:k/10, x:100/Math.sqrt(k*100), d1:r.d1, d2:r.d2}; }); }
+  function fit(list, key){   // best line through the origin: gradient = Σxy / Σx²  (cm per 10⁻² V^−½, which is m V^½)
+    var sxy=0, sxx=0; list.forEach(function(q){ sxy+=q.x*q[key]; sxx+=q.x*q.x; }); return sxx ? sxy/sxx : 0;
+  }
+  function clearExp(){ readings={}; swept=false; sweeping=false; dwell=0; }
+  var CONST2 = 2*L*H, ROOT2ME = Math.sqrt(2*ME*E);
+  function spacing(k){ return CONST2/(k*ROOT2ME); }
+
+  function bulbPoint(th){ // where a ray from the graphite at angle th meets the far side of the bulb
+    var s=2*BR*Math.cos(th); return {x:GXT+s*Math.cos(th), y:AY-s*Math.sin(th), s:s};
+  }
+  function draw(){
+    var V=kV()*1000, on=started, g='';
+    // --- side view
+    var nx=Math.sqrt(BR*BR-14*14), jx=BCX-nx;
+    g+='<path d="M'+jx.toFixed(1)+','+(AY-14)+' H22 Q12,'+(AY-14)+' 12,'+AY+' Q12,'+(AY+14)+' 22,'+(AY+14)+' H'+jx.toFixed(1)+' A'+BR+','+BR+' 0 1,0 '+jx.toFixed(1)+','+(AY-14)+' Z" fill="none" stroke="var(--ink-soft)" stroke-width="2.2"/>';
+    // fluorescent coating on the far side of the bulb
+    var a0=-0.75, a1=0.75;
+    g+='<path d="M'+(BCX+BR*Math.cos(a0)).toFixed(1)+','+(AY+BR*Math.sin(a0)).toFixed(1)+' A'+BR+','+BR+' 0 0,1 '+(BCX+BR*Math.cos(a1)).toFixed(1)+','+(AY+BR*Math.sin(a1)).toFixed(1)+'" fill="none" stroke="var(--glow)" stroke-width="4" opacity="'+(on?0.9:0.35)+'"/>';
+    g+='<text x="'+(BCX+BR-4)+'" y="'+(AY-BR+8)+'" font-size="10.5" fill="var(--ink-soft)">screen</text>';
+    g+='<text x="'+BCX+'" y="'+(AY+BR-10)+'" text-anchor="middle" font-size="10" fill="var(--ink-faint)">vacuum</text>';
+    // cathode (heated filament) and anode
+    g+='<path d="M'+(CATH-8)+','+(AY-7)+' l3,4 -3,4 3,4 -3,4" fill="none" stroke="'+(on?'var(--accent)':'var(--metal)')+'" stroke-width="2"/>';
+    g+='<line x1="'+CATH+'" x2="'+CATH+'" y1="'+(AY-9)+'" y2="'+(AY+9)+'" stroke="var(--metal)" stroke-width="4" stroke-linecap="round"/>';
+    g+='<path d="M'+ANODE+','+(AY-13)+' V'+(AY-4)+' M'+ANODE+','+(AY+4)+' V'+(AY+13)+'" stroke="var(--metal)" stroke-width="5" stroke-linecap="round"/>';
+    g+='<line x1="'+GXT+'" x2="'+GXT+'" y1="'+(AY-8)+'" y2="'+(AY+8)+'" stroke="var(--ink)" stroke-width="2.5"/>';
+    g+='<text x="4" y="'+(AY-20)+'" font-size="10.5" fill="var(--ink-soft)">cathode</text>';
+    g+='<text x="'+(ANODE+2)+'" y="'+(AY-20)+'" font-size="10.5" fill="var(--ink-soft)">anode</text>';
+    g+='<text x="'+(GXT-2)+'" y="'+(AY+26)+'" text-anchor="end" font-size="10.5" fill="var(--ink-soft)">graphite</text>';
+    // high-voltage supply: cathode −, anode +
+    g+='<path d="M'+CATH+','+(AY+9)+' V'+(AY+38)+' M'+ANODE+','+(AY+13)+' V'+(AY+38)+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.6"/>';
+    g+='<rect x="'+(CATH-12)+'" y="'+(AY+38)+'" width="'+(ANODE-CATH+24)+'" height="22" rx="4" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>';
+    g+='<text x="'+((CATH+ANODE)/2)+'" y="'+(AY+53)+'" text-anchor="middle" font-size="11" fill="var(--ink)">'+kV().toFixed(1)+' kV</text>';
+    g+='<text x="'+(CATH-16)+'" y="'+(AY+36)+'" font-size="11" fill="var(--ink-soft)">−</text><text x="'+(ANODE+6)+'" y="'+(AY+36)+'" font-size="11" fill="var(--ink-soft)">+</text>';
+    // faint paths of the beam and the two ring cones
+    if(on){
+      [0, theta(V,D1), theta(V,D2)].forEach(function(th, i){
+        [1,-1].forEach(function(sg){ if(i===0 && sg<0) return;
+          var p=bulbPoint(th); g+='<line x1="'+GXT+'" y1="'+AY+'" x2="'+p.x.toFixed(1)+'" y2="'+(AY+sg*(p.y-AY)).toFixed(1)+'" stroke="var(--electron)" stroke-width="1" opacity="0.22"/>';
+        });
+      });
+    }
+    electrons.forEach(function(q){
+      var x, y;
+      if(q.x<GXT){ x=q.x; y=AY+q.jy*Math.min(1,(q.x-CATH)/40); }
+      else { var th=q.th, s=q.s; x=GXT+s*Math.cos(th); y=AY-q.sg*s*Math.sin(th); }
+      g+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.6" fill="var(--electron)"/>';
+    });
+    // --- the screen seen from the front, with a centimetre scale
+    var fr=FR_CM*PXCM;
+    g+='<circle cx="'+FACE.x+'" cy="'+FACE.y+'" r="'+fr+'" fill="var(--screen)" stroke="var(--ink-soft)" stroke-width="2"/>';
+    if(NARROW) g+='<text x="'+(FACE.x-fr-8)+'" y="'+(FACE.y-10)+'" text-anchor="end" font-size="10.5" fill="var(--ink-soft)">screen, seen</text><text x="'+(FACE.x-fr-8)+'" y="'+(FACE.y+3)+'" text-anchor="end" font-size="10.5" fill="var(--ink-soft)">from the front</text>';
+    else g+='<text x="'+FACE.x+'" y="'+(FACE.y+fr+16)+'" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">screen, seen from the front</text>';
+    if(!exp) kept.forEach(function(k, n){
+      [D1,D2].forEach(function(d){ g+='<circle cx="'+FACE.x+'" cy="'+FACE.y+'" r="'+(ringD(k.V,d)/2*100*PXCM).toFixed(1)+'" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.6"/>'; });
+      var rr=ringD(k.V,D2)/2*100*PXCM, tx=FACE.x+rr*0.7071, ty=FACE.y-rr*0.7071;
+      g+='<circle cx="'+tx.toFixed(1)+'" cy="'+ty.toFixed(1)+'" r="7" fill="var(--panel)" stroke="var(--ink-faint)"/><text x="'+tx.toFixed(1)+'" y="'+(ty+3.5).toFixed(1)+'" text-anchor="middle" font-size="9.5" fill="var(--ink)">'+(n+1)+'</text>';
+    });
+    if(on){
+      var bright = running ? 1 : 0.75;
+      [[D1,0.95,3.2],[D2,0.7,3.2]].forEach(function(c){
+        var r=(ringD(V,c[0])/2*100*PXCM).toFixed(1);
+        g+='<circle cx="'+FACE.x+'" cy="'+FACE.y+'" r="'+r+'" fill="none" stroke="var(--glow)" stroke-width="7" opacity="'+(0.18*bright).toFixed(2)+'"/>';
+        g+='<circle cx="'+FACE.x+'" cy="'+FACE.y+'" r="'+r+'" fill="none" stroke="var(--glow)" stroke-width="'+c[2]+'" opacity="'+(c[1]*bright).toFixed(2)+'"/>';
+      });
+      g+='<circle cx="'+FACE.x+'" cy="'+FACE.y+'" r="9" fill="var(--glow)" opacity="'+(0.35*bright).toFixed(2)+'"/><circle cx="'+FACE.x+'" cy="'+FACE.y+'" r="5" fill="#eafff0"/>';
+    }
+    // the scale along a diameter: ticks every 0.5 cm, numbers every 1 cm (as on the screen's printed scale)
+    var sy=FACE.y;
+    g+='<line x1="'+(FACE.x-3.5*PXCM)+'" x2="'+(FACE.x+3.5*PXCM)+'" y1="'+sy+'" y2="'+sy+'" stroke="#cfe9d6" stroke-width="1" opacity="0.8"/>';
+    for(var c=-3.5; c<=3.501; c+=0.5){
+      var tx2=FACE.x+c*PXCM, big=Math.abs(c%1)<0.01;
+      g+='<line x1="'+tx2+'" x2="'+tx2+'" y1="'+(sy-(big?6:3.5))+'" y2="'+(sy+(big?6:3.5))+'" stroke="#cfe9d6" stroke-width="1"/>';
+      if(big && c!==0) g+='<text x="'+tx2+'" y="'+(sy+16)+'" text-anchor="middle" font-size="8.5" fill="#cfe9d6">'+Math.abs(c)+'</text>';
+    }
+    g+='<line x1="'+FACE.x+'" x2="'+FACE.x+'" y1="'+(FACE.y-fr*0.9)+'" y2="'+(FACE.y+fr*0.9)+'" stroke="#cfe9d6" stroke-width="0.6" opacity="0.4"/>';
+    g+='<text x="'+(FACE.x+fr+6)+'" y="'+(sy+4)+'" font-size="10" fill="var(--ink-soft)">cm</text>';
+    if(!on) g+='<text x="'+FACE.x+'" y="'+(FACE.y-18)+'" text-anchor="middle" font-size="10.5" fill="#cfe9d6">dark</text>';
+
+    // --- the graph
+    if(!exp){
+      for(var a=0; a<=AMAX; a+=2) g+='<line x1="'+ax(a)+'" x2="'+ax(a)+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--panel-border)"/><text x="'+ax(a)+'" y="'+(GY+GH+15)+'" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">'+a+'</text>';
+      g+='<line x1="'+GX+'" x2="'+GX+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/><line x1="'+GX+'" x2="'+(GX+GW)+'" y1="'+(GY+GH)+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
+      g+='<text x="'+(GX+GW/2)+'" y="'+(GY+GH+32)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">angle from the beam, θ (°)</text>';
+      g+='<text transform="translate('+(GX-10)+','+(GY+GH/2)+') rotate(-90)" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">electron count</text>';
+      kept.forEach(function(k, n){
+        g+='<polyline points="'+countPath(k.V)+'" fill="none" stroke="var(--ink-faint)" stroke-width="1.8" stroke-dasharray="5 4"/>';
+        var t1=theta(k.V,D1)*DEG;
+        g+='<circle cx="'+ax(t1).toFixed(1)+'" cy="'+(ay(count(t1,k.V))-12).toFixed(1)+'" r="8" fill="var(--panel)" stroke="var(--ink-faint)" stroke-width="1.5"/><text x="'+ax(t1).toFixed(1)+'" y="'+(ay(count(t1,k.V))-8).toFixed(1)+'" text-anchor="middle" font-size="10" fill="var(--ink)">'+(n+1)+'</text>';
+      });
+      if(on){
+        g+='<polyline points="'+countPath(V)+'" fill="none" stroke="var(--quantum)" stroke-width="2.6" stroke-linejoin="round"/>';
+        var t1n=theta(V,D1)*DEG, flip=t1n>AMAX/2, ly2=GY+26;
+        g+='<line x1="'+ax(t1n).toFixed(1)+'" x2="'+ax(t1n).toFixed(1)+'" y1="'+(ly2+4)+'" y2="'+(GY+GH)+'" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"/>';
+        g+='<text x="'+(ax(t1n)+(flip?-5:5)).toFixed(1)+'" y="'+(ly2+4)+'"'+(flip?' text-anchor="end"':'')+' font-size="10.5" fill="var(--accent)">first ring, θ = '+t1n.toFixed(1)+'°</text>';
+        g+='<text x="'+(ax(0)+12)+'" y="'+(GY+10)+'" font-size="10" fill="var(--ink-faint)">central spot (off the scale)</text>';
+      } else g+='<text x="'+(GX+GW/2)+'" y="'+(GY+GH/2)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-faint)">switch on to see the pattern</text>';
+    } else {
+      for(var x=0; x<=XMAX+1e-9; x+=0.5) g+='<line x1="'+ex(x)+'" x2="'+ex(x)+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--panel-border)"/><text x="'+ex(x)+'" y="'+(GY+GH+15)+'" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">'+x.toFixed(1)+'</text>';
+      for(var y=1; y<=YMAX; y++) g+='<line x1="'+GX+'" x2="'+(GX+GW)+'" y1="'+ey(y)+'" y2="'+ey(y)+'" stroke="var(--panel-border)"/><text x="'+(GX-5)+'" y="'+(ey(y)+4)+'" text-anchor="end" font-size="10.5" fill="var(--ink-faint)">'+y+'</text>';
+      g+='<line x1="'+GX+'" x2="'+GX+'" y1="'+GY+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/><line x1="'+GX+'" x2="'+(GX+GW)+'" y1="'+(GY+GH)+'" y2="'+(GY+GH)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
+      g+='<text x="'+(GX+GW/2)+'" y="'+(GY+GH+32)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">1/√V (10⁻² V<tspan font-size="8" dy="-5">−½</tspan><tspan dy="5">)</tspan></text>';
+      g+='<text x="'+(GX-4)+'" y="'+(GY-8)+'" font-size="11.5" fill="var(--ink-soft)">ring diameter D (cm)</text>';
+      var list=readList();
+      if(swept){
+        [['d1','var(--quantum)'],['d2','var(--accent)']].forEach(function(c){
+          var k=fit(list,c[0]); g+='<line x1="'+ex(0)+'" y1="'+ey(0)+'" x2="'+ex(XMAX)+'" y2="'+ey(k*XMAX)+'" stroke="'+c[1]+'" stroke-width="1.5" stroke-dasharray="6 4"/>';
+        });
+      }
+      list.forEach(function(q){
+        var x1=ex(q.x), y1=ey(q.d1), y2=ey(q.d2);
+        g+='<path d="M'+(x1-4).toFixed(1)+','+(y1-4).toFixed(1)+' l8,8 m0,-8 l-8,8" stroke="var(--quantum)" stroke-width="2"/>';
+        g+='<circle cx="'+x1.toFixed(1)+'" cy="'+y2.toFixed(1)+'" r="4" fill="none" stroke="var(--accent)" stroke-width="2"/>';
+      });
+      g+='<text x="'+(GX+8)+'" y="'+(GY+12)+'" font-size="10.5" fill="var(--quantum)">× inner ring</text><text x="'+(GX+8)+'" y="'+(GY+26)+'" font-size="10.5" fill="var(--accent)">○ outer ring</text>';
+      if(!list.length) g+='<text x="'+(GX+GW/2)+'" y="'+(GY+GH/2)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-faint)">readings appear here</text>';
+    }
+    if(running && slowOn()) g+='<text x="'+(GX+GW)+'" y="'+(GY+12)+'" text-anchor="end" font-size="11.5" fill="var(--accent)">slow motion</text>';
+    $('#ed-svg').innerHTML=g;
+    readout(V, on);
+  }
+
+  var lastNote='', lastRes='';
+  function readout(V, on){
+    var v=speed(V), p=mom(V), l=lam(V), th1=theta(V,D1), dd=ringD(V,D1)*100, Ek=E*V;
+    $('#ed-vo').textContent='V = '+kV().toFixed(1)+' kV = '+Math.round(V)+' V';
+    $('#ed-sv').textContent=sci(v,2)+' m/s';
+    $('#ed-sl').textContent=sci(l,2)+' m';
+    var list=readList();
+    if(exp){
+      $('#ed-s3l').textContent='Spacing d (inner)'; $('#ed-s4l').textContent='Spacing d (outer)';
+      $('#ed-s3').textContent = swept ? sci(spacing(fit(list,'d1')),2)+' m' : '?';
+      $('#ed-s4').textContent = swept ? sci(spacing(fit(list,'d2')),2)+' m' : '?';
+    } else {
+      $('#ed-s3l').textContent='First ring θ'; $('#ed-s4l').textContent='First ring D';
+      $('#ed-s3').textContent=(th1*DEG).toFixed(2)+'°';
+      $('#ed-s4').textContent=dd.toFixed(2)+' cm';
+    }
+    // working 1: the wavelength
+    var w='eV = ½mv²<br>1.60 × 10⁻¹⁹ × '+Math.round(V)+' = ½ × 9.11 × 10⁻³¹ × v²<br>'+sci(Ek,3)+' = '+sci(ME/2,3)+' × v²'
+      +'<br>v² = [['+sci(Ek,3)+'|'+sci(ME/2,3)+']]<br>v² = '+sci(v*v,3)+'<br>v = '+sci(v,3)+' m s⁻¹'
+      +'<br>p = mv<br>p = 9.11 × 10⁻³¹ × '+sci(v,3)+'<br>p = '+sci(p,3)+' kg m s⁻¹'
+      +'<br>λ = [[h|p]]<br>λ = [[6.63 × 10⁻³⁴|'+sci(p,3)+']]<br>λ = <b>'+sci(l,2)+' m</b>';
+    $('#ed-eq1').innerHTML=FR(w);
+    // working 2: the first ring, or (experiment) the spacing from the gradient
+    var w2;
+    if(!exp){
+      var r=L*100*Math.tan(th1);
+      w2='θ ≈ [[λ|d]]<br>θ = [['+sci(l,3)+'|2.13 × 10⁻¹⁰]]<br>θ = '+sf(th1,4)+' rad = '+(th1*DEG).toFixed(2)+'°'
+        +'<br>r = L tan θ<br>r = 13.5 × tan '+(th1*DEG).toFixed(2)+'°<br>r = '+sf(r,4)+' cm<br>D = 2r<br>D = 2 × '+sf(r,4)+'<br>D = <b>'+(2*r).toFixed(2)+' cm</b>';
+      $('#ed-eq2').innerHTML=FR(w2);
+    } else if(!swept){
+      $('#ed-eq2').innerHTML='Finish the experiment to see how the graph gives the spacing d of the carbon atoms.';
+    } else {
+      var k1=fit(list,'d1'), k2=fit(list,'d2');
+      w2='D = [[2Lλ|d]]<br>λ = [[h|√(2meV)]]<br>D = [[2Lh|d √(2me)]] × [[1|√V]]<br>gradient = [[2Lh|d √(2me)]]'
+        +'<br>Inner ring: gradient = '+sf(k1,4)+' m V<sup>½</sup>'
+        +'<br>'+sf(k1,4)+' = [[2 × 0.135 × 6.63 × 10⁻³⁴|d × √(2 × 9.11 × 10⁻³¹ × 1.60 × 10⁻¹⁹)]]'
+        +'<br>'+sf(k1,4)+' = [['+sci(CONST2,3)+'|d × '+sci(ROOT2ME,3)+']]'
+        +'<br>d = [['+sci(CONST2,3)+'|'+sf(k1,4)+' × '+sci(ROOT2ME,3)+']]<br>d = <b>'+sci(spacing(k1),2)+' m</b>'
+        +'<br>Outer ring: gradient = '+sf(k2,4)+' m V<sup>½</sup>'
+        +'<br>d = [['+sci(CONST2,3)+'|'+sf(k2,4)+' × '+sci(ROOT2ME,3)+']]<br>d = <b>'+sci(spacing(k2),2)+' m</b>'
+        +'<br>The outer value is a little below 1.23 × 10⁻¹⁰ m: D = [[2Lλ|d]] takes tan θ ≈ θ, which is less accurate at the larger angles of the outer ring.';
+      $('#ed-eq2').innerHTML=FR(w2);
+    }
+    // results table (experiment)
+    var res='';
+    if(exp && list.length){
+      res='<div class="results-wrap"><table><thead><tr><th>V (kV)</th><th>1/√V (10⁻² V<sup>−½</sup>)</th><th>D inner (cm)</th><th>D outer (cm)</th></tr></thead><tbody>'
+        +list.map(function(q){ return '<tr><td>'+q.v.toFixed(1)+'</td><td>'+q.x.toFixed(3)+'</td><td>'+q.d1.toFixed(1)+'</td><td>'+q.d2.toFixed(1)+'</td></tr>'; }).join('')+'</tbody></table></div>';
+    }
+    if(res!==lastRes){ $('#ed-results').innerHTML=res; lastRes=res; }
+    // what is happening now
+    var note;
+    if(!started) note='Press Switch on. The hot cathode gives off electrons, the anode at '+kV().toFixed(1)+' kV accelerates them, and they pass through a very thin layer of graphite onto the fluorescent screen.';
+    else {
+      note='λ = h/p = '+sci(l,2)+' m, close to the spacing of the carbon atoms, so the electrons diffract and land in rings, not one spot. ';
+      var ref=kept.length ? kept[kept.length-1].V : null;
+      if(ref!==null && Math.abs(ref-V)>50) note+= V>ref ? 'Higher voltage than kept set '+kept.length+': faster electrons, more momentum, shorter λ, so smaller rings.' : 'Lower voltage than kept set '+kept.length+': slower electrons, less momentum, longer λ, so bigger rings.';
+      else note+='Raise the voltage: faster electrons, more momentum, shorter λ, smaller rings.';
+    }
+    if(exp){
+      if(!started) note='Experiment: press Switch on. The supply steps from 2.0 kV to 5.0 kV, 0.5 kV at a time, and both ring diameters are read off the scale and plotted against 1/√V. You can also drag the voltage slider to take your own readings.';
+      else if(swept) note='Experiment finished. Both sets of points lie on straight lines through the origin, so D ∝ 1/√V ∝ λ. The gradients give the two spacings d (see the working).';
+      else if(sweeping) note='Reading the ring diameters at '+kV().toFixed(1)+' kV. Each reading is to the nearest 0.1 cm on the scale.';
+      else note='Taking your own readings: drag the voltage slider. Press Play to carry on stepping up 0.5 kV at a time.';
+    }
+    if(started && !running && t>0 && idle>=AUTO_PAUSE) note='Paused. Press Play to carry on. '+note;
+    if(note!==lastNote){ $('#ed-note').innerHTML=note; lastNote=note; }
+    playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : (started ? '&#9654; Play' : '&#9654; Switch on');
+  }
+
+  // ---- the animation
+  function slowOn(){ return slowBtn.getAttribute('aria-pressed')==='true'; }
+  function step(dt){
+    if(exp && sweeping){
+      dwell+=dt; idle=0;
+      if(dwell>=DWELL){
+        dwell=0; record(kV());
+        if(kV()>=5-1e-9){ sweeping=false; swept=true; }
+        else { var nv=Math.min(5, Math.floor(kV()*2+1e-6)/2+0.5); vIn.value=nv.toFixed(1); markPreset(); }
+      }
+    }
+    var V=kV()*1000, vmax=150*Math.sqrt(V/3000);
+    t+=dt; spawn+=dt*26;
+    while(spawn>=1){ spawn--;
+      if(electrons.length<160) electrons.push({x:CATH+1, jy:(Math.random()-0.5)*6, s:0, th:0, sg:1, path:-1});
+    }
+    var t1=theta(V,D1), t2=theta(V,D2);
+    electrons=electrons.filter(function(q){
+      if(q.x<GXT){
+        var sp = q.x<ANODE ? vmax*Math.sqrt(Math.max(0.03,(q.x-CATH)/(ANODE-CATH))) : vmax;
+        q.x+=sp*dt;
+        if(q.x>=GXT){   // through the graphite: most go straight on, some are diffracted into one of the two rings
+          var r=Math.random(); q.path = r<0.5 ? 0 : (r<0.8 ? 1 : 2); q.sg = Math.random()<0.5 ? 1 : -1; q.s=q.x-GXT;
+        }
+        return true;
+      }
+      q.th = q.path===0 ? 0 : (q.path===1 ? t1 : t2);
+      q.s+=vmax*dt;
+      return q.s < 2*BR*Math.cos(q.th);
+    });
+  }
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function frame(now){
+    if(!running) return;
+    var real=Math.min(0.05,(now-last)/1000); last=now;
+    step(real*(slowOn()?0.3:1)); idle+=real;
+    if(idle>=AUTO_PAUSE) stop();   // it always ends: it pauses itself after 40 s with nobody touching it
+    draw(); if(running) raf=requestAnimationFrame(frame);
+  }
+  function run(){
+    started=true; running=true; idle=0; last=performance.now();
+    if(exp && !swept){ if(!Object.keys(readings).length) vIn.value='2.0'; sweeping=true; dwell=0; }
+    raf=requestAnimationFrame(frame); draw();
+  }
+  function reset(){ stop(); started=false; t=0; idle=0; electrons=[]; spawn=0; clearExp(); if(exp) vIn.value='2.0'; markPreset(); draw(); }
+  function touched(){ idle=0; }
+
+  // ---- controls
+  var presetsEl=$('#ed-presets');
+  function markPreset(){ Array.prototype.forEach.call(presetsEl.children,function(b){ b.setAttribute('aria-pressed', String(Math.abs(+b.dataset.v-kV())<1e-6)); }); }
+  vIn.addEventListener('input',function(){ markPreset(); touched();
+    if(exp){ sweeping=false; dwell=0; if(started && !swept) record(kV()); }
+    draw(); });
+  presetsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return;
+    vIn.value=(+b.dataset.v).toFixed(1); markPreset(); touched();
+    if(exp){ sweeping=false; if(started && !swept) record(kV()); }
+    if(!running && !exp) run(); else draw(); });
+  var expBtn=$('#ed-exp');
+  expBtn.addEventListener('click',function(){
+    exp=!exp; expBtn.setAttribute('aria-pressed', String(exp)); clearExp();
+    if(exp){ vIn.value='2.0'; if(running){ sweeping=true; } }
+    $('#ed-keep').hidden=exp; $('#ed-clear').hidden=exp; $('#ed-kept').hidden=exp;
+    markPreset(); touched(); draw(); });
+  playBtn.addEventListener('click',function(){ if(running){ stop(); draw(); } else run(); });
+  slowBtn.addEventListener('click',function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); touched(); draw(); });
+  $('#ed-reset').addEventListener('click',reset);
+  function listKept(){
+    $('#ed-kept').innerHTML=kept.map(function(k,n){ return '<li><b>'+(n+1)+'</b>'+(k.V/1000).toFixed(1)+' kV, λ = '+sci(lam(k.V),2)+' m</li>'; }).join('');
+    $('#ed-clear').disabled=!kept.length; $('#ed-keep').disabled=kept.length>=3;
+  }
+  $('#ed-keep').addEventListener('click',function(){ if(kept.length<3){ kept.push({V:kV()*1000}); if(!started) run(); } listKept(); draw(); });
+  $('#ed-clear').addEventListener('click',function(){ kept=[]; listKept(); draw(); });
+
+  watchEquals($('#ed-eq1')); watchEquals($('#ed-eq2'));
+  listKept(); reset();
+})();
+</script>
+<footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
+</body>
+</html>
