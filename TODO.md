@@ -30,12 +30,11 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 ## 3. Alex to review
 
 - [ ] Check the 20-minute review of all 21 IGCSE workouts (4 Nov 2026): every page cut to about 20 minutes of content (477 → 300 activities), Quick check cards instead of single Predicts, memory games replaced by one crossword per unit. What changed on each page is in `tools/REVIEW.md` (rows starting "4 Nov 2026 20-minute review"). Calculate cards were then put back to 3 questions (Alex, 4 Nov 2026), so pages may run a little over 20 minutes, never 30.
-- [ ] Decide whether to split 2b `circuits.html` (still ~39 min after the cut): page A Overview, Charge, Series, Resistance; page B I–V, LDR and Thermistor, Series Calculations, Units and Terms. A split touches `igcse.html`, `tools/sets/build.py`, the 2.9 practical's `page.json` link (`circuits.html#iv`) and `tools/CORE-PRACTICALS.md` (added 4 Nov 2026).
 
 51 pages are 🔍 To review and 17 are ❔ Not recorded in `tools/REVIEW.md`. Go through that table; only Alex marks a page ✅.
 
 - [ ] Check Units 7 and 8 (7a `radioactivity.html`, 7b `fission-and-fusion.html`, 8a `universe-and-stars.html`, 8b `cosmology.html`; what to look at is in `tools/REVIEW.md`). When each is checked, remove its Draft labels (added 4 Nov 2026).
-- [ ] Check Unit 3 (3a `waves.html`, 3b `light-and-sound.html`; what to look at is in `tools/REVIEW.md`). When it is checked, remove its Draft labels (CLAUDE.md, "Draft units") (added 4 Nov 2026).
+- [ ] Check Unit 3 (3a `waves.html`, 3b `light-and-sound.html`, 3c `sound.html`; what to look at is in `tools/REVIEW.md`). When it is checked, remove its Draft labels (CLAUDE.md, "Draft units") (added 4 Nov 2026).
 - [ ] Look at the drafts `calculations.html` and `graphs.html`. If they're fine, add their cards to `igcse.html` below Core Practicals and remove `noindex` (in `tools/sets/build.py`).
 - [x] `iv-characteristics.html`: reversible 6 V battery instead of the two-cell −6 V to +6 V potentiometer (3 Nov 2026).
 
@@ -62,6 +61,8 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 - [ ] `ial.html` holds only Core Practicals so far; IAL workouts are still to plan.
 
 ## Done
+
+- [x] Split 2b (now 2b Circuits + 2c Circuit Components; Electric Charge is 2d) and 3b (now 3b Light + 3c Sound, TA) so no workout runs to 30 minutes (Alex, 4 Nov 2026).
 
 - 4 Nov 2026: core practicals 2.23P, 3.27P and 7.6 built and published, with new animations `electrostatic-charging.html` (framed in 2c Charging, with the banner), `oscilloscope.html` (framed in 3b Pitch and Loudness) and `penetrating-power.html` (framed in 7a Alpha, Beta, Gamma), each with its banner; mark scheme wording from the IGCSE Question Index.
 - 4 Nov 2026: Unit 7 (7a `radioactivity.html`, 7b `fission-and-fusion.html`) and Unit 8 (8a `universe-and-stars.html`, 8b `cosmology.html`, TA) workouts as drafts, with cards on `igcse.html`, Units and Terms on 7b and 8a, tabs in the Calculations and Graphs sets. `film-badge.html` and `random-decay.html` framed in 7a, `chain-reaction.html` in 7b (and now on the IGCSE animation list). Marked 🔍 in `tools/REVIEW.md`.
