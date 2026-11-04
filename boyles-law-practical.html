@@ -398,6 +398,21 @@ table.units.res-tbl{min-width:0}
   .celebrate{display:inline-block;animation:pulse .6s ease-out;color:var(--good)}
   .slot .chip.is-placed{animation:settle .15s ease-out}
 }
+/* core route and extra practice */
+.page-head .route-note{order:4;flex-basis:100%;margin:2px 0 0;font:500 12.5px var(--f-mono);color:var(--ink-soft)}
+.route-note b{color:var(--ink);font-weight:600}
+.tabs-sep{align-self:center;margin:0 2px 0 10px;font:500 11.5px var(--f-mono);color:var(--ink-faint);white-space:nowrap}
+.tabs-sep::after{content:" \203A"}
+.tab-btn.is-extra{border-style:dashed;color:var(--ink-soft)}
+.tab-btn.is-extra.is-active{border-style:solid;color:var(--bg)}
+.extra-note{font:500 12.5px var(--f-mono);color:var(--ink-soft);margin:-4px 0 12px}
+details.extra-block{margin-top:22px;border:1.5px dashed var(--panel-border);border-radius:12px;padding:10px 14px;background:transparent}
+details.extra-block[open]{padding-bottom:16px}
+details.extra-block>summary{font:700 20px var(--f-head);color:var(--ink);padding:4px 0;min-height:36px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+details.extra-block>summary::before{content:'+';width:18px;font:500 18px var(--f-mono);color:var(--accent)}
+details.extra-block[open]>summary::before{content:'\2212'}
+details.extra-block>summary .extra-n{font:500 12px var(--f-mono);color:var(--ink-faint)}
+details.extra-block>div.acts{margin-top:14px;padding:0;background:none;font:inherit;line-height:inherit;border-radius:0}
 </style>
 <div class="page">
 <header class="page-head">
@@ -472,6 +487,8 @@ const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim
 const raf=f=>requestAnimationFrame(f);
 
 const STORE_KEY='cp-ial14-boyles-law-v1',OLD_STORE_KEY='';
+// Core route (page.json "core"): {tab: [activity titles]}. Other activities on a core tab go under "Extra practice"; other tabs are extra tabs. null = no core route.
+const CORE=null;
 const TAB_IDS=["overview", "method", "variables", "experiment", "results", "graphs", "calculate", "accuracy", "exam"];
 let activeTab='overview';
 const reflowers=[];
@@ -480,7 +497,7 @@ function addTicker(tab,fn){tickers.push({tab,fn});}
 function loop(t){if(!document.hidden){for(const k of tickers){if(k.tab===activeTab){try{k.fn(t);}catch(e){console.error(e);}}}}raf(loop);}
 
 function act(panel,kind,title,intro){
-  const a=mk('article','act');
+  const a=mk('article','act');a.dataset.title=title;
   a.innerHTML='<h3 class="act-title"><span class="kind">'+kind+'</span><span>'+FR(title)+'</span></h3>'+(intro?'<p class="act-intro">'+FR(intro)+'</p>':'');
   const body=mk('div','act-body');a.appendChild(body);
   $('#panel-'+panel+' .acts').appendChild(a);
@@ -515,12 +532,15 @@ function writeSave(){
 function saveSoon(){if(!saveReady)return;clearTimeout(saveTimer);saveTimer=setTimeout(writeSave,1000);raf(()=>showProgress(true));}
 // An activity hidden inside its tab (e.g. one for a method type that is not chosen) does not count.
 function shown(g){let e=g.host;while(e&&!(e.classList&&e.classList.contains('panel'))){if(e.hidden)return false;e=e.parentElement;}return true;}
-function tabDone(t){const gs=games.filter(g=>g.tab===t&&shown(g));return gs.length>0&&gs.every(g=>{try{return g.isDone();}catch(e){return false;}});}
+// On a core tab only the core activities count; Extra practice never stops the tick.
+function counts(g){return shown(g)&&!(CORE&&CORE[g.tab]&&g.host.closest('.extra-block'));}
+function tabDone(t){const gs=games.filter(g=>g.tab===t&&counts(g));return gs.length>0&&gs.every(g=>{try{return g.isDone();}catch(e){return false;}});}
 function showProgress(animate){
-  const graded=TAB_IDS.filter(t=>games.some(g=>g.tab===t));
+  const withGames=TAB_IDS.filter(t=>games.some(g=>g.tab===t));
+  const graded=CORE?withGames.filter(t=>CORE[t]):withGames;
   let n=0;
-  graded.forEach(t=>{
-    const d=tabDone(t),btn=document.getElementById('tab-'+t);if(d)n++;
+  withGames.forEach(t=>{
+    const d=tabDone(t),btn=document.getElementById('tab-'+t);if(d&&graded.indexOf(t)>=0)n++;
     if(!btn)return;
     let tk=btn.querySelector('.tab-tick');
     if(d&&!tk){tk=mk('span','tab-tick','<span aria-hidden="true">✓</span><span class="sr-only"> (done)</span>');btn.appendChild(tk);if(animate)tk.classList.add('pop-in');}
@@ -529,7 +549,7 @@ function showProgress(animate){
   });
   let pill=document.getElementById('tabs-done');
   if(!pill){const eb=$('.page-head .eyebrow');if(!eb||!graded.length)return;pill=mk('span','tabs-done');pill.id='tabs-done';pill.setAttribute('aria-live','polite');eb.parentNode.appendChild(pill);}
-  const txt=n+' of '+graded.length+' tabs done';
+  const txt=(CORE?'Core route: ':'')+n+' of '+graded.length+' tabs done';
   if(pill.textContent!==txt){
     const up=n>(+pill.dataset.n||0);pill.textContent=txt;pill.dataset.n=n;
     if(animate&&up){pill.classList.remove('pulse');void pill.offsetWidth;pill.classList.add('pulse');}
@@ -1704,6 +1724,40 @@ function vGraph(label){
   body.appendChild(d4);
 }
 
+/* Core route: activities named in page.json "core" stay at the top of their tab, in their order; the rest of
+   that tab's activities go into a closed "Extra practice" block under them. A tab with no core activities is an
+   extra tab: its button moves after the core tabs, behind an "Extra practice" label. */
+function applyCore(){
+  if(!CORE)return;
+  const missing=[];
+  TAB_IDS.sort((a,b)=>(CORE[a]?0:1)-(CORE[b]?0:1));
+  const nav=byId('tab-'+TAB_IDS[0]).parentNode;
+  let sepAdded=false;
+  TAB_IDS.forEach(t=>{
+    const panel=byId('panel-'+t),btn=byId('tab-'+t),list=panel&&$('.acts',panel);if(!list)return;
+    if(!CORE[t]){
+      if(!sepAdded){nav.appendChild(mk('span','tabs-sep','Extra practice'));sepAdded=true;}
+      nav.appendChild(btn);btn.classList.add('is-extra');panel.classList.add('is-extra');
+      $('.panel-head',panel).insertAdjacentElement('afterend',mk('p','extra-note','Extra practice: not part of the core route. Use it to go further, or to revise.'));
+      return;
+    }
+    nav.appendChild(btn);
+    const want=CORE[t],found={},extras=[];
+    Array.from(list.children).forEach(a=>{
+      if(!a.classList.contains('act'))return;
+      if(want.indexOf(a.dataset.title)>=0)found[a.dataset.title]=1;else extras.push(a);
+    });
+    want.forEach(w=>{if(!found[w])missing.push(t+': '+w);});
+    if(!extras.length)return;
+    const d=mk('details','extra-block');
+    d.innerHTML='<summary>Extra practice <span class="extra-n">'+extras.length+' more '+(extras.length>1?'activities':'activity')+', optional</span></summary>';
+    const box=mk('div','acts');extras.forEach(a=>box.appendChild(a));d.appendChild(box);
+    list.parentNode.insertBefore(d,list.nextSibling);
+    d.addEventListener('toggle',()=>{if(d.open)raf(()=>reflowers.forEach(f=>{try{f(activeTab);}catch(e){console.error(e);}}));});
+  });
+  if(missing.length){window.__coreMissing=missing;console.warn('Core activities not found: '+missing.join(' | '));}
+}
+applyCore();
 function pairPredicts(){
   const isPred=a=>a&&a.classList.contains('act')&&(($('.kind',a)||{}).textContent==='Predict');
   $$('.acts').forEach(list=>{

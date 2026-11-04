@@ -17,12 +17,13 @@ python3 tools/practical-gen/gen.py --all --check        # rebuild every practica
   - Every graded factory returns `track(host,{getState,setState,isDone})`, so its answers are saved and its tab can be ticked. A new graded factory must do the same.
 - `practicals/<slug>/page.json`:
   - `file`, `title`, `course` (`igcse`, the default, or `ial`: sets the breadcrumb), `unit`, `links` (header links to the animation and the workout tab), `storeKey` (bump it when questions move) and `oldStoreKey` (the key before the last bump; only the open tab is carried over from it), `draft` (true adds noindex), `accent` (light and dark pairs), optional `extraCss`.
+  - `core` (Alex, 4 Nov 2026): the exam-focused core route, `{"<tab id>": ["<act title>", …]}`. On a listed tab the named activities stay at the top (in content order) and the rest of that tab go into a closed "Extra practice" block; unlisted tabs become extra tabs, moved after the core tabs behind an "Extra practice ›" label. List the core tabs first in `tabs` (the first tab must be a core tab). The tab ticks and the "Core route: N of M tabs done" pill count only core activities. `coreMinutes` is the time shown in the header line (aim for about 12, never more than 15). A title in `core` that matches no `act()` is reported by `check.py` ("CORE TITLES NOT FOUND") and in the console.
   - `tabs`: each has `id`, `label`, `title` and `spec`. A spec badge ending in P adds the TA badge, the tab's TA tag and the "TA = Triple Award only" header note automatically.
 - `practicals/<slug>/content.js`: the activities, in tab order. Each `act(tab, kind, title, intro)` call adds a card to that tab. Two Predicts in a row are paired side by side automatically.
 
 To change something on every practical page (a bug fix, a new factory), edit `template/`, rebuild with `--all`, and check each page.
 
-`check.py` answers every graded activity on a built page in Playwright and reports what the page says, then checks every tab for sideways scroll at 380px and each framed animation's height. Run `python3 -m http.server 8765` in the repo root first, then `python3 tools/practical-gen/check.py hookes-law-practical.html` (add `--shots DIR` for screenshots).
+`check.py` answers every graded activity on a built page in Playwright and reports what the page says, then checks every tab for sideways scroll at 380px and each framed animation's height. It opens every Extra practice block first, and prints the core route with an estimated time per activity (Predict 0.75 min, Sort/Match/Order 1.75, 1 per Calculate question or Spot the error example, Plot 2.5, Your turn 5, Exam style 1 per mark). Run `python3 -m http.server 8765` in the repo root first, then `python3 tools/practical-gen/check.py hookes-law-practical.html` (add `--shots DIR` for screenshots).
 
 ## experiment-kit: Experiment mode for animation pages
 
