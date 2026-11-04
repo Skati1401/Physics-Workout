@@ -97,6 +97,15 @@ h1{font:800 clamp(34px,8vw,58px)/.92 var(--f-head);letter-spacing:0;margin:0 0 1
 .act-body{display:flex;flex-direction:column;gap:12px;min-width:0}
 .sub{font:500 11.5px var(--f-mono);letter-spacing:0;color:var(--ink-faint);margin:2px 0 -4px}
 .note{font-size:13px;color:var(--ink-soft);margin:0}
+.dv{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:14px 22px;align-items:start;margin-bottom:12px}
+.dv-fig{margin:0;position:sticky;top:8px}.dv-fig svg{width:100%;max-width:240px;display:block}.dv-fig figcaption{font-size:13px;color:var(--ink-soft)}
+.dv-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:10px 14px}
+.dv-step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:10px 12px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel)}
+.dv-n{font:600 13px var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:6px;min-width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center}
+.dv-h{font-weight:600;margin:2px 0 4px}.dv-step .note{margin:0 0 8px}
+.btn:disabled{opacity:.5;cursor:default}
+@media (prefers-reduced-motion: no-preference){.dv-in{animation:dvIn .25s ease-out}@keyframes dvIn{from{opacity:0}to{opacity:1}}}
+@media (max-width:640px){.dv{grid-template-columns:minmax(0,1fr)}.dv-fig{position:static}.dv-fig svg{max-width:200px}}
 .note-eq{display:block;margin:6px 0;font-family:'IBM Plex Mono',monospace;color:var(--ink)}
 .bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
 .btn{font:500 13px var(--f-body);padding:7px 14px;border:1px solid var(--panel-border);border-radius:6px;background:var(--panel-2);cursor:pointer}
@@ -1332,6 +1341,75 @@ function watchEquals(sel){
     alignEquals(el);
     new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true});
   });
+}
+{
+  // IAL 132: derive ½m⟨c²⟩ = 3/2 kT, one step at a time (IAL only: IB 2025 uses the result but does not derive it)
+  const body=act('gas','Derive','From molecules to temperature','IAL spec point 132: derive the equation for the mean kinetic energy of the molecules. One molecule in a cube first, then all N of them. Press Next step to add each step.');
+  const art=body.parentNode;
+  art.id='gs-derive';
+  $('.act-title span:last-child',art).innerHTML=FR('Derive ½m⟨c²⟩ = [[3|2]]kT');
+  const cx='c<sub>x</sub>',mx='⟨c<sub>x</sub>²⟩';
+  const STEPS=[
+    ['One molecule hits the shaded wall','A molecule of mass m moves at speed '+cx+' towards the wall. The collision is elastic, so it bounces back at the same speed.',
+      ['momentum before = m'+cx,'momentum after = −m'+cx,'change of momentum = −m'+cx+' − m'+cx,'change of momentum = −2m'+cx]],
+    ['Time between hits on that wall','It crosses the cube and back, a distance 2L, before it hits the same wall again.',
+      ['Δt = [[2L|'+cx+']]']],
+    ['Force on the wall from this molecule','Force = rate of change of momentum. The wall gains momentum 2m'+cx+' at each hit.',
+      ['F = [[2m'+cx+'|Δt]]','F = 2m'+cx+' × [['+cx+'|2L]]','F = [[m'+cx+'²|L]]']],
+    ['Add up all N molecules','Each molecule has its own '+cx+'. '+mx+' is the mean of all the '+cx+'² values.',
+      ['F = [[m|L]] × ('+cx+'₁² + '+cx+'₂² + … + '+cx+'<sub>N</sub>²)','F = [[Nm'+mx+'|L]]']],
+    ['Pressure on the wall','The wall has area L², and the volume of the cube is V = L³.',
+      ['p = [[F|L²]]','p = [[Nm'+mx+'|L³]]','p = [[Nm'+mx+'|V]]','pV = Nm'+mx]],
+    ['No direction is special','The molecules move at random, so the mean square speed is shared equally between x, y and z.',
+      ['c² = '+cx+'² + c<sub>y</sub>² + c<sub>z</sub>²','⟨c²⟩ = '+mx+' + ⟨c<sub>y</sub>²⟩ + ⟨c<sub>z</sub>²⟩','⟨c²⟩ = 3'+mx,mx+' = [[1|3]]⟨c²⟩']],
+    ['Pressure of a gas from its molecules','Put this into pV = Nm'+mx+'.',
+      ['pV = [[1|3]]Nm⟨c²⟩']],
+    ['Compare with the ideal gas equation','Both equations give pV for the same gas, so the right-hand sides are equal.',
+      ['pV = NkT','[[1|3]]Nm⟨c²⟩ = NkT','m⟨c²⟩ = 3kT','½m⟨c²⟩ = [[3|2]]kT']],
+    ['What it means','The mean kinetic energy of a molecule is proportional to the kelvin temperature, whatever the gas. With the temperature on the slider above:',null]
+  ];
+  body.innerHTML=`
+  <div class="dv">
+    <figure class="dv-fig">
+      <svg viewBox="0 0 220 170" role="img" aria-label="A cube of side L. One molecule moves with speed c x towards the shaded right-hand wall and bounces back.">
+        <path d="M150 40 L190 14 L190 114 L150 140 Z" fill="var(--gas)" opacity=".28"/>
+        <path d="M30 40 H150 V140 H30 Z M30 40 L70 14 H190 L150 40 M190 14 V114 L150 140" fill="none" stroke="var(--ink-soft)" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M30 140 L70 114 H190 M70 114 V14" fill="none" stroke="var(--ink-faint)" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <circle cx="78" cy="87" r="8" fill="var(--gas)"/>
+        <path d="M90 80 H136" stroke="var(--ink)" stroke-width="2.5"/><path d="M136 74 L146 80 L136 86 Z" fill="var(--ink)"/>
+        <path d="M144 94 H100" stroke="var(--ink)" stroke-width="1.8" stroke-dasharray="5 4"/><path d="M100 89 L90 94 L100 99 Z" fill="var(--ink)"/>
+        <text x="114" y="70" font-size="14" text-anchor="middle" fill="var(--ink)" font-style="italic">c<tspan font-size="10" dy="3">x</tspan></text>
+        <text x="90" y="166" font-size="14" text-anchor="middle" fill="var(--ink-soft)" font-style="italic">L</text>
+        <path d="M30 152 V146 M150 152 V146 M30 149 H150" stroke="var(--ink-faint)" stroke-width="1.5"/>
+      </svg>
+      <figcaption>A cube of side L holding N molecules, each of mass m.</figcaption>
+    </figure>
+    <ol class="dv-steps" id="dv-steps"></ol>
+  </div>`;
+  const list=byId('dv-steps');
+  STEPS.forEach((s,i)=>{
+    const li=mk('li','dv-step');li.hidden=i>0;
+    li.innerHTML='<span class="dv-n">'+(i+1)+'</span><div><p class="dv-h">'+s[0]+'</p><p class="note">'+FR(s[1])+'</p>'+
+      (s[2]?'<div class="eq">'+FR(s[2].join('<br>'))+'</div>':'<div class="eq" id="dv-num"></div>')+'</div>';
+    list.appendChild(li);
+  });
+  const T=byId('gs-t');
+  function nums(){
+    const t=+T.value,ke=1.5*KB*t;
+    byId('dv-num').innerHTML=FR('½m⟨c²⟩ = [[3|2]]kT<br>½m⟨c²⟩ = [[3|2]] × 1.38 × 10⁻²³ × '+t+'<br>½m⟨c²⟩ = <b>'+(t?sci(ke,3):'0')+' J</b>'+(t?'':'<br>At absolute zero the molecules have no kinetic energy.'));
+  }
+  T.addEventListener('input',nums);
+  let shown=1;
+  const items=$$('.dv-step',list);
+  const b=bar(body,[
+    {label:'Next step',primary:true,fn:()=>{if(shown<items.length){const li=items[shown++];li.hidden=false;li.classList.add('dv-in');}upd(true);}},
+    {label:'Show all',fn:()=>{items.forEach(li=>li.hidden=false);shown=items.length;upd(true);}},
+    {label:'Start again',fn:()=>{items.forEach((li,i)=>{li.hidden=i>0;li.classList.remove('dv-in');});shown=1;upd(true);}}
+  ]);
+  const next=$('.btn.primary',b.el);
+  function upd(say){next.disabled=shown>=items.length;if(say)b.say('Step '+shown+' of '+items.length+(shown>=items.length?': done':''));}
+  nums();upd(false);
+  onLevel.push(()=>{art.hidden=LEVEL!=='ial';nums();});
 }
 stackSliders('.sim','sim-view','.ctl-row','.seg:not(#hw-btns)');
 watchEquals('.eq');
