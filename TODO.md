@@ -24,8 +24,8 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 - [ ] 4 Energy, Lesson 4 convection slides (67–88): link `animations/heat-transfer.html?level=igcse` (convection) (review row H25, added 3 Nov 2026).
 - [ ] 4 Energy, Lessons 9–10 GPE → KE slides (190–222): link `animations/roller-coaster-energy.html?level=igcse` (review row W04, added 3 Nov 2026).
 - [ ] 5.2 Nuclear Decay (IAL), slide 42: link `animations/chain-reaction.html?level=ial` (built 4 Nov 2026; review row S8).
-- [ ] 6 Magnetism (IGCSE), slides 29–30: build an electromagnets and circuit-breaker animation (tab 1: coil picking up clips, with current, turns and iron core; tab 2: a circuit breaker that trips at a set current), then link it on slides 29–30 (review row M18, added 3 Nov 2026).
-- [ ] E2 Quantum (IB), slides 55–70: build an electron-diffraction tube animation (voltage slider, rings shrink as the voltage rises; second view: count against angle with the first minimum), then link it on slides 55–70 (review row Q28, added 3 Nov 2026).
+- [ ] 6 Magnetism (IGCSE), slides 29–30: link `animations/electromagnets.html?level=igcse` (built 4 Nov 2026; review row M18).
+- [ ] E2 Quantum (IB), slides 55–70: link `animations/electron-diffraction.html?level=ib` (built 4 Nov 2026; review row Q28).
 
 ## 3. Alex to review
 
@@ -63,6 +63,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## Done
 
+- 4 Nov 2026: `animations/electromagnets.html` (electromagnet and circuit breaker; framed in 6a Electromagnets and 2a Safety) and `animations/electron-diffraction.html` (IAL Unit 2, IB Theme E; framed in `quantum-physics.html` Matter Waves).
 - 4 Nov 2026: `animations/chain-reaction.html` (reactor chain reaction, IAL Unit 5 and IB Theme E lists). Licence footer added to 2a, 2b, 2c.
 - 3 Nov 2026: Calculations and Graphs sets now cover Forces Part 2 (1c, 1d) and Units 4, 5 and 6 (32 and 9 tabs). 1b gained two graph Calculates ("Read the graph" on F = ma and Weight: force–acceleration and weight–mass lines, mass and g from the gradient), used by the Graphs set. The interactive-revision-lab skill already had the one-Units-tab-per-unit rule.
 - 3 Nov 2026: one Units and Key Terms tab per unit ("Units and Terms", last tab) on 1c, 2b, 4c, 5b and 6b; the other workouts' Units/Key Terms tabs removed, old links forwarded, saved answers carried over. 4b's crossword is on 4c; 4d's renewable sort moved to its Renewable tab. Unit 5 gained two units tables from the SLG deck and a key-terms match. Marked 🔍 in `tools/REVIEW.md`.
