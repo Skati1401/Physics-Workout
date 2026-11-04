@@ -41,7 +41,6 @@ SETS = {
     'title': 'Calculations Set', 'key': 'set-calculations-v1', 'kinds': CALC,
     'tabs': [
       {'part': P1, 'page': 'motion.html', 'src': '1a', 'section': 'SPEED AND ACCELERATION', 'tab': 'calculating', 'label': 'Speed and Acceleration'},
-      {'part': P1, 'page': 'forces.html', 'src': '1b', 'section': 'RESULTANT FORCE', 'tab': 'balanced', 'label': 'Resultant Force'},
       {'part': P1, 'page': 'forces.html', 'src': '1b', 'section': 'F = ma', 'tab': 'fma', 'label': 'F = ma'},
       {'part': P1, 'page': 'forces.html', 'src': '1b', 'section': 'WEIGHT', 'tab': 'weight', 'label': 'Weight'},
       {'part': P2, 'page': 'falling-stopping-springs.html', 'src': '1c', 'section': '1b. v² = u² + 2as', 'tab': 'suvat', 'label': 'v² = u² + 2as'},

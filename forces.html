@@ -34,6 +34,11 @@
 }
 @keyframes tickin{from{transform:scale(.3);opacity:0}}
 @keyframes donepulse{40%{transform:scale(1.12)}}
+/* quick check: a tab's short multiple-choice questions in one card (review, 4 Nov 2026) */
+.qc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;align-items:start}
+.qc-item{display:flex;flex-direction:column;gap:10px;min-width:0;padding:12px 14px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
+.qc-n{margin:0;font:500 12px var(--f-mono);color:var(--ink-soft)}
+.qc-ctx{margin:0;color:var(--ink-soft)}
 </style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
@@ -381,13 +386,6 @@ table.data th,table.data td{border:1px solid var(--panel-border);padding:6px 12p
 table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);text-align:left}
 .diag{display:block;width:100%;max-width:300px;height:auto;margin:0 0 6px}
 
-.sort-item .icon-wrap{flex:none;width:30px;height:30px;display:inline-block;vertical-align:middle;margin-right:8px}
-.sort-item .icon-wrap svg{width:100%;height:100%;display:block}
-.sort-item:has(.icon-wrap){display:flex;align-items:center}
-.icon-body{fill:var(--cat-soft,var(--panel-2));stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round}
-.icon-line{fill:none;stroke:var(--ink-soft);stroke-width:2.5;stroke-linecap:round}
-.icon-accent{fill:none;stroke:var(--cat,var(--accent));stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
-.icon-wave{fill:none;stroke:var(--motion);stroke-width:2.5;stroke-linecap:round}
 
 /* free body diagram scenes: a force name is dropped onto each arrow */
 .scene-lab{display:grid;grid-template-columns:minmax(0,856px) minmax(240px,1fr);gap:16px 20px;align-items:start}
@@ -500,7 +498,7 @@ const raf=f=>requestAnimationFrame(f);
 
 // Units merge (3 Nov 2026): this unit's Units and Key Terms tabs are now one tab, so old links go there.
 try{const to={definitions:'falling-stopping-springs.html#terms'}[location.hash.slice(1)];if(to){if(to[0]==='#')history.replaceState(null,'',to);else{location.replace(to);return;}}}catch(e){}
-const STORE_KEY='unit1b-forces-v2',OLD_STORE_KEY='forces-v1';
+const STORE_KEY='unit1b-forces-v3',OLD_STORE_KEY='unit1b-forces-v2';
 const TAB_IDS=['overview','vectors','forcedef','freebody','balanced','fma','weight'];
 let activeTab='overview';
 const reflowers=[];
@@ -514,6 +512,19 @@ function act(panel,kind,title,intro){
   const body=mk('div','act-body');a.appendChild(body);
   $('#panel-'+panel+' .acts').appendChild(a);
   return body;
+}
+/* ================= quick check: a tab's short multiple-choice questions in one card =================
+   Review (4 Nov 2026): one card per tab instead of a row of single Predicts. Each question is a createPredict
+   (the same feedback, Try again and saved answers); ctx is the one-line set-up that used to be the Predict's intro. */
+function quickCheck(panel,title,qs){
+  const body=act(panel,'Quick check',title,'Answer each question. A wrong first answer tells you why, then you try again.');
+  const grid=mk('div','qc-grid');body.appendChild(grid);
+  qs.forEach((q,i)=>{
+    const box=mk('div','qc-item');grid.appendChild(box);
+    box.appendChild(mk('p','qc-n',(i+1)+' of '+qs.length+(q.title?' · '+FR(q.title):'')));
+    if(q.ctx)box.appendChild(mk('p','qc-ctx',FR(q.ctx)));
+    createPredict(Object.assign({},q,{host:box}));
+  });
 }
 function bar(parent,buttons){
   const b=mk('div','bar');
@@ -1466,45 +1477,19 @@ clozeAct('overview','Unit 1b in one passage','Drag a word into each gap, or tap 
 createSortGame({host:act('vectors','Sort','Vector or scalar?','A vector quantity has direction as well as size. A scalar only has size. Drag each quantity into the right bin.'),
   cats:[{id:'vector',label:'Vector',color:'--vector',soft:'--vector-soft'},{id:'scalar',label:'Scalar',color:'--motion',soft:'--motion-soft'}],
   items:[
-    {id:'v1',text:'Velocity',cat:'vector'},{id:'v2',text:'Displacement',cat:'vector'},{id:'v3',text:'Force',cat:'vector'},{id:'v4',text:'Acceleration',cat:'vector'},
-    {id:'v7',text:'Speed',cat:'scalar'},{id:'v8',text:'Distance',cat:'scalar'},{id:'v9',text:'Mass',cat:'scalar'},{id:'v11',text:'Energy',cat:'scalar'}
+    {id:'v1',text:'Velocity',cat:'vector'},{id:'v2',text:'Displacement',cat:'vector'},{id:'v3',text:'Force',cat:'vector'},
+    {id:'v7',text:'Speed',cat:'scalar'},{id:'v8',text:'Distance',cat:'scalar'},{id:'v9',text:'Mass',cat:'scalar'}
   ]});
 
 /* ================= 3. TYPES OF FORCE ================= */
-const ICONS={
-  weight:'<svg viewBox="0 0 64 64"><circle class="icon-body" cx="32" cy="24" r="13"/><line class="icon-line" x1="32" y1="11" x2="34" y2="6"/><path class="icon-accent" d="M32 42 L32 56 M25 50 L32 57 L39 50"/></svg>',
-  friction:'<svg viewBox="0 0 64 64"><rect class="icon-body" x="7" y="36" width="50" height="9" rx="2"/><rect class="icon-body" x="17" y="19" width="30" height="14" rx="2"/><path class="icon-accent" d="M13 30 q4 -5 8 0 M43 30 q4 -5 8 0"/></svg>',
-  airres:'<svg viewBox="0 0 64 64"><path class="icon-body" d="M11 26 Q32 5 53 26 Z"/><line class="icon-line" x1="15" y1="26" x2="27" y2="47"/><line class="icon-line" x1="49" y1="26" x2="37" y2="47"/><circle class="icon-body" cx="32" cy="53" r="6"/></svg>',
-  upthrust:'<svg viewBox="0 0 64 64"><path class="icon-body" d="M13 33 L51 33 L44 46 L20 46 Z"/><path class="icon-wave" d="M5 33 q6 6 12 0 t12 0 t12 0 t12 0"/><path class="icon-accent" d="M32 28 L32 11 M25 18 L32 10 L39 18"/></svg>',
-  thrust:'<svg viewBox="0 0 64 64"><path class="icon-body" d="M21 10 L41 10 L41 39 L31 48 L21 39 Z"/><path class="icon-wave" d="M25 39 Q31 55 37 39"/><path class="icon-accent" d="M45 24 L59 24 M52 17 L59 24 L52 31"/></svg>',
-  magnetic:'<svg viewBox="0 0 64 64"><path class="icon-body" d="M16 10 v22 a16 16 0 0 0 32 0 v-22" fill="none"/><rect class="icon-accent" x="11" y="6" width="9" height="11"/><rect class="icon-accent" x="44" y="6" width="9" height="11"/><path class="icon-line" d="M28 42 q7 5 0 10"/></svg>',
-  electro:'<svg viewBox="0 0 64 64"><ellipse class="icon-body" cx="33" cy="25" rx="15" ry="17"/><path class="icon-line" d="M33 42 L31 50"/><path class="icon-accent" d="M10 14 L17 21 L11 25 L19 34"/></svg>',
-  tension:'<svg viewBox="0 0 64 64"><path class="icon-body" d="M9 32 h6 l4 -9 l6 18 l6 -18 l6 18 l6 -18 l4 9 h6" style="fill:none"/><path class="icon-accent" d="M5 32 L1 32 M59 32 L63 32"/></svg>',
-  compression:'<svg viewBox="0 0 64 64"><path class="icon-body" d="M20 32 h4 l3 -7 l3 14 l3 -14 l3 14 l3 -14 l3 7 h4" style="fill:none"/><path class="icon-accent" d="M10 32 L20 32 M54 32 L44 32"/></svg>'
-};
-const ic=(k,t)=>'<span class="icon-wrap" aria-hidden="true">'+ICONS[k]+'</span><span>'+t+'</span>';
 createMatchGame({host:act('forcedef','Match','Force and scene','Match each force to the scene where you would feel it. Select a card on each side; select a joined card to undo it.'),
   leftTitle:'Force',rightTitle:'Where you feel it',narrowLeft:true,pairs:[
     {id:'f1',l:'Weight',r:'An apple falls from a tree, pulled straight down to the ground.'},
     {id:'f2',l:'Friction',r:'A sledge slows down as its runners rub against the snow.'},
     {id:'f3',l:'Air resistance',r:'Elizabeth reaches a steady falling speed as she skydives through the air.'},
     {id:'f4',l:'Upthrust',r:'A rowing boat floats, pushed upward by the water it displaces.'},
-    {id:'f5',l:'Lift',r:'An aeroplane’s wings push it upward as it speeds down the runway.'},
-    {id:'f6',l:'Thrust',r:'A rocket’s engines push it forward off the launch pad.'},
     {id:'f7',l:'Magnetic',r:'A paperclip jumps across a gap to stick to a magnet.'},
-    {id:'f8',l:'Electrostatic',r:'A balloon rubbed on a jumper sticks to the wall.'},
-    {id:'f9',l:'Tension',r:'A tow rope stretches tight as it pulls a broken-down car.'},
-    {id:'f10',l:'Compression',r:'A spring squashes shorter as David presses down on it.'}
-  ]});
-createSortGame({host:act('forcedef','Sort','Contact or non-contact?','Sort the same forces by whether they need contact to act.'),
-  cats:[{id:'contact',label:'Contact force',hint:'Surfaces must be touching',color:'--force',soft:'--force-soft'},
-        {id:'noncontact',label:'Non-contact force',hint:'Acts through a gap, no touching needed',color:'--balance',soft:'--balance-soft'}],
-  items:[
-    {id:'fs1',text:ic('friction','Friction'),cat:'contact'},{id:'fs2',text:ic('airres','Air / water resistance'),cat:'contact'},
-    {id:'fs3',text:ic('tension','Tension'),cat:'contact'},{id:'fs4',text:ic('compression','Compression'),cat:'contact'},
-    {id:'fs5',text:ic('thrust','Thrust'),cat:'contact'},{id:'fs6',text:ic('upthrust','Upthrust'),cat:'contact'},
-    {id:'fs7',text:ic('weight','Weight (gravity)'),cat:'noncontact'},{id:'fs8',text:ic('magnetic','Magnetic'),cat:'noncontact'},
-    {id:'fs9',text:ic('electro','Electrostatic'),cat:'noncontact'}
+    {id:'f8',l:'Electrostatic',r:'A balloon rubbed on a jumper sticks to the wall.'}
   ]});
 createSortGame({host:act('forcedef','Sort','What does the force change?','A force can change an object’s speed, its direction or its shape. Sort each situation by the main change the force causes.'),
   cats:[{id:'speed',label:'Speed',hint:'Speeds up or slows down',color:'--motion',soft:'--motion-soft'},
@@ -1544,13 +1529,7 @@ const SCENES=[
     '<line x1="100" y1="112" x2="78" y2="112" stroke="#2457d6" stroke-width="8" stroke-linecap="round"/><polygon points="64,112 78,102 78,122" fill="#2457d6"/>'+
     '<line x1="132" y1="68" x2="132" y2="34" stroke="#2457d6" stroke-width="8" stroke-linecap="round"/><polygon points="132,22 122,36 142,36" fill="#2457d6"/>'+
     '<line x1="132" y1="124" x2="132" y2="150" stroke="#2457d6" stroke-width="8" stroke-linecap="round"/><polygon points="132,164 122,150 142,150" fill="#2457d6"/></svg>',
-   blanks:[['up','Normal reaction'],['down','Weight'],['right','Tension'],['left','Friction']]},
-  {id:'lamp',caption:'A lamp, hanging still from the ceiling',name:'Lamp',svg:'<svg viewBox="0 0 260 180" role="img" aria-label="A lamp hanging from the ceiling on a cord, with two force arrows">'+
-    '<rect width="260" height="180" fill="#3a4257"/><rect width="260" height="12" fill="#c9ced8"/><rect x="116" y="12" width="28" height="5" rx="2" fill="#8a909c"/><line x1="130" y1="17" x2="130" y2="74" stroke="#20232a" stroke-width="2.5"/>'+
-    '<path d="M108 106 L118 76 L142 76 L152 106 Z" fill="#e8c35a" stroke="#8a6d20" stroke-width="2"/><circle cx="130" cy="108" r="7" fill="#fff6c8"/>'+
-    '<line x1="130" y1="74" x2="130" y2="40" stroke="#ffe15c" stroke-width="8" stroke-linecap="round"/><polygon points="130,26 120,40 140,40" fill="#ffe15c"/>'+
-    '<line x1="130" y1="117" x2="130" y2="150" stroke="#ffe15c" stroke-width="8" stroke-linecap="round"/><polygon points="130,164 120,150 140,150" fill="#ffe15c"/></svg>',
-   blanks:[['up','Tension'],['down','Weight']]}
+   blanks:[['up','Normal reaction'],['down','Weight'],['right','Tension'],['left','Friction']]}
 ];
 {
   const DIR={up:'upward',down:'downward',left:'backward',right:'forward'};
@@ -1633,37 +1612,31 @@ const SCENES=[
     chips:Object.keys(ARROWS).map(k=>({id:k,text:'<span class="glyph" aria-hidden="true">'+ARROWS[k][0]+'</span><span class="chip-sub">'+ARROWS[k][1]+'</span>'})),
     isCorrect:(c,s)=>c.id===s.answer});
 }
-predictAct('balanced','Friction on a moving box','Choose an answer to see the explanation.',{
-  q:'A box is pushed to the right across the floor. Which way does friction on the box act?',
-  options:[
+quickCheck('balanced','Friction and balanced forces',[
+  {title:'Friction on a moving box',
+    q:'A box is pushed to the right across the floor. Which way does friction on the box act?',
+    options:[
     {text:'To the left, against the motion',correct:true},
     {text:'To the right, with the push',why:'Friction does not help the push. It acts against the motion.'},
     {text:'Downwards, into the floor',why:'That describes the box pressing on the floor. Friction acts along the surface, against the motion.'},
     {text:'There is no friction once it moves',why:'Friction keeps acting while the surfaces slide over each other.'}
-  ],
-  explain:'Friction always opposes motion, so it acts in the opposite direction to the way the box slides.'});
-predictAct('balanced','A car at a steady speed','Choose an answer to see the explanation.',{
-  q:'A car drives along a straight road at a steady 30 m/s. The driving force equals the resistive forces. What is the resultant force on the car?',
-  options:[
+    ],
+    explain:'Friction always opposes motion, so it acts in the opposite direction to the way the box slides.'},
+  {title:'A car at a steady speed',
+    q:'A car drives along a straight road at a steady 30 m/s. The driving force equals the resistive forces. What is the resultant force on the car?',
+    options:[
     {text:'Zero, so its speed does not change',correct:true},
     {text:'Forwards, or the car would slow down',why:'A car does not need a resultant force to keep moving. It needs one only to speed up, slow down or turn.'},
     {text:'Backwards, because of air resistance',why:'Air resistance is balanced by the driving force, so it does not leave a backwards resultant.'},
     {text:'Downwards, equal to its weight',why:'The weight is balanced by the upward push of the road, so there is no vertical resultant either.'}
-  ],
-  explain:'Balanced forces give a resultant of zero, so the car keeps moving at a constant velocity.'});
-calcAct('balanced','Resultant force','Add the forces acting the same way and subtract the ones acting the opposite way. Give the size; the working shows the direction.',[
-  {q:'Elizabeth is skydiving. Her weight is 700 N and the air resistance on her is 450 N. The size of the resultant force is',unit:'N',answer:250,
-   working:'resultant force = 700 − 450<br>resultant force = 250 N, downwards, so she is still speeding up'},
-  {q:'A car has a driving force of 2400 N. Friction is 300 N and air resistance is 900 N. The size of the resultant force is',unit:'N',answer:1200,
-   working:'forces acting backwards = 300 + 900 = 1200 N<br>resultant force = 2400 − 1200<br>resultant force = 1200 N, forwards'}
+    ],
+    explain:'Balanced forces give a resultant of zero, so the car keeps moving at a constant velocity.'}
 ]);
 
 /* ================= 6. F = ma ================= */
 exploreFrame('fma','Push a trolley','Set the resultant force and the mass, then press Go. The trolley starts from rest on a 10 m track. The faint dots mark where it was every 0.5 s, so you can see it speeding up.',
   'animations/force-mass-acceleration.html','F = ma animation: a trolley pushed by a resultant force','F = ma');
 calcAct('fma','F = m × a','Type your answer into each box, then press Check. Correct answers lock in green.',[
-  {q:'A resultant force of 18 N gives a trolley an acceleration of 4.5 m/s². The mass of the trolley is',unit:'kg',answer:4,
-   working:'F = m × a<br>18 = m × 4.5<br>m = [[18|4.5]]<br>m = 4 kg'},
   {q:'Henry and his bike have a total mass of 60 kg. The forward force is 150 N, and air resistance and friction together are 30 N. The acceleration is',unit:'m/s²',answer:2,
    working:'resultant force = 150 − 30 = 120 N<br>F = m × a<br>120 = 60 × a<br>a = [[120|60]]<br>a = 2 m/s²'}
 ]);
@@ -1674,36 +1647,16 @@ spotAct('fma','Find the mistake',[
     'a = 1200 × 800',
     'a = 960 000 m/s²'],
     wrong:2,explain:'To get a on its own from 1200 = 800 × a, divide both sides by 800. An acceleration of nearly a million m/s² is impossible for a car.',
-    fix:['a = [[1200|800]]','a = 1.5 m/s²']},
-  {scenario:'A trolley accelerates at 2.5 m/s² when the resultant force on it is 10 N. Find its mass.',lines:[
-    'F = m × a',
-    '10 = m × 2.5',
-    'm = [[2.5|10]]',
-    'm = 0.25 kg'],
-    wrong:2,explain:'Dividing both sides by 2.5 leaves m = 10 over 2.5. The fraction has been written upside down.',
-    fix:['m = [[10|2.5]]','m = 4 kg']}
+    fix:['a = [[1200|800]]','a = 1.5 m/s²']}
 ]);
 
 calcAct('fma','Read the graph','Fatimah pulls a trolley with different resultant forces and measures its acceleration each time. The graph shows her results. Read the points you need off the line.',[
-  {q:'The resultant force needed for an acceleration of 1.5 m/s² is',unit:'N',answer:3,working:'Read across from 1.5 m/s² on the line<br>F = 3 N'},
   {q:'The gradient of the line is the mass of the trolley. The mass is',unit:'kg',answer:2,
-   working:'F = m × a, so the gradient of force against acceleration is m<br>gradient = [[change in force|change in acceleration]]<br>gradient = [[5 − 0|2.5 − 0]]<br>gradient = [[5|2.5]]<br>m = 2 kg'},
-  {q:'With a resultant force of 4 N, the acceleration is',unit:'m/s²',answer:2,
-   working:'Read across from 4 N on the line, or use F = m × a<br>4 = 2 × a<br>a = [[4|2]]<br>a = 2 m/s²'}
+   working:'F = m × a, so the gradient of force against acceleration is m<br>gradient = [[change in force|change in acceleration]]<br>gradient = [[5 − 0|2.5 − 0]]<br>gradient = [[5|2.5]]<br>m = 2 kg'}
 ],mgraph({xMax:2.5,yMax:5,xTicks:[0,0.5,1,1.5,2,2.5],yTicks:[0,1,2,3,4,5],xLabel:'acceleration (m/s²)',yLabel:'resultant force (N)',
   label:'Force–acceleration graph: a straight line through the origin to 5 N at 2.5 m/s²',pts:[[0,0],[2.5,5]]}).svg);
 
 /* ================= 7. WEIGHT ================= */
-createMatchGame({host:act('weight','Match','Different worlds, different g','Gravitational field strength is not the same everywhere. Match each world to its value of g. (IGCSE uses g = 10 N/kg for Earth.)'),
-  leftTitle:'World',rightTitle:'g',pairs:[
-    {id:'p1',l:'The Moon',r:'1.6 N/kg'},{id:'p2',l:'Mars',r:'3.7 N/kg'},{id:'p3',l:'Venus',r:'8.9 N/kg'},
-    {id:'p4',l:'Earth (IGCSE value)',r:'10 N/kg'},{id:'p5',l:'Jupiter',r:'25 N/kg'}
-  ]});
-calcAct('weight','W = m × g','Type your answer into each box, then press Check. Correct answers lock in green.',[
-  {q:'A 6 kg bag of shopping on Earth (g = 10 N/kg) has a weight of',unit:'N',answer:60,working:'W = m × g<br>W = 6 × 10<br>W = 60 N'},
-  {q:'Ruby is an astronaut with a mass of 70 kg. Her weight on Earth (g = 10 N/kg) is',unit:'N',answer:700,working:'W = m × g<br>W = 70 × 10<br>W = 700 N'},
-  {q:'Ruby’s weight on the Moon (g = 1.6 N/kg) is',unit:'N',answer:112,working:'W = m × g<br>W = 70 × 1.6<br>W = 112 N<br>Her mass (70 kg) is the same in both places. Only her weight changes, because g is different.'}
-]);
 spotAct('weight','Find the mistake',[
   {scenario:'A rock weighs 37 N on Mars, where g = 3.7 N/kg. Find its mass.',lines:[
     'W = m × g',
@@ -1722,11 +1675,8 @@ spotAct('weight','Find the mistake',[
 ]);
 
 calcAct('weight','Read the graph','Nabil measures the weight of different masses on another planet. The graph shows his results. Read the points you need off the line.',[
-  {q:'The weight of a 3 kg mass on this planet is',unit:'N',answer:12,working:'Read up from 3 kg to the line, then across<br>W = 12 N'},
   {q:'The gradient of the line is the gravitational field strength. On this planet g is',unit:'N/kg',answer:4,
-   working:'W = m × g, so the gradient of weight against mass is g<br>gradient = [[change in weight|change in mass]]<br>gradient = [[20 − 0|5 − 0]]<br>gradient = [[20|5]]<br>g = 4 N/kg'},
-  {q:'An object that weighs 16 N on this planet has a mass of',unit:'kg',answer:4,
-   working:'Read across from 16 N on the line, or use W = m × g<br>16 = m × 4<br>m = [[16|4]]<br>m = 4 kg'}
+   working:'W = m × g, so the gradient of weight against mass is g<br>gradient = [[change in weight|change in mass]]<br>gradient = [[20 − 0|5 − 0]]<br>gradient = [[20|5]]<br>g = 4 N/kg'}
 ],mgraph({xMax:5,yMax:20,xTicks:[0,1,2,3,4,5],yTicks:[0,4,8,12,16,20],xLabel:'mass (kg)',yLabel:'weight (N)',
   label:'Weight–mass graph: a straight line through the origin to 20 N at 5 kg',pts:[[0,0],[5,20]]}).svg);
 
@@ -1829,11 +1779,14 @@ byId('tab-overview').parentNode.addEventListener('keydown',e=>{
 });
 // The open tab is remembered in this browser only, so a reload returns to it.
 // Answers and the open tab are remembered in this browser only, so a reload keeps them.
-// OLD_STORE_KEY held only the open tab; it is read once so a returning student lands on the same tab.
+// Review (4 Nov 2026): fewer activities per page. Answers saved before it are carried over once for the
+// activities that did not change (old key -> new key); the rest start fresh.
+const CARRY={"overview-0":"overview-0","forcedef-2":"forcedef-1","freebody-0":"freebody-0","balanced-0":"balanced-0","balanced-1":"balanced-1","balanced-2":"balanced-2","weight-2":"weight-0","weight-3":"weight-1"};
 function readSaved(){
-  for(const k of [STORE_KEY,OLD_STORE_KEY]){
-    try{const s=JSON.parse(localStorage.getItem(k)||'null');if(s&&typeof s==='object')return s;}catch(e){}
-  }
+  try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(OLD_STORE_KEY)||'null');
+    if(s&&typeof s==='object'){const v=s.v||{},n={};Object.keys(CARRY).forEach(k=>{if(v[k])n[CARRY[k]]=v[k];});return {tab:s.tab,v:n};}
+  }catch(e){}
   return {};
 }
 function start(data){
