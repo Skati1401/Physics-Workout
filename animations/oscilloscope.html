@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency of a Sound Wave Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation. A signal generator and loudspeaker, or a tuning fork, sends sound to a microphone connected to an oscilloscope. Change the time base and Y-gain, turn the trigger on for a steady trace, and read the period and frequency. Experiment mode: measure the frequency of three mystery tuning forks and a hidden tone with two cursors.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#be185d; --topic-soft:#fce7f3;
+    --sound:#be185d;
+    --screen:#0f2a1c; --screen-grid:rgba(120,220,160,0.22); --screen-axis:rgba(120,220,160,0.45); --trace:#3ddc84; --cursor:#ffd34d;
+    --metal:#9aa3ae; --metal-soft:#e3e7ec; --wood:#a8692c; --wood-soft:#f1e0cb; --box:#334155;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#f472b6; --topic-soft:#3a1428;
+      --sound:#f472b6;
+      --screen:#071a10; --screen-grid:rgba(120,220,160,0.2); --screen-axis:rgba(120,220,160,0.4); --trace:#4ade80; --cursor:#ffd34d;
+      --metal:#7d8592; --metal-soft:#2c333d; --wood:#d9a066; --wood-soft:#33240f; --box:#94a3b8;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#f472b6; --topic-soft:#3a1428;
+    --sound:#f472b6;
+    --screen:#071a10; --screen-grid:rgba(120,220,160,0.2); --screen-axis:rgba(120,220,160,0.4); --trace:#4ade80; --cursor:#ffd34d;
+    --metal:#7d8592; --metal-soft:#2c333d; --wood:#d9a066; --wood-soft:#33240f; --box:#94a3b8;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+  /* button rows fill their width (Alex, 2 Nov 2026) */
+  .btn-group>.btn,.exp-btns>.btn{flex:1 1 0;min-width:max-content;justify-content:center;}
+  .seg:not(.tabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));}
+  .seg:not(.tabs)>button{padding-inline:4px;white-space:nowrap;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 300px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  .view.dragging,.view.dragging *{cursor:grabbing;}
+  .view:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+  #os-svg{touch-action:pan-y;}
+  .seg.six{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;}
+  .seg.four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;}
+  .seg.six>button,.seg.four>button{padding-inline:2px;font-size:12px;white-space:normal;line-height:1.15;}
+  .choices{display:flex;flex-direction:column;gap:7px;}
+  .choices .rowlab{display:block;margin-bottom:3px;}
+  .cyc{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:12.5px var(--font-mono);color:var(--ink-soft);}
+  .cyc .btn{min-width:44px;justify-content:center;padding-inline:8px;}
+  .cyc output{font:600 15px var(--font-mono);color:var(--ink);min-width:1.6em;text-align:center;}
+  @media (max-width:420px){ .seg.six{grid-template-columns:repeat(3,minmax(0,1fr));} }
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">Animations &middot; sound &middot; core practical 3.27P</div>
+      <h1>Frequency of a Sound Wave</h1>
+    </div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="os-svg" viewBox="0 0 600 300" role="img" aria-label="A sound source, a microphone and an oscilloscope"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="os-play" type="button">&#9654; Play</button>
+          <button class="btn" id="os-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="os-trig" type="button" aria-pressed="true" title="The trigger starts each sweep at the same point on the wave, so the trace stands still">Trigger: steady trace</button>
+          <button class="btn" id="os-snd" type="button" aria-pressed="false" title="Play the sound through your speakers">Sound</button>
+          <button class="btn" id="os-exp" type="button" aria-pressed="false" title="Measure the frequency of mystery tuning forks with two cursors">Experiment</button>
+        </div>
+        <div class="sliders">
+          <div id="os-frow"><label class="lab" for="os-f">Signal generator frequency <output id="os-fo"></output></label><input type="range" id="os-f" min="100" max="2000" step="10" value="440"></div>
+          <div><label class="lab" for="os-v">Loudness <output id="os-vo"></output></label><input type="range" id="os-v" min="1" max="10" step="1" value="5"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="choices">
+        <div><span class="rowlab">Source</span>
+        <div class="seg four" id="os-src"><button type="button" data-v="gen" aria-pressed="true">Signal generator</button><button type="button" data-v="fa" aria-pressed="false">Fork 256 Hz</button><button type="button" data-v="fb" aria-pressed="false">Fork 384 Hz</button><button type="button" data-v="fc" aria-pressed="false">Fork 512 Hz</button></div></div>
+        <div><span class="rowlab">Time base (ms per division)</span>
+        <div class="seg six" id="os-tb"><button type="button" data-v="0.1" aria-pressed="false">0.1</button><button type="button" data-v="0.2" aria-pressed="false">0.2</button><button type="button" data-v="0.5" aria-pressed="false">0.5</button><button type="button" data-v="1" aria-pressed="true">1</button><button type="button" data-v="2" aria-pressed="false">2</button><button type="button" data-v="5" aria-pressed="false">5</button></div></div>
+        <div><span class="rowlab">Y-gain (mV per division)</span>
+        <div class="seg four" id="os-y"><button type="button" data-v="5" aria-pressed="false">5</button><button type="button" data-v="10" aria-pressed="false">10</button><button type="button" data-v="20" aria-pressed="true">20</button><button type="button" data-v="50" aria-pressed="false">50</button></div></div>
+      </div>
+      <p class="note" id="os-note" aria-live="polite"></p>
+      <div id="os-expbox" hidden>
+        <div class="cyc"><span>Complete cycles between the cursors</span><button class="btn" id="os-nm" type="button" aria-label="One fewer cycle">&minus;</button><output id="os-n">1</output><button class="btn" id="os-np" type="button" aria-label="One more cycle">+</button><button class="btn btn-primary" id="os-rec" type="button">Record reading</button></div>
+        <div class="rtable-wrap" style="margin-top:8px"><div id="os-table"></div></div>
+        <div class="exp-btns" style="margin-top:8px"><button class="btn" id="os-clear" type="button">Clear readings</button></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><small id="os-l1">Cycles on screen</small><strong id="os-s1">&ndash;</strong></div>
+        <div class="stat"><small id="os-l2">One cycle</small><strong id="os-s2">&ndash;</strong></div>
+        <div class="stat"><small id="os-l3">Period, T</small><strong id="os-s3">&ndash;</strong></div>
+        <div class="stat hi"><small id="os-l4">Frequency, f</small><strong id="os-s4">&ndash;</strong></div>
+      </div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="os-eq1"></div>
+        <div class="eq" id="os-eq2"></div>
+        <p class="eqnote" id="os-eq3"></p>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    Array.prototype.forEach.call(document.querySelectorAll('details.working'), function(d){ d.open = true; });
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 4.97 × 10⁻¹⁹
+    if(x===0) return '0';
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+Math.abs(m).toFixed(dp)>=10){ m/=10; e++; }
+    return sn(m,dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function sig(x, n){   // n significant figures, as text, real minus sign
+    if(x===0) return '0';
+    var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
+    return sn(x, dp);
+  }
+  function grp(t){ return String(t).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }   // 12 345
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+(+x1).toFixed(1)+'" y1="'+(+y1).toFixed(1)+'" x2="'+(+x2).toFixed(1)+'" y2="'+(+y2).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||1.5)+'"'+(extra||'')+'/>'; }
+
+
+/* ================= Experiment kit (copy this block into an animation page's <script>) =================
+   The reusable parts of an animation's Experiment mode, taken from animations/hookes-law.html:
+   - expRun():     the run itself: step the independent variable up one interval at a time, then
+                   (optionally) back down again, measuring at every step
+   - expReading(): a reading with a small, fixed pattern of reading error, rounded to the instrument's
+                   resolution, that never goes the wrong way
+   - expTable():   the results table (sticky header, newest row highlighted, a column per run)
+   - expCross(), expRing(), expKey(): SVG marks for plotted readings (× first run, ○ return run)
+   The page keeps its own picture, physics, graph axes and notes. See tools/experiment-kit/README.md.
+   Plain ES5 so it can sit inside any animation page's IIFE. */
+
+// A fixed pattern of reading errors, in units of the instrument's resolution. Fixed (not random) so a
+// teacher sees the same results as the class, and a re-run gives the same table.
+var EXP_ERR = [0, 1, -1, 0, 2, -1, 1, -2, 0, 1, -1, 0, 1, -1, 2, 0, -1, 1, 0, -2, 1];
+function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP_ERR.length]; }
+
+// What the student reads off the instrument.
+//   trueVal  the value the physics gives at this step
+//   prevVal  the reading taken at the step before (or the start value)
+//   res      the instrument's resolution (0.1 cm ruler, 0.05 mm vernier, 0.01 A ammeter, 1° protractor)
+//   i        the step number (picks the error from the pattern)
+//   scale    how big the error is, in resolutions (default 1; 0.5 for a fine instrument)
+// The error is never more than a quarter of the change since the last reading, so a reading never
+// goes the wrong way (an extension never falls as the load rises, a current never drops as V rises).
+function expReading(trueVal, prevVal, res, i, scale){
+  var gap = Math.abs(trueVal - prevVal);
+  var err = i > 0 ? expErr(i) * Math.min(res * (scale == null ? 1 : scale), gap / 4) : 0;
+  var r = Math.round((trueVal + err) / res) * res;
+  var dp = Math.max(0, Math.ceil(-Math.log10(res) - 1e-9));
+  return +r.toFixed(dp);
+}
+
+// The run. cfg = {
+//   start: 0,                 value of the independent variable before the first step
+//   max: 10,                  last value of the first run (the run stops there)
+//   step: 1,                  the interval (the page can change it with setStep, which resets the run)
+//   reverse: true,            allow a return run (unloading, turning the voltage back down)
+//   measure: function(v, phase, prevReading){ return reading },   phase is 'up' or 'down'
+//   onChange: function(run, what){}  what is 'up', 'down' or 'reset'
+// }
+// run.up and run.down are arrays of {v, r}. run.phase is 'up' until the first step back, then 'down'.
+function expRun(cfg){
+  var run = { up: [], down: [], phase: 'up', value: cfg.start || 0, peak: cfg.start || 0, step: cfg.step || 1 };
+  var r6 = function(x){ return Math.round(x * 1e6) / 1e6; };
+  run.upDone = function(){ return run.phase === 'down' || run.peak >= cfg.max - 1e-9; };
+  run.downDone = function(){ return run.phase === 'down' && run.value <= (cfg.start || 0) + 1e-9; };
+  run.last = function(){ var a = run.phase === 'down' && run.down.length ? run.down : run.up; return a[a.length - 1] || null; };
+  run.stepUp = function(){
+    if(run.phase !== 'up' || run.upDone()) return false;
+    var prev = run.up.length ? run.up[run.up.length - 1].r : null;
+    var v = r6(Math.min(cfg.max, run.value + run.step));
+    run.value = run.peak = v;
+    run.up.push({ v: v, r: cfg.measure(v, 'up', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'up');
+    return true;
+  };
+  run.stepDown = function(){
+    if(!cfg.reverse || run.value <= (cfg.start || 0) + 1e-9 || !run.up.length) return false;
+    run.phase = 'down';
+    var prev = run.down.length ? run.down[run.down.length - 1].r : run.up[run.up.length - 1].r;
+    var v = r6(Math.max(cfg.start || 0, run.value - run.step));
+    run.value = v;
+    run.down.push({ v: v, r: cfg.measure(v, 'down', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'down');
+    return true;
+  };
+  run.reset = function(){ run.up = []; run.down = []; run.phase = 'up'; run.value = run.peak = cfg.start || 0; if(cfg.onChange) cfg.onChange(run, 'reset'); };
+  run.setStep = function(s){ run.step = s; run.reset(); };
+  return run;
+}
+
+// The results table. cols = [{label:'Load (N)', key:'v', dp:0}, {label:'Extension loading (cm)', key:'up', dp:1}, ...]
+// rows = [{v:1, up:1.6, down:''}, ...]. newKey/newV highlight the reading just taken (fades in).
+// Wrap it in .rtable-wrap so a long table scrolls under its sticky header.
+function expTable(el, cols, rows, newV){
+  var fmt = function(x, dp){ return (x === '' || x == null) ? '' : (+x).toFixed(dp || 0); };
+  var h = '<table class="rtable"><thead><tr>' + cols.map(function(c){ return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    h += '<tr' + (newV != null && row.v === newV ? ' class="new"' : '') + '>' + cols.map(function(c){ return '<td>' + fmt(row[c.key], c.dp) + '</td>'; }).join('') + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table>';
+}
+
+// Plotted readings, as SVG strings. Size 5 suits a 300px-wide graph.
+function expCross(cx, cy, s){ s = s || 5; return '<path d="M' + (cx - s) + ',' + (cy - s) + ' L' + (cx + s) + ',' + (cy + s) + ' M' + (cx + s) + ',' + (cy - s) + ' L' + (cx - s) + ',' + (cy + s) + '" stroke="var(--ink)" stroke-width="2"/>'; }
+function expRing(cx, cy, r){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r || 4.5) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+// A two-line key in the bottom-right corner of a graph: expKey(rightX, bottomY, 'loading', 'unloading')
+function expKey(x, y, upLabel, downLabel){
+  return '<text x="' + x + '" y="' + (y - 14) + '" text-anchor="end" font-size="10.5" fill="var(--ink)">× ' + upLabel + '</text>' +
+         '<text x="' + x + '" y="' + y + '" text-anchor="end" font-size="10.5" fill="var(--accent)">○ ' + downLabel + '</text>';
+}
+/* ================= end of Experiment kit ================= */
+
+
+  var svg=$('#os-svg'), playBtn=$('#os-play'), trigBtn=$('#os-trig'), sndBtn=$('#os-snd'), expBtn=$('#os-exp');
+  var fIn=$('#os-f'), vIn=$('#os-v');
+  var srcSeg=segGroup($('#os-src'), function(){ newSource(); });
+  var tbSeg=segGroup($('#os-tb'), function(){ draw(); });
+  var ySeg=segGroup($('#os-y'), function(){ draw(); });
+  function exp(){ return pressed(expBtn); }
+  function trig(){ return pressed(trigBtn); }
+  function src(){ return srcSeg.value(); }
+  function tb(){ return +tbSeg.value(); }
+  function yg(){ return +ySeg.value(); }
+  // tuning forks: stamped values in Watch mode, unmarked mystery forks in Experiment mode
+  var FORK={fa:256, fb:384, fc:512}, MYST={gen:750, fa:320, fb:440, fc:640};
+  var LAB={gen:'Signal generator', fa:'Fork 256 Hz', fb:'Fork 384 Hz', fc:'Fork 512 Hz'};
+  var XLAB={gen:'Hidden tone', fa:'Fork A', fb:'Fork B', fc:'Fork C'};
+  function freq(){ var s=src(); if(exp()) return MYST[s]; return s==='gen' ? +fIn.value : FORK[s]; }
+  function srcName(){ return exp() ? XLAB[src()] : LAB[src()]; }
+
+  // ---- the microphone (dragged along the bench, 10 cm to 50 cm from the source)
+  var DMIN=10, DMAX=50, dist=20;
+  var SX=118, PX=2.6;   // the source's front at x=118, 2.6 units per cm
+  function micX(){ return SX+dist*PX; }
+  // signal from the microphone (mV peak): louder source or closer microphone gives a bigger signal
+  var run=null, raf=0, last=0, T_ON=24, T_FORK=14;
+  function amp(){
+    if(!run) return 0;
+    var a=(+vIn.value/5)*40*(20/dist);
+    if(src()!=='gen') a*=Math.exp(-run.t/7);
+    return a;
+  }
+  function stop(){ cancelAnimationFrame(raf); raf=0; }
+  function frame(now){
+    var real=Math.min(0.05,(now-last)/1000); last=now;
+    if(run && !run.over){
+      run.t+=real; run.drift+=real*(0.37+0.21*Math.sin(run.t*1.7));
+      if(run.t>=(src()==='gen' ? T_ON : T_FORK)){ run.over=true; soundOff(); }
+    }
+    draw();
+    if(run && !run.over && !run.paused) raf=requestAnimationFrame(frame);
+  }
+  function loop(){ stop(); last=performance.now(); raf=requestAnimationFrame(frame); }
+  function reset(){ stop(); run=null; soundOff(); draw(); }
+  function newSource(){
+    $('#os-frow').hidden = src()!=='gen' || exp();
+    reset();
+  }
+
+  // ---- optional sound through the computer's speakers (off unless Sound is pressed)
+  var AC=null, osc=null, gain=null;
+  function soundOn(){
+    if(!pressed(sndBtn) || !run || run.over || run.paused) return;
+    try{
+      if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
+      if(!osc){ osc=AC.createOscillator(); gain=AC.createGain(); osc.type='sine'; osc.connect(gain); gain.connect(AC.destination); gain.gain.value=0; osc.start(); }
+    }catch(e){}
+  }
+  function soundSet(){
+    if(!osc) return;
+    try{ osc.frequency.setTargetAtTime(freq(), AC.currentTime, 0.02); gain.gain.setTargetAtTime(Math.min(0.12, amp()/400*0.12*3), AC.currentTime, 0.05); }catch(e){}
+  }
+  function soundOff(){ if(!osc) return; try{ gain.gain.setTargetAtTime(0, AC.currentTime, 0.03); osc.stop(AC.currentTime+0.2); }catch(e){} osc=null; gain=null; }
+
+  // ---- the oscilloscope screen: 10 divisions across, 8 up, 29 units per division
+  var SC={x:292, y:22, d:29, nx:10, ny:8};
+  function scrX(div){ return SC.x+div*SC.d; }
+  var cur=[1.0, 5.0], curSel=1, nCyc=1;
+  function phase0(){ return trig() || !run ? 0 : run.drift*freq()*0.0137; }
+  function traceVolts(tms, a){ return a*Math.sin(2*Math.PI*(freq()*tms/1000+phase0())); }
+
+  function drawSource(){
+    var g='', s=src(), on=run && !run.over && !run.paused, cy=150;
+    if(s==='gen'){
+      g+='<rect x="8" y="'+(cy+20)+'" width="78" height="52" rx="5" fill="var(--panel)" stroke="var(--box)" stroke-width="1.8"/>';
+      g+='<rect x="15" y="'+(cy+27)+'" width="64" height="18" rx="2" fill="var(--screen)"/>';
+      g+=txt(47, cy+40, exp() ? '? Hz' : freq()+' Hz', {a:'middle', fs:11, c:'var(--trace)', w:600});
+      g+='<circle cx="30" cy="'+(cy+59)+'" r="6" fill="none" stroke="var(--box)" stroke-width="1.5"/><circle cx="62" cy="'+(cy+59)+'" r="6" fill="none" stroke="var(--box)" stroke-width="1.5"/>';
+      g+=txt(47, cy+14, 'signal generator', {a:'middle', fs:10.5, c:'var(--ink-faint)'});
+      g+='<path d="M86,'+(cy+40)+' C100,'+(cy+40)+' 92,'+(cy+6)+' 104,'+(cy+6)+'" fill="none" stroke="var(--ink-faint)" stroke-width="1.4"/>';
+      // loudspeaker cone, moving in and out while it plays
+      var kick = on ? Math.sin(run.t*40)*1.6*Math.min(1,amp()/40) : 0;
+      g+='<rect x="100" y="'+(cy-14)+'" width="10" height="28" fill="var(--box)"/>';
+      g+='<path d="M'+(110+kick).toFixed(1)+','+(cy-14)+' L'+(118+kick).toFixed(1)+','+(cy-30)+' L'+(118+kick).toFixed(1)+','+(cy+30)+' L'+(110+kick).toFixed(1)+','+(cy+14)+' Z" fill="var(--metal-soft)" stroke="var(--box)" stroke-width="1.5"/>';
+      g+=txt(110, cy-38, 'loudspeaker', {a:'middle', fs:10.5, c:'var(--ink-faint)'});
+    } else {
+      // tuning fork on a wooden box; the prongs vibrate after it is struck
+      var w = on ? Math.sin(run.t*60)*2.2*Math.exp(-run.t/7) : 0;
+      g+='<rect x="30" y="'+(cy+30)+'" width="90" height="30" rx="3" fill="var(--wood-soft)" stroke="var(--wood)" stroke-width="1.6"/>';
+      g+='<rect x="68" y="'+(cy+16)+'" width="14" height="16" fill="var(--metal)"/>';
+      g+='<path d="M'+(64-w).toFixed(1)+','+(cy-70)+' L'+(64-w*0.4).toFixed(1)+','+(cy+4)+' Q75,'+(cy+18)+' '+(86+w*0.4).toFixed(1)+','+(cy+4)+' L'+(86+w).toFixed(1)+','+(cy-70)+'" fill="none" stroke="var(--metal)" stroke-width="6" stroke-linecap="round"/>';
+      g+=txt(75, cy+78, exp() ? XLAB[s].toLowerCase() : 'tuning fork, '+FORK[s]+' Hz', {a:'middle', fs:10.5, c:'var(--ink-faint)'});
+      if(run && run.t<0.4) g+=txt(30, cy-60, 'strike it', {fs:10.5, c:'var(--accent)'});
+    }
+    return g;
+  }
+  function drawAir(){
+    // compressions travelling to the microphone: closer together for a higher frequency
+    var g='', cy=150, x0=122, x1=micX()-10, on=run && !run.paused && run && !run.over;
+    if(!run) return g;
+    var lam=Math.max(9, Math.min(60, 26*440/freq())), shift=(run.t*90)%lam, op=Math.min(0.9, 0.15+amp()/60);
+    for(var x=x0+shift; x<x1; x+=lam) g+=ln(x, cy-24, x, cy+24, 'var(--sound)', 2.2, ' opacity="'+op.toFixed(2)+'"');
+    return on||run ? g : '';
+  }
+  function drawMic(){
+    var x=micX(), cy=150, g='';
+    g+='<rect x="'+(x-4)+'" y="'+(cy-8)+'" width="22" height="16" rx="8" fill="var(--box)"/>';
+    g+=ln(x+18, cy, x+30, cy, 'var(--box)', 3)+ln(x+8, cy+8, x+8, 236, 'var(--ink-soft)', 2)+ln(x-4, 236, x+20, 236, 'var(--ink-soft)', 2);
+    g+='<path d="M'+(x+30)+','+cy+' C'+(x+44)+','+cy+' '+(x+40)+',200 '+(SC.x-12)+',200" fill="none" stroke="var(--ink-faint)" stroke-width="1.4"/>';
+    g+=txt(x+8, cy-16, 'microphone', {a:'middle', fs:10.5, c:'var(--ink-faint)'});
+    if(!(run && !run.over) || true) g+=txt(x+8, cy-30, '← drag →', {a:'middle', fs:9.5, c:'var(--accent)'});
+    // distance along the bench
+    g+=ln(SX, 252, x, 252, 'var(--ink-faint)', 1)+ln(SX, 247, SX, 257, 'var(--ink-faint)', 1)+ln(x, 247, x, 257, 'var(--ink-faint)', 1);
+    g+=txt((SX+x)/2, 268, dist+' cm', {a:'middle', fs:10.5, c:'var(--ink-soft)'});
+    return g;
+  }
+  function drawScope(){
+    var g='', W=SC.nx*SC.d, H=SC.ny*SC.d, cy=SC.y+H/2;
+    g+='<rect x="'+(SC.x-12)+'" y="'+(SC.y-12)+'" width="'+(W+24)+'" height="'+(H+46)+'" rx="10" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>';
+    g+='<rect x="'+SC.x+'" y="'+SC.y+'" width="'+W+'" height="'+H+'" fill="var(--screen)"/>';
+    for(var i=1;i<SC.nx;i++) g+=ln(scrX(i), SC.y, scrX(i), SC.y+H, 'var(--screen-grid)', 0.8);
+    for(var j=1;j<SC.ny;j++) g+=ln(SC.x, SC.y+j*SC.d, SC.x+W, SC.y+j*SC.d, j===4 ? 'var(--screen-axis)' : 'var(--screen-grid)', 0.8);
+    // small ticks every 0.2 division on the centre lines, as on a real screen
+    for(var k=0;k<=SC.nx*5;k++){ var xx=SC.x+k*SC.d/5; g+=ln(xx, cy-2.5, xx, cy+2.5, 'var(--screen-axis)', 0.7); }
+    g+=txt(SC.x, SC.y+H+16, 'time base '+tb()+' ms/div', {fs:10.5, c:'var(--ink-soft)'});
+    g+=txt(SC.x+W, SC.y+H+16, 'Y-gain '+yg()+' mV/div', {a:'end', fs:10.5, c:'var(--ink-soft)'});
+    g+=txt(SC.x+W/2, SC.y+H+28, 'oscilloscope', {a:'middle', fs:10, c:'var(--ink-faint)'});
+    var a=amp(), clip=false;
+    function trace(ph, op){
+      var pts=[], tot=SC.nx*tb();
+      for(var px=0; px<=W; px+=1){
+        var tms=px/W*tot, v=a*Math.sin(2*Math.PI*(freq()*tms/1000+ph)), dv=v/yg();
+        if(dv>4){ dv=4; clip=true; } if(dv<-4){ dv=-4; clip=true; }
+        pts.push((SC.x+px).toFixed(1)+','+(cy-dv*SC.d).toFixed(1));
+      }
+      return '<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--trace)" stroke-width="1.6" opacity="'+op+'" stroke-linejoin="round"/>';
+    }
+    if(!trig() && run){ g+=trace(phase0()+0.31, 0.35)+trace(phase0(), 1); }
+    else g+=trace(phase0(), 1);
+    if(clip) g+=txt(SC.x+W-4, SC.y+12, 'off the screen', {a:'end', fs:10, c:'var(--cursor)'});
+    if(exp()){
+      // two cursors to read the time between matching points
+      [0,1].forEach(function(i){
+        var x=scrX(cur[i]), sel=(i===curSel);
+        g+=ln(x, SC.y, x, SC.y+H, 'var(--cursor)', sel?1.8:1.2, ' stroke-dasharray="4 3"');
+        g+='<rect x="'+(x-9)+'" y="'+(SC.y+H-16)+'" width="18" height="14" rx="3" fill="var(--cursor)" opacity="'+(sel?1:0.7)+'"/>'+txt(x, SC.y+H-5, String(i+1), {a:'middle', fs:10, w:600, c:'var(--screen)'});
+      });
+      g+=txt(SC.x+4, SC.y+12, '← drag the cursors →', {fs:9.5, c:'var(--cursor)'});
+    } else if(run && trig()){
+      // one period marked from the start of the trace
+      var per=1000/freq()/tb();
+      if(per<=SC.nx){
+        var xa=scrX(0), xb=scrX(per), yy=SC.y+SC.d*0.6;
+        g+='<path d="M'+xa+','+yy+' L'+xb.toFixed(1)+','+yy+'" stroke="var(--cursor)" stroke-width="1.3" marker-start="url(#os-ah)" marker-end="url(#os-ah)"/>';
+        g+=txt((xa+xb)/2, yy-5, 'T', {a:'middle', fs:10.5, w:600, c:'var(--cursor)'});
+      }
+    }
+    return g;
+  }
+  function draw(){
+    var g='<defs><marker id="os-ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--cursor)"/></marker></defs>';
+    g+=ln(0, 236, 270, 236, 'var(--ink-faint)', 2);
+    g+=drawSource()+drawAir()+drawMic()+drawScope();
+    svg.innerHTML=g;
+    soundSet();
+    readings();
+  }
+
+  // ---- Experiment mode readings: three per source, then the mean and the stamped value
+  var R={gen:[], fa:[], fb:[], fc:[]}, justAdded=null;
+  function cyclesOnScreen(){ return freq()*SC.nx*tb()/1000; }
+  function readDiv(){ return Math.round(Math.abs(cur[1]-cur[0])*10)/10; }
+  function recordReading(){
+    if(!run || run.over || !trig() || readDiv()===0 || R[src()].length>=3) return;
+    var D=readDiv(), T=D*tb()/nCyc, f=1000/T;
+    R[src()].push({v:R[src()].length+1, tb:tb(), n:nCyc, D:D, T:T, f:f}); justAdded=R[src()].length;
+    draw();
+  }
+  function readings(){
+    var E=exp(), f=freq(), on=run && !run.over, a=amp(), cyc=cyclesOnScreen(), per=1000/f, pdiv=per/tb();
+    var note='', w1='', w2='', w3='';
+    $('#os-fo').textContent=fIn.value+' Hz'; $('#os-vo').textContent=vIn.value;
+    var clipped = a/yg()>4, small = a/yg()<1;
+    var setHint = cyc>10 ? 'There are too many cycles to count: choose a <b>smaller</b> time base.' : cyc<1 ? 'Less than one cycle fits on the screen: choose a <b>larger</b> time base.' : '';
+    var yHint = clipped ? 'The trace goes off the screen: choose a <b>larger</b> Y-gain (more mV per division).' : small && a>0 ? 'The trace is very small: choose a <b>smaller</b> Y-gain.' : '';
+    if(!E){
+      $('#os-l1').textContent='Cycles on screen'; $('#os-l2').textContent='One cycle'; $('#os-l3').textContent='Period, T'; $('#os-l4').textContent='Frequency, f';
+      $('#os-s1').textContent = run ? sig(cyc,3) : '–';
+      $('#os-s2').textContent = run ? sig(pdiv,3)+' div' : '–';
+      $('#os-s3').textContent = run ? sig(per,3)+' ms' : '–';
+      $('#os-s4').textContent = run ? f+' Hz' : '–';
+      w1='T = divisions for one cycle × time base<br>T = '+sig(pdiv,3)+' × '+tb()+'<br>T = '+sig(per,4)+' ms<br>T = '+sig(per/1000,4)+' s';
+      w2='f = [[1|T]]<br>f = [[1|'+sig(per/1000,4)+']]<br>f = <b>'+f+' Hz</b>';
+      w3='Higher pitch means a higher frequency: more cycles on the screen. A louder sound means a larger amplitude: a taller trace.';
+      if(!run) note = src()==='gen' ? 'The signal generator drives the loudspeaker; the microphone turns the sound into a voltage, shown on the oscilloscope. Press <b>Play</b>.' : 'Strike the tuning fork with a rubber hammer: press <b>Play</b>. The microphone turns its sound into a voltage on the oscilloscope.';
+      else if(!trig()) note='The trigger is off, so each sweep starts at a different point on the wave and the trace drifts. Turn on the <b>trigger</b> for a steady trace.';
+      else if(setHint || yHint) note=(setHint+' '+yHint).trim();
+      else if(on) note='<b>'+sig(cyc,3)+' cycles</b> fit across the 10 divisions. One cycle is '+sig(pdiv,3)+' divisions, so T = '+sig(pdiv,3)+' × '+tb()+' ms = '+sig(per,3)+' ms and f = [[1|T]] = '+f+' Hz. '+(src()==='gen' ? 'Change the frequency: a higher pitch squashes more cycles onto the screen.' : 'The trace gets smaller as the fork goes quieter.');
+      else note='The sound has stopped. Press <b>Play</b> to start it again.';
+    } else {
+      var rs=R[src()], done=rs.length===3, mean = done ? (rs[0].f+rs[1].f+rs[2].f)/3 : null;
+      $('#os-l1').textContent='Cycles on screen'; $('#os-l2').textContent='Between cursors'; $('#os-l3').textContent='Your period'; $('#os-l4').textContent='Mean frequency';
+      var D=readDiv(), Tm=D*tb()/nCyc;
+      $('#os-s1').textContent = run ? sig(cyc,2) : '–';
+      $('#os-s2').textContent = D.toFixed(1)+' div';
+      $('#os-s3').textContent = D ? sig(Tm,3)+' ms' : '–';
+      $('#os-s4').textContent = done ? Math.round(mean)+' Hz' : '?';
+      expTable($('#os-table'), [{label:'Time base (ms/div)', key:'tb', dp:1}, {label:'Cycles', key:'n'}, {label:'Divisions', key:'D', dp:1}, {label:'T (ms)', key:'T', dp:3}, {label:'f (Hz)', key:'f', dp:0}], rs, justAdded);
+      Array.prototype.forEach.call($('#os-table').querySelectorAll('tbody tr'), function(tr, i){ var r=rs[i]; tr.children[0].textContent=String(r.tb); tr.children[3].textContent=sig(r.T,3); });
+      if(rs.length){ var r=rs[rs.length-1]; w1='T = [[divisions × time base|number of cycles]]<br>T = [['+r.D.toFixed(1)+' × '+r.tb+'|'+r.n+']]<br>T = '+sig(r.T,4)+' ms<br>T = '+sig(r.T/1000,4)+' s<br>f = [[1|T]]<br>f = [[1|'+sig(r.T/1000,4)+']]<br>f = <b>'+Math.round(r.f)+' Hz</b>'; }
+      else w1='Your working appears after your first reading.';
+      if(done){ w2='mean f = [['+rs.map(function(x){ return Math.round(x.f); }).join(' + ')+'|3]]<br>mean f = <b>'+Math.round(mean)+' Hz</b>'; w3=XLAB[src()]+(src()==='gen' ? ' was set to '+f+' Hz.' : ' is stamped '+f+' Hz.')+' Your mean is '+Math.abs((mean-f)/f*100).toFixed(1)+'% '+(mean>=f?'above':'below')+' it.'; }
+      if(!run) note='Experiment: '+srcName()+'. Press <b>Play</b>, then set the time base so you can see several complete cycles, and the Y-gain so the trace fills the screen.';
+      else if(run.over) note='The sound has stopped: press <b>Play</b> again.';
+      else if(!trig()) note='The trace is not steady: turn the <b>trigger</b> on before you measure.';
+      else if(done) note='Done: three readings for '+srcName()+', mean <b>'+Math.round(mean)+' Hz</b>. '+w3+' Choose another source, or a different time base and repeat.';
+      else if(setHint || yHint) note=(setHint+' '+yHint).trim();
+      else note='Drag cursor 1 and cursor 2 to the same point on two waves (e.g. where the trace crosses the centre line going up), as many complete cycles apart as you can. Set the number of cycles, then press <b>Record reading</b>. Reading '+(rs.length+1)+' of 3.';
+      $('#os-rec').disabled = !run || run.over || !trig() || D===0 || done;
+      $('#os-n').textContent=nCyc;
+    }
+    $('#os-eq1').innerHTML=FR(w1); $('#os-eq2').innerHTML=FR(w2); $('#os-eq2').hidden=!w2; $('#os-eq3').innerHTML=FR(w3); $('#os-eq3').hidden=!w3;
+    $('#os-note').innerHTML=FR(note);
+    playBtn.innerHTML = on && !run.paused ? '&#10074;&#10074; Pause' : (on ? '&#9654; Carry on' : '&#9654; Play');
+    svg.setAttribute('aria-valuenow', dist); svg.setAttribute('aria-valuetext', 'microphone '+dist+' cm from the source');
+  }
+
+  // ---- buttons and sliders
+  playBtn.addEventListener('click', function(){
+    if(run && !run.over){ run.paused=!run.paused; if(run.paused){ stop(); soundOff(); draw(); } else { soundOn(); loop(); } return; }
+    run={t:0, drift:0}; soundOn(); loop(); draw();
+  });
+  $('#os-reset').addEventListener('click', reset);
+  trigBtn.addEventListener('click', function(){ var v=!trig(); trigBtn.setAttribute('aria-pressed', String(v)); trigBtn.textContent = v ? 'Trigger: steady trace' : 'Trigger: off'; draw(); });
+  sndBtn.addEventListener('click', function(){ var v=!pressed(sndBtn); sndBtn.setAttribute('aria-pressed', String(v)); if(v) soundOn(); else soundOff(); draw(); });
+  expBtn.addEventListener('click', function(){
+    var v=!exp(); expBtn.setAttribute('aria-pressed', String(v)); $('#os-expbox').hidden=!v;
+    Array.prototype.forEach.call($('#os-src').querySelectorAll('button'), function(b){ b.textContent = v ? XLAB[b.dataset.v] : LAB[b.dataset.v]; });
+    if(v){ trigBtn.setAttribute('aria-pressed','false'); trigBtn.textContent='Trigger: off'; }
+    newSource();
+  });
+  fIn.addEventListener('input', function(){ draw(); });
+  vIn.addEventListener('input', function(){ draw(); });
+  $('#os-nm').addEventListener('click', function(){ nCyc=Math.max(1,nCyc-1); draw(); });
+  $('#os-np').addEventListener('click', function(){ nCyc=Math.min(10,nCyc+1); draw(); });
+  $('#os-rec').addEventListener('click', recordReading);
+  $('#os-clear').addEventListener('click', function(){ R[src()]=[]; justAdded=null; draw(); });
+
+  // ---- drag the microphone along the bench, or the cursors on the screen; arrow keys move the selected one
+  function svgPt(e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+  var grab=null;
+  function setDist(v){ v=Math.round(Math.max(DMIN, Math.min(DMAX, v))); if(v!==dist){ dist=v; draw(); } }
+  function setCur(i, v){ v=Math.round(Math.max(0, Math.min(SC.nx, v))*10)/10; cur[i]=v; draw(); }
+  svg.addEventListener('pointerdown', function(e){
+    var q=svgPt(e);
+    if(exp() && q.x>=SC.x-6 && q.x<=SC.x+SC.nx*SC.d+6 && q.y>=SC.y && q.y<=SC.y+SC.ny*SC.d){
+      var d0=Math.abs(q.x-scrX(cur[0])), d1=Math.abs(q.x-scrX(cur[1]));
+      curSel = d0<=d1 ? 0 : 1; grab={k:'cur', i:curSel};
+    } else if(Math.abs(q.x-(micX()+8))<26 && q.y>110 && q.y<240){ grab={k:'mic', off:q.x-micX()}; }
+    else return;
+    svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
+    if(grab.k==='cur') setCur(grab.i, (q.x-SC.x)/SC.d);
+  });
+  svg.addEventListener('pointermove', function(e){
+    if(!grab) return; var q=svgPt(e);
+    if(grab.k==='cur') setCur(grab.i, (q.x-SC.x)/SC.d); else setDist((q.x-grab.off-SX)/PX);
+  });
+  function endGrab(){ if(!grab) return; grab=null; svg.classList.remove('dragging'); draw(); }
+  svg.addEventListener('pointerup', endGrab); svg.addEventListener('pointercancel', endGrab);
+  svg.addEventListener('keydown', function(e){
+    var k=e.key, big=e.shiftKey;
+    if(exp() && (k==='1' || k==='2')){ curSel=+k-1; draw(); e.preventDefault(); return; }
+    if(exp() && (k==='ArrowLeft' || k==='ArrowRight')){ setCur(curSel, cur[curSel]+(k==='ArrowRight'?1:-1)*(big?1:0.1)); e.preventDefault(); return; }
+    if(k==='ArrowUp' || k==='ArrowDown' || (!exp() && (k==='ArrowLeft' || k==='ArrowRight'))){ setDist(dist+((k==='ArrowRight'||k==='ArrowUp')?1:-1)*(big?5:1)); e.preventDefault(); }
+  });
+  svg.setAttribute('tabindex','0'); svg.setAttribute('role','slider'); svg.setAttribute('aria-valuemin', DMIN); svg.setAttribute('aria-valuemax', DMAX);
+  svg.setAttribute('aria-label', 'A sound source, a microphone on the bench and an oscilloscope screen. Drag the microphone, or use the up and down arrow keys, to change its distance. In Experiment mode, drag the two cursors on the screen, or press 1 or 2 and use the left and right arrow keys.');
+
+  watchEquals($('#os-eq1')); watchEquals($('#os-eq2'));
+  newSource();
+})();
+</script>
+<footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
+
+</body>
+</html>
