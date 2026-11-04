@@ -58,7 +58,6 @@ SETS = {
       {'part': U2, 'page': 'circuits.html', 'src': '2b', 'section': 'SERIES CIRCUIT CALCULATIONS', 'tab': 'seriescalc', 'label': 'Series Calculations'},
       {'part': U3, 'page': 'waves.html', 'src': '3a', 'section': 'WAVE EQUATIONS', 'tab': 'equation', 'label': 'v = fλ'},
       {'part': U3, 'page': 'waves.html', 'src': '3a', 'section': 'ELECTROMAGNETIC SPECTRUM', 'tab': 'spectrum', 'label': 'EM Waves'},
-      {'part': U3, 'page': 'light-and-sound.html', 'src': '3b', 'section': 'REFLECTION', 'tab': 'reflection', 'label': 'Reflection'},
       {'part': U3, 'page': 'light-and-sound.html', 'src': '3b', 'section': 'REFRACTION', 'tab': 'refraction', 'label': 'Refractive Index'},
       {'part': U3, 'page': 'light-and-sound.html', 'src': '3b', 'section': 'TOTAL INTERNAL REFLECTION', 'tab': 'tir', 'label': 'Critical Angle'},
       {'part': U3, 'page': 'light-and-sound.html', 'src': '3b', 'section': 'SPEED OF SOUND', 'tab': 'speed', 'label': 'Speed of Sound', 'ta': True},

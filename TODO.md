@@ -29,6 +29,10 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 ## 3. Alex to review
 
+- [ ] Check the 20-minute review of all 21 IGCSE workouts (4 Nov 2026): every page cut to about 20 minutes of content (477 → 300 activities), Quick check cards instead of single Predicts, memory games replaced by one crossword per unit. What changed on each page is in `tools/REVIEW.md` (rows starting "4 Nov 2026 20-minute review"). Many Calculate cards now have only 1 question; say if you want some back.
+- [ ] Decide whether to split 2b `circuits.html` (still ~39 min after the cut): page A Overview, Charge, Series, Resistance; page B I–V, LDR and Thermistor, Series Calculations, Units and Terms. A split touches `igcse.html`, `tools/sets/build.py`, the 2.9 practical's `page.json` link (`circuits.html#iv`) and `tools/CORE-PRACTICALS.md` (added 4 Nov 2026).
+- [ ] 3b: add the missing core practical banners on the Refraction (3.17/3.19) and Speed of Sound (3.25P) tabs; the practical pages exist (found 4 Nov 2026).
+
 51 pages are 🔍 To review and 17 are ❔ Not recorded in `tools/REVIEW.md`. Go through that table; only Alex marks a page ✅.
 
 - [ ] Check Units 7 and 8 (7a `radioactivity.html`, 7b `fission-and-fusion.html`, 8a `universe-and-stars.html`, 8b `cosmology.html`; what to look at is in `tools/REVIEW.md`). When each is checked, remove its Draft labels (added 4 Nov 2026).
