@@ -48,7 +48,7 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 How to build one: `tools/CORE-PRACTICALS.md`.
 
 - [ ] 3.19 Refractive index of glass (batch B; do 3.17 first so they share the light box).
-- [ ] 3.25P Speed of sound in air (batch B).
+- [ ] 3.25P Speed of sound: draft built 4 Nov 2026 (`speed-of-sound-practical.html`, no card yet). Alex to review the draft (method switch Orders and Matches, Henry's graph that misses the origin, Exam model answers), then publish per `tools/CORE-PRACTICALS.md` step 7.
 - [ ] 2.23P Charging insulators by friction (batch C). Add its `.cp-banner` to `electric-charge.html#charging` when built.
 - [ ] 3.17 Refraction (batch C).
 - [ ] 3.27P Frequency of sound with an oscilloscope (batch C).
