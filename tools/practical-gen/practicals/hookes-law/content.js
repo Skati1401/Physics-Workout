@@ -51,7 +51,7 @@
 
 /* ================= EXPERIMENT ================= */
 {
-  const body=act('experiment','Your turn','Take your own readings','Press Experiment, choose a mass size, then add the masses one at a time and watch your results table and graph fill in. Then take them off one at a time. Do it for all three samples. Which obeys Hooke’s law, up to what load, and which go back to their original length?');
+  const body=act('experiment','Your turn','Take your own readings','Press Experiment, choose a mass size, then add the masses one at a time and watch your results table and graph fill in. Then take them off one at a time. Do it for the spring and then the rubber band. Which obeys Hooke’s law, up to what load, and which goes back to its original length? Extra: try the metal wire too.');
 }
 frameAct('experiment','animations/hookes-law.html','','Hooke’s law animation: stretching a spring, wire or rubber band','Hooke’s law',false);
 
@@ -330,6 +330,14 @@ function swapGraph(label){
 
 /* ================= EXAM PRACTICE ================= */
 {
+  const body=act('exam','Exam style','Describe the method','The most common long question on this practical. Write your answer on paper first, then check it against the marking points.');
+  body.appendChild(mk('p','sub','5 marks'));
+  body.appendChild(mk('p','','Elizabeth wants to find out whether a spring obeys Hooke’s law. Describe how she should measure the extension of the spring for each load. Include how to make her readings accurate and one safety precaution.'));
+  const d4=mk('details','');
+  d4.innerHTML='<summary>Check your answer</summary><div><ul><li>Measure the original length of the spring with a ruler, before any load is added.</li><li>Add the masses one at a time, gently, and measure the new length for a range of loads.</li><li>Extension = new length − original length.</li><li>Measure between the same two points each time, using a pointer fixed to the bottom of the spring.</li><li>Avoid parallax: read the ruler with your eye level with the pointer.</li><li>Clamp the ruler vertically, and check it with a set square.</li><li>Also measure the length as the masses are taken off, and find the mean extension at each load.</li><li>Find each load from the mass (W = mg) or measure it with a newtonmeter; check the masses on a balance.</li><li>Safety: wear goggles to protect your eyes if the spring snaps, and keep your feet clear of the masses (or put a crash pad under them).</li></ul><p class="sub">Any five points score. “Be careful” or “wear protective clothing” scores nothing: say what protects what.</p></div>';
+  body.appendChild(d4);
+}
+{
   const body=act('exam','Exam style','Does the spring obey Hooke’s law?','Elizabeth loads a spring and records these results. One reading is missing.');
   const tbl=mk('div','table-scroll');
   tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Load (N)</th><th>0</th><th>2</th><th>4</th><th>6</th><th>8</th><th>10</th></tr></thead><tbody><tr><th>Extension (cm)</th><td>0</td><td>1.5</td><td>3.0</td><td><b>?</b></td><td>6.0</td><td>8.9</td></tr></tbody></table>';
@@ -353,12 +361,7 @@ function swapGraph(label){
   const d3=mk('details','');
   d3.innerHTML='<summary>Check your answer</summary><div><ul><li>The rubber band’s graph is curved, with no straight-line part.</li><li>So its extension is not directly proportional to the force: it does not obey Hooke’s law.</li></ul></div>';
   body.appendChild(d3);
-  body.appendChild(mk('p','sub','(e) 5 marks'));
-  body.appendChild(mk('p','','Describe how Elizabeth should measure the extension of the spring for each load. Include how to make her readings accurate and one safety precaution.'));
-  const d4=mk('details','');
-  d4.innerHTML='<summary>Check your answer</summary><div><ul><li>Measure the original length of the spring with a ruler, before any load is added.</li><li>Add the masses one at a time, gently, and measure the new length for a range of loads.</li><li>Extension = new length − original length.</li><li>Measure between the same two points each time, using a pointer fixed to the bottom of the spring.</li><li>Avoid parallax: read the ruler with your eye level with the pointer.</li><li>Clamp the ruler vertically, and check it with a set square.</li><li>Also measure the length as the masses are taken off.</li><li>Safety: wear goggles to protect your eyes if the spring snaps, and keep your feet clear of the masses (or put a crash pad under them).</li></ul><p class="sub">Any five points score. “Be careful” or “wear protective clothing” scores nothing: say what protects what.</p></div>';
-  body.appendChild(d4);
-  body.appendChild(mk('p','sub','(f) 3 marks'));
+  body.appendChild(mk('p','sub','(e) 3 marks'));
   body.appendChild(mk('p','','Ali tests a long copper wire instead. Its extension is only a few millimetres. Describe how he should measure the extension, and give one safety precaution.'));
   const d5=mk('details','');
   d5.innerHTML='<summary>Check your answer</summary><div><ul><li>Fix a marker to the wire and measure its original position (length) before adding any load.</li><li>Add the loads gently, one at a time; extension = new length − original length, read at the same marker each time.</li><li>The extension is tiny, so measure it with a vernier scale (or vernier calipers), not just a ruler.</li><li>Avoid parallax: view the scale perpendicularly, level with the marker.</li><li>Safety: wear goggles in case the wire snaps, and keep your feet clear of the masses.</li></ul><p class="sub">For a wire method, repeating and finding a mean, naming control variables, or just writing “eye level” scored nothing in a recent mark scheme. Give the detail instead.</p></div>';
