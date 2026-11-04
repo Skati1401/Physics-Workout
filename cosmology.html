@@ -34,6 +34,11 @@
 @keyframes tickin{from{transform:scale(.3);opacity:0}}
 @keyframes donepulse{40%{transform:scale(1.12)}}
 .act-title b.ta{font:500 11px var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px;white-space:nowrap;vertical-align:2px}
+/* quick check: a tab's short multiple-choice questions in one card (review, 4 Nov 2026) */
+.qc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;align-items:start}
+.qc-item{display:flex;flex-direction:column;gap:10px;min-width:0;padding:12px 14px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
+.qc-n{margin:0;font:500 12px var(--f-mono);color:var(--ink-soft)}
+.qc-ctx{margin:0;color:var(--ink-soft)}
 </style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
@@ -503,7 +508,7 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='unit8b-v1';
+const STORE_KEY='unit8b-v2',OLD_STORE_KEY='unit8b-v1';
 const TAB_IDS=["overview","bigbang","redshift","equation","expansion"];
 let activeTab='overview';
 const reflowers=[];
@@ -517,6 +522,19 @@ function act(panel,kind,title,intro){
   const body=mk('div','act-body');a.appendChild(body);
   $('#panel-'+panel+' .acts').appendChild(a);
   return body;
+}
+/* ================= quick check: a tab's short multiple-choice questions in one card =================
+   Review (4 Nov 2026): one card per tab instead of a row of single Predicts. Each question is a createPredict
+   (the same feedback, Try again and saved answers); ctx is the one-line set-up that used to be the Predict's intro. */
+function quickCheck(panel,title,qs){
+  const body=act(panel,'Quick check',title,'Answer each question. A wrong first answer tells you why, then you try again.');
+  const grid=mk('div','qc-grid');body.appendChild(grid);
+  qs.forEach((q,i)=>{
+    const box=mk('div','qc-item');grid.appendChild(box);
+    box.appendChild(mk('p','qc-n',(i+1)+' of '+qs.length+(q.title?' · '+FR(q.title):'')));
+    if(q.ctx)box.appendChild(mk('p','qc-ctx',FR(q.ctx)));
+    createPredict(Object.assign({},q,{host:box}));
+  });
 }
 function bar(parent,buttons){
   const b=mk('div','bar');
@@ -1546,36 +1564,29 @@ predictAct('bigbang','The cosmic microwave background','Decide first, then see t
     {text:'Light from the Big Bang that has not yet reached us',why:'The CMB is reaching us now. It started as high-energy radiation and has been stretched to microwave wavelengths.'}
   ],
   explain:'Soon after the Big Bang the universe was filled with very hot radiation. As the universe expanded, its wavelength was stretched, and today it reaches us as microwaves from every direction: the CMB.'});
-predictAct('bigbang','Why the CMB counts as evidence','Decide first, then see the answer.',{
-  q:'Why is the CMB evidence for the Big Bang?',
-  options:[
-    {text:'The theory predicted leftover radiation filling all of space',correct:true},
-    {text:'It shows the universe is getting hotter',why:'The CMB shows the universe has cooled: the radiation has been stretched to long, low-energy wavelengths.'},
-    {text:'It comes only from the direction of the Big Bang',why:'The CMB comes from every direction. The Big Bang happened everywhere, not at one point in space.'},
-    {text:'It proves the universe is shrinking',why:'The stretching of the radiation to microwaves fits an expanding universe, not a shrinking one.'}
-  ],
-  explain:'A hot, dense early universe would have left radiation everywhere, cooled and stretched by expansion. That is exactly what the CMB is, coming almost equally from every direction.'});
 
 /* ================= 3. RED-SHIFT ================= */
-predictAct('redshift','A galaxy moving away','Decide first, then see the answer.',{
-  q:'A galaxy is moving away from the Earth. Compared with light from a source at rest, its light has',
-  options:[
+quickCheck('redshift','Red-shift',[
+  {title:'A galaxy moving away',
+    q:'A galaxy is moving away from the Earth. Compared with light from a source at rest, its light has',
+    options:[
     {text:'a longer wavelength and a lower frequency',correct:true},
     {text:'a shorter wavelength and a higher frequency',why:'That happens when a source moves towards you (blue-shift). Moving away stretches the waves.'},
     {text:'a longer wavelength and a higher frequency',why:'Light always travels at the same speed, so a longer wavelength means a lower frequency.'},
     {text:'the same wavelength, but it is dimmer',why:'It may be dimmer, but the wavelength changes too: the motion stretches the waves.'}
-  ],
-  explain:'This is the Doppler effect: a source moving away from an observer stretches out the waves, so the observed wavelength is longer and the frequency lower. For light this moves the spectrum towards the red end.'});
-predictAct('redshift','Comparing two galaxies','Decide first, then see the answer.',{
-  q:'The dark lines in each galaxy’s spectrum are shifted from where they are in the lab. What does this tell you about galaxy B?',
-  pre:spectraFig([[0,'Lab'],[10,'Galaxy A'],[30,'Galaxy B']]),
-  options:[
+    ],
+    explain:'This is the Doppler effect: a source moving away from an observer stretches out the waves, so the observed wavelength is longer and the frequency lower. For light this moves the spectrum towards the red end.'},
+  {title:'Comparing two galaxies',
+    q:'The dark lines in each galaxy’s spectrum are shifted from where they are in the lab. What does this tell you about galaxy B?',
+    pre:spectraFig([[0,'Lab'],[10,'Galaxy A'],[30,'Galaxy B']]),
+    options:[
     {text:'It is moving away faster than galaxy A',correct:true},
     {text:'It is moving towards us faster than A',why:'The lines have moved towards the red end (to the right), which means moving away, not towards us.'},
     {text:'It is hotter than galaxy A',why:'The pattern of lines is the same, just shifted. The shift shows motion, not temperature.'},
     {text:'It is closer to us than galaxy A',why:'A bigger red-shift goes with a greater distance: B is further away and moving away faster.'}
-  ],
-  explain:'Both galaxies’ lines have moved towards the red end, so both are moving away. B’s lines have moved further, so B is moving away faster, and so is further away.'});
+    ],
+    explain:'Both galaxies’ lines have moved towards the red end, so both are moving away. B’s lines have moved further, so B is moving away faster, and so is further away.'}
+]);
 createSortGame({host:act('redshift','Sort','Red-shift or blue-shift?','Sort each situation, then press Check.'),
   cats:[{id:'r',label:'Red-shift',color:'--force',soft:'--force-soft'},
         {id:'b',label:'Blue-shift',color:'--motion',soft:'--motion-soft'}],
@@ -1592,8 +1603,7 @@ createSortGame({host:act('redshift','Sort','Red-shift or blue-shift?','Sort each
 calcAct('equation','[[Δλ|λ₀]] = [[v|c]]','Use [[change in wavelength|reference wavelength]] = [[velocity of galaxy|speed of light]], with c = 3.0 × 10⁸ m/s. Δλ = λ − λ₀.',[
   {q:'A line at 656 nm in the lab is seen at 662.6 nm in a galaxy’s light. The galaxy’s velocity is',unit:'× 10⁶ m/s',answer:3.02,working:'Δλ = 662.6 − 656 = 6.6 nm<br>[[Δλ|λ₀]] = [[v|c]]<br>[[6.6|656]] = [[v|3.0 × 10⁸]]<br>v = [[6.6|656]] × 3.0 × 10⁸<br>v = 3.02 × 10⁶ m/s'},
   {q:'A galaxy moves away at 1.5 × 10⁷ m/s. A line at 500 nm in the lab is shifted by',unit:'nm',answer:25,working:'[[Δλ|λ₀]] = [[v|c]]<br>[[Δλ|500]] = [[1.5 × 10⁷|3.0 × 10⁸]]<br>[[Δλ|500]] = 0.05<br>Δλ = 0.05 × 500<br>Δλ = 25 nm'},
-  {q:'For that galaxy, the observed wavelength of the 500 nm line is',unit:'nm',answer:525,working:'λ = λ₀ + Δλ<br>λ = 500 + 25<br>λ = 525 nm'},
-  {q:'A galaxy’s light has [[Δλ|λ₀]] = 0.020. Its velocity is',unit:'× 10⁶ m/s',answer:6,working:'[[Δλ|λ₀]] = [[v|c]]<br>0.020 = [[v|3.0 × 10⁸]]<br>v = 0.020 × 3.0 × 10⁸<br>v = 6.0 × 10⁶ m/s'}
+  {q:'For that galaxy, the observed wavelength of the 500 nm line is',unit:'nm',answer:525,working:'λ = λ₀ + Δλ<br>λ = 500 + 25<br>λ = 525 nm'}
 ]);
 spotAct('equation','Find the mistake',[
   {scenario:'A 400 nm line is shifted by 8.0 nm in a galaxy’s light. Find the galaxy’s velocity.',lines:['[[Δλ|λ₀]] = [[v|c]]','[[8.0|400]] = [[v|3.0 × 10⁸]]','0.020 = [[v|3.0 × 10⁸]]','v = [[0.020|3.0 × 10⁸]]','v = 6.7 × 10⁻¹¹ m/s'],wrong:3,
@@ -1621,15 +1631,6 @@ predictAct('expansion','Are we at the centre?','Decide first, then see the answe
     {text:'No, because the galaxies are really moving towards us',why:'Their light is red-shifted, which means they are moving away from us.'}
   ],
   explain:'Space itself is expanding, so the distance between every pair of galaxies grows. An observer in any galaxy would see the others moving away, faster the further they are.'});
-predictAct('expansion','Red-shift and distance','Decide first, then see the answer.',{
-  q:'Galaxy P is twice as far away as galaxy Q. How does P’s red-shift compare with Q’s?',
-  options:[
-    {text:'About twice as big',correct:true},
-    {text:'About half as big',why:'More distant galaxies have bigger red-shifts, not smaller: they are moving away faster.'},
-    {text:'The same, as all galaxies move at the same speed',why:'Galaxies further away are moving away faster, so their red-shift is bigger.'},
-    {text:'Zero, as P is too far away to measure',why:'Red-shift is measured for galaxies billions of light years away. The further the galaxy, the bigger the shift.'}
-  ],
-  explain:'The speed a galaxy moves away is roughly proportional to its distance, and red-shift is proportional to speed. So a galaxy twice as far away has about twice the red-shift.'});
 
 /* ================= tabs, startup ================= */
 // Two Predict activities in a row sit side by side (they stack again on narrow screens).
@@ -1729,8 +1730,14 @@ byId('tab-overview').parentNode.addEventListener('keydown',e=>{
   applyTabUI(TAB_IDS[n]);byId('tab-'+TAB_IDS[n]).focus();
 });
 // Answers and the open tab are remembered in this browser only, so a reload keeps them.
+// Review (4 Nov 2026): fewer activities per page. Answers saved before it are carried over once for the
+// activities that did not change (old key -> new key); the rest start fresh.
+const CARRY={"overview-0":"overview-0","bigbang-0":"bigbang-0","bigbang-1":"bigbang-1","bigbang-2":"bigbang-2","redshift-0":"redshift-0","redshift-1":"redshift-1","redshift-2":"redshift-2","equation-1":"equation-1","equation-2":"equation-2","expansion-0":"expansion-0","expansion-1":"expansion-1"};
 function readSaved(){
   try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(OLD_STORE_KEY)||'null');
+    if(s&&typeof s==='object'){const v=s.v||{},n={};Object.keys(CARRY).forEach(k=>{if(v[k])n[CARRY[k]]=v[k];});return {tab:s.tab,v:n};}
+  }catch(e){}
   return {};
 }
 function start(data){
