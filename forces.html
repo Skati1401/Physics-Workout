@@ -39,6 +39,12 @@
 .qc-item{display:flex;flex-direction:column;gap:10px;min-width:0;padding:12px 14px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
 .qc-n{margin:0;font:500 12px var(--f-mono);color:var(--ink-soft)}
 .qc-ctx{margin:0;color:var(--ink-soft)}
+/* Show answer (4 Nov 2026): answers filled in by the button are dashed, not green */
+.btn[hidden]{display:none!important}
+.btn-show{border-style:dashed}
+.slot.is-shown,.sort-item.is-shown,.match-card.is-shown,.reorder-row.is-shown,.calc-num-input.is-shown,.xw-cell.is-shown{border-style:dashed!important;border-color:var(--accent)!important;background:var(--accent-soft)!important;color:var(--ink)!important}
+.calc-show-row{grid-column:1/-1}
+.calc-show-row:has(> [hidden]){display:none}
 </style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
@@ -533,6 +539,17 @@ function bar(parent,buttons){
   parent.appendChild(b);
   return {el:b,msg:msg,say:(t,cls)=>{msg.textContent=t;msg.className='fb'+(cls?' '+cls:'');}};
 }
+// Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
+// answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
+// a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
+const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
+function answerBtn(b,fn){
+  const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
+  btn.addEventListener('click',()=>{btn.hidden=true;fn();});
+  b.el.insertBefore(btn,b.msg);
+  return {on:()=>{btn.hidden=false;},off:()=>{btn.hidden=true;}};
+}
 
 /* ================= saved answers and tab progress =================
    Every graded activity registers with track() and gives getState / setState / isDone.
@@ -647,7 +664,7 @@ function createBlankGame(cfg){
   cfg.chips.forEach(c=>chipMap[c.id]=c);
   slots.forEach(s=>slotMap[s.id]=s);
   let order=shuffle(cfg.chips.map(c=>c.id));
-  let placed={},locked={},selected=null;
+  let placed={},locked={},shown={},selected=null;
   slots.forEach(s=>{
     s.el.dataset.slotId=s.id;s.el.classList.add('slot','is-empty');
     s.el.addEventListener('click',function(e){
@@ -660,6 +677,18 @@ function createBlankGame(cfg){
     },s.label||'Gap');
   });
   function say(t,c){if(cfg.msg)cfg.msg.say(t,c);}
+  const ans=cfg.msg&&cfg.msg.el?answerBtn(cfg.msg,showAll):{on(){},off(){}};
+  function showAll(){
+    slots.forEach(s=>{
+      if(locked[s.id])return;
+      const used=new Set(Object.keys(placed).filter(k=>locked[k]).map(k=>placed[k]));
+      const c=cfg.chips.find(c=>cfg.isCorrect(c,s)&&(cfg.palette||!used.has(c.id)))||cfg.chips.find(c=>cfg.isCorrect(c,s));
+      if(!c)return;
+      if(!cfg.palette)Object.keys(placed).forEach(k=>{if(!locked[k]&&placed[k]===c.id)delete placed[k];});
+      placed[s.id]=c.id;locked[s.id]=true;shown[s.id]=true;
+    });
+    render();say(SHOWN_MSG,'');
+  }
   function chipEl(c,inSlot){
     const e=mk('span','chip'+(inSlot?' is-placed':''));
     e.innerHTML=inSlot&&cfg.slotText?cfg.slotText(c):c.text;
@@ -696,6 +725,7 @@ function createBlankGame(cfg){
       const old=s.el.querySelector('.chip');if(old)old.remove();
       s.el.classList.toggle('is-empty',!placed[s.id]);
       s.el.classList.toggle('is-correct',!!locked[s.id]);
+      s.el.classList.toggle('is-shown',!!shown[s.id]);
       s.el.classList.toggle('pop',!!fresh[s.id]);
       s.el.classList.remove('is-wrong');
       if(placed[s.id]){
@@ -727,18 +757,19 @@ function createBlankGame(cfg){
     render();
     wrong.forEach(id=>{slotMap[id].el.classList.add('is-wrong');});
     const done=Object.keys(locked).length;
-    if(done===slots.length){say('All '+slots.length+' correct. Well done.','good');celebrate(cfg.score);}
+    if(wrong.length)ans.on();
+    if(done===slots.length){ans.off();say('All '+slots.length+' correct. Well done.','good');celebrate(cfg.score);}
     else if(wrong.length)say(wrong.length+' in the wrong place. They will pop back so you can try again.'+(empty?' '+empty+' still empty.':''),'bad');
     else say(empty+' still to fill.','');
     if(wrong.length)setTimeout(()=>{wrong.forEach(id=>{if(!locked[id])delete placed[id];});render();},850);
   }
-  function reset(){placed={};locked={};selected=null;order=shuffle(cfg.chips.map(c=>c.id));say('','');render();}
+  function reset(){placed={};locked={};shown={};selected=null;ans.off();order=shuffle(cfg.chips.map(c=>c.id));say('','');render();}
   render();
   return track(pool,{check:check,reset:reset,render:render,
     getState:()=>({o:order,p:placed,l:Object.keys(locked)}),
     setState:s=>{
       if(Array.isArray(s.o)&&s.o.length===order.length&&s.o.every(id=>chipMap[id]))order=s.o.slice();
-      placed={};locked={};selected=null;
+      placed={};locked={};shown={};selected=null;ans.off();
       Object.keys(s.p||{}).forEach(k=>{if(slotMap[k]&&chipMap[s.p[k]])placed[k]=s.p[k];});
       (s.l||[]).forEach(k=>{if(placed[k]&&cfg.isCorrect(chipMap[placed[k]],slotMap[k]))locked[k]=true;});
       render();
@@ -755,11 +786,12 @@ function createSortGame(cfg){
   const poolLabel=mk('div','pool-label','Cards to sort');
   const poolEl=mk('div','sort-pool');
   host.appendChild(binsEl);host.appendChild(poolLabel);host.appendChild(poolEl);
-  let where={},locked={},selected=null,order;
+  let where={},locked={},shown={},selected=null,order;
   const b=bar(host,[{label:'Check',primary:true,fn:check},{label:'Shuffle again',fn:reset}]);
   const score=mk('span','score');b.el.insertBefore(score,b.msg);
+  const ans=answerBtn(b,()=>{items.forEach(i=>{if(!locked[i.id]){where[i.id]=i.cat;locked[i.id]=true;shown[i.id]=true;}});render();b.say(SHOWN_MSG,'');});
   let fresh={};
-  function itemEl(i){const e=mk('div','sort-item',i.text);e.dataset.item=i.id;if(locked[i.id])e.classList.add('is-correct');if(fresh[i.id])e.classList.add('pop');return e;}
+  function itemEl(i){const e=mk('div','sort-item',i.text);e.dataset.item=i.id;if(locked[i.id])e.classList.add('is-correct');if(shown[i.id])e.classList.add('is-shown');if(fresh[i.id])e.classList.add('pop');return e;}
   function drop(id,ev){
     const bin=hitEl(ev,'.bin');
     if(bin&&binsEl.contains(bin))where[id]=bin.dataset.cat;
@@ -799,18 +831,19 @@ function createSortGame(cfg){
     });
     render();
     wrong.forEach(id=>{const e=binsEl.querySelector('[data-item="'+id+'"]');if(e)e.classList.add('is-wrong');});
-    if(Object.keys(locked).length===items.length){b.say('All correct. Well done.','good');celebrate(score);}
+    if(wrong.length)ans.on();
+    if(Object.keys(locked).length===items.length){ans.off();b.say('All correct. Well done.','good');celebrate(score);}
     else if(wrong.length)b.say(wrong.length+' in the wrong bin. They will go back to the pool.'+(inPool?' '+inPool+' not sorted yet.':''),'bad');
     else b.say(inPool+' cards still to sort.','');
     if(wrong.length)setTimeout(()=>{wrong.forEach(id=>{if(!locked[id])where[id]='pool';});render();},850);
   }
-  function reset(){where={};locked={};selected=null;items.forEach(i=>where[i.id]='pool');order=shuffle(items.map(i=>i.id));b.say('','');render();}
+  function reset(){where={};locked={};shown={};selected=null;ans.off();items.forEach(i=>where[i.id]='pool');order=shuffle(items.map(i=>i.id));b.say('','');render();}
   reset();
   return track(host,{reset:reset,
     getState:()=>({o:order,w:where,l:Object.keys(locked)}),
     setState:s=>{
       if(Array.isArray(s.o)&&s.o.length===items.length&&s.o.every(id=>itemMap[id]))order=s.o.slice();
-      where={};locked={};selected=null;
+      where={};locked={};shown={};selected=null;ans.off();
       items.forEach(i=>{const w=s.w&&s.w[i.id];where[i.id]=cats.some(c=>c.id===w)?w:'pool';});
       (s.l||[]).forEach(id=>{if(itemMap[id]&&where[id]===itemMap[id].cat)locked[id]=true;});
       render();
@@ -826,16 +859,20 @@ function createMatchGame(cfg){
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','match-lines');
   const colL=mk('div','match-col'),colR=mk('div','match-col');
   grid.appendChild(svg);grid.appendChild(colL);grid.appendChild(colR);host.appendChild(grid);
-  let L,R,link,locked,sel,wrongSet={},fresh={};
+  let L,R,link,locked,sel,wrongSet={},fresh={},shown={};
   const b=bar(host,[{label:'Check matches',primary:true,fn:check},{label:'Shuffle again',fn:reset}]);
   const score=mk('span','score');b.el.insertBefore(score,b.msg);
+  const ans=answerBtn(b,()=>{
+    pairs.forEach(p=>{if(locked[p.id])return;Object.keys(link).forEach(k=>{if(k!==p.id&&link[k]===p.id)delete link[k];});link[p.id]=p.id;locked[p.id]=true;shown[p.id]=true;});
+    wrongSet={};render();b.say(SHOWN_MSG,'');
+  });
   function card(side,id){
     const p=pairs.find(x=>x.id===id);
     const e=mk('div','match-card',side==='L'?p.l:p.r);e.dataset.side=side;e.dataset.id=id;
     const linked=side==='L'?link[id]!==undefined:Object.values(link).indexOf(id)>=0;
     if(linked)e.classList.add('is-linked');
     const lid=side==='L'?id:Object.keys(link).find(k=>link[k]===id);
-    if(lid!==undefined&&locked[lid]){e.classList.remove('is-linked');e.classList.add('is-correct');if(fresh[lid])e.classList.add('pop');}
+    if(lid!==undefined&&locked[lid]){e.classList.remove('is-linked');e.classList.add('is-correct');if(shown[lid])e.classList.add('is-shown');if(fresh[lid])e.classList.add('pop');}
     if(lid!==undefined&&wrongSet[lid])e.classList.add('is-wrong');
     if(sel&&sel.side===side&&sel.id===id)e.classList.add('is-selected');
     if(!(lid!==undefined&&locked[lid])){
@@ -892,12 +929,13 @@ function createMatchGame(cfg){
     pairs.forEach(p=>{if(locked[p.id])return;if(link[p.id]===undefined){unpaired++;return;}if(link[p.id]===p.id){locked[p.id]=true;fresh[p.id]=true;}else wrong.push(p.id);});
     wrongSet={};wrong.forEach(id=>wrongSet[id]=true);
     render();
-    if(Object.keys(locked).length===pairs.length){b.say('All pairs correct. Well done.','good');celebrate(score);}
+    if(wrong.length)ans.on();
+    if(Object.keys(locked).length===pairs.length){ans.off();b.say('All pairs correct. Well done.','good');celebrate(score);}
     else if(wrong.length)b.say(wrong.length+' pair'+(wrong.length>1?'s are':' is')+' wrong. They will come apart so you can try again.'+(unpaired?' '+unpaired+' not paired yet.':''),'bad');
     else b.say(unpaired+' still to pair.','');
     if(wrong.length)setTimeout(()=>{wrong.forEach(id=>{if(!locked[id])delete link[id];});wrongSet={};render();},900);
   }
-  function reset(){L=shuffle(pairs.map(p=>p.id));R=shuffle(pairs.map(p=>p.id));link={};locked={};sel=null;wrongSet={};b.say('','');render();}
+  function reset(){L=shuffle(pairs.map(p=>p.id));R=shuffle(pairs.map(p=>p.id));link={};locked={};shown={};sel=null;wrongSet={};ans.off();b.say('','');render();}
   window.addEventListener('resize',()=>raf(reflow));
   reset();
   const ok=a=>Array.isArray(a)&&a.length===pairs.length&&pairs.every(p=>a.indexOf(p.id)>=0);
@@ -905,7 +943,7 @@ function createMatchGame(cfg){
     getState:()=>({L:L,R:R,k:link,l:Object.keys(locked)}),
     setState:s=>{
       if(ok(s.L))L=s.L.slice();if(ok(s.R))R=s.R.slice();
-      link={};locked={};sel=null;wrongSet={};
+      link={};locked={};shown={};sel=null;wrongSet={};ans.off();
       const used={};
       Object.keys(s.k||{}).forEach(l=>{const r=s.k[l];if(pairs.some(p=>p.id===l)&&pairs.some(p=>p.id===r)&&!used[r]){link[l]=r;used[r]=1;}});
       (s.l||[]).forEach(id=>{if(link[id]===id)locked[id]=true;});
@@ -961,8 +999,17 @@ function createCalc(cfg){
     row.innerHTML='<div class="calc-input-label"><label for="'+id+'-'+i+'">'+q.q+'</label></div>'+
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
+      '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
       '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
     wrap.appendChild(row);
+    // Show answer: puts the answer in the box and opens the working for this question only
+    const sb=row.querySelector('.calc-show');
+    sb.addEventListener('click',()=>{
+      const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
+      inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
+      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
+    });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
   function check(){
@@ -975,13 +1022,13 @@ function createCalc(cfg){
       const clean=raw.replace(/[\u2212\u2013]/g,'-').replace(/[\s,\u2009]/g,'').replace(/[\u00D7x]10\^?(-?\d+)/i,'e$1');
       const v=/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(clean)?parseFloat(clean):NaN;
       if(isFinite(v)&&numClose(v,q.answer)){inp.disabled=true;inp.classList.add('pop');inp.classList.remove('is-wrong');fb.textContent='Correct.';fb.className='calc-fb good';ok++;}
-      else{bad++;inp.classList.add('is-wrong');inp.closest('.calc-input-row').querySelector('.calc-working').hidden=false;fb.textContent=q.hint||'Not quite. Check the rearrangement and the units, then try again.';fb.className='calc-fb bad';}
+      else{bad++;inp.classList.add('is-wrong');inp.closest('.calc-input-row').querySelector('.calc-show').hidden=false;fb.textContent=q.hint||'Not quite. Check the rearrangement and the units, then try again.';fb.className='calc-fb bad';}
     });
     if(ok===qs.length){b.say('All '+qs.length+' correct.','good');celebrate(b.msg);}
     else b.say(ok+' of '+qs.length+' correct'+(blank?', '+blank+' left blank':'')+'.',bad?'bad':'');
   }
   function reset(){
-    qs.forEach((q,i)=>{const inp=$('#'+id+'-'+i);inp.value='';inp.disabled=false;inp.classList.remove('is-wrong');const fb=inp.closest('.calc-input-row').querySelector('.calc-fb');fb.textContent='';fb.className='calc-fb';inp.closest('.calc-input-row').querySelector('.calc-working').hidden=true;});
+    qs.forEach((q,i)=>{const inp=$('#'+id+'-'+i);inp.value='';inp.disabled=false;inp.classList.remove('is-wrong','is-shown');const row=inp.closest('.calc-input-row'),fb=row.querySelector('.calc-fb');fb.textContent='';fb.className='calc-fb';row.querySelector('.calc-working').hidden=true;row.querySelector('.calc-show').hidden=true;});
     b.say('','');
   }
   const inp=i=>document.getElementById(id+'-'+i);
@@ -1007,6 +1054,13 @@ function createReorder(cfg){
   const b=bar(host,[{label:'Check order',primary:true,fn:check},{label:'Shuffle again',fn:reset}]);
   let order,rows={},done=false;
   const valid=o=>cfg.constraints.filter(c=>o.indexOf(c[0])<o.indexOf(c[1])).length;
+  const ans=answerBtn(b,()=>{
+    // a right order: the steps as written, with any step moved after the steps it must follow
+    const left=steps.map(s=>s.id),out=[];
+    while(left.length){const k=left.findIndex(id=>cfg.constraints.every(c=>c[1]!==id||out.indexOf(c[0])>=0));out.push(left.splice(k<0?0:k,1)[0]);}
+    order=out;done=true;sync();Object.keys(rows).forEach(k=>rows[k].classList.add('is-correct','is-shown'));
+    b.say('This is the right order (shown, dashed). '+(cfg.why||''),'');
+  });
   function build(){
     list.innerHTML='';rows={};
     steps.forEach(s=>{
@@ -1035,10 +1089,10 @@ function createReorder(cfg){
     if(done)return;
     const n=valid(order),t=cfg.constraints.length;
     if(n===t){done=true;Object.keys(rows).forEach(k=>rows[k].classList.add('is-correct','pop'));b.say('Correct order. '+(cfg.why||''),'good');}
-    else b.say(n+' of '+t+' sequence checks passed. Think about what must happen before what, then try again.','bad');
+    else{ans.on();b.say(n+' of '+t+' sequence checks passed. Think about what must happen before what, then try again.','bad');}
   }
   function reset(){
-    done=false;let o;
+    done=false;ans.off();let o;
     do{o=shuffle(steps.map(s=>s.id));}while(valid(o)===cfg.constraints.length);
     order=o;b.say('','');build();
   }
@@ -1224,6 +1278,7 @@ function createCrossword(cfg){
     clues.appendChild(col);
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Start again',fn:reset}]);
+  const ans=answerBtn(b,()=>{keys.forEach(k=>{const cl=cells[k];if(!cl.ok){lock(cl);cl.el.classList.add('is-shown');}});markDone();b.say(SHOWN_MSG,'');});
   let cur=null,dir=0;
   const wordOf=(key,d)=>{const cl=cells[key];return cl.words.find(wi=>words[wi].d===d);};
   function highlight(){
@@ -1287,13 +1342,14 @@ function createCrossword(cfg){
     const done=words.filter(w=>w.cells.every(k=>cells[k].ok)).length;
     clearTimeout(wrongTimer);
     wrongTimer=setTimeout(()=>{wrong.forEach(cl=>{if(!cl.ok){cl.inp.value='';cl.el.classList.remove('is-wrong');}});},750);
-    if(done===words.length){b.say('All '+words.length+' words correct. Well done.','good');celebrate(b.msg);}
+    if(wrong.length)ans.on();
+    if(done===words.length){ans.off();b.say('All '+words.length+' words correct. Well done.','good');celebrate(b.msg);}
     else b.say(done+' of '+words.length+' words correct'+(wrong.length?', '+wrong.length+' wrong letter'+(wrong.length>1?'s':'')+' taken out':'')+(blank?', '+blank+' square'+(blank>1?'s':'')+' empty':'')+'.',wrong.length?'bad':'');
   }
   function reset(){
     clearTimeout(wrongTimer);
-    keys.forEach(k=>{const cl=cells[k];cl.ok=false;cl.inp.value='';cl.inp.readOnly=false;cl.el.classList.remove('is-ok','is-wrong','pop');});
-    markDone();b.say('','');
+    keys.forEach(k=>{const cl=cells[k];cl.ok=false;cl.inp.value='';cl.inp.readOnly=false;cl.el.classList.remove('is-ok','is-wrong','is-shown','pop');});
+    ans.off();markDone();b.say('','');
   }
   return track(host,{reset:reset,
     getState:()=>({v:keys.map(k=>cells[k].inp.value||'.').join(''),ok:keys.map(k=>cells[k].ok?1:0).join('')}),

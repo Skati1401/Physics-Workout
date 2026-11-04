@@ -72,14 +72,6 @@ function scopeSVG(o){
     {id:'f',l:'Tuning fork',r:'Gives a note of one fixed frequency when it is struck'}
   ]});
 }
-{
-  const body=act('method','Spot the error','Find the mistake in a method','Elena’s method has exactly one wrong step. Click the step with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Elena writes down how she measured the period of a note.',
-    lines:['Connect a microphone to the oscilloscope and get a steady trace.','Set the time base so three complete cycles fit on the screen.','Count the divisions across the three cycles.','Multiply the number of divisions by the Y-gain.','Divide by three to get the time for one cycle.'],wrong:3,
-    explain:'The Y-gain is the voltage per division, up the screen. Time is across the screen, so the divisions must be multiplied by the time base.',
-    fix:['Multiply the number of divisions by the time base.','Divide by three to get the time for one cycle.']});
-}
 
 /* ================= 3. EXPERIMENT ================= */
 {
@@ -247,18 +239,6 @@ frameAct('experiment','animations/oscilloscope.html','','Frequency of a sound wa
     {q:'A 200 Hz note is shown at 1 ms per division. How many divisions wide is one cycle?',unit:'div',answer:5,working:'f = [[1|T]]<br>200 = [[1|T]]<br>T = [[1|200]]<br>T = 0.005 s<br>T = 5 ms<br>divisions = [[5|1]]<br>divisions = 5'},
     {q:'Four complete cycles span 8.0 divisions at 0.2 ms per division. What is the frequency?',unit:'Hz',answer:2500,working:'time for 4 cycles = 8.0 × 0.2<br>time for 4 cycles = 1.6 ms<br>T = [[1.6|4]]<br>T = 0.40 ms<br>T = 0.000 40 s<br>f = [[1|T]]<br>f = [[1|0.000 40]]<br>f = 2500 Hz'}
   ]});
-}
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each working has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the wrong line.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Sophie finds the period of an 800 Hz note.',
-    lines:['f = [[1|T]]','800 = [[1|T]]','T = 800 × 1','T = 800 s'],wrong:2,
-    explain:'Multiplying both sides by T gives 800 × T = 1, so T = [[1|800]]. A period of 800 s for an audible note is far too long: that is a clue.',
-    fix:['800 × T = 1','T = [[1|800]]','T = 0.001 25 s']});
-  createSpot({host:grid,scenario:'Aidan sees five complete cycles across 8.0 divisions at 2 ms per division.',
-    lines:['time for 5 cycles = 8.0 × 2','time for 5 cycles = 16 ms','5 × T = 16','T = 16 × 5','T = 80 ms'],wrong:3,
-    explain:'If 5 × T = 16, then T = [[16|5]]. One cycle must take less time than five cycles, not more.',
-    fix:['T = [[16|5]]','T = 3.2 ms']});
 }
 
 /* ================= 8. ACCURACY AND SAFETY ================= */

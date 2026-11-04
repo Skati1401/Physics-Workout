@@ -217,18 +217,6 @@ const GB={xMin:0,xMax:1,yMin:0,yMax:0.8,xTicks:[0,0.2,0.4,0.6,0.8,1],yTicks:[0,0
     {q:'A plastic has a critical angle of 42°. Its refractive index is',unit:'',answer:1.49,working:'sin c = [[1|n]]<br>sin 42° = [[1|n]]<br>0.6691 = [[1|n]]<br>n = [[1|0.6691]]<br>n = 1.49'}
   ]});
 }
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Glass has n = 1.50. A ray in the glass has an angle of refraction of 28°. Find the angle of incidence.',
-    lines:['n = [[sin i|sin r]]','1.50 = [[sin i|sin 28°]]','sin i = [[1.50|sin 28°]]','sin i = [[1.50|0.4695]]','sin i = 3.195','No angle has a sine of 3.195'],wrong:2,
-    explain:'sin 28° is on the bottom, so multiply both sides by it: sin i = 1.50 × sin 28°. A check: a sine is never more than 1.',
-    fix:['sin i = 1.50 × sin 28°','sin i = 1.50 × 0.4695','sin i = 0.7042','i = 44.8°']});
-  createSpot({host:grid,scenario:'Water has a refractive index of 1.33. Find its critical angle.',
-    lines:['sin c = [[1|n]]','sin c = [[1|1.33]]','sin c = 0.7519','c = sin 0.7519','c = 0.0131'],wrong:3,
-    explain:'c is the angle whose sine is 0.7519, so use the inverse sine (sin⁻¹ on a calculator). An angle of 0.0131° is far too small.',
-    fix:['c = sin⁻¹ 0.7519','c = 48.8°']});
-}
 
 /* ================= 8. ACCURACY AND RELIABILITY ================= */
 {

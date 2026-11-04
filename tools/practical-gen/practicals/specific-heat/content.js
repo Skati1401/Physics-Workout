@@ -321,18 +321,6 @@ function energyGraph(){
     {q:'500 g of oil (c = 2200 J/kg °C) at 20 °C receives 22 000 J. What is its final temperature?',unit:'°C',answer:40,working:'500 g = 0.5 kg<br>ΔQ = m × c × ΔT<br>22 000 = 0.5 × 2200 × ΔT<br>22 000 = 1100 × ΔT<br>ΔT = [[22 000|1100]]<br>ΔT = 20 °C<br>final temperature = 20 + 20<br>final temperature = 40 °C'}
   ]});
 }
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'25 200 J raises the temperature of some water by 3 °C. What is the mass of the water? (c = 4200 J/kg °C)',
-    lines:['ΔQ = m × c × ΔT','25 200 = m × 4200 × 3','m = 25 200 × 4200 × 3','m = 317 520 000 kg'],wrong:2,
-    explain:'m is multiplied by 4200 and by 3, so to get m on its own, divide 25 200 by both of them. A mass of 317 million kilograms is far too big.',
-    fix:['25 200 = m × 12 600','m = [[25 200|12 600]]','m = 2 kg']});
-  createSpot({host:grid,scenario:'5400 J raises the temperature of a 0.5 kg block by 12 °C. What is its specific heat capacity?',
-    lines:['ΔQ = m × c × ΔT','5400 = 0.5 × c × 12','5400 = 6 × c','c = 5400 − 6','c = 5394 J/kg °C'],wrong:3,
-    explain:'c is multiplied by 6, so divide 5400 by 6. Taking 6 away does not undo a multiplication.',
-    fix:['c = [[5400|6]]','c = 900 J/kg °C']});
-}
 
 /* ================= 8. ACCURACY AND SAFETY ================= */
 {

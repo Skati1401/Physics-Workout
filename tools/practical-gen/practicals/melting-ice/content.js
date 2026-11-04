@@ -259,18 +259,6 @@ function coolGraph(){
     {q:'Ruby reads the thermometer every 30 s, from 0 s up to and including 12 minutes. How many readings does she take?',unit:'readings',answer:25,working:'12 minutes = 720 s<br>number of intervals = [[720|30]]<br>number of intervals = 24<br>number of readings = 24 + 1<br>number of readings = 25'}
   ]});
 }
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Liquid wax cools at 2.5 °C per minute. How long does it take to cool by 15 °C?',
-    lines:['rate = [[temperature fall|time]]','2.5 = [[15|time]]','2.5 × time = 15','time = 15 × 2.5','time = 37.5 min'],wrong:3,
-    explain:'Line 3 is right: 2.5 × time = 15. To get time on its own, divide 15 by 2.5; multiplying gives a far longer time than it could take.',
-    fix:['time = [[15|2.5]]','time = 6 min']});
-  createSpot({host:grid,scenario:'Water warms at 3 °C per minute. By how much does its temperature rise in 4 minutes?',
-    lines:['rate = [[temperature rise|time]]','3 = [[temperature rise|4]]','temperature rise = [[3|4]]','temperature rise = 0.75 °C'],wrong:2,
-    explain:'To get the temperature rise on its own, multiply both sides by 4. Dividing 3 by 4 gives less than one minute’s rise.',
-    fix:['temperature rise = 3 × 4','temperature rise = 12 °C']});
-}
 
 /* ================= 8. ACCURACY AND SAFETY ================= */
 {

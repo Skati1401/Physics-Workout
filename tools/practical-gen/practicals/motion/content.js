@@ -347,18 +347,6 @@ function ballGraph(){
     {q:'A 5.0 cm card on the car blocks a light gate for 0.040 s. What is the car’s speed?',unit:'m/s',answer:1.25,working:'5.0 cm = 0.050 m<br>speed = [[distance|time]]<br>speed = [[0.050|0.040]]<br>speed = 1.25 m/s'}
   ]});
 }
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'A car accelerates from rest at 0.6 m/s² until it reaches 1.5 m/s. How long does this take?',
-    lines:['a = [[v − u|t]]','0.6 = [[1.5 − 0|t]]','t = [[0.6|1.5]]','t = 0.4 s'],wrong:2,
-    explain:'t is on the bottom, so 0.6 × t = 1.5, and t = 1.5 divided by 0.6. The fraction is upside down. A check: speeding up by only 0.6 m/s each second, it needs more than 2 s to reach 1.5 m/s.',
-    fix:['0.6 × t = 1.5','t = [[1.5|0.6]]','t = 2.5 s']});
-  createSpot({host:grid,scenario:'A car starts from rest and reaches 1.2 m/s, accelerating at 0.8 m/s². How far does it travel?',
-    lines:['v² = u² + 2as','1.2² = 0² + 2 × 0.8 × s','1.44 = 1.6 × s','s = 1.6 × 1.44','s = 2.30 m'],wrong:3,
-    explain:'s is multiplied by 1.6, so divide 1.44 by 1.6 to get s on its own.',
-    fix:['s = [[1.44|1.6]]','s = 0.9 m']});
-}
 
 /* ================= 8. ACCURACY AND SAFETY ================= */
 {

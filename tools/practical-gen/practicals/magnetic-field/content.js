@@ -49,14 +49,6 @@
     {id:'m',l:'Second bar magnet',r:'Shows the pattern between like or unlike poles'}
   ]});
 }
-{
-  const body=act('method','Spot the error','Find the mistake in a method','Julia’s method has exactly one wrong step. Click the step with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Julia writes down how she plotted one field line.',
-    lines:['Place the compass next to the north pole of the magnet.','Mark a dot where the north end of the needle points.','Move the compass so the north end of the needle is on the dot.','Mark a new dot where the north end of the needle points.','Join the dots to form a field line, with an arrow from N to S.'],wrong:2,
-    explain:'The tail (south end) of the needle goes on the last dot. Then the needle points on along the field, and the next dot carries the line forward. With the north end on the dot, the line doubles back.',
-    fix:['Move the compass on so the tail (south end) of the needle is on the dot.']});
-}
 
 /* ================= 3. IRON FILINGS ================= */
 {
@@ -175,14 +167,6 @@ function barFieldSVG(marks){
     {text:'Straight up, away from the magnet',why:'At R the field line runs along the magnet, from the N end towards the S end.'},
     {text:'Straight down, into the magnet',why:'The field line at R runs along the magnet, not into it.'}
   ],explain:'A compass needle lines up along the field line, with its north end pointing the way of the arrow: from N to S. Above the middle of the magnet that is to the right.'});
-}
-{
-  const body=act('results','Spot the error','Find the mistake in a description','Nabil’s description has exactly one wrong statement. Every statement after it follows from it. Click the wrong one.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Nabil describes the field pattern he plotted round a bar magnet.',
-    lines:['The field lines come out of the north pole.','They loop round and go into the south pole.','The lines are furthest apart near the poles.','So the field is weakest near the poles.'],wrong:2,
-    explain:'Near the poles the lines are closest together, not furthest apart. That is where the field is strongest.',
-    fix:['The lines are closest together near the poles.','So the field is strongest near the poles.']});
 }
 
 /* ================= 6. TWO MAGNETS ================= */

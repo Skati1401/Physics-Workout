@@ -73,14 +73,6 @@
     {id:'t',l:'Thermometer',r:'Measures how much the water in each can warms up'}
   ]});
 }
-{
-  const body=act('method','Spot the error','Find the mistake in a method','Charlotte’s Leslie cube method has exactly one wrong step. Click the step with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Charlotte writes down how she compared the four faces of a Leslie cube.',
-    lines:['Fill the Leslie cube with hot water and put the lid on.','Hold the detector 10 cm from the matt black face and record the reading.','Turn the cube to the shiny silver face.','Move the detector closer, to 2 cm, so the reading is big enough to see.','Record the reading, then repeat for the other two faces.'],wrong:3,
-    explain:'Moving the detector closer makes every reading bigger, so the shiny face would look like a better emitter than it is. The distance must stay the same for every face.',
-    fix:['Keep the detector 10 cm from the shiny silver face.']});
-}
 
 /* ================= 3. VARIABLES ================= */
 {

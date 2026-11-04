@@ -60,14 +60,6 @@ function examPart(body,head,q,bullets){
     {id:'w',l:'Small pieces of paper',r:'Jump up to a charged rod held just above them'}
   ]});
 }
-{
-  const body=act('method','Spot the error','Find the mistake in a method','Hana’s method has exactly one wrong step. Click the step with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Hana writes down how she showed two charged rods repel.',
-    lines:['Rub a polythene rod with a dry cloth.','Hang the rod in a paper stirrup from a thread.','Rub a second polythene rod with the cloth.','Touch the end of the hanging rod with the second rod.','Watch which way the hanging rod turns.'],wrong:3,
-    explain:'If the rods touch, charge can move between them and her hand can push the hanging rod. The second rod must be brought close, without touching, so only the electrostatic force acts.',
-    fix:['Bring the second rod close to the end of the hanging rod, without touching it.']});
-}
 
 /* ================= 3. EXPERIMENT ================= */
 {
@@ -161,14 +153,6 @@ frameAct('experiment','animations/electrostatic-charging.html','','Charging by f
     {text:'None, as only the rod was charged',why:'The electrons came from the cloth, so the cloth is charged too.'},
     {text:'Positive, but smaller than the rod’s charge',why:'Every electron the rod gained, the cloth lost, so the two charges are the same size.'}
   ],explain:'Charge is not made by rubbing, only moved. The cloth lost exactly the electrons the rod gained, so the cloth’s positive charge is the same size as the rod’s negative charge.'});
-}
-{
-  const body=act('electrons','Spot the error','Find the mistake in an explanation','David’s explanation has exactly one wrong statement. Every statement after it follows from it. Click the wrong one.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'David explains why a balloon rubbed on his hair sticks to a wall.',
-    lines:['Rubbing the balloon on his hair is friction.','Electrons are transferred from his hair to the balloon.','So the balloon loses electrons and becomes positive.','It induces a negative charge on the surface of the wall.','Unlike charges attract, so the balloon sticks.'],wrong:2,
-    explain:'If electrons move from his hair to the balloon, the balloon gains electrons, so it becomes negative. The next lines follow from his mistake: a negative balloon induces a positive charge on the wall.',
-    fix:['So the balloon gains electrons and becomes negative.','It induces a positive charge on the surface of the wall.','Unlike charges attract, so the balloon sticks.']});
 }
 
 /* ================= 6. CONDUCTORS ================= */

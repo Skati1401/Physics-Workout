@@ -245,14 +245,6 @@ frameAct('experiment','animations/penetrating-power.html','','Penetrating power 
     {q:'What is the corrected count rate in counts per second?',unit:'counts per second',answer:6.98,working:'count rate = [[corrected count|time]]<br>count rate = [[419|60]]<br>count rate = 6.98 counts per second'}
   ]});
 }
-{
-  const body=act('background','Spot the error','Find the mistake in a method','Edward’s method has exactly one wrong step. Click the step with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Edward allows for background radiation in his results.',
-    lines:['Take the source out of the room, or put it back in its lead box.','Count for one minute with the GM tube.','Repeat twice more and find the mean background count.','Add the mean background count to each count from the source.','Compare the corrected counts for each absorber.'],wrong:3,
-    explain:'The background is counted as well as the source, so it must be taken away from each count: corrected count = count − background.',
-    fix:['Take the mean background count away from each count from the source.']});
-}
 
 /* ================= 8. SAFETY AND ACCURACY ================= */
 {

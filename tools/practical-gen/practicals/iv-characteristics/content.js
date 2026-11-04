@@ -261,18 +261,6 @@ function swapGraph(label){
     {q:'A diode has 0.70 V across it and a current of 20 mA. Its resistance is',unit:'Ω',answer:35,working:'20 mA = 0.020 A<br>V = I × R<br>0.70 = 0.020 × R<br>R = [[0.70|0.020]]<br>R = 35 Ω'}
   ]});
 }
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Charlotte’s lamp has 3.0 V across it and a current of 0.20 A. Find its resistance.',
-    lines:['V = I × R','3.0 = 0.20 × R','R = 3.0 × 0.20','R = 0.6 Ω'],wrong:2,
-    explain:'R is multiplied by 0.20, so divide 3.0 by 0.20 to get R on its own.',
-    fix:['R = [[3.0|0.20]]','R = 15 Ω']});
-  createSpot({host:grid,scenario:'A 12 V supply is connected across a 48 Ω resistor. Find the current.',
-    lines:['V = I × R','12 = I × 48','I = [[48|12]]','I = 4 A'],wrong:2,
-    explain:'To get I on its own, divide 12 by 48. The fraction is upside down. A check: 4 A × 48 Ω would need 192 V.',
-    fix:['I = [[12|48]]','I = 0.25 A']});
-}
 
 /* ================= 7. ACCURACY AND SAFETY ================= */
 {

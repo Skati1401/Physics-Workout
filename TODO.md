@@ -59,6 +59,8 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## Done
 
+- [x] Show answer button after a wrong Check on every marked activity, workouts and practicals; Calculate working opens only from it. Spot the error removed from the 17 practical pages too (20 cards) (Alex, 4 Nov 2026).
+
 - [x] Spot the error removed from all IGCSE workouts: 26 cards, 34 worked examples (Alex, 4 Nov 2026: show only clear working).
 
 - [x] Split 2b (now 2b Circuits + 2c Circuit Components; Electric Charge is 2d) and 3b (now 3b Light + 3c Sound, TA) so no workout runs to 30 minutes (Alex, 4 Nov 2026).

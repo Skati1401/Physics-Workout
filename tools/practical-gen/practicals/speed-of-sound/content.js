@@ -387,22 +387,6 @@ function micGraph(label){
     {q:'Two microphones are 1.02 m apart. On the oscilloscope the pulses are 6.0 divisions apart, with a time base of 0.5 ms/div. What speed does this give?',unit:'m/s',answer:340,working:'Δt = 6.0 × 0.5<br>Δt = 3.0 ms<br>Δt = 0.0030 s<br>speed = [[1.02|0.0030]]<br>speed = 340 m/s'}
   ]});
 }
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Sophie times 0.40 s from seeing the blocks hit to hearing the sound. Sound travels at 340 m/s. How far away is Ali?',
-    lines:['speed = [[distance|time]]','340 = [[d|0.40]]','d = [[340|0.40]]','d = 850 m'],wrong:2,
-    explain:'d is divided by 0.40, so multiply 340 by 0.40 to get d on its own. A check: 850 m in 0.40 s would be over 2000 m/s.',
-    fix:['d = 340 × 0.40','d = 136 m']});
-  createSpot({host:grid,scenario:'Charlie stands 68 m from a wall. Sound travels at 340 m/s. How long does the echo take to come back?',
-    lines:['speed = [[distance|time]]','distance = 2 × 68 = 136 m','340 = [[136|t]]','340 × t = 136','t = 340 × 136','t = 46 240 s'],wrong:4,
-    explain:'t is multiplied by 340, so divide 136 by 340 to get t on its own. An echo taking 46 240 s (nearly 13 hours) is not sensible.',
-    fix:['t = [[136|340]]','t = 0.40 s']});
-  createSpot({host:grid,scenario:'The pulses from two microphones are 2.5 ms apart. Sound travels at 340 m/s. How far apart are the microphones?',
-    lines:['speed = [[distance|time]]','2.5 ms = 0.0025 s','340 = [[d|0.0025]]','d = [[0.0025|340]]','d = 0.000 0074 m'],wrong:3,
-    explain:'d is divided by 0.0025, so multiply 340 by 0.0025. A few millionths of a metre is not a sensible distance between two microphones.',
-    fix:['d = 340 × 0.0025','d = 0.85 m']});
-}
 
 /* ================= 7. ACCURACY AND SAFETY ================= */
 {

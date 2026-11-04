@@ -246,22 +246,6 @@ function vGraph(label){
     {q:'9.00 × 10²⁰ molecules of a gas are at 1.20 × 10⁵ Pa in a volume of 3.00 × 10⁻⁵ m³. What is their temperature?',unit:'K',answer:290,working:'pV = NkT<br>(1.20 × 10⁵) × (3.00 × 10⁻⁵) = 9.00 × 10²⁰ × 1.38 × 10⁻²³ × T<br>3.60 = 1.242 × 10⁻² × T<br>T = [[3.60|1.242 × 10⁻²]]<br>T = 290 K'}
   ]});
 }
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Asma squashes 30.0 cm³ of air at 100 kPa to 12.0 cm³ at the same temperature. What is the new pressure?',
-    lines:['p<sub>1</sub>V<sub>1</sub> = p<sub>2</sub>V<sub>2</sub>','100 × 30.0 = p<sub>2</sub> × 12.0','p<sub>2</sub> = [[12.0|100 × 30.0]]','p<sub>2</sub> = [[12.0|3000]]','p<sub>2</sub> = 0.004 kPa'],wrong:2,
-    explain:'To get p₂ on its own, divide 100 × 30.0 by 12.0. Asma put the fraction upside down. A check: squashing the air should raise its pressure above 100 kPa, not drop it to almost nothing.',
-    fix:['p<sub>2</sub> = [[100 × 30.0|12.0]]','p<sub>2</sub> = [[3000|12.0]]','p<sub>2</sub> = 250 kPa']});
-  createSpot({host:grid,scenario:'Ollie finds the number of molecules in 2.40 × 10⁻⁵ m³ of air at 1.00 × 10⁵ Pa and 290 K.',
-    lines:['pV = NkT','(1.00 × 10⁵) × (2.40 × 10⁻⁵) = N × 1.38 × 10⁻²³ × 290','2.40 = N × 4.002 × 10⁻²¹','N = 2.40 × 4.002 × 10⁻²¹','N = 9.60 × 10⁻²¹'],wrong:3,
-    explain:'To get N on its own, divide 2.40 by 4.002 × 10⁻²¹, not multiply. Less than one molecule is clearly impossible.',
-    fix:['N = [[2.40|4.002 × 10⁻²¹]]','N = 6.00 × 10²⁰']});
-  createSpot({host:grid,scenario:'Rose finds the temperature of 7.50 × 10²⁰ molecules at 2.00 × 10⁵ Pa in 1.50 × 10⁻⁵ m³.',
-    lines:['pV = NkT','(2.00 × 10⁵) × (1.50 × 10⁻⁵) = 7.50 × 10²⁰ × 1.38 × 10⁻²³ × T','3.00 = 1.035 × 10⁻² × T','T = [[1.035 × 10⁻²|3.00]]','T = 3.45 × 10⁻³ K'],wrong:3,
-    explain:'To get T on its own, divide 3.00 by 1.035 × 10⁻². Rose put the fraction upside down. A temperature of a few thousandths of a kelvin is far too cold for a gas in a lab.',
-    fix:['T = [[3.00|1.035 × 10⁻²]]','T = 290 K']});
-}
 
 /* ================= 6. ACCURACY AND SAFETY ================= */
 {

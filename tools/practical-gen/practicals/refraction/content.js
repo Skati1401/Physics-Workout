@@ -236,18 +236,6 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
     {q:'The critical angle for water is 48.8°. The refractive index of water is',unit:'',answer:1.33,working:'sin c = [[1|n]]<br>sin 48.8° = [[1|n]]<br>0.7524 = [[1|n]]<br>n = [[1|0.7524]]<br>n = 1.33'}
   ]});
 }
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'A ray goes into glass (n = 1.50) at an angle of incidence of 40°. Find the angle of refraction.',
-    lines:['n = [[sin i|sin r]]','1.50 = [[sin 40°|sin r]]','sin r = 1.50 × sin 40°','sin r = 1.50 × 0.6428','sin r = 0.9642','r = 74.6°'],wrong:2,
-    explain:'sin r is on the bottom of the fraction, so sin r = [[sin 40°|1.50]], not 1.50 × sin 40°. A check: going into glass the ray bends towards the normal, so r must be less than 40°.',
-    fix:['sin r = [[sin 40°|1.50]]','sin r = [[0.6428|1.50]]','sin r = 0.4285','r = 25.4°']});
-  createSpot({host:grid,scenario:'A type of glass has a critical angle of 39°. Find its refractive index.',
-    lines:['sin c = [[1|n]]','sin 39° = [[1|n]]','0.6293 = [[1|n]]','n = 0.6293 × 1','n = 0.629'],wrong:3,
-    explain:'n is on the bottom of the fraction, so n = [[1|0.6293]]. A check: a refractive index is always more than 1.',
-    fix:['n = [[1|0.6293]]','n = 1.59']});
-}
 
 /* ================= 8. ACCURACY AND SAFETY ================= */
 {

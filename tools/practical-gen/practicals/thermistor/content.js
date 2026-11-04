@@ -253,18 +253,6 @@ frameAct('divider','animations/thermistor.html','pd','Thermistor potential divid
     {q:'In the divider, R = 2.70 kΩ. The voltmeters read 4.10 V across R and 1.88 V across the thermistor. Find R<sub>T</sub>.',unit:'kΩ',answer:1.24,working:'[[R<sub>T</sub>|R]] = [[V<sub>T</sub>|V<sub>R</sub>]]<br>[[R<sub>T</sub>|2.70]] = [[1.88|4.10]]<br>R<sub>T</sub> = [[1.88 × 2.70|4.10]]<br>R<sub>T</sub> = 1.24 kΩ'}
   ]});
 }
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Haris finds the temperature when the thermistor’s resistance is 2.67 kΩ. b = 3900 K and ln (R₀ / Ω) = −4.57.',
-    lines:['ln R = [[b|T]] + ln R₀','ln 2670 = [[3900|T]] + (−4.57)','7.890 + 4.57 = [[3900|T]]','12.46 = [[3900|T]]','T = [[12.46|3900]]','T = 0.003195 K'],wrong:4,
-    explain:'To get T on its own, multiply both sides by T and divide by 12.46: T = 3900 over 12.46. Haris turned the fraction upside down, which gives 1/T, not T. A temperature of 0.003 K is far below anything in the beaker.',
-    fix:['T = [[3900|12.46]]','T = 313 K (40 °C)']});
-  createSpot({host:grid,scenario:'Amelia finds R<sub>T</sub> in the divider. R = 3.00 kΩ, V<sub>R</sub> = 2.40 V and V<sub>T</sub> = 3.60 V.',
-    lines:['[[R<sub>T</sub>|R]] = [[V<sub>T</sub>|V<sub>R</sub>]]','[[R<sub>T</sub>|3.00]] = [[3.60|2.40]]','R<sub>T</sub> = [[3.60|2.40 × 3.00]]','R<sub>T</sub> = 0.500 kΩ'],wrong:2,
-    explain:'To get R<sub>T</sub> on its own, multiply both sides by 3.00, so 3.00 goes on the top. Amelia divided by it. A check: the thermistor has the bigger voltage, so it must have the bigger resistance, more than 3.00 kΩ.',
-    fix:['R<sub>T</sub> = [[3.60 × 3.00|2.40]]','R<sub>T</sub> = 4.50 kΩ']});
-}
 
 /* ================= 9. ACCURACY AND SAFETY ================= */
 {

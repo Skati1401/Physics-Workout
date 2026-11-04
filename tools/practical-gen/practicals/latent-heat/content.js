@@ -283,22 +283,6 @@ function meltGraph(){
     {q:'A joulemeter reads 30 000 J. The heated funnel gives 95.0 g of water and the control 5.0 g. Find L<sub>f</sub>.',unit:'kJ kg⁻¹',answer:333,working:'Δm = 95.0 − 5.0<br>Δm = 90.0 g = 0.0900 kg<br>ΔE = LΔm<br>30 000 = L<sub>f</sub> × 0.0900<br>L<sub>f</sub> = [[30 000|0.0900]]<br>L<sub>f</sub> = 333 000 J kg⁻¹ = 333 kJ kg⁻¹'}
   ]});
 }
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'A heater supplies 9040 J to boiling water. What mass boils away? (L<sub>v</sub> = 2.26 × 10⁶ J kg⁻¹)',
-    lines:['ΔE = LΔm','9040 = 2.26 × 10⁶ × Δm','Δm = 9040 × 2.26 × 10⁶','Δm = 2.04 × 10¹⁰ kg'],wrong:2,
-    explain:'Δm is multiplied by 2.26 × 10⁶, so divide 9040 by it. Twenty billion kilograms from one small heater is far too much.',
-    fix:['Δm = [[9040|2.26 × 10⁶]]','Δm = 0.004 kg']});
-  createSpot({host:grid,scenario:'A joulemeter reads 26 720 J. The heated funnel gives 0.0850 kg of water and the control 0.0050 kg. Find L<sub>f</sub>.',
-    lines:['Δm = 0.0850 − 0.0050','Δm = 0.0800 kg','ΔE = LΔm','26 720 = L × 0.0800','L = [[0.0800|26 720]]','L = 2.99 × 10⁻⁶ J kg⁻¹'],wrong:4,
-    explain:'L is multiplied by 0.0800, so divide 26 720 by 0.0800. The fraction has been turned upside down.',
-    fix:['L = [[26 720|0.0800]]','L = 3.34 × 10⁵ J kg⁻¹']});
-  createSpot({host:grid,scenario:'25 200 J is supplied to 1.2 kg of water (c = 4200 J kg⁻¹ K⁻¹). What is its rise in temperature?',
-    lines:['ΔE = mcΔθ','25 200 = 1.2 × 4200 × Δθ','25 200 = 5040 × Δθ','Δθ = 25 200 − 5040','Δθ = 20 160 K'],wrong:3,
-    explain:'Δθ is multiplied by 5040, so divide 25 200 by 5040. Taking 5040 away does not undo a multiplication.',
-    fix:['Δθ = [[25 200|5040]]','Δθ = 5.0 K']});
-}
 
 /* ================= 8. ACCURACY AND SAFETY ================= */
 {

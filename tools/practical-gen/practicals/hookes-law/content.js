@@ -278,18 +278,6 @@ function swapGraph(label){
     {q:'A spring obeys Hooke’s law. A 3.0 N load stretches it by 2.4 cm. How far does a 5.0 N load stretch it?',unit:'cm',answer:4.0,working:'extension per newton = [[2.4|3.0]]<br>extension per newton = 0.8 cm per N<br>extension = 0.8 × 5.0<br>extension = 4.0 cm'}
   ]});
 }
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'Fatimah works out the mass that puts a 7 N load on a spring. g = 10 N/kg.',
-    lines:['W = m × g','7 = m × 10','m = [[10|7]]','m = 1.4 kg'],wrong:2,
-    explain:'To get m on its own, divide 7 by 10. Fatimah divided 10 by 7, so the fraction is upside down.',
-    fix:['m = [[7|10]]','m = 0.7 kg']});
-  createSpot({host:grid,scenario:'A 2.0 N load stretches a spring by 1.6 cm. The spring obeys Hooke’s law. What load gives an extension of 4.0 cm?',
-    lines:['extension per newton = [[1.6|2.0]]','extension per newton = 0.8 cm per N','4.0 = 0.8 × load','load = 4.0 × 0.8','load = 3.2 N'],wrong:3,
-    explain:'To get the load on its own, divide 4.0 by 0.8, not multiply. A check: a bigger extension (4.0 cm) needs a bigger load than 2.0 N, but 3.2 N would give only 2.56 cm.',
-    fix:['load = [[4.0|0.8]]','load = 5.0 N']});
-}
 
 /* ================= 6. ACCURACY AND SAFETY ================= */
 {

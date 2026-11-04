@@ -327,18 +327,6 @@ function volGraph(){
     {q:'A 135 g stone raises the water in a measuring cylinder from 40 cm³ to 90 cm³. What is its density?',unit:'g/cm³',answer:2.7,working:'V = V₂ − V₁<br>V = 90 − 40<br>V = 50 cm³<br>ρ = [[m|V]]<br>ρ = [[135|50]]<br>ρ = 2.7 g/cm³'}
   ]});
 }
-{
-  const body=act('calculate','Spot the error','Find the mistake','Each answer has exactly one mistake, made while rearranging. Every line after it is worked correctly from it. Click the line with the mistake.');
-  const grid=mk('div','');body.appendChild(grid);
-  createSpot({host:grid,scenario:'A brass weight has a mass of 425 g. The density of brass is 8.5 g/cm³. What is its volume?',
-    lines:['ρ = [[m|V]]','8.5 = [[425|V]]','8.5 × V = 425','V = 8.5 × 425','V = 3612.5 cm³'],wrong:3,
-    explain:'V is multiplied by 8.5, so to get V on its own, divide 425 by 8.5. 3612.5 cm³ is more than 3½ litres: far too big for a small weight.',
-    fix:['V = [[425|8.5]]','V = 50 cm³']});
-  createSpot({host:grid,scenario:'Cooking oil has a density of 0.92 g/cm³. What is the mass of 250 cm³ of it?',
-    lines:['ρ = [[m|V]]','0.92 = [[m|250]]','m = [[0.92|250]]','m = 0.00368 g'],wrong:2,
-    explain:'m is divided by 250, so to get m on its own, multiply 0.92 by 250. 0.00368 g is far too little for a quarter of a litre of oil.',
-    fix:['m = 0.92 × 250','m = 230 g']});
-}
 
 /* ================= 8. ACCURACY AND SAFETY ================= */
 {
