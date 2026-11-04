@@ -1,3 +1,37 @@
+/* Core route: activities named in page.json "core" stay at the top of their tab, in their order; the rest of
+   that tab's activities go into a closed "Extra practice" block under them. A tab with no core activities is an
+   extra tab: its button moves after the core tabs, behind an "Extra practice" label. */
+function applyCore(){
+  if(!CORE)return;
+  const missing=[];
+  TAB_IDS.sort((a,b)=>(CORE[a]?0:1)-(CORE[b]?0:1));
+  const nav=byId('tab-'+TAB_IDS[0]).parentNode;
+  let sepAdded=false;
+  TAB_IDS.forEach(t=>{
+    const panel=byId('panel-'+t),btn=byId('tab-'+t),list=panel&&$('.acts',panel);if(!list)return;
+    if(!CORE[t]){
+      if(!sepAdded){nav.appendChild(mk('span','tabs-sep','Extra practice'));sepAdded=true;}
+      nav.appendChild(btn);btn.classList.add('is-extra');panel.classList.add('is-extra');
+      $('.panel-head',panel).insertAdjacentElement('afterend',mk('p','extra-note','Extra practice: not part of the core route. Use it to go further, or to revise.'));
+      return;
+    }
+    nav.appendChild(btn);
+    const want=CORE[t],found={},extras=[];
+    Array.from(list.children).forEach(a=>{
+      if(!a.classList.contains('act'))return;
+      if(want.indexOf(a.dataset.title)>=0)found[a.dataset.title]=1;else extras.push(a);
+    });
+    want.forEach(w=>{if(!found[w])missing.push(t+': '+w);});
+    if(!extras.length)return;
+    const d=mk('details','extra-block');
+    d.innerHTML='<summary>Extra practice <span class="extra-n">'+extras.length+' more '+(extras.length>1?'activities':'activity')+', optional</span></summary>';
+    const box=mk('div','acts');extras.forEach(a=>box.appendChild(a));d.appendChild(box);
+    list.parentNode.insertBefore(d,list.nextSibling);
+    d.addEventListener('toggle',()=>{if(d.open)raf(()=>reflowers.forEach(f=>{try{f(activeTab);}catch(e){console.error(e);}}));});
+  });
+  if(missing.length){window.__coreMissing=missing;console.warn('Core activities not found: '+missing.join(' | '));}
+}
+applyCore();
 function pairPredicts(){
   const isPred=a=>a&&a.classList.contains('act')&&(($('.kind',a)||{}).textContent==='Predict');
   $$('.acts').forEach(list=>{

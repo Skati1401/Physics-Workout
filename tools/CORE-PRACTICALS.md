@@ -2,6 +2,15 @@
 
 Alex wants every IGCSE physics practical built the way 1.22 Hooke's law was. Each batch is built in its own chat.
 
+## Core route + Extra practice (Alex, 4 Nov 2026)
+
+Every practical page is exam focused, with a **core route of about 12 minutes (15 at most)** and everything else kept as optional **Extra practice**. The pages are used when the practical is taught and by Year 11s revising for Papers 1 and 2. A review on 4 Nov 2026 found every page took 45–75 minutes (Project doc `claude/practicals-review-2026-11-04.md`).
+
+- **The core route:** the method Order, the Experiment run (its Your turn asks only for the runs that matter, about 5 minutes, then "Extra: …"), the one to three short skills the papers ask most for this practical (plot or sketch the graph, variables, reading or concluding from data, an improvement), and one exam-style written part, usually "describe the method", split out of the Exam act into its own `act('exam','Exam style', …)`.
+- **Choose it from the papers:** list every Question Index part tagged with the practical's spec points (4PH1 papers from 2019 count most) and pick what is asked most.
+- **Set it** with `core` and `coreMinutes` in `page.json` (see `tools/README.md`), with the core tabs first. Core activities must not need data that only an Extra activity shows.
+- **Check it:** `check.py` prints the route and its estimated minutes.
+
 ## Starting a batch in a new chat
 
 Paste this into a new chat in the "Animated activities for kids" project:
@@ -44,9 +53,10 @@ The new chat should then:
    - Match the method steps, the Order and Match wording, the model answers (bullet points) and the Exam tab to the marking points' phrasing: the details that score (e.g. "ruler held vertically / set square / eye level", "interrupter card", "speed at bottom = 2 × average speed").
    - Where a mark scheme accepts more than one method, offer them with a "Method type" switch, as in the 1.5 page's Overview and Method tabs.
    - Note the papers used in the batch notes below. Never copy a question onto the site; the repo is public.
-5. **Review it critically**, using the skill's review list: numbers, wording, spec coverage, trims. Fix what you find before showing Alex.
-6. **Push the draft** to `main` and send Alex its link: `https://skati1401.github.io/Physics-Workout/<slug>-practical.html`.
-7. **Publish once Alex approves.**
+5. **Set the core route** (see "Core route + Extra practice" above) and check its minutes with `check.py`.
+6. **Review it critically**, using the skill's review list: numbers, wording, spec coverage, trims. Fix what you find before showing Alex.
+7. **Push the draft** to `main` and send Alex its link: `https://skati1401.github.io/Physics-Workout/<slug>-practical.html`.
+8. **Publish once Alex approves.**
    - Set `"draft": false` and rebuild.
    - Add its card under "Core Practicals" in `igcse.html`, in spec order, with a TA tag if needed.
    - Add the `.cp-banner` to its workout tab's heading line, copying the one in `falling-stopping-springs.html#hooke`. If that workout can't open a tab from `#tab`, add hash support as in the 1b page. Units 2, 3 and 7 have no workouts yet: skip the banner and note it below.

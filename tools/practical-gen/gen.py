@@ -47,6 +47,15 @@ def build(slug):
     assert len(ids) == len(set(ids)), 'duplicate tab ids'
     first = ids[0]
     any_ta = any(is_ta(s) for t in tabs for s in t['spec'])
+    core = cfg.get('core')
+    if core:
+        bad = [k for k in core if k not in ids]
+        assert not bad, 'core names unknown tabs: %s' % bad
+        assert first in core, 'the first tab (%s) must be a core tab' % first
+        for k, titles in core.items():
+            for t in titles:
+                if ("'%s'" % t) not in content and ('"%s"' % t) not in content:
+                    print('warning: core title not found as a literal in content.js: %s: %s' % (k, t))
 
     head = read(T, 'head.html').replace('{{TITLE}}', cfg['title'])
     head = head.replace('{{DESCRIPTION}}', ('\n<meta name="description" content="%s">' % html.escape(cfg['description'], quote=True)) if cfg.get('description') else '')
@@ -83,13 +92,16 @@ def build(slug):
 
     engine = (read(T, 'engine.js').replace('{{STORE_KEY}}', cfg['storeKey'])
               .replace('{{OLD_STORE_KEY}}', cfg.get('oldStoreKey', ''))
-              .replace('{{TAB_IDS}}', json.dumps(ids)).replace('{{FIRST_TAB}}', first))
+              .replace('{{TAB_IDS}}', json.dumps(ids)).replace('{{FIRST_TAB}}', first)
+              .replace('{{CORE}}', json.dumps(cfg['core'], ensure_ascii=False) if cfg.get('core') else 'null'))
     tail = read(T, 'tail.js').replace('{{FIRST_TAB}}', first)
 
     out = (head + '<style>\n' + style + '</style>\n<div class="page">\n'
            '<header class="page-head">\n'
            + crumbs + '\n<h1>' + cfg['title'] + '</h1>\n' + ta_note
-           + ('<p class="cp-link">' + links + '</p>\n' if links else '') +
+           + ('<p class="cp-link">' + links + '</p>\n' if links else '')
+           + (('<p class="route-note"><b>Core route, about %s minutes:</b> the first %d tabs, in order. <b>Extra practice</b> is under each tab and in the tabs after them.</p>\n'
+               % (cfg.get('coreMinutes', 12), len(core))) if core else '') +
            '</header>\n<nav class="tabs" role="tablist" aria-label="Activities">\n'
            + '\n'.join(tab_btn(i, t) for i, t in enumerate(tabs)) + '\n</nav>\n'
            + '\n'.join(panel(i, t) for i, t in enumerate(tabs)) + '\n</div>\n' + read(REPO, 'tools', 'licence', 'footer.html') + '<script>\n'

@@ -34,6 +34,7 @@ async () => {
   }
   const show = el => { const p = el.closest('.panel'); document.getElementById('tab-' + p.id.slice(6)).click(); return p.id.slice(6); };
   const out = [];
+  document.querySelectorAll('details.extra-block').forEach(d => d.open = true);
   for (const [kind, c] of window.__R) {
     let host = c.host || c.pool, tab = show(host), res = '';
     await sleep(30);
@@ -112,6 +113,34 @@ async () => {
 }
 """
 
+ROUTE_JS = r"""
+() => {
+  if (!window.__coreMissing && !document.querySelector('.extra-block, .tab-btn.is-extra')) {
+    if (!document.querySelector('.route-note')) return null;
+  }
+  const est = a => {
+    const k = (a.querySelector('.kind') || {}).textContent || '';
+    if (k === 'Predict') return 0.75;
+    if (k === 'Calculate') return Math.max(1, a.querySelectorAll('.calc-num-input').length);
+    if (k === 'Spot the error') return Math.max(1, a.querySelectorAll('.err-block').length);
+    if (k === 'Plot') return 2.5;
+    if (k === 'Your turn') return 5;
+    if (k === 'Exam style') { let m = 0; a.querySelectorAll('p.sub').forEach(p => { const r = /(\d+) marks?/.exec(p.textContent); if (r) m += +r[1]; }); return m || 2; }
+    if (k === 'Look' || k === 'Watch') return 0.5;
+    return 1.75;
+  };
+  const tabs = [], extraTabs = [];
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const t = b.dataset.tab, panel = document.getElementById('panel-' + t);
+    if (b.classList.contains('is-extra')) { extraTabs.push(t); return; }
+    const items = [...panel.querySelectorAll('.acts .act')].filter(a => !a.closest('.extra-block') && !a.hidden)
+      .map(a => [(a.querySelector('.kind') || {}).textContent, a.dataset.title, est(a)]);
+    tabs.push([t, items]);
+  });
+  return {tabs, extraTabs, missing: window.__coreMissing || []};
+}
+"""
+
 with sync_playwright() as p:
     b = p.chromium.launch()
     errors = []
@@ -123,6 +152,7 @@ with sync_playwright() as p:
         r = route.fetch(); route.fulfill(response=r, body=instrument(r.text()))
     pg.route('**/' + page_file, handler)
     pg.goto(URL + page_file); pg.wait_for_timeout(500)
+    route = pg.evaluate(ROUTE_JS)
     res = pg.evaluate(ANSWER_JS)
     for r in res:
         print('%-11s %-10s %s' % tuple(r))
@@ -141,5 +171,14 @@ with sync_playwright() as p:
                 print('w=%d tab=%s scrollWidth=%d frames=%s %s' % (w, t, sw, fr, over))
             if SHOTS:
                 pg.screenshot(path='%s/%s-%s-%d.png' % (OUT, page_file[:-5], t, w), full_page=True)
+    if route:
+        print('core route (estimated minutes; Your turn counts 5):')
+        tot = 0
+        for t, items in route['tabs']:
+            m = sum(x[2] for x in items); tot += m
+            print('  %-11s %4.1f  %s' % (t, m, ' | '.join('%s: %s (%.1f)' % (k, ti, mm) for k, ti, mm in items)))
+        print('  total %.1f min; extra tabs: %s' % (tot, ', '.join(route['extraTabs']) or 'none'))
+        if route['missing']:
+            print('CORE TITLES NOT FOUND:', route['missing'])
     print('errors:', errors or 'none')
     b.close()

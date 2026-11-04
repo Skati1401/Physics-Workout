@@ -15,6 +15,8 @@ const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim
 const raf=f=>requestAnimationFrame(f);
 
 const STORE_KEY='{{STORE_KEY}}',OLD_STORE_KEY='{{OLD_STORE_KEY}}';
+// Core route (page.json "core"): {tab: [activity titles]}. Other activities on a core tab go under "Extra practice"; other tabs are extra tabs. null = no core route.
+const CORE={{CORE}};
 const TAB_IDS={{TAB_IDS}};
 let activeTab='{{FIRST_TAB}}';
 const reflowers=[];
@@ -23,7 +25,7 @@ function addTicker(tab,fn){tickers.push({tab,fn});}
 function loop(t){if(!document.hidden){for(const k of tickers){if(k.tab===activeTab){try{k.fn(t);}catch(e){console.error(e);}}}}raf(loop);}
 
 function act(panel,kind,title,intro){
-  const a=mk('article','act');
+  const a=mk('article','act');a.dataset.title=title;
   a.innerHTML='<h3 class="act-title"><span class="kind">'+kind+'</span><span>'+FR(title)+'</span></h3>'+(intro?'<p class="act-intro">'+FR(intro)+'</p>':'');
   const body=mk('div','act-body');a.appendChild(body);
   $('#panel-'+panel+' .acts').appendChild(a);
@@ -58,12 +60,15 @@ function writeSave(){
 function saveSoon(){if(!saveReady)return;clearTimeout(saveTimer);saveTimer=setTimeout(writeSave,1000);raf(()=>showProgress(true));}
 // An activity hidden inside its tab (e.g. one for a method type that is not chosen) does not count.
 function shown(g){let e=g.host;while(e&&!(e.classList&&e.classList.contains('panel'))){if(e.hidden)return false;e=e.parentElement;}return true;}
-function tabDone(t){const gs=games.filter(g=>g.tab===t&&shown(g));return gs.length>0&&gs.every(g=>{try{return g.isDone();}catch(e){return false;}});}
+// On a core tab only the core activities count; Extra practice never stops the tick.
+function counts(g){return shown(g)&&!(CORE&&CORE[g.tab]&&g.host.closest('.extra-block'));}
+function tabDone(t){const gs=games.filter(g=>g.tab===t&&counts(g));return gs.length>0&&gs.every(g=>{try{return g.isDone();}catch(e){return false;}});}
 function showProgress(animate){
-  const graded=TAB_IDS.filter(t=>games.some(g=>g.tab===t));
+  const withGames=TAB_IDS.filter(t=>games.some(g=>g.tab===t));
+  const graded=CORE?withGames.filter(t=>CORE[t]):withGames;
   let n=0;
-  graded.forEach(t=>{
-    const d=tabDone(t),btn=document.getElementById('tab-'+t);if(d)n++;
+  withGames.forEach(t=>{
+    const d=tabDone(t),btn=document.getElementById('tab-'+t);if(d&&graded.indexOf(t)>=0)n++;
     if(!btn)return;
     let tk=btn.querySelector('.tab-tick');
     if(d&&!tk){tk=mk('span','tab-tick','<span aria-hidden="true">✓</span><span class="sr-only"> (done)</span>');btn.appendChild(tk);if(animate)tk.classList.add('pop-in');}
@@ -72,7 +77,7 @@ function showProgress(animate){
   });
   let pill=document.getElementById('tabs-done');
   if(!pill){const eb=$('.page-head .eyebrow');if(!eb||!graded.length)return;pill=mk('span','tabs-done');pill.id='tabs-done';pill.setAttribute('aria-live','polite');eb.parentNode.appendChild(pill);}
-  const txt=n+' of '+graded.length+' tabs done';
+  const txt=(CORE?'Core route: ':'')+n+' of '+graded.length+' tabs done';
   if(pill.textContent!==txt){
     const up=n>(+pill.dataset.n||0);pill.textContent=txt;pill.dataset.n=n;
     if(animate&&up){pill.classList.remove('pulse');void pill.offsetWidth;pill.classList.add('pulse');}
