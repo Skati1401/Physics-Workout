@@ -32,6 +32,8 @@ U3 = 'Unit 3 Waves'
 U4 = 'Unit 4 Energy'
 U5 = 'Unit 5 Solids, Liquids and Gases'
 U6 = 'Unit 6 Magnetism and Electromagnetism'
+U7 = 'Unit 7 Radioactivity and Particles'
+U8 = 'Unit 8 Astrophysics'
 
 # Each tab of a set page = one workout section. part = the label its tabs sit under.
 SETS = {
@@ -77,6 +79,14 @@ SETS = {
       {'part': U5, 'page': 'gases.html', 'src': '5b', 'section': 'GAS LAWS', 'tab': 'laws', 'label': 'Gas Laws'},
       {'part': U6, 'page': 'electromagnetic-induction.html', 'src': '6b', 'section': 'TRANSFORMERS', 'tab': 'transformers', 'label': 'Transformers'},
       {'part': U6, 'page': 'electromagnetic-induction.html', 'src': '6b', 'section': 'NATIONAL GRID', 'tab': 'grid', 'label': 'National Grid'},
+      {'part': U7, 'page': 'radioactivity.html', 'src': '7a', 'section': 'ATOMS AND ISOTOPES', 'tab': 'atoms', 'label': 'Atoms'},
+      {'part': U7, 'page': 'radioactivity.html', 'src': '7a', 'section': 'DECAY EQUATIONS', 'tab': 'equations', 'label': 'Decay Equations'},
+      {'part': U7, 'page': 'radioactivity.html', 'src': '7a', 'section': 'HALF-LIFE', 'tab': 'halflife', 'label': 'Half-Life'},
+      {'part': U7, 'page': 'fission-and-fusion.html', 'src': '7b', 'section': 'FISSION', 'tab': 'fission', 'label': 'Fission'},
+      {'part': U7, 'page': 'fission-and-fusion.html', 'src': '7b', 'section': 'FUSION', 'tab': 'fusion', 'label': 'Fusion'},
+      {'part': U8, 'page': 'universe-and-stars.html', 'src': '8a', 'section': 'GRAVITY AND ORBITS', 'tab': 'orbits', 'label': 'W = mg'},
+      {'part': U8, 'page': 'universe-and-stars.html', 'src': '8a', 'section': 'ORBITAL SPEED', 'tab': 'orbital', 'label': 'Orbital Speed'},
+      {'part': U8, 'page': 'cosmology.html', 'src': '8b', 'section': 'THE RED-SHIFT EQUATION', 'tab': 'equation', 'label': 'Red-Shift', 'ta': True},
     ]},
   'graphs.html': {
     'title': 'Graphs Set', 'key': 'set-graphs-v1', 'kinds': GRAPH,
@@ -93,6 +103,7 @@ SETS = {
       {'part': U3, 'page': 'waves.html', 'src': '3a', 'section': 'WAVE EQUATIONS', 'tab': 'equation', 'label': 'Period from a Graph', 'titles': ['Read the period off the graph']},
       {'part': U3, 'page': 'light-and-sound.html', 'src': '3b', 'section': 'PITCH AND LOUDNESS', 'tab': 'pitch', 'label': 'Oscilloscope', 'ta': True, 'titles': ['Read the oscilloscope']},
       {'part': U5, 'page': 'density-pressure-state.html', 'src': '5a', 'section': 'HEATING CURVE', 'tab': 'heating', 'label': 'Heating Curve', 'ta': True},
+      {'part': U7, 'page': 'radioactivity.html', 'src': '7a', 'section': 'HALF-LIFE', 'tab': 'halflife', 'label': 'Half-Life Graph', 'titles': ['Read the half-life off the graph']},
     ]},
 }
 
