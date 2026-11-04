@@ -236,7 +236,7 @@
         <div class="stat"><small>Generation</small><strong id="cr-g">0</strong></div>
         <div class="stat"><small>Fissions</small><strong id="cr-fis">20</strong></div>
         <div class="stat"><small>Neutrons</small><strong id="cr-nn">0</strong></div>
-        <div class="stat hi"><small>k</small><strong id="cr-k">1.00</strong></div>
+        <div class="stat hi" id="cr-k-box"><small>k</small><strong id="cr-k">1.00</strong></div>
       </div>
       <details class="working">
         <summary>Show working</summary>
@@ -544,6 +544,14 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function regime(k){ return Math.abs(k-1)<0.02 ? 'steady' : (k<1 ? 'dies' : 'grows'); }
   var WORD={steady:'<b>critical</b> and the chain stays steady', dies:'<b>subcritical</b> and the chain is dying out', grows:'<b>supercritical</b> and the chain is growing'};
 
+  // IGCSE (?level=igcse): no k anywhere; the chain is described as dying out, steady or growing.
+  var IG = PW_LEVEL==='igcse';
+  var PLAIN={steady:'staying the same: the chain is <b>steady</b>', dies:'falling: the chain is <b>dying out</b>', grows:'rising: the chain is <b>growing</b>'};
+  if(IG){
+    $('#cr-k-box').hidden=true;
+    $('#cr-exp').title='Find the control-rod position that keeps the chain steady from your own runs';
+    var th=document.querySelectorAll('#cr-runs-wrap thead th'); if(th[3]) th[3].remove();
+  }
   var lastNote='';
   function readings(){
     var f=rodsIn(), p=probs(f), k=NU*p.fiss, F=sites.length, hide=exp() && !done, m=measured(), mod=modSeg.value();
@@ -556,12 +564,14 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
 
     // working
     var w1='', w2='', w3='';
-    if(hide){
+    if(hide && IG){
+      w1='Finish the run, then look at your graph: does the number of fissions in each generation fall, stay the same or rise?';
+    } else if(hide){
       w1='Finish the run, then find k from your graph:<br>F<sub>n</sub> = F<sub>0</sub> × k<sup>n</sup><br>k = 1 when the number of fissions stays the same.';
     } else {
       var per=function(x){ return Math.round(x*100); };
-      w1='Each fission releases 2 or 3 neutrons: 2.5 on average.<br>Of every 100 neutrons: '+per(p.leak)+' escape, '+per(p.cap)+' are captured without fission'+(p.rod>0?', '+per(p.rod)+' are absorbed by the control rods':'')+' and '+per(p.fiss)+' cause fission.<br>k = 2.5 × [['+per(p.fiss)+'|100]]<br>k = <b>'+k.toFixed(2)+'</b>';
-      if(m && (exp() || done)){
+      w1='Each fission releases 2 or 3 neutrons: 2.5 on average.<br>Of every 100 neutrons: '+per(p.leak)+' escape, '+per(p.cap)+' are captured without fission'+(p.rod>0?', '+per(p.rod)+' are absorbed by the control rods':'')+' and '+per(p.fiss)+' cause fission.'+(IG?'':'<br>k = 2.5 × [['+per(p.fiss)+'|100]]<br>k = <b>'+k.toFixed(2)+'</b>');
+      if(m && (exp() || done) && !IG){
         var sup='<sup>'+m.n+'</sup>';
         w2='F<sub>n</sub> = F<sub>0</sub> × k<sup>n</sup><br>'+m.b[1]+' = '+m.a[1]+' × k'+sup+'<br>k'+sup+' = [['+m.b[1]+'|'+m.a[1]+']]<br>k'+sup+' = '+m.r.toFixed(3)+'<br>k = '+(m.n>1?sup:'')+(m.n>1?'√':'')+m.r.toFixed(3)+'<br>k = <b>'+m.k.toFixed(2)+'</b>';
         w3='From the graph: generation '+m.a[0]+' to generation '+m.b[0]+'.'+(endWhy==='dies'?' (The last generation with any fissions.)':'');
@@ -573,20 +583,21 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var note, kk = (exp() && m) ? m.k : k;
     if(!started){
       note = exp()
-        ? 'Experiment: set the control rods, then press <b>Play</b>. Find the position that keeps the number of fissions <b>steady</b> (k = 1). Moving the rods starts the run again.'
+        ? 'Experiment: set the control rods, then press <b>Play</b>. Find the position that keeps the number of fissions <b>steady</b>'+(IG?'':' (k = 1)')+'. Moving the rods starts the run again.'
         : 'A U-235 nucleus that captures a <b class="ts">slow</b> neutron splits into two fission fragments, releasing 2 or 3 <b class="tf">fast</b> neutrons and about 200 MeV of energy. Press <b>Play</b> to start with 20 fissions.';
       if(mod==='none') note='With no moderator the neutrons stay <b class="tf">fast</b>, and U-235 rarely captures a fast neutron. Press <b>Play</b> and watch the chain.';
     } else if(done){
-      if(endWhy==='scram') note='Over 100 fissions in one generation: the power is rising too fast, so the safety system drops all the control rods in (an emergency shutdown). With k = '+kk.toFixed(2)+' the chain was <b>supercritical</b>.';
-      else if(endWhy==='dies') note='The chain has <b>died out</b> after '+gen+' generations: with k = '+kk.toFixed(2)+' each generation has fewer fissions than the one before (subcritical).'+(mod==='none'?' Without a moderator, too few neutrons are slowed down.':'');
-      else note='After '+GMAX+' generations: k = '+kk.toFixed(2)+', so the reactor is '+WORD[regime(kk)]+'.'+(regime(kk)==='steady'?' This is how a power station runs: each fission causes exactly one more on average.':'');
+      if(endWhy==='scram') note='Over 100 fissions in one generation: the power is rising too fast, so the safety system drops all the control rods in (an emergency shutdown). '+(IG?'The chain was growing.':'With k = '+kk.toFixed(2)+' the chain was <b>supercritical</b>.');
+      else if(endWhy==='dies') note='The chain has <b>died out</b> after '+gen+' generations: '+(IG?'':'with k = '+kk.toFixed(2)+' ')+'each generation has fewer fissions than the one before'+(IG?'.':' (subcritical).')+(mod==='none'?' Without a moderator, too few neutrons are slowed down.':'');
+      else note=(IG?'After '+GMAX+' generations the number of fissions is '+PLAIN[regime(kk)]+'.':'After '+GMAX+' generations: k = '+kk.toFixed(2)+', so the reactor is '+WORD[regime(kk)]+'.')+(regime(kk)==='steady'?' This is how a power station runs: each fission causes exactly one more on average.':'');
       if(exp() && endWhy!=='scram') note+= regime(kk)==='steady' ? ' You have found the critical position.' : (kk<1 ? ' Raise the rods a little and try again.' : ' Lower the rods a little and try again.');
       if(exp() && endWhy==='scram') note+=' Lower the rods and try again.';
     } else {
       note = mod==='none'
         ? 'Generation '+gen+': '+F+' fissions. Without a moderator the <b class="tf">fast</b> neutrons fly straight on: most escape or are captured by U-238.'
         : 'Generation '+gen+': '+F+' fissions. <b class="tf">Fast</b> neutrons collide with '+(mod==='graphite'?'carbon':'hydrogen')+' nuclei in the moderator and slow down to <b class="ts">thermal</b> speeds; some are absorbed by the boron control rods.';
-      if(!hide) note+=' k = '+k.toFixed(2)+': the chain '+(regime(k)==='steady'?'stays steady (critical).':(k<1?'is dying out (subcritical).':'is growing (supercritical).'));
+      if(!hide && IG) note+=' The chain '+(regime(k)==='steady'?'is steady.':(k<1?'is dying out.':'is growing.'));
+      else if(!hide) note+=' k = '+k.toFixed(2)+': the chain '+(regime(k)==='steady'?'stays steady (critical).':(k<1?'is dying out (subcritical).':'is growing (supercritical).'));
       if(!running) note='Paused. '+note;
     }
     note=FR(note);
@@ -615,7 +626,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function showRuns(){ var on=exp() && runs.length>0; $('#cr-runs-wrap').hidden=!on; $('.stage').classList.toggle('has-runs', on); }
   function logRun(){
     var m=measured(), k=m?m.k:0, r=endWhy==='scram'?'grows':(endWhy==='dies'?'dies':regime(k));
-    runs.push([++runNo, fuelSeg.value()==='new'?'new':'used', Math.round(rodsIn()*100)+'%', m?m.k.toFixed(2):'–', {steady:'steady', dies:'dies out', grows:'grows'}[r]]);
+    var row=[++runNo, fuelSeg.value()==='new'?'new':'used', Math.round(rodsIn()*100)+'%', m?m.k.toFixed(2):'–', {steady:'steady', dies:'dies out', grows:'grows'}[r]];
+    if(IG) row.splice(3,1);
+    runs.push(row);
     var tb=$('#cr-runs');
     tb.innerHTML=runs.map(function(r,i){ return '<tr'+(i===runs.length-1?' class="new"':'')+'>'+r.map(function(c){ return '<td>'+c+'</td>'; }).join('')+'</tr>'; }).join('');
     showRuns(); var wrap=$('#cr-runs-wrap'); wrap.scrollTop=wrap.scrollHeight;
