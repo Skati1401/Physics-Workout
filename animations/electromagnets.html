@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Electromagnets and Circuit Breakers</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation. Pick up paper clips with an electromagnet (change the current, the turns and the core, then switch off), then overload a circuit breaker and watch it trip.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#0f7a86;   --topic-soft:#d6f1f3;
+    --north:#d23b3b;   --north-soft:#fbdede;
+    --south:#2f62d6;   --south-soft:#dde7fb;
+    --copper:#b8651b;  --iron:#6b7280; --steel:#5b7a99; --clip:#7d8796; --wood:#c9a46a;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#4fd1dc; --topic-soft:#123236;
+      --north:#ff7a7a; --north-soft:#3d1a1a;
+      --south:#7da3ff; --south-soft:#1a2440;
+      --copper:#f0a35e; --iron:#9aa3b2; --steel:#8fb0d1; --clip:#aeb6c4; --wood:#8a6a3a;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#4fd1dc; --topic-soft:#123236;
+    --north:#ff7a7a; --north-soft:#3d1a1a;
+    --south:#7da3ff; --south-soft:#1a2440;
+    --copper:#f0a35e; --iron:#9aa3b2; --steel:#8fb0d1; --clip:#aeb6c4; --wood:#8a6a3a;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; the tabs, choices, note, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,420px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(250px,calc(100vh - 300px));}
+  .embed .view{max-height:440px;}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px;margin-top:10px;}
+  .under .btn-group{flex:0 1 auto;}
+  .sliders{flex:1 1 300px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:8px 20px;min-width:0;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{font-size:12.5px;padding:8px 14px;white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .fixed .seg.tabs{display:none;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 10px;align-items:center;}
+  .rowlab{font:11.5px/1.3 var(--font-mono);color:var(--ink-faint);}
+  .apps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+  .apps button{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;padding:5px 9px;text-align:left;}
+  .apps button small{font-size:11px;opacity:.8;}
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;min-width:0;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--accent);}
+  .stat.bad strong{color:var(--bad);}
+  .note{font-size:14.5px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+  .note b.bad{color:var(--bad);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:40px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  .rules{margin:0;padding:8px 12px 8px 28px;font-size:13.5px;line-height:1.5;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;}
+  .rules li+li{margin-top:3px;}
+
+  .rtab-wrap{max-height:100px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  .rtab{border-collapse:collapse;font:12.5px var(--font-mono);width:100%;}
+  .rtab th,.rtab td{padding:4px 8px;text-align:center;border-bottom:1px solid var(--panel-border);}
+  .rtab th{position:sticky;top:0;background:var(--panel);font-weight:600;color:var(--ink-soft);font-size:11.5px;}
+  .rtab td:first-child,.rtab th:first-child{text-align:left;}
+  .rtab tr:last-child td{border-bottom:0;}
+  .rtab .empty td{color:var(--ink-faint);text-align:left;}
+
+  @media (max-width:560px){ .cgrid{grid-template-columns:minmax(0,1fr);gap:4px;} .stage{padding:12px;} .eq{font-size:12.5px;padding:6px 8px;} .note{font-size:14px;} .apps{grid-template-columns:repeat(2,minmax(0,1fr));} .stat strong{font-size:14px;} }
+
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; magnetism</div>
+    <h1>Electromagnets and Circuit Breakers</h1>
+  </header>
+
+  <!-- Tab 1: an electromagnet picking up paper clips -->
+  <section class="card stage" id="st-magnet">
+    <div>
+      <svg class="view" id="em-svg" viewBox="0 0 480 340" role="img" aria-label="A coil of wire wound on a core, held in a clamp above a tray of paper clips, connected to a d.c. supply through a switch and an ammeter"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="em-go" type="button">&#9654; Switch on</button>
+          <button class="btn" id="em-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="em-slow" type="button" aria-pressed="false">Slow motion</button>
+        </div>
+        <div class="sliders">
+          <div><label class="lab" for="em-i">Current <output id="em-io"></output></label><input type="range" id="em-i" min="0.5" max="3" step="0.5" value="1.5"></div>
+          <div><label class="lab" for="em-n">Turns on the coil <output id="em-no"></output></label><input type="range" id="em-n" min="10" max="40" step="10" value="20"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="seg tabs" role="group" aria-label="Part"><button type="button" data-v="magnet" aria-pressed="true">Electromagnet</button><button type="button" data-v="breaker" aria-pressed="false">Circuit breaker</button></div>
+      <div>
+        <div class="lab">Core inside the coil</div>
+        <div class="seg" id="em-core"><button type="button" data-v="none" aria-pressed="false">No core</button><button type="button" data-v="iron" aria-pressed="true">Soft iron</button><button type="button" data-v="steel" aria-pressed="false">Steel</button></div>
+      </div>
+      <p class="note" id="em-note" aria-live="polite"></p>
+      <div class="stats">
+        <div class="stat"><small>Switch</small><strong id="em-s1">Off</strong></div>
+        <div class="stat hi"><small>Clips held</small><strong id="em-s2">0</strong></div>
+        <div class="stat"><small>Core</small><strong id="em-s3">Soft iron</strong></div>
+      </div>
+      <div>
+        <div class="lab">Your results</div>
+        <div class="rtab-wrap"><table class="rtab"><thead><tr><th>Core</th><th>Turns</th><th>Current</th><th>Clips on</th><th>After off</th></tr></thead><tbody id="em-rows"></tbody></table></div>
+      </div>
+      <details class="working" id="em-work">
+        <summary>How to make it stronger</summary>
+        <ul class="rules">
+          <li>A current in the coil makes a magnetic field, like a bar magnet&rsquo;s.</li>
+          <li>More current or more turns make the field stronger.</li>
+          <li>An iron core is magnetised by the coil&rsquo;s field and makes it much stronger.</li>
+          <li>Soft iron loses its magnetism when the current stops; steel keeps some of it.</li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <!-- Tab 2: a circuit breaker -->
+  <section class="card stage" id="st-breaker" hidden>
+    <div>
+      <svg class="view" id="cb-svg" viewBox="0 0 560 340" role="img" aria-label="Inside a circuit breaker: the current flows through an electromagnet coil and a pair of contacts on a switch arm. An iron catch holds the arm down against a spring."></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="cb-go" type="button" disabled>&#9654; Reset breaker</button>
+          <button class="btn" id="cb-fault" type="button" aria-pressed="false">Short circuit</button>
+          <button class="btn" id="cb-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="cb-slow" type="button" aria-pressed="false">Slow motion</button>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="seg tabs" role="group" aria-label="Part"><button type="button" data-v="magnet" aria-pressed="false">Electromagnet</button><button type="button" data-v="breaker" aria-pressed="true">Circuit breaker</button></div>
+      <div class="cgrid">
+        <span class="rowlab">Trips at</span>
+        <div class="seg" id="cb-rate" role="group" aria-label="Trip current of the breaker"><button type="button" data-v="6" aria-pressed="false">6 A (lights)</button><button type="button" data-v="16" aria-pressed="true">16 A</button><button type="button" data-v="32" aria-pressed="false">32 A (sockets)</button></div>
+        <span class="rowlab">Switch on<br>(230 V)</span>
+        <div class="seg apps" id="cb-apps" role="group" aria-label="Appliances on the 230 V mains"></div>
+      </div>
+      <p class="note" id="cb-note" aria-live="polite"></p>
+      <div class="stats">
+        <div class="stat hi"><small>Current</small><strong id="cb-s1">0 A</strong></div>
+        <div class="stat"><small>Trip current</small><strong id="cb-s2">16 A</strong></div>
+        <div class="stat" id="cb-s3b"><small>Breaker</small><strong id="cb-s3">Closed</strong></div>
+      </div>
+      <details class="working" id="cb-work">
+        <summary>Show working: the current</summary>
+        <div class="eq" id="cb-eq"></div>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // electromagnets.html is the one copy of this animation.
+  // With ?embed the page drops its heading so a workout tab can show it in a frame, and tells that page its height.
+  // ?show=magnet or ?show=breaker opens one part and hides the part tabs.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  var page = document.getElementById('page');
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+    document.getElementById('em-work').open = true;
+    document.getElementById('cb-work').open = true;
+  }
+  function $(s){ return document.querySelector(s); }
+  function each(list,f){ Array.prototype.forEach.call(list,f); }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function toggle(b){ b.setAttribute('aria-pressed', String(!pressed(b))); }
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ each(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    return {pick:pick};
+  }
+  function FR(t){
+    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1 ')
+      .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  function arrowHead(id, col){ return '<marker id="'+id+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+col+'"/></marker>'; }
+  function f1(n){ return (Math.round(n*10)/10).toFixed(1); }
+  function ease(p){ return 1-Math.pow(1-p,3); }
+  function easeIn(p){ return p*p; }
+  function lerp(a,b,p){ return a+(b-a)*p; }
+  // a zigzag spring between two points
+  function spring(x1,y1,x2,y2,n,w){
+    var dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L, px=-uy, py=ux, d='M'+x1.toFixed(1)+','+y1.toFixed(1), end=6;
+    d+=' L'+(x1+ux*end).toFixed(1)+','+(y1+uy*end).toFixed(1);
+    for(var i=1;i<=n;i++){ var s=end+(L-2*end)*(i-0.5)/n, side=(i%2?1:-1)*w; d+=' L'+(x1+ux*s+px*side).toFixed(1)+','+(y1+uy*s+py*side).toFixed(1); }
+    d+=' L'+(x2-ux*end).toFixed(1)+','+(y2-uy*end).toFixed(1)+' L'+x2.toFixed(1)+','+y2.toFixed(1);
+    return '<path d="'+d+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.8" stroke-linejoin="round"/>';
+  }
+  function rot(px,py,cx,cy,deg){ var a=deg*Math.PI/180, x=px-cx, y=py-cy; return [cx+x*Math.cos(a)-y*Math.sin(a), cy+x*Math.sin(a)+y*Math.cos(a)]; }
+
+  /* ---------- part tabs ---------- */
+  var part='magnet';
+  function showPart(v){
+    part=v;
+    $('#st-magnet').hidden = v!=='magnet';
+    $('#st-breaker').hidden = v!=='breaker';
+    each(document.querySelectorAll('.seg.tabs button'), function(b){ b.setAttribute('aria-pressed', String(b.dataset.v===v)); });
+    if(window.pwCountTab) pwCountTab(v, v==='magnet'?'Electromagnet':'Circuit breaker');
+  }
+  each(document.querySelectorAll('.seg.tabs'), function(g){
+    g.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; showPart(b.dataset.v); var other=document.querySelector('#st-'+b.dataset.v+' .seg.tabs [data-v="'+b.dataset.v+'"]'); if(other) other.focus(); });
+  });
+
+  /* =====================================================================
+     Tab 1: an electromagnet picking up paper clips
+     Strength ~ turns × current (ampere-turns, 5 to 120). A soft iron core is
+     magnetised easily and makes the field much stronger; steel is magnetised
+     less easily, but keeps some magnetism (it is magnetically hard).
+     ===================================================================== */
+  (function(){
+    var svg=$('#em-svg'), goBtn=$('#em-go'), slowBtn=$('#em-slow'), iIn=$('#em-i'), nIn=$('#em-n');
+    var coreSeg=segGroup($('#em-core'), function(v){ core=v; dropAll(); });
+    var core='iron', on=false, running=false, raf=0, last=0, clock=0, lastRow=null, phase='start';
+    var NCLIP=14, MAXHELD=12, CORE_NAME={none:'No core',iron:'Soft iron',steel:'Steel'};
+    var CX=232, BOT=200;   // centre of the core and its bottom end
+    function S(){ return (+iIn.value)*(+nIn.value); }
+    function clipsOn(){
+      var s=S();
+      if(core==='iron') return Math.min(MAXHELD, Math.round(s/10));
+      if(core==='steel') return Math.min(MAXHELD, Math.round(s/16));
+      return Math.floor(s/60);   // no core: only a strong coil lifts one or two
+    }
+    function kept(n){ return core==='steel' && n>0 ? Math.max(1, Math.round(n*0.4)) : 0; }
+    // where each clip rests in the tray, and where it hangs when held (three short chains below the core)
+    var TRAY=[], clips=[];
+    (function(){
+      var seed=7; function rnd(){ seed=(seed*9301+49297)%233280; return seed/233280; }
+      for(var i=0;i<NCLIP;i++){ var c=i%7, r=Math.floor(i/7); TRAY.push({x:178+c*21+rnd()*8, y:301+r*9+rnd()*3, a:70+rnd()*40}); }
+    })();
+    function heldPos(i){ var c=i%3, k=Math.floor(i/3), s=c-1; return {x:CX+s*(5+k*6), y:BOT+4+k*20, a:s*-10}; }
+    function initClips(){ clips=TRAY.map(function(p){ return {x:p.x,y:p.y,a:p.a, from:null, to:null, t0:0, dur:0, held:false}; }); }
+    function moveClip(c, to, delay, dur, up){ c.from={x:c.x,y:c.y,a:c.a}; c.to=to; c.t0=clock+delay; c.dur=dur; c.up=up; }
+    function heldCount(){ return clips.filter(function(c){ return c.held; }).length; }
+    // set how many clips are held: extra ones fly up to the core, spare ones fall back into the tray
+    function setHeld(n){
+      var held=clips.filter(function(c){ return c.held; }), free=clips.filter(function(c){ return !c.held; }), d=0;
+      // held clips are numbered by their place on the chains, top links first
+      held.sort(function(a,b){ return a.slot-b.slot; });
+      if(n>held.length){
+        var used={}; held.forEach(function(c){ used[c.slot]=1; });
+        var nextSlots=[]; for(var s=0; nextSlots.length<n-held.length; s++) if(!used[s]) nextSlots.push(s);
+        free.sort(function(a,b){ return Math.abs(a.x-CX)-Math.abs(b.x-CX); });   // the nearest clips jump first
+        nextSlots.forEach(function(s,j){ var c=free[j]; c.held=true; c.slot=s; moveClip(c, heldPos(s), d, 0.38, true); d+=0.06; });
+      } else if(n<held.length){
+        held.slice(n).reverse().forEach(function(c,j){ c.held=false; var home=TRAY[clips.indexOf(c)]; moveClip(c, home, j*0.04, 0.45, false); });
+      }
+      start();
+    }
+    function dropAll(){ on=false; setHeld(0); phase='start'; lastRow=null; ui(); }
+    function start(){ if(running) return; running=true; last=performance.now(); raf=requestAnimationFrame(frame); }
+    function rate(){ return pressed(slowBtn)?0.3:1; }
+    function frame(now){
+      if(!running) return;
+      clock+=Math.min(0.05,(now-last)/1000)*rate(); last=now;
+      var busy=false;
+      clips.forEach(function(c){
+        if(!c.to) return;
+        var p=(clock-c.t0)/c.dur;
+        if(p<0){ busy=true; return; }
+        if(p>=1){ c.x=c.to.x; c.y=c.to.y; c.a=c.to.a; c.to=null; return; }
+        busy=true;
+        var e=c.up?ease(p):easeIn(p);
+        c.x=lerp(c.from.x,c.to.x,e); c.y=lerp(c.from.y,c.to.y,e); c.a=lerp(c.from.a,c.to.a,e);
+      });
+      draw();
+      if(busy) raf=requestAnimationFrame(frame); else { running=false; settled(); }
+    }
+    function settled(){
+      if(on){ phase='on'; record(); }
+      else if(phase==='dropping'){ phase='off'; if(lastRow){ lastRow.off=heldCount(); renderRows(); } }
+      ui();
+    }
+    var rows=[];
+    function record(){
+      var r={core:core, n:+nIn.value, i:+iIn.value, on:heldCount(), off:null};
+      var p=rows[rows.length-1];
+      if(p && p.core===r.core && p.n===r.n && p.i===r.i && p.off===null){ p.on=r.on; lastRow=p; }
+      else { rows.push(r); lastRow=r; }
+      renderRows();
+    }
+    function renderRows(){
+      var tb=$('#em-rows');
+      if(!rows.length){ tb.innerHTML='<tr class="empty"><td colspan="5">Switch on to record a result.</td></tr>'; return; }
+      tb.innerHTML=rows.map(function(r){ return '<tr><td>'+CORE_NAME[r.core]+'</td><td>'+r.n+'</td><td>'+f1(r.i)+' A</td><td>'+r.on+'</td><td>'+(r.off===null?'&ndash;':r.off)+'</td></tr>'; }).join('');
+      var w=tb.closest('.rtab-wrap'); w.scrollTop=w.scrollHeight;
+    }
+    function switchOn(){ on=true; phase='lifting'; setHeld(Math.max(clipsOn(), heldCount())); ui(); }
+    function switchOff(){ on=false; phase='dropping'; setHeld(kept(heldCount())); ui(); }
+    goBtn.addEventListener('click', function(){ if(on) switchOff(); else switchOn(); });
+    // changing the current or turns while it is on changes how many clips it can hold
+    function onSlide(){
+      out();
+      if(on){ phase='lifting'; setHeld(clipsOn()); }
+      else if(phase==='off' && heldCount()===0){ phase='start'; }
+      draw(); ui();
+    }
+    iIn.addEventListener('input', onSlide); nIn.addEventListener('input', onSlide);
+    slowBtn.addEventListener('click', function(){ toggle(slowBtn); });
+    $('#em-reset').addEventListener('click', function(){
+      running=false; cancelAnimationFrame(raf); on=false; phase='start'; rows=[]; lastRow=null; core='iron'; coreSeg.pick('iron');
+      iIn.value=1.5; nIn.value=20; initClips(); out(); renderRows(); draw(); ui();
+    });
+    function out(){ $('#em-io').textContent=f1(+iIn.value)+' A'; $('#em-no').textContent=nIn.value; }
+
+    function clipShape(c){
+      return '<g transform="translate('+c.x.toFixed(1)+','+c.y.toFixed(1)+') rotate('+c.a.toFixed(1)+')"><rect x="-4.5" y="-1" width="9" height="21" rx="4.5" fill="none" stroke="var(--clip)" stroke-width="1.7"/><path d="M-1.6,4 V16 M1.8,1.5 V13" stroke="var(--clip)" stroke-width="1.4" fill="none" stroke-linecap="round"/></g>';
+    }
+    function draw(){
+      var n=+nIn.value, I=+iIn.value, g='<defs>'+arrowHead('em-ah','var(--accent)')+'</defs>';
+      // bench, clamp stand
+      g+='<rect x="4" y="326" width="472" height="10" rx="3" fill="var(--wood)" opacity="0.55"/>';
+      g+='<rect x="20" y="316" width="120" height="10" rx="2" fill="var(--ink-faint)"/><rect x="44" y="14" width="8" height="302" fill="var(--ink-faint)"/>';
+      g+='<rect x="40" y="32" width="16" height="16" rx="2" fill="var(--ink-soft)"/><rect x="52" y="36" width="168" height="8" fill="var(--ink-faint)"/>';
+      g+='<rect x="214" y="28" width="36" height="22" rx="3" fill="var(--ink-soft)"/>';
+      // the core (or a cardboard tube when there is no core)
+      if(core==='none') g+='<rect x="'+(CX-10)+'" y="46" width="20" height="'+(BOT-46)+'" fill="none" stroke="var(--ink-faint)" stroke-width="1.4" stroke-dasharray="4 3"/>';
+      else g+='<rect x="'+(CX-10)+'" y="46" width="20" height="'+(BOT-46)+'" rx="2" fill="var(--'+core+')"/>'+
+              '<text x="'+(CX-16)+'" y="'+(BOT-6)+'" text-anchor="end" font-size="11" fill="var(--ink-soft)">'+(core==='iron'?'soft iron':'steel')+'</text>';
+      // the coil: one drawn loop for every two turns
+      var loops=n/2, y0=70, y1=188, dy=(y1-y0)/loops, back='', front='';
+      for(var k=0;k<loops;k++){
+        var y=y0+dy*(k+0.5);
+        back+='<path d="M'+(CX-14)+','+(y-2).toFixed(1)+' Q'+CX+','+(y-7).toFixed(1)+' '+(CX+14)+','+(y+2).toFixed(1)+'" fill="none" stroke="var(--copper)" stroke-width="1.6" opacity="0.4"/>';
+        front+='<path d="M'+(CX-14)+','+(y-2).toFixed(1)+' Q'+CX+','+(y+6).toFixed(1)+' '+(CX+14)+','+(y+2).toFixed(1)+'" fill="none" stroke="var(--copper)" stroke-width="2.4" stroke-linecap="round"/>';
+      }
+      g+=back+front;
+      // the circuit: coil → supply → switch → ammeter → back to the coil
+      var wire='fill="none" stroke="var(--ink-soft)" stroke-width="2"';
+      g+='<path d="M'+(CX+14)+','+(y0+2)+' H352 V48" '+wire+'/>';
+      g+='<path d="M418,48 V70 M418,104 V120 M418,160 V196 H'+(CX+14)+' V'+(y1)+'" '+wire+'/>';
+      g+='<rect x="330" y="8" width="112" height="40" rx="5" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2"/>'+
+         '<text x="386" y="32" text-anchor="middle" font-size="12" fill="var(--ink)">d.c. supply</text>'+
+         '<circle cx="352" cy="48" r="3.5" fill="var(--north)"/><circle cx="418" cy="48" r="3.5" fill="var(--ink)"/>';
+      // switch
+      g+='<circle cx="418" cy="70" r="3" fill="var(--ink)"/><circle cx="418" cy="104" r="3" fill="var(--ink)"/>';
+      g+=on?'<line x1="418" y1="104" x2="418" y2="70" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>'
+           :'<line x1="418" y1="104" x2="440" y2="76" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>';
+      g+='<text x="400" y="91" text-anchor="end" font-size="11" fill="var(--ink-soft)">switch</text>';
+      // ammeter
+      g+='<circle cx="418" cy="140" r="20" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2"/><text x="418" y="145" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)">A</text>'+
+         '<text x="444" y="144" font-size="12" font-weight="600" fill="var(--accent)">'+(on?f1(I):'0.0')+' A</text>';
+      // current arrow along the top wire when it flows
+      if(on) g+='<line x1="300" y1="'+(y0+2)+'" x2="276" y2="'+(y0+2)+'" stroke="var(--accent)" stroke-width="2.4" marker-end="url(#em-ah)"/>';
+      // the tray of clips
+      g+='<path d="M160,296 L168,322 H322 L330,296" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2" stroke-linejoin="round"/>';
+      g+='<text x="'+(345)+'" y="318" font-size="11" fill="var(--ink-soft)">paper clips</text>';
+      clips.forEach(function(c){ g+=clipShape(c); });
+      // poles, when the core or coil is magnetised
+      var mag=(on && (core!=='none' || S()>=60)) || (!on && core==='steel' && heldCount()>0);
+      if(mag) g+='<text x="'+(CX+22)+'" y="'+(BOT-2)+'" font-size="13" font-weight="700" fill="var(--north)">N</text><text x="'+(CX+22)+'" y="60" font-size="13" font-weight="700" fill="var(--south)">S</text>';
+      svg.innerHTML=g;
+    }
+    function ui(){
+      goBtn.innerHTML = on ? '&#9632; Switch off' : '&#9654; Switch on';
+      var h=heldCount();
+      $('#em-s1').textContent = on?'On':'Off';
+      $('#em-s2').textContent = String(h);
+      $('#em-s3').textContent = CORE_NAME[core];
+      var s;
+      if(phase==='start') s='Set the current, the number of turns and the core, then press <b>Switch on</b>. How many paper clips will the electromagnet pick up?';
+      else if(phase==='lifting') s='The current in the coil makes a magnetic field. The clips nearest the end of the core are pulled up first, and each clip is magnetised and holds the next one.';
+      else if(phase==='dropping') s='Switched off: no current, so the coil has no magnetic field&hellip;';
+      else if(phase==='on'){
+        if(core==='iron') s='The <b>soft iron core</b> is magnetised by the coil&rsquo;s field and makes it much stronger: it holds <b>'+h+'</b> clips. Try more <b>current</b> or more <b>turns</b>.';
+        else if(core==='steel') s='The <b>steel core</b> is magnetised too, but less easily than soft iron, so it holds <b>'+h+'</b> clips. Now switch off and watch.';
+        else s='With <b>no core</b> the coil&rsquo;s field is weak: it holds <b>'+h+'</b> clip'+(h===1?'':'s')+'. Put a soft iron core in and switch on again.';
+        if(h>=MAXHELD) s+=' (That is as many as fit.)';
+      } else {
+        if(core==='steel' && h>0) s='Switched off, but <b>'+h+'</b> clip'+(h===1?' stays':'s stay')+' stuck. Steel is <b>magnetically hard</b>: it keeps some magnetism, so it would make a permanent magnet, not an electromagnet.';
+        else if(core==='iron') s='Switched off: <b>soft iron</b> loses its magnetism as soon as the current stops, so every clip drops. That is why an electromagnet has a soft iron core.';
+        else s='Switched off: no current, no magnetic field, so the clips drop.';
+      }
+      $('#em-note').innerHTML=s;
+    }
+    initClips(); out(); renderRows(); draw(); ui();
+  })();
+
+  /* =====================================================================
+     Tab 2: a circuit breaker. The current flows through the coil of an
+     electromagnet and through a pair of contacts. A spring pulls the switch
+     arm open; an iron catch holds it shut. The bigger the current, the harder
+     the electromagnet pulls on the catch; above the trip current it pulls the
+     catch over, the spring opens the contacts and the current stops.
+     ===================================================================== */
+  (function(){
+    var svg=$('#cb-svg'), goBtn=$('#cb-go'), faultBtn=$('#cb-fault'), slowBtn=$('#cb-slow');
+    var V=230;
+    var APPS=[{id:'lamp',name:'Lamp',P:100},{id:'tv',name:'TV',P:150},{id:'toaster',name:'Toaster',P:1000},{id:'micro',name:'Microwave',P:1200},{id:'heater',name:'Heater',P:2500},{id:'kettle',name:'Kettle',P:3000}];
+    var appsEl=$('#cb-apps');
+    appsEl.innerHTML=APPS.map(function(a){ return '<button type="button" data-v="'+a.id+'" aria-pressed="false"><span>'+a.name+'</span><small>'+a.P+' W</small></button>'; }).join('');
+    var onSet={}, trip=16, fault=false, closed=true;
+    // animation state: catch angle (0 at rest, −8° pulled in) and arm angle (0 shut, 11° open)
+    var catchA=0, armA=0, seq=null, running=false, raf=0, last=0, msg='', again=false;
+    var CATCH_IN=-8, ARM_OPEN=7, PIV={x:230,y:285}, ARMP={x:500,y:80};
+    segGroup($('#cb-rate'), function(v){ trip=+v; update(); });
+    appsEl.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; toggle(b); onSet[b.dataset.v]=pressed(b); again=false; update(); });
+    faultBtn.addEventListener('click', function(){ toggle(faultBtn); fault=pressed(faultBtn); again=false; faultBtn.textContent=fault?'Fix the fault':'Short circuit'; faultBtn.setAttribute('aria-pressed',String(fault)); update(); });
+    slowBtn.addEventListener('click', function(){ toggle(slowBtn); });
+    goBtn.addEventListener('click', resetBreaker);
+    $('#cb-reset').addEventListener('click', function(){
+      running=false; cancelAnimationFrame(raf); seq=null; catchA=0; armA=0; closed=true; fault=false; msg=''; again=false;
+      faultBtn.setAttribute('aria-pressed','false'); faultBtn.textContent='Short circuit';
+      onSet={}; each(appsEl.querySelectorAll('button'), function(b){ b.setAttribute('aria-pressed','false'); });
+      update();
+    });
+    function power(){ return APPS.reduce(function(s,a){ return s+(onSet[a.id]?a.P:0); },0); }
+    function demand(){ return fault ? 1000 : power()/V; }   // the current that would flow with the contacts shut
+    function current(){ return (closed && armA<1) ? demand() : 0; }
+    function rate(){ return pressed(slowBtn)?0.3:1; }
+
+    // a run is a list of steps, each moving one part over a set time; it always ends
+    function play(steps, done){ seq={steps:steps, i:0, t:0, done:done}; if(!running){ running=true; last=performance.now(); raf=requestAnimationFrame(frame); } }
+    function frame(now){
+      if(!running||!seq) { running=false; return; }
+      var dt=Math.min(0.05,(now-last)/1000)*rate(); last=now; seq.t+=dt;
+      var st=seq.steps[seq.i], p=Math.min(1, seq.t/st.dur);
+      st.go(p);
+      if(p>=1){ seq.i++; seq.t=0; if(st.after) st.after(); }
+      draw(); stats();
+      if(seq.i>=seq.steps.length){ var d=seq.done; seq=null; running=false; if(d) d(); update(); return; }
+      raf=requestAnimationFrame(frame);
+    }
+    function tripRun(){
+      msg='tripping';
+      var c0=catchA, a0=armA;
+      play([
+        {dur:0.25, go:function(p){ catchA=lerp(c0,CATCH_IN,easeIn(p)); }},
+        {dur:0.3, go:function(p){ armA=lerp(a0,ARM_OPEN,ease(p)); }, after:function(){ closed=false; }},
+        {dur:0.35, go:function(p){ catchA=lerp(CATCH_IN,0,ease(p)); }}
+      ], function(){ msg='tripped'; });
+    }
+    function resetBreaker(){
+      if(closed||running) return;
+      msg='resetting';
+      play([
+        {dur:0.2, go:function(p){ catchA=lerp(0,CATCH_IN*0.7,ease(p)); }},
+        {dur:0.35, go:function(p){ armA=lerp(ARM_OPEN,0,ease(p)); }, after:function(){ closed=true; }},
+        {dur:0.2, go:function(p){ catchA=lerp(CATCH_IN*0.7,0,ease(p)); }}
+      ], function(){ msg=''; again=demand()>trip; });
+    }
+    function update(){
+      if(!running && closed && demand()>trip) tripRun();
+      draw(); stats(); note();
+    }
+    function fmtI(I){ return I>=100?'over 100 A':f1(I)+' A'; }
+    function stats(){
+      var I=current();
+      $('#cb-s1').textContent=fmtI(I);
+      $('#cb-s2').textContent=trip+' A';
+      var open=!closed||armA>1;
+      $('#cb-s3').textContent=open?'Tripped':'Closed';
+      $('#cb-s3b').className='stat'+(open?' bad':'');
+      goBtn.disabled = closed || running;
+    }
+    function note(){
+      var I=demand(), s;
+      if(msg==='tripping') s=fault?'<b class="bad">Short circuit!</b> The live wire touches the neutral, so the resistance is tiny and the current is huge. The electromagnet pulls the iron catch at once&hellip;'
+                               :'The current is more than <b>'+trip+' A</b>, so the electromagnet pulls hard enough to move the <b>iron catch</b>. The catch lets go of the switch arm&hellip;';
+      else if(!closed) s=(again?'<b class="bad">Tripped again:</b> the current was still too big. ':'<b class="bad">Tripped.</b> ')+'The spring has pulled the contacts apart, so no current flows. '+
+        (I>trip ? (fault?'Fix the fault, then press <b>Reset breaker</b>.':'Switch something off, then press <b>Reset breaker</b>.')
+                : 'Press <b>Reset breaker</b>: unlike a fuse, nothing has to be replaced.');
+      else if(I===0) s='The current flows in through the <b>electromagnet coil</b> and out through the <b>contacts</b>. Switch some appliances on and watch the current rise.';
+      else s='A current of <b>'+f1(I)+' A</b> flows through the coil, so the electromagnet pulls on the iron catch, but the spring holds it. It trips if the current goes above <b>'+trip+' A</b>.';
+      $('#cb-note').innerHTML=s;
+      // working: P = IV for the appliances that are on
+      var P=power(), eq;
+      if(fault) eq='Short circuit: the current is limited only by the resistance of the wires, so it is far above '+trip+' A.';
+      else if(!P) eq='Switch an appliance on to see the working.';
+      else { var Ic=P/V;
+        eq='P = I &times; V<br>'+P+' = I &times; 230<br>I = [['+P+'|230]]<br>I = '+f1(Ic)+' A<br>'+
+           (Ic>trip?f1(Ic)+' A is more than '+trip+' A, so the breaker trips.':f1(Ic)+' A is less than '+trip+' A, so the breaker stays closed.');
+      }
+      $('#cb-eq').innerHTML=FR(eq);
+    }
+
+    function draw(){
+      var I=current(), pull=I/trip, g='<defs>'+arrowHead('cb-ah','var(--accent)')+'</defs>';
+      var wire='fill="none" stroke="var(--ink-soft)" stroke-width="2.2" stroke-linejoin="round"';
+      // the case
+      g+='<rect x="64" y="8" width="420" height="320" rx="12" fill="none" stroke="var(--panel-border)" stroke-width="2" stroke-dasharray="6 5"/>';
+      // wires: supply (live) in at top right → arm pivot; fixed contact → down → electromagnet coil → out to the appliances
+      g+='<path d="M556,80 H'+ARMP.x+'" '+wire+'/>';
+      g+='<path d="M370,104 V312 H182 V214" '+wire+'/>';
+      g+='<path d="M98,214 V246 H4" '+wire+'/>';
+      g+='<text x="552" y="70" text-anchor="end" font-size="11" fill="var(--ink-soft)">live in</text>';
+      g+='<text x="6" y="238" font-size="11" fill="var(--ink-soft)">to the</text><text x="6" y="264" font-size="11" fill="var(--ink-soft)">appliances</text>';
+      // electromagnet: iron core with the coil wound on it
+      g+='<rect x="80" y="186" width="132" height="28" rx="3" fill="var(--iron)"/>';
+      for(var k=0;k<9;k++){ var x=100+k*10; g+='<path d="M'+x+',184 Q'+(x+6)+',200 '+x+',216" fill="none" stroke="var(--copper)" stroke-width="3" stroke-linecap="round"/>'; }
+      g+='<text x="146" y="180" text-anchor="middle" font-size="11" fill="var(--ink-soft)">electromagnet</text>';
+      if(I>0){ var fl=Math.min(1,pull); g+='<path d="M212,192 Q218,200 212,208" fill="none" stroke="var(--topic)" stroke-width="'+(1+3*fl).toFixed(1)+'" opacity="'+(0.3+0.6*fl).toFixed(2)+'"/>'; }
+      // fixed contact on its block
+      g+='<rect x="356" y="96" width="28" height="10" rx="2" fill="var(--ink-faint)"/><rect x="362" y="90" width="16" height="6" rx="1" fill="var(--accent)"/>';
+      g+='<text x="392" y="120" font-size="11" fill="var(--ink-soft)">contacts</text>';
+      // switch arm (pivot on the right), with its moving contact and spring
+      var tip=rot(240,80,ARMP.x,ARMP.y,armA), sp=rot(300,76,ARMP.x,ARMP.y,armA), mc=rot(370,86,ARMP.x,ARMP.y,armA);
+      g+=spring(300,18,sp[0],sp[1],8,7)+'<rect x="286" y="12" width="28" height="6" rx="2" fill="var(--ink-faint)"/>';
+      g+='<g transform="rotate('+armA.toFixed(2)+' '+ARMP.x+' '+ARMP.y+')"><rect x="240" y="76" width="266" height="8" rx="3" fill="var(--steel)" opacity="0.9"/><rect x="362" y="84" width="16" height="6" rx="1" fill="var(--accent)"/></g>';
+      g+='<circle cx="'+ARMP.x+'" cy="'+ARMP.y+'" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>';
+      g+='<text x="430" y="62" text-anchor="middle" font-size="11" fill="var(--ink-soft)">switch arm</text><text x="324" y="34" font-size="11" fill="var(--ink-soft)">spring</text>';
+      // iron catch: pivots at the bottom; its ledge at the top holds the arm down
+      var cs=rot(230,248,PIV.x,PIV.y,catchA);
+      g+=spring(cs[0]+6,cs[1],300,248,6,6)+'<rect x="300" y="238" width="8" height="20" rx="2" fill="var(--ink-faint)"/>';
+      g+='<g transform="rotate('+catchA.toFixed(2)+' '+PIV.x+' '+PIV.y+')"><rect x="224" y="64" width="12" height="221" rx="2" fill="var(--iron)"/><rect x="224" y="64" width="30" height="11" rx="2" fill="var(--iron)"/></g>';
+      g+='<circle cx="'+PIV.x+'" cy="'+PIV.y+'" r="5" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>';
+      g+='<text x="244" y="146" font-size="11" fill="var(--ink-soft)">iron</text><text x="244" y="160" font-size="11" fill="var(--ink-soft)">catch</text>';
+      // current arrow on the incoming wire
+      if(I>0) g+='<line x1="546" y1="80" x2="520" y2="80" stroke="var(--accent)" stroke-width="2.4" marker-end="url(#cb-ah)"/>';
+      // meter: the electromagnet's pull against the pull needed to trip it
+      var mx=392, mw=150, my=258, fill=Math.min(1.25,pull)/1.25*mw, trip80=mw/1.25;
+      g+='<text x="'+mx+'" y="'+(my-10)+'" font-size="11" fill="var(--ink-soft)">pull of the electromagnet</text>';
+      g+='<rect x="'+mx+'" y="'+my+'" width="'+mw+'" height="14" rx="3" fill="var(--bg)" stroke="var(--panel-border)"/>';
+      g+='<rect x="'+mx+'" y="'+my+'" width="'+fill.toFixed(1)+'" height="14" rx="3" fill="'+(pull>1?'var(--bad)':'var(--topic)')+'"/>';
+      g+='<line x1="'+(mx+trip80)+'" y1="'+(my-4)+'" x2="'+(mx+trip80)+'" y2="'+(my+18)+'" stroke="var(--ink)" stroke-width="2" stroke-dasharray="3 2"/>';
+      g+='<text x="'+(mx+trip80)+'" y="'+(my+32)+'" text-anchor="middle" font-size="11" fill="var(--ink)">trips at '+trip+' A</text>';
+      svg.innerHTML=g;
+    }
+    watchEquals($('#cb-eq'));
+    update();
+  })();
+
+  var q=location.search.match(/[?&]show=(magnet|breaker)\b/);
+  if(q){ document.documentElement.classList.add('fixed'); showPart(q[1]); } else showPart('magnet');
+})();
+</script>
+<footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
+</body>
+</html>
