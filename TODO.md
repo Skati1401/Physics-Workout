@@ -58,11 +58,11 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## 6. Build: IAL and IB
 
-- [ ] IAL 132: the derivation of ½m⟨c²⟩ = 3/2 kT (an Order activity or a step-by-step reveal).
 - [ ] `ial.html` holds only Core Practicals so far; IAL workouts are still to plan.
 
 ## Done
 
+- 4 Nov 2026: IAL 132 derivation of ½m⟨c²⟩ = 3/2 kT: an Order with a "Show the derivation" reveal on `animations/gas-molecules.html` (IAL and IB views only). Marked 🔍 in `tools/REVIEW.md`.
 - 4 Nov 2026: `animations/electromagnets.html` (electromagnet and circuit breaker; framed in 6a Electromagnets and 2a Safety) and `animations/electron-diffraction.html` (IAL Unit 2, IB Theme E; framed in `quantum-physics.html` Matter Waves).
 - 4 Nov 2026: `animations/chain-reaction.html` (reactor chain reaction, IAL Unit 5 and IB Theme E lists). Licence footer added to 2a, 2b, 2c.
 - 3 Nov 2026: Calculations and Graphs sets now cover Forces Part 2 (1c, 1d) and Units 4, 5 and 6 (32 and 9 tabs). 1b gained two graph Calculates ("Read the graph" on F = ma and Weight: force–acceleration and weight–mass lines, mass and g from the gradient), used by the Graphs set. The interactive-revision-lab skill already had the one-Units-tab-per-unit rule.
