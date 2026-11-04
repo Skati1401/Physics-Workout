@@ -28,6 +28,7 @@ GRAPH = ['Label the graph', 'Calculate']
 P1 = 'Forces Part 1 (Year 10)'
 P2 = 'Forces Part 2 (Year 11)'
 U2 = 'Unit 2 Electricity'
+U3 = 'Unit 3 Waves'
 U4 = 'Unit 4 Energy'
 U5 = 'Unit 5 Solids, Liquids and Gases'
 U6 = 'Unit 6 Magnetism and Electromagnetism'
@@ -54,6 +55,13 @@ SETS = {
       {'part': U2, 'page': 'circuits.html', 'src': '2b', 'section': 'SERIES AND PARALLEL', 'tab': 'series', 'label': 'Series and Parallel'},
       {'part': U2, 'page': 'circuits.html', 'src': '2b', 'section': 'RESISTANCE', 'tab': 'resistance', 'label': 'V = IR'},
       {'part': U2, 'page': 'circuits.html', 'src': '2b', 'section': 'SERIES CIRCUIT CALCULATIONS', 'tab': 'seriescalc', 'label': 'Series Calculations'},
+      {'part': U3, 'page': 'waves.html', 'src': '3a', 'section': 'WAVE EQUATIONS', 'tab': 'equation', 'label': 'v = fλ'},
+      {'part': U3, 'page': 'waves.html', 'src': '3a', 'section': 'ELECTROMAGNETIC SPECTRUM', 'tab': 'spectrum', 'label': 'EM Waves'},
+      {'part': U3, 'page': 'light-and-sound.html', 'src': '3b', 'section': 'REFLECTION', 'tab': 'reflection', 'label': 'Reflection'},
+      {'part': U3, 'page': 'light-and-sound.html', 'src': '3b', 'section': 'REFRACTION', 'tab': 'refraction', 'label': 'Refractive Index'},
+      {'part': U3, 'page': 'light-and-sound.html', 'src': '3b', 'section': 'TOTAL INTERNAL REFLECTION', 'tab': 'tir', 'label': 'Critical Angle'},
+      {'part': U3, 'page': 'light-and-sound.html', 'src': '3b', 'section': 'SPEED OF SOUND', 'tab': 'speed', 'label': 'Speed of Sound', 'ta': True},
+      {'part': U3, 'page': 'light-and-sound.html', 'src': '3b', 'section': 'PITCH AND LOUDNESS', 'tab': 'pitch', 'label': 'Oscilloscope', 'ta': True},
       {'part': U4, 'page': 'energy-stores-efficiency.html', 'src': '4a', 'section': 'CONSERVATION', 'tab': 'conserve', 'label': 'Conservation'},
       {'part': U4, 'page': 'energy-stores-efficiency.html', 'src': '4a', 'section': 'EFFICIENCY', 'tab': 'efficiency', 'label': 'Efficiency'},
       {'part': U4, 'page': 'energy-stores-efficiency.html', 'src': '4a', 'section': 'SANKEY DIAGRAMS', 'tab': 'sankey', 'label': 'Sankey', 'kinds': ['Label the diagram', 'Calculate']},
@@ -81,6 +89,9 @@ SETS = {
       {'part': P2, 'page': 'falling-stopping-springs.html', 'src': '1c', 'section': 'STOPPING', 'tab': 'stopping', 'label': 'Stopping'},
       {'part': P2, 'page': 'falling-stopping-springs.html', 'src': '1c', 'section': "HOOKE'S LAW", 'tab': 'hooke', 'label': 'Hooke’s Law', 'kinds': ['Label the graph']},
       {'part': U2, 'page': 'circuits.html', 'src': '2b', 'section': 'CURRENT–VOLTAGE GRAPHS', 'tab': 'iv', 'label': 'I–V Graphs'},
+      {'part': U3, 'page': 'waves.html', 'src': '3a', 'section': 'DESCRIBING WAVES', 'tab': 'describing', 'label': 'Wave Graphs', 'titles': ['Read the wave']},
+      {'part': U3, 'page': 'waves.html', 'src': '3a', 'section': 'WAVE EQUATIONS', 'tab': 'equation', 'label': 'Period from a Graph', 'titles': ['Read the period off the graph']},
+      {'part': U3, 'page': 'light-and-sound.html', 'src': '3b', 'section': 'PITCH AND LOUDNESS', 'tab': 'pitch', 'label': 'Oscilloscope', 'ta': True, 'titles': ['Read the oscilloscope']},
       {'part': U5, 'page': 'density-pressure-state.html', 'src': '5a', 'section': 'HEATING CURVE', 'tab': 'heating', 'label': 'Heating Curve', 'ta': True},
     ]},
 }

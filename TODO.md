@@ -31,6 +31,7 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 51 pages are 🔍 To review and 17 are ❔ Not recorded in `tools/REVIEW.md`. Go through that table; only Alex marks a page ✅.
 
+- [ ] Check Unit 3 (3a `waves.html`, 3b `light-and-sound.html`; what to look at is in `tools/REVIEW.md`). When it is checked, remove its Draft labels (CLAUDE.md, "Draft units") (added 4 Nov 2026).
 - [ ] Look at the drafts `calculations.html` and `graphs.html`. If they're fine, add their cards to `igcse.html` below Core Practicals and remove `noindex` (in `tools/sets/build.py`).
 - [x] `iv-characteristics.html`: reversible 6 V battery instead of the two-cell −6 V to +6 V potentiometer (3 Nov 2026).
 
@@ -38,7 +39,6 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the cards to `igcse.html`, then add the unit's activities to the Calculations and Graphs sets.
 
-- [ ] Unit 3 Waves (about 2 pages).
 - [ ] Unit 7 Radioactivity and Particles (1–2 pages). Frame `film-badge.html` and `random-decay.html` in it.
 - [ ] Unit 8 Astrophysics (1 page).
 - [ ] Key-word crosswords for other units, if Alex wants them.
@@ -63,6 +63,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## Done
 
+- 4 Nov 2026: Unit 3 Waves workouts (draft): 3a `waves.html` and 3b `light-and-sound.html` (Units and Terms for Unit 3 on 3b), cards on `igcse.html` under a Draft Unit 3 heading, Unit 3 tabs added to the Calculations and Graphs sets. `refraction.html` and `speed-of-sound.html` framed in 3b. Marked 🔍 in `tools/REVIEW.md`.
 - 4 Nov 2026: core practicals 3.17, 3.19 and 3.25P built as drafts with their animations `refraction.html` and `speed-of-sound.html` (new Unit 3 Waves heading on `animations/igcse.html`); mark scheme wording checked from the IGCSE Question Index.
 - 4 Nov 2026: `animations/electromagnets.html` (electromagnet and circuit breaker; framed in 6a Electromagnets and 2a Safety) and `animations/electron-diffraction.html` (IAL Unit 2, IB Theme E; framed in `quantum-physics.html` Matter Waves).
 - 4 Nov 2026: `animations/chain-reaction.html` (reactor chain reaction, IAL Unit 5 and IB Theme E lists). Licence footer added to 2a, 2b, 2c.
