@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speed of Sound in Air Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation. Measure the speed of sound in air three ways: a flash and bang across a field timed with a stopwatch, echoes from a wall, and two microphones with an oscilloscope. Experiment mode: take three timings at each distance and plot distance against time.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#be185d;   --topic-soft:#fce7f3;
+    --sound:#be185d;   --light:#e0a800;  --light-ink:#9a6b00;
+    --grass:#5f8f2e;   --grass-soft:#e3f0d2;
+    --brick:#a14a2a;   --brick-soft:#f4dccf;
+    --wood:#a8692c;    --wood-soft:#f1e0cb;  --metal:#9aa3ae;  --hair:#5b3a1e;
+    --screen:#0f2a1c;  --screen-grid:rgba(120,220,160,0.22);  --trace:#3ddc84;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#f472b6; --topic-soft:#3a1428;
+      --sound:#f472b6; --light:#ffd34d; --light-ink:#ffd34d;
+      --grass:#8cc152; --grass-soft:#1d2a12;
+      --brick:#e08a68; --brick-soft:#3a1d12;
+      --wood:#d9a066; --wood-soft:#33240f; --metal:#7d8592; --hair:#c99a6b;
+      --screen:#071a10; --screen-grid:rgba(120,220,160,0.2); --trace:#4ade80;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#f472b6; --topic-soft:#3a1428;
+    --sound:#f472b6; --light:#ffd34d; --light-ink:#ffd34d;
+    --grass:#8cc152; --grass-soft:#1d2a12;
+    --brick:#e08a68; --brick-soft:#3a1d12;
+    --wood:#d9a066; --wood-soft:#33240f; --metal:#7d8592; --hair:#c99a6b;
+    --screen:#071a10; --screen-grid:rgba(120,220,160,0.2); --trace:#4ade80;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+  /* button rows fill their width (Alex, 2 Nov 2026) */
+  .btn-group>.btn,.exp-btns>.btn{flex:1 1 0;min-width:max-content;justify-content:center;}
+  .seg:not(.tabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));}
+  .seg:not(.tabs)>button{padding-inline:4px;white-space:nowrap;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 300px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  #ss-svg.dragging,#ss-svg.dragging *{cursor:grabbing;}
+  #ss-svg:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+  #ss-svg{touch-action:pan-y;}
+  #ss-svg sub{font-size:.8em;}
+  .rtable th sub{font-size:.85em;}
+
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">Animations &middot; sound &middot; core practical 3.25P</div>
+      <h1>Speed of Sound in Air</h1>
+    </div>
+    <div class="seg tabs" id="ss-mode" role="group" aria-label="Method"><button type="button" data-v="direct" aria-pressed="true">Direct</button><button type="button" data-v="echo" aria-pressed="false">Echo</button><button type="button" data-v="mics" aria-pressed="false">Two microphones</button></div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="ss-svg" viewBox="0 0 600 270" role="img" aria-label="Speed of sound"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="ss-play" type="button">&#9654; Play</button>
+          <button class="btn" id="ss-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="ss-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="ss-exp" type="button" aria-pressed="false" title="Take your own timings, three at each distance, and plot them">Experiment</button>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="cgrid" id="ss-nrow" hidden>
+        <span class="rowlab">Time</span>
+        <div class="seg" id="ss-n"><button type="button" data-v="1" aria-pressed="false">1 echo</button><button type="button" data-v="20" aria-pressed="true">20 echoes</button></div>
+      </div>
+      <p class="note" id="ss-note" aria-live="polite"></p>
+      <div id="ss-expbox" hidden>
+        <div class="rtable-wrap"><div id="ss-table"></div></div>
+        <div class="exp-btns" style="margin-top:8px"><button class="btn" id="ss-clear" type="button">Clear readings</button></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><small id="ss-l1">Distance</small><strong id="ss-s1">&ndash;</strong></div>
+        <div class="stat"><small id="ss-l2">&ndash;</small><strong id="ss-s2">&ndash;</strong></div>
+        <div class="stat"><small id="ss-l3">&ndash;</small><strong id="ss-s3">&ndash;</strong></div>
+        <div class="stat hi"><small id="ss-l4">Speed</small><strong id="ss-s4">&ndash;</strong></div>
+      </div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="ss-eq1"></div>
+        <div class="eq" id="ss-eq2"></div>
+        <p class="eqnote" id="ss-eq3"></p>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    Array.prototype.forEach.call(document.querySelectorAll('details.working'), function(d){ d.open = true; });
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 4.97 × 10⁻¹⁹
+    if(x===0) return '0';
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+Math.abs(m).toFixed(dp)>=10){ m/=10; e++; }
+    return sn(m,dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function sig(x, n){   // n significant figures, as text, real minus sign
+    if(x===0) return '0';
+    var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
+    return sn(x, dp);
+  }
+  function grp(t){ return String(t).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }   // 12 345
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+(+x1).toFixed(1)+'" y1="'+(+y1).toFixed(1)+'" x2="'+(+x2).toFixed(1)+'" y2="'+(+y2).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||1.5)+'"'+(extra||'')+'/>'; }
+
+/* ================= Experiment kit (copy this block into an animation page's <script>) =================
+   The reusable parts of an animation's Experiment mode, taken from animations/hookes-law.html:
+   - expRun():     the run itself: step the independent variable up one interval at a time, then
+                   (optionally) back down again, measuring at every step
+   - expReading(): a reading with a small, fixed pattern of reading error, rounded to the instrument's
+                   resolution, that never goes the wrong way
+   - expTable():   the results table (sticky header, newest row highlighted, a column per run)
+   - expCross(), expRing(), expKey(): SVG marks for plotted readings (× first run, ○ return run)
+   The page keeps its own picture, physics, graph axes and notes. See tools/experiment-kit/README.md.
+   Plain ES5 so it can sit inside any animation page's IIFE. */
+
+// A fixed pattern of reading errors, in units of the instrument's resolution. Fixed (not random) so a
+// teacher sees the same results as the class, and a re-run gives the same table.
+var EXP_ERR = [0, 1, -1, 0, 2, -1, 1, -2, 0, 1, -1, 0, 1, -1, 2, 0, -1, 1, 0, -2, 1];
+function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP_ERR.length]; }
+
+// What the student reads off the instrument.
+//   trueVal  the value the physics gives at this step
+//   prevVal  the reading taken at the step before (or the start value)
+//   res      the instrument's resolution (0.1 cm ruler, 0.05 mm vernier, 0.01 A ammeter, 1° protractor)
+//   i        the step number (picks the error from the pattern)
+//   scale    how big the error is, in resolutions (default 1; 0.5 for a fine instrument)
+// The error is never more than a quarter of the change since the last reading, so a reading never
+// goes the wrong way (an extension never falls as the load rises, a current never drops as V rises).
+function expReading(trueVal, prevVal, res, i, scale){
+  var gap = Math.abs(trueVal - prevVal);
+  var err = i > 0 ? expErr(i) * Math.min(res * (scale == null ? 1 : scale), gap / 4) : 0;
+  var r = Math.round((trueVal + err) / res) * res;
+  var dp = Math.max(0, Math.ceil(-Math.log10(res) - 1e-9));
+  return +r.toFixed(dp);
+}
+
+// The run. cfg = {
+//   start: 0,                 value of the independent variable before the first step
+//   max: 10,                  last value of the first run (the run stops there)
+//   step: 1,                  the interval (the page can change it with setStep, which resets the run)
+//   reverse: true,            allow a return run (unloading, turning the voltage back down)
+//   measure: function(v, phase, prevReading){ return reading },   phase is 'up' or 'down'
+//   onChange: function(run, what){}  what is 'up', 'down' or 'reset'
+// }
+// run.up and run.down are arrays of {v, r}. run.phase is 'up' until the first step back, then 'down'.
+function expRun(cfg){
+  var run = { up: [], down: [], phase: 'up', value: cfg.start || 0, peak: cfg.start || 0, step: cfg.step || 1 };
+  var r6 = function(x){ return Math.round(x * 1e6) / 1e6; };
+  run.upDone = function(){ return run.phase === 'down' || run.peak >= cfg.max - 1e-9; };
+  run.downDone = function(){ return run.phase === 'down' && run.value <= (cfg.start || 0) + 1e-9; };
+  run.last = function(){ var a = run.phase === 'down' && run.down.length ? run.down : run.up; return a[a.length - 1] || null; };
+  run.stepUp = function(){
+    if(run.phase !== 'up' || run.upDone()) return false;
+    var prev = run.up.length ? run.up[run.up.length - 1].r : null;
+    var v = r6(Math.min(cfg.max, run.value + run.step));
+    run.value = run.peak = v;
+    run.up.push({ v: v, r: cfg.measure(v, 'up', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'up');
+    return true;
+  };
+  run.stepDown = function(){
+    if(!cfg.reverse || run.value <= (cfg.start || 0) + 1e-9 || !run.up.length) return false;
+    run.phase = 'down';
+    var prev = run.down.length ? run.down[run.down.length - 1].r : run.up[run.up.length - 1].r;
+    var v = r6(Math.max(cfg.start || 0, run.value - run.step));
+    run.value = v;
+    run.down.push({ v: v, r: cfg.measure(v, 'down', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'down');
+    return true;
+  };
+  run.reset = function(){ run.up = []; run.down = []; run.phase = 'up'; run.value = run.peak = cfg.start || 0; if(cfg.onChange) cfg.onChange(run, 'reset'); };
+  run.setStep = function(s){ run.step = s; run.reset(); };
+  return run;
+}
+
+// The results table. cols = [{label:'Load (N)', key:'v', dp:0}, {label:'Extension loading (cm)', key:'up', dp:1}, ...]
+// rows = [{v:1, up:1.6, down:''}, ...]. newKey/newV highlight the reading just taken (fades in).
+// Wrap it in .rtable-wrap so a long table scrolls under its sticky header.
+function expTable(el, cols, rows, newV){
+  var fmt = function(x, dp){ return (x === '' || x == null) ? '' : (+x).toFixed(dp || 0); };
+  var h = '<table class="rtable"><thead><tr>' + cols.map(function(c){ return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    h += '<tr' + (newV != null && row.v === newV ? ' class="new"' : '') + '>' + cols.map(function(c){ return '<td>' + fmt(row[c.key], c.dp) + '</td>'; }).join('') + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table>';
+}
+
+// Plotted readings, as SVG strings. Size 5 suits a 300px-wide graph.
+function expCross(cx, cy, s){ s = s || 5; return '<path d="M' + (cx - s) + ',' + (cy - s) + ' L' + (cx + s) + ',' + (cy + s) + ' M' + (cx + s) + ',' + (cy - s) + ' L' + (cx - s) + ',' + (cy + s) + '" stroke="var(--ink)" stroke-width="2"/>'; }
+function expRing(cx, cy, r){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r || 4.5) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+// A two-line key in the bottom-right corner of a graph: expKey(rightX, bottomY, 'loading', 'unloading')
+function expKey(x, y, upLabel, downLabel){
+  return '<text x="' + x + '" y="' + (y - 14) + '" text-anchor="end" font-size="10.5" fill="var(--ink)">× ' + upLabel + '</text>' +
+         '<text x="' + x + '" y="' + y + '" text-anchor="end" font-size="10.5" fill="var(--accent)">○ ' + downLabel + '</text>';
+}
+/* ================= end of Experiment kit ================= */
+
+  // ---- the physics
+  var V=340;             // speed of sound in air on a 15 °C day, m/s
+  // Reaction times (s), mean and spread. Reacting to a sight is a little slower than reacting to a sound,
+  // so starting on the flash and stopping on the bang do not cancel: the stopwatch reads about 0.04 s short.
+  var RT_SEE=[0.21,0.03], RT_HEAR=[0.17,0.03], RT_ECHO=[0.17,0.035];
+  var LIM={direct:[50,400,10], echo:[20,150,5], mics:[0.2,1.5,0.05]};
+  var dv={direct:200, echo:60, mics:1};
+  var SEED=20261104;
+  function rng(seed){ var a=seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+  function seeded(tag){ var h=SEED; for(var i=0;i<tag.length;i++) h=Math.imul(h^tag.charCodeAt(i), 2654435761)>>>0; return rng(h); }
+  function gauss(r, m){ var u=Math.max(1e-12,r()), v=r(); var z=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); z=Math.max(-2.2,Math.min(2.2,z)); return m[0]+m[1]*z; }
+  function fitLine(p){
+    var n=p.length, sx=0, sy=0, sxx=0, sxy=0;
+    p.forEach(function(q){ sx+=q[0]; sy+=q[1]; sxx+=q[0]*q[0]; sxy+=q[0]*q[1]; });
+    var d=n*sxx-sx*sx; if(n<2 || d===0) return null;
+    var m=(n*sxy-sx*sy)/d; return {m:m, c:(sy-m*sx)/n};
+  }
+
+  var svg=$('#ss-svg'), playBtn=$('#ss-play'), slowBtn=$('#ss-slow'), expBtn=$('#ss-exp');
+  var modeSeg=segGroup($('#ss-mode'), function(){ setMode(); });
+  var nSeg=segGroup($('#ss-n'), function(){ reset(); });
+  var showQ=location.search.match(/[?&]show=(direct|echo|mics)\b/);
+  if(showQ){ modeSeg.pick(showQ[1]); $('#ss-mode').hidden=true; }
+  function mode(){ return modeSeg.value(); }
+  function exp(){ return pressed(expBtn); }
+  function slowOn(){ return pressed(slowBtn); }
+  function d(){ return dv[mode()]; }
+  function N(){ return mode()==='echo' ? +nSeg.value() : 1; }
+  function rkey(){ return mode()==='echo' ? 'echo'+N() : mode(); }
+  function dkey(v){ return (+v).toFixed(2); }
+  function dTxt(v){ return mode()==='mics' ? sn(v,2)+' m' : Math.round(v)+' m'; }
+  // what is plotted: y = distance the sound travels (2d for an echo), x = time for that distance
+  function yOf(v){ return mode()==='echo' ? 2*v : v; }
+  function tUnit(){ return mode()==='mics' ? 'ms' : 's'; }
+  function tDp(){ return 2; }
+
+  // ---- readings: up to 3 timings at each distance, kept per method (and per echo count)
+  var R={direct:{}, echo1:{}, echo20:{}, mics:{}}, reps={};
+  function list(){ return R[rkey()]; }
+  function rowsNow(){
+    var src=list();
+    return Object.keys(src).map(Number).sort(function(a,b){ return a-b; }).map(function(k){
+      var ts=src[dkey(k)], m=ts.length===3 ? (ts[0]+ts[1]+ts[2])/3 : null;
+      return {v:k, ts:ts, mean:m, one: m===null ? null : m/N()};
+    });
+  }
+  function done(){ return rowsNow().filter(function(r){ return r.mean!==null; }); }
+  function enough(){ return done().length>=4; }
+  // best-fit line of distance against time: y = m x + c (x in s, or ms for the microphones)
+  function fitNow(){ return fitLine(done().map(function(r){ return [r.one, yOf(r.v)]; })); }
+
+  // ---- layout: scene on the left, distance–time graph on the right (under the scene on a phone)
+  var G, SW=372, narrowQ=window.matchMedia('(max-width:560px)');
+  function layout(){
+    if(narrowQ.matches){ G={x:58, y:302, w:290, h:170}; svg.setAttribute('viewBox','0 0 372 512'); }
+    else { G={x:424, y:24, w:160, h:192}; svg.setAttribute('viewBox','0 0 600 270'); }
+  }
+  if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ layout(); draw(); });
+  layout();
+  function axes(){
+    var m=mode();
+    if(m==='direct') return {x1:1.4, xs:0.2, dpx:1, y1:400, ys:100, dpy:0, xl:'time (s)', yl:'distance (m)'};
+    if(m==='echo')   return {x1:1.0, xs:0.2, dpx:1, y1:300, ys:100, dpy:0, xl:'time for one echo (s)', yl:'2 × d (m)'};
+    return                  {x1:5, xs:1, dpx:0, y1:1.5, ys:0.5, dpy:1, xl:'Δt (ms)', yl:'d (m)'};
+  }
+  function vScale(){ return mode()==='mics' ? V/1000 : V; }   // distance per unit of the time axis
+  function gx(a,v){ return G.x+v/a.x1*G.w; }
+  function gy(a,v){ return G.y+G.h-v/a.y1*G.h; }
+
+  // ---- the run (one timing, or one watched demonstration)
+  var run=null, raf=0, last=0, watchRep=0, lastShown=null, justAdded=null, lastReading=null;
+  var GY=200;                          // ground line
+  var AX=34, PXd=0.8;                  // direct: Ali at x=34, 0.8 units per metre (400 m = 320)
+  var WX=352, PXe=2;                   // echo: wall at x=352, 2 units per metre
+  var BY=104, SRC=40, MA=70, PXm=180;  // microphones: bench, plate, microphone A, 180 units per metre
+  var TB=0.5;                          // oscilloscope time base, ms per division
+  function sophieX(){ return AX+d()*PXd; }
+  function aliEchoX(){ return WX-d()*PXe; }
+  function micBX(){ return MA+d()*PXm; }
+  var tA=(MA-SRC)/PXm/V;               // time for the sound to reach microphone A (s)
+
+  function newRun(kind){
+    var m=mode(), D=d(), tag, r, o={kind:kind, t:0, mode:m};
+    if(kind==='exp'){ var rk=rkey()+dkey(D); reps[rk]=(reps[rk]||0)+1; tag=rk+'#'+reps[rk]; }
+    else { watchRep++; tag='w'+m+D+'#'+watchRep; }
+    r=seeded(tag);
+    if(m==='direct'){
+      o.tSound=D/V; o.rs=gauss(r,RT_SEE); o.rp=gauss(r,RT_HEAR);
+      o.start=o.rs; o.stop=o.tSound+o.rp; o.tEnd=o.stop+0.35;
+      o.rate = kind==='exp' ? 0.5 : 0.25;
+      o.reading=Math.round((o.stop-o.start)*100)/100;
+    } else if(m==='echo'){
+      var T=2*D/V;
+      if(kind==='watch'){ o.T=T; o.claps=4; o.tEnd=4*T+0.15; o.rate=0.25; }
+      else {
+        var n=N(), e = n>1 ? gauss(r,[0,0.012]) : 0;
+        o.T=T*(1+e); o.claps = n>1 ? n+1 : 1; o.n=n;
+        o.rs=gauss(r,RT_ECHO); o.rp=gauss(r,RT_ECHO);
+        o.start=o.rs; o.stop=(n>1 ? n*o.T : T)+o.rp; o.tEnd=o.stop+0.25;
+        o.rate = n>1 ? Math.max(1, o.tEnd/3.5) : 0.5;
+        o.reading=Math.round((o.stop-o.start)*100)/100;
+      }
+    } else {
+      o.tB=tA+D/V; o.tEnd=Math.min(tA+(10*TB-0.5)/1000, o.tB+0.0012);
+      o.rate = kind==='exp' ? 1/600 : 1/1000;
+      var dt=(o.tB-tA)*1000+gauss(r,[0,0.025]);
+      o.reading=Math.round(dt/0.05)*0.05; o.reading=+o.reading.toFixed(2);
+    }
+    return o;
+  }
+  function stop(){ cancelAnimationFrame(raf); raf=0; }
+  function frame(now){
+    var real=Math.min(0.05,(now-last)/1000); last=now;
+    if(run && !run.over){
+      run.t=Math.min(run.tEnd, run.t+real*run.rate*(slowOn()?0.3:1));
+      if(run.t>=run.tEnd) finish();
+    }
+    draw();
+    if(run && !run.over && !run.paused) raf=requestAnimationFrame(frame);
+  }
+  function loop(){ stop(); last=performance.now(); raf=requestAnimationFrame(frame); }
+  function finish(){
+    run.over=true;
+    if(run.kind==='exp'){
+      var src=list(), k=dkey(d());
+      if(!src[k]) src[k]=[];
+      if(src[k].length<3){ src[k].push(run.reading); justAdded=+k; }
+      lastReading=run.reading;
+    } else lastShown=run;
+  }
+  function reset(){ stop(); run=null; lastShown=null; justAdded=null; lastReading=null; draw(); }
+  function clearReadings(){ R[rkey()]={}; reset(); }
+  function setMode(){ reset(); setAria(); }
+  function setExp(){ $('#ss-expbox').hidden=!exp(); reset(); }
+
+  // ---- drawing helpers
+  function person(x, fy, o){
+    // a stick figure about 52 units tall; o.face 1 (right) or -1; o.girl draws a solid dress; o.arms 'up'|'clap'|'watch'
+    var f=o.face||1, g='', col='var(--ink)', hx=x, hy=fy-48;
+    g+=ln(x, fy-22, x-6, fy, col, 2)+ln(x, fy-22, x+6, fy, col, 2);   // legs
+    g+=ln(x, fy-40, x, fy-22, col, 2);                                  // body
+    if(o.girl) g+='<path d="M'+(x-3)+','+(fy-38)+' L'+(x+3)+','+(fy-38)+' L'+(x+9)+','+(fy-16)+' L'+(x-9)+','+(fy-16)+' Z" fill="var(--accent)" stroke="var(--accent)" stroke-width="1"/>';
+    if(o.arms==='up'){
+      var sp=o.together ? 3.5 : 10;
+      g+=ln(x, fy-38, x-sp, fy-62, col, 2)+ln(x, fy-38, x+sp, fy-62, col, 2);
+      g+='<rect x="'+(x-sp-4)+'" y="'+(fy-70)+'" width="7" height="10" rx="1.5" fill="var(--wood)" stroke="var(--ink)" stroke-width="0.8"/>';
+      g+='<rect x="'+(x+sp-3)+'" y="'+(fy-70)+'" width="7" height="10" rx="1.5" fill="var(--wood)" stroke="var(--ink)" stroke-width="0.8"/>';
+    } else if(o.arms==='clap'){
+      var c=o.together ? 1 : 6;
+      g+=ln(x, fy-38, x+f*10, fy-50-c, col, 2)+ln(x, fy-38, x+f*10, fy-50+c, col, 2);
+    } else {
+      g+=ln(x, fy-38, x+f*11, fy-34, col, 2)+ln(x, fy-38, x-f*5, fy-24, col, 2);
+      g+='<circle cx="'+(x+f*13)+'" cy="'+(fy-34)+'" r="3.2" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.2"/>';
+    }
+    if(o.girl) g+='<path d="M'+(hx-f*4)+','+(hy-4)+' q'+(-f*8)+',2 '+(-f*7)+',12" fill="none" stroke="var(--hair)" stroke-width="3" stroke-linecap="round"/>';
+    g+='<circle cx="'+hx+'" cy="'+hy+'" r="6" fill="var(--panel)" stroke="'+col+'" stroke-width="2"/>';
+    if(o.girl) g+='<path d="M'+(hx-6)+','+(hy-1)+' a6,6 0 0 1 12,0" fill="var(--hair)"/>';
+    else g+='<path d="M'+(hx-6)+','+(hy-2)+' a6,6 0 0 1 12,0 z" fill="var(--hair)"/>';
+    return g;
+  }
+  function watchBox(x, y, val, on){
+    x=Math.max(4, Math.min(SW-60, x-28));
+    return '<rect x="'+x+'" y="'+y+'" width="56" height="19" rx="4" fill="var(--panel)" stroke="'+(on?'var(--topic)':'var(--ink-faint)')+'" stroke-width="1.4"/>'+
+      txt(x+28, y+14, val, {a:'middle', fs:11.5, w:600, c:'var(--ink)'});
+  }
+  function rings(cx, cy, r, clip){
+    // one short pulse of sound: three close rings, the front one darkest
+    var g='';
+    [0,3.5,7].forEach(function(k,i){ var rr=r-k; if(rr>0.5) g+='<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="'+rr.toFixed(1)+'" fill="none" stroke="var(--sound)" stroke-width="'+(i?1:1.8)+'" opacity="'+(1-i*0.3)+'" clip-path="url(#'+clip+')"/>'; });
+    return g;
+  }
+  function tapeScale(x0, px, max, every, label, y){
+    var g=ln(x0, y, x0+max*px, y, 'var(--ink-faint)', 1.2), v;
+    for(v=0; v<=max+1e-9; v+=every/2){
+      var X=x0+v*px, big=Math.abs(v/every-Math.round(v/every))<1e-6;
+      g+=ln(X, y, X, y+(big?7:4), 'var(--ink-faint)', 1);
+      if(big) g+=txt(X, y+18, label(v), {a:'middle', fs:9.5, c:'var(--ink-faint)'});
+    }
+    return g;
+  }
+  function dimArrow(x1, x2, y, label){
+    return '<path d="M'+x1+','+y+' L'+x2+','+y+'" stroke="var(--topic)" stroke-width="1.2" marker-end="url(#ss-ah)" marker-start="url(#ss-ah)"/>'+
+      txt((x1+x2)/2, y-5, label, {a:'middle', fs:10.5, c:'var(--topic)', w:600});
+  }
+  function dragHint(x, y){ return (run && !run.over) ? '' : txt(x, y, '← drag →', {a:'middle', fs:9, c:'var(--accent)'}); }
+
+  // ---- the three scenes
+  function sceneDirect(){
+    var g='', D=d(), sx=sophieX(), t=run ? run.t : 0, live=run && run.mode==='direct';
+    g+='<rect x="0" y="'+GY+'" width="'+SW+'" height="8" fill="var(--grass-soft)"/>'+ln(0, GY, SW, GY, 'var(--grass)', 2);
+    g+=tapeScale(AX, PXd, 400, 100, function(v){ return v+(v===400?' m':''); }, GY+10);
+    g+=dimArrow(AX, sx, GY+44, 'd = '+D+' m');
+    // light: arrives almost at once
+    if(live && t>0){
+      var fl=Math.max(0, 1-t/0.08);
+      g+=ln(AX+4, GY-66, sx-4, GY-50, 'var(--light)', 1.4, ' stroke-dasharray="4 3" opacity="'+(0.35+0.65*fl)+'"');
+      g+=txt(AX-22, GY-122, 'light arrives almost at once', {fs:9.5, c:'var(--light-ink)'});
+      if(fl>0) g+='<circle cx="'+AX+'" cy="'+(GY-66)+'" r="'+(5+10*(1-fl))+'" fill="var(--light)" opacity="'+fl+'"/>';
+    }
+    if(live){ var r=V*t*PXd; if(r<SW) g+=rings(AX, GY-66, r, 'ss-clip'); }
+    g+=person(AX, GY, {arms:'up', together: !live || t<0.05});
+    g+=txt(AX+9, GY-3, 'Ali', {fs:9.5, c:'var(--ink-soft)'});
+    g+=person(sx, GY, {girl:true, face:-1, arms:'watch'});
+    // Sophie's stopwatch
+    var shown='0.00 s', on=false;
+    if(live){
+      var el=Math.max(0, Math.min(t, run.stop)-run.start);
+      shown=(t<run.start?0:el).toFixed(2)+' s'; on=t>=run.start && t<run.stop;
+      if(t>=run.start && t<run.start+0.25) g+=txt(sx, GY-96, 'sees it: start', {a:'middle', fs:9.5, c:'var(--light-ink)'});
+      if(t>=run.stop) g+=txt(sx, GY-96, 'hears it: stop', {a:'middle', fs:9.5, c:'var(--sound)'});
+    }
+    g+=watchBox(sx, GY-88, shown, on);
+    g+=txt(sx<300 ? sx+9 : sx-9, GY-3, 'Sophie', {a: sx<300 ? 'start' : 'end', fs:9.5, c:'var(--ink-soft)'});
+    g+=dragHint(sx, GY-110);
+    g+=txt(SW-4, 14, 'people not to scale', {a:'end', fs:9, c:'var(--ink-faint)'});
+    return g;
+  }
+  function sceneEcho(){
+    var g='', D=d(), ax=aliEchoX(), sx=ax-22, t=run ? run.t : 0, live=run && run.mode==='echo';
+    g+='<rect x="0" y="'+GY+'" width="'+SW+'" height="8" fill="var(--grass-soft)"/>'+ln(0, GY, SW, GY, 'var(--grass)', 2);
+    // the wall, with brick lines
+    g+='<rect x="'+WX+'" y="'+(GY-120)+'" width="16" height="120" fill="var(--brick-soft)" stroke="var(--brick)" stroke-width="1.5"/>';
+    for(var b=GY-110;b<GY;b+=10) g+=ln(WX, b, WX+16, b, 'var(--brick)', 0.6);
+    g+=txt(WX+8, GY-126, 'wall', {a:'middle', fs:9.5, c:'var(--ink-soft)'});
+    g+=tapeScale(WX-150*PXe, PXe, 150, 50, function(v){ return (150-v)+(v===0?' m':''); }, GY+10);
+    g+=dimArrow(ax, WX, GY+44, 'd = '+D+' m');
+    // claps and their echoes: each pulse goes to the wall and back (the reflected ring is centred on the mirror image)
+    var together=false, k=0, label='';
+    if(live){
+      for(k=0;k<run.claps;k++){
+        var t0=k*run.T; if(t<t0) break;
+        var r=V*(t-t0)*PXe;
+        if(t-t0<0.05) together=true;
+        if(r<(WX-ax)+SW) { g+=rings(ax, GY-50, r, 'ss-clipw'); if(r>WX-ax) g+=rings(2*WX-ax, GY-50, r, 'ss-clipw'); }
+      }
+      var nc=Math.min(run.claps, Math.floor(t/run.T+1e-9)+1);
+      label = run.claps>1 ? 'clap '+nc+(run.kind==='exp' ? ' of '+run.claps : '') : '';
+      if(label) g+=txt(ax, GY-92, label, {a:'middle', fs:10, c:'var(--sound)'});
+      if(run.kind==='exp' && run.rate>1) g+=txt(4, 14, 'fast forward', {fs:10.5, c:'var(--accent)'});
+    }
+    g+=person(ax, GY, {arms:'clap', face:1, together: !live || together});
+    g+=txt(ax+9, GY-3, 'Ali', {fs:9.5, c:'var(--ink-soft)'});
+    g+=person(sx, GY, {girl:true, face:1, arms:'watch'});
+    g+=txt(sx-9, GY-3, 'Sophie', {a:'end', fs:9.5, c:'var(--ink-soft)'});
+    if(exp() || (live && run.kind==='exp')){
+      var shown='0.00 s', on=false;
+      if(live && run.kind==='exp'){ var el=Math.max(0, Math.min(t, run.stop)-run.start); shown=(t<run.start?0:el).toFixed(2)+' s'; on=t>=run.start && t<run.stop; }
+      g+=watchBox(sx-6, GY-118, shown, on);
+    }
+    g+=dragHint(ax-11, GY-74);
+    if(!live || run.claps<=1) g+=txt(4, 14, 'people not to scale', {fs:9, c:'var(--ink-faint)'});
+    return g;
+  }
+  function sceneMics(){
+    var g='', D=d(), bx=micBX(), t=run ? run.t : 0, live=run && run.mode==='mics';
+    // bench and metre rule
+    g+='<rect x="14" y="'+BY+'" width="'+(SW-24)+'" height="7" fill="var(--wood-soft)" stroke="var(--wood)" stroke-width="1"/>';
+    g+=tapeScale(MA, PXm, 1.5, 0.5, function(v){ return sn(v,1)+(v>1.4?' m':''); }, BY+9);
+    g+=dimArrow(MA, bx, BY-58, 'd = '+sn(D,2)+' m');
+    // the hammer hits a metal plate
+    var hit = live && t<0.0004;
+    g+='<rect x="'+(SRC-4)+'" y="'+(BY-34)+'" width="4" height="34" fill="var(--metal)" stroke="var(--ink)" stroke-width="0.8"/>';
+    var hx = hit ? SRC-10 : SRC-22;
+    g+=ln(hx-4, BY-14, hx-18, BY-2, 'var(--wood)', 3)+'<rect x="'+(hx-6)+'" y="'+(BY-24)+'" width="6" height="12" rx="1" fill="var(--ink-soft)"/>';
+    if(live){ var r=V*t*PXm; if(r<SW+20) g+=rings(SRC, BY-18, r, 'ss-clipm'); }
+    // microphones on stands
+    function mic(x, lab){ return ln(x, BY-12, x, BY, 'var(--ink-soft)', 2)+'<rect x="'+(x-4)+'" y="'+(BY-26)+'" width="8" height="14" rx="4" fill="var(--ink)"/>'+txt(x, BY-31, lab, {a:'middle', fs:10, w:600, c:'var(--ink)'}); }
+    g+=mic(MA, 'A')+mic(bx, 'B');
+    g+=dragHint(bx, BY-42);
+    // leads to the oscilloscope
+    var sy0=148, sx0=82, sw=260, sh=96, div=sw/10;
+    g+='<path d="M'+MA+','+BY+' C '+MA+','+(BY+30)+' 60,'+(sy0-6)+' 60,'+(sy0+20)+'" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>';
+    g+='<path d="M'+bx+','+BY+' C '+bx+','+(BY+28)+' 60,'+(sy0+40)+' 60,'+(sy0+72)+'" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>';
+    g+='<rect x="24" y="'+(sy0-12)+'" width="'+(SW-34)+'" height="'+(sh+30)+'" rx="8" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.4"/>';
+    g+=txt(34, sy0+sh+12, 'oscilloscope', {fs:9, c:'var(--ink-faint)'});
+    g+=txt(34, sy0+26, 'A', {fs:10, w:600, c:'var(--ink)'})+txt(34, sy0+76, 'B', {fs:10, w:600, c:'var(--ink)'});
+    g+='<rect x="'+sx0+'" y="'+sy0+'" width="'+sw+'" height="'+sh+'" fill="var(--screen)"/>';
+    for(var i=1;i<10;i++) g+=ln(sx0+i*div, sy0, sx0+i*div, sy0+sh, 'var(--screen-grid)', 0.7);
+    for(var j=1;j<4;j++) g+=ln(sx0, sy0+j*sh/4, sx0+sw, sy0+j*sh/4, 'var(--screen-grid)', 0.7);
+    g+=txt(sx0+sw, sy0+sh+12, 'time base '+TB+' ms/div', {a:'end', fs:9, c:'var(--ink-faint)'});
+    // traces: the screen starts when A's pulse arrives (A's pulse at 1 division)
+    var shownRun = live ? run : null;
+    if(shownRun){
+      var tau = (t-tA)*1000+TB;            // ms across the screen
+      if(t>=tA){
+        var tauMax=Math.min(10*TB, tau), dtB=(shownRun.tB-tA)*1000;
+        [[sy0+24, TB],[sy0+72, TB+dtB]].forEach(function(tr){
+          var pts=[];
+          for(var s=0;s<=tauMax+1e-9;s+=0.02){
+            var u=s-tr[1], y=tr[0];
+            if(u>0) y-=18*Math.exp(-u/0.35)*Math.sin(2*Math.PI*u/0.16);
+            pts.push((sx0+s/(10*TB)*sw).toFixed(1)+','+y.toFixed(1));
+          }
+          g+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--trace)" stroke-width="1.5"/>';
+        });
+        if(run.over){
+          var xa=sx0+TB/(10*TB)*sw, xb=sx0+(TB+dtB)/(10*TB)*sw;
+          g+=ln(xa, sy0+40, xa, sy0+56, 'var(--trace)', 1, ' stroke-dasharray="2 2"')+ln(xb, sy0+40, xb, sy0+56, 'var(--trace)', 1, ' stroke-dasharray="2 2"');
+          g+='<path d="M'+xa+','+(sy0+48)+' L'+xb+','+(sy0+48)+'" stroke="var(--trace)" stroke-width="1" marker-end="url(#ss-aht)" marker-start="url(#ss-aht)"/>';
+          g+=txt((xa+xb)/2, sy0+45, 'Δt', {a:'middle', fs:9.5, c:'var(--trace)'});
+        }
+      }
+    } else {
+      g+=ln(sx0, sy0+24, sx0+sw, sy0+24, 'var(--trace)', 1.2, ' opacity="0.5"')+ln(sx0, sy0+72, sx0+sw, sy0+72, 'var(--trace)', 1.2, ' opacity="0.5"');
+    }
+    return g;
+  }
+
+  function drawGraph(){
+    var a=axes(), g='', v;
+    for(v=0; v<=a.x1+1e-9; v+=a.xs){ var X=gx(a,v); g+=ln(X, G.y, X, G.y+G.h, 'var(--panel-border)', 1)+txt(X, G.y+G.h+13, sn(v,a.dpx), {a:'middle', fs:9.5, c:'var(--ink-faint)'}); }
+    for(v=0; v<=a.y1+1e-9; v+=a.ys){ var Y=gy(a,v); g+=ln(G.x, Y, G.x+G.w, Y, 'var(--panel-border)', 1)+txt(G.x-4, Y+3.5, sn(v,a.dpy), {a:'end', fs:9.5, c:'var(--ink-faint)'}); }
+    g+=ln(G.x, G.y, G.x, G.y+G.h, 'var(--ink-soft)', 2)+ln(G.x, G.y+G.h, G.x+G.w, G.y+G.h, 'var(--ink-soft)', 2);
+    g+=txt(G.x-4, G.y-9, a.yl, {fs:10.5}); g+=txt(G.x+G.w/2, G.y+G.h+28, a.xl, {a:'middle', fs:10.5});
+    var m=mode(), k=vScale();
+    if(!exp()){
+      // theory: the sound travels 340 m every second; light would be a line up the distance axis
+      var xe=Math.min(a.x1, a.y1/k);
+      g+=ln(gx(a,0), gy(a,0), gx(a,xe), gy(a,k*xe), 'var(--sound)', 2.2);
+      g+=txt(gx(a,xe)-4, gy(a,k*xe)+14, 'sound', {a:'end', fs:10, c:'var(--sound)'});
+      if(m==='direct'){ g+=ln(G.x+2, G.y+G.h, G.x+2, G.y+2, 'var(--light)', 3); g+=txt(G.x+7, G.y+12, 'light', {fs:10, c:'var(--light-ink)'}); }
+      var Y0=yOf(d()), X0=Y0/k;
+      g+=ln(G.x, gy(a,Y0), gx(a,X0), gy(a,Y0), 'var(--ink-faint)', 1, ' stroke-dasharray="3 3"')+ln(gx(a,X0), gy(a,Y0), gx(a,X0), G.y+G.h, 'var(--ink-faint)', 1, ' stroke-dasharray="3 3"');
+      // where the sound has got to now
+      if(run && !run.over){
+        var tt = m==='mics' ? Math.max(0,(run.t-tA))*1000 : (m==='echo' ? run.t%run.T : run.t);
+        var yy=Math.min(Y0, k*tt);
+        if(m!=='mics' || run.t>=tA) g+='<circle cx="'+gx(a,yy/k).toFixed(1)+'" cy="'+gy(a,yy).toFixed(1)+'" r="4.5" fill="var(--sound)" stroke="var(--panel)" stroke-width="1.5"/>';
+      } else g+='<circle cx="'+gx(a,X0).toFixed(1)+'" cy="'+gy(a,Y0).toFixed(1)+'" r="4.5" fill="var(--sound)" stroke="var(--panel)" stroke-width="1.5"/>';
+      // what Sophie's stopwatch read, as a ring
+      if(m==='direct' && lastShown && lastShown.mode==='direct' && run && run.over) g+=expRing(+gx(a,lastShown.reading).toFixed(1), +gy(a,d()).toFixed(1), 4.5);
+    } else {
+      var rs=rowsNow();
+      if(!rs.length) g+=txt(G.x+G.w/2, G.y+G.h/2, 'readings appear here', {a:'middle', fs:10.5, c:'var(--ink-faint)'});
+      rs.forEach(function(r){
+        var ts=r.ts, mean=ts.reduce(function(s,x){ return s+x; },0)/ts.length, x=mean/N(), y=yOf(r.v);
+        if(x<=a.x1 && y<=a.y1) g+=r.mean!==null ? expCross(+gx(a,x).toFixed(1), +gy(a,y).toFixed(1), 4) : '<circle cx="'+gx(a,x).toFixed(1)+'" cy="'+gy(a,y).toFixed(1)+'" r="2" fill="var(--ink-faint)"/>';
+      });
+      if(enough()){
+        var f=fitNow();
+        if(f){
+          var x0=Math.max(0, -f.c/f.m), x1=Math.min(a.x1, (a.y1-f.c)/f.m);
+          g+=ln(gx(a,x0), gy(a,f.m*x0+f.c), gx(a,x1), gy(a,f.m*x1+f.c), 'var(--accent)', 1.6, ' stroke-dasharray="5 4"');
+          g+=txt(G.x+G.w-2, G.y+G.h-8, 'best fit', {a:'end', fs:10, c:'var(--accent)'});
+        }
+      }
+    }
+    return g;
+  }
+
+  function draw(){
+    var m=mode();
+    var g='<defs><marker id="ss-ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--topic)"/></marker>'+
+      '<marker id="ss-aht" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--trace)"/></marker>'+
+      '<clipPath id="ss-clip"><rect x="0" y="0" width="'+SW+'" height="'+GY+'"/></clipPath>'+
+      '<clipPath id="ss-clipw"><rect x="0" y="0" width="'+WX+'" height="'+GY+'"/></clipPath>'+
+      '<clipPath id="ss-clipm"><rect x="0" y="0" width="'+SW+'" height="'+BY+'"/></clipPath></defs>';
+    g+= m==='direct' ? sceneDirect() : m==='echo' ? sceneEcho() : sceneMics();
+    g+=drawGraph();
+    if(run && !run.over && (slowOn() || run.rate<1)){
+      var sp = run.rate<1 ? Math.round(1/run.rate)+' × slower' : '';
+      if(slowOn()) sp=(sp?sp+', ':'')+'slow motion';
+      if(sp && !(m==='echo' && run.rate>1)) g+=txt(m==='echo' ? 4 : SW-4, m==='echo' ? 14 : 28, sp, {a: m==='echo' ? 'start' : 'end', fs:10, c:'var(--accent)'});
+    }
+    svg.innerHTML=g;
+    readings();
+  }
+
+  // ---- readings, table, working and note
+  var lastNote='';
+  function S(i, label, val){ $('#ss-l'+i).textContent=label; $('#ss-s'+i).textContent=val; }
+  function readings(){
+    var m=mode(), D=d(), E=exp(), U=tUnit(), busy=run && !run.over;
+    $('#ss-nrow').hidden = !(m==='echo' && E);
+    svg.setAttribute('aria-valuenow', D); svg.setAttribute('aria-valuetext', 'd = '+dTxt(D));
+    var here=list()[dkey(D)]||[], meanHere = here.length===3 ? (here[0]+here[1]+here[2])/3 : null;
+    var w1='', w2='', w3='', note='';
+    var tS=yOf(D)/V;   // time for the sound, s
+    var spd = function(dist, tsec){ return Math.round(dist/tsec); };
+
+    if(!E){
+      if(m==='direct'){
+        var sw = lastShown && run && run.over ? lastShown.reading : null;
+        S(1,'Distance, d', D+' m'); S(2,'Sound takes', sig(tS,3)+' s'); S(3,'Stopwatch', sw===null ? '–' : sw.toFixed(2)+' s'); S(4,'Speed from stopwatch', sw===null ? '–' : spd(D,sw)+' m/s');
+        w1='speed = [[distance|time]]<br>340 = [['+D+'|t]]<br>t = [['+D+'|340]]<br>t = <b>'+sig(tS,4)+' s</b>';
+        if(sw!==null) w2='Sophie’s stopwatch: t = '+sw.toFixed(2)+' s<br>speed = [['+D+'|'+sw.toFixed(2)+']]<br>speed = <b>'+spd(D,sw)+' m/s</b>';
+        w3='Light covers '+D+' m in about a millionth of a second, so we treat it as arriving instantly: the time on the stopwatch is the time the sound took.';
+        if(busy) note = run.t<run.tSound ? 'Ali bangs the blocks together. The light reaches Sophie almost at once and she starts the stopwatch; the sound is still on its way.' : 'The sound reaches Sophie after '+sig(run.tSound,3)+' s, and she stops the stopwatch.';
+        else if(sw!==null) note='Sophie’s stopwatch reads <b>'+sw.toFixed(2)+' s</b>; the sound took '+sig(tS,3)+' s. She is slow to start (seeing) and slow to stop (hearing), but the two delays do not cancel exactly. Play again: every timing is a little different.';
+        else note='Ali bangs two wooden blocks together above his head. Sophie, '+D+' m away, starts her stopwatch when she <b>sees</b> the blocks hit and stops it when she <b>hears</b> the bang. Drag Sophie, then press <b>Play</b>.';
+      } else if(m==='echo'){
+        S(1,'Distance to wall', D+' m'); S(2,'There and back', 2*D+' m'); S(3,'One echo takes', sig(tS,3)+' s'); S(4,'Speed of sound', V+' m/s');
+        w1='distance = 2 × d<br>distance = 2 × '+D+'<br>distance = '+(2*D)+' m';
+        w2='speed = [[distance|time]]<br>340 = [['+(2*D)+'|t]]<br>t = [['+(2*D)+'|340]]<br>t = <b>'+sig(tS,4)+' s</b>';
+        w3='The sound goes to the wall and back, so it travels twice the distance to the wall. One echo takes under a second, which is too short to time well by hand.';
+        if(busy) note='Ali claps in a steady rhythm. Each clap travels to the wall and reflects back; he times his claps so each one is at the same moment as the echo of the one before.';
+        else note='Ali stands '+D+' m from a large flat wall and claps. The sound reflects off the wall and comes back as an echo. Drag Ali and Sophie, then press <b>Play</b>.';
+      } else {
+        var dtm=D/V*1000, divs=dtm/TB;
+        S(1,'Distance, d', sn(D,2)+' m'); S(2,'Time between, Δt', sig(dtm,3)+' ms'); S(3,'On the screen', sig(divs,3)+' div'); S(4,'Speed of sound', V+' m/s');
+        w1='speed = [[distance|time]]<br>340 = [['+sn(D,2)+'|Δt]]<br>Δt = [['+sn(D,2)+'|340]]<br>Δt = <b>'+sig(dtm/1000,4)+' s</b><br>Δt = '+sig(dtm,4)+' ms';
+        w2='divisions = [[Δt|time base]]<br>divisions = [['+sig(dtm,4)+'|'+TB+']]<br>divisions = <b>'+sig(divs,3)+'</b>';
+        w3='The oscilloscope starts its trace when the sound reaches microphone A. The time between the two pulses is the time the sound takes to travel from A to B. No one has to react, so there is no reaction time.';
+        if(busy) note = run.t<tA ? 'The hammer hits the plate. The sound spreads out at 340 m/s (shown '+Math.round(1/run.rate)+' times slower).' : (run.t<run.tB ? 'The sound reaches microphone A, and the oscilloscope starts its trace.' : 'The sound reaches microphone B: a second pulse on the lower trace.');
+        else if(run && run.over) note='The two pulses are '+sig(divs,3)+' divisions apart. At '+TB+' ms per division, Δt = '+sig(dtm,3)+' ms. Speed = [[distance|time]].';
+        else note='A hammer hits a metal plate. Microphones A and B are '+sn(D,2)+' m apart, connected to a dual-trace oscilloscope. Drag microphone B, then press <b>Play</b>.';
+      }
+    } else {
+      // Experiment mode
+      var name = m==='direct' ? 'Sophie' : m==='echo' ? 'Ali and Sophie' : 'microphone B';
+      var ttl = m==='mics' ? 'Δt' : 't';
+      var cols=[{label: m==='mics' ? 'd (m)' : 'd (m)', key:'v', dp: m==='mics' ? 2 : 0}];
+      [1,2,3].forEach(function(i){ cols.push({label: ttl+'<sub>'+i+'</sub> ('+U+')', key:'t'+i, dp:2}); });
+      cols.push({label:'mean ('+U+')', key:'mean', dp: m==='mics' ? 2 : 3});
+      if(m==='echo' && N()>1) cols.push({label:'one echo (s)', key:'one', dp:4});
+      expTable($('#ss-table'), cols, rowsNow().map(function(r){ return {v:r.v, t1:r.ts[0], t2:r.ts[1], t3:r.ts[2], mean:r.mean===null?'':r.mean, one:r.one===null?'':r.one}; }), justAdded);
+      var lr = lastReading===null || busy ? '–' : lastReading.toFixed(2)+' '+U;
+      var mh = meanHere===null ? '?' : (m==='mics' ? sig(meanHere,3) : meanHere.toFixed(3))+' '+U;
+      var spHere=null;
+      if(meanHere!==null) spHere = m==='mics' ? D/(meanHere/1000) : yOf(D)/(meanHere/N());
+      S(1, m==='echo' ? 'Distance to wall' : 'Distance, d', dTxt(D)); S(2, 'Last timing', lr); S(3, 'Mean here', mh); S(4, 'Speed here', spHere===null ? '?' : Math.round(spHere)+' m/s');
+      if(meanHere!==null){
+        var a3=here.map(function(x){ return x.toFixed(2); }).join(' + '), mtxt=sig(meanHere,4);
+        w1='mean = [['+a3+'|3]]<br>mean = '+mtxt+' '+U+'<br>';
+        if(m==='direct') w1+='speed = [[distance|time]]<br>speed = [['+D+'|'+mtxt+']]<br>speed = <b>'+Math.round(spHere)+' m/s</b>';
+        else if(m==='echo') w1+=(N()>1 ? 'one echo = [['+mtxt+'|20]]<br>one echo = '+sig(meanHere/20,4)+' s<br>' : '')+
+               'distance = 2 × '+D+'<br>distance = '+(2*D)+' m<br>speed = [[distance|time]]<br>speed = [['+(2*D)+'|'+sig(meanHere/N(),4)+']]<br>speed = <b>'+Math.round(spHere)+' m/s</b>';
+        else w1+='Δt = '+sig(meanHere/1000,4)+' s<br>speed = [[distance|time]]<br>speed = [['+sn(D,2)+'|'+sig(meanHere/1000,4)+']]<br>speed = <b>'+Math.round(spHere)+' m/s</b>';
+      } else w1='Take three timings at this distance: the mean and the speed appear after the third.';
+      var dn=done(), f=enough() ? fitNow() : null;
+      if(f){
+        var lo=dn[0], hi=dn[dn.length-1], yl=yOf(lo.v), yh=yOf(hi.v), xl=(yl-f.c)/f.m, xh=(yh-f.c)/f.m;
+        var yTxt=function(y){ return m==='mics' ? sn(y,2) : String(Math.round(y)); };
+        var gr=(yh-yl)/(xh-xl), gsp = m==='mics' ? gr*1000 : gr, xint=-f.c/f.m;
+        w2='gradient = [[change in distance|change in time]]<br>gradient = [['+yTxt(yh)+' − '+yTxt(yl)+'|'+sig(xh,4)+' − '+sig(xl,4)+']]<br>gradient = [['+yTxt(yh-yl)+'|'+sig(xh-xl,4)+']]';
+        if(m==='mics') w2+='<br>'+sig(xh-xl,4)+' ms = '+sig((xh-xl)/1000,4)+' s<br>gradient = [['+yTxt(yh-yl)+'|'+sig((xh-xl)/1000,4)+']]';
+        w2+='<br>speed = <b>'+Math.round(gsp)+' m/s</b>';
+        w3='The gradient is read from two points on your best-fit line (at '+dTxt(lo.v)+' and '+dTxt(hi.v)+'). The model uses 340 m/s; your value differs a little because of the errors in timing.';
+        note='Done: your points lie close to a straight line. Its gradient is the speed of sound: <b>'+Math.round(gsp)+' m/s</b>.';
+        if(m==='direct' && Math.abs(xint)>0.01) note+=' The line misses the origin: every timing is about '+sn(Math.abs(xint),2)+' s too '+(xint<0?'short':'long')+', because Sophie’s reaction times at the start and the stop are not equal. That shifts the line but does not change its gradient.';
+        else if(m==='echo' && N()===1) note+=' But see how spread out the three timings at each distance are: one echo is too short to time well by hand. Try 20 echoes.';
+        else if(m==='mics') note+=' The timings hardly vary: there is no reaction time.';
+      } else {
+        var count=here.length;
+        if(busy) note = m==='direct' ? 'Sophie starts the stopwatch when she sees the blocks hit, and stops it when she hears the bang.' :
+                        m==='echo' ? (N()>1 ? 'Ali claps in time with the echoes. Sophie times from the first clap to the 21st: 20 echoes.' : 'Sophie starts the stopwatch when she hears the clap, and stops it when she hears the echo.') :
+                        'The oscilloscope shows both pulses. Read the time between them.';
+        else if(count===3) note='Three timings at '+dTxt(D)+': mean '+mh+'. Now drag '+name+' to a new distance. You have '+dn.length+' distance'+(dn.length===1?'':'s')+' done: do at least 4'+(m==='direct'?' (100 m or more works best).':'.');
+        else if(count>0) note=dTxt(D)+': '+count+' of 3 timings. '+(m==='direct'?'Each timing is a little different, because of Sophie’s reaction times.':m==='mics'?'Press again for the next one.':'Press again for the next one.');
+        else note = m==='direct' ? 'Experiment: drag Sophie to a distance, then press <b>Clap and time</b> three times. Do at least 4 distances, from 100 m to 400 m.' :
+                    m==='echo' ? 'Experiment: choose 1 echo or 20 echoes. Drag Ali and Sophie to a distance from the wall, then time it three times. Do at least 4 distances.' :
+                    'Experiment: drag microphone B to a distance, then press <b>Hit the plate</b> three times. Read Δt from the screen each time. Do at least 4 distances.';
+      }
+    }
+    $('#ss-eq1').innerHTML=FR(w1); $('#ss-eq2').innerHTML=FR(w2); $('#ss-eq2').hidden=!w2; $('#ss-eq3').innerHTML=FR(w3); $('#ss-eq3').hidden=!w3;
+    $('#ss-eq1').hidden=!w1;
+    note=FR(note);
+    if(note!==lastNote){ $('#ss-note').innerHTML=note; lastNote=note; }
+    $('#ss-clear').disabled=!!busy;
+    Array.prototype.forEach.call($('#ss-n').querySelectorAll('button'), function(b){ b.disabled=!!busy; });
+    Array.prototype.forEach.call($('#ss-mode').querySelectorAll('button'), function(b){ b.disabled=!!busy && E; });
+    if(E){
+      var full=here.length>=3;
+      playBtn.innerHTML = full ? '3 timings done' : '&#9654; '+(m==='direct' ? 'Clap and time' : m==='echo' ? (N()>1 ? 'Time 20 echoes' : 'Time one echo') : 'Hit the plate');
+      playBtn.disabled = !!busy || full;
+    } else {
+      playBtn.innerHTML = busy && !run.paused ? '&#10074;&#10074; Pause' : '&#9654; Play';
+      playBtn.disabled=false;
+    }
+  }
+
+  // ---- buttons
+  playBtn.addEventListener('click', function(){
+    if(exp()){ if(!(run && !run.over)){ justAdded=null; run=newRun('exp'); loop(); draw(); } return; }
+    if(run && !run.over){ run.paused=!run.paused; if(run.paused){ stop(); draw(); } else loop(); return; }
+    run=newRun('watch'); lastShown=null; loop(); draw();
+  });
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
+  expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); setExp(); });
+  $('#ss-reset').addEventListener('click', reset);
+  $('#ss-clear').addEventListener('click', clearReadings);
+
+  // ---- drag the timer (direct), the people (echo) or microphone B along the bench, or use the arrow keys
+  function lim(){ return LIM[mode()]; }
+  function setD(v){
+    var L=lim(); v=Math.round(v/L[2])*L[2]; v=+Math.max(L[0], Math.min(L[1], v)).toFixed(2);
+    if(v===dv[mode()]) return; dv[mode()]=v;
+    if(run && !run.over) stop();
+    run=null; lastShown=null; justAdded=null; lastReading=null; draw();
+  }
+  function objX(){ var m=mode(); return m==='direct' ? sophieX() : m==='echo' ? aliEchoX()-11 : micBX(); }
+  function objY(){ var m=mode(); return m==='mics' ? BY-20 : GY-40; }
+  function toD(x){ var m=mode(); return m==='direct' ? (x-AX)/PXd : m==='echo' ? (WX-x-11)/PXe : (x-MA)/PXm; }
+  function svgPt(e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+  var grab=null;
+  svg.addEventListener('pointerdown', function(e){
+    if(run && !run.over) return;
+    var q=svgPt(e), ox=objX(), oy=objY();
+    if(Math.abs(q.x-ox)>26 || Math.abs(q.y-oy)>(mode()==='mics'?30:60)) return;
+    grab=q.x-ox; svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
+  });
+  svg.addEventListener('pointermove', function(e){ if(grab===null) return; setD(toD(svgPt(e).x-grab)); });
+  function endGrab(){ if(grab===null) return; grab=null; svg.classList.remove('dragging'); draw(); }
+  svg.addEventListener('pointerup', endGrab); svg.addEventListener('pointercancel', endGrab);
+  svg.addEventListener('keydown', function(e){
+    if(run && !run.over) return;
+    var L=lim(), k=e.key, v=null, D=d();
+    if(k==='ArrowRight'||k==='ArrowUp') v=D+L[2]; else if(k==='ArrowLeft'||k==='ArrowDown') v=D-L[2];
+    else if(k==='PageUp') v=D+5*L[2]; else if(k==='PageDown') v=D-5*L[2]; else if(k==='Home') v=L[0]; else if(k==='End') v=L[1];
+    if(v!==null){ setD(v); e.preventDefault(); }
+  });
+  function setAria(){
+    var L=lim(), m=mode();
+    svg.setAttribute('aria-valuemin', L[0]); svg.setAttribute('aria-valuemax', L[1]);
+    svg.setAttribute('aria-label', m==='direct' ? 'A field: Ali bangs two blocks, Sophie times him from a distance d. Drag Sophie, or use the arrow keys, to change d. A distance–time graph is on the right.' :
+      m==='echo' ? 'Ali and Sophie stand a distance d from a wall; Ali claps and the echo comes back. Drag them, or use the arrow keys, to change d.' :
+      'A hammer hits a metal plate; microphones A and B a distance d apart feed a dual-trace oscilloscope. Drag microphone B, or use the arrow keys, to change d.');
+  }
+  svg.setAttribute('tabindex','0'); svg.setAttribute('role','slider');
+
+  watchEquals($('#ss-eq1')); watchEquals($('#ss-eq2'));
+  setAria(); setExp();
+})();
+</script>
+<footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
+</body>
+</html>
