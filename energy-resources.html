@@ -359,6 +359,11 @@ svg.sankey{background:var(--panel)}
 .anim-frame{display:block;width:100%;height:600px;border:0}
 .anim-open{font:600 13px var(--f-mono);margin:4px 0 18px}
 .anim-open a{color:var(--accent)}
+/* quick check: a tab's short multiple-choice questions in one card (review, 4 Nov 2026) */
+.qc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;align-items:start}
+.qc-item{display:flex;flex-direction:column;gap:10px;min-width:0;padding:12px 14px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
+.qc-n{margin:0;font:500 12px var(--f-mono);color:var(--ink-soft)}
+.qc-ctx{margin:0;color:var(--ink-soft)}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -444,7 +449,7 @@ const raf=f=>requestAnimationFrame(f);
 
 // Units merge (3 Nov 2026): this unit's Units and Key Terms tabs are now one tab, so old links go there.
 try{const to={terms:'work-and-power.html#units'}[location.hash.slice(1)];if(to){if(to[0]==='#')history.replaceState(null,'',to);else{location.replace(to);return;}}}catch(e){}
-const STORE_KEY='unit4d-energy-resources-v3',OLD_STORE_KEY='unit4d-energy-resources-v2';
+const STORE_KEY='unit4d-energy-resources-v4',OLD_STORE_KEY='unit4d-energy-resources-v3';
 const TAB_IDS=['overview','stations','renew','solar','pros','choose'];
 let activeTab='overview';
 const reflowers=[];
@@ -455,6 +460,19 @@ function act(panel,kind,title,intro){
   const body=mk('div','act-body');a.appendChild(body);
   $('#panel-'+panel+' .acts').appendChild(a);
   return body;
+}
+/* ================= quick check: a tab's short multiple-choice questions in one card =================
+   Review (4 Nov 2026): one card per tab instead of a row of single Predicts. Each question is a createPredict
+   (the same feedback, Try again and saved answers); ctx is the one-line set-up that used to be the Predict's intro. */
+function quickCheck(panel,title,qs){
+  const body=act(panel,'Quick check',title,'Answer each question. A wrong first answer tells you why, then you try again.');
+  const grid=mk('div','qc-grid');body.appendChild(grid);
+  qs.forEach((q,i)=>{
+    const box=mk('div','qc-item');grid.appendChild(box);
+    box.appendChild(mk('p','qc-n',(i+1)+' of '+qs.length+(q.title?' · '+FR(q.title):'')));
+    if(q.ctx)box.appendChild(mk('p','qc-ctx',FR(q.ctx)));
+    createPredict(Object.assign({},q,{host:box}));
+  });
 }
 function bar(parent,buttons){
   const b=mk('div','bar');
@@ -1288,41 +1306,26 @@ const COL={a:'var(--accent)',g:'var(--grav)',k:'var(--kin)',t:'var(--therm)',e:'
     constraints:[['a','b'],['b','c'],['c','d'],['d','e'],['e','f']],
     why:'Chemical store → thermal store of the water and steam → kinetic energy of the turbine → generator → transferred electrically.'
   });
-  createReorder({
-    host:act('stations','Order','A nuclear power station','Put the energy transfers in order, from the uranium fuel to the National Grid.'),
-    steps:[
-      {id:'a',text:'Uranium nuclei split in the reactor, releasing energy from their nuclear store'},
-      {id:'b',text:'The energy heats the coolant flowing through the reactor'},
-      {id:'c',text:'The hot coolant boils water into steam in the heat exchanger'},
-      {id:'d',text:'The steam spins the turbine, giving it kinetic energy'},
-      {id:'e',text:'The turbine turns the generator'},
-      {id:'f',text:'The generator transfers the energy electrically to the National Grid'}
-    ],
-    constraints:[['a','b'],['b','c'],['c','d'],['d','e'],['e','f']],
-    why:'Nuclear store → thermal store of the coolant, then the water and steam → kinetic energy of the turbine → generator → transferred electrically.'
-  });
-  createPredict({
-    host:act('stations','Predict','Coal or nuclear?','Compare a coal power station with a nuclear one.'),
+  quickCheck('stations','Power stations',[
+  {title:'Coal or nuclear?',ctx:'Compare a coal power station with a nuclear one.',
     q:'Which part of the two power stations works in a different way?',
     options:[
-      {text:'How the water is heated to make steam',correct:true},
-      {text:'How the turbine turns the generator',why:'In both, steam spins a turbine that turns a generator in exactly the same way.'},
-      {text:'How the electricity reaches homes',why:'Both feed the same National Grid, through transformers and cables.'},
-      {text:'How the steam is cooled afterwards',why:'Both cool their steam back to water, often in cooling towers. The difference is the heat source.'}
+    {text:'How the water is heated to make steam',correct:true},
+    {text:'How the turbine turns the generator',why:'In both, steam spins a turbine that turns a generator in exactly the same way.'},
+    {text:'How the electricity reaches homes',why:'Both feed the same National Grid, through transformers and cables.'},
+    {text:'How the steam is cooled afterwards',why:'Both cool their steam back to water, often in cooling towers. The difference is the heat source.'}
     ],
-    explain:'Only the heat source is different: burning fuel (chemical store) in a coal power station, nuclear fission (nuclear store) in a nuclear one. From the steam onwards, they work in the same way.'
-  });
-  createPredict({
-    host:act('stations','Predict','Where does it go?','A gas power station is about 50% efficient.'),
+    explain:'Only the heat source is different: burning fuel (chemical store) in a coal power station, nuclear fission (nuclear store) in a nuclear one. From the steam onwards, they work in the same way.'},
+  {title:'Where does it go?',ctx:'A gas power station is about 50% efficient.',
     q:'Where does most of the wasted energy go?',
     options:[
-      {text:'Into the thermal store of the surroundings',correct:true},
-      {text:'It is destroyed in the turbine',why:'Energy is never destroyed. It is transferred to other stores.'},
-      {text:'Into the kinetic store of the generator',why:'The spinning generator’s energy is transferred electrically, which is the useful output.'},
-      {text:'It stays in the chemical store of the gas',why:'Once the gas is burned, the energy has left its chemical store.'}
+    {text:'Into the thermal store of the surroundings',correct:true},
+    {text:'It is destroyed in the turbine',why:'Energy is never destroyed. It is transferred to other stores.'},
+    {text:'Into the kinetic store of the generator',why:'The spinning generator’s energy is transferred electrically, which is the useful output.'},
+    {text:'It stays in the chemical store of the gas',why:'Once the gas is burned, the energy has left its chemical store.'}
     ],
-    explain:'Most of the wasted energy heats the surroundings: hot gases leave up the chimney, and the cooling towers or a river carry away the thermal energy of the used steam.'
-  });
+    explain:'Most of the wasted energy heats the surroundings: hot gases leave up the chimney, and the cooling towers or a river carry away the thermal energy of the used steam.'}
+  ]);
   createSortGame({host:act('stations','Sort','Fossil fuel, nuclear or both?','Drag each statement into the power station it describes.'),
     cats:[{id:'f',label:'Fossil fuel only',color:'--kin',soft:'--kin-soft'},{id:'n',label:'Nuclear only',color:'--elec',soft:'--elec-soft'},{id:'b',label:'Both',color:'--grav',soft:'--grav-soft'}],
     items:[
@@ -1337,12 +1340,6 @@ const COL={a:'var(--accent)',g:'var(--grav)',k:'var(--kin)',t:'var(--therm)',e:'
 
 /* ================= 4. WIND, WATER AND GEOTHERMAL ================= */
 {
-  createSortGame({host:act('renew','Sort','Renewable or non-renewable?','Drag each energy resource into the right bin.'),
-    cats:[{id:'r',label:'Renewable',hint:'will not run out',color:'--rad',soft:'--rad-soft'},{id:'n',label:'Non-renewable',hint:'will run out',color:'--therm',soft:'--therm-soft'}],
-    items:[
-      {id:'r1',text:'Wind',cat:'r'},{id:'r2',text:'Hydroelectric',cat:'r'},{id:'r3',text:'Geothermal',cat:'r'},{id:'r4',text:'Solar cells',cat:'r'},
-      {id:'n1',text:'Coal',cat:'n'},{id:'n2',text:'Natural gas',cat:'n'},{id:'n3',text:'Oil',cat:'n'},{id:'n4',text:'Nuclear (uranium)',cat:'n'}
-    ]});
   const mg=createMatchGame({host:act('renew','Match','How each one works','Link each resource to the energy transfers it uses.'),
     leftTitle:'Resource',rightTitle:'Energy transfers',narrowLeft:true,pairs:[
     {id:'w',l:'Wind',r:'Moving air pushes on the blades, so they spin and turn a generator'},
@@ -1364,17 +1361,6 @@ const COL={a:'var(--accent)',g:'var(--grav)',k:'var(--kin)',t:'var(--therm)',e:'
       {id:'c1',text:'A coal-fired power station',cat:'c'},
       {id:'c2',text:'A natural gas power station',cat:'c'}
     ]});
-  createPredict({
-    host:act('renew','Predict','The calm day','A town gets all its electricity from a wind farm.'),
-    q:'On a day with no wind, what happens?',
-    options:[
-      {text:'The wind farm generates no electricity',correct:true},
-      {text:'The turbines use energy they stored up',why:'A wind turbine stores no energy. With no moving air, there is no kinetic energy to transfer.'},
-      {text:'The turbines spin more slowly but give the same power',why:'Less kinetic energy in the air each second means less power. With no wind there is none.'},
-      {text:'The generators run backwards to keep the town going',why:'A generator needs to be turned to work. With no wind, nothing turns it.'}
-    ],
-    explain:'A wind turbine transfers the kinetic energy of moving air. No wind means no energy transferred, so the town needs another, more reliable supply as well.'
-  });
   createPredict({
     host:act('renew','Predict','A higher dam','A hydroelectric dam is built so the water falls twice as far.'),
     q:'What happens to the energy each kilogram of water gives the turbine? Ignore energy wasted.',
@@ -1400,17 +1386,6 @@ const COL={a:'var(--accent)',g:'var(--grav)',k:'var(--kin)',t:'var(--therm)',e:'
       {text:'Light is stored in the cell to be used at night',why:'A solar cell cannot store energy. With no light it produces no current, so a battery is needed.'}
     ],
     explain:'A solar cell transfers energy from light directly, electrically. There is no turbine and no generator, so nothing moves.'
-  });
-  createPredict({
-    host:act('solar','Predict','A solar power tower','Thousands of mirrors reflect sunlight onto the top of a tower.'),
-    q:'How does the tower generate electricity?',
-    options:[
-      {text:'Focused sunlight boils water and the steam spins a turbine',correct:true},
-      {text:'The tower is covered in solar cells that make a current',why:'The mirrors do not use solar cells. They focus the Sun’s radiation to heat a fluid until it is very hot.'},
-      {text:'The mirrors spin round in the sunlight and turn generators',why:'The mirrors only turn slowly to follow the Sun. They reflect the radiation onto the tower.'},
-      {text:'The reflected sunlight is sent along cables as electricity',why:'Electricity is not made from reflected light. The energy goes into the thermal store of the fluid in the tower.'}
-    ],
-    explain:'A solar power tower is one kind of solar heating system: the mirrors focus radiation onto the tower, increasing the thermal store of a fluid there. This boils water into steam, which spins a turbine and turns a generator, as in a fossil fuel power station.'
   });
   createSortGame({host:act('solar','Sort','Solar cell or solar heating?','Drag each statement to the system it describes.'),
     cats:[{id:'c',label:'Solar cells',color:'--elec',soft:'--elec-soft'},{id:'h',label:'Solar heating',color:'--therm',soft:'--therm-soft'}],
@@ -1466,50 +1441,35 @@ const COL={a:'var(--accent)',g:'var(--grav)',k:'var(--kin)',t:'var(--therm)',e:'
 
 /* ================= 7. CHOOSING A RESOURCE ================= */
 {
-  createPredict({
-    host:act('choose','Predict','A volcanic island','An island has active volcanoes and hot springs, and no coal, oil or gas.'),
+  quickCheck('choose','Choosing a resource',[
+  {title:'A volcanic island',ctx:'An island has active volcanoes and hot springs, and no coal, oil or gas.',
     q:'Which resource is the best choice for a reliable electricity supply?',
     options:[
-      {text:'Geothermal',correct:true},
-      {text:'Solar cells',why:'Solar cells give nothing at night, so they are not reliable on their own.'},
-      {text:'Coal',why:'The island has no coal. It would all have to be shipped in, and burning it releases carbon dioxide.'},
-      {text:'Wind',why:'Wind may help, but it depends on the weather, so it is not reliable on its own.'}
+    {text:'Geothermal',correct:true},
+    {text:'Solar cells',why:'Solar cells give nothing at night, so they are not reliable on their own.'},
+    {text:'Coal',why:'The island has no coal. It would all have to be shipped in, and burning it releases carbon dioxide.'},
+    {text:'Wind',why:'Wind may help, but it depends on the weather, so it is not reliable on its own.'}
     ],
-    explain:'Hot rocks near the surface make geothermal power possible. It is renewable, releases very little carbon dioxide, and runs day and night whatever the weather.'
-  });
-  createPredict({
-    host:act('choose','Predict','Half-time kettles','At half-time in a big football match, millions of kettles are switched on at once.'),
+    explain:'Hot rocks near the surface make geothermal power possible. It is renewable, releases very little carbon dioxide, and runs day and night whatever the weather.'},
+  {title:'Half-time kettles',ctx:'At half-time in a big football match, millions of kettles are switched on at once.',
     q:'Which power station can best meet this sudden rise in demand?',
     options:[
-      {text:'A hydroelectric or gas power station',correct:true},
-      {text:'A nuclear power station',why:'Nuclear power stations take a long time to start up and are kept running steadily. They cannot respond within minutes.'},
-      {text:'A coal power station that is switched off',why:'A cold coal power station takes hours to start up, far too slow for half-time.'},
-      {text:'A wind farm',why:'A wind farm can only give what the wind provides at that moment. It cannot be turned up when demand rises.'}
+    {text:'A hydroelectric or gas power station',correct:true},
+    {text:'A nuclear power station',why:'Nuclear power stations take a long time to start up and are kept running steadily. They cannot respond within minutes.'},
+    {text:'A coal power station that is switched off',why:'A cold coal power station takes hours to start up, far too slow for half-time.'},
+    {text:'A wind farm',why:'A wind farm can only give what the wind provides at that moment. It cannot be turned up when demand rises.'}
     ],
-    explain:'Hydroelectric power stations can open their gates and gas power stations can start up within minutes, so they are used to meet sudden rises in demand.'
-  });
-  createPredict({
-    host:act('choose','Predict','Why not all renewable?','A country wants to stop burning fossil fuels.'),
+    explain:'Hydroelectric power stations can open their gates and gas power stations can start up within minutes, so they are used to meet sudden rises in demand.'},
+  {title:'Why not all renewable?',ctx:'A country wants to stop burning fossil fuels.',
     q:'Why can it not simply build wind farms and solar farms instead?',
     options:[
-      {text:'Their output depends on the weather and time of day',correct:true},
-      {text:'Renewable resources will run out too quickly',why:'Wind and sunlight are replaced naturally, so they will not run out.'},
-      {text:'They release more carbon dioxide than fossil fuels',why:'They release no carbon dioxide while they run, which is their big advantage.'},
-      {text:'They cannot be connected to the National Grid',why:'Wind and solar farms are connected to the National Grid like any power station.'}
+    {text:'Their output depends on the weather and time of day',correct:true},
+    {text:'Renewable resources will run out too quickly',why:'Wind and sunlight are replaced naturally, so they will not run out.'},
+    {text:'They release more carbon dioxide than fossil fuels',why:'They release no carbon dioxide while they run, which is their big advantage.'},
+    {text:'They cannot be connected to the National Grid',why:'Wind and solar farms are connected to the National Grid like any power station.'}
     ],
-    explain:'Wind and solar power are not reliable: there is no solar power at night and no wind power on a calm day. A reliable supply, or a way to store energy, is needed as well.'
-  });
-  createPredict({
-    host:act('choose','Predict','Cost of a resource','Compare wind farms with a gas power station.'),
-    q:'Which statement about costs is correct?',
-    options:[
-      {text:'Wind farms cost a lot to build, but nothing for fuel',correct:true},
-      {text:'Wind farms cost nothing to build or run',why:'Building turbines is expensive, and they need maintenance. Only the fuel (the wind) is free.'},
-      {text:'Gas power stations have no fuel costs',why:'The gas must be bought, and its price can change a lot.'},
-      {text:'Both cost the same, as both generate electricity',why:'Their costs are very different: wind is mostly building costs, gas is mostly fuel costs.'}
-    ],
-    explain:'Renewables such as wind have high building costs but free fuel. Fossil fuel power stations are cheaper to build, but the fuel must be paid for all the time they run.'
-  });
+    explain:'Wind and solar power are not reliable: there is no solar power at night and no wind power on a calm day. A reliable supply, or a way to store energy, is needed as well.'}
+  ]);
 }
 
 
@@ -1611,28 +1571,15 @@ byId('tab-overview').parentNode.addEventListener('keydown',e=>{
 });
 // The open tab is remembered in this browser only, so a reload returns to it.
 // Answers and the open tab are remembered in this browser only, so a reload keeps them.
-// OLD_STORE_KEY held only the open tab; it is read once so a returning student lands on the same tab.
+// Review (4 Nov 2026): fewer activities per page. Answers saved before it are carried over once for the
+// activities that did not change (old key -> new key); the rest start fresh.
+const CARRY={"overview-0":"overview-0","stations-0":"stations-0","stations-2":"stations-1","stations-3":"stations-2","stations-4":"stations-3","renew-1":"renew-0","renew-2":"renew-1","renew-4":"renew-2","solar-0":"solar-0","solar-2":"solar-1","solar-3":"solar-2","pros-0":"pros-0","pros-1":"pros-1","choose-0":"choose-0","choose-1":"choose-1","choose-2":"choose-2"};
 function readSaved(){
-  for(const k of [STORE_KEY,OLD_STORE_KEY]){
-    try{const s=JSON.parse(localStorage.getItem(k)||'null');if(s&&typeof s==='object')return s;}catch(e){}
-  }
+  try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(OLD_STORE_KEY)||'null');
+    if(s&&typeof s==='object'){const v=s.v||{},n={};Object.keys(CARRY).forEach(k=>{if(v[k])n[CARRY[k]]=v[k];});return {tab:s.tab,v:n};}
+  }catch(e){}
   return {};
-}
-// Units merge (3 Nov 2026): answers saved before it are copied across once. This page's own answers come
-// with them, except on the tabs whose activities changed, and so do the answers of activities that moved here.
-const MERGE_FROM='unit4d-energy-resources-v2',MERGE_DROP=['terms','renew'],MERGE_MOVES=[
-  [['unit4d-energy-resources-v2'],'terms-1','renew-0'],
-  [['unit4d-energy-resources-v2'],'renew-0','renew-1'],
-  [['unit4d-energy-resources-v2'],'renew-1','renew-2'],
-  [['unit4d-energy-resources-v2'],'renew-2','renew-3'],
-  [['unit4d-energy-resources-v2'],'renew-3','renew-4']];
-function carrySaved(s){
-  try{if(localStorage.getItem(STORE_KEY))return s;}catch(e){return s;}
-  const load=k=>{try{const x=JSON.parse(localStorage.getItem(k)||'null');return x&&typeof x==='object'?x:null;}catch(e){return null;}};
-  const old=load(MERGE_FROM)||s||{},v={};
-  Object.keys(old.v||{}).forEach(k=>{if(MERGE_DROP.indexOf(k.replace(/-\d+$/,''))<0)v[k]=old.v[k];});
-  MERGE_MOVES.forEach(m=>{for(const k of m[0]){const x=load(k);if(x&&x.v&&x.v[m[1]]){v[m[2]]=x.v[m[1]];break;}}});
-  return {tab:old.tab,v:v};
 }
 function start(data){
   const v=(data&&data.v)||{};
@@ -1644,7 +1591,7 @@ function start(data){
   if(TAB_IDS.indexOf(t)<0)t='overview';
   applyTabUI(t);
 }
-start(carrySaved(readSaved()));
+start(readSaved());
 })();
 </script>
 
