@@ -47,10 +47,10 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 
 How to build one: `tools/CORE-PRACTICALS.md`.
 
-- [ ] 3.19 Refractive index of glass (batch B; do 3.17 first so they share the light box).
+- [ ] 3.19 Refractive index: draft built 4 Nov 2026 (`refractive-index-practical.html`, no card yet). Alex to review (plotting to 2 d.p. on a 0.02 grid, the swapped-axes gradient = 1/n, the inverse-sine Spot the Error, Exam (b) and (c)), then publish per `tools/CORE-PRACTICALS.md` step 7.
 - [ ] 3.25P Speed of sound: draft built 4 Nov 2026 (`speed-of-sound-practical.html`, no card yet). Alex to review the draft (method switch Orders and Matches, Henry's graph that misses the origin, Exam model answers), then publish per `tools/CORE-PRACTICALS.md` step 7.
 - [ ] 2.23P Charging insulators by friction (batch C). Add its `.cp-banner` to `electric-charge.html#charging` when built.
-- [ ] 3.17 Refraction (batch C).
+- [ ] 3.17 Refraction: draft built 4 Nov 2026 (`refraction-practical.html`, no card yet). Alex to review (block-by-block tabs instead of Variables/Results/Graphs, the semicircle Sort around c = 42°, Exam (b) glass-to-air n), then publish per step 7.
 - [ ] 3.27P Frequency of sound with an oscilloscope (batch C).
 - [ ] 7.6 Penetrating power of radiation (batch C).
 - [ ] IAL CP7 resistivity and CP8 internal resistance practical pages, if Alex wants them (the animations are done).
@@ -63,6 +63,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## Done
 
+- 4 Nov 2026: core practicals 3.17, 3.19 and 3.25P built as drafts with their animations `refraction.html` and `speed-of-sound.html` (new Unit 3 Waves heading on `animations/igcse.html`); mark scheme wording checked from the IGCSE Question Index.
 - 4 Nov 2026: `animations/electromagnets.html` (electromagnet and circuit breaker; framed in 6a Electromagnets and 2a Safety) and `animations/electron-diffraction.html` (IAL Unit 2, IB Theme E; framed in `quantum-physics.html` Matter Waves).
 - 4 Nov 2026: `animations/chain-reaction.html` (reactor chain reaction, IAL Unit 5 and IB Theme E lists). Licence footer added to 2a, 2b, 2c.
 - 3 Nov 2026: Calculations and Graphs sets now cover Forces Part 2 (1c, 1d) and Units 4, 5 and 6 (32 and 9 tabs). 1b gained two graph Calculates ("Read the graph" on F = ma and Weight: force–acceleration and weight–mass lines, mass and g from the gradient), used by the Graphs set. The interactive-revision-lab skill already had the one-Units-tab-per-unit rule.
