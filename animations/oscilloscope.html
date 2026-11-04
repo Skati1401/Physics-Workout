@@ -161,12 +161,15 @@
   .embed .home-link,.embed .page-head{display:none;}
   .embed .view{max-height:460px;}
   #os-svg{touch-action:pan-y;}
+  #os-expbox .rtable-wrap{max-height:86px;}
+  .note{font-size:14px;line-height:1.45;}
   .seg.six{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;}
   .seg.four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;}
   .seg.six>button,.seg.four>button{padding-inline:2px;font-size:12px;white-space:normal;line-height:1.15;}
-  .choices{display:flex;flex-direction:column;gap:7px;}
-  .choices .rowlab{display:block;margin-bottom:3px;}
-  .cyc{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:12.5px var(--font-mono);color:var(--ink-soft);}
+  .choices{display:flex;flex-direction:column;gap:6px;}
+  .choices>div{display:grid;grid-template-columns:74px minmax(0,1fr);gap:8px;align-items:center;}
+  .choices .rowlab{line-height:1.25;}
+  .cyc{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font:12.5px var(--font-mono);color:var(--ink-soft);}
   .cyc .btn{min-width:44px;justify-content:center;padding-inline:8px;}
   .cyc output{font:600 15px var(--font-mono);color:var(--ink);min-width:1.6em;text-align:center;}
   @media (max-width:420px){ .seg.six{grid-template-columns:repeat(3,minmax(0,1fr));} }
@@ -215,6 +218,7 @@
           <button class="btn" id="os-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="os-trig" type="button" aria-pressed="true" title="The trigger starts each sweep at the same point on the wave, so the trace stands still">Trigger: steady trace</button>
           <button class="btn" id="os-snd" type="button" aria-pressed="false" title="Play the sound through your speakers">Sound</button>
+          <button class="btn" id="os-clear" type="button" hidden>Clear readings</button>
           <button class="btn" id="os-exp" type="button" aria-pressed="false" title="Measure the frequency of mystery tuning forks with two cursors">Experiment</button>
         </div>
         <div class="sliders">
@@ -227,18 +231,17 @@
       <div class="choices">
         <div><span class="rowlab">Source</span>
         <div class="seg four" id="os-src"><button type="button" data-v="gen" aria-pressed="true">Signal generator</button><button type="button" data-v="fa" aria-pressed="false">Fork 256 Hz</button><button type="button" data-v="fb" aria-pressed="false">Fork 384 Hz</button><button type="button" data-v="fc" aria-pressed="false">Fork 512 Hz</button></div></div>
-        <div><span class="rowlab">Time base (ms per division)</span>
+        <div><span class="rowlab">Time base<br>ms/div</span>
         <div class="seg six" id="os-tb"><button type="button" data-v="0.1" aria-pressed="false">0.1</button><button type="button" data-v="0.2" aria-pressed="false">0.2</button><button type="button" data-v="0.5" aria-pressed="false">0.5</button><button type="button" data-v="1" aria-pressed="true">1</button><button type="button" data-v="2" aria-pressed="false">2</button><button type="button" data-v="5" aria-pressed="false">5</button></div></div>
-        <div><span class="rowlab">Y-gain (mV per division)</span>
+        <div><span class="rowlab">Y-gain<br>mV/div</span>
         <div class="seg four" id="os-y"><button type="button" data-v="5" aria-pressed="false">5</button><button type="button" data-v="10" aria-pressed="false">10</button><button type="button" data-v="20" aria-pressed="true">20</button><button type="button" data-v="50" aria-pressed="false">50</button></div></div>
       </div>
       <p class="note" id="os-note" aria-live="polite"></p>
       <div id="os-expbox" hidden>
-        <div class="cyc"><span>Complete cycles between the cursors</span><button class="btn" id="os-nm" type="button" aria-label="One fewer cycle">&minus;</button><output id="os-n">1</output><button class="btn" id="os-np" type="button" aria-label="One more cycle">+</button><button class="btn btn-primary" id="os-rec" type="button">Record reading</button></div>
+        <div class="cyc"><span>Cycles between cursors</span><button class="btn" id="os-nm" type="button" aria-label="One fewer cycle">&minus;</button><output id="os-n">1</output><button class="btn" id="os-np" type="button" aria-label="One more cycle">+</button><button class="btn btn-primary" id="os-rec" type="button">Record</button></div>
         <div class="rtable-wrap" style="margin-top:8px"><div id="os-table"></div></div>
-        <div class="exp-btns" style="margin-top:8px"><button class="btn" id="os-clear" type="button">Clear readings</button></div>
       </div>
-      <div class="stats">
+      <div class="stats" id="os-stats">
         <div class="stat"><small id="os-l1">Cycles on screen</small><strong id="os-s1">&ndash;</strong></div>
         <div class="stat"><small id="os-l2">One cycle</small><strong id="os-s2">&ndash;</strong></div>
         <div class="stat"><small id="os-l3">Period, T</small><strong id="os-s3">&ndash;</strong></div>
@@ -622,9 +625,9 @@ function expKey(x, y, upLabel, downLabel){
       if(!run) note='Experiment: '+srcName()+'. Press <b>Play</b>, then set the time base so you can see several complete cycles, and the Y-gain so the trace fills the screen.';
       else if(run.over) note='The sound has stopped: press <b>Play</b> again.';
       else if(!trig()) note='The trace is not steady: turn the <b>trigger</b> on before you measure.';
-      else if(done) note='Done: three readings for '+srcName()+', mean <b>'+Math.round(mean)+' Hz</b>. '+w3+' Choose another source, or a different time base and repeat.';
+      else if(done) note='Done: mean of three readings <b>'+Math.round(mean)+' Hz</b>. '+w3+' Try another source.';
       else if(setHint || yHint) note=(setHint+' '+yHint).trim();
-      else note='Drag cursor 1 and cursor 2 to the same point on two waves (e.g. where the trace crosses the centre line going up), as many complete cycles apart as you can. Set the number of cycles, then press <b>Record reading</b>. Reading '+(rs.length+1)+' of 3.';
+      else note='Drag cursors 1 and 2 to the same point on two waves (e.g. crossing the centre line going up), as many cycles apart as you can. Set the cycles, then <b>Record</b> ('+(rs.length+1)+' of 3).';
       $('#os-rec').disabled = !run || run.over || !trig() || D===0 || done;
       $('#os-n').textContent=nCyc;
     }
@@ -643,7 +646,7 @@ function expKey(x, y, upLabel, downLabel){
   trigBtn.addEventListener('click', function(){ var v=!trig(); trigBtn.setAttribute('aria-pressed', String(v)); trigBtn.textContent = v ? 'Trigger: steady trace' : 'Trigger: off'; draw(); });
   sndBtn.addEventListener('click', function(){ var v=!pressed(sndBtn); sndBtn.setAttribute('aria-pressed', String(v)); if(v) soundOn(); else soundOff(); draw(); });
   expBtn.addEventListener('click', function(){
-    var v=!exp(); expBtn.setAttribute('aria-pressed', String(v)); $('#os-expbox').hidden=!v;
+    var v=!exp(); expBtn.setAttribute('aria-pressed', String(v)); $('#os-expbox').hidden=!v; $('#os-clear').hidden=!v; $('#os-stats').hidden=v;
     Array.prototype.forEach.call($('#os-src').querySelectorAll('button'), function(b){ b.textContent = v ? XLAB[b.dataset.v] : LAB[b.dataset.v]; });
     if(v){ trigBtn.setAttribute('aria-pressed','false'); trigBtn.textContent='Trigger: off'; }
     newSource();

@@ -173,8 +173,11 @@
   .embed .home-link,.embed .page-head{display:none;}
   .embed .view{max-height:460px;}
   #ch-svg{touch-action:pan-y;}
-  .choices{display:flex;flex-direction:column;gap:8px;}
-  .choices .rowlab{display:block;margin-bottom:4px;}
+  #ch-expbox .rtable-wrap{max-height:100px;}
+  .note{font-size:14px;line-height:1.45;}
+  .choices{display:flex;flex-direction:column;gap:6px;}
+  .choices>div{display:grid;grid-template-columns:74px minmax(0,1fr);gap:8px;align-items:center;}
+  .choices .rowlab{line-height:1.25;}
   .seg.four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;}
   .seg.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;}
   .seg.four>button,.seg.two>button{padding-inline:3px;font-size:12px;white-space:normal;line-height:1.2;}
@@ -230,6 +233,7 @@
           <button class="btn" id="ch-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="ch-slow" type="button" aria-pressed="false">Slow motion</button>
           <button class="btn" id="ch-show" type="button" aria-pressed="true">Show charges</button>
+          <button class="btn" id="ch-clear" type="button" hidden>Clear readings</button>
           <button class="btn" id="ch-exp" type="button" aria-pressed="false" title="Try every pair of rods and record what you see">Experiment</button>
         </div>
       </div>
@@ -248,14 +252,14 @@
       <p class="note" id="ch-note" aria-live="polite"></p>
       <div id="ch-expbox" hidden>
         <div class="rtable-wrap"><div id="ch-table"></div></div>
-        <div class="exp-btns" style="margin-top:8px"><span class="done-list" id="ch-done"></span><button class="btn" id="ch-clear" type="button">Clear readings</button></div>
+        <p class="done-list" id="ch-done" style="margin:6px 0 0"></p>
       </div>
-      <div class="stats">
+      <div class="stats" id="ch-stats">
         <div class="stat"><small>Rod in your hand</small><strong id="ch-s1">&ndash;</strong></div>
         <div class="stat"><small>Cloth</small><strong id="ch-s2">&ndash;</strong></div>
         <div class="stat hi"><small id="ch-l3">Force</small><strong id="ch-s3">&ndash;</strong></div>
       </div>
-      <details class="working">
+      <details class="working" id="ch-explain">
         <summary>Explain it</summary>
         <ul class="why" id="ch-why"></ul>
       </details>
@@ -638,7 +642,7 @@ function expKey(x, y, upLabel, downLabel){
   function allPairs(){ return PAIRS.every(function(p){ return pairDone(p[0], p[1]); }); }
   function clearReadings(){ recs=[]; newest=null; reset(); }
   function setExp(){
-    $('#ch-expbox').hidden=!exp();
+    $('#ch-expbox').hidden=!exp(); $('#ch-clear').hidden=!exp(); $('#ch-stats').hidden=exp();
     showBtn.setAttribute('aria-pressed', String(!exp()));
     if(exp()){ testSeg.pick('hang'); setup(); return; }
     reset();
@@ -666,12 +670,13 @@ function expKey(x, y, upLabel, downLabel){
       } else if(doneNow) note='The '+(t==='hang' ? 'hanging rod '+seen(t, run.rod) : t==='paper' ? 'pieces of paper '+seen(t, run.rod) : t==='water' ? 'stream '+seen(t, run.rod) : seen(t, run.rod).replace(/^leaf/,'gold leaf'))+'. '+(t==='scope' ? '' : (o ? '<b>'+forceTxt(o)+'</b>.' : 'No force.'));
       else note = t==='hang' ? 'A rubbed '+NAME[hang()]+' rod hangs from a thread in a paper stirrup, so it can turn freely. Choose the rod in your hand, then press <b>Rub and bring near</b>.' :
                   'Choose the rod in your hand, then press <b>Rub and bring near</b>. Does the '+(t==='paper' ? 'paper' : t==='water' ? 'water' : 'gold leaf')+' move?';
+      $('#ch-explain').hidden=false;
       $('#ch-s1').textContent = qTxt(run ? (p.rub>=1 || run.rod==='none' ? qRod(run.rod) : 0) : 0);
       $('#ch-s2').textContent = run && run.rod!=='none' && p.rub>=1 ? qTxt(qCloth(run.rod)) : '–';
       $('#ch-s3').textContent = doneNow ? forceTxt(o) : '–';
     } else {
       var list=PAIRS.map(function(pr){ var d=pairDone(pr[0], pr[1]); return (d?'<b>✓</b> ':'') + (pr[0]==='poly'?'P':'A')+' hanging, '+(pr[1]==='poly'?'P':'A')+' near'; });
-      $('#ch-done').innerHTML = 'Pairs: '+list.join(' · ');
+      $('#ch-done').innerHTML = 'Pairs: '+list.join(' · '); $('#ch-done').hidden=allPairs();
       expTable($('#ch-table'), [{label:'Test', key:'test'}, {label:'Rod brought near', key:'rod'}, {label:'What you see', key:'saw'}],
         recs.map(function(x){ return {v:x.k, test:x.test, rod:x.rod, saw:x.saw}; }), newest);
       // the table formats numbers; these are words
@@ -679,9 +684,10 @@ function expKey(x, y, upLabel, downLabel){
       var fin=allPairs();
       if(busy) note = p.rubbing ? 'Rub the rod with the cloth.' : p.app<1 ? 'Bring it close, without touching.' : 'Watch carefully.';
       else if(doneNow && !fin) note='Recorded: '+(TEST[run.test].toLowerCase())+': '+seen(run.test, run.rod)+'. '+(run.test==='hang' ? 'Now try another pair: change the hanging rod or the rod in your hand.' : 'Try the hanging rod with each pair of rods too.');
-      else if(fin) note=(doneNow ? 'Recorded: '+TEST[run.test].toLowerCase()+': '+seen(run.test, run.rod)+'. ' : '')+'Done. <b>Like charges repel and unlike charges attract.</b> Two polythene rods repel, and so do two acetate rods, but polythene attracts acetate. So rubbed polythene and rubbed acetate carry different types of charge, and every rubbed insulator attracts one and repels the other: there are only <b>two types of charge</b>, negative (polythene, gained electrons) and positive (acetate, lost electrons).';
-      else note='Experiment: try all four pairs with the hanging rod (polythene or acetate hanging, polythene or acetate in your hand). Then try the metal rod and an unrubbed rod, and the other tests. Charges are hidden: work out what is happening from what you see.';
+      else if(fin) note=(doneNow ? 'Recorded: '+TEST[run.test].toLowerCase()+': '+seen(run.test, run.rod)+'. ' : '')+'Done. <b>Like charges repel, unlike charges attract.</b> Polythene repels polythene and acetate repels acetate, but they attract each other: so there are <b>two types of charge</b>, negative (polythene, gained electrons) and positive (acetate, lost electrons).';
+      else note='Experiment: try all four pairs with the hanging rod (polythene or acetate, hanging and in your hand), then the metal and unrubbed rods and the other tests. Charges are hidden: go by what you see.';
       if(!fin){ why=['Finish the four pairs to see the explanation.']; }
+      $('#ch-explain').hidden=!fin;
       $('#ch-s1').textContent = fin && run ? qTxt(qRod(run.rod)) : '?';
       $('#ch-s2').textContent = fin && run && run.rod!=='none' ? qTxt(qCloth(run.rod)) : '?';
       $('#ch-s3').textContent = doneNow ? forceTxt(o) : '–';
