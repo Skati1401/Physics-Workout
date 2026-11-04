@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Refraction of Light Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation: a ray box shines a ray through a rectangular block, a semicircular block or a prism. Measure i and r from the normal, find the critical angle, see total internal reflection and dispersion. Experiment mode: trace rays and find n from a graph of sin i against sin r.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#be185d;   --topic-soft:#fce7f3;
+    --ray:#dc2626;     --pencil:#6b7280;
+    --paper:#fdfcf8;   --glass:#cfe8f5;   --glass-edge:#5b8db3;   --prot:rgba(255,255,255,0.55);
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#f472b6; --topic-soft:#3f1530;
+      --ray:#f87171; --pencil:#a3acbb;
+      --paper:#20283a; --glass:#1e3a52; --glass-edge:#7fb2d9; --prot:rgba(27,33,46,0.55);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#f472b6; --topic-soft:#3f1530;
+      --ray:#f87171; --pencil:#a3acbb;
+      --paper:#20283a; --glass:#1e3a52; --glass-edge:#7fb2d9; --prot:rgba(27,33,46,0.55);
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+  /* button rows fill their width (Alex, 2 Nov 2026) */
+  .btn-group>.btn,.exp-btns>.btn{flex:1 1 0;min-width:max-content;justify-content:center;}
+  .seg:not(.tabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));}
+  .seg:not(.tabs)>button{padding-inline:4px;white-space:nowrap;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 335px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .revbox{display:flex;align-items:end;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  .view.dragging,.view.dragging *{cursor:grabbing;}
+  .grab{cursor:grab;}
+  .view:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+
+
+  /* refraction: paper, block, ray box */
+  #rf-block,#rf-jump,#rf-entry,#rf-light,#rf-show{display:flex;flex-wrap:nowrap;}
+  #rf-block>button,#rf-jump>button,#rf-entry>button,#rf-light>button,#rf-show>button{flex:1 1 auto;padding-inline:6px;}
+  #rf-block>button{padding-inline:3px;font-size:12px;}
+  #rf-stats{grid-template-columns:repeat(auto-fit,minmax(74px,1fr));}
+  #rf-stats .stat strong{font-size:14px;}
+  #rf-svg{max-height:max(260px,calc(100vh - 262px));}
+  .embed #rf-svg{max-height:460px;}
+  @media (max-width:560px){ #rf-block,#rf-jump{flex-wrap:wrap;} }
+  .seg button.tog[aria-pressed="true"]{background:var(--topic-soft);border-color:var(--topic);color:var(--ink);}
+  .obs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;}
+  .obs li{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.4;padding:4px 8px;border:1px solid var(--panel-border);border-radius:8px;color:var(--ink-soft);}
+  .obs li .tk{font:600 13px var(--font-mono);width:1.2em;flex:none;color:var(--ink-faint);}
+  .obs li.on{color:var(--ink);border-color:var(--good);background:var(--good-soft);}
+  .obs li.on .tk{color:var(--good);}
+  .obs li{padding:3px 8px;font-size:13px;}
+  #rf-tablewrap{max-height:122px;}
+  .slider-hint{font:11.5px var(--font-mono);color:var(--ink-faint);margin-top:2px;}
+
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">Animations &middot; light &middot; IGCSE core practicals 3.17 and 3.19</div>
+      <h1>Refraction of Light</h1>
+    </div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="rf-svg" viewBox="0 0 600 360" tabindex="0" role="slider" aria-label="A ray box on a sheet of paper shines a ray of light at a glass block. Drag the ray box, or use the arrow keys, to change the angle of incidence" aria-valuemin="0" aria-valuemax="85"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="rf-play" type="button">&#9654; Play</button>
+          <button class="btn" id="rf-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="rf-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="rf-exp" type="button" aria-pressed="false" title="Trace the rays yourself and record the angles">Experiment</button>
+          <button class="btn" id="rf-clear" type="button" hidden>Clear readings</button>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div><label class="lab" for="rf-i">Angle of incidence, i (or drag the ray box)<output id="rf-io"></output></label><input type="range" id="rf-i" min="0" max="85" step="1" value="40"></div>
+      <div class="cgrid">
+        <span class="rowlab">Block</span>
+        <div class="seg" id="rf-block"><button type="button" data-v="rect" aria-pressed="true">Rectangle</button><button type="button" data-v="semi" aria-pressed="false">Semicircle</button><button type="button" data-v="p60" aria-pressed="false">60° prism</button><button type="button" data-v="p45" aria-pressed="false">45° prism</button></div>
+        <span class="rowlab" id="rf-elab">Ray in</span>
+        <div class="seg" id="rf-entry"></div>
+        <span class="rowlab" id="rf-llab">Light</span>
+        <div class="seg" id="rf-light"><button type="button" data-v="one" aria-pressed="true">One colour</button><button type="button" data-v="white" aria-pressed="false">White light</button></div>
+        <span class="rowlab" id="rf-slab">Show</span>
+        <div class="seg" id="rf-show"><button type="button" class="tog" data-v="prot" aria-pressed="false">Protractor</button><button type="button" class="tog" data-v="refl" aria-pressed="true">Weak reflection</button></div>
+        <span class="rowlab" id="rf-jlab">Jump to</span>
+        <div class="seg" id="rf-jump"></div>
+      </div>
+      <p class="note" id="rf-note" aria-live="polite"></p>
+      <div class="stats" id="rf-stats"></div>
+      <ul class="obs" id="rf-obs" hidden></ul>
+      <div class="rtable-wrap" id="rf-tablewrap" hidden><div id="rf-table"></div></div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="rf-eq1"></div>
+        <div class="eq" id="rf-eq2"></div>
+        <p class="eqnote" id="rf-eq3"></p>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    Array.prototype.forEach.call(document.querySelectorAll('details.working'), function(d){ d.open = true; });
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 4.97 × 10⁻¹⁹
+    if(x===0) return '0';
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+Math.abs(m).toFixed(dp)>=10){ m/=10; e++; }
+    return sn(m,dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function sig(x, n){   // n significant figures, as text, real minus sign
+    if(x===0) return '0';
+    x=+x.toPrecision(n); if(x===0) return '0';
+    var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
+    return sn(x, dp);
+  }
+  function grp(t){ return String(t).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }   // 12 345
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+(+x1).toFixed(1)+'" y1="'+(+y1).toFixed(1)+'" x2="'+(+x2).toFixed(1)+'" y2="'+(+y2).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||1.5)+'"'+(extra||'')+'/>'; }
+  // A small seeded random number generator (mulberry32), so the same setup gives the same readings.
+  function rng(seed){ var a = seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+  // Least-squares straight line through points [[x,y],…]: {m, c}
+  function fitLine(p){
+    var n=p.length, sx=0, sy=0, sxx=0, sxy=0;
+    p.forEach(function(q){ sx+=q[0]; sy+=q[1]; sxx+=q[0]*q[0]; sxy+=q[0]*q[1]; });
+    var d=n*sxx-sx*sx; if(n<2 || d===0) return null;
+    var m=(n*sxy-sx*sy)/d; return {m:m, c:(sy-m*sx)/n};
+  }
+
+/* ================= Experiment kit (copy this block into an animation page's <script>) =================
+   The reusable parts of an animation's Experiment mode, taken from animations/hookes-law.html:
+   - expRun():     the run itself: step the independent variable up one interval at a time, then
+                   (optionally) back down again, measuring at every step
+   - expReading(): a reading with a small, fixed pattern of reading error, rounded to the instrument's
+                   resolution, that never goes the wrong way
+   - expTable():   the results table (sticky header, newest row highlighted, a column per run)
+   - expCross(), expRing(), expKey(): SVG marks for plotted readings (× first run, ○ return run)
+   The page keeps its own picture, physics, graph axes and notes. See tools/experiment-kit/README.md.
+   Plain ES5 so it can sit inside any animation page's IIFE. */
+
+// A fixed pattern of reading errors, in units of the instrument's resolution. Fixed (not random) so a
+// teacher sees the same results as the class, and a re-run gives the same table.
+var EXP_ERR = [0, 1, -1, 0, 2, -1, 1, -2, 0, 1, -1, 0, 1, -1, 2, 0, -1, 1, 0, -2, 1];
+function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP_ERR.length]; }
+
+// What the student reads off the instrument.
+//   trueVal  the value the physics gives at this step
+//   prevVal  the reading taken at the step before (or the start value)
+//   res      the instrument's resolution (0.1 cm ruler, 0.05 mm vernier, 0.01 A ammeter, 1° protractor)
+//   i        the step number (picks the error from the pattern)
+//   scale    how big the error is, in resolutions (default 1; 0.5 for a fine instrument)
+// The error is never more than a quarter of the change since the last reading, so a reading never
+// goes the wrong way (an extension never falls as the load rises, a current never drops as V rises).
+function expReading(trueVal, prevVal, res, i, scale){
+  var gap = Math.abs(trueVal - prevVal);
+  var err = i > 0 ? expErr(i) * Math.min(res * (scale == null ? 1 : scale), gap / 4) : 0;
+  var r = Math.round((trueVal + err) / res) * res;
+  var dp = Math.max(0, Math.ceil(-Math.log10(res) - 1e-9));
+  return +r.toFixed(dp);
+}
+
+// The run. cfg = {
+//   start: 0,                 value of the independent variable before the first step
+//   max: 10,                  last value of the first run (the run stops there)
+//   step: 1,                  the interval (the page can change it with setStep, which resets the run)
+//   reverse: true,            allow a return run (unloading, turning the voltage back down)
+//   measure: function(v, phase, prevReading){ return reading },   phase is 'up' or 'down'
+//   onChange: function(run, what){}  what is 'up', 'down' or 'reset'
+// }
+// run.up and run.down are arrays of {v, r}. run.phase is 'up' until the first step back, then 'down'.
+function expRun(cfg){
+  var run = { up: [], down: [], phase: 'up', value: cfg.start || 0, peak: cfg.start || 0, step: cfg.step || 1 };
+  var r6 = function(x){ return Math.round(x * 1e6) / 1e6; };
+  run.upDone = function(){ return run.phase === 'down' || run.peak >= cfg.max - 1e-9; };
+  run.downDone = function(){ return run.phase === 'down' && run.value <= (cfg.start || 0) + 1e-9; };
+  run.last = function(){ var a = run.phase === 'down' && run.down.length ? run.down : run.up; return a[a.length - 1] || null; };
+  run.stepUp = function(){
+    if(run.phase !== 'up' || run.upDone()) return false;
+    var prev = run.up.length ? run.up[run.up.length - 1].r : null;
+    var v = r6(Math.min(cfg.max, run.value + run.step));
+    run.value = run.peak = v;
+    run.up.push({ v: v, r: cfg.measure(v, 'up', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'up');
+    return true;
+  };
+  run.stepDown = function(){
+    if(!cfg.reverse || run.value <= (cfg.start || 0) + 1e-9 || !run.up.length) return false;
+    run.phase = 'down';
+    var prev = run.down.length ? run.down[run.down.length - 1].r : run.up[run.up.length - 1].r;
+    var v = r6(Math.max(cfg.start || 0, run.value - run.step));
+    run.value = v;
+    run.down.push({ v: v, r: cfg.measure(v, 'down', prev) });
+    if(cfg.onChange) cfg.onChange(run, 'down');
+    return true;
+  };
+  run.reset = function(){ run.up = []; run.down = []; run.phase = 'up'; run.value = run.peak = cfg.start || 0; if(cfg.onChange) cfg.onChange(run, 'reset'); };
+  run.setStep = function(s){ run.step = s; run.reset(); };
+  return run;
+}
+
+// The results table. cols = [{label:'Load (N)', key:'v', dp:0}, {label:'Extension loading (cm)', key:'up', dp:1}, ...]
+// rows = [{v:1, up:1.6, down:''}, ...]. newKey/newV highlight the reading just taken (fades in).
+// Wrap it in .rtable-wrap so a long table scrolls under its sticky header.
+function expTable(el, cols, rows, newV){
+  var fmt = function(x, dp){ return (x === '' || x == null) ? '' : (+x).toFixed(dp || 0); };
+  var h = '<table class="rtable"><thead><tr>' + cols.map(function(c){ return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(row){
+    h += '<tr' + (newV != null && row.v === newV ? ' class="new"' : '') + '>' + cols.map(function(c){ return '<td>' + fmt(row[c.key], c.dp) + '</td>'; }).join('') + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table>';
+}
+
+// Plotted readings, as SVG strings. Size 5 suits a 300px-wide graph.
+function expCross(cx, cy, s){ s = s || 5; return '<path d="M' + (cx - s) + ',' + (cy - s) + ' L' + (cx + s) + ',' + (cy + s) + ' M' + (cx + s) + ',' + (cy - s) + ' L' + (cx - s) + ',' + (cy + s) + '" stroke="var(--ink)" stroke-width="2"/>'; }
+function expRing(cx, cy, r){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r || 4.5) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>'; }
+// A two-line key in the bottom-right corner of a graph: expKey(rightX, bottomY, 'loading', 'unloading')
+function expKey(x, y, upLabel, downLabel){
+  return '<text x="' + x + '" y="' + (y - 14) + '" text-anchor="end" font-size="10.5" fill="var(--ink)">× ' + upLabel + '</text>' +
+         '<text x="' + x + '" y="' + y + '" text-anchor="end" font-size="10.5" fill="var(--accent)">○ ' + downLabel + '</text>';
+}
+/* ================= end of Experiment kit ================= */
+
+  // ================= small helpers =================
+  function f1(x){ return (+x).toFixed(1); }
+  function stat(lab, val, hi){ return '<div class="stat'+(hi?' hi':'')+'"><small>'+lab+'</small><strong>'+val+'</strong></div>'; }
+  function svgPoint(svg, e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+  // Drag something in the picture: o.hit(q) says whether the press grabbed it, o.move(q) moves it, o.ok() allows it now.
+  function svgDrag(svg, o){
+    var on=false, ctm=null;
+    svg.addEventListener('pointerdown', function(e){
+      if(o.ok && !o.ok()) return;
+      var q=svgPoint(svg,e); if(!o.hit(q)) return;
+      on=true; ctm=svg.getScreenCTM().inverse();   // freeze the scale while dragging
+      svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
+      if(o.start) o.start(q);
+    });
+    svg.addEventListener('pointermove', function(e){ if(!on) return; var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; o.move(p.matrixTransform(ctm)); });
+    function end(){ if(!on) return; on=false; svg.classList.remove('dragging'); if(o.end) o.end(); }
+    svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  }
+  var D2R=Math.PI/180;
+  function deg(x){ return x/D2R; }
+  function sinD(a){ return Math.sin(a*D2R); }
+  function dot(a,b){ return a[0]*b[0]+a[1]*b[1]; }
+  function add(a,b,k){ return [a[0]+b[0]*(k==null?1:k), a[1]+b[1]*(k==null?1:k)]; }
+  function unit(a){ var L=Math.hypot(a[0],a[1]); return [a[0]/L,a[1]/L]; }
+  function d0(x){ return Math.round(x)+'°'; }          // whole degrees
+  function d1(x){ return (Math.round(x*10)/10).toFixed(1)+'°'; }
+
+  // ================= the optics =================
+  // Glass with n = 1.50 for one colour (critical angle 41.8°). White light: seven colours, red 1.490 to violet 1.530.
+  var NG=1.50;
+  var WHITE=[['#dc2626',1.490],['#ea580c',1.497],['#ca8a04',1.503],['#16a34a',1.510],['#2563eb',1.517],['#4f46e5',1.524],['#9333ea',1.530]];
+  var NGREEN=1.510;
+  function crit(n){ return deg(Math.asin(1/n)); }
+  var PW=600, PH=360;                     // the sheet of paper
+  function seg(a,b,face){ return {t:'s', a:a, b:b, face:face}; }
+  function arc(c,r,face){ return {t:'a', c:c, r:r, face:face}; }   // lower half of a circle (y down)
+  var S3=Math.sqrt(3), R2=Math.SQRT1_2;
+  var BLOCKS={
+    rect:{name:'rectangular block', path:'M200,140 H440 V260 H200 Z',
+      edges:[seg([200,140],[440,140],'top'), seg([440,140],[440,260],'right'), seg([440,260],[200,260],'bottom'), seg([200,260],[200,140],'left')],
+      entries:{top:{label:'Top face', P:[250,140], u:[0,-1], s:[-1,0], Rb:125, max:85, kind:'graph'}}},
+    semi:{name:'semicircular block', path:'M180,118 H420 A120,120 0 0 1 180,118 Z',
+      edges:[seg([180,118],[420,118],'flat'), arc([300,118],120,'curved')],
+      entries:{curved:{label:'Curved side', P:[300,118], u:[0,1], s:[-1,0], Rb:222, max:85, kind:'crit'},
+               flat:{label:'Flat side', P:[300,118], u:[0,-1], s:[-1,0], Rb:98, max:85, kind:'graph'}}},
+    p60:{name:'60° prism', path:'M300,109.5 L410,300 L190,300 Z',
+      edges:[seg([190,300],[300,109.5],'left'), seg([300,109.5],[410,300],'right'), seg([410,300],[190,300],'base')],
+      entries:{left:{label:'Left face', P:[245,204.75], u:[-S3/2,-0.5], s:[-0.5,S3/2], Rb:180, max:80, kind:'obs'}}},
+    p45:{name:'45° prism', path:'M200,260 L200,90 L370,260 Z',
+      edges:[seg([200,260],[200,90],'short1'), seg([200,90],[370,260],'long'), seg([370,260],[200,260],'short2')],
+      entries:{short:{label:'Short side', P:[200,175], u:[-1,0], s:[0,-1], Rb:150, max:80, kind:'obs'},
+               long:{label:'Long side', P:[242.5,132.5], u:[R2,-R2], s:[-R2,-R2], Rb:150, max:80, kind:'obs'}}}
+  };
+  function hitEdge(e,S,d){
+    if(e.t==='s'){
+      var ex=e.b[0]-e.a[0], ey=e.b[1]-e.a[1], den=d[0]*ey-d[1]*ex;
+      if(Math.abs(den)<1e-12) return null;
+      var qx=e.a[0]-S[0], qy=e.a[1]-S[1], t=(qx*ey-qy*ex)/den, u=(qx*d[1]-qy*d[0])/den;
+      if(t<1e-6 || u<-1e-9 || u>1+1e-9) return null;
+      var L=Math.hypot(ex,ey); return {t:t, N:[ey/L,-ex/L]};
+    }
+    var fx=S[0]-e.c[0], fy=S[1]-e.c[1], b=fx*d[0]+fy*d[1], c=fx*fx+fy*fy-e.r*e.r, disc=b*b-c;
+    if(disc<0) return null;
+    var sq=Math.sqrt(disc), ts=[-b-sq,-b+sq], best=null;
+    ts.forEach(function(t){
+      if(t<1e-6 || best) return;
+      var py=S[1]+d[1]*t-e.c[1];
+      if(py<-1e-9) return;                    // only the lower (curved) half
+      best={t:t, N:[(S[0]+d[0]*t-e.c[0])/e.r, py/e.r]};
+    });
+    return best;
+  }
+  function fresnel(n1,n2,ci,ct){
+    var rs=(n1*ci-n2*ct)/(n1*ci+n2*ct), rp=(n1*ct-n2*ci)/(n1*ct+n2*ci);
+    return (rs*rs+rp*rp)/2;
+  }
+  // Follow one ray through the block. Returns the points, what happens at each face, and the weak reflections.
+  function traceRay(edges, S, d, n){
+    var pts=[S], ev=[], part=[], inside=false, cur=S, dir=d, I=1, inten=[];
+    for(var k=0;k<8;k++){
+      var best=null;
+      edges.forEach(function(e){ var h=hitEdge(e,cur,dir); if(h && (!best || h.t<best.t)){ best=h; best.e=e; } });
+      if(!best) break;
+      var p=add(cur,dir,best.t); pts.push(p); inten.push(I);
+      var N=best.N; if(dot(N,dir)>0) N=[-N[0],-N[1]];
+      var n1=inside?n:1, n2=inside?1:n, ci=-dot(N,dir), eta=n1/n2;
+      var si=Math.sqrt(Math.max(0,1-ci*ci)), st=eta*si;
+      var refl=[dir[0]+2*ci*N[0], dir[1]+2*ci*N[1]];
+      if(st>1+1e-12){ ev.push({p:p, kind:'tir', i:deg(Math.asin(Math.min(1,si))), face:best.e.face, N:N, din:dir, dout:refl}); dir=refl; }
+      else {
+        var ct=Math.sqrt(Math.max(0,1-st*st)), nd=unit([eta*dir[0]+(eta*ci-ct)*N[0], eta*dir[1]+(eta*ci-ct)*N[1]]);
+        var R=fresnel(n1,n2,ci,ct);
+        part.push({p:p, dir:refl, I:I*R});
+        ev.push({p:p, kind:inside?'out':'in', i:deg(Math.asin(Math.min(1,si))), r:deg(Math.asin(Math.min(1,st))), face:best.e.face, N:N, din:dir, dout:nd});
+        I*=(1-R); dir=nd; inside=!inside;
+      }
+      cur=p;
+    }
+    pts.push(add(cur,dir,900)); inten.push(I);
+    return {pts:pts, ev:ev, part:part, inten:inten, dir:dir};
+  }
+
+  // ================= state =================
+  var svg=$('#rf-svg'), playBtn=$('#rf-play'), slowBtn=$('#rf-slow'), expBtn=$('#rf-exp'), iIn=$('#rf-i');
+  var I=40, running=false, raf=0, last=0;
+  var X={rd:[], busy:0, mark:null, obs:{}, k:0, just:null, pending:null};
+  var TRACE_T=2.4;                                       // seconds for one traced reading
+  var curBlock='rect', blockSeg=segGroup($('#rf-block'), function(v){ if(v===curBlock) return; curBlock=v; setEntries(); newSetup(); });
+  var entryEl=$('#rf-entry'), entrySeg=segGroup(entryEl, function(){ if(exp() && kind()==='obs'){ stop(); X.mark=null; X.just=null; setJumps(); setRows(); lastNote=''; draw(); return; } newSetup(); });
+  var lightSeg=segGroup($('#rf-light'), function(){ X.mark=null; lastNote=''; draw(); });
+  var jumpEl=$('#rf-jump'), jumpSeg=segGroup(jumpEl, function(v){ stop(); setI(+v, true); });
+  var showEl=$('#rf-show');
+  showEl.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; b.setAttribute('aria-pressed', String(!pressed(b))); draw(); });
+  function showing(v){ return pressed(showEl.querySelector('[data-v="'+v+'"]')); }
+  function blk(){ return BLOCKS[blockSeg.value()]; }
+  function ent(){ return blk().entries[entrySeg.value()]; }
+  function kind(){ return ent().kind; }
+  function exp(){ return pressed(expBtn); }
+  function slowOn(){ return pressed(slowBtn); }
+  function white(){ return lightSeg.value()==='white' && !(exp() && kind()!=='obs'); }
+
+  // where the ray box is, and the ray it sends at the point P
+  function boxPos(i){ var E=ent(), c=Math.cos(i*D2R), s=Math.sin(i*D2R); return add(E.P, [c*E.u[0]+s*E.s[0], c*E.u[1]+s*E.s[1]], E.Rb); }
+  function rays(i){
+    var E=ent(), B=boxPos(i), d=unit([E.P[0]-B[0], E.P[1]-B[1]]), S=add(B,d,24);
+    var list = white() ? WHITE.map(function(w){ return {col:w[0], n:w[1], tr:traceRay(blk().edges, S, d, w[1])}; })
+                       : [{col:'var(--ray)', n:NG, tr:traceRay(blk().edges, S, d, NG)}];
+    return {B:B, d:d, S:S, list:list};
+  }
+  // the event at P (where the angle of incidence is set), and the one after it
+  function keyIdx(tr){ var P=ent().P, k=-1; tr.ev.forEach(function(e,j){ if(k<0 && Math.hypot(e.p[0]-P[0], e.p[1]-P[1])<0.5) k=j; }); return k; }
+
+  // ================= layout =================
+  var narrowQ=window.matchMedia('(max-width:560px)'), G=null, FS=1;
+  function hasGraph(){ return exp() && kind()==='graph'; }
+  function layout(){
+    FS = narrowQ.matches ? 1.45 : 1;
+    if(!hasGraph()){ G=null; svg.setAttribute('viewBox','0 0 600 360'); return; }
+    if(narrowQ.matches){ G={x:84, y:402, w:470, h:236}; svg.setAttribute('viewBox','0 0 600 700'); }
+    else { G={x:668, y:28, w:172, h:276}; svg.setAttribute('viewBox','0 0 860 360'); }
+  }
+  if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ layout(); draw(); });
+
+  // ================= drawing =================
+  function T(x,y,s,o){ o=o||{}; o.fs=(o.fs||12)*FS; return txt(x,y,s,o); }
+  function poly(pts, col, w, op, extra){ return '<polyline points="'+pts.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' ')+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!=null?' opacity="'+(+op).toFixed(2)+'"':'')+(extra||'')+'/>'; }
+  function clipLine(a, b){ return [a, b]; }
+  function arrowMid(a, b, col, op){   // a small arrowhead halfway along a ray
+    var m=[(a[0]+b[0])/2,(a[1]+b[1])/2], d=unit([b[0]-a[0], b[1]-a[1]]), n=[-d[1], d[0]], s=7;
+    var p1=add(add(m,d,-s),n,s*0.55), p2=add(add(m,d,-s),n,-s*0.55);
+    return '<path d="M'+f1(p1[0])+','+f1(p1[1])+' L'+f1(m[0]+d[0]*3)+','+f1(m[1]+d[1]*3)+' L'+f1(p2[0])+','+f1(p2[1])+'" fill="none" stroke="'+col+'" stroke-width="2"'+(op!=null?' opacity="'+(+op).toFixed(2)+'"':'')+'/>';
+  }
+  // angle arc at p between two directions (unit vectors pointing away from p), with a label
+  function angArc(p, a, b, R, lab, col){
+    var a0=Math.atan2(a[1],a[0]), a1=Math.atan2(b[1],b[0]), da=a1-a0;
+    while(da>Math.PI) da-=2*Math.PI; while(da<-Math.PI) da+=2*Math.PI;
+    if(Math.abs(da)<0.02) return '';
+    var x0=p[0]+R*Math.cos(a0), y0=p[1]+R*Math.sin(a0), x1=p[0]+R*Math.cos(a1), y1=p[1]+R*Math.sin(a1);
+    var am=a0+da/2, ca=Math.cos(am), anc=ca<-0.3?'end':ca>0.3?'start':'middle', LR=R+(anc==='middle'?13:6)*FS, lx=p[0]+LR*ca, ly=p[1]+LR*Math.sin(am)+4*FS+(anc==='middle'&&Math.sin(am)>0?6*FS:0);
+    return '<path d="M'+f1(x0)+','+f1(y0)+' A'+R+','+R+' 0 0 '+(da>0?1:0)+' '+f1(x1)+','+f1(y1)+'" fill="none" stroke="'+col+'" stroke-width="1.6"/>'+
+      '<text x="'+f1(lx)+'" y="'+f1(ly)+'" text-anchor="'+anc+'" font-size="'+(11.5*FS)+'" font-weight="600" fill="'+col+'" stroke="var(--paper)" stroke-width="4" stroke-linejoin="round" paint-order="stroke">'+lab+'</text>';
+  }
+  function normalLine(p, N, len, op){
+    return ln(p[0]-N[0]*len, p[1]-N[1]*len, p[0]+N[0]*len, p[1]+N[1]*len, 'var(--ink-soft)', 1.3, ' stroke-dasharray="5 4"'+(op!=null?' opacity="'+op+'"':''));
+  }
+  // a 360° protractor centred on p, its zero along the normal N, read in degrees from the normal
+  function protractor(p, N){
+    var g='<g opacity="0.92">', R=78, base=Math.atan2(N[1],N[0]);
+    g+='<circle cx="'+f1(p[0])+'" cy="'+f1(p[1])+'" r="'+R+'" fill="var(--prot)" stroke="var(--ink-faint)" stroke-width="1"/>';
+    g+='<circle cx="'+f1(p[0])+'" cy="'+f1(p[1])+'" r="'+(R-22)+'" fill="none" stroke="var(--ink-faint)" stroke-width="0.6"/>';
+    for(var a=0;a<360;a+=5){
+      var t=base+a*D2R, big=a%10===0, r0=big?R-9:R-5;
+      g+=ln(p[0]+R*Math.cos(t), p[1]+R*Math.sin(t), p[0]+r0*Math.cos(t), p[1]+r0*Math.sin(t), 'var(--ink-faint)', big?1:0.6);
+      if(a%30===0){ var lab=a<=90?a:a<=180?180-a:a<=270?a-180:360-a;
+        g+=T(p[0]+(R-16)*Math.cos(t), p[1]+(R-16)*Math.sin(t)+3*FS, lab, {a:'middle', fs:7.5, c:'var(--ink-soft)'}); }
+    }
+    return g+'</g>';
+  }
+  function rayBox(B, d){
+    var ang=deg(Math.atan2(d[1],d[0]));
+    return '<g class="grab" transform="translate('+f1(B[0])+' '+f1(B[1])+') rotate('+f1(ang)+')">'+
+      '<rect x="-26" y="-13" width="50" height="26" rx="4" fill="var(--ink)" />'+
+      '<rect x="18" y="-6" width="6" height="12" fill="var(--panel-border)"/>'+
+      '<rect x="22" y="-1.5" width="4" height="3" fill="#fde68a"/>'+
+      '<rect x="-36" y="-36" width="70" height="72" fill="transparent"/></g>';
+  }
+  function cross(p, s){ s=(s||5)*FS; return '<path d="M'+f1(p[0]-s)+','+f1(p[1]-s)+' L'+f1(p[0]+s)+','+f1(p[1]+s)+' M'+f1(p[0]+s)+','+f1(p[1]-s)+' L'+f1(p[0]-s)+','+f1(p[1]+s)+'" stroke="var(--pencil)" stroke-width="1.8"/>'; }
+  // a point on the last stretch of a ray, d along it, kept on the paper
+  function inPaper(p){ return p[0]>6 && p[0]<PW-6 && p[1]>6 && p[1]<PH-6; }
+  function alongLast(tr, dist){
+    var a=tr.pts[tr.pts.length-2], d=tr.dir, p=add(a,d,dist);
+    while(!inPaper(p) && dist>12){ dist*=0.8; p=add(a,d,dist); }
+    return p;
+  }
+  function rayLines(R, tr, col, keep){
+    var g='', pts=tr.pts;            // from the front of the ray box
+    for(var k=0;k<pts.length-1;k++){
+      var op=Math.max(0.22, Math.min(1, tr.inten[k]));
+      g+=poly([pts[k],pts[k+1]], col, 2.4, op);
+      if((k===0 && !white()) || k===pts.length-2) g+=arrowMid(pts[k], k===pts.length-2 ? add(pts[k], tr.dir, 120) : pts[k+1], col, op);
+    }
+    if(keep && showing('refl')) tr.part.forEach(function(q){ if(q.I>0.004) g+=poly([q.p, add(q.p,q.dir,110)], col, 1.6, Math.min(0.85, 0.12+2.2*q.I)); });
+    return g;
+  }
+  function scene(){
+    var g='', b=blk(), E=ent(), R=rays(I), tr=R.list[Math.floor(R.list.length/2)].tr, k=keyIdx(tr), m=X.mark;
+    var ph = m ? TRACE_T-X.busy : -1;                    // how far through tracing a reading we are
+    g+='<defs><clipPath id="rf-paper"><rect x="0" y="0" width="'+PW+'" height="'+PH+'"/></clipPath></defs>';
+    g+='<rect x="0.5" y="0.5" width="'+(PW-1)+'" height="'+(PH-1)+'" rx="4" fill="var(--paper)" stroke="var(--panel-border)"/>';
+    g+='<g clip-path="url(#rf-paper)">';
+    var lifted = m && ph>=0.5;
+    // the block (lifted off once the crosses are marked) and its pencil outline
+    if(exp()) g+='<path d="'+b.path+'" fill="none" stroke="var(--pencil)" stroke-width="1.2"/>';
+    if(!lifted) g+='<path d="'+b.path+'" fill="var(--glass)" fill-opacity="0.75" stroke="var(--glass-edge)" stroke-width="2"/>';
+    else if(ph<0.9) g+='<path d="'+b.path+'" fill="var(--glass)" fill-opacity="'+(0.75*(0.9-ph)/0.4).toFixed(2)+'" stroke="none"/>';
+    if(blockSeg.value()==='semi') g+=ln(296,118,304,118,'var(--ink)',1.5)+ln(300,114,300,122,'var(--ink)',1.5)+T(334,112,'centre',{a:'middle',fs:9.5,c:'var(--ink-faint)'});
+    if(showing('prot') && !m && k>=0) g+=protractor(tr.ev[k].p, tr.ev[k].N);
+    // the rays (off while the block is lifted)
+    if(!lifted){
+      R.list.forEach(function(L, j){ g+=rayLines(R, L.tr, L.col, !white() || j===3); });
+      if(white()) g+=poly([R.S, tr.pts[1]], '#fde68a', 5, 0.9)+poly([R.S, tr.pts[1]], '#d97706', 1.4, 1);
+    }
+    // normals and angles where the ray meets each face
+    var showAng = !m && !X.busy;
+    tr.ev.forEach(function(e, j){
+      if(j<k || k<0) return;
+      if(!(m && j>k)) g+=normalLine(e.p, e.N, 52, lifted?1:0.9);
+      if(!showAng || j>k+1) return;
+      var big = j===k, fs=big?1:0.8, inc=[-e.din[0],-e.din[1]], nIn=[-e.N[0],-e.N[1]];
+      if(e.i>0.6) g+=angArc(e.p, e.N, inc, big?34:26, (big?'i = ':'')+d1(e.i), 'var(--topic)');
+      if(e.kind==='tir') g+=angArc(e.p, e.N, e.dout, big?44:34, d1(e.i), 'var(--topic)');
+      else if(e.r>0.6 && !white()) g+=angArc(e.p, nIn, e.dout, big?44:34, (big?'r = ':'')+d1(e.r), 'var(--accent)');
+    });
+    // the traced reading: crosses, then the block lifted, pencil lines, the normal and the protractor
+    if(m){
+      var t0=Math.min(1, ph/0.5);
+      m.crosses.forEach(function(c, j){ if(t0>=(j+1)/m.crosses.length-1e-6) g+=cross(c); });
+      if(ph>=0.9){
+        var t1=Math.min(1,(ph-0.9)/0.6), L=0, segs=[], pts=m.line;
+        for(var q=1;q<pts.length;q++){ var l=Math.hypot(pts[q][0]-pts[q-1][0], pts[q][1]-pts[q-1][1]); segs.push(l); L+=l; }
+        g+='<polyline points="'+pts.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' ')+'" fill="none" stroke="var(--pencil)" stroke-width="1.6" stroke-dasharray="'+f1(L)+'" stroke-dashoffset="'+f1(L*(1-t1))+'"/>';
+      }
+      if(ph>=1.5){
+        var e=m.e, inc=[-e.din[0],-e.din[1]], nIn=[-e.N[0],-e.N[1]];
+        g+=protractor(e.p, e.N);
+        g+=angArc(e.p, e.N, inc, 34, ph>=TRACE_T-1e-6 && m.lab1 ? m.lab1 : '?', 'var(--topic)');
+        if(m.lab2===null){}
+        else if(e.kind==='tir') g+=angArc(e.p, e.N, e.dout, 46, ph>=TRACE_T-1e-6 && m.lab2 ? m.lab2 : '?', 'var(--accent)');
+        else if(e.r>0.6) g+=angArc(e.p, nIn, e.dout, 46, ph>=TRACE_T-1e-6 && m.lab2 ? m.lab2 : '?', 'var(--accent)');
+      }
+    }
+    g+='</g>';
+    // the ray box (drag it)
+    if(!lifted || !m){ g+=rayBox(R.B, R.d); }
+    if(!exp() || !X.rd.length){ var hb=add(R.B, E.u, 30); if(inPaper(hb) && !m) g+=T(hb[0], hb[1]+4, 'drag', {a:'middle', fs:9.5, c:'var(--topic)'}); }
+    g+=T(8, PH-8, 'paper, seen from above', {fs:9.5, c:'var(--ink-faint)'});
+    if(running && slowOn()) g+=T(PW-8, 16, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
+    return g;
+  }
+
+  // ---- the sin i against sin r graph (Experiment, rectangular block or flat side of the semicircle)
+  var GA={x0:0, x1:0.7, xs:0.1, dpx:1, y0:0, y1:1.0, ys:0.2, dpy:1, xl:'sin r', yl:'sin i'};
+  function gx(v){ return G.x+(v-GA.x0)/(GA.x1-GA.x0)*G.w; }
+  function gy(v){ return G.y+G.h-(v-GA.y0)/(GA.y1-GA.y0)*G.h; }
+  function graph(){
+    var g='', v;
+    for(v=0; v<=GA.x1+1e-9; v+=0.05){ var X0=gx(v), mj=Math.abs(v/0.1-Math.round(v/0.1))<1e-6; g+=ln(X0,G.y,X0,G.y+G.h,'var(--panel-border)',mj?1:0.5); if(mj) g+=T(X0,G.y+G.h+13*FS,v.toFixed(1),{a:'middle',fs:9.5,c:'var(--ink-faint)'}); }
+    for(v=0; v<=GA.y1+1e-9; v+=0.1){ var Y=gy(v), mj2=Math.abs(v/0.2-Math.round(v/0.2))<1e-6; g+=ln(G.x,Y,G.x+G.w,Y,'var(--panel-border)',mj2?1:0.5); if(mj2) g+=T(G.x-4,Y+3.5,v.toFixed(1),{a:'end',fs:9.5,c:'var(--ink-faint)'}); }
+    g+=ln(G.x,G.y,G.x,G.y+G.h,'var(--ink-soft)',2)+ln(G.x,G.y+G.h,G.x+G.w,G.y+G.h,'var(--ink-soft)',2);
+    g+=T(G.x, G.y-8, GA.yl, {fs:11})+T(G.x+G.w/2, G.y+G.h+30*FS, GA.xl, {a:'middle', fs:11});
+    if(!X.rd.length) g+=T(G.x+G.w/2, G.y+20, 'readings appear here', {a:'middle', fs:10, c:'var(--ink-faint)'});
+    X.rd.forEach(function(p){ g+=expCross(+f1(gx(p.sr)), +f1(gy(p.si)), 4*FS); });
+    if(done()){
+      var m=slope(), xe=Math.min(GA.x1, GA.y1/m);
+      g+=ln(gx(0),gy(0),gx(xe),gy(m*xe),'var(--accent)',1.8,' stroke-dasharray="6 4"');
+      g+=T(G.x+G.w-4, G.y+G.h-8, 'best fit', {a:'end', fs:10, c:'var(--accent)'});
+    }
+    return g;
+  }
+  function slope(){ var sxy=0, sxx=0; X.rd.forEach(function(p){ sxy+=p.sr*p.si; sxx+=p.sr*p.sr; }); return sxx ? sxy/sxx : 0; }
+
+  function draw(){
+    var g=scene();
+    if(G) g+=graph();
+    svg.innerHTML=g;
+    svg.setAttribute('aria-valuenow', I); svg.setAttribute('aria-valuemax', ent().max);
+    svg.setAttribute('aria-valuetext', 'Angle of incidence '+d1(I));
+    readings();
+  }
+
+  // ================= Experiment =================
+  function distinctI(){ var s={}; X.rd.forEach(function(p){ s[p.i]=1; }); return Object.keys(s).map(Number); }
+  function done(){
+    var K=kind();
+    if(K==='graph'){ var d=distinctI(); return d.length>=5 && Math.min.apply(null,d)<=30 && Math.max.apply(null,d)>=60; }
+    if(K==='crit'){ var lo=-1, hi=99; X.rd.forEach(function(p){ if(p.tir) hi=Math.min(hi,p.i); else lo=Math.max(lo,p.i); }); return X.rd.length>=3 && lo>=0 && hi<99 && hi-lo<=2 && hi>lo; }
+    return OBS[obsKey()].every(function(o){ return X.obs[o[0]]; });
+  }
+  function critRange(){ var lo=-1, hi=99; X.rd.forEach(function(p){ if(p.tir) hi=Math.min(hi,p.i); else lo=Math.max(lo,p.i); }); return [lo,hi]; }
+  // a protractor reading: whole degrees, a small fixed reading error, never out of order with the readings either side
+  function readAngle(trueA, i){
+    var k=X.k++, r=Math.round(trueA+0.45*expErr(k+3));
+    var lo=-1, hi=1e9;
+    X.rd.forEach(function(p){ if(p.r==null) return; if(p.i<i) lo=Math.max(lo,p.r); if(p.i>i) hi=Math.min(hi,p.r); });
+    if(i>0) r=Math.max(r, lo); r=Math.min(r, hi);
+    return Math.max(0, Math.min(90, r));
+  }
+  var OBS={
+    p60:[['out','The ray refracts out of the second face'],['tir','The ray is totally internally reflected inside the prism'],['disp','White light spreads out into a spectrum of colours']],
+    p45:[['t90','Into a short side: the ray turns through 90°'],['t180','Into the long side: the ray turns back through 180°']]
+  };
+  function obsKey(){ return blockSeg.value(); }
+  function deviation(R){ var tr=R.list[Math.floor(R.list.length/2)].tr; return deg(Math.acos(Math.max(-1,Math.min(1,dot(R.d, tr.dir))))); }
+  function takeReading(){
+    var R=rays(I), tr=R.list[Math.floor(R.list.length/2)].tr, k=keyIdx(tr), e=tr.ev[k], K=kind();
+    // crosses far apart on the ray going in and the ray coming out; the pencil line joins them through the block
+    var first=tr.pts[1], start=R.S, last=tr.pts[tr.pts.length-2];
+    var c1=add(start, R.d, 6), c2=add(start, R.d, Math.max(12, Math.hypot(first[0]-start[0], first[1]-start[1])-22));
+    var crosses=[c1, c2, alongLast(tr, 26), alongLast(tr, 120)];
+    var line=[c1].concat(tr.pts.slice(1, tr.pts.length-1)).concat([alongLast(tr, 120)]);
+    X.mark={crosses:crosses, line:line, e:e, lab1:'', lab2:''};
+    var row={i:I};
+    if(K==='graph'){ row.r=readAngle(e.r, I); row.si=sinD(row.i); row.sr=sinD(row.r); X.mark.lab1='i = '+row.i+'°'; X.mark.lab2='r = '+row.r+'°'; }
+    else if(K==='crit'){
+      if(e.kind==='tir'){ row.tir=true; X.mark.lab1=row.i+'°'; X.mark.lab2=row.i+'°'; }
+      else { row.r=readAngle(e.r, I); X.mark.lab1=row.i+'°'; X.mark.lab2=row.r+'°'; }
+    } else {
+      var after=tr.ev.slice(k+1), tirs=tr.ev.filter(function(q){ return q.kind==='tir'; }).length, exitFace=after.length ? after[after.length-1].face : '';
+      row.tirs=tirs; row.dev=Math.round(deviation(R)); row.white=white();
+      row.what = after.length && after[0].kind==='tir' ? 'Total internal reflection' : (row.white ? 'Refracts out, spreads into colours' : 'Refracts out');
+      if(after.length>1 && after[0].kind==='tir' && after[1].kind==='tir') row.what='Two total internal reflections';
+      X.mark.lab1=row.i+'°'; X.mark.lab2=null;
+      var b=blockSeg.value(), en=entrySeg.value();
+      row.ok=[];
+      if(b==='p60'){ if(!tirs && exitFace==='right') row.ok.push('out'); if(tirs) row.ok.push('tir'); if(row.white && !tirs && exitFace==='right') row.ok.push('disp'); }
+      else { if(en==='short' && tirs===1 && exitFace==='short2') row.ok.push('t90'); if(en==='long' && tirs===2 && exitFace==='long') row.ok.push('t180'); }
+    }
+    X.pending=row;   // recorded when the tracing animation ends
+  }
+  function record(){ var row=X.pending; X.pending=null; if(!row) return; X.rd.push(row); X.just=row; (row.ok||[]).forEach(function(k){ X.obs[k]=1; }); lastNote=''; }
+  function clearRun(){ X={rd:[], busy:0, mark:null, obs:{}, k:0, just:null, pending:null}; }
+
+  // ================= readings, working, note =================
+  var lastNote='';
+  function setEq(id, html){ var el=$(id); el.innerHTML=FR(html); el.hidden=!html; }
+  function snell(i, r, n, nTxt){   // air into glass, substitute then rearrange
+    if(i<0.05) return 'i = 0°: the ray is along the normal, so it does not bend.<br>r = 0°';
+    var si=sinD(i);
+    return 'n = [[sin i|sin r]]<br>'+nTxt+' = [[sin '+d1(i)+'|sin r]]<br>sin r = [[sin '+d1(i)+'|'+nTxt+']]<br>sin r = [['+si.toFixed(4)+'|'+nTxt+']]<br>sin r = '+(si/n).toFixed(4)+'<br>r = <b>'+d1(r)+'</b>';
+  }
+  function readings(){
+    var b=blockSeg.value(), K=kind(), ex=exp(), R=rays(I), mid=R.list[Math.floor(R.list.length/2)], tr=mid.tr, k=keyIdx(tr), e=tr.ev[k], nx=tr.ev[k+1];
+    var n = white() ? NGREEN : NG, nTxt = white() ? '1.51' : '1.50', C=crit(n);
+    $('#rf-io').textContent=d1(I);
+    var rr = function(){ if(!white()) return d1(e.r); var a=R.list[0].tr.ev[keyIdx(R.list[0].tr)], z=R.list[6].tr.ev[keyIdx(R.list[6].tr)]; return (Math.round(z.r*10)/10).toFixed(1)+'–'+d1(a.r); };
+    var s='';
+    if(ex){
+      var J=X.just;
+      if(K==='graph') s=stat('Readings', X.rd.length+(done()?'':' (5+)'))+stat('i', J ? J.i+'°' : '–')+stat('r', J ? J.r+'°' : '–', true);
+      else if(K==='crit') s=stat('Readings', X.rd.length)+stat('In glass', J ? J.i+'°' : '–')+stat('In air', J ? (J.tir?'TIR':J.r+'°') : '–', true);
+      else s=stat('Traced', X.rd.length)+stat('i', J ? J.i+'°' : '–')+stat('Turned', J ? J.dev+'°' : '–', true);
+    } else if(K==='graph'){
+      s=stat('i', d1(I))+stat('r'+(white()?' (violet–red)':''), rr(), true)+stat(b==='rect'?'Leaves at':'Leaves curved side', b==='rect' ? d1(I) : 'no bend');
+    } else if(K==='crit'){
+      s=stat('Angle in glass', d1(I))+stat('Angle in air', e.kind==='tir' ? 'none: TIR' : d1(e.r), true)+stat('Critical angle', d1(C));
+    } else {
+      var dev=deviation(R);
+      s=stat('i', d1(I))+stat('r', I<0.05 ? '0.0°' : rr())+stat(nx && nx.kind==='tir' ? 'Next face: TIR' : 'At next face', nx ? d1(nx.i) : '–', true)+stat('Turned', d0(dev));
+    }
+    $('#rf-stats').innerHTML=s;
+
+    // results table / observations
+    if(ex){
+      var cols, rows;
+      if(K==='graph'){ cols=[{label:'i (°)',key:'i'},{label:'r (°)',key:'r'},{label:'sin i',key:'si',dp:3},{label:'sin r',key:'sr',dp:3}]; rows=X.rd; }
+      else if(K==='crit'){ cols=[{label:'Angle in glass (°)',key:'i'},{label:'Angle in air (°)',key:'r'}]; rows=X.rd; }
+      else { cols=[{label:'i (°)',key:'i'},{label:'What happens',key:'w0'},{label:'Turned (°)',key:'dev'}]; rows=X.rd.map(function(p){ return {i:p.i, w0:'', dev:p.dev}; }); }
+      expTable($('#rf-table'), cols, rows, null);
+      Array.prototype.forEach.call(document.querySelectorAll('#rf-table tbody tr'), function(tr, j){
+        var p=X.rd[j];
+        if(K==='crit' && p.tir) tr.children[1].textContent='TIR';
+        if(K==='obs'){ tr.children[1].textContent=p.what; tr.children[1].style.textAlign='left'; }
+        if(j===X.rd.length-1) tr.className='new';
+      });
+      if(K==='obs') $('#rf-obs').innerHTML=OBS[obsKey()].map(function(o){ var on=!!X.obs[o[0]]; return '<li'+(on?' class="on"':'')+'><span class="tk" aria-hidden="true">'+(on?'✓':'○')+'</span><span>'+o[1]+(on?'':'<span class="sr-only"> (not seen yet)</span>')+'</span></li>'; }).join('');
+    }
+
+    // working
+    var w1='', w2='', w3='';
+    if(ex){
+      var J2=X.just;
+      if(K==='graph'){
+        if(J2) w1='sin i = sin '+J2.i+'°<br>sin i = '+J2.si.toFixed(3)+'<br>sin r = sin '+J2.r+'°<br>sin r = '+J2.sr.toFixed(3);
+        else w1='Set the angle of incidence, then press Take reading. Take readings from about 10° to 80°.';
+        if(done()){ var m=slope(), xs=0.6; w2='gradient = [[change in sin i|change in sin r]]<br>gradient = [['+(m*xs).toFixed(3)+' − 0|'+xs.toFixed(3)+' − 0]]<br>n = gradient = <b>'+m.toFixed(2)+'</b>'; }
+      } else if(K==='crit'){
+        if(J2 && !J2.tir) w1='n = [[sin (angle in air)|sin (angle in glass)]]<br>n = [[sin '+J2.r+'°|sin '+J2.i+'°]]<br>n = [['+sinD(J2.r).toFixed(3)+'|'+sinD(J2.i).toFixed(3)+']]<br>n = '+(sinD(J2.r)/sinD(J2.i)).toFixed(2);
+        else if(J2) w1='At '+J2.i+'° no light leaves the flat face: total internal reflection.';
+        else w1='Aim the ray at the centre of the flat face. Turn the ray box a few degrees at a time and take a reading each time.';
+        if(done()){ var cr=critRange(); w2='The critical angle is between '+cr[0]+'° and '+cr[1]+'°: c ≈ '+(cr[0]+cr[1])/2+'°<br>sin c = [[1|n]]<br>sin '+(cr[0]+cr[1])/2+'° = [[1|n]]<br>n = [[1|sin '+(cr[0]+cr[1])/2+'°]]<br>n = <b>'+(1/sinD((cr[0]+cr[1])/2)).toFixed(2)+'</b>'; }
+      } else {
+        w1='Trace the ray at different angles of incidence. Record what happens at each face and how far the ray turns.';
+      }
+    } else if(K==='graph'){
+      w1=snell(I, e.r, n, nTxt);
+      if(white()) w3='Worked for green light (n = 1.51). Violet light has a bigger refractive index, so it bends more; red bends less.';
+      else if(b==='rect') w3='At the bottom face the ray meets the normal at r again, so it leaves at '+d1(I)+': parallel to the ray going in, but moved sideways.';
+      else w3='The refracted ray travels along a radius, so it meets the curved side along the normal and leaves without bending.';
+    } else if(K==='crit'){
+      w2='sin c = [[1|n]]<br>sin c = [[1|'+nTxt+']]<br>sin c = '+(1/n).toFixed(4)+'<br>c = <b>'+d1(C)+'</b>';
+      if(e.kind==='tir'){ w1='n = [[sin (angle in air)|sin (angle in glass)]]<br>'+nTxt+' = [[sin r|sin '+d1(I)+']]<br>sin r = '+nTxt+' × sin '+d1(I)+'<br>sin r = '+(n*sinD(I)).toFixed(4); w3='sin r would be more than 1, which is impossible: no light leaves. '+d1(I)+' is bigger than the critical angle, so there is total internal reflection.'; }
+      else if(I<0.05){ w1='Along the normal (0°): no bending.'; }
+      else { w1='n = [[sin (angle in air)|sin (angle in glass)]]<br>'+nTxt+' = [[sin r|sin '+d1(I)+']]<br>sin r = '+nTxt+' × sin '+d1(I)+'<br>sin r = '+(n*sinD(I)).toFixed(4)+'<br>r = <b>'+d1(e.r)+'</b>'; w3='The ray enters along a radius, so it does not bend at the curved side. At the flat face it speeds up and bends away from the normal.'; }
+    } else {
+      w1=snell(I, e.r, n, nTxt);
+      if(nx){ w2='critical angle c = '+d1(C)+'<br>angle at the next face = '+d1(nx.i); w3 = nx.kind==='tir' ? d1(nx.i)+' is more than c, so the ray is totally internally reflected.' : d1(nx.i)+' is less than c, so the ray refracts out, bending away from the normal.'; }
+      if(white()) w3+=' Worked for green light (n = 1.51).';
+    }
+    setEq('#rf-eq1', w1); setEq('#rf-eq2', w2); $('#rf-eq3').innerHTML=FR(w3); $('#rf-eq3').hidden=!w3;
+
+    // note
+    var note='';
+    if(ex){
+      if(X.busy) note = X.busy>TRACE_T-0.5 ? 'Marking two crosses on the ray going in and two on the ray coming out, far apart…' : X.busy>TRACE_T-1.5 ? 'Lifting the block off, then joining the crosses with a ruler, through the outline…' : 'Drawing the normal and measuring the angles from it with a protractor…';
+      else if(K==='graph'){
+        if(!X.rd.length) note='Experiment (3.19): set an angle of incidence, then press <b>Take reading</b>. Measure i and r from the normal. Take readings from about 10° to 80°.';
+        else if(!done()) note='You have '+distinctI().length+' angle'+(distinctI().length===1?'':'s')+'. You need at least 5, from 30° or less to 60° or more. Plot sin i against sin r.';
+        else note='Done: a straight line through the origin, so sin i ∝ sin r. Gradient = refractive index, <b>n ≈ '+slope().toFixed(2)+'</b>. r increases with i, but at a decreasing rate.';
+      } else if(K==='crit'){
+        var cr2=critRange();
+        if(!X.rd.length) note='Experiment (3.17): the ray goes along a radius to the centre of the flat face. Take readings as you turn the ray box, and find where the light stops leaving the flat face.';
+        else if(!done()) note = cr2[0]>=0 && cr2[1]<99 ? 'It refracts out at '+cr2[0]+'° and is totally internally reflected at '+cr2[1]+'°. Narrow it down to within 2°.' : cr2[1]<99 ? 'Total internal reflection at '+cr2[1]+'°. Try a smaller angle.' : 'The light still leaves the flat face. Try a bigger angle in the glass.';
+        else note='Done: the <b>critical angle</b> is between '+cr2[0]+'° and '+cr2[1]+'° (it is 41.8°). Below it the ray refracts out; above it, total internal reflection. n = [[1|sin c]] ≈ 1.5.';
+      } else {
+        if(!X.rd.length) note='Experiment (3.17): set an angle, then press <b>Trace the ray</b>. See everything on the list.'+(blockSeg.value()==='p60'?' Try white light too.':' Try both sides.');
+        else if(!done()) note='Keep going: '+OBS[obsKey()].filter(function(o){ return !X.obs[o[0]]; }).length+' still to see.'+(blockSeg.value()==='p45' && !X.obs.t180 ? ' Use <b>Ray in: Long side</b> for one of them.' : '');
+        else note = blockSeg.value()==='p60' ? 'Done: above the critical angle at the second face, the ray is totally internally reflected. Violet bends most, red least: <b>dispersion</b>.' : 'Done: inside, the ray meets a face at 45°, more than the critical angle (41.8°): <b>total internal reflection</b>, as in periscopes and binoculars.';
+      }
+    } else if(K==='graph'){
+      note = I<0.05 ? 'Along the normal: the ray goes straight through without bending.' : 'Going into the glass the light slows down and bends <b>towards</b> the normal (r &lt; i).'+(b==='rect' ? ' Coming out it speeds up and bends away, leaving <b>parallel</b> to the ray going in.' : ' It leaves the curved side along a radius, so it does not bend there.');
+      if(white() && I>0.05) note='White light: each colour bends by a different amount, violet the most. Coming out of parallel faces the colours end up parallel again, so you hardly see them.';
+    } else if(K==='crit'){
+      note = I<0.05 ? 'Along the normal: no bending at all.' : e.kind==='tir' ? 'Above the critical angle: <b>total internal reflection</b>. All the light reflects back into the glass.' : Math.abs(I-C)<0.6 ? 'At the <b>critical angle</b>: the refracted ray runs along the flat face (angle in air 90°).' : 'Below the critical angle: the light refracts out, bending <b>away</b> from the normal, and some reflects weakly.';
+    } else if(blockSeg.value()==='p60'){
+      note = nx && nx.kind==='tir' ? 'The ray meets the second face above the critical angle, so it is <b>totally internally reflected</b>.' : white() ? 'White light splits into a spectrum: violet bends most, red least. This is <b>dispersion</b>.' : 'The ray bends towards the normal going in, and away from it coming out, so it turns towards the base.';
+    } else {
+      var tirs=tr.ev.filter(function(q){ return q.kind==='tir'; }).length;
+      note = tirs===2 ? 'Two total internal reflections: the ray comes back the way it came, shifted sideways (binoculars).' : tirs===1 ? 'Inside, the ray meets the long side at more than the critical angle: <b>total internal reflection</b> turns it through '+d0(deviation(R))+' (a periscope).' : 'At this angle the ray meets the far face below the critical angle, so it refracts out. Total internal reflection needs the ray to go in close to the normal.';
+    }
+    if(note!==lastNote){ $('#rf-note').innerHTML=FR(note); lastNote=note; }
+    if(ex){ playBtn.innerHTML = K==='obs' ? '&#9654; Trace the ray' : '&#9654; Take reading'; playBtn.disabled=X.busy>0; }
+    else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
+  }
+
+  // ================= motion =================
+  // Play turns the ray box steadily from 0° to the largest angle, then stops (it never loops).
+  var SWEEP=7;   // degrees per second
+  function frame(now){
+    var real=Math.min(0.05,(now-last)/1000); last=now;
+    if(running){
+      var v=I+SWEEP*real*(slowOn()?0.3:1);
+      if(v>=ent().max){ v=ent().max; running=false; }
+      I=Math.round(v*100)/100; iIn.value=Math.round(I); jumpSeg.pick(null);
+    }
+    if(X.busy){ X.busy-=real; if(X.busy<=0){ X.busy=0; record(); } }
+    draw();
+    if(running || X.busy) raf=requestAnimationFrame(frame);
+  }
+  function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+
+  // ================= controls =================
+  var JUMPS={
+    rect:{top:[[0,'Along the normal'],[30,'30°'],[60,'60°']]},
+    semi:{curved:[[30,'Below c'],[+crit(NG).toFixed(1),'At c'],[50,'Above c']], flat:[[0,'Along the normal'],[30,'30°'],[60,'60°']]},
+    p60:{left:[[20,'20°'],[40,'40°'],[60,'60°']]},
+    p45:{short:[[0,'Along the normal'],[20,'20°']], long:[[0,'Along the normal'],[10,'10°']]}
+  };
+  function setJumps(){ jumpEl.innerHTML=JUMPS[blockSeg.value()][entrySeg.value()].map(function(j){ return '<button type="button" data-v="'+j[0]+'" aria-pressed="false">'+j[1]+'</button>'; }).join(''); }
+  function setEntries(){
+    var es=blk().entries, keys=Object.keys(es);
+    entryEl.innerHTML=keys.map(function(k,j){ return '<button type="button" data-v="'+k+'" aria-pressed="'+(j===0)+'">'+es[k].label+'</button>'; }).join('');
+  }
+  function setI(v, keep){
+    if(X.busy) return;
+    v=Math.max(0, Math.min(ent().max, v));
+    if(exp()) v=Math.round(v);
+    if(v!==I) X.mark=null;
+    I=v; iIn.value=Math.round(v);
+    if(!keep) jumpSeg.pick(null);
+    draw();
+  }
+  function setRows(){
+    var ex=exp(), K=kind(), multi=Object.keys(blk().entries).length>1;
+    $('#rf-elab').hidden=entryEl.hidden=!multi;
+    $('#rf-jlab').hidden=jumpEl.hidden=ex;
+    $('#rf-slab').hidden=showEl.hidden=ex; $('#rf-stats').hidden=ex;
+    $('details.working').hidden = ex && K==='obs'; $('#rf-tablewrap').style.maxHeight = K==='obs' ? '98px' : '';
+    $('#rf-llab').hidden=$('#rf-light').hidden = (ex && K!=='obs') || blockSeg.value()==='p45';
+    $('#rf-clear').hidden=!ex; $('#rf-tablewrap').hidden=!ex; $('#rf-obs').hidden=!(ex && K==='obs');
+    iIn.max=ent().max;
+  }
+  function newSetup(){ stop(); clearRun(); setJumps(); setRows(); layout(); if(I>ent().max) I=ent().max; if(exp()) I=Math.round(I); iIn.value=Math.round(I); lastNote=''; draw(); }
+
+  svgDrag(svg, {
+    ok:function(){ return !X.busy; },
+    hit:function(q){ var B=boxPos(I); return Math.hypot(q.x-B[0], q.y-B[1])<40; },
+    start:function(){ stop(); },
+    move:function(q){ var E=ent(), v=[q.x-E.P[0], q.y-E.P[1]], a=deg(Math.atan2(dot(v,E.s), dot(v,E.u))); setI(Math.round(Math.max(0,a))); }
+  });
+  svg.addEventListener('keydown', function(e){
+    if(X.busy) return;
+    var k=e.key, v=null;
+    if(k==='ArrowRight'||k==='ArrowUp') v=Math.floor(I)+1; else if(k==='ArrowLeft'||k==='ArrowDown') v=Math.ceil(I)-1;
+    else if(k==='PageUp') v=I+10; else if(k==='PageDown') v=I-10; else if(k==='Home') v=0; else if(k==='End') v=ent().max;
+    if(v!==null){ stop(); setI(v); e.preventDefault(); }
+  });
+  iIn.addEventListener('input', function(){ stop(); setI(+iIn.value); });
+
+  playBtn.addEventListener('click', function(){
+    if(exp()){ if(X.busy) return; takeReading(); X.busy=TRACE_T; loop(); return; }
+    if(running){ stop(); draw(); return; }
+    if(I>=ent().max-0.01) I=0;
+    jumpSeg.pick(null); running=true; loop();
+  });
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
+  expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); newSetup(); });
+  $('#rf-reset').addEventListener('click', function(){ stop(); if(exp()){ clearRun(); I=Math.round(I); draw(); return; } jumpSeg.pick(null); setI(40); });
+  $('#rf-clear').addEventListener('click', function(){ stop(); clearRun(); draw(); });
+
+  watchEquals($('#rf-eq1')); watchEquals($('#rf-eq2'));
+  setEntries(); setJumps(); setRows(); layout(); draw();
+})();
+</script>
+<footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
+</body>
+</html>
