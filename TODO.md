@@ -59,6 +59,8 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## Done
 
+- [x] Spot the error removed from all IGCSE workouts: 26 cards, 34 worked examples (Alex, 4 Nov 2026: show only clear working).
+
 - [x] Split 2b (now 2b Circuits + 2c Circuit Components; Electric Charge is 2d) and 3b (now 3b Light + 3c Sound, TA) so no workout runs to 30 minutes (Alex, 4 Nov 2026).
 - 4 Nov 2026: core practicals 3.17, 3.19 and 3.25P published (cards on `igcse.html`, workout links and `.cp-banner`s on 3b Refraction and Speed of Sound, now 3c `sound.html`).
 - 4 Nov 2026: core practicals 2.23P, 3.27P and 7.6 built and published, with new animations `electrostatic-charging.html` (framed in 2c Charging, with the banner), `oscilloscope.html` (framed in 3b Pitch and Loudness) and `penetrating-power.html` (framed in 7a Alpha, Beta, Gamma), each with its banner; mark scheme wording from the IGCSE Question Index.
