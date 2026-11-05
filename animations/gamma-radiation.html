@@ -158,6 +158,11 @@
   .embed .page{padding:0;max-width:none;display:flow-root;}
   .embed .home-link,.embed .page-head{display:none;}
   .embed .view{max-height:460px;}
+  .meas-off{display:none !important;}
+  /* measure mode sits beside the practical page's results table, so keep the picture small and the note beside it */
+  .measure .stage{grid-template-columns:minmax(0,1.25fr) minmax(200px,1fr);}
+  .measure .view{max-height:280px;}
+  @media (max-width:560px){ .measure .stage{grid-template-columns:minmax(0,1fr);} }
 
 </style>
 <script>
@@ -423,6 +428,20 @@ function expKey(x, y, upLabel, downLabel){
   var graphEl=$('#gr-graph'), graphSeg=segGroup(graphEl, function(){ draw(); });
   var showQ=location.search.match(/[?&]show=(dist|abs)\b/);
   if(showQ){ modeSeg.pick(showQ[1]); $('#gr-mode').hidden=true; }
+  // Measure mode (?show=measure, Alex 5 Nov 2026): the CP15 practical page's "Do the Experiment" tab. Absorption only,
+  // 4 mm sheets of lead up to 24 mm. Nothing is worked out for the student: no graph, table, readings or working. They read
+  // the counter (background over 5 minutes, then 60 s counts) and fill in the table on the practical page, which checks
+  // against these same fixed counts: MEAS_BG and MEAS_C must match GA_BG and GA_C in tools/practical-gen/practicals/gamma-absorption/content.js.
+  var MEAS=/[?&]show=measure\b/.test(location.search), MEAS_STEP=4, MEAS_BG=120, MEAS_C=[476,366,290,224,181,141,112];
+  if(MEAS){
+    modeSeg.pick('abs'); $('#gr-mode').hidden=true;
+    expBtn.setAttribute('aria-pressed','true'); expBtn.hidden=true; $('#gr-clear').hidden=true;
+    $('#gr-sheets').innerHTML='<button class="btn" type="button" data-s="'+MEAS_STEP+'">+ '+MEAS_STEP+' mm</button><button class="btn" id="gr-rem" type="button">&minus; Last</button>';
+    graphEl.closest('.cgrid').hidden=true;
+    ['.stats','details.working','#gr-tablewrap'].forEach(function(q){ var e=document.querySelector(q); if(e) e.classList.add('meas-off'); });
+    document.documentElement.classList.add('measure');
+  }
+  function maxX(){ return MEAS ? MEAS_STEP*(MEAS_C.length-1) : MAX_X; }
   function mode(){ return modeSeg.value(); }
   function dist(){ return mode()==='dist'; }
   function exp(){ return pressed(expBtn); }
@@ -460,6 +479,7 @@ function expKey(x, y, upLabel, downLabel){
   // on a phone the graph goes under the bench so its labels stay readable
   var narrowQ=window.matchMedia('(max-width:560px)');
   function layout(){
+    if(MEAS){ svg.setAttribute('viewBox','0 40 345 200'); return; }
     if(narrowQ.matches){ G={x:62, y:322, w:262, h:200}; svg.setAttribute('viewBox','0 0 340 566'); }
     else { G={x:368, y:20, w:214, h:226}; svg.setAttribute('viewBox','0 0 600 300'); }
   }
@@ -560,7 +580,7 @@ function expKey(x, y, upLabel, downLabel){
 
   function draw(){
     var g='<defs><marker id="gr-ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>';
-    g+=drawScene()+drawGraph();
+    g+=drawScene()+(MEAS?'':drawGraph());
     if((running||counting) && slowOn()) g+=txt(336, 14, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
     svg.innerHTML=g;
     readings();
@@ -575,7 +595,7 @@ function expKey(x, y, upLabel, downLabel){
     $('#gr-sb').textContent = exp() ? (b===null ? '?' : sig(b,3)+' min⁻¹') : BG+' min⁻¹';
     $('#gr-scl').textContent = D ? 'Count rate, C' : 'Count rate, I';
     $('#gr-sc').textContent = exp() ? (lastCount!==null && !counting ? lastCount+' min⁻¹' : '–') : Math.round(rateNow()+BG)+' min⁻¹';
-    Array.prototype.forEach.call(document.querySelectorAll('#gr-sheets [data-s]'), function(bt){ bt.disabled = x()+(+bt.dataset.s)>MAX_X || !!counting; });
+    Array.prototype.forEach.call(document.querySelectorAll('#gr-sheets [data-s]'), function(bt){ bt.disabled = x()+(+bt.dataset.s)>maxX() || !!counting; });
     $('#gr-rem').disabled = !sheets.length || !!counting;
     $('#gr-bg').disabled = $('#gr-clear').disabled = !!counting;
     svg.setAttribute('aria-valuenow', d()); svg.setAttribute('aria-valuetext', 'd = '+d()+' cm');
@@ -608,38 +628,53 @@ function expKey(x, y, upLabel, downLabel){
         w3='C against d is a curve. Choose “C against 1/d²” or “1/√C against d” to get a straight line.';
       } else w1='Measure the background, then count at 5 or more distances (5 cm to 50 cm).';
     } else {
+      var LNW='I = I<sub>0</sub>e<sup>−μx</sup><br>ln I = ln I<sub>0</sub> − μx<br>ln I = −μx + ln I<sub>0</sub>';
+      var LNWHY='Why ln I? I = I₀e<sup>−μx</sup> gives a curve. Taking ln of both sides gives ln I = −μx + ln I₀, which has the form y = mx + c: plot ln I up the side (y) and x along the bottom, and you get a straight line with gradient m = −μ and intercept c = ln I₀. A straight line shows the fall is exponential.';
       if(!exp()){
         var I0=rateDist(D_ABS), I=rateAbs(x());
-        w1='I = I<sub>0</sub>e<sup>−μx</sup><br>I = '+sig(I0,4)+' × e<sup>−'+MU+' × '+x()+'</sup><br>I = <b>'+sig(I,3)+' min⁻¹</b>';
-        w2='x<sub>½</sub> = [[ln 2|μ]]<br>x<sub>½</sub> = [[0.6931|'+MU+']]<br>x<sub>½</sub> = <b>'+sig(LN2/MU,3)+' mm</b>';
-        w3='Each extra '+sig(LN2/MU,3)+' mm of lead halves the count rate (after the background is taken off). ln I = ln I₀ − μx, so ln I against x is a straight line with gradient −μ.';
+        if(graphSeg.value()==='ln'){
+          w1=LNW;
+          w2='gradient = −μ<br>gradient = −'+MU+' mm⁻¹<br>intercept = ln I<sub>0</sub><br>intercept = ln '+sig(I0,4)+'<br>intercept = <b>'+sig(Math.log(I0),3)+'</b>';
+          w3=LNWHY+' Half-thickness x<sub>½</sub> = [[ln 2|μ]] = '+sig(LN2/MU,3)+' mm.';
+        } else {
+          w1='I = I<sub>0</sub>e<sup>−μx</sup><br>I = '+sig(I0,4)+' × e<sup>−'+MU+' × '+x()+'</sup><br>I = <b>'+sig(I,3)+' min⁻¹</b>';
+          w2='x<sub>½</sub> = [[ln 2|μ]]<br>x<sub>½</sub> = [[0.6931|'+MU+']]<br>x<sub>½</sub> = <b>'+sig(LN2/MU,3)+' mm</b>';
+          w3='Each extra '+sig(LN2/MU,3)+' mm of lead halves the count rate (after the background is taken off). I against x is a curve, so it is hard to find μ from it: choose “ln I against x” to see why that graph is a straight line.';
+        }
       } else if(enough() && graphSeg.value()==='ln'){
         var f2=fitNow(), mu=-f2.m;
-        w1='ln I = ln I<sub>0</sub> − μx<br>gradient = −μ<br>gradient = '+sig(f2.m,4)+' mm⁻¹<br>μ = <b>'+sig(mu,3)+' mm⁻¹</b>';
+        w1=LNW+'<br>gradient = −μ<br>gradient = '+sig(f2.m,4)+' mm⁻¹<br>μ = <b>'+sig(mu,3)+' mm⁻¹</b>';
         w2='x<sub>½</sub> = [[ln 2|μ]]<br>x<sub>½</sub> = [[0.6931|'+sig(mu,4)+']]<br>x<sub>½</sub> = <b>'+sig(LN2/mu,3)+' mm</b>';
         w3='The model used μ = '+MU+' mm⁻¹ for lead (x½ = '+sig(LN2/MU,3)+' mm); your value differs a little because the counts are random.';
       } else if(enough()) w1='Choose “ln I against x” to find μ from the gradient.';
       else w1='Measure the background, then count with 5 or more thicknesses of lead (0 to 30 mm).';
     }
-    $('#gr-eq1').innerHTML=FR(w1); $('#gr-eq2').innerHTML=FR(w2); $('#gr-eq2').hidden=!w2; $('#gr-eq3').innerHTML=w3; $('#gr-eq3').hidden=!w3;
+    $('#gr-eq1').innerHTML=FR(w1); $('#gr-eq2').innerHTML=FR(w2); $('#gr-eq2').hidden=!w2; $('#gr-eq3').innerHTML=FR(w3); $('#gr-eq3').hidden=!w3;
 
     var n=rows().length, note;
-    if(counting) note = counting.kind==='bg' ? 'Counting the background for 5 minutes, with the source put away in its box.' : 'Counting for 60 s'+(D?' at d = '+d()+' cm.':' with '+x()+' mm of lead.');
+    if(MEAS && !counting){
+      if(bgRate()===null) note='First <b>measure the background</b>: the source is put away and the counter counts for 5 minutes (300 s). Write the count in your table.';
+      else if(lastCount!==null && lastKind==='bg') note='Background: '+lastCount+' counts in 5 minutes. Write it in your table, then <b>count for 60 s</b> with no lead.';
+      else if(lastCount!==null) note='Write the count for '+x()+' mm of lead in your table. '+(x()>=maxX()?'That was the last reading: now work out I and ln I for each row.':'Then add '+MEAS_STEP+' mm more lead and <b>count for 60 s</b> again, up to '+maxX()+' mm.');
+      else note='The tube stays 10 cm from the source. <b>Count for 60 s</b> with '+(x()?x()+' mm of lead':'no lead')+', then read the counter.';
+    }
+    else if(counting) note = counting.kind==='bg' ? 'Counting the background for 5 minutes, with the source put away in its box.' : 'Counting for 60 s'+(D?' at d = '+d()+' cm.':' with '+x()+' mm of lead.');
     else if(!exp()){
       if(D) note='Gamma rays leave the source in all directions. Drag the tube further away: fewer of them reach its window, and the count rate falls with 1/d². <b>Play</b> to watch.';
+      else if(graphSeg.value()==='ln') note='Why ln I? I = I₀e<sup>−μx</sup> is a curve, but ln I = ln I₀ − μx is a straight line (y = mx + c): gradient −μ, intercept ln I₀. Add lead and <b>Play</b> to watch.';
       else note='Add lead sheets between the source and the tube. Each sheet absorbs a fixed fraction of the gamma rays that reach it, so the count rate falls exponentially. <b>Play</b> to watch.';
     }
     else if(bgRate()===null) note='Experiment: first <b>measure the background</b> (no source), then take a 60 s count at each '+(D?'distance':'thickness of lead')+'. Subtract the background from every count.';
     else if(!enough()) note='Background = '+sig(bgRate(),3)+' per minute. You have '+rows().length+' reading'+(rows().length===1?'':'s')+': take at least 5, across the whole range'+(D?' (5 cm to 50 cm).':' (0 to 30 mm).');
     else if(D) note = graphSeg.value()!=='c' ? 'Your points lie close to a straight line through the origin, so C ∝ 1/d²: the inverse-square law.' : 'Done: now choose a graph that gives a straight line. Take more readings to improve it.';
-    else note = graphSeg.value()==='ln' ? 'Your ln I points lie on a straight line, so I falls exponentially: μ = '+sig(-fitNow().m,3)+' mm⁻¹, half-thickness '+sig(LN2/-fitNow().m,3)+' mm.' : 'Done: plot ln I against x to get a straight line.';
+    else note = graphSeg.value()==='ln' ? 'Your ln I points lie on a straight line, so I falls exponentially: μ = '+sig(-fitNow().m,3)+' mm⁻¹, half-thickness '+sig(LN2/-fitNow().m,3)+' mm.' : 'Done: I falls on a curve. Plot ln I against x: ln I = ln I₀ − μx is a straight line with gradient −μ.';
     if(note!==lastNote){ $('#gr-note').innerHTML=note; lastNote=note; }
     if(exp()){ playBtn.innerHTML = R[mode()][key()] ? '&#9654; Count again' : '&#9654; Count for 60 s'; playBtn.disabled=!!counting; }
     else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
   }
 
   // ---- motion: photons fly out from the source; the ones that reach the window make the counter click
-  var running=false, raf=0, last=0, liveT=0, counting=null, lastCount=null, lastTime=0, justAdded=null, spawn=0, LIVE_MAX=30, rand=Math.random;
+  var lastKind=null, running=false, raf=0, last=0, liveT=0, counting=null, lastCount=null, lastTime=0, justAdded=null, spawn=0, LIVE_MAX=30, rand=Math.random;
   function emit(dt, rate){
     spawn+=dt*rate;
     while(spawn>=1){ spawn--; var a=(Math.random()-0.5)*0.9;
@@ -681,13 +716,14 @@ function expKey(x, y, upLabel, downLabel){
     var mean, tag;
     if(kind==='bg'){ BGR.rep++; mean=BG*5; tag='bg'+BGR.rep; }
     else { var k=key(), rk=mode()+k; reps[rk]=(reps[rk]||0)+1; mean=rateNow()+BG; tag=rk+'#'+reps[rk]; }
-    counting={kind:kind, t:0, dur:kind==='bg'?300:60, target:poisson(mean, seeded(tag)), shown:0, key:key()};
+    var target = MEAS ? (kind==='bg' ? MEAS_BG : MEAS_C[Math.round(x()/MEAS_STEP)]) : poisson(mean, seeded(tag));
+    counting={kind:kind, t:0, dur:kind==='bg'?300:60, target:target, shown:0, key:key()};
     loop(); draw();
   }
   function finishCount(){
-    var c=counting; counting=null;
+    var c=counting; counting=null; lastKind=c.kind;
     lastCount=c.target; lastTime=c.dur;
-    if(c.kind==='bg'){ BGR.count=c.target; lastCount=null; }
+    if(c.kind==='bg'){ BGR.count=c.target; lastCount=MEAS?c.target:null; }
     else { R[mode()][c.key]={count:c.target}; justAdded=c.key; lastCount=c.target; }
   }
   function reset(){ stop(); counting=null; photons=[]; clicks=0; liveT=0; lastCount=null; lastTime=0; justAdded=null; cancelAnimationFrame(raf); draw(); }
@@ -730,7 +766,7 @@ function expKey(x, y, upLabel, downLabel){
     else if(k==='PageUp') v=d()+5; else if(k==='PageDown') v=d()-5; else if(k==='Home') v=5; else if(k==='End') v=50;
     if(v!==null){ setD(v); e.preventDefault(); }
   });
-  $('#gr-sheets').addEventListener('click', function(e){ var bt=e.target.closest('[data-s]'); if(!bt||bt.disabled) return; var s=+bt.dataset.s; if(x()+s<=MAX_X){ sheets.push(s); photons=[]; lastCount=null; justAdded=null; draw(); } });
+  $('#gr-sheets').addEventListener('click', function(e){ var bt=e.target.closest('[data-s]'); if(!bt||bt.disabled) return; var s=+bt.dataset.s; if(x()+s<=maxX()){ sheets.push(s); photons=[]; lastCount=null; justAdded=null; draw(); } });
   $('#gr-rem').addEventListener('click', function(){ sheets.pop(); photons=[]; lastCount=null; justAdded=null; draw(); });
 
   watchEquals($('#gr-eq1')); watchEquals($('#gr-eq2'));
