@@ -108,15 +108,17 @@ frameAct('do','animations/hookes-law.html','measure','Hooke’s law experiment: 
     HK_LEN.map((L,F)=>'<tr><td class="given">'+F+'</td><td><input class="calc-num-input" data-c="L" data-f="'+F+'" inputmode="decimal" autocomplete="off" aria-label="Length at '+F+' N, in cm"></td><td><input class="calc-num-input" data-c="x" data-f="'+F+'" inputmode="decimal" autocomplete="off" aria-label="Extension at '+F+' N, in cm"></td></tr>').join('')+'</tbody></table>';
   const inp=(c,F)=>$('input[data-c="'+c+'"][data-f="'+F+'"]',wrap), all=()=>$$('input',wrap);
   const val=e=>{const t=e.value.trim().replace(/[−–]/g,'-').replace(',','.');return t===''||!/^-?(\d+\.?\d*|\.\d+)$/.test(t)?NaN:parseFloat(t);};
-  const b=bar(body,[{label:'Check table',primary:true,fn:check},{label:'Clear',fn:reset}]);
-  const ans=answerBtn(b,()=>{
+  // Fill in table (Alex, 5 Nov 2026): always there, so a student who can't read the ruler can still go on to the plot
+  const b=bar(body,[{label:'Check table',primary:true,fn:check},{label:'Fill in table',fn:fill},{label:'Clear',fn:reset}]);
+  const ans={on:()=>{},off:()=>{}};
+  function fill(){
     HK_LEN.forEach((L,F)=>{
       const l=inp('L',F),x=inp('x',F);
       if(!l.disabled){l.value=L.toFixed(1);l.disabled=true;l.classList.add('is-shown');l.classList.remove('is-wrong');}
       if(!x.disabled){const o=val(inp('L',0));x.value=(val(l)-o).toFixed(1).replace(/^-0\.0$/,'0.0');x.disabled=true;x.classList.add('is-shown');x.classList.remove('is-wrong');}
     });
-    b.say('Answers shown (dashed), worked from the lengths in the table. Now plot them below.','');hkPlotRows();
-  });
+    b.say('Table filled in (dashed), with each extension worked from the lengths in the table. Now plot them below.','');hkPlotRows();
+  }
   function check(){
     let ok=0,bad=0,blank=0;const o=val(inp('L',0));
     HK_LEN.forEach((L,F)=>{
@@ -190,7 +192,7 @@ frameAct('experiment','animations/hookes-law.html','','Hooke’s law animation: 
   ]});
 }
 {
-  const body=act('variables','Predict','A new question to test','');
+  const body=act('variables','Multiple choice','A new question to test','');
   createPredict({host:body,q:'Elizabeth wants to find out whether springs made of thicker wire stretch less. What is her independent variable?',options:[
     {text:'The thickness of the spring’s wire',correct:true},
     {text:'The load she hangs on each spring',why:'The load is what she changes in the basic practical. Here she must keep it the same for every spring, so it is a control variable.'},
@@ -199,7 +201,7 @@ frameAct('experiment','animations/hookes-law.html','','Hooke’s law animation: 
   ],explain:'The independent variable is the one she changes on purpose: the thickness of the wire. She keeps the load the same and measures the extension.'});
 }
 {
-  const body=act('variables','Predict','Measuring the original length','');
+  const body=act('variables','Multiple choice','Measuring the original length','');
   createPredict({host:body,q:'Why must Ali read the length of the spring before he adds any masses?',options:[
     {text:'Every extension is worked out from this length',correct:true},
     {text:'It is the only way to check the ruler is vertical',why:'A set square checks the ruler is vertical. The original length is needed to work out every extension.'},
@@ -357,14 +359,7 @@ function tableCalc(body,head,rows,unitNote){
   ],'Extension = length − original length (12.0 cm).');
 }
 {
-  const body=act('results','Plot','Plot Ali’s results','Plot each point from Ali’s table as a small cross. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
-  createPlot({host:body,
-    points:[{x:2.4,y:2},{x:4.8,y:4},{x:7.2,y:6},{x:11,y:8}],
-    rowText:p=>p.y+' N, '+fmt(p.x,1)+' cm',
-    graph:{xMin:0,xMax:12,yMin:0,yMax:8,xTicks:[0,2,4,6,8,10,12],yTicks:[0,2,4,6,8],minor:[0.4,0.5],snap:[0.2,0.5],xLabel:'extension (cm)',yLabel:'force (N)',W:560,H:340}});
-}
-{
-  const body=act('results','Predict','Reading the results','');
+  const body=act('results','Multiple choice','Reading the results','');
   createPredict({host:body,q:'Use Ali’s table. Up to which load does the spring obey Hooke’s law?',options:[
     {text:'To at least 6 N: each extra 2 N adds 2.4 cm',correct:true},
     {text:'Up to 8 N: the extension goes up every time',why:'Going up is not enough. Hooke’s law needs the extension to be proportional to the force; from 6 N to 8 N it grows by 3.8 cm, not 2.4 cm.'},
@@ -373,7 +368,7 @@ function tableCalc(body,head,rows,unitNote){
   ],explain:'From 0 to 6 N, each extra 2 N adds 2.4 cm, so extension is directly proportional to force. From 6 N to 8 N it adds 3.8 cm. So the spring obeys Hooke’s law to at least 6 N, and its limit of proportionality is somewhere between 6 N and 8 N.'});
 }
 {
-  const body=act('results','Predict','Taking the masses off','');
+  const body=act('results','Multiple choice','Taking the masses off','');
   createPredict({host:body,q:'Ali takes all the masses off. The spring now measures 12.6 cm, not 12.0 cm. What does this show?',options:[
     {text:'It went past its elastic limit and is permanently stretched',correct:true},
     {text:'It is still elastic, because it got shorter again',why:'Elastic means it returns to its original length. It is 0.6 cm longer than it started, so it has not fully recovered.'},
@@ -383,8 +378,8 @@ function tableCalc(body,head,rows,unitNote){
 }
 
 {
-  const body=act('results','Predict','The line of best fit','');
-  createPredict({host:body,q:'What line of best fit should Ali draw through his plotted points?',options:[
+  const body=act('results','Multiple choice','The line of best fit','');
+  createPredict({host:body,q:'Ali plots his results on a graph of force against extension. What line of best fit should he draw?',options:[
     {text:'A straight line through the origin to 6 N, then a smooth curve',correct:true},
     {text:'Short straight lines joining each point to the next',why:'Joining the dots follows every small error. A line of best fit shows the trend, so it is one smooth line.'},
     {text:'One straight line through every point, all the way from 0 to 8 N',why:'The 8 N point is well off the straight line, so the trend changes there. Forcing one straight line hides the limit of proportionality.'},
@@ -392,7 +387,7 @@ function tableCalc(body,head,rows,unitNote){
   ],explain:'Draw one thin, smooth line that follows the trend: straight through the origin while the points are in line, then curving once they are not.'});
 }
 {
-  const body=act('results','Predict','An anomalous result','');
+  const body=act('results','Multiple choice','An anomalous result','');
   createPredict({host:body,q:'Fatimah’s results are below. Which result is anomalous, and what should she do?',
     pre:'<div class="table-scroll"><table class="units res-tbl"><thead><tr><th>Load (N)</th><th>0</th><th>2</th><th>4</th><th>6</th><th>8</th></tr></thead><tbody><tr><th>Extension (cm)</th><td>0</td><td>1.6</td><td>3.2</td><td>5.9</td><td>6.4</td></tr></tbody></table></div>',
     options:[
