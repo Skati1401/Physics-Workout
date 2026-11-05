@@ -151,7 +151,8 @@ frameAct('do','animations/hookes-law.html','measure','Hooke’s law experiment: 
     graph:{xMin:0,xMax:14,yMin:0,yMax:8,xTicks:[0,2,4,6,8,10,12,14],yTicks:[0,2,4,6,8],minor:[0.4,0.5],snap:[0.2,0.5],xLabel:'extension (cm)',yLabel:'force (N)',W:560,H:340}});
   // the list beside the graph shows each extension from the student's table once it is checked
   // the animation and the results table side by side, so students read and write without scrolling
-  {const fr=$('#panel-do .anim-wrap'),tb=$('#panel-do .hk-tbl').closest('.act');if(fr&&tb){const sp=mk('div','hk-split');fr.parentNode.insertBefore(sp,fr);sp.appendChild(fr);sp.appendChild(tb);}}
+  // (after the page's core-route set-up has run, so the table still counts as a core activity)
+  setTimeout(()=>{const fr=$('#panel-do .anim-wrap'),tb=$('#panel-do .hk-tbl').closest('.act');if(fr&&tb){const sp=mk('div','hk-split');fr.parentNode.insertBefore(sp,fr);sp.appendChild(fr);sp.appendChild(tb);}},0);
   hkPlotRows=()=>{$$('.plot-row',body).forEach((li,i)=>{const e=hkTable&&hkTable.ext(i+1),s=li.firstElementChild;if(s)s.textContent=(i+1)+' N, '+(e?e+' cm':'your extension');});};
   hkPlotRows();
 }
