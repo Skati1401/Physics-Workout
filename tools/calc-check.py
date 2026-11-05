@@ -33,9 +33,9 @@ def run(pg,page):
                 if re.search(r'NaN|undefined|Infinity',o['txt']+o['lab']+o['ans']): bad.append('NaN/undefined')
                 num=o['ans'].replace('×10^','e')
                 try:
-                    v=float(num); keys={num,o['ans'],('%g'%v),('%g'%v).replace('e','×10^'),('%g'%v).replace('e+0','e').replace('e-0','e-'),('%.2e'%v).replace('e+0','e').replace('e-0','e-'),('%.3g'%v)}
+                    v=float(num); keys={num,o['ans'],('%g'%v),('%g'%v).replace('e','×10^'),('%g'%v).replace('e+0','e').replace('e-0','e-'),('%.2e'%v).replace('e+0','e').replace('e-0','e-'),('%.3g'%v),('%.3g'%v).replace('e+','e')}
                     sup=str.maketrans('⁰¹²³⁴⁵⁶⁷⁸⁹⁻','0123456789-')
-                    flat=o['last'].translate(sup).replace('×10','e').replace('\u2212','-').replace('\u2009','').replace(' ','').replace('\u00a0','')
+                    flat=o['last'].translate(sup).replace('\u2212','-').replace('\u2009','').replace(' ','').replace('\u00a0','').replace('×10','e')
                     if not any(k.replace(' ','') in flat for k in keys if k): bad.append('answer %s not in last lines'%o['ans'])
                 except: pass
                 if not o['split']: bad.append('no givens||steps layout')
