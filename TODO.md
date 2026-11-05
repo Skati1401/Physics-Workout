@@ -49,6 +49,18 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 How to build one: `tools/CORE-PRACTICALS.md`.
 
 - [ ] Review the six practicals published 4 Nov 2026: 3.17 `refraction-practical.html`, 3.19 `refractive-index-practical.html`, 3.25P `speed-of-sound-practical.html`, 2.23P `charging-practical.html`, 3.27P `sound-frequency-practical.html`, 7.6 `penetrating-power-practical.html` (what to check is in `tools/REVIEW.md`).
+- [ ] Core route for the other 13 IGCSE practicals (only 1.22 has one): about 12 minutes each, chosen from the Question Index, set in `page.json`, checked with `check.py` (`tools/CORE-PRACTICALS.md`, "Core route + Extra practice"). Start from the recommended route for each page in the Project doc `claude/practicals-review-2026-11-04.md` (added 5 Nov 2026).
+- [ ] Fix the errors the 4 Nov practicals review found, still live on 5 Nov 2026 (full list per page in `claude/practicals-review-2026-11-04.md`). The main ones:
+  - 5.4 density: `setMethod` runs before the Method activities exist, so all four Orders show on load; make Irregular object the default.
+  - 1.5 motion: the "Three ramps" graph lines end at different distances and speeds; fix the end points.
+  - 3.27P: Trace A Q1 asks for "complete" cycles with the answer 2.5; identical repeats possible without moving the cursors.
+  - 3.25P: delete "Much over 200 m, the sound gets hard to hear"; "Why miss the origin?" contradicts the animation; Exam (f) uses past-paper data.
+  - 5.14P: the "more mass than measured" distractor in "Why is the value too high?" would really give a high c.
+  - 6.6: "Tapping the card" marks a creditworthy answer wrong.
+  - 7.6: the absorber thickness is a control, yet paper, 5 mm Al and 2 cm lead are compared ("The best absorber").
+  - 2.23P Exam (f): add "electrons". CP12: line 93 says the calibration carries to the Divider tab (it doesn't). CP13: the "steam condensed back" distractor would really make L_v high.
+  - Duplicate exam numbers to change: 2.9 Exam (b), 3.25P Exam (b), 3.17 Exam (d), 3.19 Exam (d), CP12 Exam (a).
+  - Missing activities worth adding: circuit diagram (2.9), field-drawing mistakes (6.6), sketch the heating curve (5.11P).
 - [ ] IAL CP7 resistivity and CP8 internal resistance practical pages, if Alex wants them (the animations are done).
 - [ ] IAL CP12–14: mark scheme wording check (no IAL question index yet).
 
