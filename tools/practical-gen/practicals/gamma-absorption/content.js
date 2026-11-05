@@ -147,9 +147,9 @@ frameAct('do','animations/gamma-radiation.html','measure','Gamma absorption expe
 {
   const body=act('do','Calculate','μ and the half-thickness from your line','A good line of best fit through your points passes through (0, 6.12) and (24.0, 4.49). Read nothing else off the graph.');
   createCalc({host:body,questions:[
-    {q:'What is the gradient of the line?',unit:'mm⁻¹',answer:-0.0679,working:'gradient = [[change in ln I|change in x]]<br>gradient = [[4.49 − 6.12|24.0 − 0]]<br>gradient = [[−1.63|24.0]]<br>gradient = −0.0679 mm⁻¹'},
-    {q:'What is the absorption coefficient, μ, in m⁻¹?',unit:'m⁻¹',answer:67.9,working:'gradient = −μ<br>−0.0679 = −μ<br>μ = 0.0679 mm⁻¹<br>μ = 0.0679 × 1000<br>μ = 67.9 m⁻¹'},
-    {q:'What is the half-thickness of lead, x½?',unit:'mm',answer:10.2,working:'x<sub>½</sub> = [[ln 2|μ]]<br>x<sub>½</sub> = [[0.6931|0.0679]]<br>x<sub>½</sub> = 10.2 mm'}
+    {q:'What is the gradient of the line?',unit:'mm⁻¹',answer:-0.0679,working:'first point = (0, 6.12)<br>second point = (24.0, 4.49)<br>gradient = ?||gradient = [[change in ln I|change in x]]<br>gradient = [[4.49 − 6.12|24.0 − 0]]<br>gradient = [[−1.63|24.0]]<br>gradient = −0.0679 mm⁻¹'},
+    {q:'What is the absorption coefficient, μ, in m⁻¹?',unit:'m⁻¹',answer:67.9,working:'gradient = −0.0679 mm⁻¹<br>1 mm⁻¹ = 1000 m⁻¹<br>μ = ?||gradient = −μ<br>−0.0679 = −μ<br>μ = 0.0679 mm⁻¹<br>μ = 0.0679 × 1000<br>μ = 67.9 m⁻¹'},
+    {q:'What is the half-thickness of lead, x½?',unit:'mm',answer:10.2,working:'μ = 0.0679 mm⁻¹<br>x<sub>½</sub> = ?||x<sub>½</sub> = [[ln 2|μ]]<br>x<sub>½</sub> = [[0.6931|0.0679]]<br>x<sub>½</sub> = 10.2 mm'}
   ]});
 }
 
@@ -171,7 +171,7 @@ const GI={xMin:0,xMax:30,yMin:0,yMax:500,xTicks:[0,5,10,15,20,25,30],yTicks:[0,1
   createCalc({host:side,questions:[
     {q:'What is I with no lead?',unit:'min⁻¹',answer:480,working:'Read the value where x = 0.<br>I<sub>0</sub> = 480 min⁻¹'},
     {q:'What thickness of lead halves I?',unit:'mm',answer:10,working:'Half of 480 is 240.<br>Read across from 240 to the curve, then down.<br>x<sub>½</sub> = 10 mm'},
-    {q:'Use your half-thickness to find μ.',unit:'mm⁻¹',answer:0.0693,working:'x<sub>½</sub> = [[ln 2|μ]]<br>10 = [[0.6931|μ]]<br>μ = [[0.6931|10]]<br>μ = 0.0693 mm⁻¹'}
+    {q:'Use your half-thickness to find μ.',unit:'mm⁻¹',answer:0.0693,working:'x<sub>½</sub> = 10 mm<br>μ = ?||x<sub>½</sub> = [[ln 2|μ]]<br>10 = [[0.6931|μ]]<br>μ = [[0.6931|10]]<br>μ = 0.0693 mm⁻¹'}
   ]});
 }
 const GL={xMin:0,xMax:40,yMin:3,yMax:6.5,xTicks:[0,10,20,30,40],yTicks:[3,3.5,4,4.5,5,5.5,6,6.5],xLabel:'x (mm)',yLabel:'ln (I / min⁻¹)',W:560,H:340};
@@ -183,20 +183,33 @@ const GL={xMin:0,xMax:40,yMin:3,yMax:6.5,xTicks:[0,10,20,30,40],yTicks:[3,3.5,4,
     extra:lab(g0,'P',34,3.62-0.35)+lab(g0,'Q',34,5.49+0.3)},GL)).svg));
   const side=mk('div','graph-side');split.appendChild(side);
   createCalc({host:side,questions:[
-    {q:'Line P: what is μ for lead?',unit:'mm⁻¹',answer:0.07,working:'gradient = [[change in ln I|change in x]]<br>gradient = [[3.2 − 6.0|40 − 0]]<br>gradient = −0.070 mm⁻¹<br>gradient = −μ<br>μ = 0.070 mm⁻¹'},
-    {q:'Line Q: what is μ for aluminium?',unit:'mm⁻¹',answer:0.015,working:'gradient = [[5.4 − 6.0|40 − 0]]<br>gradient = −0.015 mm⁻¹<br>gradient = −μ<br>μ = 0.015 mm⁻¹'},
-    {q:'What is I with no absorber?',unit:'min⁻¹',answer:403,working:'Both lines meet the ln I axis at 6.0.<br>ln I<sub>0</sub> = 6.0<br>I<sub>0</sub> = e<sup>6.0</sup><br>I<sub>0</sub> = 403 min⁻¹'}
+    {q:'Line P: what is μ for lead?',unit:'mm⁻¹',answer:0.07,working:'first point = (0, 6.0)<br>second point = (40, 3.2)<br>μ = ?||gradient = [[change in ln I|change in x]]<br>gradient = [[3.2 − 6.0|40 − 0]]<br>gradient = −0.070 mm⁻¹<br>gradient = −μ<br>μ = 0.070 mm⁻¹'},
+    {q:'Line Q: what is μ for aluminium?',unit:'mm⁻¹',answer:0.015,working:'first point = (0, 6.0)<br>second point = (40, 5.4)<br>μ = ?||gradient = [[change in ln I|change in x]]<br>gradient = [[5.4 − 6.0|40 − 0]]<br>gradient = −0.015 mm⁻¹<br>gradient = −μ<br>μ = 0.015 mm⁻¹'},
+    {q:'What is I with no absorber?',unit:'min⁻¹',answer:403,working:'intercept = 6.0<br>I<sub>0</sub> = ?||ln I<sub>0</sub> = intercept<br>ln I<sub>0</sub> = 6.0<br>I<sub>0</sub> = e<sup>6.0</sup><br>I<sub>0</sub> = 403 min⁻¹'}
   ]});
 }
 
 /* ================= 6. CALCULATE ================= */
+const g3=v=>String(+(+v).toPrecision(3)), g4=v=>String(+(+v).toPrecision(4));
 {
-  const body=act('calculate','Calculate','Absorption and background','Use I = I<sub>0</sub>e<sup>−μx</sup> and x<sub>½</sub> = [[ln 2|μ]]. Every count rate here has already had the background taken off, unless the question says otherwise.');
+  const body=act('calculate','Calculate','Absorption and background','Use I = I<sub>0</sub>e<sup>−μx</sup> and x<sub>½</sub> = [[ln 2|μ]]. Every count rate here has already had the background taken off, unless the question says otherwise. Press New problems for another set.');
   createCalc({host:body,questions:[
-    {q:'I₀ = 520 per minute and μ = 0.065 mm⁻¹ for lead. What is I through 15 mm of lead?',unit:'min⁻¹',answer:196,working:'I = I<sub>0</sub>e<sup>−μx</sup><br>I = 520 × e<sup>−0.065 × 15</sup><br>I = 520 × e<sup>−0.975</sup><br>I = 520 × 0.3772<br>I = 196 min⁻¹'},
-    {q:'I falls from 450 to 150 per minute. μ = 0.068 mm⁻¹. How thick is the lead?',unit:'mm',answer:16.2,working:'I = I<sub>0</sub>e<sup>−μx</sup><br>150 = 450 × e<sup>−0.068x</sup><br>[[150|450]] = e<sup>−0.068x</sup><br>ln 0.3333 = −0.068x<br>−1.0986 = −0.068x<br>x = [[1.0986|0.068]]<br>x = 16.2 mm'},
-    {q:'A lead absorber has a half-thickness of 12 mm. What is μ?',unit:'mm⁻¹',answer:0.0578,working:'x<sub>½</sub> = [[ln 2|μ]]<br>12 = [[0.6931|μ]]<br>μ = [[0.6931|12]]<br>μ = 0.0578 mm⁻¹'},
-    {q:'Iman counts 230 in 1 minute through some lead. The background was 95 counts in 5 minutes. What is the corrected count rate?',unit:'min⁻¹',answer:211,working:'background count rate = [[95|5]]<br>background count rate = 19 min⁻¹<br>I = 230 − 19<br>I = 211 min⁻¹'}
+    {q:'I₀ = 520 per minute and μ = 0.065 mm⁻¹ for lead. What is I through 15 mm of lead?',unit:'min⁻¹',answer:196,working:'I<sub>0</sub> = 520 min⁻¹<br>μ = 0.065 mm⁻¹<br>x = 15 mm<br>I = ?||I = I<sub>0</sub>e<sup>−μx</sup><br>I = 520 × e<sup>−0.065 × 15</sup><br>I = 520 × e<sup>−0.975</sup><br>I = 520 × 0.3772<br>I = 196 min⁻¹',
+     make:rnd=>{const I0=calcPick(rnd,[400,450,480,520,560,600]),mu=calcPick(rnd,[0.055,0.06,0.065,0.07,0.075]),x=calcPick(rnd,[6,8,10,12,15,18,20]),p=g4(mu*x),f=Math.exp(-mu*x),I=I0*f;
+       return {q:`I₀ = ${I0} per minute and μ = ${mu} mm⁻¹ for lead. What is I through ${x} mm of lead?`,unit:'min⁻¹',answer:+I.toPrecision(3),
+         working:`I<sub>0</sub> = ${I0} min⁻¹<br>μ = ${mu} mm⁻¹<br>x = ${x} mm<br>I = ?||I = I<sub>0</sub>e<sup>−μx</sup><br>I = ${I0} × e<sup>−${mu} × ${x}</sup><br>I = ${I0} × e<sup>−${p}</sup><br>I = ${I0} × ${g4(f)}<br>I = ${g3(I)} min⁻¹`};}},
+    {q:'I falls from 450 to 150 per minute. μ = 0.068 mm⁻¹. How thick is the lead?',unit:'mm',answer:16.2,working:'I<sub>0</sub> = 450 min⁻¹<br>I = 150 min⁻¹<br>μ = 0.068 mm⁻¹<br>x = ?||I = I<sub>0</sub>e<sup>−μx</sup><br>150 = 450 × e<sup>−0.068x</sup><br>[[150|450]] = e<sup>−0.068x</sup><br>ln 0.3333 = −0.068x<br>−1.0986 = −0.068x<br>x = [[1.0986|0.068]]<br>x = 16.2 mm',
+     make:rnd=>{const I0=calcPick(rnd,[360,480,600,720,840]),r=calcPick(rnd,[2,3,4,5]),mu=calcPick(rnd,[0.06,0.064,0.068,0.072,0.08]),I=I0/r,ln=Math.log(r),x=ln/mu;
+       return {q:`I falls from ${I0} to ${I} per minute. μ = ${mu} mm⁻¹. How thick is the lead?`,unit:'mm',answer:+x.toPrecision(3),
+         working:`I<sub>0</sub> = ${I0} min⁻¹<br>I = ${I} min⁻¹<br>μ = ${mu} mm⁻¹<br>x = ?||I = I<sub>0</sub>e<sup>−μx</sup><br>${I} = ${I0} × e<sup>−${mu}x</sup><br>[[${I}|${I0}]] = e<sup>−${mu}x</sup><br>ln ${g4(1/r)} = −${mu}x<br>−${g4(ln)} = −${mu}x<br>x = [[${g4(ln)}|${mu}]]<br>x = ${g3(x)} mm`};}},
+    {q:'A lead absorber has a half-thickness of 12 mm. What is μ?',unit:'mm⁻¹',answer:0.0578,working:'x<sub>½</sub> = 12 mm<br>μ = ?||x<sub>½</sub> = [[ln 2|μ]]<br>12 = [[0.6931|μ]]<br>μ = [[0.6931|12]]<br>μ = 0.0578 mm⁻¹',
+     make:rnd=>{const h=calcPick(rnd,[8,9,10,11,12,14,15,16]),mu=Math.LN2/h,what=calcPick(rnd,['A lead absorber','A sheet of lead','A lead shield']);
+       return {q:`${what} has a half-thickness of ${h} mm. What is μ?`,unit:'mm⁻¹',answer:+mu.toPrecision(3),
+         working:`x<sub>½</sub> = ${h} mm<br>μ = ?||x<sub>½</sub> = [[ln 2|μ]]<br>${h} = [[0.6931|μ]]<br>μ = [[0.6931|${h}]]<br>μ = ${g3(mu)} mm⁻¹`};}},
+    {q:'Iman counts 230 in 1 minute through some lead. The background was 95 counts in 5 minutes. What is the corrected count rate?',unit:'min⁻¹',answer:211,working:'count rate = 230 min⁻¹<br>background = 95 counts in 5 min<br>I = ?||background count rate = [[95|5]]<br>background count rate = 19 min⁻¹<br>I = 230 − 19<br>I = 211 min⁻¹',
+     make:rnd=>{const who=calcPick(rnd,['Amelia','Asma','Rose','Haris','Iman','Isaac','Jordan','Nicholas','Ollie']),raw=calcPick(rnd,[180,215,246,262,305,338,372,410]),b=calcPick(rnd,[14,16,18,19,21,22,24]),bc=5*b,I=raw-b;
+       return {q:`${who} counts ${raw} in 1 minute through some lead. The background was ${bc} counts in 5 minutes. What is the corrected count rate?`,unit:'min⁻¹',answer:I,
+         working:`count rate = ${raw} min⁻¹<br>background = ${bc} counts in 5 min<br>I = ?||background count rate = [[${bc}|5]]<br>background count rate = ${b} min⁻¹<br>I = ${raw} − ${b}<br>I = ${I} min⁻¹`};}}
   ]});
 }
 
@@ -224,11 +237,11 @@ const GL={xMin:0,xMax:40,yMin:3,yMax:6.5,xTicks:[0,10,20,30,40],yTicks:[3,3.5,4,
   body.appendChild(resTable(['x (mm)','0','5.0','10.0','15.0','20.0'],[['Count in 1 minute','512','382',null,'216','165']]));
   body.appendChild(mk('p','sub','(a) 1 mark'));
   createCalc({host:body,questions:[
-    {q:'Calculate the background count rate, in counts per minute.',unit:'min⁻¹',answer:22,working:'background count rate = [[110|5]]<br>background count rate = 22 min⁻¹'}
+    {q:'Calculate the background count rate, in counts per minute.',unit:'min⁻¹',answer:22,working:'background = 110 counts in 5 min<br>background count rate = ?||background count rate = [[110|5]]<br>background count rate = 22 min⁻¹'}
   ]});
   body.appendChild(mk('p','sub','(b) 2 marks'));
   createCalc({host:body,questions:[
-    {q:'Predict the missing count at 10.0 mm.',unit:'counts',answer:287,working:'I = count − 22<br>I at 0 mm = 490 min⁻¹, I at 5.0 mm = 360 min⁻¹<br>each 5.0 mm multiplies I by [[360|490]] = 0.7347<br>I at 10.0 mm = 360 × 0.7347<br>I at 10.0 mm = 264.5 min⁻¹<br>count = 264.5 + 22<br>count = 287'}
+    {q:'Predict the missing count at 10.0 mm.',unit:'counts',answer:287,working:'background count rate = 22 min⁻¹<br>count at 0 mm = 512<br>count at 5.0 mm = 382<br>count at 10.0 mm = ?||I (0 mm) = 512 − 22<br>I (0 mm) = 490 min⁻¹<br>I (5.0 mm) = 382 − 22<br>I (5.0 mm) = 360 min⁻¹<br>factor per 5.0 mm = [[360|490]]<br>factor per 5.0 mm = 0.7347<br>I (10.0 mm) = 360 × 0.7347<br>I (10.0 mm) = 264.5 min⁻¹<br>count = 264.5 + 22<br>count = 287'}
   ]});
   examPart(body,'(c) 3 marks','The corrected count rate is given by I = I<sub>0</sub>e<sup>−μx</sup>. Explain why Nicholas should plot ln I against x, and how he can find μ from his graph.',[
     'Taking natural logs gives ln I = ln I<sub>0</sub> − μx.',
@@ -237,11 +250,11 @@ const GL={xMin:0,xMax:40,yMin:3,yMax:6.5,xTicks:[0,10,20,30,40],yTicks:[3,3.5,4,
   ]);
   body.appendChild(mk('p','sub','(d) 3 marks'));
   createCalc({host:body,questions:[
-    {q:'Use the readings at 0 and 20.0 mm to calculate μ, in m⁻¹.',unit:'m⁻¹',answer:61.6,working:'I at 0 mm = 512 − 22 = 490 min⁻¹, ln I = 6.194<br>I at 20.0 mm = 165 − 22 = 143 min⁻¹, ln I = 4.963<br>gradient = [[4.963 − 6.194|20.0 − 0]]<br>gradient = −0.0616 mm⁻¹<br>μ = 0.0616 mm⁻¹<br>μ = 0.0616 × 1000<br>μ = 61.6 m⁻¹'}
+    {q:'Use the readings at 0 and 20.0 mm to calculate μ, in m⁻¹.',unit:'m⁻¹',answer:61.6,working:'background count rate = 22 min⁻¹<br>count at 0 mm = 512<br>count at 20.0 mm = 165<br>μ = ?||I (0 mm) = 512 − 22<br>I (0 mm) = 490 min⁻¹<br>ln I (0 mm) = 6.194<br>I (20.0 mm) = 165 − 22<br>I (20.0 mm) = 143 min⁻¹<br>ln I (20.0 mm) = 4.963<br>gradient = [[4.963 − 6.194|20.0 − 0]]<br>gradient = −0.0616 mm⁻¹<br>μ = 0.0616 mm⁻¹<br>μ = 0.0616 × 1000<br>μ = 61.6 m⁻¹'}
   ]});
   body.appendChild(mk('p','sub','(e) 2 marks'));
   createCalc({host:body,questions:[
-    {q:'Calculate the half-thickness of lead.',unit:'mm',answer:11.3,working:'μ = 0.0616 mm⁻¹<br>x<sub>½</sub> = [[ln 2|μ]]<br>x<sub>½</sub> = [[0.6931|0.0616]]<br>x<sub>½</sub> = 11.3 mm'}
+    {q:'Calculate the half-thickness of lead.',unit:'mm',answer:11.3,working:'μ = 0.0616 mm⁻¹<br>x<sub>½</sub> = ?||x<sub>½</sub> = [[ln 2|μ]]<br>x<sub>½</sub> = [[0.6931|0.0616]]<br>x<sub>½</sub> = 11.3 mm'}
   ]});
   examPart(body,'(f) 6 marks','Describe how Nicholas should carry out this investigation to obtain accurate results. Include how he should use his results and one safety precaution.',[
     'Measure the background count (with the source in its box) for several minutes, or repeat it, and find the count rate per minute.',
