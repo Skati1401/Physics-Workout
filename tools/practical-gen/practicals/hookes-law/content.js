@@ -1,3 +1,46 @@
+/* ================= 0. WHAT HOOKE'S LAW SAYS ================= */
+{
+  const body=act('law','Look','Hooke’s law on a graph','Almost every Hooke’s law question comes back to one idea: up to the limit of proportionality, the extension is directly proportional to the force.');
+  const G={xMin:0,xMax:16,yMin:0,yMax:6,xTicks:[0,2,4,6,8,10,12,14,16],yTicks:[0,1,2,3,4,5,6],xLabel:'extension (cm)',yLabel:'force (N)',W:560,H:340};
+  const g0=lineGraph(Object.assign({points:[[0,0]]},G));
+  const dash=(x,y)=>'<polyline points="'+g0.gx(0)+','+g0.gy(y)+' '+g0.gx(x)+','+g0.gy(y)+' '+g0.gx(x)+','+g0.gy(0)+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="5 4"/>';
+  const lop='<circle cx="'+g0.gx(10)+'" cy="'+g0.gy(5)+'" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>'+
+    '<text class="g-lab" x="'+(g0.gx(10)-10)+'" y="'+(g0.gy(5)-14)+'" text-anchor="end">limit of proportionality</text>';
+  const tag='<text class="g-lab" x="'+(g0.gx(4)+12)+'" y="'+(g0.gy(2)+4)+'">2 N → 4 cm</text><text class="g-lab" x="'+(g0.gx(8)+12)+'" y="'+(g0.gy(4)+4)+'">4 N → 8 cm</text>';
+  const svg=lineGraph(Object.assign({label:'Force against extension for a spring: a straight line through the origin up to 5 N, then a curve',
+    segments:[{pts:[[0,0],[10,5]]},{pts:[[10,5],[11,5.3],[12.5,5.65],[14.5,5.92],[16,6]]}],extra:dash(4,2)+dash(8,4)+lop+tag},G)).svg;
+  const split=mk('div','graph-split');body.appendChild(split);
+  split.appendChild(mk('div','graph-box',svg));
+  const side=mk('div','graph-side');split.appendChild(side);
+  side.innerHTML='<p><b>Hooke’s law:</b> the extension of a spring is directly proportional to the force on it, up to the limit of proportionality.</p>'+
+    '<ul><li><b>Directly proportional</b> means that if the force doubles, the extension doubles: 2 N gives 4 cm, 4 N gives 8 cm.</li>'+
+    '<li>So each extra 1 N adds the same extension (here 2 cm).</li>'+
+    '<li>On the graph this part is a <b>straight line through the origin</b>. That is how you spot Hooke’s law on any graph.</li>'+
+    '<li>Past the <b>limit of proportionality</b> (5 N here) the line curves, and the spring no longer obeys Hooke’s law.</li></ul>'+
+    '<p class="sub">In an exam, write the whole statement, including “up to the limit of proportionality”. A straight line that does not pass through the origin is not direct proportion.</p>';
+}
+{
+  const body=act('law','Fill in the blanks','What Hooke’s law says','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
+  const parts=[
+    'Hooke’s law says that the extension of a spring is ',['h1','directly proportional'],' to the ',['h2','force'],' on it, up to the ',['h3','limit of proportionality'],
+    '. So if the force on the spring doubles, its extension ',['h4','doubles'],', and each extra newton adds the ',['h5','same'],' extension. On a graph of force against extension, this part is a ',
+    ['h6','straight line'],' that passes through the ',['h7','origin'],'. Past the limit of proportionality the graph ',['h8','curves'],', and the spring no longer obeys Hooke’s law.'
+  ];
+  const cloze=mk('div','cloze'),slots=[],chips=[];
+  parts.forEach(p=>{
+    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
+    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
+  });
+  ['inversely proportional','halves','mass','elastic limit'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
+  body.appendChild(cloze);
+  body.appendChild(mk('div','pool-label','Word bank'));
+  const pool=mk('div','chip-pool');body.appendChild(pool);
+  const g={};
+  const b=bar(body,[{label:'Check',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
+  const score=mk('span','score');b.el.insertBefore(score,b.msg);
+  Object.assign(g,createBlankGame({slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
+}
+
 /* ================= 1. OVERVIEW ================= */
 {
   const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
@@ -417,7 +460,15 @@ function tableCalc(body,head,rows,unitNote){
   body.appendChild(d4);
 }
 {
-  const body=act('exam','Exam style','Does the spring obey Hooke’s law?','Elizabeth loads a spring and records these results. One reading is missing.');
+  const body=act('exam','Exam style','Measure a wire’s extension','A wire stretches far less than a spring, so the method changes.');
+  body.appendChild(mk('p','sub','3 marks'));
+  body.appendChild(mk('p','','Ali tests a long copper wire instead. Its extension is only a few millimetres. Describe how he should measure the extension, and give one safety precaution.'));
+  const d5=mk('details','');
+  d5.innerHTML='<summary>Check your answer</summary><div><ul><li>Fix a marker to the wire and measure its original position (length) before adding any load.</li><li>Add the loads gently, one at a time; extension = new length − original length, read at the same marker each time.</li><li>The extension is tiny, so measure it with a vernier scale (or vernier calipers), not just a ruler.</li><li>Avoid parallax: view the scale perpendicularly, level with the marker.</li><li>Safety: wear goggles in case the wire snaps, and keep your feet clear of the masses.</li></ul><p class="sub">For a wire method, repeating and finding a mean, naming control variables, or just writing “eye level” scored nothing in a recent mark scheme. Give the detail instead.</p></div>';
+  body.appendChild(d5);
+}
+{
+  const body=act('analysis','Exam style','Does the spring obey Hooke’s law?','Elizabeth loads a spring and records these results. One reading is missing.');
   const tbl=mk('div','table-scroll');
   tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Load (N)</th><th>0</th><th>2</th><th>4</th><th>6</th><th>8</th><th>10</th></tr></thead><tbody><tr><th>Extension (cm)</th><td>0</td><td>1.5</td><td>3.0</td><td><b>?</b></td><td>6.0</td><td>8.9</td></tr></tbody></table>';
   body.appendChild(tbl);
@@ -440,9 +491,4 @@ function tableCalc(body,head,rows,unitNote){
   const d3=mk('details','');
   d3.innerHTML='<summary>Check your answer</summary><div><ul><li>The rubber band’s graph is curved, with no straight-line part.</li><li>So its extension is not directly proportional to the force: it does not obey Hooke’s law.</li></ul></div>';
   body.appendChild(d3);
-  body.appendChild(mk('p','sub','(e) 3 marks'));
-  body.appendChild(mk('p','','Ali tests a long copper wire instead. Its extension is only a few millimetres. Describe how he should measure the extension, and give one safety precaution.'));
-  const d5=mk('details','');
-  d5.innerHTML='<summary>Check your answer</summary><div><ul><li>Fix a marker to the wire and measure its original position (length) before adding any load.</li><li>Add the loads gently, one at a time; extension = new length − original length, read at the same marker each time.</li><li>The extension is tiny, so measure it with a vernier scale (or vernier calipers), not just a ruler.</li><li>Avoid parallax: view the scale perpendicularly, level with the marker.</li><li>Safety: wear goggles in case the wire snaps, and keep your feet clear of the masses.</li></ul><p class="sub">For a wire method, repeating and finding a mean, naming control variables, or just writing “eye level” scored nothing in a recent mark scheme. Give the detail instead.</p></div>';
-  body.appendChild(d5);
 }
