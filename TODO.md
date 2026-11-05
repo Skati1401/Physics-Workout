@@ -64,7 +64,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
   - Duplicate exam numbers to change: 2.9 Exam (b), 3.25P Exam (b), 3.17 Exam (d), 3.19 Exam (d), CP12 Exam (a).
   - Missing activities worth adding: circuit diagram (2.9), field-drawing mistakes (6.6), sketch the heating curve (5.11P).
 - [ ] IAL CP7 resistivity and CP8 internal resistance practical pages, if Alex wants them (the animations are done).
-- [ ] IAL CP12–14: mark scheme wording check (no IAL question index yet).
+- [ ] IAL CP12–15: mark scheme wording check (no IAL question index yet).
 
 ## 6. Build: IAL and IB
 
@@ -72,6 +72,8 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 - [ ] `ial.html` holds only Core Practicals so far; IAL workouts are still to plan.
 
 ## Done
+
+- 5 Nov 2026: IAL CP15 `gamma-absorption-practical.html` (10 tabs, from Alex’s CP15 worksheet), card on `ial.html`; `animations/gamma-radiation.html` gets a measure mode for its Do the Experiment tab, the “Why ln I?” explanation, and the second tab labelled CP15.
 
 - [x] Show answer button after a wrong Check on every marked activity, workouts and practicals; Calculate working opens only from it. Spot the error removed from the 17 practical pages too (20 cards) (Alex, 4 Nov 2026).
 

@@ -1,3 +1,46 @@
+/* ================= 0. WHAT HOOKE'S LAW SAYS ================= */
+{
+  const body=act('law','Look','Hooke’s law on a graph','Almost every Hooke’s law question comes back to one idea: up to the limit of proportionality, the extension is directly proportional to the force.');
+  const G={xMin:0,xMax:16,yMin:0,yMax:6,xTicks:[0,2,4,6,8,10,12,14,16],yTicks:[0,1,2,3,4,5,6],xLabel:'extension (cm)',yLabel:'force (N)',W:560,H:340};
+  const g0=lineGraph(Object.assign({points:[[0,0]]},G));
+  const dash=(x,y)=>'<polyline points="'+g0.gx(0)+','+g0.gy(y)+' '+g0.gx(x)+','+g0.gy(y)+' '+g0.gx(x)+','+g0.gy(0)+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="5 4"/>';
+  const lop='<circle cx="'+g0.gx(10)+'" cy="'+g0.gy(5)+'" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>'+
+    '<text class="g-lab" x="'+(g0.gx(10)-10)+'" y="'+(g0.gy(5)-14)+'" text-anchor="end">limit of proportionality</text>';
+  const tag='<text class="g-lab" x="'+(g0.gx(4)+12)+'" y="'+(g0.gy(2)+4)+'">2 N → 4 cm</text><text class="g-lab" x="'+(g0.gx(8)+12)+'" y="'+(g0.gy(4)+4)+'">4 N → 8 cm</text>';
+  const svg=lineGraph(Object.assign({label:'Force against extension for a spring: a straight line through the origin up to 5 N, then a curve',
+    segments:[{pts:[[0,0],[10,5]]},{pts:[[10,5],[11,5.3],[12.5,5.65],[14.5,5.92],[16,6]]}],extra:dash(4,2)+dash(8,4)+lop+tag},G)).svg;
+  const split=mk('div','graph-split');body.appendChild(split);
+  split.appendChild(mk('div','graph-box',svg));
+  const side=mk('div','graph-side');split.appendChild(side);
+  side.innerHTML='<p><b>Hooke’s law:</b> the extension of a spring is directly proportional to the force on it, up to the limit of proportionality.</p>'+
+    '<ul><li><b>Directly proportional</b> means that if the force doubles, the extension doubles: 2 N gives 4 cm, 4 N gives 8 cm.</li>'+
+    '<li>So each extra 1 N adds the same extension (here 2 cm).</li>'+
+    '<li>On the graph this part is a <b>straight line through the origin</b>. That is how you spot Hooke’s law on any graph.</li>'+
+    '<li>Past the <b>limit of proportionality</b> (5 N here) the line curves, and the spring no longer obeys Hooke’s law.</li></ul>'+
+    '<p class="sub">In an exam, write the whole statement, including “up to the limit of proportionality”. A straight line that does not pass through the origin is not direct proportion.</p>';
+}
+{
+  const body=act('law','Fill in the blanks','What Hooke’s law says','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
+  const parts=[
+    'Hooke’s law says that the extension of a spring is ',['h1','directly proportional'],' to the ',['h2','force'],' on it, up to the ',['h3','limit of proportionality'],
+    '. So if the force on the spring doubles, its extension ',['h4','doubles'],', and each extra newton adds the ',['h5','same'],' extension. On a graph of force against extension, this part is a ',
+    ['h6','straight line'],' that passes through the ',['h7','origin'],'. Past the limit of proportionality the graph ',['h8','curves'],', and the spring no longer obeys Hooke’s law.'
+  ];
+  const cloze=mk('div','cloze'),slots=[],chips=[];
+  parts.forEach(p=>{
+    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
+    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
+  });
+  ['inversely proportional','halves','mass','elastic limit'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
+  body.appendChild(cloze);
+  body.appendChild(mk('div','pool-label','Word bank'));
+  const pool=mk('div','chip-pool');body.appendChild(pool);
+  const g={};
+  const b=bar(body,[{label:'Check',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
+  const score=mk('span','score');b.el.insertBefore(score,b.msg);
+  Object.assign(g,createBlankGame({slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
+}
+
 /* ================= 1. OVERVIEW ================= */
 {
   const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
@@ -280,19 +323,37 @@ function swapGraph(label){
 }
 
 /* ================= 4. RESULTS ================= */
+// A results table with the answer boxes in its own cells (Alex, 5 Nov 2026): rows are [given cells…], a cell
+// {a:answer, w:working} is a box. Check marks each box; a wrong one gets Show answer, which fills it in and shows its working.
+function tableCalc(body,head,rows,unitNote){
+  const wrap=mk('div','table-scroll');body.appendChild(wrap);
+  let n=0;const boxes=[];
+  wrap.innerHTML='<table class="units res-tbl"><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+
+    rows.map(r=>'<tr>'+r.map(c=>typeof c==='object'?'<td><input class="calc-num-input" data-i="'+(n++)+'" inputmode="decimal" autocomplete="off" aria-label="'+c.label+'"></td>':'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+  rows.forEach(r=>r.forEach(c=>{if(typeof c==='object')boxes.push(c);}));
+  const inps=$$('input',wrap),val=e=>{const t=e.value.trim().replace(/[\u2212\u2013]/g,'-');return /^-?(\d+\.?\d*|\.\d+)$/.test(t)?parseFloat(t):NaN;};
+  const work=mk('div','calc-working');work.hidden=true;work.innerHTML='<div class="calc-working-head">Working</div><div class="cw"></div>';body.appendChild(work);
+  const b=bar(body,[{label:'Check table',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  const ans=answerBtn(b,()=>{inps.forEach((e,i)=>{if(e.disabled)return;e.value=boxes[i].shown||String(boxes[i].a);e.disabled=true;e.classList.add('is-shown');e.classList.remove('is-wrong');});
+    $('.cw',work).innerHTML=boxes.map(x=>FR(x.w)).join('<br>');work.hidden=false;b.say('Answers shown (dashed), with the working.','');});
+  function check(){let ok=0,bad=0,blank=0;
+    inps.forEach((e,i)=>{if(e.disabled){ok++;return;}if(e.value.trim()===''){blank++;return;}
+      if(numClose(val(e),boxes[i].a)){e.disabled=true;e.classList.add('pop');e.classList.remove('is-wrong');ok++;}else{bad++;e.classList.add('is-wrong');}});
+    if(ok===inps.length){b.say('All '+ok+' correct.','good');celebrate(b.msg);ans.off();}
+    else{b.say(ok+' of '+inps.length+' correct'+(blank?', '+blank+' left blank':'')+'.'+(bad&&unitNote?' '+unitNote:''),bad?'bad':'');if(bad)ans.on();}}
+  function reset(){inps.forEach(e=>{e.value='';e.disabled=false;e.classList.remove('is-wrong','is-shown','pop');});work.hidden=true;ans.off();b.say('','');}
+  inps.forEach(e=>e.addEventListener('input',()=>e.classList.remove('is-wrong')));
+  return track(body,{reset:reset,
+    getState:()=>({v:inps.map(e=>e.value),ok:inps.map(e=>e.disabled),sh:inps.map(e=>e.classList.contains('is-shown'))}),
+    setState:s=>{reset();inps.forEach((e,i)=>{if(!s||!s.v||typeof s.v[i]!=='string')return;e.value=s.v[i];if(s.ok&&s.ok[i]){e.disabled=true;if(s.sh&&s.sh[i])e.classList.add('is-shown');}});if(inps.every(e=>e.disabled))b.say('All '+inps.length+' correct.','good');},
+    isDone:()=>inps.every(e=>e.disabled)});
+}
 {
-  const body=act('results','Calculate','Complete the results table','Ali’s spring is 12.0 cm long with no load. Work out each extension.');
-  const tbl=mk('div','table-scroll');
-  tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Load (N)</th><th>Length (cm)</th><th>Extension (cm)</th></tr></thead><tbody>'+
-    [[0,'12.0','0'],[2,'14.4','?'],[4,'16.8','?'],[6,'19.2','?'],[8,'23.0','?']].map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>').join('')+'</tbody></table>';
-  body.appendChild(tbl);
-  const w=(L,x)=>'extension = new length − original length<br>extension = '+L+' − 12.0<br>extension = '+x+' cm';
-  createCalc({host:body,questions:[
-    {q:'Extension with a 2 N load',unit:'cm',answer:2.4,working:w('14.4','2.4')},
-    {q:'Extension with a 4 N load',unit:'cm',answer:4.8,working:w('16.8','4.8')},
-    {q:'Extension with a 6 N load',unit:'cm',answer:7.2,working:w('19.2','7.2')},
-    {q:'Extension with an 8 N load',unit:'cm',answer:11.0,working:w('23.0','11.0')}
-  ]});
+  const body=act('results','Calculate','Complete the results table','Ali’s spring is 12.0 cm long with no load. Work out each extension and write it in the table, then press Check.');
+  const x=(L,v,F)=>({a:v,shown:v.toFixed(1),label:'Extension at '+F+' N, in cm',w:'extension at '+F+' N = '+L+' − 12.0 = '+v.toFixed(1)+' cm'});
+  tableCalc(body,['Load (N)','Length (cm)','Extension (cm)'],[
+    [0,'12.0','0'],[2,'14.4',x('14.4',2.4,2)],[4,'16.8',x('16.8',4.8,4)],[6,'19.2',x('19.2',7.2,6)],[8,'23.0',x('23.0',11.0,8)]
+  ],'Extension = length − original length (12.0 cm).');
 }
 {
   const body=act('results','Plot','Plot Ali’s results','Plot each point from Ali’s table as a small cross. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
@@ -399,7 +460,15 @@ function swapGraph(label){
   body.appendChild(d4);
 }
 {
-  const body=act('exam','Exam style','Does the spring obey Hooke’s law?','Elizabeth loads a spring and records these results. One reading is missing.');
+  const body=act('exam','Exam style','Measure a wire’s extension','A wire stretches far less than a spring, so the method changes.');
+  body.appendChild(mk('p','sub','3 marks'));
+  body.appendChild(mk('p','','Ali tests a long copper wire instead. Its extension is only a few millimetres. Describe how he should measure the extension, and give one safety precaution.'));
+  const d5=mk('details','');
+  d5.innerHTML='<summary>Check your answer</summary><div><ul><li>Fix a marker to the wire and measure its original position (length) before adding any load.</li><li>Add the loads gently, one at a time; extension = new length − original length, read at the same marker each time.</li><li>The extension is tiny, so measure it with a vernier scale (or vernier calipers), not just a ruler.</li><li>Avoid parallax: view the scale perpendicularly, level with the marker.</li><li>Safety: wear goggles in case the wire snaps, and keep your feet clear of the masses.</li></ul><p class="sub">For a wire method, repeating and finding a mean, naming control variables, or just writing “eye level” scored nothing in a recent mark scheme. Give the detail instead.</p></div>';
+  body.appendChild(d5);
+}
+{
+  const body=act('analysis','Exam style','Does the spring obey Hooke’s law?','Elizabeth loads a spring and records these results. One reading is missing.');
   const tbl=mk('div','table-scroll');
   tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Load (N)</th><th>0</th><th>2</th><th>4</th><th>6</th><th>8</th><th>10</th></tr></thead><tbody><tr><th>Extension (cm)</th><td>0</td><td>1.5</td><td>3.0</td><td><b>?</b></td><td>6.0</td><td>8.9</td></tr></tbody></table>';
   body.appendChild(tbl);
@@ -422,9 +491,4 @@ function swapGraph(label){
   const d3=mk('details','');
   d3.innerHTML='<summary>Check your answer</summary><div><ul><li>The rubber band’s graph is curved, with no straight-line part.</li><li>So its extension is not directly proportional to the force: it does not obey Hooke’s law.</li></ul></div>';
   body.appendChild(d3);
-  body.appendChild(mk('p','sub','(e) 3 marks'));
-  body.appendChild(mk('p','','Ali tests a long copper wire instead. Its extension is only a few millimetres. Describe how he should measure the extension, and give one safety precaution.'));
-  const d5=mk('details','');
-  d5.innerHTML='<summary>Check your answer</summary><div><ul><li>Fix a marker to the wire and measure its original position (length) before adding any load.</li><li>Add the loads gently, one at a time; extension = new length − original length, read at the same marker each time.</li><li>The extension is tiny, so measure it with a vernier scale (or vernier calipers), not just a ruler.</li><li>Avoid parallax: view the scale perpendicularly, level with the marker.</li><li>Safety: wear goggles in case the wire snaps, and keep your feet clear of the masses.</li></ul><p class="sub">For a wire method, repeating and finding a mean, naming control variables, or just writing “eye level” scored nothing in a recent mark scheme. Give the detail instead.</p></div>';
-  body.appendChild(d5);
 }
