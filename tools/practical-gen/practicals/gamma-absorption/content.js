@@ -120,6 +120,18 @@ frameAct('do','animations/gamma-radiation.html','measure','Gamma absorption expe
     isDone:()=>all().every(e=>e.disabled)});
 }
 {
+  // the same step-by-step "Why plot ln I?" as the animation's note (Alex, 5 Nov 2026)
+  const body=act('do','Explain','Why plot ln I?','I = I<sub>0</sub>e<sup>−μx</sup> is a curve. Take ln of each side:');
+  body.insertAdjacentHTML('beforeend',
+    '<div class="ln-steps"><span>ln I</span><span>=</span><span>ln (I<sub>0</sub>e<sup>−μx</sup>)</span>'+
+    '<span>ln I</span><span>=</span><span>ln I<sub>0</sub> + ln (e<sup>−μx</sup>)</span>'+
+    '<span>ln I</span><span>=</span><span>ln I<sub>0</sub> − μx</span></div>'+
+    '<p class="act-intro">In the order of y = mx + c:</p>'+
+    '<div class="ln-match"><span>ln I</span><span>=</span><span>−μ</span><span>x</span><span>+</span><span>ln I<sub>0</sub></span>'+
+    '<span>y</span><span>=</span><span>m</span><span>x</span><span>+</span><span>c</span></div>'+
+    '<p class="act-intro">So ln I against x is a straight line: gradient = −μ, intercept = ln I<sub>0</sub>. A straight line shows the fall is exponential.</p>');
+}
+{
   const body=act('do','Plot','Plot your results','Plot ln I against x from your table as small crosses. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
   createPlot({host:body,next:' Now find μ from the line of best fit below.',
     points:GA_X.map((x,k)=>({x:x,y:+GA_LN[k].toFixed(3)})),
