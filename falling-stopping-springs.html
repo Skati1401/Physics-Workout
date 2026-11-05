@@ -329,7 +329,6 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-full{grid-column:1/-1}
 .cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
 .cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
-.cw-given .eqg{grid-template-columns:auto auto auto}
 @media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
@@ -944,6 +943,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -953,18 +960,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -986,8 +1012,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -1488,77 +1515,54 @@ clozeAct('overview','Unit 1c in one passage','Drag a word into each gap, or tap 
 ],['inversely','mass','accelerates','plastic','changing']);
 
 /* ================= 1b. v² = u² + 2as ================= */
-// suvat working (Alex, 5 Nov 2026): s, u, v and a listed down the left, the equation and every step on the right,
-// as students should set it out in the exam (wide, not tall). Each column is lined up on its = signs here (the same
-// .eqg markup alignEquals makes, so alignEquals leaves it alone, and the copy in calculations.html works too).
-const eqCol=lines=>'<div class="eqg">'+lines.map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
-const suvatWork=(given,steps)=>'<div class="cw-split"><div class="cw-given">'+eqCol(given)+'</div><div class="cw-eq">'+eqCol(steps)+'</div></div>';
+// suvat working: s, u, v and a down the left, the equation and every step on the right (the engine's "givens||steps")
+const suvatWork=(given,steps)=>given.join('<br>')+'||'+steps.join('<br>');
 const sn=x=>{const v=+(+x).toFixed(2);return (v<0?'−':'')+String(Math.abs(v));};
-const seededRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
-const pickOne=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 const nice=x=>Math.abs(x*10-Math.round(x*10))<1e-9;
 // Problem makers: each returns {q, unit, answer, working}. Slot 1 is along the ground, slot 2 is up or down (g = 10 m/s²).
 const SUVAT_MAKERS=[
   [ // find the deceleration
-    rnd=>{let u,a,s,k=0;do{u=pickOne(rnd,[8,10,12,15,16,18,20,24,25,30]);a=pickOne(rnd,[2,2.5,4,5,6,8]);s=u*u/(2*a);}while((!nice(s)||s>120)&&++k<60);
-      const who=pickOne(rnd,['Camila brakes her bike','A car brakes','A train brakes','Ali brakes his scooter','A bus brakes']);
+    rnd=>{let u,a,s,k=0;do{u=calcPick(rnd,[8,10,12,15,16,18,20,24,25,30]);a=calcPick(rnd,[2,2.5,4,5,6,8]);s=u*u/(2*a);}while((!nice(s)||s>120)&&++k<60);
+      const who=calcPick(rnd,['Camila brakes her bike','A car brakes','A train brakes','Ali brakes his scooter','A bus brakes']);
       return {q:who+' from '+sn(u)+' m/s to a stop in '+sn(s)+' m. The size of the deceleration is',unit:'m/s²',answer:a,
         working:suvatWork(['s = '+sn(s)+' m','u = '+sn(u)+' m/s','v = 0','a = ?'],
           ['v² = u² + 2as','0² = '+sn(u)+'² + 2 × a × '+sn(s),'0 = '+sn(u*u)+' + '+sn(2*s)+' × a',sn(2*s)+' × a = −'+sn(u*u),'a = [[−'+sn(u*u)+'|'+sn(2*s)+']]','a = −'+sn(a)+' m/s²','deceleration = '+sn(a)+' m/s²'])};},
     // find the final speed
-    rnd=>{let u,v,a,s,k=0;do{u=pickOne(rnd,[0,2,4,5,6,10]);v=u+pickOne(rnd,[4,6,8,10,12,15,20]);a=pickOne(rnd,[1,2,2.5,4,5]);s=(v*v-u*u)/(2*a);}while((!nice(s)||s>200)&&++k<60);
-      const who=pickOne(rnd,['A car','Sophie, on her bike,','A sprinter','A motorbike']);
+    rnd=>{let u,v,a,s,k=0;do{u=calcPick(rnd,[0,2,4,5,6,10]);v=u+calcPick(rnd,[4,6,8,10,12,15,20]);a=calcPick(rnd,[1,2,2.5,4,5]);s=(v*v-u*u)/(2*a);}while((!nice(s)||s>200)&&++k<60);
+      const who=calcPick(rnd,['A car','Sophie, on her bike,','A sprinter','A motorbike']);
       const from=u?'from '+sn(u)+' m/s':'from rest';
       return {q:who+' accelerates at '+sn(a)+' m/s² '+from+' over a distance of '+sn(s)+' m. The final speed is',unit:'m/s',answer:v,
         working:suvatWork(['s = '+sn(s)+' m','u = '+(u?sn(u)+' m/s':'0'),'v = ?','a = '+sn(a)+' m/s²'],
           ['v² = u² + 2as','v² = '+sn(u)+'² + 2 × '+sn(a)+' × '+sn(s),'v² = '+sn(u*u)+' + '+sn(2*a*s),'v² = '+sn(v*v),'v = √'+sn(v*v),'v = '+sn(v)+' m/s'])};},
     // find the distance
-    rnd=>{let u,v,a,s,k=0;do{u=pickOne(rnd,[2,4,5,6,10,12]);v=u+pickOne(rnd,[4,6,8,10,12,15,20]);a=pickOne(rnd,[1,2,2.5,4,5]);s=(v*v-u*u)/(2*a);}while((!nice(s)||s>200)&&++k<60);
-      const who=pickOne(rnd,['A train','A car','Hana, on her skateboard,','A lorry']);
+    rnd=>{let u,v,a,s,k=0;do{u=calcPick(rnd,[2,4,5,6,10,12]);v=u+calcPick(rnd,[4,6,8,10,12,15,20]);a=calcPick(rnd,[1,2,2.5,4,5]);s=(v*v-u*u)/(2*a);}while((!nice(s)||s>200)&&++k<60);
+      const who=calcPick(rnd,['A train','A car','Hana, on her skateboard,','A lorry']);
       return {q:who+' speeds up from '+sn(u)+' m/s to '+sn(v)+' m/s with an acceleration of '+sn(a)+' m/s². The distance it travels while speeding up is',unit:'m',answer:s,
         working:suvatWork(['s = ?','u = '+sn(u)+' m/s','v = '+sn(v)+' m/s','a = '+sn(a)+' m/s²'],
           ['v² = u² + 2as',sn(v)+'² = '+sn(u)+'² + 2 × '+sn(a)+' × s',sn(v*v)+' = '+sn(u*u)+' + '+sn(2*a)+' × s',sn(2*a)+' × s = '+sn(v*v)+' − '+sn(u*u),sn(2*a)+' × s = '+sn(v*v-u*u),'s = [['+sn(v*v-u*u)+'|'+sn(2*a)+']]','s = '+sn(s)+' m'])};}
   ],
   [ // thrown straight up: find the launch speed
-    rnd=>{const u=pickOne(rnd,[4,5,6,7,8,9,10,12,14,15]),h=u*u/20;
-      const what=pickOne(rnd,['A ball is thrown','Zahra kicks a football','A stone is flicked','Aidan throws a tennis ball']);
+    rnd=>{const u=calcPick(rnd,[4,5,6,7,8,9,10,12,14,15]),h=u*u/20;
+      const what=calcPick(rnd,['A ball is thrown','Zahra kicks a football','A stone is flicked','Aidan throws a tennis ball']);
       return {q:what+' straight up and it reaches a maximum height of '+sn(h)+' m. The speed it left at is',unit:'m/s',answer:u,
         working:suvatWork(['s = '+sn(h)+' m','u = ?','v = 0 (at the top)','a = −10 m/s²'],
           ['v² = u² + 2as','0² = u² + 2 × (−10) × '+sn(h),'0 = u² − '+sn(u*u),'u² = '+sn(u*u),'u = √'+sn(u*u),'u = '+sn(u)+' m/s'])};},
     // dropped from rest: find the landing speed
-    rnd=>{const v=pickOne(rnd,[5,6,8,10,12,14,15,20]),h=v*v/20;
-      const what=pickOne(rnd,['A stone is dropped from rest off a bridge','An apple falls from rest from a branch','Poppy drops a ball from rest out of a window']);
+    rnd=>{const v=calcPick(rnd,[5,6,8,10,12,14,15,20]),h=v*v/20;
+      const what=calcPick(rnd,['A stone is dropped from rest off a bridge','An apple falls from rest from a branch','Poppy drops a ball from rest out of a window']);
       return {q:what+' '+sn(h)+' m above the ground. Ignoring air resistance, the speed it hits the ground at is',unit:'m/s',answer:v,
         working:suvatWork(['s = '+sn(h)+' m','u = 0 (from rest)','v = ?','a = 10 m/s²'],
           ['v² = u² + 2as','v² = 0² + 2 × 10 × '+sn(h),'v² = '+sn(v*v),'v = √'+sn(v*v),'v = '+sn(v)+' m/s'])};}
   ]
 ];
-{
-  const fixed=[
-    {q:'Camila brakes her bike from 12 m/s to a stop in 18 m. The size of the deceleration is',unit:'m/s²',answer:4,
-     working:suvatWork(['s = 18 m','u = 12 m/s','v = 0','a = ?'],['v² = u² + 2as','0² = 12² + 2 × a × 18','0 = 144 + 36 × a','36 × a = −144','a = [[−144|36]]','a = −4 m/s²','deceleration = 4 m/s²'])},
-    {q:'A ball is thrown straight up and it reaches a maximum height of 3.2 m. The speed it left at is',unit:'m/s',answer:8,
-     working:suvatWork(['s = 3.2 m','u = ?','v = 0 (at the top)','a = −10 m/s²'],['v² = u² + 2as','0² = u² + 2 × (−10) × 3.2','0 = u² − 64','u² = 64','u = √64','u = 8 m/s'])}
-  ];
-  // New problems: the first set is always the fixed pair above. The button makes a fresh pair (a different kind of
-  // problem and new numbers) from a seed saved with the answers, so a reload shows the same problems.
-  const qs=fixed.map(q=>Object.assign({},q));
-  const g=calcAct('suvat','v² = u² + 2as','Write down s, u, v and a first, then the equation. Take g = 10 m/s². Press New problems for another pair.',qs),host=g.host;
-  let seed=0;
-  const apply=s=>{
-    seed=s;const rnd=seededRnd(s),rows=$$('.calc-input-row',host);
-    qs.forEach((q,i)=>{
-      Object.assign(q,s?pickOne(rnd,SUVAT_MAKERS[i])(rnd):fixed[i]);
-      $('label',rows[i]).innerHTML=FR(q.q);$('.cw',rows[i]).innerHTML=FR(q.working);$('.calc-input-unit',rows[i]).textContent=q.unit;
-    });
-  };
-  const bar=$('.bar',host),btn=mk('button','btn','New problems');btn.type='button';
-  bar.insertBefore(btn,$('.fb',bar));
-  btn.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));g.reset();const fb=$('.fb',bar);fb.textContent='New problems: try these two.';fb.className='fb';});
-  const getS=g.getState,setS=g.setState;
-  g.getState=()=>Object.assign(getS(),{seed:seed});
-  g.setState=st=>{apply((st&&st.seed)||0);setS(st);};
-}
+calcAct('suvat','v² = u² + 2as','Write down s, u, v and a first, then the equation. Take g = 10 m/s². Press New problems for another pair.',[
+  {q:'Camila brakes her bike from 12 m/s to a stop in 18 m. The size of the deceleration is',unit:'m/s²',answer:4,
+   working:suvatWork(['s = 18 m','u = 12 m/s','v = 0','a = ?'],['v² = u² + 2as','0² = 12² + 2 × a × 18','0 = 144 + 36 × a','36 × a = −144','a = [[−144|36]]','a = −4 m/s²','deceleration = 4 m/s²']),
+   make:rnd=>calcPick(rnd,SUVAT_MAKERS[0])(rnd)},
+  {q:'A ball is thrown straight up and it reaches a maximum height of 3.2 m. The speed it left at is',unit:'m/s',answer:8,
+   working:suvatWork(['s = 3.2 m','u = ?','v = 0 (at the top)','a = −10 m/s²'],['v² = u² + 2as','0² = u² + 2 × (−10) × 3.2','0 = u² − 64','u² = 64','u = √64','u = 8 m/s']),
+   make:rnd=>calcPick(rnd,SUVAT_MAKERS[1])(rnd)}
+]);
 
 /* ================= 2. FALLING ================= */
 exploreFrame('falling','A skydiver falling','Press Jump and watch the two forces on Hana, the skydiver, and her velocity–time graph. Open the parachute whenever you like: the opening plays in slow motion. Or pick a point on the journey to freeze it there, then press Play to carry on.',
