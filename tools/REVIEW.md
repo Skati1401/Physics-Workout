@@ -102,7 +102,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `skydiver.html` | IGCSE | ❔ Not recorded | |
 | `stopping-distance.html` | IGCSE | ❔ Not recorded | |
 | `hookes-law.html` | IGCSE | 🔍 To review | 3 Nov 2026: animated stretch (0.6 s, Slow motion 2.2 s), drag masses onto and off the hanger, rubber band unloads on a lower curve and returns to its original length.  |
-| `momentum-collision.html` | IGCSE | ❔ Not recorded | |
+| `momentum-collision.html` | IGCSE | 🔍 To review | Both trolleys now start at −6 to +6 m/s; check a head-on stick and bounce, and both moving left |
 | `seesaw-moments.html` | IGCSE | 🔍 To review | 3 Nov 2026 audit fixes: new Slow motion button; sliders narrower so it fits one screen. Drag each person along the beam. |
 | `liquid-pressure.html` | IGCSE | ✅ Checked 2 Nov 2026 | Draggable objects. |
 | `heating-curve.html` | IGCSE | 🔍 To review | 3 Nov 2026 audit fixes: graph and particle model redrawn: ice from −40 °C warms twice as fast as water.  |
