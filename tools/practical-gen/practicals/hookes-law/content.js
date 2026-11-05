@@ -1,24 +1,3 @@
-/* ================= 0. WHAT HOOKE'S LAW SAYS ================= */
-{
-  const body=act('overview','Look','Hooke’s law on a graph','Almost every Hooke’s law question comes back to one idea: up to the limit of proportionality, the extension is directly proportional to the force.');
-  const G={xMin:0,xMax:16,yMin:0,yMax:6,xTicks:[0,2,4,6,8,10,12,14,16],yTicks:[0,1,2,3,4,5,6],xLabel:'extension (cm)',yLabel:'force (N)',W:560,H:340};
-  const g0=lineGraph(Object.assign({points:[[0,0]]},G));
-  const dash=(x,y)=>'<polyline points="'+g0.gx(0)+','+g0.gy(y)+' '+g0.gx(x)+','+g0.gy(y)+' '+g0.gx(x)+','+g0.gy(0)+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="5 4"/>';
-  const lop='<circle cx="'+g0.gx(10)+'" cy="'+g0.gy(5)+'" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>'+
-    '<text class="g-lab" x="'+(g0.gx(10)-10)+'" y="'+(g0.gy(5)-14)+'" text-anchor="end">limit of proportionality</text>';
-  const tag='<text class="g-lab" x="'+(g0.gx(4)+12)+'" y="'+(g0.gy(2)+4)+'">2 N → 4 cm</text><text class="g-lab" x="'+(g0.gx(8)+12)+'" y="'+(g0.gy(4)+4)+'">4 N → 8 cm</text>';
-  const svg=lineGraph(Object.assign({label:'Force against extension for a spring: a straight line through the origin up to 5 N, then a curve',
-    segments:[{pts:[[0,0],[10,5]]},{pts:[[10,5],[11,5.3],[12.5,5.65],[14.5,5.92],[16,6]]}],extra:dash(4,2)+dash(8,4)+lop+tag},G)).svg;
-  const split=mk('div','graph-split');body.appendChild(split);
-  split.appendChild(mk('div','graph-box',svg));
-  const side=mk('div','graph-side');split.appendChild(side);
-  side.innerHTML='<p><b>Hooke’s law:</b> the extension of a spring is directly proportional to the force on it, up to the limit of proportionality.</p>'+
-    '<ul><li><b>Directly proportional</b> means that if the force doubles, the extension doubles: 2 N gives 4 cm, 4 N gives 8 cm.</li>'+
-    '<li>So each extra 1 N adds the same extension (here 2 cm).</li>'+
-    '<li>On the graph this part is a <b>straight line through the origin</b>. That is how you spot Hooke’s law on any graph.</li>'+
-    '<li>Past the <b>limit of proportionality</b> (5 N here) the line curves, and the spring no longer obeys Hooke’s law.</li></ul>'+
-    '<p class="sub">In an exam, write the whole statement, including “up to the limit of proportionality”. A straight line that does not pass through the origin is not direct proportion.</p>';
-}
 {
   const body=act('overview','Fill in the blanks','Hooke’s law in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
   const parts=[
@@ -42,6 +21,27 @@
   Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
 }
 
+/* ================= 0. WHAT HOOKE'S LAW SAYS ================= */
+{
+  const body=act('overview','Look','Hooke’s law on a graph','Almost every Hooke’s law question comes back to one idea: up to the limit of proportionality, the extension is directly proportional to the force.');
+  const G={xMin:0,xMax:16,yMin:0,yMax:6,xTicks:[0,2,4,6,8,10,12,14,16],yTicks:[0,1,2,3,4,5,6],xLabel:'extension (cm)',yLabel:'force (N)',W:560,H:340};
+  const g0=lineGraph(Object.assign({points:[[0,0]]},G));
+  const dash=(x,y)=>'<polyline points="'+g0.gx(0)+','+g0.gy(y)+' '+g0.gx(x)+','+g0.gy(y)+' '+g0.gx(x)+','+g0.gy(0)+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="5 4"/>';
+  const lop='<circle cx="'+g0.gx(10)+'" cy="'+g0.gy(5)+'" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>'+
+    '<text class="g-lab" x="'+(g0.gx(10)-10)+'" y="'+(g0.gy(5)-14)+'" text-anchor="end">limit of proportionality</text>';
+  const tag='<text class="g-lab" x="'+(g0.gx(4)+12)+'" y="'+(g0.gy(2)+4)+'">2 N → 4 cm</text><text class="g-lab" x="'+(g0.gx(8)+12)+'" y="'+(g0.gy(4)+4)+'">4 N → 8 cm</text>';
+  const svg=lineGraph(Object.assign({label:'Force against extension for a spring: a straight line through the origin up to 5 N, then a curve',
+    segments:[{pts:[[0,0],[10,5]]},{pts:[[10,5],[11,5.3],[12.5,5.65],[14.5,5.92],[16,6]]}],extra:dash(4,2)+dash(8,4)+lop+tag},G)).svg;
+  const split=mk('div','graph-split');body.appendChild(split);
+  split.appendChild(mk('div','graph-box',svg));
+  const side=mk('div','graph-side');split.appendChild(side);
+  side.innerHTML='<p class="hk-law"><b>Hooke’s law:</b> the extension of a spring is directly proportional to the force on it, up to the limit of proportionality.</p>'+
+    '<ul class="hk-points"><li><b>Directly proportional</b> means that if the force doubles, the extension doubles: 2 N gives 4 cm, 4 N gives 8 cm.</li>'+
+    '<li>So each extra 1 N adds the same extension (here 2 cm).</li>'+
+    '<li>On the graph this part is a <b>straight line through the origin</b>. That is how you spot Hooke’s law on any graph.</li>'+
+    '<li>Past the <b>limit of proportionality</b> (5 N here) the line curves, and the spring no longer obeys Hooke’s law.</li></ul>'+
+    '<p class="hk-tip"><b>Exam tip:</b> write the whole statement, including “up to the limit of proportionality”. A straight line that does not pass through the origin is not direct proportion.</p>';
+}
 /* ================= 2. METHOD ================= */
 {
   const body=act('method','Order','Carry out the practical','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
