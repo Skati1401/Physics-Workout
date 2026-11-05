@@ -1732,19 +1732,37 @@ function swapGraph(label){
 }
 
 /* ================= 4. RESULTS ================= */
+// A results table with the answer boxes in its own cells (Alex, 5 Nov 2026): rows are [given cells…], a cell
+// {a:answer, w:working} is a box. Check marks each box; a wrong one gets Show answer, which fills it in and shows its working.
+function tableCalc(body,head,rows,unitNote){
+  const wrap=mk('div','table-scroll');body.appendChild(wrap);
+  let n=0;const boxes=[];
+  wrap.innerHTML='<table class="units res-tbl"><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+
+    rows.map(r=>'<tr>'+r.map(c=>typeof c==='object'?'<td><input class="calc-num-input" data-i="'+(n++)+'" inputmode="decimal" autocomplete="off" aria-label="'+c.label+'"></td>':'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+  rows.forEach(r=>r.forEach(c=>{if(typeof c==='object')boxes.push(c);}));
+  const inps=$$('input',wrap),val=e=>{const t=e.value.trim().replace(/[\u2212\u2013]/g,'-');return /^-?(\d+\.?\d*|\.\d+)$/.test(t)?parseFloat(t):NaN;};
+  const work=mk('div','calc-working');work.hidden=true;work.innerHTML='<div class="calc-working-head">Working</div><div class="cw"></div>';body.appendChild(work);
+  const b=bar(body,[{label:'Check table',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  const ans=answerBtn(b,()=>{inps.forEach((e,i)=>{if(e.disabled)return;e.value=boxes[i].shown||String(boxes[i].a);e.disabled=true;e.classList.add('is-shown');e.classList.remove('is-wrong');});
+    $('.cw',work).innerHTML=boxes.map(x=>FR(x.w)).join('<br>');work.hidden=false;b.say('Answers shown (dashed), with the working.','');});
+  function check(){let ok=0,bad=0,blank=0;
+    inps.forEach((e,i)=>{if(e.disabled){ok++;return;}if(e.value.trim()===''){blank++;return;}
+      if(numClose(val(e),boxes[i].a)){e.disabled=true;e.classList.add('pop');e.classList.remove('is-wrong');ok++;}else{bad++;e.classList.add('is-wrong');}});
+    if(ok===inps.length){b.say('All '+ok+' correct.','good');celebrate(b.msg);ans.off();}
+    else{b.say(ok+' of '+inps.length+' correct'+(blank?', '+blank+' left blank':'')+'.'+(bad&&unitNote?' '+unitNote:''),bad?'bad':'');if(bad)ans.on();}}
+  function reset(){inps.forEach(e=>{e.value='';e.disabled=false;e.classList.remove('is-wrong','is-shown','pop');});work.hidden=true;ans.off();b.say('','');}
+  inps.forEach(e=>e.addEventListener('input',()=>e.classList.remove('is-wrong')));
+  return track(body,{reset:reset,
+    getState:()=>({v:inps.map(e=>e.value),ok:inps.map(e=>e.disabled),sh:inps.map(e=>e.classList.contains('is-shown'))}),
+    setState:s=>{reset();inps.forEach((e,i)=>{if(!s||!s.v||typeof s.v[i]!=='string')return;e.value=s.v[i];if(s.ok&&s.ok[i]){e.disabled=true;if(s.sh&&s.sh[i])e.classList.add('is-shown');}});if(inps.every(e=>e.disabled))b.say('All '+inps.length+' correct.','good');},
+    isDone:()=>inps.every(e=>e.disabled)});
+}
 {
-  const body=act('results','Calculate','Complete the results table','Ali’s spring is 12.0 cm long with no load. Work out each extension.');
-  const tbl=mk('div','table-scroll');
-  tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Load (N)</th><th>Length (cm)</th><th>Extension (cm)</th></tr></thead><tbody>'+
-    [[0,'12.0','0'],[2,'14.4','?'],[4,'16.8','?'],[6,'19.2','?'],[8,'23.0','?']].map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>').join('')+'</tbody></table>';
-  body.appendChild(tbl);
-  const w=(L,x)=>'extension = new length − original length<br>extension = '+L+' − 12.0<br>extension = '+x+' cm';
-  createCalc({host:body,questions:[
-    {q:'Extension with a 2 N load',unit:'cm',answer:2.4,working:w('14.4','2.4')},
-    {q:'Extension with a 4 N load',unit:'cm',answer:4.8,working:w('16.8','4.8')},
-    {q:'Extension with a 6 N load',unit:'cm',answer:7.2,working:w('19.2','7.2')},
-    {q:'Extension with an 8 N load',unit:'cm',answer:11.0,working:w('23.0','11.0')}
-  ]});
+  const body=act('results','Calculate','Complete the results table','Ali’s spring is 12.0 cm long with no load. Work out each extension and write it in the table, then press Check.');
+  const x=(L,v,F)=>({a:v,shown:v.toFixed(1),label:'Extension at '+F+' N, in cm',w:'extension at '+F+' N = '+L+' − 12.0 = '+v.toFixed(1)+' cm'});
+  tableCalc(body,['Load (N)','Length (cm)','Extension (cm)'],[
+    [0,'12.0','0'],[2,'14.4',x('14.4',2.4,2)],[4,'16.8',x('16.8',4.8,4)],[6,'19.2',x('19.2',7.2,6)],[8,'23.0',x('23.0',11.0,8)]
+  ],'Extension = length − original length (12.0 cm).');
 }
 {
   const body=act('results','Plot','Plot Ali’s results','Plot each point from Ali’s table as a small cross. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
