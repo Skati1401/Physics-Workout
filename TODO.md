@@ -43,7 +43,6 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the cards to `igcse.html`, then add the unit's activities to the Calculations and Graphs sets.
 
 - [ ] Key-word crosswords for other units, if Alex wants them.
-- [ ] Roll out the 1c suvat working layout to every Calculate card's working (workouts, practicals, sets): the known values listed down the left (e.g. s = …, u = …), the equation and every step on the right, as students should lay out an exam answer (wide, not tall). Model: `suvatWork()` / `eqCol()` in `falling-stopping-springs.html`, which also works in the Calculations set copy; stack the two columns on phones. Do it in another chat, engine change into every copy and `tools/practical-gen/template/engine.js` (Alex, 5 Nov 2026).
 
 ## 5. Build: core practicals
 
@@ -72,6 +71,8 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 - [ ] `ial.html` holds only Core Practicals so far; IAL workouts are still to plan.
 
 ## Done
+
+- [x] Two-column Calculate working (givens left, steps right) and a New problems button on every workout Calculate: 21 IGCSE, Year 9 and IB pages, about 190 questions; questions on a fixed graph, table or diagram keep their numbers (Alex, 5 Nov 2026).
 
 - 5 Nov 2026: IAL CP15 `gamma-absorption-practical.html` (10 tabs, from Alex’s CP15 worksheet), card on `ial.html`; `animations/gamma-radiation.html` gets a measure mode for its Do the Experiment tab, the “Why ln I?” explanation, and the second tab labelled CP15.
 

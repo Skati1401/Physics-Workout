@@ -326,6 +326,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-m{justify-self:center}
 .eqg-r{justify-self:start;min-width:0}
 .eqg-full{grid-column:1/-1}
+.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
+.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
+@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -469,7 +472,7 @@ function bar(parent,buttons){
 // Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
 // answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
 // a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
-const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const shownVal=a=>{const v=Number(a),t=String(a);if(!/e/i.test(t)&&!(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-3)))return t;const p=v.toPrecision(3).split('e');return p.length<2?t:p[0]+'×10^'+(+p[1]);};
 const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
 function answerBtn(b,fn){
   const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
@@ -918,6 +921,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -927,18 +938,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -960,8 +990,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -1500,13 +1531,25 @@ const LHR_OPTS=up=>[
     constraints:[['a','b'],['b','c'],['c','d'],['d','e']],
     why:'The primary current makes a changing field, the core carries it to the secondary, and the changing field induces the output voltage.'
   });
+  // New problems helpers (transformers tab): numbers with a space every 3 digits from 10 000
+  const tr_n=x=>{const v=+(+x).toFixed(2),t=String(Math.abs(v)).split('.'),i=Math.abs(v)>=10000?t[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '):t[0];return (v<0?'−':'')+i+(t[1]?'.'+t[1]:'');};
+  const tr_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+  const VP='V<sub>p</sub>',VS='V<sub>s</sub>',NP='N<sub>p</sub>',NS='N<sub>s</sub>';
   createCalc({
     host:act('transformers','Calculate','The turns ratio','Use [[V<sub>p</sub>|V<sub>s</sub>]] = [[N<sub>p</sub>|N<sub>s</sub>]].'),
     questions:[
       {q:'A transformer has 2000 turns on its primary and 100 turns on its secondary. The primary is connected to 230 V. The output voltage is',unit:'V',answer:11.5,
-        working:'[[V<sub>p</sub>|V<sub>s</sub>]] = [[N<sub>p</sub>|N<sub>s</sub>]]<br>[[230|V<sub>s</sub>]] = [[2000|100]]<br>[[230|V<sub>s</sub>]] = 20<br>230 = 20 × V<sub>s</sub><br>V<sub>s</sub> = [[230|20]]<br>V<sub>s</sub> = 11.5 V'},
+        working:tr_w([NP+' = 2000',NS+' = 100',VP+' = 230 V',VS+' = ?'],['[['+VP+'|'+VS+']] = [['+NP+'|'+NS+']]','[[230|'+VS+']] = [[2000|100]]','[[230|'+VS+']] = 20','230 = 20 × '+VS,VS+' = [[230|20]]',VS+' = 11.5 V']),
+        make:rnd=>{const k=calcPick(rnd,[10,20,23,46,50,100]),Ns=calcPick(rnd,[50,100,150,200,250,400]),Np=k*Ns,Vs=+(230/k).toFixed(2);
+          const what=calcPick(rnd,['A transformer','A doorbell transformer','The transformer in a phone charger','A model railway transformer']);
+          return {q:what+' has '+tr_n(Np)+' turns on its primary and '+Ns+' turns on its secondary. The primary is connected to 230 V. The output voltage is',unit:'V',answer:Vs,
+            working:tr_w([NP+' = '+tr_n(Np),NS+' = '+Ns,VP+' = 230 V',VS+' = ?'],['[['+VP+'|'+VS+']] = [['+NP+'|'+NS+']]','[[230|'+VS+']] = [['+tr_n(Np)+'|'+Ns+']]','[[230|'+VS+']] = '+k,'230 = '+k+' × '+VS,VS+' = [[230|'+k+']]',VS+' = '+tr_n(Vs)+' V'])};}},
       {q:'A transformer steps 12 V up to 240 V. Its secondary coil has 4000 turns. The number of turns on the primary is',unit:'turns',answer:200,
-        working:'[[V<sub>p</sub>|V<sub>s</sub>]] = [[N<sub>p</sub>|N<sub>s</sub>]]<br>[[12|240]] = [[N<sub>p</sub>|4000]]<br>12 × 4000 = 240 × N<sub>p</sub><br>48 000 = 240 × N<sub>p</sub><br>N<sub>p</sub> = [[48 000|240]]<br>N<sub>p</sub> = 200 turns'}
+        working:tr_w([VP+' = 12 V',VS+' = 240 V',NS+' = 4000',NP+' = ?'],['[['+VP+'|'+VS+']] = [['+NP+'|'+NS+']]','[[12|240]] = [['+NP+'|4000]]','12 × 4000 = 240 × '+NP,'48 000 = 240 × '+NP,NP+' = [[48 000|240]]',NP+' = 200 turns']),
+        make:rnd=>{const Vp=calcPick(rnd,[6,12,20,24,25]),k=calcPick(rnd,[5,10,20,40,50]),Np=calcPick(rnd,[50,100,150,200,250,400]),Vs=k*Vp,Ns=k*Np;
+          const what=calcPick(rnd,['A transformer','A step-up transformer','The transformer in a neon sign','The transformer in Nabil’s science project']);
+          return {q:what+' steps '+Vp+' V up to '+tr_n(Vs)+' V. Its secondary coil has '+tr_n(Ns)+' turns. The number of turns on the primary is',unit:'turns',answer:Np,
+            working:tr_w([VP+' = '+Vp+' V',VS+' = '+tr_n(Vs)+' V',NS+' = '+tr_n(Ns),NP+' = ?'],['[['+VP+'|'+VS+']] = [['+NP+'|'+NS+']]','[['+Vp+'|'+tr_n(Vs)+']] = [['+NP+'|'+tr_n(Ns)+']]',Vp+' × '+tr_n(Ns)+' = '+tr_n(Vs)+' × '+NP,tr_n(Vp*Ns)+' = '+tr_n(Vs)+' × '+NP,NP+' = [['+tr_n(Vp*Ns)+'|'+tr_n(Vs)+']]',NP+' = '+Np+' turns'])};}}
     ]
   });
 }
@@ -1538,13 +1581,27 @@ const LHR_OPTS=up=>[
     constraints:[['a','b'],['b','c'],['c','d'],['d','e']],
     why:'The voltage is stepped up for the long journey, then stepped down before it reaches homes.'
   });
+  // New problems helpers (grid tab)
+  const gr_n=x=>{const v=+(+x).toFixed(2),t=String(Math.abs(v)).split('.'),i=Math.abs(v)>=10000?t[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '):t[0];return (v<0?'−':'')+i+(t[1]?'.'+t[1]:'');};
+  const gr_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+  const VP='V<sub>p</sub>',VS='V<sub>s</sub>',IP='I<sub>p</sub>',IS='I<sub>s</sub>',EQ=VP+' × '+IP+' = '+VS+' × '+IS;
   createCalc({
     host:act('grid','Calculate','Input power = output power','Use V<sub>p</sub> × I<sub>p</sub> = V<sub>s</sub> × I<sub>s</sub> (100% efficient).'),
     questions:[
       {q:'A power station transformer steps 25 000 V up to 400 000 V. The current in the primary is 800 A. The current in the secondary is',unit:'A',answer:50,
-        working:'V<sub>p</sub> × I<sub>p</sub> = V<sub>s</sub> × I<sub>s</sub><br>25 000 × 800 = 400 000 × I<sub>s</sub><br>20 000 000 = 400 000 × I<sub>s</sub><br>I<sub>s</sub> = [[20 000 000|400 000]]<br>I<sub>s</sub> = 50 A'},
+        working:gr_w([VP+' = 25 000 V',VS+' = 400 000 V',IP+' = 800 A',IS+' = ?'],[EQ,'25 000 × 800 = 400 000 × '+IS,'20 000 000 = 400 000 × '+IS,IS+' = [[20 000 000|400 000]]',IS+' = 50 A']),
+        make:rnd=>{let Vp,Vs,Ip,Is,k=0;do{Vp=calcPick(rnd,[20000,25000]);Vs=calcPick(rnd,[132000,275000,400000]);Ip=calcPick(rnd,[400,500,800,1000,1100,1200,1320,1600,2000]);Is=Vp*Ip/Vs;}while(Math.abs(Is*100-Math.round(Is*100))>1e-9&&++k<80);
+          Is=+Is.toFixed(2);
+          const what=calcPick(rnd,['A power station transformer','The step-up transformer at a gas-fired power station','The transformer at a nuclear power station','A step-up transformer at a power station']);
+          return {q:what+' steps '+gr_n(Vp)+' V up to '+gr_n(Vs)+' V. The current in the primary is '+gr_n(Ip)+' A. The current in the secondary is',unit:'A',answer:Is,
+            working:gr_w([VP+' = '+gr_n(Vp)+' V',VS+' = '+gr_n(Vs)+' V',IP+' = '+gr_n(Ip)+' A',IS+' = ?'],[EQ,gr_n(Vp)+' × '+gr_n(Ip)+' = '+gr_n(Vs)+' × '+IS,gr_n(Vp*Ip)+' = '+gr_n(Vs)+' × '+IS,IS+' = [['+gr_n(Vp*Ip)+'|'+gr_n(Vs)+']]',IS+' = '+gr_n(Is)+' A'])};}},
       {q:'A laptop charger steps 230 V down to 20 V. The output current is 4.6 A. The current in the primary is',unit:'A',answer:0.4,
-        working:'V<sub>p</sub> × I<sub>p</sub> = V<sub>s</sub> × I<sub>s</sub><br>230 × I<sub>p</sub> = 20 × 4.6<br>230 × I<sub>p</sub> = 92<br>I<sub>p</sub> = [[92|230]]<br>I<sub>p</sub> = 0.4 A'}
+        working:gr_w([VP+' = 230 V',VS+' = 20 V',IS+' = 4.6 A',IP+' = ?'],[EQ,'230 × '+IP+' = 20 × 4.6','230 × '+IP+' = 92',IP+' = [[92|230]]',IP+' = 0.4 A']),
+        make:rnd=>{const c=calcPick(rnd,[['A phone charger',5,[2.3]],['A laptop charger',20,[2.3,4.6]],['A laptop charger',19,[2.3,4.6]],['A games console power supply',12,[4.6,6.9,9.2]],['A garden lighting transformer',12,[2.3,4.6,6.9]]]);
+          const Vs=c[1],Is=calcPick(rnd,c[2]),P=+(Vs*Is).toFixed(2),Ip=+(P/230).toFixed(2);
+          const what=c[0]==='A laptop charger'?calcPick(rnd,['A laptop charger','Elena’s laptop charger','Aidan’s laptop charger']):c[0];
+          return {q:what+' steps 230 V down to '+Vs+' V. The output current is '+gr_n(Is)+' A. The current in the primary is',unit:'A',answer:Ip,
+            working:gr_w([VP+' = 230 V',VS+' = '+Vs+' V',IS+' = '+gr_n(Is)+' A',IP+' = ?'],[EQ,'230 × '+IP+' = '+Vs+' × '+gr_n(Is),'230 × '+IP+' = '+gr_n(P),IP+' = [['+gr_n(P)+'|230]]',IP+' = '+gr_n(Ip)+' A'])};}}
     ]
   });
 }

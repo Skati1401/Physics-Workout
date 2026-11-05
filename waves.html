@@ -326,6 +326,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-m{justify-self:center}
 .eqg-r{justify-self:start;min-width:0}
 .eqg-full{grid-column:1/-1}
+.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
+.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
+@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -543,7 +546,7 @@ function bar(parent,buttons){
 // Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
 // answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
 // a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
-const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const shownVal=a=>{const v=Number(a),t=String(a);if(!/e/i.test(t)&&!(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-3)))return t;const p=v.toPrecision(3).split('e');return p.length<2?t:p[0]+'×10^'+(+p[1]);};
 const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
 function answerBtn(b,fn){
   const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
@@ -992,6 +995,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -1001,18 +1012,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -1034,8 +1064,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -1618,21 +1649,46 @@ createSortGame({host:act('types','Sort','Transverse or longitudinal?','Sort each
 }
 calcAct('describing','Read the wave','The graph shows a snapshot of a wave on a rope. Read each answer off the graph.',[
   {q:'The amplitude of the wave is',unit:'cm',answer:4,working:'The amplitude is the height of a crest above the rest position (the zero line).<br>amplitude = 4 cm'},
-  {q:'The wavelength of the wave is',unit:'m',answer:0.4,working:'3 complete waves fit in 1.2 m.<br>wavelength = [[1.2|3]]<br>wavelength = 0.4 m'}
+  {q:'The wavelength of the wave is',unit:'m',answer:0.4,working:'distance for 3 waves = 1.2 m<br>λ = ?||λ = [[distance|number of waves]]<br>λ = [[1.2|3]]<br>λ = 0.4 m'}
 
   ],mgraph({pts:sinePts(0,1.2,4,0.4),xMin:0,xMax:1.2,yMin:-6,yMax:6,xTicks:[0,0.2,0.4,0.6,0.8,1.0,1.2],yTicks:[-6,-4,-2,0,2,4,6],xLabel:'Distance along the rope / m',yLabel:'Displacement / cm',label:'Displacement against distance for a wave on a rope'}).svg);
 
 /* ================= 4. WAVE EQUATIONS ================= */
-calcAct('equation','v = f × λ and f = [[1|T]]','Use wave speed = frequency × wavelength and frequency = [[1|time period]].',[
-  {q:'A sound wave travels at 340 m/s with a frequency of 680 Hz. Its wavelength is',unit:'m',answer:0.5,working:'v = f × λ<br>340 = 680 × λ<br>λ = [[340|680]]<br>λ = 0.5 m'},
-  {q:'A wave has a time period of 0.020 s. Its frequency is',unit:'Hz',answer:50,working:'f = [[1|T]]<br>f = [[1|0.020]]<br>f = 50 Hz'},
-  {q:'A wave has a time period of 0.25 s and a wavelength of 2.0 m. Its speed is',unit:'m/s',answer:8,working:'f = [[1|T]]<br>f = [[1|0.25]]<br>f = 4 Hz<br>v = f × λ<br>v = 4 × 2.0<br>v = 8 m/s'}
+// New problems helpers for this tab: eq_fmt prints a number with no float noise; eq_ok is true for at most 2 decimal places
+const eq_fmt=x=>String(+(+x).toFixed(4));
+const eq_ok=x=>Math.abs(x*100-Math.round(x*100))<1e-6;
+calcAct('equation','v = f × λ and f = [[1|T]]','Use wave speed = frequency × wavelength and frequency = [[1|time period]]. Press New problems for another set.',[
+  {q:'A sound wave travels at 340 m/s with a frequency of 680 Hz. Its wavelength is',unit:'m',answer:0.5,working:'v = 340 m/s<br>f = 680 Hz<br>λ = ?||v = f × λ<br>340 = 680 × λ<br>λ = [[340|680]]<br>λ = 0.5 m',
+   make:rnd=>{const c=calcPick(rnd,[
+       {t:'A sound wave travels through air at V m/s with a frequency of F Hz.',v:[340],f:[170,200,340,425,680,850,1700]},
+       {t:'A sound wave travels through sea water at V m/s with a frequency of F Hz.',v:[1500],f:[300,500,750,1000,1500,3000]},
+       {t:'Henry shakes the end of a long rope. The wave travels along it at V m/s with a frequency of F Hz.',v:[2,3,4,6],f:[1,2,4,5]},
+       {t:'A water wave in a ripple tank travels at V m/s with a frequency of F Hz.',v:[0.12,0.15,0.18,0.2,0.24],f:[4,5,6,8,10]}]);
+     let v,f,l,k=0;do{v=calcPick(rnd,c.v);f=calcPick(rnd,c.f);l=v/f;}while(!eq_ok(l)&&++k<60);
+     const V=eq_fmt(v),F=eq_fmt(f),L=eq_fmt(l);
+     return {q:c.t.replace('V',V).replace('F',F)+' Its wavelength is',unit:'m',answer:+L,working:'v = '+V+' m/s<br>f = '+F+' Hz<br>λ = ?||v = f × λ<br>'+V+' = '+F+' × λ<br>λ = [['+V+'|'+F+']]<br>λ = '+L+' m'};}},
+  {q:'A wave has a time period of 0.020 s. Its frequency is',unit:'Hz',answer:50,working:'T = 0.020 s<br>f = ?||f = [[1|T]]<br>f = [[1|0.020]]<br>f = 50 Hz',
+   make:rnd=>{const c=calcPick(rnd,[
+       {t:'A sound wave has a time period of T s.',T:[0.001,0.002,0.0025,0.004,0.005]},
+       {t:'A wave on a stretched string has a time period of T s.',T:[0.01,0.02,0.025,0.04,0.05]},
+       {t:'A wave on a rope has a time period of T s.',T:[0.2,0.25,0.4,0.5]},
+       {t:'A water wave on a pond has a time period of T s.',T:[0.4,0.5,0.8,1.25,2]}]);
+     const T=calcPick(rnd,c.T),f=+(1/T).toFixed(4),Ts=eq_fmt(T),fs=eq_fmt(f);
+     return {q:c.t.replace('T s',Ts+' s')+' Its frequency is',unit:'Hz',answer:f,working:'T = '+Ts+' s<br>f = ?||f = [[1|T]]<br>f = [[1|'+Ts+']]<br>f = '+fs+' Hz'};}},
+  {q:'A wave has a time period of 0.25 s and a wavelength of 2.0 m. Its speed is',unit:'m/s',answer:8,working:'T = 0.25 s<br>λ = 2.0 m<br>v = ?||f = [[1|T]]<br>f = [[1|0.25]]<br>f = 4 Hz<br>v = f × λ<br>v = 4 × 2.0<br>v = 8 m/s',
+   make:rnd=>{const c=calcPick(rnd,[
+       {t:'A wave on a rope',T:[0.2,0.25,0.4,0.5],l:[0.5,1,1.5,2,2.5,3]},
+       {t:'A wave on the sea',T:[2,4,5,10],l:[10,20,25,40,50,80]},
+       {t:'A water wave in a ripple tank',T:[0.1,0.125,0.2,0.25],l:[0.01,0.02,0.025,0.03,0.04]}]);
+     let T,l,f,v,k=0;do{T=calcPick(rnd,c.T);l=calcPick(rnd,c.l);f=1/T;v=f*l;}while((!eq_ok(f)||!eq_ok(v))&&++k<60);
+     const Ts=eq_fmt(T),Ls=eq_fmt(l),Fs=eq_fmt(f),Vs=eq_fmt(v);
+     return {q:c.t+' has a time period of '+Ts+' s and a wavelength of '+Ls+' m. Its speed is',unit:'m/s',answer:+Vs,working:'T = '+Ts+' s<br>λ = '+Ls+' m<br>v = ?||f = [[1|T]]<br>f = [[1|'+Ts+']]<br>f = '+Fs+' Hz<br>v = f × λ<br>v = '+Fs+' × '+Ls+'<br>v = '+Vs+' m/s'};}}
 
   ]);
 calcAct('equation','Read the period off the graph','The graph shows how one point on a sound wave moves as the wave passes. Read the time period off the graph first.',[
-  {q:'The time period of the wave is',unit:'s',answer:0.004,working:'2.5 complete waves take 10 ms.<br>T = [[10 ms|2.5]]<br>T = 4 ms<br>T = 0.004 s'},
-  {q:'The frequency of the wave is',unit:'Hz',answer:250,working:'f = [[1|T]]<br>f = [[1|0.004]]<br>f = 250 Hz'},
-  {q:'The sound travels at 340 m/s. Its wavelength is',unit:'m',answer:1.36,working:'v = f × λ<br>340 = 250 × λ<br>λ = [[340|250]]<br>λ = 1.36 m'}
+  {q:'The time period of the wave is',unit:'s',answer:0.004,working:'time for 2.5 waves = 10 ms<br>T = ?||T = [[time|number of waves]]<br>T = [[10 ms|2.5]]<br>T = 4 ms<br>T = 0.004 s'},
+  {q:'The frequency of the wave is',unit:'Hz',answer:250,working:'T = 0.004 s<br>f = ?||f = [[1|T]]<br>f = [[1|0.004]]<br>f = 250 Hz'},
+  {q:'The sound travels at 340 m/s. Its wavelength is',unit:'m',answer:1.36,working:'v = 340 m/s<br>f = 250 Hz<br>λ = ?||v = f × λ<br>340 = 250 × λ<br>λ = [[340|250]]<br>λ = 1.36 m'}
 
   ],mgraph({pts:sinePts(0,10,3,4),xMin:0,xMax:10,yMin:-4,yMax:4,xTicks:[0,2,4,6,8,10],yTicks:[-4,-2,0,2,4],xLabel:'Time / ms',yLabel:'Displacement',label:'Displacement against time for a point on a sound wave'}).svg);
 
@@ -1669,9 +1725,17 @@ createReorder({host:act('spectrum','Order','The colours of visible light','Put t
     {id:'r',text:'Red'},{id:'o',text:'Orange'},{id:'y',text:'Yellow'},{id:'g',text:'Green'},
     {id:'b',text:'Blue'},{id:'i',text:'Indigo'},{id:'v',text:'Violet'}
   ],constraints:chain(['r','o','y','g','b','i','v']),why:'Red light has the longest wavelength (lowest frequency); violet has the shortest (highest frequency).'});
-calcAct('spectrum','Electromagnetic waves','All electromagnetic waves travel at 3.0 × 10⁸ m/s in free space. Use v = f × λ.',[
-  {q:'A radio station broadcasts at a frequency of 1.0 × 10⁸ Hz. The wavelength is',unit:'m',answer:3,working:'v = f × λ<br>3.0 × 10⁸ = 1.0 × 10⁸ × λ<br>λ = [[3.0 × 10⁸|1.0 × 10⁸]]<br>λ = 3.0 m'},
-  {q:'A microwave has a wavelength of 0.12 m. Its frequency is',unit:'× 10⁹ Hz',answer:2.5,working:'v = f × λ<br>3.0 × 10⁸ = f × 0.12<br>f = [[3.0 × 10⁸|0.12]]<br>f = 2.5 × 10⁹ Hz'}
+// New problems helper for this tab: em_sci(m,e) writes m × 10^e with superscript digits
+const em_sci=(m,e)=>m+' × 10'+String(e).replace(/-/g,'⁻').replace(/\d/g,d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
+calcAct('spectrum','Electromagnetic waves','All electromagnetic waves travel at 3.0 × 10⁸ m/s in free space. Use v = f × λ. Press New problems for another pair.',[
+  {q:'A radio station broadcasts at a frequency of 1.0 × 10⁸ Hz. The wavelength is',unit:'m',answer:3,working:'v = 3.0 × 10⁸ m/s<br>f = 1.0 × 10⁸ Hz<br>λ = ?||v = f × λ<br>3.0 × 10⁸ = 1.0 × 10⁸ × λ<br>λ = [[3.0 × 10⁸|1.0 × 10⁸]]<br>λ = 3.0 m',
+   make:rnd=>{const c=calcPick(rnd,[[1.0,8,'3',3],[1.2,8,'2.5',2.5],[1.5,8,'2',2],[6.0,5,'500',500],[1.5,6,'200',200],[1.0,6,'300',300],[2.0,5,'1500',1500]]),
+       who=calcPick(rnd,['A radio station broadcasts','A radio transmitter sends out radio waves','Nabil tunes his radio to a station that broadcasts']),F=em_sci(c[0].toFixed(1),c[1]);
+     return {q:who+' at a frequency of '+F+' Hz. The wavelength is',unit:'m',answer:c[3],working:'v = 3.0 × 10⁸ m/s<br>f = '+F+' Hz<br>λ = ?||v = f × λ<br>3.0 × 10⁸ = '+F+' × λ<br>λ = [[3.0 × 10⁸|'+F+']]<br>λ = '+c[2]+' m'};}},
+  {q:'A microwave has a wavelength of 0.12 m. Its frequency is',unit:'× 10⁹ Hz',answer:2.5,working:'v = 3.0 × 10⁸ m/s<br>λ = 0.12 m<br>f = ?||v = f × λ<br>3.0 × 10⁸ = f × 0.12<br>f = [[3.0 × 10⁸|0.12]]<br>f = 2.5 × 10⁹ Hz',
+   make:rnd=>{const c=calcPick(rnd,[['A microwave oven uses microwaves with a wavelength of',[0.12]],['A mobile phone signal has a wavelength of',[0.15,0.2,0.3]],['A Wi-Fi router sends microwaves with a wavelength of',[0.06,0.12]],['A satellite TV signal has a wavelength of',[0.025,0.03]],['A speed camera’s radar uses microwaves with a wavelength of',[0.012,0.015]]]),
+       l=calcPick(rnd,c[1]),f=+(0.3/l).toFixed(2);
+     return {q:c[0]+' '+l+' m. Its frequency is',unit:'× 10⁹ Hz',answer:f,working:'v = 3.0 × 10⁸ m/s<br>λ = '+l+' m<br>f = ?||v = f × λ<br>3.0 × 10⁸ = f × '+l+'<br>f = [[3.0 × 10⁸|'+l+']]<br>f = '+em_sci(f,9)+' Hz'};}}
 
   ]);
 

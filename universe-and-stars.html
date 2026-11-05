@@ -326,6 +326,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-m{justify-self:center}
 .eqg-r{justify-self:start;min-width:0}
 .eqg-full{grid-column:1/-1}
+.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
+.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
+@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -549,7 +552,7 @@ function bar(parent,buttons){
 // Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
 // answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
 // a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
-const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const shownVal=a=>{const v=Number(a),t=String(a);if(!/e/i.test(t)&&!(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-3)))return t;const p=v.toPrecision(3).split('e');return p.length<2?t:p[0]+'×10^'+(+p[1]);};
 const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
 function answerBtn(b,fn){
   const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
@@ -998,6 +1001,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -1007,18 +1018,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -1040,8 +1070,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -1616,17 +1647,47 @@ createSortGame({host:act('orbits','Sort','Moons, planets and comets','Sort each 
     {id:'c2',cat:'c',text:'Speed up a lot when close to the Sun'},
     {id:'c3',cat:'c',text:'Spend most of their time far from the Sun'}
   ]});
+// New problems helpers (orbits tab)
+const ob_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+const ob_n=x=>String(+(+x).toFixed(2));
+const OB_WORLDS=[['the Moon',1.6],['Mars',3.7],['Mercury',3.7],['Venus',8.9],['Jupiter',25],['Saturn',10.4]];
 calcAct('orbits','Weight on other worlds','Use weight = mass × gravitational field strength, W = m × g.',[
-  {q:'An astronaut of mass 80 kg stands on the Moon (g = 1.6 N/kg). Her weight is',unit:'N',answer:128,working:'W = m × g<br>W = 80 × 1.6<br>W = 128 N'},
-  {q:'A probe weighs 2500 N on Jupiter, where g = 25 N/kg. Its mass is',unit:'kg',answer:100,working:'W = m × g<br>2500 = m × 25<br>m = [[2500|25]]<br>m = 100 kg'}
-
+  {q:'An astronaut of mass 80 kg stands on the Moon (g = 1.6 N/kg). Her weight is',unit:'N',answer:128,working:ob_w(['m = 80 kg','g = 1.6 N/kg','W = ?'],['W = m × g','W = 80 × 1.6','W = 128 N']),
+   make:rnd=>{const w=calcPick(rnd,OB_WORLDS),m=calcPick(rnd,[55,60,65,70,75,80,85,90,95]),W=+(m*w[1]).toFixed(2);
+     const who=calcPick(rnd,[['An astronaut','Her'],['An astronaut','His'],['Zahra, an astronaut','Her'],['Lucas, an astronaut','His'],['Camila, an astronaut','Her']]);
+     return {q:who[0]+' of mass '+m+' kg'+(who[0].indexOf(',')>0?',':'')+' stands on '+w[0]+' (g = '+w[1]+' N/kg). '+who[1]+' weight is',unit:'N',answer:W,working:ob_w(['m = '+m+' kg','g = '+w[1]+' N/kg','W = ?'],['W = m × g','W = '+m+' × '+w[1],'W = '+ob_n(W)+' N'])};}},
+  {q:'A probe weighs 2500 N on Jupiter, where g = 25 N/kg. Its mass is',unit:'kg',answer:100,working:ob_w(['W = 2500 N','g = 25 N/kg','m = ?'],['W = m × g','2500 = m × 25','m = [[2500|25]]','m = 100 kg']),
+   make:rnd=>{const w=calcPick(rnd,OB_WORLDS),m=calcPick(rnd,[40,50,80,100,120,150,200,250,400,500]),W=+(m*w[1]).toFixed(2);
+     const what=calcPick(rnd,['A probe','A lander','A rover','A space probe']);
+     return {q:what+' weighs '+ob_n(W)+' N on '+w[0]+', where g = '+w[1]+' N/kg. Its mass is',unit:'kg',answer:m,working:ob_w(['W = '+ob_n(W)+' N','g = '+w[1]+' N/kg','m = ?'],['W = m × g',ob_n(W)+' = m × '+w[1],'m = [['+ob_n(W)+'|'+w[1]+']]','m = '+m+' kg'])};}}
   ]);
 
 /* ================= 4. ORBITAL SPEED ================= */
+// New problems helpers (orbital tab): or_sci(1.5e11) gives "1.5 × 10¹¹"; or_n puts a space in numbers from 10 000
+const or_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+const or_sup=n=>String(n).split('').map(d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[+d]).join('');
+const or_sci=(m,e)=>m+' × 10'+or_sup(e);
+const or_n=x=>{const t=String(x).split('.'),i=Math.abs(x)>=10000?t[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '):t[0];return i+(t[1]?'.'+t[1]:'');};
+const or_sf=(x,n)=>+(+x).toPrecision(n);
 calcAct('orbital','v = [[2 × π × r|T]]','Use orbital speed = [[2 × π × orbital radius|time period]], with r in metres and T in seconds.',[
-  {q:'The Earth orbits the Sun at a radius of 1.5 × 10¹¹ m. One year is 3.15 × 10⁷ s. Its orbital speed is',unit:'km/s',answer:29.9,working:'v = [[2 × π × r|T]]<br>v = [[2 × π × 1.5 × 10¹¹|3.15 × 10⁷]]<br>v = 29 920 m/s<br>v = 29.9 km/s'},
-  {q:'A geostationary satellite orbits once every 24 hours at a radius of 4.22 × 10⁷ m. Its orbital speed is',unit:'m/s',answer:3069,working:'T = 24 × 60 × 60 = 86 400 s<br>v = [[2 × π × r|T]]<br>v = [[2 × π × 4.22 × 10⁷|86 400]]<br>v = 3069 m/s'},
-  {q:'The International Space Station moves at 7700 m/s at an orbital radius of 6.77 × 10⁶ m. Its time period is',unit:'min',answer:92.1,working:'v = [[2 × π × r|T]]<br>7700 = [[2 × π × 6.77 × 10⁶|T]]<br>7700 × T = 2 × π × 6.77 × 10⁶<br>T = [[2 × π × 6.77 × 10⁶|7700]]<br>T = 5524 s<br>T = [[5524|60]] min<br>T = 92.1 min'}
+  {q:'The Earth orbits the Sun at a radius of 1.5 × 10¹¹ m. One year is 3.15 × 10⁷ s. Its orbital speed is',unit:'km/s',answer:29.9,
+   working:or_w(['r = 1.5 × 10¹¹ m','T = 3.15 × 10⁷ s','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × 1.5 × 10¹¹|3.15 × 10⁷]]','v = 29 920 m/s','v = 29.9 km/s']),
+   make:rnd=>{const p=calcPick(rnd,[['Mercury',5.79,10,'One Mercury year is',7.60,6],['Venus',1.08,11,'One Venus year is',1.94,7],['The Earth',1.5,11,'One year is',3.15,7],['Mars',2.28,11,'One Mars year is',5.94,7],['Jupiter',7.78,11,'One Jupiter year is',3.74,8]]);
+     const v=2*Math.PI*p[1]*Math.pow(10,p[2])/(p[4]*Math.pow(10,p[5])),vm=Math.round(or_sf(v,4)),vk=or_sf(v/1000,3);
+     return {q:p[0]+' orbits the Sun at a radius of '+or_sci(p[1],p[2])+' m. '+p[3]+' '+or_sci(p[4],p[5])+' s. Its orbital speed is',unit:'km/s',answer:vk,
+       working:or_w(['r = '+or_sci(p[1],p[2])+' m','T = '+or_sci(p[4],p[5])+' s','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × '+or_sci(p[1],p[2])+'|'+or_sci(p[4],p[5])+']]','v = '+or_n(vm)+' m/s','v = '+(v/1000).toPrecision(3)+' km/s'])};}},
+  {q:'A geostationary satellite orbits once every 24 hours at a radius of 4.22 × 10⁷ m. Its orbital speed is',unit:'m/s',answer:3069,
+   working:or_w(['T = 24 h = 24 × 60 × 60 = 86 400 s','r = 4.22 × 10⁷ m','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × 4.22 × 10⁷|86 400]]','v = 3069 m/s']),
+   make:rnd=>{const c=calcPick(rnd,[['A geostationary satellite',24,4.22,7],['A GPS satellite',12,2.66,7],['A satellite',8,2.03,7],['A satellite',6,1.28,7],['A satellite',3,1.06,7],['A satellite',2,8.06,6]]);
+     const T=c[1]*3600,v=Math.round(2*Math.PI*c[2]*Math.pow(10,c[3])/T);
+     return {q:c[0]+' orbits once every '+c[1]+' hours at a radius of '+or_sci(c[2],c[3])+' m. Its orbital speed is',unit:'m/s',answer:v,
+       working:or_w(['T = '+c[1]+' h = '+c[1]+' × 60 × 60 = '+or_n(T)+' s','r = '+or_sci(c[2],c[3])+' m','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × '+or_sci(c[2],c[3])+'|'+or_n(T)+']]','v = '+or_n(v)+' m/s'])};}},
+  {q:'The International Space Station moves at 7700 m/s at an orbital radius of 6.77 × 10⁶ m. Its time period is',unit:'min',answer:92.1,
+   working:or_w(['v = 7700 m/s','r = 6.77 × 10⁶ m','T = ?'],['v = [[2 × π × r|T]]','7700 = [[2 × π × 6.77 × 10⁶|T]]','7700 × T = 2 × π × 6.77 × 10⁶','T = [[2 × π × 6.77 × 10⁶|7700]]','T = 5524 s','T = [[5524|60]] min','T = 92.1 min']),
+   make:rnd=>{const c=calcPick(rnd,[['The International Space Station',7700,6.77],['The Hubble Space Telescope',7590,6.92],['A weather satellite',7450,7.18],['An Earth-observation satellite',7500,7.08],['A small research satellite',7620,6.87]]);
+     const Ts=Math.round(2*Math.PI*c[2]*1e6/c[1]),Tm=or_sf(Ts/60,3);
+     return {q:c[0]+' moves at '+c[1]+' m/s at an orbital radius of '+or_sci(c[2],6)+' m. Its time period is',unit:'min',answer:Tm,
+       working:or_w(['v = '+c[1]+' m/s','r = '+or_sci(c[2],6)+' m','T = ?'],['v = [[2 × π × r|T]]',c[1]+' = [[2 × π × '+or_sci(c[2],6)+'|T]]',c[1]+' × T = 2 × π × '+or_sci(c[2],6),'T = [[2 × π × '+or_sci(c[2],6)+'|'+c[1]+']]','T = '+Ts+' s','T = [['+Ts+'|60]] min','T = '+Tm+' min'])};}}
 ]);
 
 /* ================= 5. STAR COLOUR ================= */

@@ -326,6 +326,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-m{justify-self:center}
 .eqg-r{justify-self:start;min-width:0}
 .eqg-full{grid-column:1/-1}
+.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
+.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
+@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -603,10 +606,7 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 svg.sankey{background:var(--panel)}
 </style>
 <style>
-.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
-.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
-.cw-given .eqg{grid-template-columns:auto auto auto}
-@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
+
 </style>
 <style>
 
@@ -1013,7 +1013,7 @@ function bar(parent,buttons){
 // Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
 // answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
 // a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
-const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const shownVal=a=>{const v=Number(a),t=String(a);if(!/e/i.test(t)&&!(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-3)))return t;const p=v.toPrecision(3).split('e');return p.length<2?t:p[0]+'×10^'+(+p[1]);};
 const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
 function answerBtn(b,fn){
   const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
@@ -1462,6 +1462,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -1471,18 +1479,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -1504,8 +1531,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -2009,11 +2037,40 @@ SRC='1a';
 {
 
 
-calcAct('calculating','Speed and acceleration','Work each one out on paper first. If an answer is wrong, the working appears below it.',[
-  {q:'A runner completes a 1500 m race in 5 minutes. The runner’s average speed is',unit:'m/s',answer:5,working:'time = 5 × 60 = 300 s<br>average speed = [[distance|time]]<br>average speed = [[1500|300]]<br>average speed = 5 m/s'},
-  {q:'A car accelerates from 5 m/s to 25 m/s in 4 s. Its acceleration is',unit:'m/s²',answer:5,working:'a = [[v − u|t]]<br>a = [[25 − 5|4]]<br>a = [[20|4]]<br>a = 5 m/s²'},
-  {q:'A train travelling at 30 m/s brakes and stops in 12 s. Its acceleration is',unit:'m/s²',answer:-2.5,working:'a = [[v − u|t]]<br>a = [[0 − 30|12]]<br>a = [[−30|12]]<br>a = −2.5 m/s² (the minus sign shows it is slowing down)'}
-
+// numbers for the working: no float noise, real minus sign, a space in numbers of 10 000 and over
+const calculating_n=x=>{const v=+(+x).toFixed(4),a=Math.abs(v),t=a>=10000?String(a).replace(/\B(?=(\d{3})+(?!\d))/g,' '):String(a);return (v<0?'−':'')+t;};
+const calculating_int=x=>Math.abs(x-Math.round(x))<1e-9;
+const CALCULATING_PEOPLE=[['Ruby','Her'],['Poppy','Her'],['Zahra','Her'],['Elena','Her'],['Henry','His'],['Ali','His'],['Lucas','His'],['Yassin','His']];
+calcAct('calculating','Speed and acceleration','Work each one out on paper first. Press New problems for another set.',[
+  {q:'A runner completes a 1500 m race in 5 minutes. The runner’s average speed is',unit:'m/s',answer:5,
+   working:'distance = 1500 m<br>time = 5 min = 300 s<br>average speed = ?||average speed = [[distance|time]]<br>average speed = [[1500|300]]<br>average speed = 5 m/s',
+   make:rnd=>{const n=calculating_n,c=calcPick(rnd,[
+       {verb:'runs',v:[3,4,5,6],t:[4,5,6,8,10]},{verb:'cycles',v:[5,6,8,10],t:[5,10,15,20]},
+       {verb:'walks',v:[1.2,1.5,2],t:[10,15,20,30]},{bus:true,v:[8,10,12,15],t:[5,10,20,30]}]);
+     const v=calcPick(rnd,c.v),t=calcPick(rnd,c.t),d=Math.round(v*t*60),p=calcPick(rnd,CALCULATING_PEOPLE);
+     const q=c.bus?'A bus travels '+n(d)+' m in '+t+' minutes. Its average speed is':p[0]+' '+c.verb+' '+n(d)+' m in '+t+' minutes. '+p[1]+' average speed is';
+     return {q:q,unit:'m/s',answer:v,
+       working:'distance = '+n(d)+' m<br>time = '+t+' min = '+n(t*60)+' s<br>average speed = ?||average speed = [[distance|time]]<br>average speed = [['+n(d)+'|'+n(t*60)+']]<br>average speed = '+n(v)+' m/s'};}},
+  {q:'A car accelerates from 5 m/s to 25 m/s in 4 s. Its acceleration is',unit:'m/s²',answer:5,
+   working:'u = 5 m/s<br>v = 25 m/s<br>t = 4 s<br>a = ?||a = [[v − u|t]]<br>a = [[25 − 5|4]]<br>a = [[20|4]]<br>a = 5 m/s²',
+   make:rnd=>{const n=calculating_n,c=calcPick(rnd,[
+       {who:'A car',its:'Its',u:[0,5,10],a:[1.5,2,2.5,3,4],t:[2,4,5,6,8]},
+       {who:'A train',its:'Its',u:[0,5,10],a:[0.5,1,1.5],t:[10,12,16,20]},
+       {who:'A motorbike',its:'Its',u:[0,5,10],a:[2,2.5,3,4,5],t:[2,3,4,5,6]},
+       {bike:true,u:[0,2,3,4],a:[0.5,1,1.5,2],t:[2,4,5,6]}]);
+     let u,a,t,v,k=0;do{u=calcPick(rnd,c.u);a=calcPick(rnd,c.a);t=calcPick(rnd,c.t);v=+(u+a*t).toFixed(6);}while((!calculating_int(v)||v>40||v-u<3)&&++k<60);
+     const p=calcPick(rnd,CALCULATING_PEOPLE),who=c.bike?p[0]+', on '+p[1].toLowerCase()+' bike,':c.who,its=c.bike?p[1]:c.its;
+     return {q:who+' accelerates from '+(u?n(u)+' m/s':'rest')+' to '+n(v)+' m/s in '+n(t)+' s. '+its+' acceleration is',unit:'m/s²',answer:a,
+       working:'u = '+(u?n(u)+' m/s':'0 (from rest)')+'<br>v = '+n(v)+' m/s<br>t = '+n(t)+' s<br>a = ?||a = [[v − u|t]]<br>a = [['+n(v)+' − '+n(u)+'|'+n(t)+']]<br>a = [['+n(v-u)+'|'+n(t)+']]<br>a = '+n(a)+' m/s²'};}},
+  {q:'A train travelling at 30 m/s brakes and stops in 12 s. Its acceleration is',unit:'m/s²',answer:-2.5,
+   working:'u = 30 m/s<br>v = 0 (it stops)<br>t = 12 s<br>a = ?||a = [[v − u|t]]<br>a = [[0 − 30|12]]<br>a = [[−30|12]]<br>a = −2.5 m/s² (the minus sign shows it is slowing down)',
+   make:rnd=>{const n=calculating_n,c=calcPick(rnd,[
+       {who:'A train',a:[0.5,1,1.5,2,2.5],t:[10,12,15,20]},{who:'A car',a:[2,2.5,3,4,5,6],t:[2,3,4,5,6]},
+       {who:'A bus',a:[1.5,2,2.5,3],t:[4,5,6,8]},{bike:true,a:[1,1.5,2,2.5],t:[2,3,4,5]}]);
+     let a,t,u,k=0;do{a=calcPick(rnd,c.a);t=calcPick(rnd,c.t);u=+(a*t).toFixed(6);}while((!calculating_int(u)||u>35||u<4)&&++k<60);
+     const p=calcPick(rnd,CALCULATING_PEOPLE),who=c.bike?p[0]+', cycling at '+n(u)+' m/s,':c.who+' travelling at '+n(u)+' m/s',its=c.bike?p[1]:'Its';
+     return {q:who+' brakes and stops in '+n(t)+' s. '+its+' acceleration is',unit:'m/s²',answer:-a,
+       working:'u = '+n(u)+' m/s<br>v = 0 (it stops)<br>t = '+n(t)+' s<br>a = ?||a = [[v − u|t]]<br>a = [[0 − '+n(u)+'|'+n(t)+']]<br>a = [[−'+n(u)+'|'+n(t)+']]<br>a = −'+n(a)+' m/s² (the minus sign shows it is slowing down)'};}}
   ]);
 
 }
@@ -2025,20 +2082,38 @@ SRC='1b';
 
 exploreFrame('fma','Push a trolley','Set the resultant force and the mass, then press Go. The trolley starts from rest on a 10 m track. The faint dots mark where it was every 0.5 s, so you can see it speeding up.',
   'animations/force-mass-acceleration.html','F = ma animation: a trolley pushed by a resultant force','F = ma');
-calcAct('fma','F = m × a','Type your answer into each box, then press Check. Correct answers lock in green.',[
+// numbers for the working: no float noise, real minus sign
+const fma_n=x=>{const v=+(+x).toFixed(4);return (v<0?'−':'')+String(Math.abs(v));};
+calcAct('fma','F = m × a','Type your answer into each box, then press Check. Correct answers lock in green. Press New problems for another pair.',[
   {q:'A resultant force of 18 N gives a trolley an acceleration of 4.5 m/s². The mass of the trolley is',unit:'kg',answer:4,
-   working:'F = m × a<br>18 = m × 4.5<br>m = [[18|4.5]]<br>m = 4 kg'},
+   working:'F = 18 N<br>a = 4.5 m/s²<br>m = ?||F = m × a<br>18 = m × 4.5<br>m = [[18|4.5]]<br>m = 4 kg',
+   make:rnd=>{const n=fma_n,c=calcPick(rnd,[
+       {what:'a trolley',art:'The mass of the trolley is',m:[0.5,1.5,2,2.5,4,5],a:[0.4,1.5,2,2.5,3,4.5]},
+       {what:'a toy car',art:'The mass of the toy car is',m:[0.2,0.25,0.4,0.5],a:[2,4,5,8]},
+       {what:'a sledge',art:'The mass of the sledge is',m:[8,12,15,20],a:[0.5,1.5,2,2.5]},
+       {what:'a car',art:'The mass of the car is',m:[800,1000,1200,1500],a:[1.5,2,2.5,3]}]);
+     const m=calcPick(rnd,c.m),a=calcPick(rnd,c.a),F=+(m*a).toFixed(4);
+     return {q:'A resultant force of '+n(F)+' N gives '+c.what+' an acceleration of '+n(a)+' m/s². '+c.art,unit:'kg',answer:m,
+       working:'F = '+n(F)+' N<br>a = '+n(a)+' m/s²<br>m = ?||F = m × a<br>'+n(F)+' = m × '+n(a)+'<br>m = [['+n(F)+'|'+n(a)+']]<br>m = '+n(m)+' kg'};}},
   {q:'Henry and his bike have a total mass of 60 kg. The forward force is 150 N, and air resistance and friction together are 30 N. The acceleration is',unit:'m/s²',answer:2,
-   working:'resultant force = 150 − 30 = 120 N<br>F = m × a<br>120 = 60 × a<br>a = [[120|60]]<br>a = 2 m/s²'}
-
+   working:'m = 60 kg<br>F = 150 − 30 = 120 N<br>a = ?||F = m × a<br>120 = 60 × a<br>a = [[120|60]]<br>a = 2 m/s²',
+   make:rnd=>{const n=fma_n,c=calcPick(rnd,[
+       {who:p=>p[0]+' and '+p[1]+' bike have a total mass of',m:[50,60,75,80],a:[0.5,1,1.5,2],drag:[20,30,40,50],res:'air resistance and friction together are'},
+       {who:()=>'A car has a mass of',m:[800,1000,1200,1500],a:[0.5,1,1.5,2,2.5],drag:[300,400,500,600],res:'air resistance and friction together are'},
+       {who:p=>p[0]+' pushes a supermarket trolley. The trolley has a mass of',m:[20,25,30,40],a:[0.5,1,1.5],drag:[10,15,20],res:'friction is',push:true},
+       {who:()=>'A rowing boat has a mass of',m:[150,200,250],a:[0.2,0.4,0.5],drag:[50,60,80],res:'water resistance is'}]);
+     const P=calcPick(rnd,[['Henry','his'],['Ali','his'],['Charlie','his'],['Sophie','her'],['Julia','her'],['Ananya','her']]);
+     const m=calcPick(rnd,c.m),a=calcPick(rnd,c.a),D=calcPick(rnd,c.drag),F=Math.round(m*a),T=F+D;
+     return {q:c.who(P)+' '+n(m)+' kg. The '+(c.push?'pushing':'forward')+' force is '+n(T)+' N, and '+c.res+' '+n(D)+' N. The acceleration is',unit:'m/s²',answer:a,
+       working:'m = '+n(m)+' kg<br>F = '+n(T)+' − '+n(D)+' = '+n(F)+' N<br>a = ?||F = m × a<br>'+n(F)+' = '+n(m)+' × a<br>a = [['+n(F)+'|'+n(m)+']]<br>a = '+n(a)+' m/s²'};}}
   ]);
 
 calcAct('fma','Read the graph','Fatimah pulls a trolley with different resultant forces and measures its acceleration each time. The graph shows her results. Read the points you need off the line.',[
-  {q:'The resultant force needed for an acceleration of 1.5 m/s² is',unit:'N',answer:3,working:'Read across from 1.5 m/s² on the line<br>F = 3 N'},
+  {q:'The resultant force needed for an acceleration of 1.5 m/s² is',unit:'N',answer:3,working:'Read up from 1.5 m/s² to the line, then across<br>F = 3 N'},
   {q:'The gradient of the line is the mass of the trolley. The mass is',unit:'kg',answer:2,
-   working:'F = m × a, so the gradient of force against acceleration is m<br>gradient = [[change in force|change in acceleration]]<br>gradient = [[5 − 0|2.5 − 0]]<br>gradient = [[5|2.5]]<br>m = 2 kg'},
+   working:'ΔF = 5 − 0 = 5 N<br>Δa = 2.5 − 0 = 2.5 m/s²<br>m = ?||m = gradient = [[ΔF|Δa]]<br>m = [[5|2.5]]<br>m = 2 kg'},
   {q:'With a resultant force of 4 N, the acceleration is',unit:'m/s²',answer:2,
-   working:'Read across from 4 N on the line, or use F = m × a<br>4 = 2 × a<br>a = [[4|2]]<br>a = 2 m/s²'}
+   working:'F = 4 N<br>m = 2 kg (the gradient)<br>a = ?||F = m × a<br>4 = 2 × a<br>a = [[4|2]]<br>a = 2 m/s²'}
 
   ],mgraph({xMax:2.5,yMax:5,xTicks:[0,0.5,1,1.5,2,2.5],yTicks:[0,1,2,3,4,5],xLabel:'acceleration (m/s²)',yLabel:'resultant force (N)',
   label:'Force–acceleration graph: a straight line through the origin to 5 N at 2.5 m/s²',pts:[[0,0],[2.5,5]]}).svg);
@@ -2054,9 +2129,9 @@ SRC='1b';
 calcAct('weight','Read the graph','Nabil measures the weight of different masses on another planet. The graph shows his results. Read the points you need off the line.',[
   {q:'The weight of a 3 kg mass on this planet is',unit:'N',answer:12,working:'Read up from 3 kg to the line, then across<br>W = 12 N'},
   {q:'The gradient of the line is the gravitational field strength. On this planet g is',unit:'N/kg',answer:4,
-   working:'W = m × g, so the gradient of weight against mass is g<br>gradient = [[change in weight|change in mass]]<br>gradient = [[20 − 0|5 − 0]]<br>gradient = [[20|5]]<br>g = 4 N/kg'},
+   working:'ΔW = 20 − 0 = 20 N<br>Δm = 5 − 0 = 5 kg<br>g = ?||g = gradient = [[ΔW|Δm]]<br>g = [[20|5]]<br>g = 4 N/kg'},
   {q:'An object that weighs 16 N on this planet has a mass of',unit:'kg',answer:4,
-   working:'Read across from 16 N on the line, or use W = m × g<br>16 = m × 4<br>m = [[16|4]]<br>m = 4 kg'}
+   working:'W = 16 N<br>g = 4 N/kg (the gradient)<br>m = ?||W = m × g<br>16 = m × 4<br>m = [[16|4]]<br>m = 4 kg'}
 
   ],mgraph({xMax:5,yMax:20,xTicks:[0,1,2,3,4,5],yTicks:[0,4,8,12,16,20],xLabel:'mass (kg)',yLabel:'weight (N)',
   label:'Weight–mass graph: a straight line through the origin to 20 N at 5 kg',pts:[[0,0],[5,20]]}).svg);
@@ -2068,77 +2143,54 @@ SRC='1c';
 {
 
 
-// suvat working (Alex, 5 Nov 2026): s, u, v and a listed down the left, the equation and every step on the right,
-// as students should set it out in the exam (wide, not tall). Each column is lined up on its = signs here (the same
-// .eqg markup alignEquals makes, so alignEquals leaves it alone, and the copy in calculations.html works too).
-const eqCol=lines=>'<div class="eqg">'+lines.map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
-const suvatWork=(given,steps)=>'<div class="cw-split"><div class="cw-given">'+eqCol(given)+'</div><div class="cw-eq">'+eqCol(steps)+'</div></div>';
+// suvat working: s, u, v and a down the left, the equation and every step on the right (the engine's "givens||steps")
+const suvatWork=(given,steps)=>given.join('<br>')+'||'+steps.join('<br>');
 const sn=x=>{const v=+(+x).toFixed(2);return (v<0?'−':'')+String(Math.abs(v));};
-const seededRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
-const pickOne=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 const nice=x=>Math.abs(x*10-Math.round(x*10))<1e-9;
 // Problem makers: each returns {q, unit, answer, working}. Slot 1 is along the ground, slot 2 is up or down (g = 10 m/s²).
 const SUVAT_MAKERS=[
   [ // find the deceleration
-    rnd=>{let u,a,s,k=0;do{u=pickOne(rnd,[8,10,12,15,16,18,20,24,25,30]);a=pickOne(rnd,[2,2.5,4,5,6,8]);s=u*u/(2*a);}while((!nice(s)||s>120)&&++k<60);
-      const who=pickOne(rnd,['Camila brakes her bike','A car brakes','A train brakes','Ali brakes his scooter','A bus brakes']);
+    rnd=>{let u,a,s,k=0;do{u=calcPick(rnd,[8,10,12,15,16,18,20,24,25,30]);a=calcPick(rnd,[2,2.5,4,5,6,8]);s=u*u/(2*a);}while((!nice(s)||s>120)&&++k<60);
+      const who=calcPick(rnd,['Camila brakes her bike','A car brakes','A train brakes','Ali brakes his scooter','A bus brakes']);
       return {q:who+' from '+sn(u)+' m/s to a stop in '+sn(s)+' m. The size of the deceleration is',unit:'m/s²',answer:a,
         working:suvatWork(['s = '+sn(s)+' m','u = '+sn(u)+' m/s','v = 0','a = ?'],
           ['v² = u² + 2as','0² = '+sn(u)+'² + 2 × a × '+sn(s),'0 = '+sn(u*u)+' + '+sn(2*s)+' × a',sn(2*s)+' × a = −'+sn(u*u),'a = [[−'+sn(u*u)+'|'+sn(2*s)+']]','a = −'+sn(a)+' m/s²','deceleration = '+sn(a)+' m/s²'])};},
     // find the final speed
-    rnd=>{let u,v,a,s,k=0;do{u=pickOne(rnd,[0,2,4,5,6,10]);v=u+pickOne(rnd,[4,6,8,10,12,15,20]);a=pickOne(rnd,[1,2,2.5,4,5]);s=(v*v-u*u)/(2*a);}while((!nice(s)||s>200)&&++k<60);
-      const who=pickOne(rnd,['A car','Sophie, on her bike,','A sprinter','A motorbike']);
+    rnd=>{let u,v,a,s,k=0;do{u=calcPick(rnd,[0,2,4,5,6,10]);v=u+calcPick(rnd,[4,6,8,10,12,15,20]);a=calcPick(rnd,[1,2,2.5,4,5]);s=(v*v-u*u)/(2*a);}while((!nice(s)||s>200)&&++k<60);
+      const who=calcPick(rnd,['A car','Sophie, on her bike,','A sprinter','A motorbike']);
       const from=u?'from '+sn(u)+' m/s':'from rest';
       return {q:who+' accelerates at '+sn(a)+' m/s² '+from+' over a distance of '+sn(s)+' m. The final speed is',unit:'m/s',answer:v,
         working:suvatWork(['s = '+sn(s)+' m','u = '+(u?sn(u)+' m/s':'0'),'v = ?','a = '+sn(a)+' m/s²'],
           ['v² = u² + 2as','v² = '+sn(u)+'² + 2 × '+sn(a)+' × '+sn(s),'v² = '+sn(u*u)+' + '+sn(2*a*s),'v² = '+sn(v*v),'v = √'+sn(v*v),'v = '+sn(v)+' m/s'])};},
     // find the distance
-    rnd=>{let u,v,a,s,k=0;do{u=pickOne(rnd,[2,4,5,6,10,12]);v=u+pickOne(rnd,[4,6,8,10,12,15,20]);a=pickOne(rnd,[1,2,2.5,4,5]);s=(v*v-u*u)/(2*a);}while((!nice(s)||s>200)&&++k<60);
-      const who=pickOne(rnd,['A train','A car','Hana, on her skateboard,','A lorry']);
+    rnd=>{let u,v,a,s,k=0;do{u=calcPick(rnd,[2,4,5,6,10,12]);v=u+calcPick(rnd,[4,6,8,10,12,15,20]);a=calcPick(rnd,[1,2,2.5,4,5]);s=(v*v-u*u)/(2*a);}while((!nice(s)||s>200)&&++k<60);
+      const who=calcPick(rnd,['A train','A car','Hana, on her skateboard,','A lorry']);
       return {q:who+' speeds up from '+sn(u)+' m/s to '+sn(v)+' m/s with an acceleration of '+sn(a)+' m/s². The distance it travels while speeding up is',unit:'m',answer:s,
         working:suvatWork(['s = ?','u = '+sn(u)+' m/s','v = '+sn(v)+' m/s','a = '+sn(a)+' m/s²'],
           ['v² = u² + 2as',sn(v)+'² = '+sn(u)+'² + 2 × '+sn(a)+' × s',sn(v*v)+' = '+sn(u*u)+' + '+sn(2*a)+' × s',sn(2*a)+' × s = '+sn(v*v)+' − '+sn(u*u),sn(2*a)+' × s = '+sn(v*v-u*u),'s = [['+sn(v*v-u*u)+'|'+sn(2*a)+']]','s = '+sn(s)+' m'])};}
   ],
   [ // thrown straight up: find the launch speed
-    rnd=>{const u=pickOne(rnd,[4,5,6,7,8,9,10,12,14,15]),h=u*u/20;
-      const what=pickOne(rnd,['A ball is thrown','Zahra kicks a football','A stone is flicked','Aidan throws a tennis ball']);
+    rnd=>{const u=calcPick(rnd,[4,5,6,7,8,9,10,12,14,15]),h=u*u/20;
+      const what=calcPick(rnd,['A ball is thrown','Zahra kicks a football','A stone is flicked','Aidan throws a tennis ball']);
       return {q:what+' straight up and it reaches a maximum height of '+sn(h)+' m. The speed it left at is',unit:'m/s',answer:u,
         working:suvatWork(['s = '+sn(h)+' m','u = ?','v = 0 (at the top)','a = −10 m/s²'],
           ['v² = u² + 2as','0² = u² + 2 × (−10) × '+sn(h),'0 = u² − '+sn(u*u),'u² = '+sn(u*u),'u = √'+sn(u*u),'u = '+sn(u)+' m/s'])};},
     // dropped from rest: find the landing speed
-    rnd=>{const v=pickOne(rnd,[5,6,8,10,12,14,15,20]),h=v*v/20;
-      const what=pickOne(rnd,['A stone is dropped from rest off a bridge','An apple falls from rest from a branch','Poppy drops a ball from rest out of a window']);
+    rnd=>{const v=calcPick(rnd,[5,6,8,10,12,14,15,20]),h=v*v/20;
+      const what=calcPick(rnd,['A stone is dropped from rest off a bridge','An apple falls from rest from a branch','Poppy drops a ball from rest out of a window']);
       return {q:what+' '+sn(h)+' m above the ground. Ignoring air resistance, the speed it hits the ground at is',unit:'m/s',answer:v,
         working:suvatWork(['s = '+sn(h)+' m','u = 0 (from rest)','v = ?','a = 10 m/s²'],
           ['v² = u² + 2as','v² = 0² + 2 × 10 × '+sn(h),'v² = '+sn(v*v),'v = √'+sn(v*v),'v = '+sn(v)+' m/s'])};}
   ]
 ];
-{
-  const fixed=[
-    {q:'Camila brakes her bike from 12 m/s to a stop in 18 m. The size of the deceleration is',unit:'m/s²',answer:4,
-     working:suvatWork(['s = 18 m','u = 12 m/s','v = 0','a = ?'],['v² = u² + 2as','0² = 12² + 2 × a × 18','0 = 144 + 36 × a','36 × a = −144','a = [[−144|36]]','a = −4 m/s²','deceleration = 4 m/s²'])},
-    {q:'A ball is thrown straight up and it reaches a maximum height of 3.2 m. The speed it left at is',unit:'m/s',answer:8,
-     working:suvatWork(['s = 3.2 m','u = ?','v = 0 (at the top)','a = −10 m/s²'],['v² = u² + 2as','0² = u² + 2 × (−10) × 3.2','0 = u² − 64','u² = 64','u = √64','u = 8 m/s'])}
-  ];
-  // New problems: the first set is always the fixed pair above. The button makes a fresh pair (a different kind of
-  // problem and new numbers) from a seed saved with the answers, so a reload shows the same problems.
-  const qs=fixed.map(q=>Object.assign({},q));
-  const g=calcAct('suvat','v² = u² + 2as','Write down s, u, v and a first, then the equation. Take g = 10 m/s². Press New problems for another pair.',qs),host=g.host;
-  let seed=0;
-  const apply=s=>{
-    seed=s;const rnd=seededRnd(s),rows=$$('.calc-input-row',host);
-    qs.forEach((q,i)=>{
-      Object.assign(q,s?pickOne(rnd,SUVAT_MAKERS[i])(rnd):fixed[i]);
-      $('label',rows[i]).innerHTML=FR(q.q);$('.cw',rows[i]).innerHTML=FR(q.working);$('.calc-input-unit',rows[i]).textContent=q.unit;
-    });
-  };
-  const bar=$('.bar',host),btn=mk('button','btn','New problems');btn.type='button';
-  bar.insertBefore(btn,$('.fb',bar));
-  btn.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));g.reset();const fb=$('.fb',bar);fb.textContent='New problems: try these two.';fb.className='fb';});
-  const getS=g.getState,setS=g.setState;
-  g.getState=()=>Object.assign(getS(),{seed:seed});
-  g.setState=st=>{apply((st&&st.seed)||0);setS(st);};
-}
+calcAct('suvat','v² = u² + 2as','Write down s, u, v and a first, then the equation. Take g = 10 m/s². Press New problems for another pair.',[
+  {q:'Camila brakes her bike from 12 m/s to a stop in 18 m. The size of the deceleration is',unit:'m/s²',answer:4,
+   working:suvatWork(['s = 18 m','u = 12 m/s','v = 0','a = ?'],['v² = u² + 2as','0² = 12² + 2 × a × 18','0 = 144 + 36 × a','36 × a = −144','a = [[−144|36]]','a = −4 m/s²','deceleration = 4 m/s²']),
+   make:rnd=>calcPick(rnd,SUVAT_MAKERS[0])(rnd)},
+  {q:'A ball is thrown straight up and it reaches a maximum height of 3.2 m. The speed it left at is',unit:'m/s',answer:8,
+   working:suvatWork(['s = 3.2 m','u = ?','v = 0 (at the top)','a = −10 m/s²'],['v² = u² + 2as','0² = u² + 2 × (−10) × 3.2','0 = u² − 64','u² = 64','u = √64','u = 8 m/s']),
+   make:rnd=>calcPick(rnd,SUVAT_MAKERS[1])(rnd)}
+]);
 
 }
 keepKinds('1c-suvat',null,null);
@@ -2159,9 +2211,9 @@ createSortGame({host:act('stopping','Sort','What does it change?','Stopping dist
     {id:'s11',cat:'both',text:'Car travelling at a higher speed'}
   ]});
 calcAct('stopping','Nabil’s stopping distance','Nabil is driving at 24 m/s when he sees a hazard. The graph shows his velocity from that moment. The rectangle (steady speed during the reaction time) is the thinking distance; the triangle (braking) is the braking distance.',[
-  {q:'Thinking distance =',unit:'m',answer:12,working:'thinking distance = area of the rectangle (0 to 0.5 s)<br>thinking distance = 24 × 0.5<br>thinking distance = 12 m'},
-  {q:'Braking distance =',unit:'m',answer:36,working:'braking distance = area of the triangle (0.5 s to 3.5 s)<br>braking distance = ½ × base × height<br>braking distance = ½ × (3.5 − 0.5) × 24<br>braking distance = ½ × 3 × 24<br>braking distance = 36 m'},
-  {q:'Stopping distance =',unit:'m',answer:48,working:'stopping distance = total area<br>stopping distance = 12 + 36<br>stopping distance = 48 m'}
+  {q:'Thinking distance =',unit:'m',answer:12,working:'v = 24 m/s (steady)<br>reaction time = 0.5 s (0 to 0.5 s)<br>thinking distance = ?||thinking distance = area of the rectangle<br>thinking distance = 24 × 0.5<br>thinking distance = 12 m'},
+  {q:'Braking distance =',unit:'m',answer:36,working:'base = 3.5 − 0.5 = 3 s<br>height = 24 m/s<br>braking distance = ?||braking distance = area of the triangle<br>braking distance = ½ × base × height<br>braking distance = ½ × 3 × 24<br>braking distance = 36 m'},
+  {q:'Stopping distance =',unit:'m',answer:48,working:'thinking distance = 12 m<br>braking distance = 36 m<br>stopping distance = ?||stopping distance = thinking distance + braking distance<br>stopping distance = 12 + 36<br>stopping distance = 48 m'}
 
   ],mgraph({xMax:4,yMax:28,xTicks:[0,0.5,1,2,3,3.5,4],yTicks:[0,8,16,24],dividers:[0.5],xLabel:'time (s)',yLabel:'velocity (m/s)',
   label:'Velocity–time graph: 24 m/s from 0 to 0.5 s, then a straight line down to 0 at 3.5 s',pts:[[0,24],[0.5,24],[3.5,0],[4,0]]}).svg);
@@ -2209,9 +2261,9 @@ createSortGame({host:act('hooke','Sort','Spring, wire or rubber band?','A helica
     why:'Set up and measure the original length first, then load in steps, measuring each new length. Work out the extensions after each reading or at the end, then plot.'});
 }
 calcAct('hooke','Use the results','Fatimah hangs loads on a spring and records its length.',[
-  {q:'The extension at 5 N is',unit:'cm',answer:8.2,working:'extension = new length − original length<br>extension = 12.2 − 4.0<br>extension = 8.2 cm'},
+  {q:'The extension at 5 N is',unit:'cm',answer:8.2,working:'original length = 4.0 cm (at 0 N)<br>new length = 12.2 cm (at 5 N)<br>extension = ?||extension = new length − original length<br>extension = 12.2 − 4.0<br>extension = 8.2 cm'},
   {q:'The spring obeys Hooke’s law up to at least',unit:'N',answer:4,working:'Extensions: 0, 1.5, 3.0, 4.5, 6.0, 8.2 cm<br>Each newton adds 1.5 cm up to 4 N.<br>At 5 N it would be 7.5 cm if proportional, but it is 8.2 cm, so the limit of proportionality is between 4 N and 5 N.'},
-  {q:'Using the proportional region, the extension for a 2.5 N load is',unit:'cm',answer:3.75,working:'extension = 2.5 × 1.5<br>extension = 3.75 cm'}
+  {q:'Using the proportional region, the extension for a 2.5 N load is',unit:'cm',answer:3.75,working:'F = 2.5 N<br>extension per newton = 1.5 cm (each 1 N, from 0 to 4 N)<br>extension = ?||extension = 2.5 × 1.5<br>extension = 3.75 cm'}
 
   ],dataTable([['Load (N)','0','1','2','3','4','5'],['Length (cm)','4.0','5.5','7.0','8.5','10.0','12.2']]));
 
@@ -2224,12 +2276,38 @@ SRC='1d';
 
 exploreFrame('momentum','A collision','Trolley 1 rolls into trolley 2. Choose whether they stick together or bounce apart, set the masses and both velocities (trolley 2 starts at rest, but can move either way), then press Go. Either way, the total momentum after equals the total momentum before.',
   'animations/momentum-collision.html','Momentum animation: two trolleys colliding','momentum');
-calcAct('momentum','Momentum','Momentum p = m × v, in kg m/s. If no external forces act, total momentum before = total momentum after. Check the units before you substitute.',[
+// numbers for the working: no float noise, real minus sign
+const momentum_n=x=>{const v=+(+x).toFixed(4),a=Math.abs(v),t=a>=10000?String(a).replace(/\B(?=(\d{3})+(?!\d))/g,' '):String(a);return (v<0?'−':'')+t;};
+const momentum_a=t=>/^(8|11|18)(\D|$)/.test(t)?'an '+t:'a '+t; // "an 8 g", "a 12 g"
+const momentum_ok=(x,dp)=>Math.abs(x*Math.pow(10,dp)-Math.round(x*Math.pow(10,dp)))<1e-9;
+calcAct('momentum','Momentum','Momentum p = m × v, in kg m/s. If no external forces act, total momentum before = total momentum after. Check the units before you substitute. Press New problems for another pair.',[
   {q:'A 4 kg rifle fires a 20 g bullet at 300 m/s. The recoil speed of the rifle is',unit:'m/s',answer:1.5,
-   working:'momentum before = 0 (everything at rest)<br>momentum of bullet = 0.020 × 300 = 6 kg m/s forwards<br>momentum of rifle = 6 kg m/s backwards<br>6 = 4 × v<br>v = [[6|4]]<br>v = 1.5 m/s'},
+   working:'m₁ = 20 g = 0.020 kg (bullet)<br>v₁ = 300 m/s<br>m₂ = 4 kg (rifle)<br>v₂ = ?<br>momentum before = 0 (at rest)||total momentum before = total momentum after<br>0 = 0.020 × 300 + 4 × v₂<br>0 = 6 + 4 × v₂<br>4 × v₂ = −6<br>v₂ = [[−6|4]]<br>v₂ = −1.5 m/s<br>recoil speed = 1.5 m/s (backwards)',
+   make:rnd=>{const n=momentum_n,c=calcPick(rnd,[
+       {gun:'rifle',shot:'bullet',M:[3,4,5,6],m:[10,15,20,25,30],v:[300,400,500,600]},
+       {gun:'pistol',shot:'bullet',M:[0.8,1,1.2,1.5],m:[5,8,10,12],v:[250,300,350,400]},
+       {gun:'toy cannon',shot:'ball',M:[0.5,1,1.5,2],m:[20,40,50,100],v:[5,8,10,15,20]},
+       {gun:'air rifle',shot:'pellet',M:[2,2.5,3],m:[1,2,0.5],v:[150,200,250,300]}]);
+     let M,m,v,V,k=0;do{M=calcPick(rnd,c.M);m=calcPick(rnd,c.m);v=calcPick(rnd,c.v);V=m/1000*v/M;}while((!momentum_ok(V,2)||V<0.05)&&++k<80);
+     const mk=+(m/1000).toFixed(4),p=+(mk*v).toFixed(4);V=+V.toFixed(2);
+     const A=momentum_a(n(M));
+     return {q:A[0].toUpperCase()+A.slice(1)+' kg '+c.gun+' fires '+momentum_a(n(m))+' g '+c.shot+' at '+n(v)+' m/s. The recoil speed of the '+c.gun+' is',unit:'m/s',answer:V,
+       working:'m₁ = '+n(m)+' g = '+n(mk)+' kg ('+c.shot+')<br>v₁ = '+n(v)+' m/s<br>m₂ = '+n(M)+' kg ('+c.gun+')<br>v₂ = ?<br>momentum before = 0 (at rest)||total momentum before = total momentum after<br>0 = '+n(mk)+' × '+n(v)+' + '+n(M)+' × v₂<br>0 = '+n(p)+' + '+n(M)+' × v₂<br>'+n(M)+' × v₂ = −'+n(p)+'<br>v₂ = [[−'+n(p)+'|'+n(M)+']]<br>v₂ = −'+n(V)+' m/s<br>recoil speed = '+n(V)+' m/s (backwards)'};}},
   {q:'A 2 kg trolley moving right at 3 m/s collides with a 1 kg trolley moving left at 4 m/s. They stick together. Taking right as positive, their velocity afterwards is',unit:'m/s',answer:0.667,
-   working:'m₁u₁ + m₂u₂ = (m₁ + m₂)v<br>2 × 3 + 1 × (−4) = (2 + 1) × v<br>2 = 3 × v<br>v = [[2|3]]<br>v = 0.67 m/s, to the right'}
-
+   working:'m₁ = 2 kg<br>u₁ = 3 m/s<br>m₂ = 1 kg<br>u₂ = −4 m/s (moving left)<br>v = ?||m₁u₁ + m₂u₂ = (m₁ + m₂)v<br>2 × 3 + 1 × (−4) = (2 + 1) × v<br>6 − 4 = 3 × v<br>2 = 3 × v<br>v = [[2|3]]<br>v = 0.667 m/s (to the right)',
+   make:rnd=>{const n=momentum_n,c=calcPick(rnd,[
+       {a:m=>'A '+m+' kg trolley',b:m=>'a '+m+' kg trolley',m1:[0.5,1,1.5,2,3],m2:[0.5,1,1.5,2,3],u:[1,2,3,4,5,6],end:'They stick together.'},
+       {a:m=>'A '+m+' kg railway truck',b:m=>'a '+m+' kg truck',m1:[2000,3000,4000,5000],m2:[1000,2000,3000,4000],u:[1,2,3,4],end:'They couple together.'},
+       {skate:true,m1:[40,45,50,55,60],m2:[50,60,65,70,75],u:[1,2,3,4],end:'They hold on to each other.'}]);
+     let m1,m2,u1,u2,v,k=0;do{m1=calcPick(rnd,c.m1);m2=calcPick(rnd,c.m2);u1=calcPick(rnd,c.u);u2=calcPick(rnd,c.u);v=(m1*u1-m2*u2)/(m1+m2);}while((!momentum_ok(v,2)||Math.abs(v)<0.05)&&++k<200);
+     v=+v.toFixed(2);const p1=+(m1*u1).toFixed(4),p2=+(m2*u2).toFixed(4),M=+(m1+m2).toFixed(4),P=+(p1-p2).toFixed(4);
+     let first,second;
+     if(c.skate){const g=calcPick(rnd,[['Camila','Aidan'],['Elena','Lucas'],['Hana','David'],['Ruby','Nabil'],['Charlotte','Edward']]);
+       first=g[0]+' ('+n(m1)+' kg) skates right at '+n(u1)+' m/s and collides with '+g[1]+' ('+n(m2)+' kg), who is skating left at '+n(u2)+' m/s.';}
+     else first=c.a(n(m1))+' moving right at '+n(u1)+' m/s collides with '+c.b(n(m2))+' moving left at '+n(u2)+' m/s.';
+     const dir=v>0?'to the right':'to the left';
+     return {q:first+' '+c.end+' Taking right as positive, their velocity afterwards is',unit:'m/s',answer:v,
+       working:'m₁ = '+n(m1)+' kg<br>u₁ = '+n(u1)+' m/s<br>m₂ = '+n(m2)+' kg<br>u₂ = −'+n(u2)+' m/s (moving left)<br>v = ?||m₁u₁ + m₂u₂ = (m₁ + m₂)v<br>'+n(m1)+' × '+n(u1)+' + '+n(m2)+' × (−'+n(u2)+') = ('+n(m1)+' + '+n(m2)+') × v<br>'+n(p1)+' − '+n(p2)+' = '+n(M)+' × v<br>'+n(P)+' = '+n(M)+' × v<br>v = [['+n(P)+'|'+n(M)+']]<br>v = '+n(v)+' m/s ('+dir+')'};}}
   ]);
 
 }
@@ -2248,14 +2326,41 @@ predictAct('safety','Airbags','Force = [[change in momentum|time taken]]. Choose
     {text:'It brings the passenger to a stop in a shorter time',why:'Stopping more quickly would mean a shorter time and therefore a bigger force. An airbag does the opposite.'}
   ],
   explain:'The change in momentum is the same, but spreading it over a longer time means a smaller rate of change of momentum, so a smaller force.'});
-calcAct('safety','Calculate the force','F = [[mv − mu|t]]. Work out the change in momentum first, and watch the signs if something bounces back.',[
+// numbers for the working: no float noise, real minus sign, a space in numbers of 10 000 and over
+const safety_n=x=>{const v=+(+x).toFixed(4),a=Math.abs(v),t=a>=10000?String(a).replace(/\B(?=(\d{3})+(?!\d))/g,' '):String(a);return (v<0?'−':'')+t;};
+const safety_ok=(x,dp)=>Math.abs(x*Math.pow(10,dp)-Math.round(x*Math.pow(10,dp)))<1e-9;
+let safety_ball=null; // the ball made for part 2, used again in part 3
+calcAct('safety','Calculate the force','F = [[mv − mu|t]]. Work out the change in momentum first, and watch the signs if something bounces back. Press New problems for another set.',[
   {q:'David (70 kg) is a passenger in a car. A seat belt brings him to rest from 15 m/s in 0.5 s. The force on him is',unit:'N',answer:2100,
-   working:'change in momentum = 70 × 15 − 0 = 1050 kg m/s<br>F = [[change in momentum|time taken]]<br>F = [[1050|0.5]]<br>F = 2100 N'},
+   working:'m = 70 kg<br>u = 15 m/s<br>v = 0 (at rest)<br>t = 0.5 s<br>F = ?||F = [[mv − mu|t]]<br>F = [[70 × 0 − 70 × 15|0.5]]<br>F = [[−1050|0.5]]<br>F = −2100 N<br>size of the force = 2100 N',
+   make:rnd=>{const n=safety_n,c=calcPick(rnd,[
+       {stop:'A seat belt brings',m:[50,60,65,70,75,80],u:[10,12,15,20],t:[0.2,0.4,0.5,0.6]},
+       {stop:'An airbag brings',m:[50,60,65,70,75,80],u:[10,12,15,20],t:[0.1,0.2,0.4,0.5]}]);
+     const P=calcPick(rnd,[['David','him'],['Edward','him'],['Yassin','him'],['Charlie','him'],['Fatimah','her'],['Elizabeth','her'],['Camila','her'],['Zahra','her']]);
+     let m,u,t,F,k=0;do{m=calcPick(rnd,c.m);u=calcPick(rnd,c.u);t=calcPick(rnd,c.t);F=m*u/t;}while(!safety_ok(F,0)&&++k<80);
+     F=Math.round(F);const p=m*u;
+     return {q:P[0]+' ('+n(m)+' kg) is a passenger in a car. '+c.stop+' '+P[1]+' to rest from '+n(u)+' m/s in '+n(t)+' s. The force on '+P[1]+' is',unit:'N',answer:F,
+       working:'m = '+n(m)+' kg<br>u = '+n(u)+' m/s<br>v = 0 (at rest)<br>t = '+n(t)+' s<br>F = ?||F = [[mv − mu|t]]<br>F = [['+n(m)+' × 0 − '+n(m)+' × '+n(u)+'|'+n(t)+']]<br>F = [[−'+n(p)+'|'+n(t)+']]<br>F = −'+n(F)+' N<br>size of the force = '+n(F)+' N'};}},
   {q:'A 0.16 kg cricket ball hits a bat at 30 m/s and rebounds at 20 m/s in the opposite direction. The size of its change in momentum is',unit:'kg m/s',answer:8,
-   working:'Take the rebound direction as positive: u = −30 m/s, v = +20 m/s<br>change in momentum = mv − mu<br>change in momentum = 0.16 × 20 − 0.16 × (−30)<br>change in momentum = 3.2 + 4.8<br>change in momentum = 8 kg m/s (not 0.16 × 10)'},
+   working:'m = 0.16 kg<br>u = −30 m/s (towards the bat)<br>v = 20 m/s (the rebound direction is positive)<br>change in momentum = ?||change in momentum = mv − mu<br>change in momentum = 0.16 × 20 − 0.16 × (−30)<br>change in momentum = 3.2 + 4.8<br>change in momentum = 8 kg m/s',
+   make:rnd=>{const n=safety_n,c=calcPick(rnd,[
+       {q:(m,u,v)=>'A '+m+' kg cricket ball hits a bat at '+u+' m/s and rebounds at '+v+' m/s in the opposite direction.',into:'towards the bat',m:[0.16],u:[20,25,30,35,40],v:[10,15,20,25]},
+       {q:(m,u,v)=>'A '+m+' kg tennis ball hits a racket at '+u+' m/s and rebounds at '+v+' m/s in the opposite direction.',into:'towards the racket',m:[0.06],u:[15,20,25,30],v:[20,25,30,40]},
+       {q:(m,u,v)=>'A '+m+' kg football hits a wall at '+u+' m/s and bounces back at '+v+' m/s in the opposite direction.',into:'towards the wall',m:[0.4,0.45],u:[10,12,15,20],v:[6,8,10,12]},
+       {q:(m,u,v)=>'A '+m+' kg hockey ball hits a stick at '+u+' m/s and rebounds at '+v+' m/s in the opposite direction.',into:'towards the stick',m:[0.16],u:[10,15,20],v:[15,20,25,30]}]);
+     let m,u,v,dp,k=0;do{m=calcPick(rnd,c.m);u=calcPick(rnd,c.u);v=calcPick(rnd,c.v);dp=m*(u+v);}while(!safety_ok(dp,2)&&++k<80);
+     dp=+dp.toFixed(2);const a=+(m*v).toFixed(4),b=+(m*u).toFixed(4);
+     safety_ball={m:m,dp:dp,sort:c.into};
+     return {q:c.q(n(m),n(u),n(v))+' The size of its change in momentum is',unit:'kg m/s',answer:dp,
+       working:'m = '+n(m)+' kg<br>u = −'+n(u)+' m/s ('+c.into+')<br>v = '+n(v)+' m/s (the rebound direction is positive)<br>change in momentum = ?||change in momentum = mv − mu<br>change in momentum = '+n(m)+' × '+n(v)+' − '+n(m)+' × (−'+n(u)+')<br>change in momentum = '+n(a)+' + '+n(b)+'<br>change in momentum = '+n(dp)+' kg m/s'};}},
   {q:'The ball is in contact with the bat for 0.002 s. The average force on it is',unit:'N',answer:4000,
-   working:'F = [[change in momentum|time taken]]<br>F = [[8|0.002]]<br>F = 4000 N'}
-
+   working:'change in momentum = 8 kg m/s (from the last question)<br>t = 0.002 s<br>F = ?||F = [[change in momentum|time taken]]<br>F = [[8|0.002]]<br>F = 4000 N',
+   make:rnd=>{const n=safety_n,ball=safety_ball||{dp:8,sort:'towards the bat'};
+     const what=ball.sort.replace('towards the ','');
+     let t,F,k=0;do{t=calcPick(rnd,[0.002,0.004,0.005,0.008,0.01,0.02]);F=ball.dp/t;}while((!safety_ok(F,0)||F>20000||F<20)&&++k<80);
+     F=Math.round(F);
+     return {q:'The ball is in contact with the '+what+' for '+n(t)+' s. The average force on it is',unit:'N',answer:F,
+       working:'change in momentum = '+n(ball.dp)+' kg m/s (from the last question)<br>t = '+n(t)+' s<br>F = ?||F = [[change in momentum|time taken]]<br>F = [['+n(ball.dp)+'|'+n(t)+']]<br>F = '+n(F)+' N'};}}
   ]);
 
 }
@@ -2305,11 +2410,11 @@ exploreFrame('moments','Balance the seesaw','Moment = force × perpendicular dis
 }
 calcAct('moments','Balance the beam','A 20 N weight hangs 30 cm left of a pivot and a 10 N weight hangs 15 cm left of it.',[
   {q:'The downward force 50 cm to the right of the pivot that balances the beam is',unit:'N',answer:15,
-   working:'total anticlockwise moment = 20 × 0.30 + 10 × 0.15<br>total anticlockwise moment = 6 + 1.5 = 7.5 N m<br>clockwise moment = anticlockwise moment<br>F × 0.50 = 7.5<br>F = [[7.5|0.50]]<br>F = 15 N'}
+   working:'F₁ = 20 N<br>d₁ = 30 cm = 0.30 m<br>F₂ = 10 N<br>d₂ = 15 cm = 0.15 m<br>d = 50 cm = 0.50 m<br>F = ?||clockwise moment = anticlockwise moment<br>F × 0.50 = 20 × 0.30 + 10 × 0.15<br>F × 0.50 = 6 + 1.5<br>F × 0.50 = 7.5<br>F = [[7.5|0.50]]<br>F = 15 N'}
 ],beamDiagram({x0:-0.4,x1:0.6,pivots:[0],forces:[{x:-0.3,label:'20 N'},{x:-0.15,label:'10 N'},{x:0.5,label:'F = ?'}],dims:[{a:-0.3,b:0,label:'30 cm',row:1},{a:-0.15,b:0,label:'15 cm'},{a:0,b:0.5,label:'50 cm'}],label:'A beam on a pivot with two weights on the left and an unknown force on the right'}));
 calcAct('moments','A metre rule','A uniform metre rule is pivoted at its 50 cm mark. A 2 N weight hangs at the 10 cm mark.',[
   {q:'To balance it, a 5 N weight must hang at the',unit:'cm mark',answer:66,
-   working:'The rule is uniform, so its own weight acts at the pivot and has no moment.<br>anticlockwise moment = 2 × 40 = 80 N cm<br>5 × d = 80<br>d = [[80|5]]<br>d = 16 cm to the right of the pivot<br>mark = 50 + 16 = 66 cm'}
+   working:'F₁ = 2 N<br>d₁ = 50 − 10 = 40 cm<br>F₂ = 5 N<br>d₂ = ?||The rule’s own weight acts at the pivot, so it has no moment.<br>clockwise moment = anticlockwise moment<br>5 × d₂ = 2 × 40<br>5 × d₂ = 80<br>d₂ = [[80|5]]<br>d₂ = 16 cm (to the right of the pivot)<br>mark = 50 + 16<br>mark = 66 cm'}
 
   ],beamDiagram({x0:0,x1:100,pivots:[50],forces:[{x:10,label:'2 N'},{x:66,label:'5 N'}],dims:[{a:10,b:50,label:'40 cm'},{a:50,b:66,label:'?'}],note:'0 cm                 metre rule                100 cm',label:'A metre rule pivoted at 50 cm with a 2 N weight at 10 cm and a 5 N weight to the right'}));
 
@@ -2387,8 +2492,8 @@ function beamDiagram(o){
   draw();
 }
 calcAct('beams','Henry on a light plank','A light plank 4.0 m long rests on supports at each end. Henry, who weighs 600 N, stands 1.0 m from support A. Take moments about A: the force at A has no moment about it.',[
-  {q:'The upward force at B is',unit:'N',answer:150,working:'moments about A: F<sub>B</sub> × 4.0 = 600 × 1.0<br>F<sub>B</sub> × 4.0 = 600<br>F<sub>B</sub> = [[600|4.0]]<br>F<sub>B</sub> = 150 N'},
-  {q:'The upward force at A is',unit:'N',answer:450,working:'total upward force = total downward force<br>F<sub>A</sub> + 150 = 600<br>F<sub>A</sub> = 600 − 150<br>F<sub>A</sub> = 450 N (the support nearer Henry takes more of the weight)'}
+  {q:'The upward force at B is',unit:'N',answer:150,working:'W = 600 N<br>d<sub>W</sub> = 1.0 m (from A)<br>d<sub>B</sub> = 4.0 m (from A)<br>F<sub>B</sub> = ?||clockwise moment = anticlockwise moment (about A)<br>600 × 1.0 = F<sub>B</sub> × 4.0<br>600 = F<sub>B</sub> × 4.0<br>F<sub>B</sub> = [[600|4.0]]<br>F<sub>B</sub> = 150 N'},
+  {q:'The upward force at A is',unit:'N',answer:450,working:'W = 600 N<br>F<sub>B</sub> = 150 N<br>F<sub>A</sub> = ?||total upward force = total downward force<br>F<sub>A</sub> + 150 = 600<br>F<sub>A</sub> = 600 − 150<br>F<sub>A</sub> = 450 N (the support nearer Henry takes more of the weight)'}
 
   ],beamDiagram({x0:0,x1:4,supports:[{x:0,label:'A'},{x:4,label:'B'}],forces:[{x:1,label:'600 N'}],dims:[{a:0,b:1,label:'1.0 m'},{a:0,b:4,label:'4.0 m',row:1}],label:'A 4.0 m plank on supports A and B with a 600 N load 1.0 m from A'}));
 
@@ -2408,42 +2513,17 @@ predictAct('power','Choose the fuse','Fuses come in 3 A, 5 A and 13 A.',{
     {text:'Any of them, as all fuses melt at once',why:'Each fuse melts above its own rating. It must be a little above the normal current.'}
   ],
   explain:'P = I × V, so 2300 = I × 230 and I = 10 A. Choose the fuse with the smallest rating that is above the normal current: 13 A.'});
-// New numbers (pilot, 4 Nov 2026): the first set is always the fixed questions below. "New numbers" makes a fresh
-// set of the same three questions (same rearrangement, new values) from a seed, saved with the answers, so a
-// reload shows the same numbers. Each maker returns {q, unit, answer, working} like a fixed question.
-const seededRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
-const pickOne=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
-const newNumbersCalc=(panel,title,intro,fixed,makers)=>{
-  const qs=fixed.map(q=>Object.assign({},q));
-  const g=calcAct(panel,title,intro,qs),host=g.host;
-  let seed=0;
-  const apply=s=>{
-    seed=s;const rnd=seededRnd(s),rows=$$('.calc-input-row',host);
-    qs.forEach((q,i)=>{
-      Object.assign(q,s?makers[i](rnd):fixed[i]);
-      $('label',rows[i]).innerHTML=q.q;$('.cw',rows[i]).innerHTML=FR(q.working);$('.calc-input-unit',rows[i]).textContent=q.unit;
-    });
-  };
-  const bar=$('.bar',host),btn=mk('button','btn','New numbers');btn.type='button';
-  bar.insertBefore(btn,$('.fb',bar));
-  btn.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));g.reset();const fb=$('.fb',bar);fb.textContent='New numbers: same questions, new values.';fb.className='fb';});
-  const getS=g.getState,setS=g.setState;
-  g.getState=()=>Object.assign(getS(),{seed:seed});
-  g.setState=st=>{apply((st&&st.seed)||0);setS(st);};
-  return g;
-};
 const amps=I=>Number.isInteger(I)?I.toFixed(1):String(I);
-newNumbersCalc('power','P = I × V','Use P = I × V. Give each answer in the unit shown. Press New numbers for another set.',[
-  {q:'A 1150 W microwave runs on the 230 V mains. The current is',unit:'A',answer:5,working:'P = I × V<br>1150 = I × 230<br>I = [[1150|230]]<br>I = 5 A'},
-  {q:'An electric drill has a power of 460 W and takes a current of 2.0 A. The voltage is',unit:'V',answer:230,working:'P = I × V<br>460 = 2.0 × V<br>V = [[460|2.0]]<br>V = 230 V'},
-  {q:'A 2.3 kW heater runs on the 230 V mains. The current is',unit:'A',answer:10,working:'2.3 kW = 2300 W<br>P = I × V<br>2300 = I × 230<br>I = [[2300|230]]<br>I = 10 A'}
-],[
-  rnd=>{const I=pickOne(rnd,[3,4,5,6,7,8]),P=I*230;
-    return {q:'A '+P+' W microwave runs on the 230 V mains. The current is',unit:'A',answer:I,working:'P = I × V<br>'+P+' = I × 230<br>I = [['+P+'|230]]<br>I = '+I+' A'};},
-  rnd=>{const c=pickOne(rnd,[[18,10],[18,12.5],[18,20],[110,2],[110,3],[110,4.5],[230,1.5],[230,2],[230,3]]),V=c[0],I=c[1],P=V*I;
-    return {q:'An electric drill has a power of '+P+' W and takes a current of '+amps(I)+' A. The voltage is',unit:'V',answer:V,working:'P = I × V<br>'+P+' = '+amps(I)+' × V<br>V = [['+P+'|'+amps(I)+']]<br>V = '+V+' V'};},
-  rnd=>{const kW=pickOne(rnd,[1.15,1.38,1.84,2.3,2.76,3.45]),W=Math.round(kW*1000),I=W/230;
-    return {q:'A '+kW+' kW heater runs on the 230 V mains. The current is',unit:'A',answer:I,working:kW+' kW = '+W+' W<br>P = I × V<br>'+W+' = I × 230<br>I = [['+W+'|230]]<br>I = '+I+' A'};}
+calcAct('power','P = I × V','Use P = I × V. Give each answer in the unit shown. Press New problems for another set.',[
+  {q:'A 1150 W microwave runs on the 230 V mains. The current is',unit:'A',answer:5,working:'P = 1150 W<br>V = 230 V<br>I = ?||P = I × V<br>1150 = I × 230<br>I = [[1150|230]]<br>I = 5 A',
+   make:rnd=>{const I=calcPick(rnd,[3,4,5,6,7,8]),P=I*230,what=calcPick(rnd,['microwave','kettle','toaster','hair dryer']);
+     return {q:'A '+P+' W '+what+' runs on the 230 V mains. The current is',unit:'A',answer:I,working:'P = '+P+' W<br>V = 230 V<br>I = ?||P = I × V<br>'+P+' = I × 230<br>I = [['+P+'|230]]<br>I = '+I+' A'};}},
+  {q:'An electric drill has a power of 460 W and takes a current of 2.0 A. The voltage is',unit:'V',answer:230,working:'P = 460 W<br>I = 2.0 A<br>V = ?||P = I × V<br>460 = 2.0 × V<br>V = [[460|2.0]]<br>V = 230 V',
+   make:rnd=>{const c=calcPick(rnd,[[18,10],[18,12.5],[18,20],[110,2],[110,3],[110,4.5],[230,1.5],[230,2],[230,3]]),V=c[0],I=c[1],P=V*I,what=calcPick(rnd,['An electric drill','A hedge trimmer','A floor sander']);
+     return {q:what+' has a power of '+P+' W and takes a current of '+amps(I)+' A. The voltage is',unit:'V',answer:V,working:'P = '+P+' W<br>I = '+amps(I)+' A<br>V = ?||P = I × V<br>'+P+' = '+amps(I)+' × V<br>V = [['+P+'|'+amps(I)+']]<br>V = '+V+' V'};}},
+  {q:'A 2.3 kW heater runs on the 230 V mains. The current is',unit:'A',answer:10,working:'P = 2.3 kW = 2300 W<br>V = 230 V<br>I = ?||P = I × V<br>2300 = I × 230<br>I = [[2300|230]]<br>I = 10 A',
+   make:rnd=>{const kW=calcPick(rnd,[1.15,1.38,1.84,2.3,2.76,3.45]),W=Math.round(kW*1000),I=+(W/230).toFixed(2),what=calcPick(rnd,['heater','kettle','oven']);
+     return {q:'A '+kW+' kW '+what+' runs on the 230 V mains. The current is',unit:'A',answer:I,working:'P = '+kW+' kW = '+W+' W<br>V = 230 V<br>I = ?||P = I × V<br>'+W+' = I × 230<br>I = [['+W+'|230]]<br>I = '+I+' A'};}}
 ]);
 
 }
@@ -2464,11 +2544,24 @@ createSortGame({host:act('energy','Sort','a.c. or d.c.?','Sort each card, then p
     {id:'d2',cat:'d',text:'Flows in one direction only'},
     {id:'d3',cat:'d',text:'Supplied by a solar cell'}
   ]});
-calcAct('energy','E = I × V × t','Use E = I × V × t, with time in seconds.',[
-  {q:'A 12 V battery gives a current of 2.5 A for 10 minutes. The energy transferred is',unit:'J',answer:18000,working:'t = 10 × 60 = 600 s<br>E = I × V × t<br>E = 2.5 × 12 × 600<br>E = 18 000 J'},
-  {q:'Poppy’s kettle takes 10 A from the 230 V mains and transfers 690 000 J. The time it is on for is',unit:'s',answer:300,working:'E = I × V × t<br>690 000 = 10 × 230 × t<br>690 000 = 2300 × t<br>t = [[690 000|2300]]<br>t = 300 s'},
-  {q:'A 6.0 V motor transfers 900 J in 50 s. The current is',unit:'A',answer:3,working:'E = I × V × t<br>900 = I × 6.0 × 50<br>900 = I × 300<br>I = [[900|300]]<br>I = 3 A'}
-
+// number formatting for the energy makers: no float noise, spaces in numbers of 10 000 and over, 1 d.p. on small whole values
+const energy_fmt=x=>{const v=+(+x).toFixed(4),t=String(v),k=t.indexOf('.'),i=k<0?t:t.slice(0,k);return (Math.abs(v)>=10000?i.replace(/\B(?=(\d{3})+(?!\d))/g,' '):i)+(k<0?'':t.slice(k));};
+const energy_d1=x=>Number.isInteger(x)&&x<10?x.toFixed(1):energy_fmt(x);
+calcAct('energy','E = I × V × t','Use E = I × V × t, with time in seconds. Press New problems for another set.',[
+  {q:'A 12 V battery gives a current of 2.5 A for 10 minutes. The energy transferred is',unit:'J',answer:18000,working:'I = 2.5 A<br>V = 12 V<br>t = 10 min = 600 s<br>E = ?||E = I × V × t<br>E = 2.5 × 12 × 600<br>E = 18 000 J',
+   make:rnd=>{const c=calcPick(rnd,[['A {V} V battery gives',[6,9,12],[0.5,1.5,2,2.5,3]],['A {V} V car headlamp takes',[12],[4,5]],['Charlie’s {V} V electric bike motor takes',[24,36],[5,8,10]],['A {V} V motor takes',[6,12,24],[1.5,2,2.5,3,4]]]),
+       V=calcPick(rnd,c[1]),I=calcPick(rnd,c[2]),m=calcPick(rnd,[2,5,10,15,20]),t=m*60,E=I*V*t;
+     return {q:c[0].replace('{V}',energy_d1(V))+' a current of '+energy_d1(I)+' A for '+m+' minutes. The energy transferred is',unit:'J',answer:E,
+       working:'I = '+energy_d1(I)+' A<br>V = '+energy_d1(V)+' V<br>t = '+m+' min = '+t+' s<br>E = ?||E = I × V × t<br>E = '+energy_d1(I)+' × '+energy_d1(V)+' × '+t+'<br>E = '+energy_fmt(E)+' J'};}},
+  {q:'Poppy’s kettle takes 10 A from the 230 V mains and transfers 690 000 J. The time it is on for is',unit:'s',answer:300,working:'I = 10 A<br>V = 230 V<br>E = 690 000 J<br>t = ?||E = I × V × t<br>690 000 = 10 × 230 × t<br>690 000 = 2300 × t<br>t = [[690 000|2300]]<br>t = 300 s',
+   make:rnd=>{const c=calcPick(rnd,[['Poppy’s kettle',[10,12,13]],['A toaster',[4,5]],['Henry’s hair dryer',[5,6,8]],['An electric heater',[8,10]],['Fatimah’s iron',[4,5,6]]]),
+       I=calcPick(rnd,c[1]),t=calcPick(rnd,[60,90,120,180,240,300]),P=I*230,E=P*t;
+     return {q:c[0]+' takes '+I+' A from the 230 V mains and transfers '+energy_fmt(E)+' J. The time it is on for is',unit:'s',answer:t,
+       working:'I = '+I+' A<br>V = 230 V<br>E = '+energy_fmt(E)+' J<br>t = ?||E = I × V × t<br>'+energy_fmt(E)+' = '+I+' × 230 × t<br>'+energy_fmt(E)+' = '+energy_fmt(P)+' × t<br>t = [['+energy_fmt(E)+'|'+energy_fmt(P)+']]<br>t = '+t+' s'};}},
+  {q:'A 6.0 V motor transfers 900 J in 50 s. The current is',unit:'A',answer:3,working:'V = 6.0 V<br>E = 900 J<br>t = 50 s<br>I = ?||E = I × V × t<br>900 = I × 6.0 × 50<br>900 = I × 300<br>I = [[900|300]]<br>I = 3 A',
+   make:rnd=>{const what=calcPick(rnd,['motor','lamp','fan','heating element']),V=calcPick(rnd,[3,6,9,12]),t=calcPick(rnd,[20,30,40,50,60,100]),I=calcPick(rnd,[0.5,1.5,2,2.5,3,4]),Vt=V*t,E=I*Vt;
+     return {q:'A '+energy_d1(V)+' V '+what+' transfers '+energy_fmt(E)+' J in '+t+' s. The current is',unit:'A',answer:I,
+       working:'V = '+energy_d1(V)+' V<br>E = '+energy_fmt(E)+' J<br>t = '+t+' s<br>I = ?||E = I × V × t<br>'+energy_fmt(E)+' = I × '+energy_d1(V)+' × '+t+'<br>'+energy_fmt(E)+' = I × '+energy_fmt(Vt)+'<br>I = [['+energy_fmt(E)+'|'+energy_fmt(Vt)+']]<br>I = '+energy_fmt(I)+' A'};}}
   ]);
 
 }
@@ -2507,12 +2600,25 @@ quickCheck('charge','Charge and voltage',[
     ],
     explain:'Voltage is the energy transferred per unit charge: 1 volt = 1 joule per coulomb. So 6 V means 6 J for every coulomb that passes through the battery.'}
 ]);
-calcAct('charge','Q = I × t and E = Q × V','Use Q = I × t and E = Q × V, with time in seconds.',[
-  {q:'A lamp takes a current of 0.5 A for 2 minutes. The charge that flows is',unit:'C',answer:60,working:'t = 2 × 60 = 120 s<br>Q = I × t<br>Q = 0.5 × 120<br>Q = 60 C'},
-  {q:'360 C of charge flows through a motor in 3 minutes. The current is',unit:'A',answer:2,working:'t = 3 × 60 = 180 s<br>Q = I × t<br>360 = I × 180<br>I = [[360|180]]<br>I = 2 A'},
-  {q:'Nabil’s 12 V lamp takes 2.0 A for 50 s. The energy it transfers is',unit:'J',answer:1200,working:'Q = I × t<br>Q = 2.0 × 50<br>Q = 100 C<br>E = Q × V<br>E = 100 × 12<br>E = 1200 J'}
+// number formatting for the charge makers (no float noise; 1 d.p. on small whole currents)
+const charge_fmt=x=>String(+(+x).toFixed(4));
+const charge_d1=x=>Number.isInteger(x)&&x<10?x.toFixed(1):charge_fmt(x);
+calcAct('charge','Q = I × t and E = Q × V','Use Q = I × t and E = Q × V, with time in seconds. Press New problems for another set.',[
+  {q:'A lamp takes a current of 0.5 A for 2 minutes. The charge that flows is',unit:'C',answer:60,working:'I = 0.5 A<br>t = 2 min = 120 s<br>Q = ?||Q = I × t<br>Q = 0.5 × 120<br>Q = 60 C',
+   make:rnd=>{const what=calcPick(rnd,['A lamp','A heater','A motor','Ruby’s phone charger','A fan']),I=calcPick(rnd,[0.2,0.4,0.5,1.5,2,2.5,3]),m=calcPick(rnd,[2,3,4,5,10]),t=m*60,Q=+(I*t).toFixed(2);
+     return {q:what+' takes a current of '+charge_d1(I)+' A for '+m+' minutes. The charge that flows is',unit:'C',answer:Q,
+       working:'I = '+charge_d1(I)+' A<br>t = '+m+' min = '+t+' s<br>Q = ?||Q = I × t<br>Q = '+charge_d1(I)+' × '+t+'<br>Q = '+charge_fmt(Q)+' C'};}},
+  {q:'360 C of charge flows through a motor in 3 minutes. The current is',unit:'A',answer:2,working:'Q = 360 C<br>t = 3 min = 180 s<br>I = ?||Q = I × t<br>360 = I × 180<br>I = [[360|180]]<br>I = 2 A',
+   make:rnd=>{const c=calcPick(rnd,[['a motor',[0.5,1.5,2,2.5,3]],['a lamp',[0.5,1.5,2]],['a resistor',[0.5,1.5,2,2.5]],['Lucas’s hair dryer',[4,5]],['an electric heater',[4,5]]]),what=c[0],I=calcPick(rnd,c[1]),m=calcPick(rnd,[2,3,4,5,10]),t=m*60,Q=+(I*t).toFixed(2);
+     return {q:charge_fmt(Q)+' C of charge flows through '+what+' in '+m+' minutes. The current is',unit:'A',answer:I,
+       working:'Q = '+charge_fmt(Q)+' C<br>t = '+m+' min = '+t+' s<br>I = ?||Q = I × t<br>'+charge_fmt(Q)+' = I × '+t+'<br>I = [['+charge_fmt(Q)+'|'+t+']]<br>I = '+charge_fmt(I)+' A'};}},
+  {q:'Nabil’s 12 V lamp takes 2.0 A for 50 s. The energy it transfers is',unit:'J',answer:1200,working:'V = 12 V<br>I = 2.0 A<br>t = 50 s<br>E = ?||Q = I × t<br>Q = 2.0 × 50<br>Q = 100 C<br>E = Q × V<br>E = 100 × 12<br>E = 1200 J',
+   make:rnd=>{const c=calcPick(rnd,[['Nabil’s','lamp'],['Elena’s','motor'],['A','heater'],['Julia’s','fan'],['A','heater']]),V=calcPick(rnd,[3,6,9,12,24]),I=calcPick(rnd,[0.5,1.5,2,2.5,3,4]),t=calcPick(rnd,[10,20,30,40,50,60]),Q=+(I*t).toFixed(2),E=+(Q*V).toFixed(2);
+     return {q:c[0]+' '+charge_d1(V)+' V '+c[1]+' takes '+charge_d1(I)+' A for '+t+' s. The energy it transfers is',unit:'J',answer:E,
+       working:'V = '+charge_d1(V)+' V<br>I = '+charge_d1(I)+' A<br>t = '+t+' s<br>E = ?||Q = I × t<br>Q = '+charge_d1(I)+' × '+t+'<br>Q = '+charge_fmt(Q)+' C<br>E = Q × V<br>E = '+charge_fmt(Q)+' × '+charge_d1(V)+'<br>E = '+charge_fmt(E)+' J'};}}
 
   ]);
+
 
 }
 keepKinds('2b-charge',null,null);
@@ -2552,12 +2658,25 @@ quickCheck('series','Series and parallel',[
     ],
     explain:'Adding a component in series adds to the total resistance, so the current is smaller. The supply voltage is now shared between the two lamps, so each is dimmer.'}
 ]);
-calcAct('series','Currents and voltages','Use the rules for junctions and for parallel branches.',[
-  {q:'A current of 0.60 A flows into a junction. One branch leaving it carries 0.25 A. The current in the other branch is',unit:'A',answer:0.35,working:'current in = current out<br>0.60 = 0.25 + I<br>I = 0.60 − 0.25<br>I = 0.35 A'},
-  {q:'Three lamps in parallel take 0.20 A, 0.30 A and 0.50 A. The current from the supply is',unit:'A',answer:1,working:'supply current = sum of the branch currents<br>I = 0.20 + 0.30 + 0.50<br>I = 1.0 A'},
-  {q:'Two lamps in series with a 9.0 V battery. One has 5.5 V across it. The voltage across the other is',unit:'V',answer:3.5,working:'supply voltage = sum of the voltages<br>9.0 = 5.5 + V<br>V = 9.0 − 5.5<br>V = 3.5 V'}
+// currents and voltages makers: values in tenths or hundredths, worked in integers so no float noise
+const series_f2=x=>(Math.round(x*100)/100).toFixed(2);
+const series_f1=x=>x>=10&&Number.isInteger(x)?String(x):(Math.round(x*10)/10).toFixed(1);
+calcAct('series','Currents and voltages','Use the rules for junctions and for parallel branches. Press New problems for another set.',[
+  {q:'A current of 0.60 A flows into a junction. One branch leaving it carries 0.25 A. The current in the other branch is',unit:'A',answer:0.35,working:'current in = 0.60 A<br>current out of one branch = 0.25 A<br>I = ?||current in = current out<br>0.60 = 0.25 + I<br>I = 0.60 − 0.25<br>I = 0.35 A',
+   make:rnd=>{const a=calcPick(rnd,[40,50,60,75,80,90,120,150]),b=calcPick(rnd,[10,15,20,25,30,35].filter(x=>x<a)),A=series_f2(a/100),B=series_f2(b/100),C=series_f2((a-b)/100);
+     return {q:'A current of '+A+' A flows into a junction. One branch leaving it carries '+B+' A. The current in the other branch is',unit:'A',answer:(a-b)/100,
+       working:'current in = '+A+' A<br>current out of one branch = '+B+' A<br>I = ?||current in = current out<br>'+A+' = '+B+' + I<br>I = '+A+' − '+B+'<br>I = '+C+' A'};}},
+  {q:'Three lamps in parallel take 0.20 A, 0.30 A and 0.50 A. The current from the supply is',unit:'A',answer:1,working:'I₁ = 0.20 A<br>I₂ = 0.30 A<br>I₃ = 0.50 A<br>I = ?||supply current = sum of the branch currents<br>I = 0.20 + 0.30 + 0.50<br>I = 1.0 A',
+   make:rnd=>{const what=calcPick(rnd,['Three lamps','Three resistors','Three heaters','Three motors']),c=[0,0,0].map(()=>calcPick(rnd,[10,15,20,25,30,40,50,60])),t=c[0]+c[1]+c[2],F=c.map(x=>series_f2(x/100));
+     return {q:what+' in parallel take '+F[0]+' A, '+F[1]+' A and '+F[2]+' A. The current from the supply is',unit:'A',answer:t/100,
+       working:'I₁ = '+F[0]+' A<br>I₂ = '+F[1]+' A<br>I₃ = '+F[2]+' A<br>I = ?||supply current = sum of the branch currents<br>I = '+F.join(' + ')+'<br>I = '+series_f2(t/100)+' A'};}},
+  {q:'Two lamps in series with a 9.0 V battery. One has 5.5 V across it. The voltage across the other is',unit:'V',answer:3.5,working:'supply voltage = 9.0 V<br>V₁ = 5.5 V<br>V₂ = ?||supply voltage = sum of the voltages<br>9.0 = 5.5 + V₂<br>V₂ = 9.0 − 5.5<br>V₂ = 3.5 V',
+   make:rnd=>{const what=calcPick(rnd,['Two lamps','Two resistors','A lamp and a resistor','A motor and a lamp']),s=calcPick(rnd,[45,60,90,120,240]),v=Math.round(s*calcPick(rnd,[0.2,0.3,0.4,0.6,0.7,0.8])/5)*5||5,S=series_f1(s/10),A=series_f1(v/10),B=series_f1((s-v)/10);
+     return {q:what+' in series with a '+S+' V battery. One has '+A+' V across it. The voltage across the other is',unit:'V',answer:(s-v)/10,
+       working:'supply voltage = '+S+' V<br>V₁ = '+A+' V<br>V₂ = ?||supply voltage = sum of the voltages<br>'+S+' = '+A+' + V₂<br>V₂ = '+S+' − '+A+'<br>V₂ = '+B+' V'};}}
 
   ]);
+
 
 }
 keepKinds('2b-series',null,null);
@@ -2575,10 +2694,22 @@ predictAct('resistance','More resistance','Decide first, then see the answer.',{
     {text:'It stops completely',why:'A bigger resistance makes the current smaller, but there is still a current.'}
   ],
   explain:'For the same voltage, increasing the resistance decreases the current (V = I × R). Here the resistance doubles, so the current halves.'});
-calcAct('resistance','V = I × R','Use V = I × R. Give each answer in the unit shown.',[
-  {q:'A 9.0 V battery is connected across an 18 Ω resistor. The current is',unit:'A',answer:0.5,working:'V = I × R<br>9.0 = I × 18<br>I = [[9.0|18]]<br>I = 0.5 A'},
-  {q:'A lamp on the 230 V mains takes a current of 0.25 A. Its resistance is',unit:'Ω',answer:920,working:'V = I × R<br>230 = 0.25 × R<br>R = [[230|0.25]]<br>R = 920 Ω'},
-  {q:'A current of 150 mA flows through a 40 Ω resistor. The voltage across it is',unit:'V',answer:6,working:'150 mA = 0.15 A<br>V = I × R<br>V = 0.15 × 40<br>V = 6 V'}
+// V = I × R makers: (V, I, R) sets chosen so every answer is tidy
+const res_fmt=x=>String(+(+x).toFixed(4));
+const res_d1=x=>Number.isInteger(x)&&x<10?x.toFixed(1):res_fmt(x);
+calcAct('resistance','V = I × R','Use V = I × R. Give each answer in the unit shown. Press New problems for another set.',[
+  {q:'A 9.0 V battery is connected across an 18 Ω resistor. The current is',unit:'A',answer:0.5,working:'V = 9.0 V<br>R = 18 Ω<br>I = ?||V = I × R<br>9.0 = I × 18<br>I = [[9.0|18]]<br>I = 0.5 A',
+   make:rnd=>{const c=calcPick(rnd,[[9,18],[9,30],[9,45],[6,12],[6,20],[6,24],[12,24],[12,40],[12,60],[4.5,15],[3,6],[3,12]]),V=c[0],R=c[1],I=+(V/R).toFixed(4),what=calcPick(rnd,['resistor','lamp','heating element']);
+     return {q:'A '+res_d1(V)+' V battery is connected across '+(R===18?'an ':'a ')+R+' Ω '+what+'. The current is',unit:'A',answer:I,
+       working:'V = '+res_d1(V)+' V<br>R = '+R+' Ω<br>I = ?||V = I × R<br>'+res_d1(V)+' = I × '+R+'<br>I = [['+res_d1(V)+'|'+R+']]<br>I = '+res_fmt(I)+' A'};}},
+  {q:'A lamp on the 230 V mains takes a current of 0.25 A. Its resistance is',unit:'Ω',answer:920,working:'V = 230 V<br>I = 0.25 A<br>R = ?||V = I × R<br>230 = 0.25 × R<br>R = [[230|0.25]]<br>R = 920 Ω',
+   make:rnd=>{const c=calcPick(rnd,[['A lamp',[0.1,0.2,0.25,0.4,0.5]],['A heater',[4,5,10]],['Yassin’s kettle',[10,11.5]],['A fan heater',[5,10]],['A television',[0.5,1]]]),I=calcPick(rnd,c[1]),R=+(230/I).toFixed(2);
+     return {q:c[0]+' on the 230 V mains takes a current of '+res_fmt(I)+' A. Its resistance is',unit:'Ω',answer:R,
+       working:'V = 230 V<br>I = '+res_fmt(I)+' A<br>R = ?||V = I × R<br>230 = '+res_fmt(I)+' × R<br>R = [[230|'+res_fmt(I)+']]<br>R = '+res_fmt(R)+' Ω'};}},
+  {q:'A current of 150 mA flows through a 40 Ω resistor. The voltage across it is',unit:'V',answer:6,working:'I = 150 mA = 0.15 A<br>R = 40 Ω<br>V = ?||V = I × R<br>V = 0.15 × 40<br>V = 6 V',
+   make:rnd=>{let mA,R,k=0;do{mA=calcPick(rnd,[20,50,100,120,150,200,250,300,400]);R=calcPick(rnd,[10,20,40,50,60,100]);}while((mA*R>12000||mA*R<1000)&&++k<60);const I=mA/1000,V=+(I*R).toFixed(3);
+     return {q:'A current of '+mA+' mA flows through a '+R+' Ω resistor. The voltage across it is',unit:'V',answer:V,
+       working:'I = '+mA+' mA = '+res_fmt(I)+' A<br>R = '+R+' Ω<br>V = ?||V = I × R<br>V = '+res_fmt(I)+' × '+R+'<br>V = '+res_fmt(V)+' V'};}}
 
   ]);
 
@@ -2606,11 +2737,17 @@ SRC='2c';
     ],
     explain:'The same current flows through both. V = I × R, so the bigger resistor gets the bigger share: 4 V across the 8 Ω and 2 V across the 4 Ω.',
     pre:circ('6 V','4 Ω','8 Ω')});
-  calcAct('seriescalc','Two resistors in series','A 4.0 Ω and an 8.0 Ω resistor are in series with a 6.0 V battery (questions 1 and 2).',[
-    {q:'The total resistance is',unit:'Ω',answer:12,working:'R = R₁ + R₂<br>R = 4.0 + 8.0<br>R = 12 Ω'},
-    {q:'The current in the circuit is',unit:'A',answer:0.5,working:'V = I × R<br>6.0 = I × 12<br>I = [[6.0|12]]<br>I = 0.5 A'},
+  // the third question's maker: battery, one known resistor and the current; find the second resistor (tidy values only)
+  const sc_d2=x=>(Math.round(x*100)/100).toFixed(2);
+  calcAct('seriescalc','Two resistors in series','A 4.0 Ω and an 8.0 Ω resistor are in series with a 6.0 V battery (questions 1 and 2). Press New problems for a new question 3.',[
+    {q:'The total resistance is',unit:'Ω',answer:12,working:'R₁ = 4.0 Ω<br>R₂ = 8.0 Ω<br>R = ?||R = R₁ + R₂<br>R = 4.0 + 8.0<br>R = 12 Ω'},
+    {q:'The current in the circuit is',unit:'A',answer:0.5,working:'V = 6.0 V<br>R = 12 Ω (from question 1)<br>I = ?||V = I × R<br>6.0 = I × 12<br>I = [[6.0|12]]<br>I = 0.5 A'},
     {q:'Aidan’s circuit: a 12 V battery, a 15 Ω resistor and a second resistor in series. The current is 0.30 A. The second resistor is',unit:'Ω',answer:25,
-     working:'V = I × R<br>12 = 0.30 × R<br>R = [[12|0.30]]<br>R = 40 Ω (total)<br>R₂ = 40 − 15<br>R₂ = 25 Ω'}
+     working:'V = 12 V<br>R₁ = 15 Ω<br>I = 0.30 A<br>R₂ = ?||V = I × R<br>12 = 0.30 × R<br>R = [[12|0.30]]<br>R = 40 Ω<br>R = R₁ + R₂<br>40 = 15 + R₂<br>R₂ = 40 − 15<br>R₂ = 25 Ω',
+     make:rnd=>{const c=calcPick(rnd,[[12,0.3],[12,0.2],[12,0.4],[6,0.2],[6,0.3],[9,0.3],[9,0.15],[24,0.4],[24,0.6]]),V=c[0],I=c[1],R=Math.round(V/I),R1=calcPick(rnd,[5,10,15,20].filter(x=>x<R-4)),R2=R-R1,
+         who=calcPick(rnd,['Aidan’s circuit','Charlotte’s circuit','Ali’s circuit','A circuit','Elizabeth’s circuit']);
+       return {q:who+': a '+V+' V battery, a '+R1+' Ω resistor and a second resistor in series. The current is '+sc_d2(I)+' A. The second resistor is',unit:'Ω',answer:R2,
+         working:'V = '+V+' V<br>R₁ = '+R1+' Ω<br>I = '+sc_d2(I)+' A<br>R₂ = ?||V = I × R<br>'+V+' = '+sc_d2(I)+' × R<br>R = [['+V+'|'+sc_d2(I)+']]<br>R = '+R+' Ω<br>R = R₁ + R₂<br>'+R+' = '+R1+' + R₂<br>R₂ = '+R+' − '+R1+'<br>R₂ = '+R2+' Ω'};}}
   ],circ('6.0 V','4.0 Ω','8.0 Ω'));
 }
 
@@ -2621,16 +2758,41 @@ SRC='3a';
 {
 function sinePts(x0,x1,amp,lam,n){const p=[];n=n||240;for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n;p.push([x,amp*Math.sin(2*Math.PI*x/lam)]);}return p;}
 
-calcAct('equation','v = f × λ and f = [[1|T]]','Use wave speed = frequency × wavelength and frequency = [[1|time period]].',[
-  {q:'A sound wave travels at 340 m/s with a frequency of 680 Hz. Its wavelength is',unit:'m',answer:0.5,working:'v = f × λ<br>340 = 680 × λ<br>λ = [[340|680]]<br>λ = 0.5 m'},
-  {q:'A wave has a time period of 0.020 s. Its frequency is',unit:'Hz',answer:50,working:'f = [[1|T]]<br>f = [[1|0.020]]<br>f = 50 Hz'},
-  {q:'A wave has a time period of 0.25 s and a wavelength of 2.0 m. Its speed is',unit:'m/s',answer:8,working:'f = [[1|T]]<br>f = [[1|0.25]]<br>f = 4 Hz<br>v = f × λ<br>v = 4 × 2.0<br>v = 8 m/s'}
+// New problems helpers for this tab: eq_fmt prints a number with no float noise; eq_ok is true for at most 2 decimal places
+const eq_fmt=x=>String(+(+x).toFixed(4));
+const eq_ok=x=>Math.abs(x*100-Math.round(x*100))<1e-6;
+calcAct('equation','v = f × λ and f = [[1|T]]','Use wave speed = frequency × wavelength and frequency = [[1|time period]]. Press New problems for another set.',[
+  {q:'A sound wave travels at 340 m/s with a frequency of 680 Hz. Its wavelength is',unit:'m',answer:0.5,working:'v = 340 m/s<br>f = 680 Hz<br>λ = ?||v = f × λ<br>340 = 680 × λ<br>λ = [[340|680]]<br>λ = 0.5 m',
+   make:rnd=>{const c=calcPick(rnd,[
+       {t:'A sound wave travels through air at V m/s with a frequency of F Hz.',v:[340],f:[170,200,340,425,680,850,1700]},
+       {t:'A sound wave travels through sea water at V m/s with a frequency of F Hz.',v:[1500],f:[300,500,750,1000,1500,3000]},
+       {t:'Henry shakes the end of a long rope. The wave travels along it at V m/s with a frequency of F Hz.',v:[2,3,4,6],f:[1,2,4,5]},
+       {t:'A water wave in a ripple tank travels at V m/s with a frequency of F Hz.',v:[0.12,0.15,0.18,0.2,0.24],f:[4,5,6,8,10]}]);
+     let v,f,l,k=0;do{v=calcPick(rnd,c.v);f=calcPick(rnd,c.f);l=v/f;}while(!eq_ok(l)&&++k<60);
+     const V=eq_fmt(v),F=eq_fmt(f),L=eq_fmt(l);
+     return {q:c.t.replace('V',V).replace('F',F)+' Its wavelength is',unit:'m',answer:+L,working:'v = '+V+' m/s<br>f = '+F+' Hz<br>λ = ?||v = f × λ<br>'+V+' = '+F+' × λ<br>λ = [['+V+'|'+F+']]<br>λ = '+L+' m'};}},
+  {q:'A wave has a time period of 0.020 s. Its frequency is',unit:'Hz',answer:50,working:'T = 0.020 s<br>f = ?||f = [[1|T]]<br>f = [[1|0.020]]<br>f = 50 Hz',
+   make:rnd=>{const c=calcPick(rnd,[
+       {t:'A sound wave has a time period of T s.',T:[0.001,0.002,0.0025,0.004,0.005]},
+       {t:'A wave on a stretched string has a time period of T s.',T:[0.01,0.02,0.025,0.04,0.05]},
+       {t:'A wave on a rope has a time period of T s.',T:[0.2,0.25,0.4,0.5]},
+       {t:'A water wave on a pond has a time period of T s.',T:[0.4,0.5,0.8,1.25,2]}]);
+     const T=calcPick(rnd,c.T),f=+(1/T).toFixed(4),Ts=eq_fmt(T),fs=eq_fmt(f);
+     return {q:c.t.replace('T s',Ts+' s')+' Its frequency is',unit:'Hz',answer:f,working:'T = '+Ts+' s<br>f = ?||f = [[1|T]]<br>f = [[1|'+Ts+']]<br>f = '+fs+' Hz'};}},
+  {q:'A wave has a time period of 0.25 s and a wavelength of 2.0 m. Its speed is',unit:'m/s',answer:8,working:'T = 0.25 s<br>λ = 2.0 m<br>v = ?||f = [[1|T]]<br>f = [[1|0.25]]<br>f = 4 Hz<br>v = f × λ<br>v = 4 × 2.0<br>v = 8 m/s',
+   make:rnd=>{const c=calcPick(rnd,[
+       {t:'A wave on a rope',T:[0.2,0.25,0.4,0.5],l:[0.5,1,1.5,2,2.5,3]},
+       {t:'A wave on the sea',T:[2,4,5,10],l:[10,20,25,40,50,80]},
+       {t:'A water wave in a ripple tank',T:[0.1,0.125,0.2,0.25],l:[0.01,0.02,0.025,0.03,0.04]}]);
+     let T,l,f,v,k=0;do{T=calcPick(rnd,c.T);l=calcPick(rnd,c.l);f=1/T;v=f*l;}while((!eq_ok(f)||!eq_ok(v))&&++k<60);
+     const Ts=eq_fmt(T),Ls=eq_fmt(l),Fs=eq_fmt(f),Vs=eq_fmt(v);
+     return {q:c.t+' has a time period of '+Ts+' s and a wavelength of '+Ls+' m. Its speed is',unit:'m/s',answer:+Vs,working:'T = '+Ts+' s<br>λ = '+Ls+' m<br>v = ?||f = [[1|T]]<br>f = [[1|'+Ts+']]<br>f = '+Fs+' Hz<br>v = f × λ<br>v = '+Fs+' × '+Ls+'<br>v = '+Vs+' m/s'};}}
 
   ]);
 calcAct('equation','Read the period off the graph','The graph shows how one point on a sound wave moves as the wave passes. Read the time period off the graph first.',[
-  {q:'The time period of the wave is',unit:'s',answer:0.004,working:'2.5 complete waves take 10 ms.<br>T = [[10 ms|2.5]]<br>T = 4 ms<br>T = 0.004 s'},
-  {q:'The frequency of the wave is',unit:'Hz',answer:250,working:'f = [[1|T]]<br>f = [[1|0.004]]<br>f = 250 Hz'},
-  {q:'The sound travels at 340 m/s. Its wavelength is',unit:'m',answer:1.36,working:'v = f × λ<br>340 = 250 × λ<br>λ = [[340|250]]<br>λ = 1.36 m'}
+  {q:'The time period of the wave is',unit:'s',answer:0.004,working:'time for 2.5 waves = 10 ms<br>T = ?||T = [[time|number of waves]]<br>T = [[10 ms|2.5]]<br>T = 4 ms<br>T = 0.004 s'},
+  {q:'The frequency of the wave is',unit:'Hz',answer:250,working:'T = 0.004 s<br>f = ?||f = [[1|T]]<br>f = [[1|0.004]]<br>f = 250 Hz'},
+  {q:'The sound travels at 340 m/s. Its wavelength is',unit:'m',answer:1.36,working:'v = 340 m/s<br>f = 250 Hz<br>λ = ?||v = f × λ<br>340 = 250 × λ<br>λ = [[340|250]]<br>λ = 1.36 m'}
 
   ],mgraph({pts:sinePts(0,10,3,4),xMin:0,xMax:10,yMin:-4,yMax:4,xTicks:[0,2,4,6,8,10],yTicks:[-4,-2,0,2,4],xLabel:'Time / ms',yLabel:'Displacement',label:'Displacement against time for a point on a sound wave'}).svg);
 
@@ -2651,9 +2813,17 @@ createReorder({host:act('spectrum','Order','The colours of visible light','Put t
     {id:'r',text:'Red'},{id:'o',text:'Orange'},{id:'y',text:'Yellow'},{id:'g',text:'Green'},
     {id:'b',text:'Blue'},{id:'i',text:'Indigo'},{id:'v',text:'Violet'}
   ],constraints:chain(['r','o','y','g','b','i','v']),why:'Red light has the longest wavelength (lowest frequency); violet has the shortest (highest frequency).'});
-calcAct('spectrum','Electromagnetic waves','All electromagnetic waves travel at 3.0 × 10⁸ m/s in free space. Use v = f × λ.',[
-  {q:'A radio station broadcasts at a frequency of 1.0 × 10⁸ Hz. The wavelength is',unit:'m',answer:3,working:'v = f × λ<br>3.0 × 10⁸ = 1.0 × 10⁸ × λ<br>λ = [[3.0 × 10⁸|1.0 × 10⁸]]<br>λ = 3.0 m'},
-  {q:'A microwave has a wavelength of 0.12 m. Its frequency is',unit:'× 10⁹ Hz',answer:2.5,working:'v = f × λ<br>3.0 × 10⁸ = f × 0.12<br>f = [[3.0 × 10⁸|0.12]]<br>f = 2.5 × 10⁹ Hz'}
+// New problems helper for this tab: em_sci(m,e) writes m × 10^e with superscript digits
+const em_sci=(m,e)=>m+' × 10'+String(e).replace(/-/g,'⁻').replace(/\d/g,d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
+calcAct('spectrum','Electromagnetic waves','All electromagnetic waves travel at 3.0 × 10⁸ m/s in free space. Use v = f × λ. Press New problems for another pair.',[
+  {q:'A radio station broadcasts at a frequency of 1.0 × 10⁸ Hz. The wavelength is',unit:'m',answer:3,working:'v = 3.0 × 10⁸ m/s<br>f = 1.0 × 10⁸ Hz<br>λ = ?||v = f × λ<br>3.0 × 10⁸ = 1.0 × 10⁸ × λ<br>λ = [[3.0 × 10⁸|1.0 × 10⁸]]<br>λ = 3.0 m',
+   make:rnd=>{const c=calcPick(rnd,[[1.0,8,'3',3],[1.2,8,'2.5',2.5],[1.5,8,'2',2],[6.0,5,'500',500],[1.5,6,'200',200],[1.0,6,'300',300],[2.0,5,'1500',1500]]),
+       who=calcPick(rnd,['A radio station broadcasts','A radio transmitter sends out radio waves','Nabil tunes his radio to a station that broadcasts']),F=em_sci(c[0].toFixed(1),c[1]);
+     return {q:who+' at a frequency of '+F+' Hz. The wavelength is',unit:'m',answer:c[3],working:'v = 3.0 × 10⁸ m/s<br>f = '+F+' Hz<br>λ = ?||v = f × λ<br>3.0 × 10⁸ = '+F+' × λ<br>λ = [[3.0 × 10⁸|'+F+']]<br>λ = '+c[2]+' m'};}},
+  {q:'A microwave has a wavelength of 0.12 m. Its frequency is',unit:'× 10⁹ Hz',answer:2.5,working:'v = 3.0 × 10⁸ m/s<br>λ = 0.12 m<br>f = ?||v = f × λ<br>3.0 × 10⁸ = f × 0.12<br>f = [[3.0 × 10⁸|0.12]]<br>f = 2.5 × 10⁹ Hz',
+   make:rnd=>{const c=calcPick(rnd,[['A microwave oven uses microwaves with a wavelength of',[0.12]],['A mobile phone signal has a wavelength of',[0.15,0.2,0.3]],['A Wi-Fi router sends microwaves with a wavelength of',[0.06,0.12]],['A satellite TV signal has a wavelength of',[0.025,0.03]],['A speed camera’s radar uses microwaves with a wavelength of',[0.012,0.015]]]),
+       l=calcPick(rnd,c[1]),f=+(0.3/l).toFixed(2);
+     return {q:c[0]+' '+l+' m. Its frequency is',unit:'× 10⁹ Hz',answer:f,working:'v = 3.0 × 10⁸ m/s<br>λ = '+l+' m<br>f = ?||v = f × λ<br>3.0 × 10⁸ = f × '+l+'<br>f = [[3.0 × 10⁸|'+l+']]<br>f = '+em_sci(f,9)+' Hz'};}}
 
   ]);
 
@@ -2675,15 +2845,37 @@ createReorder({host:act('refraction','Order','Finding the refractive index of gl
     {id:'e',text:'Draw the normal where the ray went in, and measure i and r with a protractor'},
     {id:'f',text:'Repeat for other angles of incidence, and find n from the sine of each angle'}
   ],constraints:chain(['a','b','c','d','e','f']),why:'Drawing round the block lets you put it back; the crosses mark each ray, and the normal is drawn before the angles are measured.'});
-calcAct('refraction','The law of reflection','The angle of incidence equals the angle of reflection. Both are measured from the normal.',[
-  {q:'A ray hits a mirror at 25° to the mirror’s surface. The angle of reflection is',unit:'°',answer:65,working:'angle of incidence = 90° − 25°<br>i = 65°<br>angle of reflection = angle of incidence<br>r = 65°'},
-  {q:'The angle between an incident ray and its reflected ray is 80°. The angle of incidence is',unit:'°',answer:40,working:'i + r = 80°<br>i = r<br>2 × i = 80°<br>i = [[80°|2]]<br>i = 40°'}
+// New problems helpers for this tab: rf_sin gives sin of an angle in degrees to 4 d.p.; rf_asin gives the angle to 1 d.p.;
+// rf_f4 writes a number to 4 d.p. (keeping trailing zeros, like a calculator line)
+const rf_sin=d=>+Math.sin(d*Math.PI/180).toFixed(4);
+const rf_asin=x=>+(Math.asin(x)*180/Math.PI).toFixed(1);
+const rf_f4=x=>(+x).toFixed(4);
+calcAct('refraction','The law of reflection','The angle of incidence equals the angle of reflection. Both are measured from the normal. Press New problems for another pair.',[
+  {q:'A ray hits a mirror at 25° to the mirror’s surface. The angle of reflection is',unit:'°',answer:65,working:'angle to the mirror = 25°<br>r = ?||i = 90° − 25°<br>i = 65°<br>r = i<br>r = 65°',
+   make:rnd=>{const a=calcPick(rnd,[10,15,20,25,30,35,40,50,55,60,70]),i=90-a,
+       who=calcPick(rnd,['A ray hits a mirror','A ray of light from a torch hits a plane mirror','Ruby shines a laser at a mirror, and the ray hits it','A ray from a ray box hits a mirror']);
+     return {q:who+' at '+a+'° to the mirror’s surface. The angle of reflection is',unit:'°',answer:i,working:'angle to the mirror = '+a+'°<br>r = ?||i = 90° − '+a+'°<br>i = '+i+'°<br>r = i<br>r = '+i+'°'};}},
+  {q:'The angle between an incident ray and its reflected ray is 80°. The angle of incidence is',unit:'°',answer:40,working:'i + r = 80°<br>i = ?||r = i<br>i + i = 80°<br>2 × i = 80°<br>i = [[80°|2]]<br>i = 40°',
+   make:rnd=>{const t=calcPick(rnd,[30,40,50,60,70,84,90,100,110,120,130,140]),i=t/2,
+       who=calcPick(rnd,['The angle between an incident ray and its reflected ray is','Light reflects off a mirror. The angle between the incident ray and the reflected ray is','Edward measures the angle between the incident ray and the reflected ray at a mirror. It is']);
+     return {q:who+' '+t+'°. The angle of incidence is',unit:'°',answer:i,working:'i + r = '+t+'°<br>i = ?||r = i<br>i + i = '+t+'°<br>2 × i = '+t+'°<br>i = [['+t+'°|2]]<br>i = '+i+'°'};}}
 
   ]);
-calcAct('refraction','n = [[sin i|sin r]]','Use refractive index n = [[sin i|sin r]]. Give angles in degrees.',[
-  {q:'Light enters glass with i = 40° and r = 25°. The refractive index is',unit:'',answer:1.52,working:'n = [[sin i|sin r]]<br>n = [[sin 40°|sin 25°]]<br>n = [[0.6428|0.4226]]<br>n = 1.52'},
-  {q:'Light enters glass (n = 1.5) with i = 50°. The angle of refraction is',unit:'°',answer:30.7,working:'n = [[sin i|sin r]]<br>1.5 = [[sin 50°|sin r]]<br>1.5 × sin r = sin 50°<br>sin r = [[sin 50°|1.5]]<br>sin r = [[0.7660|1.5]]<br>sin r = 0.5107<br>r = 30.7°'},
-  {q:'Light enters water (n = 1.33). The angle of refraction is 22°. The angle of incidence is',unit:'°',answer:29.9,working:'n = [[sin i|sin r]]<br>1.33 = [[sin i|sin 22°]]<br>sin i = 1.33 × sin 22°<br>sin i = 1.33 × 0.3746<br>sin i = 0.4982<br>i = 29.9°'}
+calcAct('refraction','n = [[sin i|sin r]]','Use refractive index n = [[sin i|sin r]]. Give angles in degrees. Press New problems for another set.',[
+  {q:'Light enters glass with i = 40° and r = 25°. The refractive index is',unit:'',answer:1.52,working:'i = 40°<br>r = 25°<br>n = ?||n = [[sin i|sin r]]<br>n = [[sin 40°|sin 25°]]<br>n = [[0.6428|0.4226]]<br>n = 1.52',
+   make:rnd=>{const m=calcPick(rnd,[['glass',1.5],['water',1.33],['Perspex',1.49],['diamond',2.42]]);
+     let i,r,k=0;do{i=calcPick(rnd,[20,25,30,35,40,45,50,55,60,65,70]);r=Math.round(Math.asin(Math.sin(i*Math.PI/180)/m[1])*180/Math.PI);}while((r<5||r>=i)&&++k<60);
+     const si=rf_sin(i),sr=rf_sin(r),n=+(si/sr).toFixed(2),who=calcPick(rnd,['Light enters '+m[0],'A ray of light passes from air into '+m[0],'In Julia’s experiment, light enters '+m[0]]);
+     return {q:who+' with i = '+i+'° and r = '+r+'°. The refractive index is',unit:'',answer:n,working:'i = '+i+'°<br>r = '+r+'°<br>n = ?||n = [[sin i|sin r]]<br>n = [[sin '+i+'°|sin '+r+'°]]<br>n = [['+rf_f4(si)+'|'+rf_f4(sr)+']]<br>n = '+n.toFixed(2)};}},
+  {q:'Light enters glass (n = 1.5) with i = 50°. The angle of refraction is',unit:'°',answer:30.7,working:'n = 1.5<br>i = 50°<br>r = ?||n = [[sin i|sin r]]<br>1.5 = [[sin 50°|sin r]]<br>1.5 × sin r = sin 50°<br>sin r = [[sin 50°|1.5]]<br>sin r = [[0.7660|1.5]]<br>sin r = 0.5107<br>r = 30.7°',
+   make:rnd=>{const m=calcPick(rnd,[['glass','1.5'],['water','1.33'],['Perspex','1.49'],['diamond','2.42']]),i=calcPick(rnd,[20,25,30,35,40,45,50,55,60,65,70]),
+       si=rf_sin(i),sr=+(si/+m[1]).toFixed(4),r=rf_asin(sr);
+     return {q:'Light enters '+m[0]+' (n = '+m[1]+') with i = '+i+'°. The angle of refraction is',unit:'°',answer:r,working:'n = '+m[1]+'<br>i = '+i+'°<br>r = ?||n = [[sin i|sin r]]<br>'+m[1]+' = [[sin '+i+'°|sin r]]<br>'+m[1]+' × sin r = sin '+i+'°<br>sin r = [[sin '+i+'°|'+m[1]+']]<br>sin r = [['+rf_f4(si)+'|'+m[1]+']]<br>sin r = '+rf_f4(sr)+'<br>r = '+r.toFixed(1)+'°'};}},
+  {q:'Light enters water (n = 1.33). The angle of refraction is 22°. The angle of incidence is',unit:'°',answer:29.9,working:'n = 1.33<br>r = 22°<br>i = ?||n = [[sin i|sin r]]<br>1.33 = [[sin i|sin 22°]]<br>sin i = 1.33 × sin 22°<br>sin i = 1.33 × 0.3746<br>sin i = 0.4982<br>i = 29.9°',
+   make:rnd=>{const m=calcPick(rnd,[['glass','1.5'],['water','1.33'],['Perspex','1.49'],['diamond','2.42']]);
+     let r,sr,si,k=0;do{r=calcPick(rnd,[10,12,15,18,20,22,25,28,30,32,35,40]);sr=rf_sin(r);si=+(+m[1]*sr).toFixed(4);}while(si>=0.98&&++k<60);
+     const i=rf_asin(si);
+     return {q:'Light enters '+m[0]+' (n = '+m[1]+'). The angle of refraction is '+r+'°. The angle of incidence is',unit:'°',answer:i,working:'n = '+m[1]+'<br>r = '+r+'°<br>i = ?||n = [[sin i|sin r]]<br>'+m[1]+' = [[sin i|sin '+r+'°]]<br>sin i = '+m[1]+' × sin '+r+'°<br>sin i = '+m[1]+' × '+rf_f4(sr)+'<br>sin i = '+rf_f4(si)+'<br>i = '+i.toFixed(1)+'°'};}}
 
   ]);
 
@@ -2711,10 +2903,21 @@ createReorder({host:act('tir','Order','How an optical fibre carries a signal','P
     {id:'d',text:'This happens again and again along the fibre, even round bends'},
     {id:'e',text:'The light comes out of the far end, carrying the information'}
   ],constraints:chain(['a','b','c','d','e']),why:'Total internal reflection at every bounce keeps the light, and the information, inside the fibre.'});
-calcAct('tir','sin c = [[1|n]]','Use sin c = [[1|n]], where c is the critical angle.',[
-  {q:'Glass has a refractive index of 1.5. Its critical angle is',unit:'°',answer:41.8,working:'sin c = [[1|n]]<br>sin c = [[1|1.5]]<br>sin c = 0.6667<br>c = 41.8°'},
-  {q:'Diamond has a critical angle of 24.4°. Its refractive index is',unit:'',answer:2.42,working:'sin c = [[1|n]]<br>sin 24.4° = [[1|n]]<br>0.4131 = [[1|n]]<br>0.4131 × n = 1<br>n = [[1|0.4131]]<br>n = 2.42'},
-  {q:'A plastic has a critical angle of 42°. Its refractive index is',unit:'',answer:1.49,working:'sin c = [[1|n]]<br>sin 42° = [[1|n]]<br>0.6691 = [[1|n]]<br>0.6691 × n = 1<br>n = [[1|0.6691]]<br>n = 1.49'}
+// New problems helpers for this tab: tir_sin gives sin of an angle in degrees to 4 d.p.; tir_f4 writes 4 d.p.
+const tir_sin=d=>+Math.sin(d*Math.PI/180).toFixed(4);
+const tir_f4=x=>(+x).toFixed(4);
+// find n from c: material, critical angle (n = 1/sin c, to 2 d.p.)
+const tir_nFromC=(rnd,list)=>{const m=calcPick(rnd,list),sc=tir_sin(m[1]),n=+(1/sc).toFixed(2);
+  return {q:m[0]+' has a critical angle of '+m[1]+'°. Its refractive index is',unit:'',answer:n,working:'c = '+m[1]+'°<br>n = ?||sin c = [[1|n]]<br>sin '+m[1]+'° = [[1|n]]<br>'+tir_f4(sc)+' = [[1|n]]<br>'+tir_f4(sc)+' × n = 1<br>n = [[1|'+tir_f4(sc)+']]<br>n = '+n.toFixed(2)};};
+calcAct('tir','sin c = [[1|n]]','Use sin c = [[1|n]], where c is the critical angle. Press New problems for another set.',[
+  {q:'Glass has a refractive index of 1.5. Its critical angle is',unit:'°',answer:41.8,working:'n = 1.5<br>c = ?||sin c = [[1|n]]<br>sin c = [[1|1.5]]<br>sin c = 0.6667<br>c = 41.8°',
+   make:rnd=>{const m=calcPick(rnd,[['Glass','1.5'],['Water','1.33'],['Perspex','1.49'],['Diamond','2.42'],['Crown glass','1.52'],['Flint glass','1.62'],['Ice','1.31']]),
+       sc=+(1/+m[1]).toFixed(4),c=+(Math.asin(sc)*180/Math.PI).toFixed(1);
+     return {q:m[0]+' has a refractive index of '+m[1]+'. Its critical angle is',unit:'°',answer:c,working:'n = '+m[1]+'<br>c = ?||sin c = [[1|n]]<br>sin c = [[1|'+m[1]+']]<br>sin c = '+tir_f4(sc)+'<br>c = '+c.toFixed(1)+'°'};}},
+  {q:'Diamond has a critical angle of 24.4°. Its refractive index is',unit:'',answer:2.42,working:'c = 24.4°<br>n = ?||sin c = [[1|n]]<br>sin 24.4° = [[1|n]]<br>0.4131 = [[1|n]]<br>0.4131 × n = 1<br>n = [[1|0.4131]]<br>n = 2.42',
+   make:rnd=>tir_nFromC(rnd,[['Diamond',24.4],['Water',48.8],['Crown glass',41.1],['Flint glass',38.1],['Ice',49.8],['A glass fibre',42.5]])},
+  {q:'A plastic has a critical angle of 42°. Its refractive index is',unit:'',answer:1.49,working:'c = 42°<br>n = ?||sin c = [[1|n]]<br>sin 42° = [[1|n]]<br>0.6691 = [[1|n]]<br>0.6691 × n = 1<br>n = [[1|0.6691]]<br>n = 1.49',
+   make:rnd=>tir_nFromC(rnd,[['A plastic',42],['A plastic',40],['A glass',41],['A glass',37],['A crystal',35],['A liquid',45],['A liquid',47]])}
 
   ]);
 
@@ -2759,10 +2962,25 @@ createReorder({host:act('speed','Order','The speed of sound practical','Core pra
     {id:'e',text:'Repeat several times and work out the mean time'},
     {id:'f',text:'Work out the speed of sound = [[distance|mean time]]'}
   ],constraints:chain(['a','b','c','d','e','f']),why:'Light arrives almost at once, so the time between seeing and hearing is the time the sound takes.'});
-calcAct('speed','speed = [[distance|time]]','Use speed = [[distance|time]]. For an echo, the sound travels there and back.',[
-  {q:'Ali claps 85 m from a wall and hears the echo 0.50 s later. The speed of sound is',unit:'m/s',answer:340,working:'distance = 2 × 85 = 170 m<br>speed = [[distance|time]]<br>speed = [[170|0.50]]<br>speed = 340 m/s'},
-  {q:'A ship’s sonar pulse returns from the sea bed after 0.40 s. Sound travels at 1500 m/s in sea water. The depth of the sea is',unit:'m',answer:300,working:'speed = [[distance|time]]<br>1500 = [[distance|0.40]]<br>distance = 1500 × 0.40<br>distance = 600 m (there and back)<br>depth = [[600|2]]<br>depth = 300 m'},
-  {q:'Two microphones are 1.0 m apart. An oscilloscope shows the sound reaching the second 2.9 ms after the first. The speed of sound is',unit:'m/s',answer:345,working:'t = 2.9 ms = 0.0029 s<br>speed = [[distance|time]]<br>speed = [[1.0|0.0029]]<br>speed = 345 m/s'}
+// New problems helper for this tab: sp_fmt prints a number with no float noise
+const sp_fmt=x=>String(+(+x).toFixed(4));
+calcAct('speed','speed = [[distance|time]]','Use speed = [[distance|time]]. For an echo, the sound travels there and back. Press New problems for another set.',[
+  {q:'Ali claps 85 m from a wall and hears the echo 0.50 s later. The speed of sound is',unit:'m/s',answer:340,working:'distance = 2 × 85 m = 170 m<br>time = 0.50 s<br>speed = ?||speed = [[distance|time]]<br>speed = [[170|0.50]]<br>speed = 340 m/s',
+   make:rnd=>{let v,t,d,k=0;do{v=calcPick(rnd,[330,336,340,344,350]);t=calcPick(rnd,[0.2,0.25,0.3,0.4,0.5,0.6,0.8,1.0,1.2]);d=v*t/2;}while(!Number.isInteger(+d.toFixed(6))&&++k<60);
+     const who=calcPick(rnd,[['Ali claps','his'],['Charlotte claps','her'],['Yassin bangs two blocks together','his'],['Fatimah shouts','her']]),D=sp_fmt(d),T=t.toFixed(t<1?2:1),D2=sp_fmt(2*d),wall=calcPick(rnd,['a wall','a cliff','a large building']);
+     return {q:who[0]+' '+D+' m from '+wall+' and hears the echo '+T+' s later. The speed of sound is',unit:'m/s',answer:v,working:'distance = 2 × '+D+' m = '+D2+' m<br>time = '+T+' s<br>speed = ?||speed = [[distance|time]]<br>speed = [['+D2+'|'+T+']]<br>speed = '+v+' m/s'};}},
+  {q:'A ship’s sonar pulse returns from the sea bed after 0.40 s. Sound travels at 1500 m/s in sea water. The depth of the sea is',unit:'m',answer:300,working:'speed = 1500 m/s<br>time = 0.40 s (there and back)<br>depth = ?||speed = [[distance|time]]<br>1500 = [[distance|0.40]]<br>distance = 1500 × 0.40<br>distance = 600 m<br>depth = [[600|2]]<br>depth = 300 m',
+   make:rnd=>{const c=calcPick(rnd,[
+       ['A ship’s sonar pulse returns from the sea bed after T s. Sound travels at 1500 m/s in sea water. The depth of the sea is','depth',1500,[0.04,0.08,0.1,0.2,0.3,0.4,0.6,0.8,1.0,1.2]],
+       ['A fishing boat’s sonar pulse reflects off a shoal of fish and returns after T s. Sound travels at 1500 m/s in sea water. The depth of the fish is','depth',1500,[0.02,0.04,0.05,0.06,0.08,0.1]],
+       ['A bat’s squeak reflects off a moth and returns after T s. Sound travels at 340 m/s in air. The distance to the moth is','distance to the moth',340,[0.005,0.01,0.02,0.025,0.05]],
+       ['Lucas shouts towards a cliff and hears the echo T s later. Sound travels at 340 m/s in air. The distance to the cliff is','distance to the cliff',340,[0.5,1.0,1.5,2.0,2.5]]]);
+     const t=calcPick(rnd,c[3]),T=t>=1?t.toFixed(1):t>=0.1?t.toFixed(2):sp_fmt(t),d=+(c[2]*t).toFixed(4),h=+(d/2).toFixed(4),nm=c[1];
+     return {q:c[0].replace('T s',T+' s'),unit:'m',answer:h,working:'speed = '+c[2]+' m/s<br>time = '+T+' s (there and back)<br>'+nm+' = ?||speed = [[distance|time]]<br>'+c[2]+' = [[distance|'+T+']]<br>distance = '+c[2]+' × '+T+'<br>distance = '+sp_fmt(d)+' m<br>'+nm+' = [['+sp_fmt(d)+'|2]]<br>'+nm+' = '+sp_fmt(h)+' m'};}},
+  {q:'Two microphones are 1.0 m apart. An oscilloscope shows the sound reaching the second 2.9 ms after the first. The speed of sound is',unit:'m/s',answer:345,working:'distance = 1.0 m<br>time = 2.9 ms = 0.0029 s<br>speed = ?||speed = [[distance|time]]<br>speed = [[1.0|0.0029]]<br>speed = 345 m/s',
+   make:rnd=>{const d=calcPick(rnd,[0.5,1.0,1.5,2.0]),vt=calcPick(rnd,[330,335,340,345,350]),tm=+(d/vt*1000).toFixed(1),t=+(tm/1000).toFixed(5),v=Math.round(d/t),
+       what=calcPick(rnd,['Two microphones are','Elena sets up two microphones','In Henry’s experiment, two microphones are']),D=d.toFixed(1);
+     return {q:what+' '+D+' m apart. An oscilloscope shows the sound reaching the second '+tm.toFixed(1)+' ms after the first. The speed of sound is',unit:'m/s',answer:v,working:'distance = '+D+' m<br>time = '+tm.toFixed(1)+' ms = '+sp_fmt(t)+' s<br>speed = ?||speed = [[distance|time]]<br>speed = [['+D+'|'+sp_fmt(t)+']]<br>speed = '+v+' m/s'};}}
 
   ]);
 
@@ -2803,10 +3021,15 @@ createReorder({host:act('pitch','Order','Finding a frequency with an oscilloscop
     {id:'e',text:'Multiply by the timebase setting to get the time period'},
     {id:'f',text:'Work out the frequency using f = [[1|T]]'}
   ],constraints:chain(['a','b','c','d','e','f']),why:'The divisions for one wave × the time per division gives the period, and f = [[1|T]] gives the frequency.'});
-calcAct('pitch','Read the oscilloscope','The timebase is set to 2 ms per division. Read the trace first.',[
-  {q:'The time period of the sound is',unit:'s',answer:0.008,working:'one wave = 4 divisions<br>T = 4 × 2 ms<br>T = 8 ms<br>T = 0.008 s'},
-  {q:'The frequency of the sound is',unit:'Hz',answer:125,working:'f = [[1|T]]<br>f = [[1|0.008]]<br>f = 125 Hz'},
-  {q:'A 500 Hz note is shown with the timebase at 1 ms per division. One wave covers',unit:'divisions',answer:2,working:'f = [[1|T]]<br>500 = [[1|T]]<br>500 × T = 1<br>T = [[1|500]]<br>T = 0.002 s = 2 ms<br>divisions = [[2 ms|1 ms]]<br>divisions = 2'}
+// New problems helper for this tab: pt_fmt prints a number with no float noise
+const pt_fmt=x=>String(+(+x).toFixed(4));
+calcAct('pitch','Read the oscilloscope','The timebase is set to 2 ms per division. Read the trace first. New problems changes only the last question, as the first two use the trace.',[
+  {q:'The time period of the sound is',unit:'s',answer:0.008,working:'one wave = 4 divisions<br>timebase = 2 ms per division<br>T = ?||T = divisions × timebase<br>T = 4 × 2 ms<br>T = 8 ms<br>T = 0.008 s'},
+  {q:'The frequency of the sound is',unit:'Hz',answer:125,working:'T = 0.008 s<br>f = ?||f = [[1|T]]<br>f = [[1|0.008]]<br>f = 125 Hz'},
+  {q:'A 500 Hz note is shown with the timebase at 1 ms per division. One wave covers',unit:'divisions',answer:2,working:'f = 500 Hz<br>timebase = 1 ms per division<br>divisions = ?||f = [[1|T]]<br>500 = [[1|T]]<br>500 × T = 1<br>T = [[1|500]]<br>T = 0.002 s = 2 ms<br>divisions = [[2 ms|1 ms]]<br>divisions = 2',
+   make:rnd=>{let f,tb,Tms,n,k=0;do{f=calcPick(rnd,[100,125,200,250,400,500,1000]);tb=calcPick(rnd,[0.1,0.2,0.5,1,2]);Tms=1000/f;n=Tms/tb;}while((Math.abs(n*2-Math.round(n*2))>1e-9||n<1||n>8)&&++k<80);
+     const T=pt_fmt(Tms/1000),Tm=pt_fmt(Tms),N=pt_fmt(n),TB=pt_fmt(tb),what=calcPick(rnd,['A '+f+' Hz note is shown','A '+f+' Hz note from a tuning fork is shown','A '+f+' Hz note from a signal generator and loudspeaker is shown']);
+     return {q:what+' with the timebase at '+TB+' ms per division. One wave covers',unit:'divisions',answer:+N,working:'f = '+f+' Hz<br>timebase = '+TB+' ms per division<br>divisions = ?||f = [[1|T]]<br>'+f+' = [[1|T]]<br>'+f+' × T = 1<br>T = [[1|'+f+']]<br>T = '+T+' s = '+Tm+' ms<br>divisions = [['+Tm+' ms|'+TB+' ms]]<br>divisions = '+N};}}
 
   ],'<figure class="scope-one">'+scopeSVG(4,2.5,'Oscilloscope trace: one complete wave covers 4 divisions')+'<figcaption>Timebase: 2 ms per division</figcaption></figure>');
 
@@ -2905,8 +3128,16 @@ SRC='4a';
   createCalc({
     host:act('conserve','Calculate','Energy in, energy out','Energy is conserved: the total energy output equals the energy put in.'),
     questions:[
-      {q:'A television is supplied with 400 J. It gives out 120 J of light and 30 J of sound. The rest heats the surroundings. The energy transferred by heating is',unit:'J',answer:250,working:'energy in = light + sound + heating<br>400 = 120 + 30 + heating<br>400 = 150 + heating<br>heating = 400 − 150<br>heating = 250 J'},
-      {q:'A ball rolls down a slope from rest. At the bottom it has 56 J in its kinetic store, and 4 J was transferred by heating on the way down. The energy it lost from its gravitational store is',unit:'J',answer:60,working:'gravitational store lost = kinetic + heating<br>gravitational store lost = 56 + 4<br>gravitational store lost = 60 J'}
+      {q:'A television is supplied with 400 J. It gives out 120 J of light and 30 J of sound. The rest heats the surroundings. The energy transferred by heating is',unit:'J',answer:250,working:'energy in = 400 J<br>light = 120 J<br>sound = 30 J<br>heating = ?||energy in = light + sound + heating<br>400 = 120 + 30 + heating<br>400 = 150 + heating<br>heating = 400 − 150<br>heating = 250 J',
+       make:rnd=>{const d=calcPick(rnd,[['A television','light','sound'],['A laptop','light','sound'],['Ruby’s tablet','light','sound'],['A food mixer','energy to the kinetic store of its blades','sound'],['An electric fan','energy to the kinetic store of the air','sound']]);
+         const E=calcPick(rnd,[200,300,400,500,600,800,1000]),a=Math.round(E*calcPick(rnd,[0.2,0.3,0.4,0.5])),b=Math.round(E*calcPick(rnd,[0.05,0.1,0.15])),h=E-a-b;
+         return {q:d[0]+' is supplied with '+E+' J. '+(d[1]==='light'?'It gives out '+a+' J of light and '+b+' J of sound':'It transfers '+a+' J '+d[1].replace('energy ','')+' and '+b+' J by sound')+'. The rest heats the surroundings. The energy transferred by heating is',unit:'J',answer:h,
+           working:'energy in = '+E+' J<br>'+(d[1]==='light'?'light':'kinetic')+' = '+a+' J<br>sound = '+b+' J<br>heating = ?||energy in = '+(d[1]==='light'?'light':'kinetic')+' + sound + heating<br>'+E+' = '+a+' + '+b+' + heating<br>'+E+' = '+(a+b)+' + heating<br>heating = '+E+' − '+(a+b)+'<br>heating = '+h+' J'};}},
+      {q:'A ball rolls down a slope from rest. At the bottom it has 56 J in its kinetic store, and 4 J was transferred by heating on the way down. The energy it lost from its gravitational store is',unit:'J',answer:60,working:'kinetic = 56 J<br>heating = 4 J<br>gravitational store lost = ?||gravitational store lost = kinetic + heating<br>gravitational store lost = 56 + 4<br>gravitational store lost = 60 J',
+       make:rnd=>{const w=calcPick(rnd,[['A ball rolls down a slope from rest','it has',[20,36,48,56,72]],['A trolley rolls down a ramp from rest','it has',[30,45,60,84,90]],['Henry slides down a slide from rest','he has',[480,600,720,850,960]],['Elena skates down a ramp from rest','she has',[900,1200,1500,1750,2000]]]);
+         const k=calcPick(rnd,w[2]),h=Math.round(k*calcPick(rnd,[0.1,0.2,0.25,0.5])),g=k+h;
+         return {q:w[0]+'. At the bottom '+w[1]+' '+k+' J in the kinetic store, and '+h+' J was transferred by heating on the way down. The energy lost from the gravitational store is',unit:'J',answer:g,
+           working:'kinetic = '+k+' J<br>heating = '+h+' J<br>gravitational store lost = ?||gravitational store lost = kinetic + heating<br>gravitational store lost = '+k+' + '+h+'<br>gravitational store lost = '+g+' J'};}}
     
   ]
   });
@@ -2920,11 +3151,23 @@ SRC='4a';
 
 
 {
+  // number for a worked answer: no float noise, a space in numbers of 5 or more digits (180 000)
+  const es_n=x=>{const v=+(+x).toFixed(4),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('efficiency','Calculate','Efficiency','Use efficiency = [[useful energy output|total energy output]]. Give a percentage when the unit is %.'),
     questions:[
-      {q:'A kettle has a total energy output of 200 000 J. 180 000 J goes into the thermal store of the water. Its efficiency is',unit:'%',answer:90,working:'efficiency = [[useful energy output|total energy output]]<br>efficiency = [[180 000|200 000]]<br>efficiency = 0.9<br>efficiency = 90%'},
-      {q:'An LED lamp is 40% efficient. In one minute it gives out 900 J of light. The total energy supplied to it is',unit:'J',answer:2250,hint:'Write 40% as 0.40, substitute, then get the total energy output on its own.',working:'efficiency = [[useful energy output|total energy output]]<br>0.40 = [[900|total energy output]]<br>0.40 × total energy output = 900<br>total energy output = [[900|0.40]]<br>total energy output = 2250 J'}
+      {q:'A kettle has a total energy output of 200 000 J. 180 000 J goes into the thermal store of the water. Its efficiency is',unit:'%',answer:90,working:'useful energy output = 180 000 J<br>total energy output = 200 000 J<br>efficiency = ?||efficiency = [[useful energy output|total energy output]]<br>efficiency = [[180 000|200 000]]<br>efficiency = 0.9<br>efficiency = 90%',
+       make:rnd=>{const d=calcPick(rnd,[['A kettle','goes into the thermal store of the water',[80,85,90,95],[100000,200000,240000,300000]],['An electric motor','goes into the kinetic store of the load',[60,65,70,75,80],[2000,4000,5000,6000]],['Poppy’s phone charger','goes into the chemical store of the battery',[70,75,80,85],[10000,20000,40000]],['A filament lamp','is carried away by light',[5,10,15],[1000,2000,3000,6000]]]);
+         const pc=calcPick(rnd,d[2]),T=calcPick(rnd,d[3]),U=T*pc/100,e=+(pc/100).toFixed(2);
+         return {q:d[0]+' has a total energy output of '+es_n(T)+' J. '+es_n(U)+' J '+d[1]+'. Its efficiency is',unit:'%',answer:pc,
+           working:'useful energy output = '+es_n(U)+' J<br>total energy output = '+es_n(T)+' J<br>efficiency = ?||efficiency = [[useful energy output|total energy output]]<br>efficiency = [['+es_n(U)+'|'+es_n(T)+']]<br>efficiency = '+e+'<br>efficiency = '+pc+'%'};}},
+      {q:'An LED lamp is 40% efficient. In one minute it gives out 900 J of light. The total energy supplied to it is',unit:'J',answer:2250,hint:'Write 40% as 0.40, substitute, then get the total energy output on its own.',working:'efficiency = 40% = 0.40<br>useful energy output = 900 J<br>total energy output = ?||efficiency = [[useful energy output|total energy output]]<br>0.40 = [[900|total energy output]]<br>0.40 × total energy output = 900<br>total energy output = [[900|0.40]]<br>total energy output = 2250 J',
+       make:rnd=>{let pc,T,U,k=0;do{pc=calcPick(rnd,[20,25,30,40,60,75,80]);T=calcPick(rnd,[600,900,1200,1500,1800,2000,2400,3000,4500]);U=T*pc/100;}while(!Number.isInteger(U)&&++k<60);
+         const d=calcPick(rnd,[['An LED lamp','In one minute it gives out','of light'],['A loudspeaker','In one minute it gives out','of sound'],['An electric motor','In ten seconds it transfers','to the kinetic store of a lift'],['Lucas’s food blender','In ten seconds it transfers','to the kinetic store of its blades']]);
+         if(d[2]==='of sound'){pc=calcPick(rnd,[20,25]);T=calcPick(rnd,[400,800,1200,2000]);U=T*pc/100;}
+         const e=(pc/100).toFixed(2);
+         return {q:d[0]+' is '+pc+'% efficient. '+d[1]+' '+es_n(U)+' J '+d[2]+'. The total energy supplied to it is',unit:'J',answer:T,
+           working:'efficiency = '+pc+'% = '+e+'<br>useful energy output = '+es_n(U)+' J<br>total energy output = ?||efficiency = [[useful energy output|total energy output]]<br>'+e+' = [['+es_n(U)+'|total energy output]]<br>'+e+' × total energy output = '+es_n(U)+'<br>total energy output = [['+es_n(U)+'|'+e+']]<br>total energy output = '+es_n(T)+' J'};}}
     
   ]
   });
@@ -3038,8 +3281,11 @@ function sankeySVG(o){
   createCalc({
     host:act('sankey','Calculate','Reading Sankey diagrams','Use the drill’s diagram above for the first question.'),
     questions:[
-      {q:'The drill’s efficiency, as a percentage, is',unit:'%',answer:60,working:'efficiency = [[useful energy output|total energy output]]<br>efficiency = [[300|500]]<br>efficiency = 0.6<br>efficiency = 60%'},
-      {q:'On a Sankey diagram, 1 mm of width stands for 5 J. The input arrow is 40 mm wide and the useful arrow is 12 mm wide. The energy wasted is',unit:'J',answer:140,hint:'Turn both widths into joules first, then subtract.',working:'input = 40 × 5<br>input = 200 J<br>useful = 12 × 5<br>useful = 60 J<br>wasted = 200 − 60<br>wasted = 140 J'}
+      {q:'The drill’s efficiency, as a percentage, is',unit:'%',answer:60,working:'useful energy output = 300 J<br>total energy output = 500 J<br>efficiency = ?||efficiency = [[useful energy output|total energy output]]<br>efficiency = [[300|500]]<br>efficiency = 0.6<br>efficiency = 60%'},
+      {q:'On a Sankey diagram, 1 mm of width stands for 5 J. The input arrow is 40 mm wide and the useful arrow is 12 mm wide. The energy wasted is',unit:'J',answer:140,hint:'Turn both widths into joules first, then subtract.',working:'scale: 1 mm = 5 J<br>input width = 40 mm<br>useful width = 12 mm<br>wasted = ?||input = 40 × 5<br>input = 200 J<br>useful = 12 × 5<br>useful = 60 J<br>wasted = input − useful<br>wasted = 200 − 60<br>wasted = 140 J',
+       make:rnd=>{const sc=calcPick(rnd,[2,4,5,10,20]),wi=calcPick(rnd,[30,40,45,50,60]),wu=Math.round(wi*calcPick(rnd,[0.2,0.3,0.4,0.6])),I=wi*sc,U=wu*sc,W=I-U;
+         return {q:'On a Sankey diagram, 1 mm of width stands for '+sc+' J. The input arrow is '+wi+' mm wide and the useful arrow is '+wu+' mm wide. The energy wasted is',unit:'J',answer:W,
+           working:'scale: 1 mm = '+sc+' J<br>input width = '+wi+' mm<br>useful width = '+wu+' mm<br>wasted = ?||input = '+wi+' × '+sc+'<br>input = '+I+' J<br>useful = '+wu+' × '+sc+'<br>useful = '+U+' J<br>wasted = input − useful<br>wasted = '+I+' − '+U+'<br>wasted = '+W+' J'};}}
     
   ]
   });
@@ -3073,12 +3319,25 @@ SRC='4c';
     {id:'f',l:'Pushing a heavy box across a rough floor at a steady speed',r:'The thermal store of the box, the floor and the air'}
   ]});
   reflowers.push(tab=>{if(tab==='work')raf(mg.reflow);});
+  const wk_n=x=>{const v=+(+x).toFixed(4),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('work','Calculate','Work done','Use work done = force × distance moved, W = F × d.'),
     questions:[
-      {q:'A crane does 36 000 J of work lifting a load with a force of 1200 N. The height it lifts the load is',unit:'m',answer:30,working:'W = F × d<br>36 000 = 1200 × d<br>d = [[36 000|1200]]<br>d = 30 m'},
-      {q:'A car’s brakes do 150 000 J of work to stop it in 50 m. The braking force is',unit:'N',answer:3000,working:'W = F × d<br>150 000 = F × 50<br>F = [[150 000|50]]<br>F = 3000 N'},
-      {q:'Camila pulls a sledge 0.4 km across snow with a force of 60 N. The work she does is',unit:'J',answer:24000,hint:'Turn the distance into metres first: 0.4 km = 400 m.',working:'d = 0.4 km = 400 m<br>W = F × d<br>W = 60 × 400<br>W = 24 000 J'}
+      {q:'A crane does 36 000 J of work lifting a load with a force of 1200 N. The height it lifts the load is',unit:'m',answer:30,working:'W = 36 000 J<br>F = 1200 N<br>d = ?||W = F × d<br>36 000 = 1200 × d<br>d = [[36 000|1200]]<br>d = 30 m',
+       make:rnd=>{const w=calcPick(rnd,[['A crane','lifting a load','it lifts the load',[800,1200,1500,2000,2500],[10,12,15,20,25,30]],['A lift motor','raising a lift','it raises the lift',[4000,5000,6000,8000],[8,10,12,15,20]],['Edward','lifting a box onto a shelf','he lifts the box',[40,50,60,80,120],[1.5,2,2.5]],['A forklift truck','lifting a pallet','it lifts the pallet',[3000,4000,5000],[2,3,4]]]);
+         const F=calcPick(rnd,w[3]),d=calcPick(rnd,w[4]),W=F*d;
+         return {q:w[0]+' does '+wk_n(W)+' J of work '+w[1]+' with a force of '+wk_n(F)+' N. The height '+w[2]+' is',unit:'m',answer:d,
+           working:'W = '+wk_n(W)+' J<br>F = '+wk_n(F)+' N<br>d = ?||W = F × d<br>'+wk_n(W)+' = '+wk_n(F)+' × d<br>d = [['+wk_n(W)+'|'+wk_n(F)+']]<br>d = '+wk_n(d)+' m'};}},
+      {q:'A car’s brakes do 150 000 J of work to stop it in 50 m. The braking force is',unit:'N',answer:3000,working:'W = 150 000 J<br>d = 50 m<br>F = ?||W = F × d<br>150 000 = F × 50<br>F = [[150 000|50]]<br>F = 3000 N',
+       make:rnd=>{const w=calcPick(rnd,[['A car’s brakes','stop it',[2000,3000,4000,5000,6000],[20,25,30,40,50]],['A lorry’s brakes','stop it',[8000,10000,12000,15000],[40,50,60,80]],['Yassin’s bike brakes','stop him',[100,120,150,200],[5,8,10,12]],['A train’s brakes','stop it',[50000,80000,100000],[200,250,400]]]);
+         const F=calcPick(rnd,w[2]),d=calcPick(rnd,w[3]),W=F*d;
+         return {q:w[0]+' do '+wk_n(W)+' J of work to '+w[1]+' in '+d+' m. The braking force is',unit:'N',answer:F,
+           working:'W = '+wk_n(W)+' J<br>d = '+d+' m<br>F = ?||W = F × d<br>'+wk_n(W)+' = F × '+d+'<br>F = [['+wk_n(W)+'|'+d+']]<br>F = '+wk_n(F)+' N'};}},
+      {q:'Camila pulls a sledge 0.4 km across snow with a force of 60 N. The work she does is',unit:'J',answer:24000,hint:'Turn the distance into metres first: 0.4 km = 400 m.',working:'F = 60 N<br>d = 0.4 km = 400 m<br>W = ?||W = F × d<br>W = 60 × 400<br>W = 24 000 J',
+       make:rnd=>{const w=calcPick(rnd,[['Camila pulls a sledge','across snow','she'],['Nabil pushes a wheelbarrow','along a path','he'],['A horse pulls a cart','along a track','it'],['Julia drags a kayak','along a beach','she'],['A tractor pulls a trailer','across a field','it']]);
+         const km=calcPick(rnd,[0.2,0.25,0.3,0.4,0.5,0.6,0.8,1.2,1.5]),m=Math.round(km*1000),F=calcPick(rnd,w[2]==='it'?[200,300,400,500,800]:[40,50,60,75,80,90]),W=F*m;
+         return {q:w[0]+' '+km+' km '+w[1]+' with a force of '+F+' N. The work '+w[2]+' '+(w[2]==='it'?'does':'does')+' is',unit:'J',answer:W,hint:'Turn the distance into metres first: '+km+' km = '+m+' m.',
+           working:'F = '+F+' N<br>d = '+km+' km = '+m+' m<br>W = ?||W = F × d<br>W = '+F+' × '+m+'<br>W = '+wk_n(W)+' J'};}}
     
   ]
   });
@@ -3105,12 +3364,25 @@ const COL={a:'var(--accent)',g:'var(--grav)',k:'var(--kin)',t:'var(--therm)',e:'
     explain:'KE = ½ × m × v². The speed is squared, so doubling the speed makes the kinetic energy 2² = 4 times bigger. This is why braking distance goes up so much with speed.',
     reveal:barsHTML([{l:'At 10 m/s',v:.25,t:'50 000 J',c:COL.k},{l:'At 20 m/s',v:1,t:'200 000 J',c:COL.k}])
   });
+  const ge_n=x=>{const v=+(+x).toFixed(4),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('gpeke','Calculate','GPE and KE','Use GPE = m × g × h and KE = ½ × m × v². Take g = 10 N/kg.'),
     questions:[
-      {q:'A car of mass 1200 kg travels at 15 m/s. Its kinetic energy is',unit:'J',answer:135000,working:'KE = ½ × m × v²<br>KE = ½ × 1200 × 15²<br>KE = 600 × 225<br>KE = 135 000 J'},
-      {q:'A 3 kg box gains 450 J of gravitational potential energy when it is lifted. The height it is lifted is',unit:'m',answer:15,working:'GPE = m × g × h<br>450 = 3 × 10 × h<br>450 = 30 × h<br>h = [[450|30]]<br>h = 15 m'},
-      {q:'A 2 kg ball has 900 J of kinetic energy. Its speed is',unit:'m/s',answer:30,hint:'Substitute, work out v², then take the square root.',working:'KE = ½ × m × v²<br>900 = ½ × 2 × v²<br>900 = 1 × v²<br>v² = 900<br>v = √900<br>v = 30 m/s'}
+      {q:'A car of mass 1200 kg travels at 15 m/s. Its kinetic energy is',unit:'J',answer:135000,working:'m = 1200 kg<br>v = 15 m/s<br>KE = ?||KE = ½ × m × v²<br>KE = ½ × 1200 × 15²<br>KE = 600 × 225<br>KE = 135 000 J',
+       make:rnd=>{const w=calcPick(rnd,[['A car of mass','travels at',[800,1000,1200,1500],[10,12,15,20,25]],['A lorry of mass','travels at',[6000,8000,10000],[10,15,20]],['Ruby, of mass','runs at',[50,52,56,60],[4,5,6,7,8]],['A motorbike and rider of total mass','travel at',[200,250,300,400],[10,15,20,25,30]]]);
+         const m=calcPick(rnd,w[2]),v=calcPick(rnd,w[3]),KE=m*v*v/2;
+         return {q:w[0]+' '+ge_n(m)+' kg '+w[1]+' '+v+' m/s. '+(w[0].startsWith('Ruby')?'Her':w[0].startsWith('A motorbike')?'Their':'Its')+' kinetic energy is',unit:'J',answer:KE,
+           working:'m = '+ge_n(m)+' kg<br>v = '+v+' m/s<br>KE = ?||KE = ½ × m × v²<br>KE = ½ × '+ge_n(m)+' × '+v+'²<br>KE = '+ge_n(m/2)+' × '+(v*v)+'<br>KE = '+ge_n(KE)+' J'};}},
+      {q:'A 3 kg box gains 450 J of gravitational potential energy when it is lifted. The height it is lifted is',unit:'m',answer:15,working:'m = 3 kg<br>g = 10 N/kg<br>GPE = 450 J<br>h = ?||GPE = m × g × h<br>450 = 3 × 10 × h<br>450 = 30 × h<br>h = [[450|30]]<br>h = 15 m',
+       make:rnd=>{const w=calcPick(rnd,[['box','it is lifted',[2,3,4,5,8],[1.5,2,5,10,15]],['bag of cement','a builder lifts it onto a roof',[25,40,50],[3,4,6,8]],['climber','she climbs a wall',[50,55,60],[8,10,12,15]],['drone','it rises',[1.5,2,2.5],[20,30,40,50]]]);
+         const m=calcPick(rnd,w[2]),h=calcPick(rnd,w[3]),mg=+(m*10).toFixed(2),E=+(mg*h).toFixed(2);
+         return {q:'A '+m+' kg '+w[0]+' gains '+ge_n(E)+' J of gravitational potential energy when '+w[1]+'. The height '+(w[0]==='climber'?'she climbs':w[0]==='drone'?'it rises':w[0]==='box'?'it is lifted':'it is lifted')+' is',unit:'m',answer:h,
+           working:'m = '+m+' kg<br>g = 10 N/kg<br>GPE = '+ge_n(E)+' J<br>h = ?||GPE = m × g × h<br>'+ge_n(E)+' = '+m+' × 10 × h<br>'+ge_n(E)+' = '+ge_n(mg)+' × h<br>h = [['+ge_n(E)+'|'+ge_n(mg)+']]<br>h = '+h+' m'};}},
+      {q:'A 2 kg ball has 900 J of kinetic energy. Its speed is',unit:'m/s',answer:30,hint:'Substitute, work out v², then take the square root.',working:'m = 2 kg<br>KE = 900 J<br>v = ?||KE = ½ × m × v²<br>900 = ½ × 2 × v²<br>900 = 1 × v²<br>v² = 900<br>v = √900<br>v = 30 m/s',
+       make:rnd=>{const w=calcPick(rnd,[['ball',[0.5,2,4],[10,20,30]],['trolley',[2,4,5,10],[2,3,4,5,6]],['cyclist and bike',[60,80,100],[5,6,8,10]],['car',[1000,1200,1600],[10,15,20,25]]]);
+         const m=calcPick(rnd,w[1]),v=calcPick(rnd,w[2]),hm=m/2,KE=hm*v*v;
+         return {q:'A '+ge_n(m)+' kg '+w[0]+' '+(w[0]==='cyclist and bike'?'have':'has')+' '+ge_n(KE)+' J of kinetic energy. '+(w[0]==='cyclist and bike'?'Their':'Its')+' speed is',unit:'m/s',answer:v,hint:'Substitute, work out v², then take the square root.',
+           working:'m = '+ge_n(m)+' kg<br>KE = '+ge_n(KE)+' J<br>v = ?||KE = ½ × m × v²<br>'+ge_n(KE)+' = ½ × '+ge_n(m)+' × v²<br>'+ge_n(KE)+' = '+ge_n(hm)+' × v²<br>v² = [['+ge_n(KE)+'|'+ge_n(hm)+']]<br>v² = '+ge_n(v*v)+'<br>v = √'+ge_n(v*v)+'<br>v = '+v+' m/s'};}}
     
   ]
   });
@@ -3136,11 +3408,22 @@ SRC='4c';
     ],
     explain:'GPE lost = KE gained, so m × g × h = ½ × m × v². The mass is on both sides, so it cancels: the speed only depends on the height.'
   });
+  const ln_n=x=>{const v=+(+x).toFixed(4),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('link','Calculate','GPE, KE and work done','GPE lost = KE gained + work done against friction. Take g = 10 N/kg.'),
     questions:[
-      {q:'A 0.4 kg ball is dropped from 5.0 m. Ignore air resistance. Its speed just before it hits the ground is',unit:'m/s',answer:10,hint:'GPE lost = KE gained. Find the GPE first.',working:'GPE = m × g × h<br>GPE = 0.4 × 10 × 5.0<br>GPE = 20 J<br>KE gained = GPE lost = 20 J<br>KE = ½ × m × v²<br>20 = ½ × 0.4 × v²<br>20 = 0.2 × v²<br>v² = [[20|0.2]]<br>v² = 100<br>v = √100<br>v = 10 m/s'},
-      {q:'Camila (mass 40 kg) slides down a slide 3.0 m high. She reaches the bottom at 6.0 m/s. The work done against friction is',unit:'J',answer:480,hint:'Find the GPE lost and the KE gained. The difference is the work done against friction.',working:'GPE = m × g × h<br>GPE = 40 × 10 × 3.0<br>GPE = 1200 J<br>KE = ½ × m × v²<br>KE = ½ × 40 × 6.0²<br>KE = 720 J<br>GPE lost = KE gained + work done<br>1200 = 720 + work done<br>work done = 1200 − 720<br>work done = 480 J'}
+      {q:'A 0.4 kg ball is dropped from 5.0 m. Ignore air resistance. Its speed just before it hits the ground is',unit:'m/s',answer:10,hint:'GPE lost = KE gained. Find the GPE first.',
+       make:rnd=>{const ob=calcPick(rnd,[['ball',[0.4,0.5,0.8]],['stone',[0.2,0.4,0.5]],['apple',[0.1,0.2]],['coconut',[1.2,1.5,2]],['tennis ball',[0.05,0.06]]]),what=ob[0],m=calcPick(rnd,ob[1]),v=calcPick(rnd,[4,6,8,10,12,14,20]),h=v*v/20,E=+(m*10*h).toFixed(4),hm=+(m/2).toFixed(4);
+         return {q:'A '+m+' kg '+what+' is dropped from '+ln_n(h)+' m. Ignore air resistance. Its speed just before it hits the ground is',unit:'m/s',answer:v,hint:'GPE lost = KE gained. Find the GPE first.',
+           working:'m = '+m+' kg<br>h = '+ln_n(h)+' m<br>g = 10 N/kg<br>v = ?||GPE = m × g × h<br>GPE = '+m+' × 10 × '+ln_n(h)+'<br>GPE = '+ln_n(E)+' J<br>KE gained = GPE lost = '+ln_n(E)+' J<br>KE = ½ × m × v²<br>'+ln_n(E)+' = ½ × '+m+' × v²<br>'+ln_n(E)+' = '+hm+' × v²<br>v² = [['+ln_n(E)+'|'+hm+']]<br>v² = '+(v*v)+'<br>v = √'+(v*v)+'<br>v = '+v+' m/s'};},
+       working:'m = 0.4 kg<br>h = 5.0 m<br>g = 10 N/kg<br>v = ?||GPE = m × g × h<br>GPE = 0.4 × 10 × 5.0<br>GPE = 20 J<br>KE gained = GPE lost = 20 J<br>KE = ½ × m × v²<br>20 = ½ × 0.4 × v²<br>20 = 0.2 × v²<br>v² = [[20|0.2]]<br>v² = 100<br>v = √100<br>v = 10 m/s'},
+      {q:'Camila (mass 40 kg) slides down a slide 3.0 m high. She reaches the bottom at 6.0 m/s. The work done against friction is',unit:'J',answer:480,hint:'Find the GPE lost and the KE gained. The difference is the work done against friction.',
+       make:rnd=>{let m,h,v,G,K,k=0;const w=calcPick(rnd,[['Camila','slides down a slide','She'],['Charlie','slides down a slide','He'],['Sophie','skis down a slope','She'],['Ali','slides down a water slide','He'],['A sledge with Hana on it','slides down a hill','It']]);
+         do{m=calcPick(rnd,[30,40,50,60,70]);h=calcPick(rnd,[2,3,4,5,8,10]);v=calcPick(rnd,[4,5,6,8,10,12]);G=m*10*h;K=m*v*v/2;}while(!(K<0.9*G&&K>0.3*G)&&++k<80);
+         const q0=w[0]+(w[0].startsWith('A sledge')?' (total mass ':' (mass ')+m+' kg) '+w[1]+' '+h+' m high. '+w[2]+' '+(w[2]==='It'?'reaches':'reaches')+' the bottom at '+v+' m/s. The work done against friction is';
+         return {q:q0,unit:'J',answer:G-K,hint:'Find the GPE lost and the KE gained. The difference is the work done against friction.',
+           working:'m = '+m+' kg<br>h = '+h+' m<br>v = '+v+' m/s<br>g = 10 N/kg<br>work done = ?||GPE = m × g × h<br>GPE = '+m+' × 10 × '+h+'<br>GPE = '+ln_n(G)+' J<br>KE = ½ × m × v²<br>KE = ½ × '+m+' × '+v+'²<br>KE = '+ln_n(K)+' J<br>GPE lost = KE gained + work done<br>'+ln_n(G)+' = '+ln_n(K)+' + work done<br>work done = '+ln_n(G)+' − '+ln_n(K)+'<br>work done = '+ln_n(G-K)+' J'};},
+       working:'m = 40 kg<br>h = 3.0 m<br>v = 6.0 m/s<br>g = 10 N/kg<br>work done = ?||GPE = m × g × h<br>GPE = 40 × 10 × 3.0<br>GPE = 1200 J<br>KE = ½ × m × v²<br>KE = ½ × 40 × 6.0²<br>KE = 720 J<br>GPE lost = KE gained + work done<br>1200 = 720 + work done<br>work done = 1200 − 720<br>work done = 480 J'}
     
   ]
   });
@@ -3154,12 +3437,24 @@ SRC='4c';
 
 
 {
+  const pw_n=x=>{const v=+(+x).toFixed(4),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('power','Calculate','Power','Use P = [[W|t]], where W is the work done (or energy transferred) and t is the time taken. 1 kW = 1000 W.'),
     questions:[
-      {q:'A 2.0 kW kettle is switched on for 90 s. The energy it transfers is',unit:'J',answer:180000,hint:'Write 2.0 kW as 2000 W first.',working:'P = 2.0 kW = 2000 W<br>P = [[W|t]]<br>2000 = [[W|90]]<br>W = 2000 × 90<br>W = 180 000 J'},
-      {q:'Charlotte weighs 500 N. She runs up stairs 4.0 m high in 5.0 s. Her power is',unit:'W',answer:400,hint:'Work out the work done first: her weight × the height.',working:'W = F × d<br>W = 500 × 4.0<br>W = 2000 J<br>P = [[W|t]]<br>P = [[2000|5.0]]<br>P = 400 W'},
-      {q:'A 1200 W crane motor does 30 000 J of work lifting a load. The time it takes is',unit:'s',answer:25,working:'P = [[W|t]]<br>1200 = [[30 000|t]]<br>1200 × t = 30 000<br>t = [[30 000|1200]]<br>t = 25 s'}
+      {q:'A 2.0 kW kettle is switched on for 90 s. The energy it transfers is',unit:'J',answer:180000,hint:'Write 2.0 kW as 2000 W first.',working:'P = 2.0 kW = 2000 W<br>t = 90 s<br>W = ?||P = [[W|t]]<br>2000 = [[W|90]]<br>W = 2000 × 90<br>W = 180 000 J',
+       make:rnd=>{const what=calcPick(rnd,['kettle','heater','hair dryer','toaster','microwave']),kW=calcPick(rnd,[0.8,1.2,1.5,2.0,2.5,3.0]),P=Math.round(kW*1000),t=calcPick(rnd,[30,45,60,90,120,150,200]),W=P*t,k1=kW.toFixed(1);
+         return {q:'A '+k1+' kW '+what+' is switched on for '+t+' s. The energy it transfers is',unit:'J',answer:W,hint:'Write '+k1+' kW as '+P+' W first.',
+           working:'P = '+k1+' kW = '+P+' W<br>t = '+t+' s<br>W = ?||P = [[W|t]]<br>'+P+' = [[W|'+t+']]<br>W = '+P+' × '+t+'<br>W = '+pw_n(W)+' J'};}},
+      {q:'Charlotte weighs 500 N. She runs up stairs 4.0 m high in 5.0 s. Her power is',unit:'W',answer:400,hint:'Work out the work done first: her weight × the height.',working:'F = 500 N<br>d = 4.0 m<br>t = 5.0 s<br>P = ?||W = F × d<br>W = 500 × 4.0<br>W = 2000 J<br>P = [[W|t]]<br>P = [[2000|5.0]]<br>P = 400 W',
+       make:rnd=>{let F,d,t,P,k=0;const w=calcPick(rnd,[['Charlotte','She','Her'],['Aidan','He','His'],['Fatimah','She','Her'],['David','He','His'],['Elizabeth','She','Her']]);
+         do{F=calcPick(rnd,[400,450,500,550,600,650,700]);d=calcPick(rnd,[3,4,5,6]);t=calcPick(rnd,[4,5,6,8,10,12]);P=F*d/t;}while((!Number.isInteger(P)||P<150||P>800||d/t>1)&&++k<80);
+         const d1=d.toFixed(1),t1=t.toFixed(1);
+         return {q:w[0]+' weighs '+F+' N. '+w[1]+' runs up stairs '+d1+' m high in '+t1+' s. '+w[2]+' power is',unit:'W',answer:P,hint:'Work out the work done first: '+w[2].toLowerCase()+' weight × the height.',
+           working:'F = '+F+' N<br>d = '+d1+' m<br>t = '+t1+' s<br>P = ?||W = F × d<br>W = '+F+' × '+d1+'<br>W = '+pw_n(F*d)+' J<br>P = [[W|t]]<br>P = [['+pw_n(F*d)+'|'+t1+']]<br>P = '+P+' W'};}},
+      {q:'A 1200 W crane motor does 30 000 J of work lifting a load. The time it takes is',unit:'s',answer:25,working:'P = 1200 W<br>W = 30 000 J<br>t = ?||P = [[W|t]]<br>1200 = [[30 000|t]]<br>1200 × t = 30 000<br>t = [[30 000|1200]]<br>t = 25 s',
+       make:rnd=>{const w=calcPick(rnd,[['crane motor','lifting a load'],['lift motor','raising a lift'],['winch','pulling a boat up a slipway'],['pump motor','lifting water into a tank']]),P=calcPick(rnd,[400,500,800,1200,1500,2000,2500]),t=calcPick(rnd,[10,15,20,25,30,40,60]),W=P*t;
+         return {q:'A '+P+' W '+w[0]+' does '+pw_n(W)+' J of work '+w[1]+'. The time it takes is',unit:'s',answer:t,
+           working:'P = '+P+' W<br>W = '+pw_n(W)+' J<br>t = ?||P = [[W|t]]<br>'+P+' = [['+pw_n(W)+'|t]]<br>'+P+' × t = '+pw_n(W)+'<br>t = [['+pw_n(W)+'|'+P+']]<br>t = '+t+' s'};}}
     
   ]
   });
@@ -3187,11 +3482,20 @@ SRC='5a';
     constraints:[['a','c'],['b','c'],['c','d'],['d','e'],['a','e']],
     why:'The stone is weighed while dry, the water level is read before and after, and the calculation comes last.'
   });
+  const dn_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('density','Calculate','Density, mass and volume','Use ρ = [[m|V]]. Give your answer in the unit shown.'),
     questions:[
-      {q:'1.5 kg of petrol has a density of 750 kg/m³. Its volume is',unit:'m³',answer:0.002,working:'ρ = [[m|V]]<br>ρ × V = m<br>V = [[m|ρ]]<br>V = [[1.5|750]]<br>V = 0.002 m³'},
-      {q:'A stone has a mass of 270 g. It raises the water level in a measuring cylinder from 50 cm³ to 150 cm³. Its density is',unit:'g/cm³',answer:2.7,working:'V = 150 − 50 = 100 cm³<br>ρ = [[m|V]] = [[270|100]] = 2.7 g/cm³'}
+      {q:'1.5 kg of petrol has a density of 750 kg/m³. Its volume is',unit:'m³',answer:0.002,working:'m = 1.5 kg<br>ρ = 750 kg/m³<br>V = ?||ρ = [[m|V]]<br>750 = [[1.5|V]]<br>750 × V = 1.5<br>V = [[1.5|750]]<br>V = 0.002 m³',
+       make:rnd=>{const w=calcPick(rnd,[['petrol',750],['olive oil',900],['sea water',1030],['milk',1030],['diesel',850],['ethanol',800]]);
+         const V=calcPick(rnd,[0.001,0.002,0.004,0.005,0.01,0.02,0.05]),m=+(w[1]*V).toPrecision(6);
+         return {q:dn_n(m)+' kg of '+w[0]+' has a density of '+dn_n(w[1])+' kg/m³. Its volume is',unit:'m³',answer:V,
+           working:'m = '+dn_n(m)+' kg<br>ρ = '+dn_n(w[1])+' kg/m³<br>V = ?||ρ = [[m|V]]<br>'+dn_n(w[1])+' = [['+dn_n(m)+'|V]]<br>'+dn_n(w[1])+' × V = '+dn_n(m)+'<br>V = [['+dn_n(m)+'|'+dn_n(w[1])+']]<br>V = '+dn_n(V)+' m³'};}},
+      {q:'A stone has a mass of 270 g. It raises the water level in a measuring cylinder from 50 cm³ to 150 cm³. Its density is',unit:'g/cm³',answer:2.7,working:'m = 270 g<br>V = 150 − 50 = 100 cm³<br>ρ = ?||ρ = [[m|V]]<br>ρ = [[270|100]]<br>ρ = 2.7 g/cm³',
+       make:rnd=>{const w=calcPick(rnd,[['A stone',[2.4,2.5,2.6,2.7,2.8]],['A brass key',[8.4,8.5]],['A piece of glass',[2.5,2.6]],['An iron bolt',[7.8,7.9]],['Ali’s pebble',[2.5,2.6,2.7]]]);
+         const rho=calcPick(rnd,w[1]),V=calcPick(rnd,w[1][0]>5?[2,4,5,10]:[20,25,40,50,80,100]),a=calcPick(rnd,[20,30,40,50,60]),b=a+V,m=+(rho*V).toFixed(1);
+         return {q:w[0]+' has a mass of '+dn_n(m)+' g. It raises the water level in a measuring cylinder from '+a+' cm³ to '+b+' cm³. Its density is',unit:'g/cm³',answer:rho,
+           working:'m = '+dn_n(m)+' g<br>V = '+b+' − '+a+' = '+V+' cm³<br>ρ = ?||ρ = [[m|V]]<br>ρ = [['+dn_n(m)+'|'+V+']]<br>ρ = '+dn_n(rho)+' g/cm³'};}}
     
   ]
   });
@@ -3205,11 +3509,21 @@ SRC='5a';
 
 
 {
+  const pr_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('pressure','Calculate','Pressure, force and area','Use p = [[F|A]].'),
     questions:[
-      {q:'A brick weighs 30 N. Its smallest face has an area of 0.015 m². Resting on that face, the pressure is',unit:'Pa',answer:2000,working:'p = [[F|A]] = [[30|0.015]] = 2000 Pa'},
-      {q:'A force of 120 N produces a pressure of 30 000 Pa. The area is',unit:'m²',answer:0.004,working:'p = [[F|A]]<br>p × A = F<br>A = [[F|p]]<br>A = [[120|30 000]]<br>A = 0.004 m²'}
+      {q:'A brick weighs 30 N. Its smallest face has an area of 0.015 m². Resting on that face, the pressure is',unit:'Pa',answer:2000,working:'F = 30 N<br>A = 0.015 m²<br>p = ?||p = [[F|A]]<br>p = [[30|0.015]]<br>p = 2000 Pa',
+       make:rnd=>{const w=calcPick(rnd,[['A brick','Its smallest face','Resting on that face',[20,25,30,40],[0.01,0.015,0.02]],['A box','Its base','Resting on the floor',[50,60,80,120,150],[0.05,0.1,0.2,0.25]],['A wardrobe','Its four feet have a total area of','Standing on its feet',[600,800,1200],[0.004,0.006,0.008]],['Henry','His two shoes have a total area of','Standing on both feet',[500,600,700],[0.025,0.04,0.05]]]);
+         const F=calcPick(rnd,w[3]),A=calcPick(rnd,w[4]),P=+(F/A).toPrecision(6);
+         const mid=w[1].endsWith('of')?w[1]+' '+pr_n(A)+' m²':w[1]+' has an area of '+pr_n(A)+' m²';
+         return {q:w[0]+' weighs '+F+' N. '+mid+'. '+w[2]+', the pressure is',unit:'Pa',answer:P,
+           working:'F = '+F+' N<br>A = '+pr_n(A)+' m²<br>p = ?||p = [[F|A]]<br>p = [['+F+'|'+pr_n(A)+']]<br>p = '+pr_n(P)+' Pa'};}},
+      {q:'A force of 120 N produces a pressure of 30 000 Pa. The area is',unit:'m²',answer:0.004,working:'F = 120 N<br>p = 30 000 Pa<br>A = ?||p = [[F|A]]<br>30 000 = [[120|A]]<br>30 000 × A = 120<br>A = [[120|30 000]]<br>A = 0.004 m²',
+       make:rnd=>{const w=calcPick(rnd,[['A force of ','N produces a pressure of ','Pa. The area is',[40,60,80,100,120,150,200],[0.002,0.004,0.005,0.01,0.02,0.025]],['Zahra stands on one foot. Her weight is ','N and the pressure under her foot is ','Pa. The area of her foot touching the ground is',[450,500,550,600],[0.01,0.0125,0.015,0.02]],['A table leg presses on the floor with a force of ','N. The pressure under the leg is ','Pa. The area of the end of the leg is',[60,80,100,120,150],[0.0005,0.001,0.002,0.004]],['A tyre presses on the road with a force of ','N. The pressure under it is ','Pa. The area of tyre touching the road is',[2000,2500,3000,4000],[0.01,0.0125,0.02,0.025]]]);
+         const F=calcPick(rnd,w[3]),A=calcPick(rnd,w[4]),P=+(F/A).toPrecision(6);
+         return {q:w[0]+F+' '+w[1]+pr_n(P)+' '+w[2],unit:'m²',answer:A,
+           working:'F = '+F+' N<br>p = '+pr_n(P)+' Pa<br>A = ?||p = [[F|A]]<br>'+pr_n(P)+' = [['+F+'|A]]<br>'+pr_n(P)+' × A = '+F+'<br>A = [['+F+'|'+pr_n(P)+']]<br>A = '+pr_n(A)+' m²'};}}
     
   ]
   });
@@ -3240,11 +3554,20 @@ SRC='5a';
     explain:'At any point in a liquid at rest, the pressure acts equally in all directions.',
     reveal:arrowsViz
   });
+  const fl_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('fluids','Calculate','Pressure difference in a liquid','Use p = h × ρ × g with g = 10 N/kg.'),
     questions:[
-      {q:'In oil (ρ = 800 kg/m³) the pressure difference is 64 000 Pa. The depth is',unit:'m',answer:8,working:'p = h × ρ × g<br>h = [[p|ρ × g]]<br>h = [[64 000|800 × 10]]<br>h = 8 m'},
-      {q:'In a mercury manometer (ρ = 13 600 kg/m³) the level on the gas side is 0.25 m lower than on the open side. Atmospheric pressure is 100 000 Pa. The gas pressure is',unit:'Pa',answer:134000,hint:'The gas pushes its side down, so the gas pressure is higher than atmospheric. Add the pressure difference.',working:'Difference = 0.25 × 13 600 × 10 = 34 000 Pa<br>Gas pressure = 100 000 + 34 000 = 134 000 Pa'}
+      {q:'In oil (ρ = 800 kg/m³) the pressure difference is 64 000 Pa. The depth is',unit:'m',answer:8,working:'ρ = 800 kg/m³<br>p = 64 000 Pa<br>g = 10 N/kg<br>h = ?||p = h × ρ × g<br>64 000 = h × 800 × 10<br>64 000 = h × 8000<br>h = [[64 000|8000]]<br>h = 8 m',
+       make:rnd=>{const w=calcPick(rnd,[['oil',800],['sea water',1030],['water',1000],['paraffin',800],['glycerol',1260]]);
+         const h=calcPick(rnd,w[1]===1030||w[1]===1260?[2,5,10,20]:[2,3,4,5,8,12,15]),rg=w[1]*10,P=h*rg;
+         return {q:'In '+w[0]+' (ρ = '+fl_n(w[1])+' kg/m³) the pressure difference is '+fl_n(P)+' Pa. The depth is',unit:'m',answer:h,
+           working:'ρ = '+fl_n(w[1])+' kg/m³<br>p = '+fl_n(P)+' Pa<br>g = 10 N/kg<br>h = ?||p = h × ρ × g<br>'+fl_n(P)+' = h × '+fl_n(w[1])+' × 10<br>'+fl_n(P)+' = h × '+fl_n(rg)+'<br>h = [['+fl_n(P)+'|'+fl_n(rg)+']]<br>h = '+h+' m'};}},
+      {q:'In a mercury manometer (ρ = 13 600 kg/m³) the level on the gas side is 0.25 m lower than on the open side. Atmospheric pressure is 100 000 Pa. The gas pressure is',unit:'Pa',answer:134000,hint:'The gas pushes its side down, so the gas pressure is higher than atmospheric. Add the pressure difference.',working:'h = 0.25 m<br>ρ = 13 600 kg/m³<br>g = 10 N/kg<br>atmospheric pressure = 100 000 Pa<br>gas pressure = ?||p = h × ρ × g<br>p = 0.25 × 13 600 × 10<br>p = 34 000 Pa<br>gas pressure = 100 000 + 34 000<br>gas pressure = 134 000 Pa',
+       make:rnd=>{const liq=calcPick(rnd,[['mercury',13600,[0.05,0.1,0.15,0.2,0.25,0.3]],['water',1000,[0.1,0.2,0.3,0.4,0.5]]]),h=calcPick(rnd,liq[2]),hi=rnd()<0.75,P=Math.round(h*liq[1]*10),G=hi?100000+P:100000-P;
+         return {q:'In a '+liq[0]+' manometer (ρ = '+fl_n(liq[1])+' kg/m³) the level on the gas side is '+h+' m '+(hi?'lower':'higher')+' than on the open side. Atmospheric pressure is 100 000 Pa. The gas pressure is',unit:'Pa',answer:G,
+           hint:hi?'The gas pushes its side down, so the gas pressure is higher than atmospheric. Add the pressure difference.':'The liquid is pushed up on the gas side, so the gas pressure is lower than atmospheric. Subtract the pressure difference.',
+           working:'h = '+h+' m<br>ρ = '+fl_n(liq[1])+' kg/m³<br>g = 10 N/kg<br>atmospheric pressure = 100 000 Pa<br>gas pressure = ?||p = h × ρ × g<br>p = '+h+' × '+fl_n(liq[1])+' × 10<br>p = '+fl_n(P)+' Pa<br>gas pressure = 100 000 '+(hi?'+':'−')+' '+fl_n(P)+'<br>gas pressure = '+fl_n(G)+' Pa'};}}
     
   ]
   });
@@ -3273,11 +3596,19 @@ SRC='5a';
     constraints:[['a','f'],['b','c'],['c','d'],['d','e'],['e','f']],
     why:'The block is set up and measured before heating, and the calculation uses the final readings.'
   });
+  const sh_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('shc','Calculate','Thermal energy, mass, c and temperature change','Use ΔQ = m × c × ΔT. Specific heat capacity of water is 4200 J/kg °C.'),
     questions:[
-      {q:'0.5 kg of aluminium (c = 900 J/kg °C) is heated from 20 °C to 80 °C. The energy transferred is',unit:'J',answer:27000,working:'ΔT = 80 − 20 = 60 °C<br>ΔQ = 0.5 × 900 × 60 = 27 000 J'},
-      {q:'84 000 J raises the temperature of some water by 10 °C. The mass of the water is',unit:'kg',answer:2,working:'ΔQ = m × c × ΔT<br>m = [[ΔQ|c × ΔT]]<br>m = [[84 000|4200 × 10]]<br>m = 2 kg'}
+      {q:'0.5 kg of aluminium (c = 900 J/kg °C) is heated from 20 °C to 80 °C. The energy transferred is',unit:'J',answer:27000,working:'m = 0.5 kg<br>c = 900 J/kg °C<br>ΔT = 80 − 20 = 60 °C<br>ΔQ = ?||ΔQ = m × c × ΔT<br>ΔQ = 0.5 × 900 × 60<br>ΔQ = 27 000 J',
+       make:rnd=>{const w=calcPick(rnd,[['aluminium',900],['copper',390],['iron',450],['water',4200],['concrete',880]]);
+         const m=calcPick(rnd,[0.2,0.25,0.5,1,1.5,2]),a=calcPick(rnd,[10,15,20,25]),dT=calcPick(rnd,w[0]==='water'?[10,20,30,40,50]:[20,30,40,50,60,80]),b=a+dT,Q=Math.round(m*w[1]*dT);
+         return {q:sh_n(m)+' kg of '+w[0]+' (c = '+sh_n(w[1])+' J/kg °C) is heated from '+a+' °C to '+b+' °C. The energy transferred is',unit:'J',answer:Q,
+           working:'m = '+sh_n(m)+' kg<br>c = '+sh_n(w[1])+' J/kg °C<br>ΔT = '+b+' − '+a+' = '+dT+' °C<br>ΔQ = ?||ΔQ = m × c × ΔT<br>ΔQ = '+sh_n(m)+' × '+sh_n(w[1])+' × '+dT+'<br>ΔQ = '+sh_n(Q)+' J'};}},
+      {q:'84 000 J raises the temperature of some water by 10 °C. The mass of the water is',unit:'kg',answer:2,working:'ΔQ = 84 000 J<br>c = 4200 J/kg °C<br>ΔT = 10 °C<br>m = ?||ΔQ = m × c × ΔT<br>84 000 = m × 4200 × 10<br>84 000 = m × 42 000<br>m = [[84 000|42 000]]<br>m = 2 kg',
+       make:rnd=>{const w=calcPick(rnd,[['some water',[0.2,0.25,0.5,0.8,1,1.5,2]],['the water in a kettle',[0.5,0.8,1,1.5]],['the water in Elena’s bottle',[0.25,0.5,0.75]],['the water in a fish tank',[20,25,40,50]]]),what=w[0],m=calcPick(rnd,w[1]),dT=calcPick(rnd,what.includes('tank')?[2,3,4,5]:[5,10,15,20,25,40]),cd=4200*dT,Q=Math.round(m*cd);
+         return {q:sh_n(Q)+' J raises the temperature of '+what+' by '+dT+' °C. The mass of the water is',unit:'kg',answer:m,
+           working:'ΔQ = '+sh_n(Q)+' J<br>c = 4200 J/kg °C<br>ΔT = '+dT+' °C<br>m = ?||ΔQ = m × c × ΔT<br>'+sh_n(Q)+' = m × 4200 × '+dT+'<br>'+sh_n(Q)+' = m × '+sh_n(cd)+'<br>m = [['+sh_n(Q)+'|'+sh_n(cd)+']]<br>m = '+sh_n(m)+' kg'};}}
     
   ]
   });
@@ -3337,11 +3668,17 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     explain:'Temperature measures the average kinetic energy of the particles. At absolute zero the particles have the least possible energy, so there is no lower temperature to reach.',
     reveal:barsHTML([{l:'Average KE at 300 K',v:1,t:'2 units',c:COL.a},{l:'Average KE at 150 K',v:.5,t:'1 unit',c:COL.a},{l:'Average KE at 0 K',v:.02,t:'least possible',c:COL.a}])}
   ]);
+  const kv_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('kelvin','Calculate','Convert and compare','Use T (K) = θ (°C) + 273.'),
     questions:[
-      {q:'Convert −50 °C to kelvin.',unit:'K',answer:223,working:'T = −50 + 273 = 223 K'},
-      {q:'A gas is heated from 300 K to 600 K. By what factor does the average kinetic energy of its molecules increase?',unit:'times',answer:2,hint:'The average kinetic energy is proportional to the Kelvin temperature. Compare 600 with 300.',working:'Average KE ∝ T (in K), so [[600|300]] = 2 times'}
+      {q:'Convert −50 °C to kelvin.',unit:'K',answer:223,working:'θ = −50 °C<br>T = ?||T = θ + 273<br>T = (−50) + 273<br>T = 223 K',
+       make:rnd=>{const th=calcPick(rnd,[-196,-183,-120,-78,-50,-40,-25,-18,-10]),T=th+273;
+         return {q:'Convert '+kv_n(th)+' °C to kelvin.',unit:'K',answer:T,working:'θ = '+kv_n(th)+' °C<br>T = ?||T = θ + 273<br>T = ('+kv_n(th)+') + 273<br>T = '+T+' K'};}},
+      {q:'A gas is heated from 300 K to 600 K. By what factor does the average kinetic energy of its molecules increase?',unit:'times',answer:2,hint:'The average kinetic energy is proportional to the Kelvin temperature. Compare 600 with 300.',working:'T₁ = 300 K<br>T₂ = 600 K<br>factor = ?||average KE ∝ T<br>factor = [[T₂|T₁]]<br>factor = [[600|300]]<br>factor = 2 times',
+       make:rnd=>{const c=calcPick(rnd,[[200,400],[200,600],[250,500],[300,450],[300,900],[400,600],[150,600],[280,700]]),f=+(c[1]/c[0]).toFixed(2),what=calcPick(rnd,['A gas is heated','The air in a sealed flask is heated','The helium in a balloon is heated','Some nitrogen in a sealed cylinder is heated']);
+         return {q:what+' from '+c[0]+' K to '+c[1]+' K. By what factor does the average kinetic energy of its molecules increase?',unit:'times',answer:f,hint:'The average kinetic energy is proportional to the Kelvin temperature. Compare '+c[1]+' with '+c[0]+'.',
+           working:'T₁ = '+c[0]+' K<br>T₂ = '+c[1]+' K<br>factor = ?||average KE ∝ T<br>factor = [[T₂|T₁]]<br>factor = [['+c[1]+'|'+c[0]+']]<br>factor = '+f+' times'};}}
     ]
   });
 }
@@ -3356,11 +3693,23 @@ SRC='5b';
 {
   frameAct('laws','animations/gas-molecules.html','laws','Gas laws animation: pressure against volume or temperature','gas laws',false);
 
+  const gl_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('laws','Calculate','Use the gas laws','For temperature questions, change °C into kelvin first. Pressure and volume stay in the units given.'),
     questions:[
-      {q:'A gas has a pressure of 200 kPa and a volume of 0.6 m³. Its pressure is changed to 300 kPa at constant temperature. The new volume is',unit:'m³',answer:0.4,working:'p₁ × V₁ = p₂ × V₂<br>V₂ = [[p₁ × V₁|p₂]]<br>V₂ = [[200 × 0.6|300]]<br>V₂ = 0.4 m³'},
-      {q:'A sealed can at 20 °C has a pressure of 150 kPa. It is heated to 100 °C. The new pressure is',unit:'kPa',answer:191,hint:'Check that you have changed both temperatures to kelvin.',working:'T₁ = 20 + 273 = 293 K<br>T₂ = 100 + 273 = 373 K<br>[[p₁|T₁]] = [[p₂|T₂]]<br>p₂ = [[p₁ × T₂|T₁]]<br>p₂ = [[150 × 373|293]]<br>p₂ = 191 kPa'}
+      {q:'A gas has a pressure of 200 kPa and a volume of 0.6 m³. Its pressure is changed to 300 kPa at constant temperature. The new volume is',unit:'m³',answer:0.4,working:'p₁ = 200 kPa<br>V₁ = 0.6 m³<br>p₂ = 300 kPa<br>V₂ = ?||p₁ × V₁ = p₂ × V₂<br>200 × 0.6 = 300 × V₂<br>120 = 300 × V₂<br>V₂ = [[120|300]]<br>V₂ = 0.4 m³',
+       make:rnd=>{let p1,V1,p2,V2,k=0;const what=calcPick(rnd,['A gas','The air in a bicycle pump','The air trapped in a syringe','The gas in a cylinder','A bubble of air under water']);
+         const unit=what.includes('syringe')||what.includes('pump')||what.includes('bubble')?'cm³':'m³';
+         do{p1=calcPick(rnd,[100,120,150,200,250,300]);p2=calcPick(rnd,[50,100,150,200,250,300,400,500,600]);V1=unit==='cm³'?calcPick(rnd,[20,30,40,50,60,80,120]):calcPick(rnd,[0.2,0.3,0.4,0.5,0.6,0.8,1.2]);V2=+(p1*V1/p2).toFixed(6);}while((p1===p2||Math.abs(V2*100-Math.round(V2*100))>1e-6)&&++k<100);
+         const pv=+(p1*V1).toFixed(4);
+         return {q:what+' has a pressure of '+p1+' kPa and a volume of '+gl_n(V1)+' '+unit+'. Its pressure is changed to '+p2+' kPa at constant temperature. The new volume is',unit:unit,answer:V2,
+           working:'p₁ = '+p1+' kPa<br>V₁ = '+gl_n(V1)+' '+unit+'<br>p₂ = '+p2+' kPa<br>V₂ = ?||p₁ × V₁ = p₂ × V₂<br>'+p1+' × '+gl_n(V1)+' = '+p2+' × V₂<br>'+gl_n(pv)+' = '+p2+' × V₂<br>V₂ = [['+gl_n(pv)+'|'+p2+']]<br>V₂ = '+gl_n(V2)+' '+unit};}},
+      {q:'A sealed can at 20 °C has a pressure of 150 kPa. It is heated to 100 °C. The new pressure is',unit:'kPa',answer:191,hint:'Check that you have changed both temperatures to kelvin.',working:'p₁ = 150 kPa<br>T₁ = 20 °C = 20 + 273 = 293 K<br>T₂ = 100 °C = 100 + 273 = 373 K<br>p₂ = ?||[[p₁|T₁]] = [[p₂|T₂]]<br>[[150|293]] = [[p₂|373]]<br>p₂ = [[150 × 373|293]]<br>p₂ = 191 kPa',
+       make:rnd=>{const w=calcPick(rnd,[['A sealed can','heated',1],['A sealed glass jar of air','warmed in the sun',1],['A sealed flask of air','heated',1],['A sealed bottle of air','cooled in a fridge',0],['A gas cylinder','cooled overnight',0]]);
+         const p1=calcPick(rnd,w[0]==='A sealed glass jar of air'?[100,101,102]:[100,120,150,200,250]),a=w[2]?calcPick(rnd,[10,15,20,25]):calcPick(rnd,[20,25,30]),b=w[2]?(w[0]==='A sealed glass jar of air'?a+calcPick(rnd,[20,25,30,35]):calcPick(rnd,[60,80,100,120,150])):calcPick(rnd,[-10,-5,0,4,5]);
+         const T1=a+273,T2=b+273,p2=+(p1*T2/T1).toPrecision(3);
+         return {q:w[0]+' at '+a+' °C has a pressure of '+p1+' kPa. It is '+w[1]+' to '+gl_n(b)+' °C. The new pressure is',unit:'kPa',answer:p2,hint:'Check that you have changed both temperatures to kelvin.',
+           working:'p₁ = '+p1+' kPa<br>T₁ = '+a+' °C = '+a+' + 273 = '+T1+' K<br>T₂ = '+gl_n(b)+' °C = '+(b<0?'('+gl_n(b)+')':b)+' + 273 = '+T2+' K<br>p₂ = ?||[[p₁|T₁]] = [[p₂|T₂]]<br>[['+p1+'|'+T1+']] = [[p₂|'+T2+']]<br>p₂ = [['+p1+' × '+T2+'|'+T1+']]<br>p₂ = '+gl_n(p2)+' kPa'};}}
     ]
   });
 }
@@ -3397,13 +3746,25 @@ SRC='6b';
     constraints:[['a','b'],['b','c'],['c','d'],['d','e']],
     why:'The primary current makes a changing field, the core carries it to the secondary, and the changing field induces the output voltage.'
   });
+  // New problems helpers (transformers tab): numbers with a space every 3 digits from 10 000
+  const tr_n=x=>{const v=+(+x).toFixed(2),t=String(Math.abs(v)).split('.'),i=Math.abs(v)>=10000?t[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '):t[0];return (v<0?'−':'')+i+(t[1]?'.'+t[1]:'');};
+  const tr_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+  const VP='V<sub>p</sub>',VS='V<sub>s</sub>',NP='N<sub>p</sub>',NS='N<sub>s</sub>';
   createCalc({
     host:act('transformers','Calculate','The turns ratio','Use [[V<sub>p</sub>|V<sub>s</sub>]] = [[N<sub>p</sub>|N<sub>s</sub>]].'),
     questions:[
       {q:'A transformer has 2000 turns on its primary and 100 turns on its secondary. The primary is connected to 230 V. The output voltage is',unit:'V',answer:11.5,
-        working:'[[V<sub>p</sub>|V<sub>s</sub>]] = [[N<sub>p</sub>|N<sub>s</sub>]]<br>[[230|V<sub>s</sub>]] = [[2000|100]]<br>[[230|V<sub>s</sub>]] = 20<br>230 = 20 × V<sub>s</sub><br>V<sub>s</sub> = [[230|20]]<br>V<sub>s</sub> = 11.5 V'},
+        working:tr_w([NP+' = 2000',NS+' = 100',VP+' = 230 V',VS+' = ?'],['[['+VP+'|'+VS+']] = [['+NP+'|'+NS+']]','[[230|'+VS+']] = [[2000|100]]','[[230|'+VS+']] = 20','230 = 20 × '+VS,VS+' = [[230|20]]',VS+' = 11.5 V']),
+        make:rnd=>{const k=calcPick(rnd,[10,20,23,46,50,100]),Ns=calcPick(rnd,[50,100,150,200,250,400]),Np=k*Ns,Vs=+(230/k).toFixed(2);
+          const what=calcPick(rnd,['A transformer','A doorbell transformer','The transformer in a phone charger','A model railway transformer']);
+          return {q:what+' has '+tr_n(Np)+' turns on its primary and '+Ns+' turns on its secondary. The primary is connected to 230 V. The output voltage is',unit:'V',answer:Vs,
+            working:tr_w([NP+' = '+tr_n(Np),NS+' = '+Ns,VP+' = 230 V',VS+' = ?'],['[['+VP+'|'+VS+']] = [['+NP+'|'+NS+']]','[[230|'+VS+']] = [['+tr_n(Np)+'|'+Ns+']]','[[230|'+VS+']] = '+k,'230 = '+k+' × '+VS,VS+' = [[230|'+k+']]',VS+' = '+tr_n(Vs)+' V'])};}},
       {q:'A transformer steps 12 V up to 240 V. Its secondary coil has 4000 turns. The number of turns on the primary is',unit:'turns',answer:200,
-        working:'[[V<sub>p</sub>|V<sub>s</sub>]] = [[N<sub>p</sub>|N<sub>s</sub>]]<br>[[12|240]] = [[N<sub>p</sub>|4000]]<br>12 × 4000 = 240 × N<sub>p</sub><br>48 000 = 240 × N<sub>p</sub><br>N<sub>p</sub> = [[48 000|240]]<br>N<sub>p</sub> = 200 turns'}
+        working:tr_w([VP+' = 12 V',VS+' = 240 V',NS+' = 4000',NP+' = ?'],['[['+VP+'|'+VS+']] = [['+NP+'|'+NS+']]','[[12|240]] = [['+NP+'|4000]]','12 × 4000 = 240 × '+NP,'48 000 = 240 × '+NP,NP+' = [[48 000|240]]',NP+' = 200 turns']),
+        make:rnd=>{const Vp=calcPick(rnd,[6,12,20,24,25]),k=calcPick(rnd,[5,10,20,40,50]),Np=calcPick(rnd,[50,100,150,200,250,400]),Vs=k*Vp,Ns=k*Np;
+          const what=calcPick(rnd,['A transformer','A step-up transformer','The transformer in a neon sign','The transformer in Nabil’s science project']);
+          return {q:what+' steps '+Vp+' V up to '+tr_n(Vs)+' V. Its secondary coil has '+tr_n(Ns)+' turns. The number of turns on the primary is',unit:'turns',answer:Np,
+            working:tr_w([VP+' = '+Vp+' V',VS+' = '+tr_n(Vs)+' V',NS+' = '+tr_n(Ns),NP+' = ?'],['[['+VP+'|'+VS+']] = [['+NP+'|'+NS+']]','[['+Vp+'|'+tr_n(Vs)+']] = [['+NP+'|'+tr_n(Ns)+']]',Vp+' × '+tr_n(Ns)+' = '+tr_n(Vs)+' × '+NP,tr_n(Vp*Ns)+' = '+tr_n(Vs)+' × '+NP,NP+' = [['+tr_n(Vp*Ns)+'|'+tr_n(Vs)+']]',NP+' = '+Np+' turns'])};}}
     ]
   });
 }
@@ -3441,13 +3802,27 @@ SRC='6b';
     constraints:[['a','b'],['b','c'],['c','d'],['d','e']],
     why:'The voltage is stepped up for the long journey, then stepped down before it reaches homes.'
   });
+  // New problems helpers (grid tab)
+  const gr_n=x=>{const v=+(+x).toFixed(2),t=String(Math.abs(v)).split('.'),i=Math.abs(v)>=10000?t[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '):t[0];return (v<0?'−':'')+i+(t[1]?'.'+t[1]:'');};
+  const gr_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+  const VP='V<sub>p</sub>',VS='V<sub>s</sub>',IP='I<sub>p</sub>',IS='I<sub>s</sub>',EQ=VP+' × '+IP+' = '+VS+' × '+IS;
   createCalc({
     host:act('grid','Calculate','Input power = output power','Use V<sub>p</sub> × I<sub>p</sub> = V<sub>s</sub> × I<sub>s</sub> (100% efficient).'),
     questions:[
       {q:'A power station transformer steps 25 000 V up to 400 000 V. The current in the primary is 800 A. The current in the secondary is',unit:'A',answer:50,
-        working:'V<sub>p</sub> × I<sub>p</sub> = V<sub>s</sub> × I<sub>s</sub><br>25 000 × 800 = 400 000 × I<sub>s</sub><br>20 000 000 = 400 000 × I<sub>s</sub><br>I<sub>s</sub> = [[20 000 000|400 000]]<br>I<sub>s</sub> = 50 A'},
+        working:gr_w([VP+' = 25 000 V',VS+' = 400 000 V',IP+' = 800 A',IS+' = ?'],[EQ,'25 000 × 800 = 400 000 × '+IS,'20 000 000 = 400 000 × '+IS,IS+' = [[20 000 000|400 000]]',IS+' = 50 A']),
+        make:rnd=>{let Vp,Vs,Ip,Is,k=0;do{Vp=calcPick(rnd,[20000,25000]);Vs=calcPick(rnd,[132000,275000,400000]);Ip=calcPick(rnd,[400,500,800,1000,1100,1200,1320,1600,2000]);Is=Vp*Ip/Vs;}while(Math.abs(Is*100-Math.round(Is*100))>1e-9&&++k<80);
+          Is=+Is.toFixed(2);
+          const what=calcPick(rnd,['A power station transformer','The step-up transformer at a gas-fired power station','The transformer at a nuclear power station','A step-up transformer at a power station']);
+          return {q:what+' steps '+gr_n(Vp)+' V up to '+gr_n(Vs)+' V. The current in the primary is '+gr_n(Ip)+' A. The current in the secondary is',unit:'A',answer:Is,
+            working:gr_w([VP+' = '+gr_n(Vp)+' V',VS+' = '+gr_n(Vs)+' V',IP+' = '+gr_n(Ip)+' A',IS+' = ?'],[EQ,gr_n(Vp)+' × '+gr_n(Ip)+' = '+gr_n(Vs)+' × '+IS,gr_n(Vp*Ip)+' = '+gr_n(Vs)+' × '+IS,IS+' = [['+gr_n(Vp*Ip)+'|'+gr_n(Vs)+']]',IS+' = '+gr_n(Is)+' A'])};}},
       {q:'A laptop charger steps 230 V down to 20 V. The output current is 4.6 A. The current in the primary is',unit:'A',answer:0.4,
-        working:'V<sub>p</sub> × I<sub>p</sub> = V<sub>s</sub> × I<sub>s</sub><br>230 × I<sub>p</sub> = 20 × 4.6<br>230 × I<sub>p</sub> = 92<br>I<sub>p</sub> = [[92|230]]<br>I<sub>p</sub> = 0.4 A'}
+        working:gr_w([VP+' = 230 V',VS+' = 20 V',IS+' = 4.6 A',IP+' = ?'],[EQ,'230 × '+IP+' = 20 × 4.6','230 × '+IP+' = 92',IP+' = [[92|230]]',IP+' = 0.4 A']),
+        make:rnd=>{const c=calcPick(rnd,[['A phone charger',5,[2.3]],['A laptop charger',20,[2.3,4.6]],['A laptop charger',19,[2.3,4.6]],['A games console power supply',12,[4.6,6.9,9.2]],['A garden lighting transformer',12,[2.3,4.6,6.9]]]);
+          const Vs=c[1],Is=calcPick(rnd,c[2]),P=+(Vs*Is).toFixed(2),Ip=+(P/230).toFixed(2);
+          const what=c[0]==='A laptop charger'?calcPick(rnd,['A laptop charger','Elena’s laptop charger','Aidan’s laptop charger']):c[0];
+          return {q:what+' steps 230 V down to '+Vs+' V. The output current is '+gr_n(Is)+' A. The current in the primary is',unit:'A',answer:Ip,
+            working:gr_w([VP+' = 230 V',VS+' = '+Vs+' V',IS+' = '+gr_n(Is)+' A',IP+' = ?'],[EQ,'230 × '+IP+' = '+Vs+' × '+gr_n(Is),'230 × '+IP+' = '+gr_n(P),IP+' = [['+gr_n(P)+'|230]]',IP+' = '+gr_n(Ip)+' A'])};}}
     ]
   });
 }
@@ -3467,10 +3842,19 @@ const mgA=createMatchGame({host:act('atoms','Match','Atom words','Select a word,
     {id:'n',l:'Nucleon',r:'A proton or a neutron'}
   ]});
 reflowers.push(t=>{if(t==='atoms')raf(mgA.reflow);});
+// New problems helpers (atoms tab)
+const at_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+const AT_NUC=[[12,6,'C','carbon'],[14,6,'C','carbon'],[16,8,'O','oxygen'],[23,11,'Na','sodium'],[27,13,'Al','aluminium'],[35,17,'Cl','chlorine'],[37,17,'Cl','chlorine'],[40,19,'K','potassium'],[56,26,'Fe','iron'],[60,27,'Co','cobalt'],[90,38,'Sr','strontium'],[131,53,'I','iodine'],[137,55,'Cs','caesium'],[226,88,'Ra','radium'],[235,92,'U','uranium'],[238,92,'U','uranium'],[239,94,'Pu','plutonium'],[241,95,'Am','americium']];
+const at_neut=rnd=>{const c=calcPick(rnd,AT_NUC),n=c[0]-c[1];
+  return {q:'The number of neutrons in a '+N(c[0],c[1],c[2])+' nucleus is',unit:'',answer:n,
+    working:at_w(['mass number A = '+c[0],'atomic number Z = '+c[1],'neutrons = ?'],['neutrons = A − Z','neutrons = '+c[0]+' − '+c[1],'neutrons = '+n])};};
 calcAct('atoms','Counting particles','Use the mass number (top) and atomic number (bottom).',[
-  {q:'The number of neutrons in a '+N(14,6,'C')+' nucleus is',unit:'',answer:8,working:'neutrons = mass number − atomic number<br>neutrons = 14 − 6<br>neutrons = 8'},
-  {q:'The number of neutrons in a '+N(238,92,'U')+' nucleus is',unit:'',answer:146,working:'neutrons = mass number − atomic number<br>neutrons = 238 − 92<br>neutrons = 146'},
-  {q:'The number of electrons in a neutral '+N(37,17,'Cl')+' atom is',unit:'',answer:17,working:'electrons = protons in a neutral atom<br>electrons = atomic number<br>electrons = 17'}
+  {q:'The number of neutrons in a '+N(14,6,'C')+' nucleus is',unit:'',answer:8,working:at_w(['mass number A = 14','atomic number Z = 6','neutrons = ?'],['neutrons = A − Z','neutrons = 14 − 6','neutrons = 8']),make:at_neut},
+  {q:'The number of neutrons in a '+N(238,92,'U')+' nucleus is',unit:'',answer:146,working:at_w(['mass number A = 238','atomic number Z = 92','neutrons = ?'],['neutrons = A − Z','neutrons = 238 − 92','neutrons = 146']),make:at_neut},
+  {q:'The number of electrons in a neutral '+N(37,17,'Cl')+' atom is',unit:'',answer:17,working:at_w(['atomic number Z = 17','electrons = ?'],['electrons = protons (neutral atom)','electrons = Z','electrons = 17']),
+   make:rnd=>{const c=calcPick(rnd,AT_NUC);
+     return {q:'The number of electrons in a neutral '+N(c[0],c[1],c[2])+' atom is',unit:'',answer:c[1],
+       working:at_w(['atomic number Z = '+c[1],'electrons = ?'],['electrons = protons (neutral atom)','electrons = Z','electrons = '+c[1]])};}}
   ]);
 
 }
@@ -3488,11 +3872,27 @@ const mgD=createMatchGame({host:act('equations','Match','What happens to the nuc
     {id:'n',l:'A neutron',r:'Mass number down by 1, atomic number the same'}
   ]});
 reflowers.push(t=>{if(t==='equations')raf(mgD.reflow);});
+// New problems helpers (equations tab): [A, Z, symbol, name of the new nucleus]
+const eq_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+const EQ_ALPHA=[[238,92,'U'],[226,88,'Ra'],[222,86,'Rn'],[239,94,'Pu'],[241,95,'Am'],[210,84,'Po'],[232,90,'Th']];
+const EQ_BETA=[[90,38,'Sr','yttrium'],[14,6,'C','nitrogen'],[131,53,'I','xenon'],[137,55,'Cs','barium'],[60,27,'Co','nickel'],[3,1,'H','helium'],[32,15,'P','sulfur']];
+const EQ_NEUT=[[87,36,'Kr','krypton'],[5,2,'He','helium'],[13,4,'Be','beryllium'],[10,3,'Li','lithium']];
 calcAct('equations','Balance the equations','The mass numbers (top) and the atomic numbers (bottom) must add up to the same on both sides.',[
-  {q:N(238,92,'U')+' gives out an alpha particle. The mass number of the new nucleus is',unit:'',answer:234,working:'238 = A + 4<br>A = 238 − 4<br>A = 234'},
-  {q:N(90,38,'Sr')+' gives out a beta particle. The atomic number of the new nucleus is',unit:'',answer:39,working:'38 = Z + (−1)<br>Z = 38 + 1<br>Z = 39 (yttrium)'},
-  {q:N(87,36,'Kr')+' gives out a neutron. The mass number of the new nucleus is',unit:'',answer:86,working:'87 = A + 1<br>A = 87 − 1<br>A = 86 (still krypton)'}
-
+  {q:N(238,92,'U')+' gives out an alpha particle. The mass number of the new nucleus is',unit:'',answer:234,
+   working:eq_w(['mass number before = 238','alpha particle: mass number = 4','new mass number A = ?'],['238 = A + 4','A = 238 − 4','A = 234']),
+   make:rnd=>{const c=calcPick(rnd,EQ_ALPHA),A=c[0]-4;
+     return {q:N(c[0],c[1],c[2])+' gives out an alpha particle. The mass number of the new nucleus is',unit:'',answer:A,
+       working:eq_w(['mass number before = '+c[0],'alpha particle: mass number = 4','new mass number A = ?'],[c[0]+' = A + 4','A = '+c[0]+' − 4','A = '+A])};}},
+  {q:N(90,38,'Sr')+' gives out a beta particle. The atomic number of the new nucleus is',unit:'',answer:39,
+   working:eq_w(['atomic number before = 38','beta particle: atomic number = −1','new atomic number Z = ?'],['38 = Z + (−1)','Z = 38 + 1','Z = 39 (yttrium)']),
+   make:rnd=>{const c=calcPick(rnd,EQ_BETA),Z=c[1]+1;
+     return {q:N(c[0],c[1],c[2])+' gives out a beta particle. The atomic number of the new nucleus is',unit:'',answer:Z,
+       working:eq_w(['atomic number before = '+c[1],'beta particle: atomic number = −1','new atomic number Z = ?'],[c[1]+' = Z + (−1)','Z = '+c[1]+' + 1','Z = '+Z+' ('+c[3]+')'])};}},
+  {q:N(87,36,'Kr')+' gives out a neutron. The mass number of the new nucleus is',unit:'',answer:86,
+   working:eq_w(['mass number before = 87','neutron: mass number = 1','new mass number A = ?'],['87 = A + 1','A = 87 − 1','A = 86 (still krypton)']),
+   make:rnd=>{const c=calcPick(rnd,EQ_NEUT),A=c[0]-1;
+     return {q:N(c[0],c[1],c[2])+' gives out a neutron. The mass number of the new nucleus is',unit:'',answer:A,
+       working:eq_w(['mass number before = '+c[0],'neutron: mass number = 1','new mass number A = ?'],[c[0]+' = A + 1','A = '+c[0]+' − 1','A = '+A+' (still '+c[3]+')'])};}}
   ]);
 
 }
@@ -3510,17 +3910,40 @@ function exploreFrameQ(panel,title,intro,file,query,frameTitle,name){
 
 exploreFrameQ('halflife','Watch nuclei decay','Nuclei decay one at a time, at random. Watch the number left on the graph, and see how long it takes to halve each time.',
   'animations/random-decay.html','level=igcse','Random decay animation: a grid of nuclei decaying at random, with the number left plotted against time','random decay');
+// New problems helpers (halflife tab)
+const hl_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+const hl_n=x=>{const v=+(+x).toFixed(2),t=String(Math.abs(v)).split('.'),i=Math.abs(v)>=10000?t[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '):t[0];return (v<0?'−':'')+i+(t[1]?'.'+t[1]:'');};
+const hl_chain=(a,n)=>{const out=[a];for(let k=0;k<n;k++){a/=2;out.push(a);}return out.map(hl_n).join(' → ');};
+// a starting value that halves n times to a whole number
+const hl_start=(rnd,n,list)=>calcPick(rnd,list.filter(a=>a%Math.pow(2,n)===0));
+const HL_UNITS=[['min','min',[2,3,4,5,6,8,10,15,20]],['hours','hours',[2,3,4,5,6,8,12]],['days','days',[2,3,4,5,6,8]],['s','s',[10,15,20,30,40]]];
+const HL_WHAT=['A source’s','A sample’s','A radioactive tracer’s','The school source’s'];
 calcAct('halflife','Half-life calculations','Halve the activity once for each half-life.',[
-  {q:'A source’s activity falls from 1200 Bq to 300 Bq in 10 minutes. Its half-life is',unit:'min',answer:5,working:'1200 → 600 → 300: 2 half-lives<br>2 half-lives = 10 min<br>half-life = [[10|2]]<br>half-life = 5 min'},
-  {q:'An isotope has a half-life of 2 days. The time for its activity to fall from 64 Bq to 8 Bq is',unit:'days',answer:6,working:'64 → 32 → 16 → 8: 3 half-lives<br>time = 3 × 2 days<br>time = 6 days'},
-  {q:'A sample has 6000 undecayed nuclei. Its half-life is 20 s. The number left after 1 minute is',unit:'',answer:750,working:'1 minute = 60 s<br>number of half-lives = [[60|20]] = 3<br>6000 → 3000 → 1500 → 750<br>number left = 750'}
-
+  {q:'A source’s activity falls from 1200 Bq to 300 Bq in 10 minutes. Its half-life is',unit:'min',answer:5,
+   working:hl_w(['activity at the start = 1200 Bq','activity at the end = 300 Bq','time = 10 min','half-life = ?'],['1200 → 600 → 300','number of half-lives = 2','2 × half-life = 10','half-life = [[10|2]]','half-life = 5 min']),
+   make:rnd=>{const u=calcPick(rnd,HL_UNITS),T=calcPick(rnd,u[2]),n=calcPick(rnd,[2,3,4]),A0=hl_start(rnd,n,[800,1200,1600,2000,2400,3200,4000,4800,6400]),A=A0/Math.pow(2,n),t=n*T;
+     const what=calcPick(rnd,HL_WHAT),unitWord=u[0]==='min'?'minutes':u[0]==='s'?'seconds':u[0];
+     return {q:what+' activity falls from '+hl_n(A0)+' Bq to '+hl_n(A)+' Bq in '+t+' '+unitWord+'. Its half-life is',unit:u[1],answer:T,
+       working:hl_w(['activity at the start = '+hl_n(A0)+' Bq','activity at the end = '+hl_n(A)+' Bq','time = '+t+' '+u[1],'half-life = ?'],[hl_chain(A0,n),'number of half-lives = '+n,n+' × half-life = '+t,'half-life = [['+t+'|'+n+']]','half-life = '+T+' '+u[1]])};}},
+  {q:'An isotope has a half-life of 2 days. The time for its activity to fall from 64 Bq to 8 Bq is',unit:'days',answer:6,
+   working:hl_w(['half-life = 2 days','activity at the start = 64 Bq','activity at the end = 8 Bq','time = ?'],['64 → 32 → 16 → 8','number of half-lives = 3','time = 3 × 2','time = 6 days']),
+   make:rnd=>{const u=calcPick(rnd,HL_UNITS.slice(0,3)),T=calcPick(rnd,u[2]),n=calcPick(rnd,[2,3,4,5]),A0=hl_start(rnd,n,[64,96,128,160,320,480,640,800,960,1280]),A=A0/Math.pow(2,n),t=n*T;
+     const what=calcPick(rnd,['An isotope','A radioactive source','A tracer used in a hospital','A sample of a radioactive isotope']);
+     return {q:what+' has a half-life of '+T+' '+u[1]+'. The time for its activity to fall from '+hl_n(A0)+' Bq to '+hl_n(A)+' Bq is',unit:u[1],answer:t,
+       working:hl_w(['half-life = '+T+' '+u[1],'activity at the start = '+hl_n(A0)+' Bq','activity at the end = '+hl_n(A)+' Bq','time = ?'],[hl_chain(A0,n),'number of half-lives = '+n,'time = '+n+' × '+T,'time = '+t+' '+u[1]])};}},
+  {q:'A sample has 6000 undecayed nuclei. Its half-life is 20 s. The number left after 1 minute is',unit:'',answer:750,
+   working:hl_w(['nuclei at the start = 6000','half-life = 20 s','time = 1 min = 60 s','number left = ?'],['number of half-lives = [[60|20]]','number of half-lives = 3','6000 → 3000 → 1500 → 750','number left = 750']),
+   make:rnd=>{const c=calcPick(rnd,[[10,1],[15,1],[20,1],[30,2],[40,2],[30,1.5],[60,3],[60,4]]),T=c[0],tm=c[1],ts=tm*60,n=ts/T;
+     const N0=hl_start(rnd,n,[1600,2400,3200,4000,4800,6000,6400,8000,9600,12000,16000]),Nl=N0/Math.pow(2,n);
+     const tw=tm===1?'1 minute':hl_n(tm)+' minutes';
+     return {q:calcPick(rnd,['A sample','A small source','A sample of a radioactive gas'])+' has '+hl_n(N0)+' undecayed nuclei. Its half-life is '+T+' s. The number left after '+tw+' is',unit:'',answer:Nl,
+       working:hl_w(['nuclei at the start = '+hl_n(N0),'half-life = '+T+' s','time = '+hl_n(tm)+' min = '+ts+' s','number left = ?'],['number of half-lives = [['+ts+'|'+T+']]','number of half-lives = '+n,hl_chain(N0,n),'number left = '+hl_n(Nl)])};}}
   ]);
 {
   const pts=[];for(let i=0;i<=120;i++){const t=i;pts.push([t,400*Math.pow(0.5,t/20)]);}
   calcAct('halflife','Read the half-life off the graph','The graph shows the activity of a source. Read the values off the curve.',[
-    {q:'The half-life of the source is',unit:'min',answer:20,working:'activity at the start = 400 Bq<br>half of it = 200 Bq<br>the curve reaches 200 Bq at 20 min<br>half-life = 20 min'},
-    {q:'The activity of the source after 60 minutes is',unit:'Bq',answer:50,working:'number of half-lives = [[60|20]] = 3<br>400 → 200 → 100 → 50<br>activity = 50 Bq'}
+    {q:'The half-life of the source is',unit:'min',answer:20,working:'activity at the start = 400 Bq<br>half-life = ?||half of 400 Bq = 200 Bq<br>the curve reaches 200 Bq at 20 min<br>half-life = 20 min'},
+    {q:'The activity of the source after 60 minutes is',unit:'Bq',answer:50,working:'activity at the start = 400 Bq<br>half-life = 20 min (from the graph)<br>time = 60 min<br>activity = ?||number of half-lives = [[60|20]]<br>number of half-lives = 3<br>400 → 200 → 100 → 50<br>activity = 50 Bq'}
   
   ],mgraph({pts:pts,xMin:0,xMax:120,yMin:0,yMax:400,xTicks:[0,20,40,60,80,100,120],yTicks:[0,50,100,150,200,250,300,350,400],xLabel:'Time / min',yLabel:'Activity / Bq',label:'Activity against time for a radioactive source'}).svg);
 }
@@ -3541,8 +3964,8 @@ createReorder({host:act('fission','Order','How a uranium-235 nucleus splits','Pu
     {id:'e',text:'The products fly apart: energy is released as their kinetic energy'}
   ],constraints:[['a','b'],['b','c'],['b','d'],['c','e'],['d','e']],why:'The neutron is absorbed first; the split gives two daughter nuclei and a few neutrons, which carry the energy away as kinetic energy.'});
 calcAct('fission','Balance a fission equation',N(235,92,'U')+' + '+N(1,0,'n')+' → '+N(141,56,'Ba')+' + '+N(92,'Z','Kr')+' + x '+N(1,0,'n')+'. The top numbers and the bottom numbers each add up to the same on both sides.',[
-  {q:'The number of neutrons released, x, is',unit:'',answer:3,working:'mass numbers: 235 + 1 = 141 + 92 + x<br>236 = 233 + x<br>x = 236 − 233<br>x = 3'},
-  {q:'The atomic number of the krypton nucleus, Z, is',unit:'',answer:36,working:'atomic numbers: 92 + 0 = 56 + Z + 0<br>92 = 56 + Z<br>Z = 92 − 56<br>Z = 36'}
+  {q:'The number of neutrons released, x, is',unit:'',answer:3,working:'mass numbers before = 235 + 1<br>mass numbers after = 141 + 92 + x<br>x = ?||235 + 1 = 141 + 92 + x<br>236 = 233 + x<br>x = 236 − 233<br>x = 3'},
+  {q:'The atomic number of the krypton nucleus, Z, is',unit:'',answer:36,working:'atomic numbers before = 92 + 0<br>atomic numbers after = 56 + Z + 0<br>Z = ?||92 + 0 = 56 + Z + 0<br>92 = 56 + Z<br>Z = 92 − 56<br>Z = 36'}
 ]);
 
 }
@@ -3576,8 +3999,8 @@ predictAct('fusion','Why so hot?','Decide first, then see the answer.',{
   ],
   explain:'Nuclei are positively charged, so they repel each other. Only at very high temperatures (very fast nuclei) and pressures (many collisions) do they get close enough to fuse.'});
 calcAct('fusion','Balance a fusion equation',N(2,1,'H')+' + '+N(3,1,'H')+' → '+N(4,2,'He')+' + X. Find the particle X.',[
-  {q:'The mass number of X is',unit:'',answer:1,working:'2 + 3 = 4 + A<br>5 = 4 + A<br>A = 1'},
-  {q:'The atomic number of X is',unit:'',answer:0,working:'1 + 1 = 2 + Z<br>2 = 2 + Z<br>Z = 0<br>X is a neutron'}
+  {q:'The mass number of X is',unit:'',answer:1,working:'mass numbers before = 2 + 3<br>mass numbers after = 4 + A<br>A = ?||2 + 3 = 4 + A<br>5 = 4 + A<br>A = 5 − 4<br>A = 1'},
+  {q:'The atomic number of X is',unit:'',answer:0,working:'atomic numbers before = 1 + 1<br>atomic numbers after = 2 + Z<br>Z = ?||1 + 1 = 2 + Z<br>2 = 2 + Z<br>Z = 2 − 2<br>Z = 0 (X is a neutron)'}
 ]);
 
 }
@@ -3609,10 +4032,19 @@ createSortGame({host:act('orbits','Sort','Moons, planets and comets','Sort each 
     {id:'c2',cat:'c',text:'Speed up a lot when close to the Sun'},
     {id:'c3',cat:'c',text:'Spend most of their time far from the Sun'}
   ]});
+// New problems helpers (orbits tab)
+const ob_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+const ob_n=x=>String(+(+x).toFixed(2));
+const OB_WORLDS=[['the Moon',1.6],['Mars',3.7],['Mercury',3.7],['Venus',8.9],['Jupiter',25],['Saturn',10.4]];
 calcAct('orbits','Weight on other worlds','Use weight = mass × gravitational field strength, W = m × g.',[
-  {q:'An astronaut of mass 80 kg stands on the Moon (g = 1.6 N/kg). Her weight is',unit:'N',answer:128,working:'W = m × g<br>W = 80 × 1.6<br>W = 128 N'},
-  {q:'A probe weighs 2500 N on Jupiter, where g = 25 N/kg. Its mass is',unit:'kg',answer:100,working:'W = m × g<br>2500 = m × 25<br>m = [[2500|25]]<br>m = 100 kg'}
-
+  {q:'An astronaut of mass 80 kg stands on the Moon (g = 1.6 N/kg). Her weight is',unit:'N',answer:128,working:ob_w(['m = 80 kg','g = 1.6 N/kg','W = ?'],['W = m × g','W = 80 × 1.6','W = 128 N']),
+   make:rnd=>{const w=calcPick(rnd,OB_WORLDS),m=calcPick(rnd,[55,60,65,70,75,80,85,90,95]),W=+(m*w[1]).toFixed(2);
+     const who=calcPick(rnd,[['An astronaut','Her'],['An astronaut','His'],['Zahra, an astronaut','Her'],['Lucas, an astronaut','His'],['Camila, an astronaut','Her']]);
+     return {q:who[0]+' of mass '+m+' kg'+(who[0].indexOf(',')>0?',':'')+' stands on '+w[0]+' (g = '+w[1]+' N/kg). '+who[1]+' weight is',unit:'N',answer:W,working:ob_w(['m = '+m+' kg','g = '+w[1]+' N/kg','W = ?'],['W = m × g','W = '+m+' × '+w[1],'W = '+ob_n(W)+' N'])};}},
+  {q:'A probe weighs 2500 N on Jupiter, where g = 25 N/kg. Its mass is',unit:'kg',answer:100,working:ob_w(['W = 2500 N','g = 25 N/kg','m = ?'],['W = m × g','2500 = m × 25','m = [[2500|25]]','m = 100 kg']),
+   make:rnd=>{const w=calcPick(rnd,OB_WORLDS),m=calcPick(rnd,[40,50,80,100,120,150,200,250,400,500]),W=+(m*w[1]).toFixed(2);
+     const what=calcPick(rnd,['A probe','A lander','A rover','A space probe']);
+     return {q:what+' weighs '+ob_n(W)+' N on '+w[0]+', where g = '+w[1]+' N/kg. Its mass is',unit:'kg',answer:m,working:ob_w(['W = '+ob_n(W)+' N','g = '+w[1]+' N/kg','m = ?'],['W = m × g',ob_n(W)+' = m × '+w[1],'m = [['+ob_n(W)+'|'+w[1]+']]','m = '+m+' kg'])};}}
   ]);
 
 }
@@ -3622,10 +4054,31 @@ SRC='8a';
 {
 
 
+// New problems helpers (orbital tab): or_sci(1.5e11) gives "1.5 × 10¹¹"; or_n puts a space in numbers from 10 000
+const or_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+const or_sup=n=>String(n).split('').map(d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[+d]).join('');
+const or_sci=(m,e)=>m+' × 10'+or_sup(e);
+const or_n=x=>{const t=String(x).split('.'),i=Math.abs(x)>=10000?t[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '):t[0];return i+(t[1]?'.'+t[1]:'');};
+const or_sf=(x,n)=>+(+x).toPrecision(n);
 calcAct('orbital','v = [[2 × π × r|T]]','Use orbital speed = [[2 × π × orbital radius|time period]], with r in metres and T in seconds.',[
-  {q:'The Earth orbits the Sun at a radius of 1.5 × 10¹¹ m. One year is 3.15 × 10⁷ s. Its orbital speed is',unit:'km/s',answer:29.9,working:'v = [[2 × π × r|T]]<br>v = [[2 × π × 1.5 × 10¹¹|3.15 × 10⁷]]<br>v = 29 920 m/s<br>v = 29.9 km/s'},
-  {q:'A geostationary satellite orbits once every 24 hours at a radius of 4.22 × 10⁷ m. Its orbital speed is',unit:'m/s',answer:3069,working:'T = 24 × 60 × 60 = 86 400 s<br>v = [[2 × π × r|T]]<br>v = [[2 × π × 4.22 × 10⁷|86 400]]<br>v = 3069 m/s'},
-  {q:'The International Space Station moves at 7700 m/s at an orbital radius of 6.77 × 10⁶ m. Its time period is',unit:'min',answer:92.1,working:'v = [[2 × π × r|T]]<br>7700 = [[2 × π × 6.77 × 10⁶|T]]<br>7700 × T = 2 × π × 6.77 × 10⁶<br>T = [[2 × π × 6.77 × 10⁶|7700]]<br>T = 5524 s<br>T = [[5524|60]] min<br>T = 92.1 min'}
+  {q:'The Earth orbits the Sun at a radius of 1.5 × 10¹¹ m. One year is 3.15 × 10⁷ s. Its orbital speed is',unit:'km/s',answer:29.9,
+   working:or_w(['r = 1.5 × 10¹¹ m','T = 3.15 × 10⁷ s','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × 1.5 × 10¹¹|3.15 × 10⁷]]','v = 29 920 m/s','v = 29.9 km/s']),
+   make:rnd=>{const p=calcPick(rnd,[['Mercury',5.79,10,'One Mercury year is',7.60,6],['Venus',1.08,11,'One Venus year is',1.94,7],['The Earth',1.5,11,'One year is',3.15,7],['Mars',2.28,11,'One Mars year is',5.94,7],['Jupiter',7.78,11,'One Jupiter year is',3.74,8]]);
+     const v=2*Math.PI*p[1]*Math.pow(10,p[2])/(p[4]*Math.pow(10,p[5])),vm=Math.round(or_sf(v,4)),vk=or_sf(v/1000,3);
+     return {q:p[0]+' orbits the Sun at a radius of '+or_sci(p[1],p[2])+' m. '+p[3]+' '+or_sci(p[4],p[5])+' s. Its orbital speed is',unit:'km/s',answer:vk,
+       working:or_w(['r = '+or_sci(p[1],p[2])+' m','T = '+or_sci(p[4],p[5])+' s','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × '+or_sci(p[1],p[2])+'|'+or_sci(p[4],p[5])+']]','v = '+or_n(vm)+' m/s','v = '+(v/1000).toPrecision(3)+' km/s'])};}},
+  {q:'A geostationary satellite orbits once every 24 hours at a radius of 4.22 × 10⁷ m. Its orbital speed is',unit:'m/s',answer:3069,
+   working:or_w(['T = 24 h = 24 × 60 × 60 = 86 400 s','r = 4.22 × 10⁷ m','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × 4.22 × 10⁷|86 400]]','v = 3069 m/s']),
+   make:rnd=>{const c=calcPick(rnd,[['A geostationary satellite',24,4.22,7],['A GPS satellite',12,2.66,7],['A satellite',8,2.03,7],['A satellite',6,1.28,7],['A satellite',3,1.06,7],['A satellite',2,8.06,6]]);
+     const T=c[1]*3600,v=Math.round(2*Math.PI*c[2]*Math.pow(10,c[3])/T);
+     return {q:c[0]+' orbits once every '+c[1]+' hours at a radius of '+or_sci(c[2],c[3])+' m. Its orbital speed is',unit:'m/s',answer:v,
+       working:or_w(['T = '+c[1]+' h = '+c[1]+' × 60 × 60 = '+or_n(T)+' s','r = '+or_sci(c[2],c[3])+' m','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × '+or_sci(c[2],c[3])+'|'+or_n(T)+']]','v = '+or_n(v)+' m/s'])};}},
+  {q:'The International Space Station moves at 7700 m/s at an orbital radius of 6.77 × 10⁶ m. Its time period is',unit:'min',answer:92.1,
+   working:or_w(['v = 7700 m/s','r = 6.77 × 10⁶ m','T = ?'],['v = [[2 × π × r|T]]','7700 = [[2 × π × 6.77 × 10⁶|T]]','7700 × T = 2 × π × 6.77 × 10⁶','T = [[2 × π × 6.77 × 10⁶|7700]]','T = 5524 s','T = [[5524|60]] min','T = 92.1 min']),
+   make:rnd=>{const c=calcPick(rnd,[['The International Space Station',7700,6.77],['The Hubble Space Telescope',7590,6.92],['A weather satellite',7450,7.18],['An Earth-observation satellite',7500,7.08],['A small research satellite',7620,6.87]]);
+     const Ts=Math.round(2*Math.PI*c[2]*1e6/c[1]),Tm=or_sf(Ts/60,3);
+     return {q:c[0]+' moves at '+c[1]+' m/s at an orbital radius of '+or_sci(c[2],6)+' m. Its time period is',unit:'min',answer:Tm,
+       working:or_w(['v = '+c[1]+' m/s','r = '+or_sci(c[2],6)+' m','T = ?'],['v = [[2 × π × r|T]]',c[1]+' = [[2 × π × '+or_sci(c[2],6)+'|T]]',c[1]+' × T = 2 × π × '+or_sci(c[2],6),'T = [[2 × π × '+or_sci(c[2],6)+'|'+c[1]+']]','T = '+Ts+' s','T = [['+Ts+'|60]] min','T = '+Tm+' min'])};}}
 ]);
 
 }
@@ -3635,10 +4088,29 @@ SRC='8b';
 {
 
 
+// New problems helpers (equation tab). The third question's maker uses the line made by the second (rs_last).
+const rs_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+const rs_n=(x,dp)=>String(+(+x).toFixed(dp));
+const RS_LINES=[393,410,434,486,589,656];
+let rs_last=null;
 calcAct('equation','[[Δλ|λ₀]] = [[v|c]]','Use [[change in wavelength|reference wavelength]] = [[velocity of galaxy|speed of light]], with c = 3.0 × 10⁸ m/s. Δλ = λ − λ₀.',[
-  {q:'A line at 656 nm in the lab is seen at 662.6 nm in a galaxy’s light. The galaxy’s velocity is',unit:'× 10⁶ m/s',answer:3.02,working:'Δλ = 662.6 − 656 = 6.6 nm<br>[[Δλ|λ₀]] = [[v|c]]<br>[[6.6|656]] = [[v|3.0 × 10⁸]]<br>v = [[6.6|656]] × 3.0 × 10⁸<br>v = 3.02 × 10⁶ m/s'},
-  {q:'A galaxy moves away at 1.5 × 10⁷ m/s. A line at 500 nm in the lab is shifted by',unit:'nm',answer:25,working:'[[Δλ|λ₀]] = [[v|c]]<br>[[Δλ|500]] = [[1.5 × 10⁷|3.0 × 10⁸]]<br>[[Δλ|500]] = 0.05<br>Δλ = 0.05 × 500<br>Δλ = 25 nm'},
-  {q:'For that galaxy, the observed wavelength of the 500 nm line is',unit:'nm',answer:525,working:'λ = λ₀ + Δλ<br>λ = 500 + 25<br>λ = 525 nm'}
+  {q:'A line at 656 nm in the lab is seen at 662.6 nm in a galaxy’s light. The galaxy’s velocity is',unit:'× 10⁶ m/s',answer:3.02,
+   working:rs_w(['λ₀ = 656 nm','λ = 662.6 nm','Δλ = 662.6 − 656 = 6.6 nm','c = 3.0 × 10⁸ m/s','v = ?'],['[[Δλ|λ₀]] = [[v|c]]','[[6.6|656]] = [[v|3.0 × 10⁸]]','v = [[6.6|656]] × 3.0 × 10⁸','v = 3.02 × 10⁶ m/s']),
+   make:rnd=>{let l0,d,v,k=0;do{l0=calcPick(rnd,RS_LINES);d=calcPick(rnd,[2.4,3.6,4.2,5.0,6.6,8.0,9.3,12.0,15.0]);v=+(d/l0*300).toPrecision(3);}while((v<1||v>9.99)&&++k<60);
+     const l=rs_n(l0+d,1),gal=calcPick(rnd,['a galaxy’s light','the light from a distant galaxy','the spectrum of a galaxy']);
+     return {q:'A line at '+l0+' nm in the lab is seen at '+l+' nm in '+gal+'. The galaxy’s velocity is',unit:'× 10⁶ m/s',answer:v,
+       working:rs_w(['λ₀ = '+l0+' nm','λ = '+l+' nm','Δλ = '+l+' − '+l0+' = '+rs_n(d,1)+' nm','c = 3.0 × 10⁸ m/s','v = ?'],['[[Δλ|λ₀]] = [[v|c]]','[['+rs_n(d,1)+'|'+l0+']] = [[v|3.0 × 10⁸]]','v = [['+rs_n(d,1)+'|'+l0+']] × 3.0 × 10⁸','v = '+v+' × 10⁶ m/s'])};}},
+  {q:'A galaxy moves away at 1.5 × 10⁷ m/s. A line at 500 nm in the lab is shifted by',unit:'nm',answer:25,
+   working:rs_w(['v = 1.5 × 10⁷ m/s','λ₀ = 500 nm','c = 3.0 × 10⁸ m/s','Δλ = ?'],['[[Δλ|λ₀]] = [[v|c]]','[[Δλ|500]] = [[1.5 × 10⁷|3.0 × 10⁸]]','[[Δλ|500]] = 0.05','Δλ = 0.05 × 500','Δλ = 25 nm']),
+   make:rnd=>{const c=calcPick(rnd,[['3.0 × 10⁶',0.01],['6.0 × 10⁶',0.02],['9.0 × 10⁶',0.03],['1.2 × 10⁷',0.04],['1.5 × 10⁷',0.05],['2.4 × 10⁷',0.08],['3.0 × 10⁷',0.1]]),l0=calcPick(rnd,RS_LINES.concat([500,600])),d=rs_n(c[1]*l0,2);
+     rs_last={l0:l0,d:d};
+     return {q:'A galaxy moves away at '+c[0]+' m/s. A line at '+l0+' nm in the lab is shifted by',unit:'nm',answer:+d,
+       working:rs_w(['v = '+c[0]+' m/s','λ₀ = '+l0+' nm','c = 3.0 × 10⁸ m/s','Δλ = ?'],['[[Δλ|λ₀]] = [[v|c]]','[[Δλ|'+l0+']] = [['+c[0]+'|3.0 × 10⁸]]','[[Δλ|'+l0+']] = '+c[1],'Δλ = '+c[1]+' × '+l0,'Δλ = '+d+' nm'])};}},
+  {q:'For that galaxy, the observed wavelength of the 500 nm line is',unit:'nm',answer:525,
+   working:rs_w(['λ₀ = 500 nm','Δλ = 25 nm','λ = ?'],['Δλ = λ − λ₀','25 = λ − 500','λ = 25 + 500','λ = 525 nm']),
+   make:rnd=>{const r=rs_last||{l0:500,d:'25'},l=rs_n(r.l0+(+r.d),2);
+     return {q:'For that galaxy, the observed wavelength of the '+r.l0+' nm line is',unit:'nm',answer:+l,
+       working:rs_w(['λ₀ = '+r.l0+' nm','Δλ = '+r.d+' nm','λ = ?'],['Δλ = λ − λ₀',r.d+' = λ − '+r.l0,'λ = '+r.d+' + '+r.l0,'λ = '+l+' nm'])};}}
 ]);
 
 }

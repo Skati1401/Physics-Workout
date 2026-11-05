@@ -326,6 +326,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-m{justify-self:center}
 .eqg-r{justify-self:start;min-width:0}
 .eqg-full{grid-column:1/-1}
+.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
+.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
+@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -484,10 +487,7 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 }
 </style>
 <style>
-.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
-.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
-.cw-given .eqg{grid-template-columns:auto auto auto}
-@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
+
 </style>
 <style>
 /* free body diagram scenes: a force name is dropped onto each arrow */
@@ -710,7 +710,7 @@ function bar(parent,buttons){
 // Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
 // answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
 // a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
-const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const shownVal=a=>{const v=Number(a),t=String(a);if(!/e/i.test(t)&&!(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-3)))return t;const p=v.toPrecision(3).split('e');return p.length<2?t:p[0]+'×10^'+(+p[1]);};
 const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
 function answerBtn(b,fn){
   const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
@@ -1159,6 +1159,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -1168,18 +1176,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -1201,8 +1228,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -1719,9 +1747,9 @@ labelGraphAct('stgraph','Label the line','Drag each description onto its point o
   {id:'D',x:13,text:'Moving backwards at a steady speed'}
 ],['Moving forwards at a steady speed','Moving forwards and slowing down','Moving backwards and speeding up','Moving backwards and slowing down']);
 calcAct('stgraph','Work out the numbers','Use the graph above. Read the two points you need off the graph.',[
-  {q:'Speed during section B =',unit:'m/s',answer:4,working:'Section B: 16 m to 0 m in 4 s<br>speed = [[16|4]]<br>speed = 4 m/s'},
+  {q:'Speed during section B =',unit:'m/s',answer:4,working:'distance = 16 − 0 = 16 m<br>time = 8 − 4 = 4 s<br>speed = ?||speed = [[distance|time]]<br>speed = [[16|4]]<br>speed = 4 m/s'},
   {q:'Distance travelled during section C =',unit:'m',answer:0,working:'Section C: the displacement stays at 0 m<br>distance travelled = 0 m'},
-  {q:'Distance travelled during section D (just the size, not the direction) =',unit:'m',answer:16,working:'Section D: 0 m to −16 m<br>distance travelled = 16 m'}
+  {q:'Distance travelled during section D (just the size, not the direction) =',unit:'m',answer:16,working:'displacement at 11 s = 0 m<br>displacement at 15 s = −16 m<br>distance travelled = ?||distance travelled = 0 − (−16)<br>distance travelled = 16 m'}
 
   ]);
 
@@ -1742,9 +1770,9 @@ labelGraphAct('vtgraph','Label the line','Drag each description onto its point o
   {id:'D',x:13,text:'Slowing down, stopping, then speeding up backwards'}
 ],['Speeding up steadily','Stationary','Speeding up, but accelerating less and less','Moving backwards at a steady speed']);
 calcAct('vtgraph','Work out the numbers','Use the graph above. Acceleration is the gradient; distance is the area under the line.',[
-  {q:'Acceleration during section B =',unit:'m/s²',answer:-2.5,working:'a = [[change in velocity|time taken]]<br>a = [[10 − 20|4]]<br>a = [[−10|4]]<br>a = −2.5 m/s²'},
-  {q:'Distance travelled during section B =',unit:'m',answer:60,working:'distance = area under the line (a trapezium)<br>distance = ½ × (20 + 10) × 4<br>distance = 60 m'},
-  {q:'Distance travelled during section D =',unit:'m',answer:20,working:'forwards (triangle above the axis) = ½ × 2 × 10 = 10 m<br>backwards (triangle below the axis) = ½ × 2 × 10 = 10 m<br>distance travelled = 10 + 10 = 20 m'}
+  {q:'Acceleration during section B =',unit:'m/s²',answer:-2.5,working:'u = 20 m/s (at 4 s)<br>v = 10 m/s (at 8 s)<br>t = 8 − 4 = 4 s<br>a = ?||a = [[v − u|t]]<br>a = [[10 − 20|4]]<br>a = [[−10|4]]<br>a = −2.5 m/s²'},
+  {q:'Distance travelled during section B =',unit:'m',answer:60,working:'velocity at 4 s = 20 m/s<br>velocity at 8 s = 10 m/s<br>time = 8 − 4 = 4 s<br>distance = ?||distance = area of the trapezium<br>distance = ½ × (20 + 10) × 4<br>distance = ½ × 30 × 4<br>distance = 60 m'},
+  {q:'Distance travelled during section D =',unit:'m',answer:20,working:'forwards: 11 s to 13 s, up to 10 m/s<br>backwards: 13 s to 15 s, down to −10 m/s<br>distance travelled = ?||forwards = ½ × 2 × 10<br>forwards = 10 m<br>backwards = ½ × 2 × 10<br>backwards = 10 m<br>distance travelled = 10 + 10<br>distance travelled = 20 m'}
 
   ]);
 
@@ -1757,20 +1785,38 @@ SRC='1b';
 
 exploreFrame('fma','Push a trolley','Set the resultant force and the mass, then press Go. The trolley starts from rest on a 10 m track. The faint dots mark where it was every 0.5 s, so you can see it speeding up.',
   'animations/force-mass-acceleration.html','F = ma animation: a trolley pushed by a resultant force','F = ma');
-calcAct('fma','F = m × a','Type your answer into each box, then press Check. Correct answers lock in green.',[
+// numbers for the working: no float noise, real minus sign
+const fma_n=x=>{const v=+(+x).toFixed(4);return (v<0?'−':'')+String(Math.abs(v));};
+calcAct('fma','F = m × a','Type your answer into each box, then press Check. Correct answers lock in green. Press New problems for another pair.',[
   {q:'A resultant force of 18 N gives a trolley an acceleration of 4.5 m/s². The mass of the trolley is',unit:'kg',answer:4,
-   working:'F = m × a<br>18 = m × 4.5<br>m = [[18|4.5]]<br>m = 4 kg'},
+   working:'F = 18 N<br>a = 4.5 m/s²<br>m = ?||F = m × a<br>18 = m × 4.5<br>m = [[18|4.5]]<br>m = 4 kg',
+   make:rnd=>{const n=fma_n,c=calcPick(rnd,[
+       {what:'a trolley',art:'The mass of the trolley is',m:[0.5,1.5,2,2.5,4,5],a:[0.4,1.5,2,2.5,3,4.5]},
+       {what:'a toy car',art:'The mass of the toy car is',m:[0.2,0.25,0.4,0.5],a:[2,4,5,8]},
+       {what:'a sledge',art:'The mass of the sledge is',m:[8,12,15,20],a:[0.5,1.5,2,2.5]},
+       {what:'a car',art:'The mass of the car is',m:[800,1000,1200,1500],a:[1.5,2,2.5,3]}]);
+     const m=calcPick(rnd,c.m),a=calcPick(rnd,c.a),F=+(m*a).toFixed(4);
+     return {q:'A resultant force of '+n(F)+' N gives '+c.what+' an acceleration of '+n(a)+' m/s². '+c.art,unit:'kg',answer:m,
+       working:'F = '+n(F)+' N<br>a = '+n(a)+' m/s²<br>m = ?||F = m × a<br>'+n(F)+' = m × '+n(a)+'<br>m = [['+n(F)+'|'+n(a)+']]<br>m = '+n(m)+' kg'};}},
   {q:'Henry and his bike have a total mass of 60 kg. The forward force is 150 N, and air resistance and friction together are 30 N. The acceleration is',unit:'m/s²',answer:2,
-   working:'resultant force = 150 − 30 = 120 N<br>F = m × a<br>120 = 60 × a<br>a = [[120|60]]<br>a = 2 m/s²'}
-
+   working:'m = 60 kg<br>F = 150 − 30 = 120 N<br>a = ?||F = m × a<br>120 = 60 × a<br>a = [[120|60]]<br>a = 2 m/s²',
+   make:rnd=>{const n=fma_n,c=calcPick(rnd,[
+       {who:p=>p[0]+' and '+p[1]+' bike have a total mass of',m:[50,60,75,80],a:[0.5,1,1.5,2],drag:[20,30,40,50],res:'air resistance and friction together are'},
+       {who:()=>'A car has a mass of',m:[800,1000,1200,1500],a:[0.5,1,1.5,2,2.5],drag:[300,400,500,600],res:'air resistance and friction together are'},
+       {who:p=>p[0]+' pushes a supermarket trolley. The trolley has a mass of',m:[20,25,30,40],a:[0.5,1,1.5],drag:[10,15,20],res:'friction is',push:true},
+       {who:()=>'A rowing boat has a mass of',m:[150,200,250],a:[0.2,0.4,0.5],drag:[50,60,80],res:'water resistance is'}]);
+     const P=calcPick(rnd,[['Henry','his'],['Ali','his'],['Charlie','his'],['Sophie','her'],['Julia','her'],['Ananya','her']]);
+     const m=calcPick(rnd,c.m),a=calcPick(rnd,c.a),D=calcPick(rnd,c.drag),F=Math.round(m*a),T=F+D;
+     return {q:c.who(P)+' '+n(m)+' kg. The '+(c.push?'pushing':'forward')+' force is '+n(T)+' N, and '+c.res+' '+n(D)+' N. The acceleration is',unit:'m/s²',answer:a,
+       working:'m = '+n(m)+' kg<br>F = '+n(T)+' − '+n(D)+' = '+n(F)+' N<br>a = ?||F = m × a<br>'+n(F)+' = '+n(m)+' × a<br>a = [['+n(F)+'|'+n(m)+']]<br>a = '+n(a)+' m/s²'};}}
   ]);
 
 calcAct('fma','Read the graph','Fatimah pulls a trolley with different resultant forces and measures its acceleration each time. The graph shows her results. Read the points you need off the line.',[
-  {q:'The resultant force needed for an acceleration of 1.5 m/s² is',unit:'N',answer:3,working:'Read across from 1.5 m/s² on the line<br>F = 3 N'},
+  {q:'The resultant force needed for an acceleration of 1.5 m/s² is',unit:'N',answer:3,working:'Read up from 1.5 m/s² to the line, then across<br>F = 3 N'},
   {q:'The gradient of the line is the mass of the trolley. The mass is',unit:'kg',answer:2,
-   working:'F = m × a, so the gradient of force against acceleration is m<br>gradient = [[change in force|change in acceleration]]<br>gradient = [[5 − 0|2.5 − 0]]<br>gradient = [[5|2.5]]<br>m = 2 kg'},
+   working:'ΔF = 5 − 0 = 5 N<br>Δa = 2.5 − 0 = 2.5 m/s²<br>m = ?||m = gradient = [[ΔF|Δa]]<br>m = [[5|2.5]]<br>m = 2 kg'},
   {q:'With a resultant force of 4 N, the acceleration is',unit:'m/s²',answer:2,
-   working:'Read across from 4 N on the line, or use F = m × a<br>4 = 2 × a<br>a = [[4|2]]<br>a = 2 m/s²'}
+   working:'F = 4 N<br>m = 2 kg (the gradient)<br>a = ?||F = m × a<br>4 = 2 × a<br>a = [[4|2]]<br>a = 2 m/s²'}
 
   ],mgraph({xMax:2.5,yMax:5,xTicks:[0,0.5,1,1.5,2,2.5],yTicks:[0,1,2,3,4,5],xLabel:'acceleration (m/s²)',yLabel:'resultant force (N)',
   label:'Force–acceleration graph: a straight line through the origin to 5 N at 2.5 m/s²',pts:[[0,0],[2.5,5]]}).svg);
@@ -1786,9 +1832,9 @@ SRC='1b';
 calcAct('weight','Read the graph','Nabil measures the weight of different masses on another planet. The graph shows his results. Read the points you need off the line.',[
   {q:'The weight of a 3 kg mass on this planet is',unit:'N',answer:12,working:'Read up from 3 kg to the line, then across<br>W = 12 N'},
   {q:'The gradient of the line is the gravitational field strength. On this planet g is',unit:'N/kg',answer:4,
-   working:'W = m × g, so the gradient of weight against mass is g<br>gradient = [[change in weight|change in mass]]<br>gradient = [[20 − 0|5 − 0]]<br>gradient = [[20|5]]<br>g = 4 N/kg'},
+   working:'ΔW = 20 − 0 = 20 N<br>Δm = 5 − 0 = 5 kg<br>g = ?||g = gradient = [[ΔW|Δm]]<br>g = [[20|5]]<br>g = 4 N/kg'},
   {q:'An object that weighs 16 N on this planet has a mass of',unit:'kg',answer:4,
-   working:'Read across from 16 N on the line, or use W = m × g<br>16 = m × 4<br>m = [[16|4]]<br>m = 4 kg'}
+   working:'W = 16 N<br>g = 4 N/kg (the gradient)<br>m = ?||W = m × g<br>16 = m × 4<br>m = [[16|4]]<br>m = 4 kg'}
 
   ],mgraph({xMax:5,yMax:20,xTicks:[0,1,2,3,4,5],yTicks:[0,4,8,12,16,20],xLabel:'mass (kg)',yLabel:'weight (N)',
   label:'Weight–mass graph: a straight line through the origin to 20 N at 5 kg',pts:[[0,0],[5,20]]}).svg);
@@ -1836,9 +1882,9 @@ createSortGame({host:act('stopping','Sort','What does it change?','Stopping dist
     {id:'s11',cat:'both',text:'Car travelling at a higher speed'}
   ]});
 calcAct('stopping','Nabil’s stopping distance','Nabil is driving at 24 m/s when he sees a hazard. The graph shows his velocity from that moment. The rectangle (steady speed during the reaction time) is the thinking distance; the triangle (braking) is the braking distance.',[
-  {q:'Thinking distance =',unit:'m',answer:12,working:'thinking distance = area of the rectangle (0 to 0.5 s)<br>thinking distance = 24 × 0.5<br>thinking distance = 12 m'},
-  {q:'Braking distance =',unit:'m',answer:36,working:'braking distance = area of the triangle (0.5 s to 3.5 s)<br>braking distance = ½ × base × height<br>braking distance = ½ × (3.5 − 0.5) × 24<br>braking distance = ½ × 3 × 24<br>braking distance = 36 m'},
-  {q:'Stopping distance =',unit:'m',answer:48,working:'stopping distance = total area<br>stopping distance = 12 + 36<br>stopping distance = 48 m'}
+  {q:'Thinking distance =',unit:'m',answer:12,working:'v = 24 m/s (steady)<br>reaction time = 0.5 s (0 to 0.5 s)<br>thinking distance = ?||thinking distance = area of the rectangle<br>thinking distance = 24 × 0.5<br>thinking distance = 12 m'},
+  {q:'Braking distance =',unit:'m',answer:36,working:'base = 3.5 − 0.5 = 3 s<br>height = 24 m/s<br>braking distance = ?||braking distance = area of the triangle<br>braking distance = ½ × base × height<br>braking distance = ½ × 3 × 24<br>braking distance = 36 m'},
+  {q:'Stopping distance =',unit:'m',answer:48,working:'thinking distance = 12 m<br>braking distance = 36 m<br>stopping distance = ?||stopping distance = thinking distance + braking distance<br>stopping distance = 12 + 36<br>stopping distance = 48 m'}
 
   ],mgraph({xMax:4,yMax:28,xTicks:[0,0.5,1,2,3,3.5,4],yTicks:[0,8,16,24],dividers:[0.5],xLabel:'time (s)',yLabel:'velocity (m/s)',
   label:'Velocity–time graph: 24 m/s from 0 to 0.5 s, then a straight line down to 0 at 3.5 s',pts:[[0,24],[0.5,24],[3.5,0],[4,0]]}).svg);
@@ -1886,9 +1932,9 @@ createSortGame({host:act('hooke','Sort','Spring, wire or rubber band?','A helica
     why:'Set up and measure the original length first, then load in steps, measuring each new length. Work out the extensions after each reading or at the end, then plot.'});
 }
 calcAct('hooke','Use the results','Fatimah hangs loads on a spring and records its length.',[
-  {q:'The extension at 5 N is',unit:'cm',answer:8.2,working:'extension = new length − original length<br>extension = 12.2 − 4.0<br>extension = 8.2 cm'},
+  {q:'The extension at 5 N is',unit:'cm',answer:8.2,working:'original length = 4.0 cm (at 0 N)<br>new length = 12.2 cm (at 5 N)<br>extension = ?||extension = new length − original length<br>extension = 12.2 − 4.0<br>extension = 8.2 cm'},
   {q:'The spring obeys Hooke’s law up to at least',unit:'N',answer:4,working:'Extensions: 0, 1.5, 3.0, 4.5, 6.0, 8.2 cm<br>Each newton adds 1.5 cm up to 4 N.<br>At 5 N it would be 7.5 cm if proportional, but it is 8.2 cm, so the limit of proportionality is between 4 N and 5 N.'},
-  {q:'Using the proportional region, the extension for a 2.5 N load is',unit:'cm',answer:3.75,working:'extension = 2.5 × 1.5<br>extension = 3.75 cm'}
+  {q:'Using the proportional region, the extension for a 2.5 N load is',unit:'cm',answer:3.75,working:'F = 2.5 N<br>extension per newton = 1.5 cm (each 1 N, from 0 to 4 N)<br>extension = ?||extension = 2.5 × 1.5<br>extension = 3.75 cm'}
 
   ],dataTable([['Load (N)','0','1','2','3','4','5'],['Length (cm)','4.0','5.5','7.0','8.5','10.0','12.2']]));
 
@@ -1942,9 +1988,9 @@ predictAct('iv','The LED will not light','Decide first, then see the answer.',{
   const fig=lineGraph(Object.assign({label:'Current against voltage for a resistor and a filament lamp',segments:[{pts:R},{pts:L,cls:'g-line-b'}],
     extra:tag('resistor',4.4,0.33)+tag('lamp',4.9,0.25)},G)).svg;
   calcAct('iv','Resistance from the graph','Read values off the graph, then use V = I × R.',[
-    {q:'The resistance of the resistor is',unit:'Ω',answer:15,working:'Read a point: at 3.0 V, I = 0.20 A<br>V = I × R<br>3.0 = 0.20 × R<br>R = [[3.0|0.20]]<br>R = 15 Ω'},
-    {q:'The resistance of the lamp at 2.0 V is',unit:'Ω',answer:12.5,working:'At 2.0 V, I = 0.16 A<br>V = I × R<br>2.0 = 0.16 × R<br>R = [[2.0|0.16]]<br>R = 12.5 Ω'},
-    {q:'The resistance of the lamp at 6.0 V is',unit:'Ω',answer:20,working:'At 6.0 V, I = 0.30 A<br>V = I × R<br>6.0 = 0.30 × R<br>R = [[6.0|0.30]]<br>R = 20 Ω'}
+    {q:'The resistance of the resistor is',unit:'Ω',answer:15,working:'V = 3.0 V (read off the graph)<br>I = 0.20 A<br>R = ?||V = I × R<br>3.0 = 0.20 × R<br>R = [[3.0|0.20]]<br>R = 15 Ω'},
+    {q:'The resistance of the lamp at 2.0 V is',unit:'Ω',answer:12.5,working:'V = 2.0 V<br>I = 0.16 A (read off the graph)<br>R = ?||V = I × R<br>2.0 = 0.16 × R<br>R = [[2.0|0.16]]<br>R = 12.5 Ω'},
+    {q:'The resistance of the lamp at 6.0 V is',unit:'Ω',answer:20,working:'V = 6.0 V<br>I = 0.30 A (read off the graph)<br>R = ?||V = I × R<br>6.0 = 0.30 × R<br>R = [[6.0|0.30]]<br>R = 20 Ω'}
   ],fig);
 }
 
@@ -2004,7 +2050,7 @@ function dimArrow(x1,y1,x2,y2,cls){
 }
 calcAct('describing','Read the wave','The graph shows a snapshot of a wave on a rope. Read each answer off the graph.',[
   {q:'The amplitude of the wave is',unit:'cm',answer:4,working:'The amplitude is the height of a crest above the rest position (the zero line).<br>amplitude = 4 cm'},
-  {q:'The wavelength of the wave is',unit:'m',answer:0.4,working:'3 complete waves fit in 1.2 m.<br>wavelength = [[1.2|3]]<br>wavelength = 0.4 m'}
+  {q:'The wavelength of the wave is',unit:'m',answer:0.4,working:'distance for 3 waves = 1.2 m<br>λ = ?||λ = [[distance|number of waves]]<br>λ = [[1.2|3]]<br>λ = 0.4 m'}
 
   ],mgraph({pts:sinePts(0,1.2,4,0.4),xMin:0,xMax:1.2,yMin:-6,yMax:6,xTicks:[0,0.2,0.4,0.6,0.8,1.0,1.2],yTicks:[-6,-4,-2,0,2,4,6],xLabel:'Distance along the rope / m',yLabel:'Displacement / cm',label:'Displacement against distance for a wave on a rope'}).svg);
 
@@ -2015,16 +2061,41 @@ SRC='3a';
 {
 function sinePts(x0,x1,amp,lam,n){const p=[];n=n||240;for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n;p.push([x,amp*Math.sin(2*Math.PI*x/lam)]);}return p;}
 
-calcAct('equation','v = f × λ and f = [[1|T]]','Use wave speed = frequency × wavelength and frequency = [[1|time period]].',[
-  {q:'A sound wave travels at 340 m/s with a frequency of 680 Hz. Its wavelength is',unit:'m',answer:0.5,working:'v = f × λ<br>340 = 680 × λ<br>λ = [[340|680]]<br>λ = 0.5 m'},
-  {q:'A wave has a time period of 0.020 s. Its frequency is',unit:'Hz',answer:50,working:'f = [[1|T]]<br>f = [[1|0.020]]<br>f = 50 Hz'},
-  {q:'A wave has a time period of 0.25 s and a wavelength of 2.0 m. Its speed is',unit:'m/s',answer:8,working:'f = [[1|T]]<br>f = [[1|0.25]]<br>f = 4 Hz<br>v = f × λ<br>v = 4 × 2.0<br>v = 8 m/s'}
+// New problems helpers for this tab: eq_fmt prints a number with no float noise; eq_ok is true for at most 2 decimal places
+const eq_fmt=x=>String(+(+x).toFixed(4));
+const eq_ok=x=>Math.abs(x*100-Math.round(x*100))<1e-6;
+calcAct('equation','v = f × λ and f = [[1|T]]','Use wave speed = frequency × wavelength and frequency = [[1|time period]]. Press New problems for another set.',[
+  {q:'A sound wave travels at 340 m/s with a frequency of 680 Hz. Its wavelength is',unit:'m',answer:0.5,working:'v = 340 m/s<br>f = 680 Hz<br>λ = ?||v = f × λ<br>340 = 680 × λ<br>λ = [[340|680]]<br>λ = 0.5 m',
+   make:rnd=>{const c=calcPick(rnd,[
+       {t:'A sound wave travels through air at V m/s with a frequency of F Hz.',v:[340],f:[170,200,340,425,680,850,1700]},
+       {t:'A sound wave travels through sea water at V m/s with a frequency of F Hz.',v:[1500],f:[300,500,750,1000,1500,3000]},
+       {t:'Henry shakes the end of a long rope. The wave travels along it at V m/s with a frequency of F Hz.',v:[2,3,4,6],f:[1,2,4,5]},
+       {t:'A water wave in a ripple tank travels at V m/s with a frequency of F Hz.',v:[0.12,0.15,0.18,0.2,0.24],f:[4,5,6,8,10]}]);
+     let v,f,l,k=0;do{v=calcPick(rnd,c.v);f=calcPick(rnd,c.f);l=v/f;}while(!eq_ok(l)&&++k<60);
+     const V=eq_fmt(v),F=eq_fmt(f),L=eq_fmt(l);
+     return {q:c.t.replace('V',V).replace('F',F)+' Its wavelength is',unit:'m',answer:+L,working:'v = '+V+' m/s<br>f = '+F+' Hz<br>λ = ?||v = f × λ<br>'+V+' = '+F+' × λ<br>λ = [['+V+'|'+F+']]<br>λ = '+L+' m'};}},
+  {q:'A wave has a time period of 0.020 s. Its frequency is',unit:'Hz',answer:50,working:'T = 0.020 s<br>f = ?||f = [[1|T]]<br>f = [[1|0.020]]<br>f = 50 Hz',
+   make:rnd=>{const c=calcPick(rnd,[
+       {t:'A sound wave has a time period of T s.',T:[0.001,0.002,0.0025,0.004,0.005]},
+       {t:'A wave on a stretched string has a time period of T s.',T:[0.01,0.02,0.025,0.04,0.05]},
+       {t:'A wave on a rope has a time period of T s.',T:[0.2,0.25,0.4,0.5]},
+       {t:'A water wave on a pond has a time period of T s.',T:[0.4,0.5,0.8,1.25,2]}]);
+     const T=calcPick(rnd,c.T),f=+(1/T).toFixed(4),Ts=eq_fmt(T),fs=eq_fmt(f);
+     return {q:c.t.replace('T s',Ts+' s')+' Its frequency is',unit:'Hz',answer:f,working:'T = '+Ts+' s<br>f = ?||f = [[1|T]]<br>f = [[1|'+Ts+']]<br>f = '+fs+' Hz'};}},
+  {q:'A wave has a time period of 0.25 s and a wavelength of 2.0 m. Its speed is',unit:'m/s',answer:8,working:'T = 0.25 s<br>λ = 2.0 m<br>v = ?||f = [[1|T]]<br>f = [[1|0.25]]<br>f = 4 Hz<br>v = f × λ<br>v = 4 × 2.0<br>v = 8 m/s',
+   make:rnd=>{const c=calcPick(rnd,[
+       {t:'A wave on a rope',T:[0.2,0.25,0.4,0.5],l:[0.5,1,1.5,2,2.5,3]},
+       {t:'A wave on the sea',T:[2,4,5,10],l:[10,20,25,40,50,80]},
+       {t:'A water wave in a ripple tank',T:[0.1,0.125,0.2,0.25],l:[0.01,0.02,0.025,0.03,0.04]}]);
+     let T,l,f,v,k=0;do{T=calcPick(rnd,c.T);l=calcPick(rnd,c.l);f=1/T;v=f*l;}while((!eq_ok(f)||!eq_ok(v))&&++k<60);
+     const Ts=eq_fmt(T),Ls=eq_fmt(l),Fs=eq_fmt(f),Vs=eq_fmt(v);
+     return {q:c.t+' has a time period of '+Ts+' s and a wavelength of '+Ls+' m. Its speed is',unit:'m/s',answer:+Vs,working:'T = '+Ts+' s<br>λ = '+Ls+' m<br>v = ?||f = [[1|T]]<br>f = [[1|'+Ts+']]<br>f = '+Fs+' Hz<br>v = f × λ<br>v = '+Fs+' × '+Ls+'<br>v = '+Vs+' m/s'};}}
 
   ]);
 calcAct('equation','Read the period off the graph','The graph shows how one point on a sound wave moves as the wave passes. Read the time period off the graph first.',[
-  {q:'The time period of the wave is',unit:'s',answer:0.004,working:'2.5 complete waves take 10 ms.<br>T = [[10 ms|2.5]]<br>T = 4 ms<br>T = 0.004 s'},
-  {q:'The frequency of the wave is',unit:'Hz',answer:250,working:'f = [[1|T]]<br>f = [[1|0.004]]<br>f = 250 Hz'},
-  {q:'The sound travels at 340 m/s. Its wavelength is',unit:'m',answer:1.36,working:'v = f × λ<br>340 = 250 × λ<br>λ = [[340|250]]<br>λ = 1.36 m'}
+  {q:'The time period of the wave is',unit:'s',answer:0.004,working:'time for 2.5 waves = 10 ms<br>T = ?||T = [[time|number of waves]]<br>T = [[10 ms|2.5]]<br>T = 4 ms<br>T = 0.004 s'},
+  {q:'The frequency of the wave is',unit:'Hz',answer:250,working:'T = 0.004 s<br>f = ?||f = [[1|T]]<br>f = [[1|0.004]]<br>f = 250 Hz'},
+  {q:'The sound travels at 340 m/s. Its wavelength is',unit:'m',answer:1.36,working:'v = 340 m/s<br>f = 250 Hz<br>λ = ?||v = f × λ<br>340 = 250 × λ<br>λ = [[340|250]]<br>λ = 1.36 m'}
 
   ],mgraph({pts:sinePts(0,10,3,4),xMin:0,xMax:10,yMin:-4,yMax:4,xTicks:[0,2,4,6,8,10],yTicks:[-4,-2,0,2,4],xLabel:'Time / ms',yLabel:'Displacement',label:'Displacement against time for a point on a sound wave'}).svg);
 
@@ -2065,10 +2136,15 @@ createReorder({host:act('pitch','Order','Finding a frequency with an oscilloscop
     {id:'e',text:'Multiply by the timebase setting to get the time period'},
     {id:'f',text:'Work out the frequency using f = [[1|T]]'}
   ],constraints:chain(['a','b','c','d','e','f']),why:'The divisions for one wave × the time per division gives the period, and f = [[1|T]] gives the frequency.'});
-calcAct('pitch','Read the oscilloscope','The timebase is set to 2 ms per division. Read the trace first.',[
-  {q:'The time period of the sound is',unit:'s',answer:0.008,working:'one wave = 4 divisions<br>T = 4 × 2 ms<br>T = 8 ms<br>T = 0.008 s'},
-  {q:'The frequency of the sound is',unit:'Hz',answer:125,working:'f = [[1|T]]<br>f = [[1|0.008]]<br>f = 125 Hz'},
-  {q:'A 500 Hz note is shown with the timebase at 1 ms per division. One wave covers',unit:'divisions',answer:2,working:'f = [[1|T]]<br>500 = [[1|T]]<br>500 × T = 1<br>T = [[1|500]]<br>T = 0.002 s = 2 ms<br>divisions = [[2 ms|1 ms]]<br>divisions = 2'}
+// New problems helper for this tab: pt_fmt prints a number with no float noise
+const pt_fmt=x=>String(+(+x).toFixed(4));
+calcAct('pitch','Read the oscilloscope','The timebase is set to 2 ms per division. Read the trace first. New problems changes only the last question, as the first two use the trace.',[
+  {q:'The time period of the sound is',unit:'s',answer:0.008,working:'one wave = 4 divisions<br>timebase = 2 ms per division<br>T = ?||T = divisions × timebase<br>T = 4 × 2 ms<br>T = 8 ms<br>T = 0.008 s'},
+  {q:'The frequency of the sound is',unit:'Hz',answer:125,working:'T = 0.008 s<br>f = ?||f = [[1|T]]<br>f = [[1|0.008]]<br>f = 125 Hz'},
+  {q:'A 500 Hz note is shown with the timebase at 1 ms per division. One wave covers',unit:'divisions',answer:2,working:'f = 500 Hz<br>timebase = 1 ms per division<br>divisions = ?||f = [[1|T]]<br>500 = [[1|T]]<br>500 × T = 1<br>T = [[1|500]]<br>T = 0.002 s = 2 ms<br>divisions = [[2 ms|1 ms]]<br>divisions = 2',
+   make:rnd=>{let f,tb,Tms,n,k=0;do{f=calcPick(rnd,[100,125,200,250,400,500,1000]);tb=calcPick(rnd,[0.1,0.2,0.5,1,2]);Tms=1000/f;n=Tms/tb;}while((Math.abs(n*2-Math.round(n*2))>1e-9||n<1||n>8)&&++k<80);
+     const T=pt_fmt(Tms/1000),Tm=pt_fmt(Tms),N=pt_fmt(n),TB=pt_fmt(tb),what=calcPick(rnd,['A '+f+' Hz note is shown','A '+f+' Hz note from a tuning fork is shown','A '+f+' Hz note from a signal generator and loudspeaker is shown']);
+     return {q:what+' with the timebase at '+TB+' ms per division. One wave covers',unit:'divisions',answer:+N,working:'f = '+f+' Hz<br>timebase = '+TB+' ms per division<br>divisions = ?||f = [[1|T]]<br>'+f+' = [[1|T]]<br>'+f+' × T = 1<br>T = [[1|'+f+']]<br>T = '+T+' s = '+Tm+' ms<br>divisions = [['+Tm+' ms|'+TB+' ms]]<br>divisions = '+N};}}
 
   ],'<figure class="scope-one">'+scopeSVG(4,2.5,'Oscilloscope trace: one complete wave covers 4 divisions')+'<figcaption>Timebase: 2 ms per division</figcaption></figure>');
 
@@ -2144,17 +2220,40 @@ function exploreFrameQ(panel,title,intro,file,query,frameTitle,name){
 
 exploreFrameQ('halflife','Watch nuclei decay','Nuclei decay one at a time, at random. Watch the number left on the graph, and see how long it takes to halve each time.',
   'animations/random-decay.html','level=igcse','Random decay animation: a grid of nuclei decaying at random, with the number left plotted against time','random decay');
+// New problems helpers (halflife tab)
+const hl_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+const hl_n=x=>{const v=+(+x).toFixed(2),t=String(Math.abs(v)).split('.'),i=Math.abs(v)>=10000?t[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '):t[0];return (v<0?'−':'')+i+(t[1]?'.'+t[1]:'');};
+const hl_chain=(a,n)=>{const out=[a];for(let k=0;k<n;k++){a/=2;out.push(a);}return out.map(hl_n).join(' → ');};
+// a starting value that halves n times to a whole number
+const hl_start=(rnd,n,list)=>calcPick(rnd,list.filter(a=>a%Math.pow(2,n)===0));
+const HL_UNITS=[['min','min',[2,3,4,5,6,8,10,15,20]],['hours','hours',[2,3,4,5,6,8,12]],['days','days',[2,3,4,5,6,8]],['s','s',[10,15,20,30,40]]];
+const HL_WHAT=['A source’s','A sample’s','A radioactive tracer’s','The school source’s'];
 calcAct('halflife','Half-life calculations','Halve the activity once for each half-life.',[
-  {q:'A source’s activity falls from 1200 Bq to 300 Bq in 10 minutes. Its half-life is',unit:'min',answer:5,working:'1200 → 600 → 300: 2 half-lives<br>2 half-lives = 10 min<br>half-life = [[10|2]]<br>half-life = 5 min'},
-  {q:'An isotope has a half-life of 2 days. The time for its activity to fall from 64 Bq to 8 Bq is',unit:'days',answer:6,working:'64 → 32 → 16 → 8: 3 half-lives<br>time = 3 × 2 days<br>time = 6 days'},
-  {q:'A sample has 6000 undecayed nuclei. Its half-life is 20 s. The number left after 1 minute is',unit:'',answer:750,working:'1 minute = 60 s<br>number of half-lives = [[60|20]] = 3<br>6000 → 3000 → 1500 → 750<br>number left = 750'}
-
+  {q:'A source’s activity falls from 1200 Bq to 300 Bq in 10 minutes. Its half-life is',unit:'min',answer:5,
+   working:hl_w(['activity at the start = 1200 Bq','activity at the end = 300 Bq','time = 10 min','half-life = ?'],['1200 → 600 → 300','number of half-lives = 2','2 × half-life = 10','half-life = [[10|2]]','half-life = 5 min']),
+   make:rnd=>{const u=calcPick(rnd,HL_UNITS),T=calcPick(rnd,u[2]),n=calcPick(rnd,[2,3,4]),A0=hl_start(rnd,n,[800,1200,1600,2000,2400,3200,4000,4800,6400]),A=A0/Math.pow(2,n),t=n*T;
+     const what=calcPick(rnd,HL_WHAT),unitWord=u[0]==='min'?'minutes':u[0]==='s'?'seconds':u[0];
+     return {q:what+' activity falls from '+hl_n(A0)+' Bq to '+hl_n(A)+' Bq in '+t+' '+unitWord+'. Its half-life is',unit:u[1],answer:T,
+       working:hl_w(['activity at the start = '+hl_n(A0)+' Bq','activity at the end = '+hl_n(A)+' Bq','time = '+t+' '+u[1],'half-life = ?'],[hl_chain(A0,n),'number of half-lives = '+n,n+' × half-life = '+t,'half-life = [['+t+'|'+n+']]','half-life = '+T+' '+u[1]])};}},
+  {q:'An isotope has a half-life of 2 days. The time for its activity to fall from 64 Bq to 8 Bq is',unit:'days',answer:6,
+   working:hl_w(['half-life = 2 days','activity at the start = 64 Bq','activity at the end = 8 Bq','time = ?'],['64 → 32 → 16 → 8','number of half-lives = 3','time = 3 × 2','time = 6 days']),
+   make:rnd=>{const u=calcPick(rnd,HL_UNITS.slice(0,3)),T=calcPick(rnd,u[2]),n=calcPick(rnd,[2,3,4,5]),A0=hl_start(rnd,n,[64,96,128,160,320,480,640,800,960,1280]),A=A0/Math.pow(2,n),t=n*T;
+     const what=calcPick(rnd,['An isotope','A radioactive source','A tracer used in a hospital','A sample of a radioactive isotope']);
+     return {q:what+' has a half-life of '+T+' '+u[1]+'. The time for its activity to fall from '+hl_n(A0)+' Bq to '+hl_n(A)+' Bq is',unit:u[1],answer:t,
+       working:hl_w(['half-life = '+T+' '+u[1],'activity at the start = '+hl_n(A0)+' Bq','activity at the end = '+hl_n(A)+' Bq','time = ?'],[hl_chain(A0,n),'number of half-lives = '+n,'time = '+n+' × '+T,'time = '+t+' '+u[1]])};}},
+  {q:'A sample has 6000 undecayed nuclei. Its half-life is 20 s. The number left after 1 minute is',unit:'',answer:750,
+   working:hl_w(['nuclei at the start = 6000','half-life = 20 s','time = 1 min = 60 s','number left = ?'],['number of half-lives = [[60|20]]','number of half-lives = 3','6000 → 3000 → 1500 → 750','number left = 750']),
+   make:rnd=>{const c=calcPick(rnd,[[10,1],[15,1],[20,1],[30,2],[40,2],[30,1.5],[60,3],[60,4]]),T=c[0],tm=c[1],ts=tm*60,n=ts/T;
+     const N0=hl_start(rnd,n,[1600,2400,3200,4000,4800,6000,6400,8000,9600,12000,16000]),Nl=N0/Math.pow(2,n);
+     const tw=tm===1?'1 minute':hl_n(tm)+' minutes';
+     return {q:calcPick(rnd,['A sample','A small source','A sample of a radioactive gas'])+' has '+hl_n(N0)+' undecayed nuclei. Its half-life is '+T+' s. The number left after '+tw+' is',unit:'',answer:Nl,
+       working:hl_w(['nuclei at the start = '+hl_n(N0),'half-life = '+T+' s','time = '+hl_n(tm)+' min = '+ts+' s','number left = ?'],['number of half-lives = [['+ts+'|'+T+']]','number of half-lives = '+n,hl_chain(N0,n),'number left = '+hl_n(Nl)])};}}
   ]);
 {
   const pts=[];for(let i=0;i<=120;i++){const t=i;pts.push([t,400*Math.pow(0.5,t/20)]);}
   calcAct('halflife','Read the half-life off the graph','The graph shows the activity of a source. Read the values off the curve.',[
-    {q:'The half-life of the source is',unit:'min',answer:20,working:'activity at the start = 400 Bq<br>half of it = 200 Bq<br>the curve reaches 200 Bq at 20 min<br>half-life = 20 min'},
-    {q:'The activity of the source after 60 minutes is',unit:'Bq',answer:50,working:'number of half-lives = [[60|20]] = 3<br>400 → 200 → 100 → 50<br>activity = 50 Bq'}
+    {q:'The half-life of the source is',unit:'min',answer:20,working:'activity at the start = 400 Bq<br>half-life = ?||half of 400 Bq = 200 Bq<br>the curve reaches 200 Bq at 20 min<br>half-life = 20 min'},
+    {q:'The activity of the source after 60 minutes is',unit:'Bq',answer:50,working:'activity at the start = 400 Bq<br>half-life = 20 min (from the graph)<br>time = 60 min<br>activity = ?||number of half-lives = [[60|20]]<br>number of half-lives = 3<br>400 → 200 → 100 → 50<br>activity = 50 Bq'}
   
   ],mgraph({pts:pts,xMin:0,xMax:120,yMin:0,yMax:400,xTicks:[0,20,40,60,80,100,120],yTicks:[0,50,100,150,200,250,300,350,400],xLabel:'Time / min',yLabel:'Activity / Bq',label:'Activity against time for a radioactive source'}).svg);
 }

@@ -331,6 +331,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-m{justify-self:center}
 .eqg-r{justify-self:start;min-width:0}
 .eqg-full{grid-column:1/-1}
+.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
+.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
+@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -542,7 +545,7 @@ function bar(parent,buttons){
 // Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
 // answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
 // a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
-const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const shownVal=a=>{const v=Number(a),t=String(a);if(!/e/i.test(t)&&!(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-3)))return t;const p=v.toPrecision(3).split('e');return p.length<2?t:p[0]+'×10^'+(+p[1]);};
 const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
 function answerBtn(b,fn){
   const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
@@ -991,6 +994,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -1000,18 +1011,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -1033,8 +1063,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -1692,20 +1723,38 @@ quickCheck('balanced','Friction and balanced forces',[
 /* ================= 6. F = ma ================= */
 exploreFrame('fma','Push a trolley','Set the resultant force and the mass, then press Go. The trolley starts from rest on a 10 m track. The faint dots mark where it was every 0.5 s, so you can see it speeding up.',
   'animations/force-mass-acceleration.html','F = ma animation: a trolley pushed by a resultant force','F = ma');
-calcAct('fma','F = m × a','Type your answer into each box, then press Check. Correct answers lock in green.',[
+// numbers for the working: no float noise, real minus sign
+const fma_n=x=>{const v=+(+x).toFixed(4);return (v<0?'−':'')+String(Math.abs(v));};
+calcAct('fma','F = m × a','Type your answer into each box, then press Check. Correct answers lock in green. Press New problems for another pair.',[
   {q:'A resultant force of 18 N gives a trolley an acceleration of 4.5 m/s². The mass of the trolley is',unit:'kg',answer:4,
-   working:'F = m × a<br>18 = m × 4.5<br>m = [[18|4.5]]<br>m = 4 kg'},
+   working:'F = 18 N<br>a = 4.5 m/s²<br>m = ?||F = m × a<br>18 = m × 4.5<br>m = [[18|4.5]]<br>m = 4 kg',
+   make:rnd=>{const n=fma_n,c=calcPick(rnd,[
+       {what:'a trolley',art:'The mass of the trolley is',m:[0.5,1.5,2,2.5,4,5],a:[0.4,1.5,2,2.5,3,4.5]},
+       {what:'a toy car',art:'The mass of the toy car is',m:[0.2,0.25,0.4,0.5],a:[2,4,5,8]},
+       {what:'a sledge',art:'The mass of the sledge is',m:[8,12,15,20],a:[0.5,1.5,2,2.5]},
+       {what:'a car',art:'The mass of the car is',m:[800,1000,1200,1500],a:[1.5,2,2.5,3]}]);
+     const m=calcPick(rnd,c.m),a=calcPick(rnd,c.a),F=+(m*a).toFixed(4);
+     return {q:'A resultant force of '+n(F)+' N gives '+c.what+' an acceleration of '+n(a)+' m/s². '+c.art,unit:'kg',answer:m,
+       working:'F = '+n(F)+' N<br>a = '+n(a)+' m/s²<br>m = ?||F = m × a<br>'+n(F)+' = m × '+n(a)+'<br>m = [['+n(F)+'|'+n(a)+']]<br>m = '+n(m)+' kg'};}},
   {q:'Henry and his bike have a total mass of 60 kg. The forward force is 150 N, and air resistance and friction together are 30 N. The acceleration is',unit:'m/s²',answer:2,
-   working:'resultant force = 150 − 30 = 120 N<br>F = m × a<br>120 = 60 × a<br>a = [[120|60]]<br>a = 2 m/s²'}
-
+   working:'m = 60 kg<br>F = 150 − 30 = 120 N<br>a = ?||F = m × a<br>120 = 60 × a<br>a = [[120|60]]<br>a = 2 m/s²',
+   make:rnd=>{const n=fma_n,c=calcPick(rnd,[
+       {who:p=>p[0]+' and '+p[1]+' bike have a total mass of',m:[50,60,75,80],a:[0.5,1,1.5,2],drag:[20,30,40,50],res:'air resistance and friction together are'},
+       {who:()=>'A car has a mass of',m:[800,1000,1200,1500],a:[0.5,1,1.5,2,2.5],drag:[300,400,500,600],res:'air resistance and friction together are'},
+       {who:p=>p[0]+' pushes a supermarket trolley. The trolley has a mass of',m:[20,25,30,40],a:[0.5,1,1.5],drag:[10,15,20],res:'friction is',push:true},
+       {who:()=>'A rowing boat has a mass of',m:[150,200,250],a:[0.2,0.4,0.5],drag:[50,60,80],res:'water resistance is'}]);
+     const P=calcPick(rnd,[['Henry','his'],['Ali','his'],['Charlie','his'],['Sophie','her'],['Julia','her'],['Ananya','her']]);
+     const m=calcPick(rnd,c.m),a=calcPick(rnd,c.a),D=calcPick(rnd,c.drag),F=Math.round(m*a),T=F+D;
+     return {q:c.who(P)+' '+n(m)+' kg. The '+(c.push?'pushing':'forward')+' force is '+n(T)+' N, and '+c.res+' '+n(D)+' N. The acceleration is',unit:'m/s²',answer:a,
+       working:'m = '+n(m)+' kg<br>F = '+n(T)+' − '+n(D)+' = '+n(F)+' N<br>a = ?||F = m × a<br>'+n(F)+' = '+n(m)+' × a<br>a = [['+n(F)+'|'+n(m)+']]<br>a = '+n(a)+' m/s²'};}}
   ]);
 
 calcAct('fma','Read the graph','Fatimah pulls a trolley with different resultant forces and measures its acceleration each time. The graph shows her results. Read the points you need off the line.',[
-  {q:'The resultant force needed for an acceleration of 1.5 m/s² is',unit:'N',answer:3,working:'Read across from 1.5 m/s² on the line<br>F = 3 N'},
+  {q:'The resultant force needed for an acceleration of 1.5 m/s² is',unit:'N',answer:3,working:'Read up from 1.5 m/s² to the line, then across<br>F = 3 N'},
   {q:'The gradient of the line is the mass of the trolley. The mass is',unit:'kg',answer:2,
-   working:'F = m × a, so the gradient of force against acceleration is m<br>gradient = [[change in force|change in acceleration]]<br>gradient = [[5 − 0|2.5 − 0]]<br>gradient = [[5|2.5]]<br>m = 2 kg'},
+   working:'ΔF = 5 − 0 = 5 N<br>Δa = 2.5 − 0 = 2.5 m/s²<br>m = ?||m = gradient = [[ΔF|Δa]]<br>m = [[5|2.5]]<br>m = 2 kg'},
   {q:'With a resultant force of 4 N, the acceleration is',unit:'m/s²',answer:2,
-   working:'Read across from 4 N on the line, or use F = m × a<br>4 = 2 × a<br>a = [[4|2]]<br>a = 2 m/s²'}
+   working:'F = 4 N<br>m = 2 kg (the gradient)<br>a = ?||F = m × a<br>4 = 2 × a<br>a = [[4|2]]<br>a = 2 m/s²'}
 
   ],mgraph({xMax:2.5,yMax:5,xTicks:[0,0.5,1,1.5,2,2.5],yTicks:[0,1,2,3,4,5],xLabel:'acceleration (m/s²)',yLabel:'resultant force (N)',
   label:'Force–acceleration graph: a straight line through the origin to 5 N at 2.5 m/s²',pts:[[0,0],[2.5,5]]}).svg);
@@ -1715,9 +1764,9 @@ calcAct('fma','Read the graph','Fatimah pulls a trolley with different resultant
 calcAct('weight','Read the graph','Nabil measures the weight of different masses on another planet. The graph shows his results. Read the points you need off the line.',[
   {q:'The weight of a 3 kg mass on this planet is',unit:'N',answer:12,working:'Read up from 3 kg to the line, then across<br>W = 12 N'},
   {q:'The gradient of the line is the gravitational field strength. On this planet g is',unit:'N/kg',answer:4,
-   working:'W = m × g, so the gradient of weight against mass is g<br>gradient = [[change in weight|change in mass]]<br>gradient = [[20 − 0|5 − 0]]<br>gradient = [[20|5]]<br>g = 4 N/kg'},
+   working:'ΔW = 20 − 0 = 20 N<br>Δm = 5 − 0 = 5 kg<br>g = ?||g = gradient = [[ΔW|Δm]]<br>g = [[20|5]]<br>g = 4 N/kg'},
   {q:'An object that weighs 16 N on this planet has a mass of',unit:'kg',answer:4,
-   working:'Read across from 16 N on the line, or use W = m × g<br>16 = m × 4<br>m = [[16|4]]<br>m = 4 kg'}
+   working:'W = 16 N<br>g = 4 N/kg (the gradient)<br>m = ?||W = m × g<br>16 = m × 4<br>m = [[16|4]]<br>m = 4 kg'}
 
   ],mgraph({xMax:5,yMax:20,xTicks:[0,1,2,3,4,5],yTicks:[0,4,8,12,16,20],xLabel:'mass (kg)',yLabel:'weight (N)',
   label:'Weight–mass graph: a straight line through the origin to 20 N at 5 kg',pts:[[0,0],[5,20]]}).svg);

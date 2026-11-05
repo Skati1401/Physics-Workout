@@ -321,6 +321,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-m{justify-self:center}
 .eqg-r{justify-self:start;min-width:0}
 .eqg-full{grid-column:1/-1}
+.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
+.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
+@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -472,7 +475,7 @@ function bar(parent,buttons){
 // Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
 // answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
 // a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
-const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const shownVal=a=>{const v=Number(a),t=String(a);if(!/e/i.test(t)&&!(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-3)))return t;const p=v.toPrecision(3).split('e');return p.length<2?t:p[0]+'×10^'+(+p[1]);};
 const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
 function answerBtn(b,fn){
   const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
@@ -921,6 +924,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -930,18 +941,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -963,8 +993,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -1508,11 +1539,20 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     constraints:[['a','c'],['b','c'],['c','d'],['d','e'],['a','e']],
     why:'The stone is weighed while dry, the water level is read before and after, and the calculation comes last.'
   });
+  const dn_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('density','Calculate','Density, mass and volume','Use ρ = [[m|V]]. Give your answer in the unit shown.'),
     questions:[
-      {q:'1.5 kg of petrol has a density of 750 kg/m³. Its volume is',unit:'m³',answer:0.002,working:'ρ = [[m|V]]<br>ρ × V = m<br>V = [[m|ρ]]<br>V = [[1.5|750]]<br>V = 0.002 m³'},
-      {q:'A stone has a mass of 270 g. It raises the water level in a measuring cylinder from 50 cm³ to 150 cm³. Its density is',unit:'g/cm³',answer:2.7,working:'V = 150 − 50 = 100 cm³<br>ρ = [[m|V]] = [[270|100]] = 2.7 g/cm³'}
+      {q:'1.5 kg of petrol has a density of 750 kg/m³. Its volume is',unit:'m³',answer:0.002,working:'m = 1.5 kg<br>ρ = 750 kg/m³<br>V = ?||ρ = [[m|V]]<br>750 = [[1.5|V]]<br>750 × V = 1.5<br>V = [[1.5|750]]<br>V = 0.002 m³',
+       make:rnd=>{const w=calcPick(rnd,[['petrol',750],['olive oil',900],['sea water',1030],['milk',1030],['diesel',850],['ethanol',800]]);
+         const V=calcPick(rnd,[0.001,0.002,0.004,0.005,0.01,0.02,0.05]),m=+(w[1]*V).toPrecision(6);
+         return {q:dn_n(m)+' kg of '+w[0]+' has a density of '+dn_n(w[1])+' kg/m³. Its volume is',unit:'m³',answer:V,
+           working:'m = '+dn_n(m)+' kg<br>ρ = '+dn_n(w[1])+' kg/m³<br>V = ?||ρ = [[m|V]]<br>'+dn_n(w[1])+' = [['+dn_n(m)+'|V]]<br>'+dn_n(w[1])+' × V = '+dn_n(m)+'<br>V = [['+dn_n(m)+'|'+dn_n(w[1])+']]<br>V = '+dn_n(V)+' m³'};}},
+      {q:'A stone has a mass of 270 g. It raises the water level in a measuring cylinder from 50 cm³ to 150 cm³. Its density is',unit:'g/cm³',answer:2.7,working:'m = 270 g<br>V = 150 − 50 = 100 cm³<br>ρ = ?||ρ = [[m|V]]<br>ρ = [[270|100]]<br>ρ = 2.7 g/cm³',
+       make:rnd=>{const w=calcPick(rnd,[['A stone',[2.4,2.5,2.6,2.7,2.8]],['A brass key',[8.4,8.5]],['A piece of glass',[2.5,2.6]],['An iron bolt',[7.8,7.9]],['Ali’s pebble',[2.5,2.6,2.7]]]);
+         const rho=calcPick(rnd,w[1]),V=calcPick(rnd,w[1][0]>5?[2,4,5,10]:[20,25,40,50,80,100]),a=calcPick(rnd,[20,30,40,50,60]),b=a+V,m=+(rho*V).toFixed(1);
+         return {q:w[0]+' has a mass of '+dn_n(m)+' g. It raises the water level in a measuring cylinder from '+a+' cm³ to '+b+' cm³. Its density is',unit:'g/cm³',answer:rho,
+           working:'m = '+dn_n(m)+' g<br>V = '+b+' − '+a+' = '+V+' cm³<br>ρ = ?||ρ = [[m|V]]<br>ρ = [['+dn_n(m)+'|'+V+']]<br>ρ = '+dn_n(rho)+' g/cm³'};}}
     
   ]
   });
@@ -1520,11 +1560,21 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
 
 /* ================= 4. PRESSURE ================= */
 {
+  const pr_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('pressure','Calculate','Pressure, force and area','Use p = [[F|A]].'),
     questions:[
-      {q:'A brick weighs 30 N. Its smallest face has an area of 0.015 m². Resting on that face, the pressure is',unit:'Pa',answer:2000,working:'p = [[F|A]] = [[30|0.015]] = 2000 Pa'},
-      {q:'A force of 120 N produces a pressure of 30 000 Pa. The area is',unit:'m²',answer:0.004,working:'p = [[F|A]]<br>p × A = F<br>A = [[F|p]]<br>A = [[120|30 000]]<br>A = 0.004 m²'}
+      {q:'A brick weighs 30 N. Its smallest face has an area of 0.015 m². Resting on that face, the pressure is',unit:'Pa',answer:2000,working:'F = 30 N<br>A = 0.015 m²<br>p = ?||p = [[F|A]]<br>p = [[30|0.015]]<br>p = 2000 Pa',
+       make:rnd=>{const w=calcPick(rnd,[['A brick','Its smallest face','Resting on that face',[20,25,30,40],[0.01,0.015,0.02]],['A box','Its base','Resting on the floor',[50,60,80,120,150],[0.05,0.1,0.2,0.25]],['A wardrobe','Its four feet have a total area of','Standing on its feet',[600,800,1200],[0.004,0.006,0.008]],['Henry','His two shoes have a total area of','Standing on both feet',[500,600,700],[0.025,0.04,0.05]]]);
+         const F=calcPick(rnd,w[3]),A=calcPick(rnd,w[4]),P=+(F/A).toPrecision(6);
+         const mid=w[1].endsWith('of')?w[1]+' '+pr_n(A)+' m²':w[1]+' has an area of '+pr_n(A)+' m²';
+         return {q:w[0]+' weighs '+F+' N. '+mid+'. '+w[2]+', the pressure is',unit:'Pa',answer:P,
+           working:'F = '+F+' N<br>A = '+pr_n(A)+' m²<br>p = ?||p = [[F|A]]<br>p = [['+F+'|'+pr_n(A)+']]<br>p = '+pr_n(P)+' Pa'};}},
+      {q:'A force of 120 N produces a pressure of 30 000 Pa. The area is',unit:'m²',answer:0.004,working:'F = 120 N<br>p = 30 000 Pa<br>A = ?||p = [[F|A]]<br>30 000 = [[120|A]]<br>30 000 × A = 120<br>A = [[120|30 000]]<br>A = 0.004 m²',
+       make:rnd=>{const w=calcPick(rnd,[['A force of ','N produces a pressure of ','Pa. The area is',[40,60,80,100,120,150,200],[0.002,0.004,0.005,0.01,0.02,0.025]],['Zahra stands on one foot. Her weight is ','N and the pressure under her foot is ','Pa. The area of her foot touching the ground is',[450,500,550,600],[0.01,0.0125,0.015,0.02]],['A table leg presses on the floor with a force of ','N. The pressure under the leg is ','Pa. The area of the end of the leg is',[60,80,100,120,150],[0.0005,0.001,0.002,0.004]],['A tyre presses on the road with a force of ','N. The pressure under it is ','Pa. The area of tyre touching the road is',[2000,2500,3000,4000],[0.01,0.0125,0.02,0.025]]]);
+         const F=calcPick(rnd,w[3]),A=calcPick(rnd,w[4]),P=+(F/A).toPrecision(6);
+         return {q:w[0]+F+' '+w[1]+pr_n(P)+' '+w[2],unit:'m²',answer:A,
+           working:'F = '+F+' N<br>p = '+pr_n(P)+' Pa<br>A = ?||p = [[F|A]]<br>'+pr_n(P)+' = [['+F+'|A]]<br>'+pr_n(P)+' × A = '+F+'<br>A = [['+F+'|'+pr_n(P)+']]<br>A = '+pr_n(A)+' m²'};}}
     
   ]
   });
@@ -1549,11 +1599,20 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     explain:'At any point in a liquid at rest, the pressure acts equally in all directions.',
     reveal:arrowsViz
   });
+  const fl_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('fluids','Calculate','Pressure difference in a liquid','Use p = h × ρ × g with g = 10 N/kg.'),
     questions:[
-      {q:'In oil (ρ = 800 kg/m³) the pressure difference is 64 000 Pa. The depth is',unit:'m',answer:8,working:'p = h × ρ × g<br>h = [[p|ρ × g]]<br>h = [[64 000|800 × 10]]<br>h = 8 m'},
-      {q:'In a mercury manometer (ρ = 13 600 kg/m³) the level on the gas side is 0.25 m lower than on the open side. Atmospheric pressure is 100 000 Pa. The gas pressure is',unit:'Pa',answer:134000,hint:'The gas pushes its side down, so the gas pressure is higher than atmospheric. Add the pressure difference.',working:'Difference = 0.25 × 13 600 × 10 = 34 000 Pa<br>Gas pressure = 100 000 + 34 000 = 134 000 Pa'}
+      {q:'In oil (ρ = 800 kg/m³) the pressure difference is 64 000 Pa. The depth is',unit:'m',answer:8,working:'ρ = 800 kg/m³<br>p = 64 000 Pa<br>g = 10 N/kg<br>h = ?||p = h × ρ × g<br>64 000 = h × 800 × 10<br>64 000 = h × 8000<br>h = [[64 000|8000]]<br>h = 8 m',
+       make:rnd=>{const w=calcPick(rnd,[['oil',800],['sea water',1030],['water',1000],['paraffin',800],['glycerol',1260]]);
+         const h=calcPick(rnd,w[1]===1030||w[1]===1260?[2,5,10,20]:[2,3,4,5,8,12,15]),rg=w[1]*10,P=h*rg;
+         return {q:'In '+w[0]+' (ρ = '+fl_n(w[1])+' kg/m³) the pressure difference is '+fl_n(P)+' Pa. The depth is',unit:'m',answer:h,
+           working:'ρ = '+fl_n(w[1])+' kg/m³<br>p = '+fl_n(P)+' Pa<br>g = 10 N/kg<br>h = ?||p = h × ρ × g<br>'+fl_n(P)+' = h × '+fl_n(w[1])+' × 10<br>'+fl_n(P)+' = h × '+fl_n(rg)+'<br>h = [['+fl_n(P)+'|'+fl_n(rg)+']]<br>h = '+h+' m'};}},
+      {q:'In a mercury manometer (ρ = 13 600 kg/m³) the level on the gas side is 0.25 m lower than on the open side. Atmospheric pressure is 100 000 Pa. The gas pressure is',unit:'Pa',answer:134000,hint:'The gas pushes its side down, so the gas pressure is higher than atmospheric. Add the pressure difference.',working:'h = 0.25 m<br>ρ = 13 600 kg/m³<br>g = 10 N/kg<br>atmospheric pressure = 100 000 Pa<br>gas pressure = ?||p = h × ρ × g<br>p = 0.25 × 13 600 × 10<br>p = 34 000 Pa<br>gas pressure = 100 000 + 34 000<br>gas pressure = 134 000 Pa',
+       make:rnd=>{const liq=calcPick(rnd,[['mercury',13600,[0.05,0.1,0.15,0.2,0.25,0.3]],['water',1000,[0.1,0.2,0.3,0.4,0.5]]]),h=calcPick(rnd,liq[2]),hi=rnd()<0.75,P=Math.round(h*liq[1]*10),G=hi?100000+P:100000-P;
+         return {q:'In a '+liq[0]+' manometer (ρ = '+fl_n(liq[1])+' kg/m³) the level on the gas side is '+h+' m '+(hi?'lower':'higher')+' than on the open side. Atmospheric pressure is 100 000 Pa. The gas pressure is',unit:'Pa',answer:G,
+           hint:hi?'The gas pushes its side down, so the gas pressure is higher than atmospheric. Add the pressure difference.':'The liquid is pushed up on the gas side, so the gas pressure is lower than atmospheric. Subtract the pressure difference.',
+           working:'h = '+h+' m<br>ρ = '+fl_n(liq[1])+' kg/m³<br>g = 10 N/kg<br>atmospheric pressure = 100 000 Pa<br>gas pressure = ?||p = h × ρ × g<br>p = '+h+' × '+fl_n(liq[1])+' × 10<br>p = '+fl_n(P)+' Pa<br>gas pressure = 100 000 '+(hi?'+':'−')+' '+fl_n(P)+'<br>gas pressure = '+fl_n(G)+' Pa'};}}
     
   ]
   });
@@ -1658,11 +1717,19 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     constraints:[['a','f'],['b','c'],['c','d'],['d','e'],['e','f']],
     why:'The block is set up and measured before heating, and the calculation uses the final readings.'
   });
+  const sh_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('shc','Calculate','Thermal energy, mass, c and temperature change','Use ΔQ = m × c × ΔT. Specific heat capacity of water is 4200 J/kg °C.'),
     questions:[
-      {q:'0.5 kg of aluminium (c = 900 J/kg °C) is heated from 20 °C to 80 °C. The energy transferred is',unit:'J',answer:27000,working:'ΔT = 80 − 20 = 60 °C<br>ΔQ = 0.5 × 900 × 60 = 27 000 J'},
-      {q:'84 000 J raises the temperature of some water by 10 °C. The mass of the water is',unit:'kg',answer:2,working:'ΔQ = m × c × ΔT<br>m = [[ΔQ|c × ΔT]]<br>m = [[84 000|4200 × 10]]<br>m = 2 kg'}
+      {q:'0.5 kg of aluminium (c = 900 J/kg °C) is heated from 20 °C to 80 °C. The energy transferred is',unit:'J',answer:27000,working:'m = 0.5 kg<br>c = 900 J/kg °C<br>ΔT = 80 − 20 = 60 °C<br>ΔQ = ?||ΔQ = m × c × ΔT<br>ΔQ = 0.5 × 900 × 60<br>ΔQ = 27 000 J',
+       make:rnd=>{const w=calcPick(rnd,[['aluminium',900],['copper',390],['iron',450],['water',4200],['concrete',880]]);
+         const m=calcPick(rnd,[0.2,0.25,0.5,1,1.5,2]),a=calcPick(rnd,[10,15,20,25]),dT=calcPick(rnd,w[0]==='water'?[10,20,30,40,50]:[20,30,40,50,60,80]),b=a+dT,Q=Math.round(m*w[1]*dT);
+         return {q:sh_n(m)+' kg of '+w[0]+' (c = '+sh_n(w[1])+' J/kg °C) is heated from '+a+' °C to '+b+' °C. The energy transferred is',unit:'J',answer:Q,
+           working:'m = '+sh_n(m)+' kg<br>c = '+sh_n(w[1])+' J/kg °C<br>ΔT = '+b+' − '+a+' = '+dT+' °C<br>ΔQ = ?||ΔQ = m × c × ΔT<br>ΔQ = '+sh_n(m)+' × '+sh_n(w[1])+' × '+dT+'<br>ΔQ = '+sh_n(Q)+' J'};}},
+      {q:'84 000 J raises the temperature of some water by 10 °C. The mass of the water is',unit:'kg',answer:2,working:'ΔQ = 84 000 J<br>c = 4200 J/kg °C<br>ΔT = 10 °C<br>m = ?||ΔQ = m × c × ΔT<br>84 000 = m × 4200 × 10<br>84 000 = m × 42 000<br>m = [[84 000|42 000]]<br>m = 2 kg',
+       make:rnd=>{const w=calcPick(rnd,[['some water',[0.2,0.25,0.5,0.8,1,1.5,2]],['the water in a kettle',[0.5,0.8,1,1.5]],['the water in Elena’s bottle',[0.25,0.5,0.75]],['the water in a fish tank',[20,25,40,50]]]),what=w[0],m=calcPick(rnd,w[1]),dT=calcPick(rnd,what.includes('tank')?[2,3,4,5]:[5,10,15,20,25,40]),cd=4200*dT,Q=Math.round(m*cd);
+         return {q:sh_n(Q)+' J raises the temperature of '+what+' by '+dT+' °C. The mass of the water is',unit:'kg',answer:m,
+           working:'ΔQ = '+sh_n(Q)+' J<br>c = 4200 J/kg °C<br>ΔT = '+dT+' °C<br>m = ?||ΔQ = m × c × ΔT<br>'+sh_n(Q)+' = m × 4200 × '+dT+'<br>'+sh_n(Q)+' = m × '+sh_n(cd)+'<br>m = [['+sh_n(Q)+'|'+sh_n(cd)+']]<br>m = '+sh_n(m)+' kg'};}}
     
   ]
   });

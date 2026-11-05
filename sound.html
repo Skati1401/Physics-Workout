@@ -326,6 +326,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-m{justify-self:center}
 .eqg-r{justify-self:start;min-width:0}
 .eqg-full{grid-column:1/-1}
+.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
+.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
+@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -526,7 +529,7 @@ function bar(parent,buttons){
 // Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
 // answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
 // a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
-const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const shownVal=a=>{const v=Number(a),t=String(a);if(!/e/i.test(t)&&!(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-3)))return t;const p=v.toPrecision(3).split('e');return p.length<2?t:p[0]+'×10^'+(+p[1]);};
 const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
 function answerBtn(b,fn){
   const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
@@ -975,6 +978,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -984,18 +995,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -1017,8 +1047,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -1594,10 +1625,25 @@ createReorder({host:act('speed','Order','The speed of sound practical','Core pra
     {id:'e',text:'Repeat several times and work out the mean time'},
     {id:'f',text:'Work out the speed of sound = [[distance|mean time]]'}
   ],constraints:chain(['a','b','c','d','e','f']),why:'Light arrives almost at once, so the time between seeing and hearing is the time the sound takes.'});
-calcAct('speed','speed = [[distance|time]]','Use speed = [[distance|time]]. For an echo, the sound travels there and back.',[
-  {q:'Ali claps 85 m from a wall and hears the echo 0.50 s later. The speed of sound is',unit:'m/s',answer:340,working:'distance = 2 × 85 = 170 m<br>speed = [[distance|time]]<br>speed = [[170|0.50]]<br>speed = 340 m/s'},
-  {q:'A ship’s sonar pulse returns from the sea bed after 0.40 s. Sound travels at 1500 m/s in sea water. The depth of the sea is',unit:'m',answer:300,working:'speed = [[distance|time]]<br>1500 = [[distance|0.40]]<br>distance = 1500 × 0.40<br>distance = 600 m (there and back)<br>depth = [[600|2]]<br>depth = 300 m'},
-  {q:'Two microphones are 1.0 m apart. An oscilloscope shows the sound reaching the second 2.9 ms after the first. The speed of sound is',unit:'m/s',answer:345,working:'t = 2.9 ms = 0.0029 s<br>speed = [[distance|time]]<br>speed = [[1.0|0.0029]]<br>speed = 345 m/s'}
+// New problems helper for this tab: sp_fmt prints a number with no float noise
+const sp_fmt=x=>String(+(+x).toFixed(4));
+calcAct('speed','speed = [[distance|time]]','Use speed = [[distance|time]]. For an echo, the sound travels there and back. Press New problems for another set.',[
+  {q:'Ali claps 85 m from a wall and hears the echo 0.50 s later. The speed of sound is',unit:'m/s',answer:340,working:'distance = 2 × 85 m = 170 m<br>time = 0.50 s<br>speed = ?||speed = [[distance|time]]<br>speed = [[170|0.50]]<br>speed = 340 m/s',
+   make:rnd=>{let v,t,d,k=0;do{v=calcPick(rnd,[330,336,340,344,350]);t=calcPick(rnd,[0.2,0.25,0.3,0.4,0.5,0.6,0.8,1.0,1.2]);d=v*t/2;}while(!Number.isInteger(+d.toFixed(6))&&++k<60);
+     const who=calcPick(rnd,[['Ali claps','his'],['Charlotte claps','her'],['Yassin bangs two blocks together','his'],['Fatimah shouts','her']]),D=sp_fmt(d),T=t.toFixed(t<1?2:1),D2=sp_fmt(2*d),wall=calcPick(rnd,['a wall','a cliff','a large building']);
+     return {q:who[0]+' '+D+' m from '+wall+' and hears the echo '+T+' s later. The speed of sound is',unit:'m/s',answer:v,working:'distance = 2 × '+D+' m = '+D2+' m<br>time = '+T+' s<br>speed = ?||speed = [[distance|time]]<br>speed = [['+D2+'|'+T+']]<br>speed = '+v+' m/s'};}},
+  {q:'A ship’s sonar pulse returns from the sea bed after 0.40 s. Sound travels at 1500 m/s in sea water. The depth of the sea is',unit:'m',answer:300,working:'speed = 1500 m/s<br>time = 0.40 s (there and back)<br>depth = ?||speed = [[distance|time]]<br>1500 = [[distance|0.40]]<br>distance = 1500 × 0.40<br>distance = 600 m<br>depth = [[600|2]]<br>depth = 300 m',
+   make:rnd=>{const c=calcPick(rnd,[
+       ['A ship’s sonar pulse returns from the sea bed after T s. Sound travels at 1500 m/s in sea water. The depth of the sea is','depth',1500,[0.04,0.08,0.1,0.2,0.3,0.4,0.6,0.8,1.0,1.2]],
+       ['A fishing boat’s sonar pulse reflects off a shoal of fish and returns after T s. Sound travels at 1500 m/s in sea water. The depth of the fish is','depth',1500,[0.02,0.04,0.05,0.06,0.08,0.1]],
+       ['A bat’s squeak reflects off a moth and returns after T s. Sound travels at 340 m/s in air. The distance to the moth is','distance to the moth',340,[0.005,0.01,0.02,0.025,0.05]],
+       ['Lucas shouts towards a cliff and hears the echo T s later. Sound travels at 340 m/s in air. The distance to the cliff is','distance to the cliff',340,[0.5,1.0,1.5,2.0,2.5]]]);
+     const t=calcPick(rnd,c[3]),T=t>=1?t.toFixed(1):t>=0.1?t.toFixed(2):sp_fmt(t),d=+(c[2]*t).toFixed(4),h=+(d/2).toFixed(4),nm=c[1];
+     return {q:c[0].replace('T s',T+' s'),unit:'m',answer:h,working:'speed = '+c[2]+' m/s<br>time = '+T+' s (there and back)<br>'+nm+' = ?||speed = [[distance|time]]<br>'+c[2]+' = [[distance|'+T+']]<br>distance = '+c[2]+' × '+T+'<br>distance = '+sp_fmt(d)+' m<br>'+nm+' = [['+sp_fmt(d)+'|2]]<br>'+nm+' = '+sp_fmt(h)+' m'};}},
+  {q:'Two microphones are 1.0 m apart. An oscilloscope shows the sound reaching the second 2.9 ms after the first. The speed of sound is',unit:'m/s',answer:345,working:'distance = 1.0 m<br>time = 2.9 ms = 0.0029 s<br>speed = ?||speed = [[distance|time]]<br>speed = [[1.0|0.0029]]<br>speed = 345 m/s',
+   make:rnd=>{const d=calcPick(rnd,[0.5,1.0,1.5,2.0]),vt=calcPick(rnd,[330,335,340,345,350]),tm=+(d/vt*1000).toFixed(1),t=+(tm/1000).toFixed(5),v=Math.round(d/t),
+       what=calcPick(rnd,['Two microphones are','Elena sets up two microphones','In Henry’s experiment, two microphones are']),D=d.toFixed(1);
+     return {q:what+' '+D+' m apart. An oscilloscope shows the sound reaching the second '+tm.toFixed(1)+' ms after the first. The speed of sound is',unit:'m/s',answer:v,working:'distance = '+D+' m<br>time = '+tm.toFixed(1)+' ms = '+sp_fmt(t)+' s<br>speed = ?||speed = [[distance|time]]<br>speed = [['+D+'|'+sp_fmt(t)+']]<br>speed = '+v+' m/s'};}}
 
   ]);
 
@@ -1623,10 +1669,15 @@ createReorder({host:act('pitch','Order','Finding a frequency with an oscilloscop
     {id:'e',text:'Multiply by the timebase setting to get the time period'},
     {id:'f',text:'Work out the frequency using f = [[1|T]]'}
   ],constraints:chain(['a','b','c','d','e','f']),why:'The divisions for one wave × the time per division gives the period, and f = [[1|T]] gives the frequency.'});
-calcAct('pitch','Read the oscilloscope','The timebase is set to 2 ms per division. Read the trace first.',[
-  {q:'The time period of the sound is',unit:'s',answer:0.008,working:'one wave = 4 divisions<br>T = 4 × 2 ms<br>T = 8 ms<br>T = 0.008 s'},
-  {q:'The frequency of the sound is',unit:'Hz',answer:125,working:'f = [[1|T]]<br>f = [[1|0.008]]<br>f = 125 Hz'},
-  {q:'A 500 Hz note is shown with the timebase at 1 ms per division. One wave covers',unit:'divisions',answer:2,working:'f = [[1|T]]<br>500 = [[1|T]]<br>500 × T = 1<br>T = [[1|500]]<br>T = 0.002 s = 2 ms<br>divisions = [[2 ms|1 ms]]<br>divisions = 2'}
+// New problems helper for this tab: pt_fmt prints a number with no float noise
+const pt_fmt=x=>String(+(+x).toFixed(4));
+calcAct('pitch','Read the oscilloscope','The timebase is set to 2 ms per division. Read the trace first. New problems changes only the last question, as the first two use the trace.',[
+  {q:'The time period of the sound is',unit:'s',answer:0.008,working:'one wave = 4 divisions<br>timebase = 2 ms per division<br>T = ?||T = divisions × timebase<br>T = 4 × 2 ms<br>T = 8 ms<br>T = 0.008 s'},
+  {q:'The frequency of the sound is',unit:'Hz',answer:125,working:'T = 0.008 s<br>f = ?||f = [[1|T]]<br>f = [[1|0.008]]<br>f = 125 Hz'},
+  {q:'A 500 Hz note is shown with the timebase at 1 ms per division. One wave covers',unit:'divisions',answer:2,working:'f = 500 Hz<br>timebase = 1 ms per division<br>divisions = ?||f = [[1|T]]<br>500 = [[1|T]]<br>500 × T = 1<br>T = [[1|500]]<br>T = 0.002 s = 2 ms<br>divisions = [[2 ms|1 ms]]<br>divisions = 2',
+   make:rnd=>{let f,tb,Tms,n,k=0;do{f=calcPick(rnd,[100,125,200,250,400,500,1000]);tb=calcPick(rnd,[0.1,0.2,0.5,1,2]);Tms=1000/f;n=Tms/tb;}while((Math.abs(n*2-Math.round(n*2))>1e-9||n<1||n>8)&&++k<80);
+     const T=pt_fmt(Tms/1000),Tm=pt_fmt(Tms),N=pt_fmt(n),TB=pt_fmt(tb),what=calcPick(rnd,['A '+f+' Hz note is shown','A '+f+' Hz note from a tuning fork is shown','A '+f+' Hz note from a signal generator and loudspeaker is shown']);
+     return {q:what+' with the timebase at '+TB+' ms per division. One wave covers',unit:'divisions',answer:+N,working:'f = '+f+' Hz<br>timebase = '+TB+' ms per division<br>divisions = ?||f = [[1|T]]<br>'+f+' = [[1|T]]<br>'+f+' × T = 1<br>T = [[1|'+f+']]<br>T = '+T+' s = '+Tm+' ms<br>divisions = [['+Tm+' ms|'+TB+' ms]]<br>divisions = '+N};}}
 
   ],'<figure class="scope-one">'+scopeSVG(4,2.5,'Oscilloscope trace: one complete wave covers 4 divisions')+'<figcaption>Timebase: 2 ms per division</figcaption></figure>');
 

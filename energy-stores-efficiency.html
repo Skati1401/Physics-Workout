@@ -264,6 +264,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-m{justify-self:center}
 .eqg-r{justify-self:start;min-width:0}
 .eqg-full{grid-column:1/-1}
+.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
+.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
+@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -466,7 +469,7 @@ function bar(parent,buttons){
 // Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
 // answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
 // a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
-const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const shownVal=a=>{const v=Number(a),t=String(a);if(!/e/i.test(t)&&!(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-3)))return t;const p=v.toPrecision(3).split('e');return p.length<2?t:p[0]+'×10^'+(+p[1]);};
 const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
 function answerBtn(b,fn){
   const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
@@ -916,6 +919,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -925,18 +936,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -958,8 +988,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -1472,8 +1503,16 @@ function sankeySVG(o){
   createCalc({
     host:act('conserve','Calculate','Energy in, energy out','Energy is conserved: the total energy output equals the energy put in.'),
     questions:[
-      {q:'A television is supplied with 400 J. It gives out 120 J of light and 30 J of sound. The rest heats the surroundings. The energy transferred by heating is',unit:'J',answer:250,working:'energy in = light + sound + heating<br>400 = 120 + 30 + heating<br>400 = 150 + heating<br>heating = 400 − 150<br>heating = 250 J'},
-      {q:'A ball rolls down a slope from rest. At the bottom it has 56 J in its kinetic store, and 4 J was transferred by heating on the way down. The energy it lost from its gravitational store is',unit:'J',answer:60,working:'gravitational store lost = kinetic + heating<br>gravitational store lost = 56 + 4<br>gravitational store lost = 60 J'}
+      {q:'A television is supplied with 400 J. It gives out 120 J of light and 30 J of sound. The rest heats the surroundings. The energy transferred by heating is',unit:'J',answer:250,working:'energy in = 400 J<br>light = 120 J<br>sound = 30 J<br>heating = ?||energy in = light + sound + heating<br>400 = 120 + 30 + heating<br>400 = 150 + heating<br>heating = 400 − 150<br>heating = 250 J',
+       make:rnd=>{const d=calcPick(rnd,[['A television','light','sound'],['A laptop','light','sound'],['Ruby’s tablet','light','sound'],['A food mixer','energy to the kinetic store of its blades','sound'],['An electric fan','energy to the kinetic store of the air','sound']]);
+         const E=calcPick(rnd,[200,300,400,500,600,800,1000]),a=Math.round(E*calcPick(rnd,[0.2,0.3,0.4,0.5])),b=Math.round(E*calcPick(rnd,[0.05,0.1,0.15])),h=E-a-b;
+         return {q:d[0]+' is supplied with '+E+' J. '+(d[1]==='light'?'It gives out '+a+' J of light and '+b+' J of sound':'It transfers '+a+' J '+d[1].replace('energy ','')+' and '+b+' J by sound')+'. The rest heats the surroundings. The energy transferred by heating is',unit:'J',answer:h,
+           working:'energy in = '+E+' J<br>'+(d[1]==='light'?'light':'kinetic')+' = '+a+' J<br>sound = '+b+' J<br>heating = ?||energy in = '+(d[1]==='light'?'light':'kinetic')+' + sound + heating<br>'+E+' = '+a+' + '+b+' + heating<br>'+E+' = '+(a+b)+' + heating<br>heating = '+E+' − '+(a+b)+'<br>heating = '+h+' J'};}},
+      {q:'A ball rolls down a slope from rest. At the bottom it has 56 J in its kinetic store, and 4 J was transferred by heating on the way down. The energy it lost from its gravitational store is',unit:'J',answer:60,working:'kinetic = 56 J<br>heating = 4 J<br>gravitational store lost = ?||gravitational store lost = kinetic + heating<br>gravitational store lost = 56 + 4<br>gravitational store lost = 60 J',
+       make:rnd=>{const w=calcPick(rnd,[['A ball rolls down a slope from rest','it has',[20,36,48,56,72]],['A trolley rolls down a ramp from rest','it has',[30,45,60,84,90]],['Henry slides down a slide from rest','he has',[480,600,720,850,960]],['Elena skates down a ramp from rest','she has',[900,1200,1500,1750,2000]]]);
+         const k=calcPick(rnd,w[2]),h=Math.round(k*calcPick(rnd,[0.1,0.2,0.25,0.5])),g=k+h;
+         return {q:w[0]+'. At the bottom '+w[1]+' '+k+' J in the kinetic store, and '+h+' J was transferred by heating on the way down. The energy lost from the gravitational store is',unit:'J',answer:g,
+           working:'kinetic = '+k+' J<br>heating = '+h+' J<br>gravitational store lost = ?||gravitational store lost = kinetic + heating<br>gravitational store lost = '+k+' + '+h+'<br>gravitational store lost = '+g+' J'};}}
     
   ]
   });
@@ -1481,11 +1520,23 @@ function sankeySVG(o){
 
 /* ================= 5. EFFICIENCY ================= */
 {
+  // number for a worked answer: no float noise, a space in numbers of 5 or more digits (180 000)
+  const es_n=x=>{const v=+(+x).toFixed(4),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
   createCalc({
     host:act('efficiency','Calculate','Efficiency','Use efficiency = [[useful energy output|total energy output]]. Give a percentage when the unit is %.'),
     questions:[
-      {q:'A kettle has a total energy output of 200 000 J. 180 000 J goes into the thermal store of the water. Its efficiency is',unit:'%',answer:90,working:'efficiency = [[useful energy output|total energy output]]<br>efficiency = [[180 000|200 000]]<br>efficiency = 0.9<br>efficiency = 90%'},
-      {q:'An LED lamp is 40% efficient. In one minute it gives out 900 J of light. The total energy supplied to it is',unit:'J',answer:2250,hint:'Write 40% as 0.40, substitute, then get the total energy output on its own.',working:'efficiency = [[useful energy output|total energy output]]<br>0.40 = [[900|total energy output]]<br>0.40 × total energy output = 900<br>total energy output = [[900|0.40]]<br>total energy output = 2250 J'}
+      {q:'A kettle has a total energy output of 200 000 J. 180 000 J goes into the thermal store of the water. Its efficiency is',unit:'%',answer:90,working:'useful energy output = 180 000 J<br>total energy output = 200 000 J<br>efficiency = ?||efficiency = [[useful energy output|total energy output]]<br>efficiency = [[180 000|200 000]]<br>efficiency = 0.9<br>efficiency = 90%',
+       make:rnd=>{const d=calcPick(rnd,[['A kettle','goes into the thermal store of the water',[80,85,90,95],[100000,200000,240000,300000]],['An electric motor','goes into the kinetic store of the load',[60,65,70,75,80],[2000,4000,5000,6000]],['Poppy’s phone charger','goes into the chemical store of the battery',[70,75,80,85],[10000,20000,40000]],['A filament lamp','is carried away by light',[5,10,15],[1000,2000,3000,6000]]]);
+         const pc=calcPick(rnd,d[2]),T=calcPick(rnd,d[3]),U=T*pc/100,e=+(pc/100).toFixed(2);
+         return {q:d[0]+' has a total energy output of '+es_n(T)+' J. '+es_n(U)+' J '+d[1]+'. Its efficiency is',unit:'%',answer:pc,
+           working:'useful energy output = '+es_n(U)+' J<br>total energy output = '+es_n(T)+' J<br>efficiency = ?||efficiency = [[useful energy output|total energy output]]<br>efficiency = [['+es_n(U)+'|'+es_n(T)+']]<br>efficiency = '+e+'<br>efficiency = '+pc+'%'};}},
+      {q:'An LED lamp is 40% efficient. In one minute it gives out 900 J of light. The total energy supplied to it is',unit:'J',answer:2250,hint:'Write 40% as 0.40, substitute, then get the total energy output on its own.',working:'efficiency = 40% = 0.40<br>useful energy output = 900 J<br>total energy output = ?||efficiency = [[useful energy output|total energy output]]<br>0.40 = [[900|total energy output]]<br>0.40 × total energy output = 900<br>total energy output = [[900|0.40]]<br>total energy output = 2250 J',
+       make:rnd=>{let pc,T,U,k=0;do{pc=calcPick(rnd,[20,25,30,40,60,75,80]);T=calcPick(rnd,[600,900,1200,1500,1800,2000,2400,3000,4500]);U=T*pc/100;}while(!Number.isInteger(U)&&++k<60);
+         const d=calcPick(rnd,[['An LED lamp','In one minute it gives out','of light'],['A loudspeaker','In one minute it gives out','of sound'],['An electric motor','In ten seconds it transfers','to the kinetic store of a lift'],['Lucas’s food blender','In ten seconds it transfers','to the kinetic store of its blades']]);
+         if(d[2]==='of sound'){pc=calcPick(rnd,[20,25]);T=calcPick(rnd,[400,800,1200,2000]);U=T*pc/100;}
+         const e=(pc/100).toFixed(2);
+         return {q:d[0]+' is '+pc+'% efficient. '+d[1]+' '+es_n(U)+' J '+d[2]+'. The total energy supplied to it is',unit:'J',answer:T,
+           working:'efficiency = '+pc+'% = '+e+'<br>useful energy output = '+es_n(U)+' J<br>total energy output = ?||efficiency = [[useful energy output|total energy output]]<br>'+e+' = [['+es_n(U)+'|total energy output]]<br>'+e+' × total energy output = '+es_n(U)+'<br>total energy output = [['+es_n(U)+'|'+e+']]<br>total energy output = '+es_n(T)+' J'};}}
     
   ]
   });
@@ -1567,8 +1618,11 @@ function sankeySVG(o){
   createCalc({
     host:act('sankey','Calculate','Reading Sankey diagrams','Use the drill’s diagram above for the first question.'),
     questions:[
-      {q:'The drill’s efficiency, as a percentage, is',unit:'%',answer:60,working:'efficiency = [[useful energy output|total energy output]]<br>efficiency = [[300|500]]<br>efficiency = 0.6<br>efficiency = 60%'},
-      {q:'On a Sankey diagram, 1 mm of width stands for 5 J. The input arrow is 40 mm wide and the useful arrow is 12 mm wide. The energy wasted is',unit:'J',answer:140,hint:'Turn both widths into joules first, then subtract.',working:'input = 40 × 5<br>input = 200 J<br>useful = 12 × 5<br>useful = 60 J<br>wasted = 200 − 60<br>wasted = 140 J'}
+      {q:'The drill’s efficiency, as a percentage, is',unit:'%',answer:60,working:'useful energy output = 300 J<br>total energy output = 500 J<br>efficiency = ?||efficiency = [[useful energy output|total energy output]]<br>efficiency = [[300|500]]<br>efficiency = 0.6<br>efficiency = 60%'},
+      {q:'On a Sankey diagram, 1 mm of width stands for 5 J. The input arrow is 40 mm wide and the useful arrow is 12 mm wide. The energy wasted is',unit:'J',answer:140,hint:'Turn both widths into joules first, then subtract.',working:'scale: 1 mm = 5 J<br>input width = 40 mm<br>useful width = 12 mm<br>wasted = ?||input = 40 × 5<br>input = 200 J<br>useful = 12 × 5<br>useful = 60 J<br>wasted = input − useful<br>wasted = 200 − 60<br>wasted = 140 J',
+       make:rnd=>{const sc=calcPick(rnd,[2,4,5,10,20]),wi=calcPick(rnd,[30,40,45,50,60]),wu=Math.round(wi*calcPick(rnd,[0.2,0.3,0.4,0.6])),I=wi*sc,U=wu*sc,W=I-U;
+         return {q:'On a Sankey diagram, 1 mm of width stands for '+sc+' J. The input arrow is '+wi+' mm wide and the useful arrow is '+wu+' mm wide. The energy wasted is',unit:'J',answer:W,
+           working:'scale: 1 mm = '+sc+' J<br>input width = '+wi+' mm<br>useful width = '+wu+' mm<br>wasted = ?||input = '+wi+' × '+sc+'<br>input = '+I+' J<br>useful = '+wu+' × '+sc+'<br>useful = '+U+' J<br>wasted = input − useful<br>wasted = '+I+' − '+U+'<br>wasted = '+W+' J'};}}
     
   ]
   });

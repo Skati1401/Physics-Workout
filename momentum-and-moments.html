@@ -326,6 +326,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-m{justify-self:center}
 .eqg-r{justify-self:start;min-width:0}
 .eqg-full{grid-column:1/-1}
+.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
+.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
+@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -496,7 +499,7 @@ function bar(parent,buttons){
 // Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
 // answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
 // a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
-const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const shownVal=a=>{const v=Number(a),t=String(a);if(!/e/i.test(t)&&!(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-3)))return t;const p=v.toPrecision(3).split('e');return p.length<2?t:p[0]+'×10^'+(+p[1]);};
 const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
 function answerBtn(b,fn){
   const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
@@ -945,6 +948,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -954,18 +965,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -987,8 +1017,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -1511,12 +1542,38 @@ clozeAct('overview','Unit 1d in one passage','Drag a word into each gap, or tap 
 /* ================= 2. MOMENTUM ================= */
 exploreFrame('momentum','A collision','Trolley 1 rolls into trolley 2. Choose whether they stick together or bounce apart, set the masses and both velocities (trolley 2 starts at rest, but can move either way), then press Go. Either way, the total momentum after equals the total momentum before.',
   'animations/momentum-collision.html','Momentum animation: two trolleys colliding','momentum');
-calcAct('momentum','Momentum','Momentum p = m × v, in kg m/s. If no external forces act, total momentum before = total momentum after. Check the units before you substitute.',[
+// numbers for the working: no float noise, real minus sign
+const momentum_n=x=>{const v=+(+x).toFixed(4),a=Math.abs(v),t=a>=10000?String(a).replace(/\B(?=(\d{3})+(?!\d))/g,' '):String(a);return (v<0?'−':'')+t;};
+const momentum_a=t=>/^(8|11|18)(\D|$)/.test(t)?'an '+t:'a '+t; // "an 8 g", "a 12 g"
+const momentum_ok=(x,dp)=>Math.abs(x*Math.pow(10,dp)-Math.round(x*Math.pow(10,dp)))<1e-9;
+calcAct('momentum','Momentum','Momentum p = m × v, in kg m/s. If no external forces act, total momentum before = total momentum after. Check the units before you substitute. Press New problems for another pair.',[
   {q:'A 4 kg rifle fires a 20 g bullet at 300 m/s. The recoil speed of the rifle is',unit:'m/s',answer:1.5,
-   working:'momentum before = 0 (everything at rest)<br>momentum of bullet = 0.020 × 300 = 6 kg m/s forwards<br>momentum of rifle = 6 kg m/s backwards<br>6 = 4 × v<br>v = [[6|4]]<br>v = 1.5 m/s'},
+   working:'m₁ = 20 g = 0.020 kg (bullet)<br>v₁ = 300 m/s<br>m₂ = 4 kg (rifle)<br>v₂ = ?<br>momentum before = 0 (at rest)||total momentum before = total momentum after<br>0 = 0.020 × 300 + 4 × v₂<br>0 = 6 + 4 × v₂<br>4 × v₂ = −6<br>v₂ = [[−6|4]]<br>v₂ = −1.5 m/s<br>recoil speed = 1.5 m/s (backwards)',
+   make:rnd=>{const n=momentum_n,c=calcPick(rnd,[
+       {gun:'rifle',shot:'bullet',M:[3,4,5,6],m:[10,15,20,25,30],v:[300,400,500,600]},
+       {gun:'pistol',shot:'bullet',M:[0.8,1,1.2,1.5],m:[5,8,10,12],v:[250,300,350,400]},
+       {gun:'toy cannon',shot:'ball',M:[0.5,1,1.5,2],m:[20,40,50,100],v:[5,8,10,15,20]},
+       {gun:'air rifle',shot:'pellet',M:[2,2.5,3],m:[1,2,0.5],v:[150,200,250,300]}]);
+     let M,m,v,V,k=0;do{M=calcPick(rnd,c.M);m=calcPick(rnd,c.m);v=calcPick(rnd,c.v);V=m/1000*v/M;}while((!momentum_ok(V,2)||V<0.05)&&++k<80);
+     const mk=+(m/1000).toFixed(4),p=+(mk*v).toFixed(4);V=+V.toFixed(2);
+     const A=momentum_a(n(M));
+     return {q:A[0].toUpperCase()+A.slice(1)+' kg '+c.gun+' fires '+momentum_a(n(m))+' g '+c.shot+' at '+n(v)+' m/s. The recoil speed of the '+c.gun+' is',unit:'m/s',answer:V,
+       working:'m₁ = '+n(m)+' g = '+n(mk)+' kg ('+c.shot+')<br>v₁ = '+n(v)+' m/s<br>m₂ = '+n(M)+' kg ('+c.gun+')<br>v₂ = ?<br>momentum before = 0 (at rest)||total momentum before = total momentum after<br>0 = '+n(mk)+' × '+n(v)+' + '+n(M)+' × v₂<br>0 = '+n(p)+' + '+n(M)+' × v₂<br>'+n(M)+' × v₂ = −'+n(p)+'<br>v₂ = [[−'+n(p)+'|'+n(M)+']]<br>v₂ = −'+n(V)+' m/s<br>recoil speed = '+n(V)+' m/s (backwards)'};}},
   {q:'A 2 kg trolley moving right at 3 m/s collides with a 1 kg trolley moving left at 4 m/s. They stick together. Taking right as positive, their velocity afterwards is',unit:'m/s',answer:0.667,
-   working:'m₁u₁ + m₂u₂ = (m₁ + m₂)v<br>2 × 3 + 1 × (−4) = (2 + 1) × v<br>2 = 3 × v<br>v = [[2|3]]<br>v = 0.67 m/s, to the right'}
-
+   working:'m₁ = 2 kg<br>u₁ = 3 m/s<br>m₂ = 1 kg<br>u₂ = −4 m/s (moving left)<br>v = ?||m₁u₁ + m₂u₂ = (m₁ + m₂)v<br>2 × 3 + 1 × (−4) = (2 + 1) × v<br>6 − 4 = 3 × v<br>2 = 3 × v<br>v = [[2|3]]<br>v = 0.667 m/s (to the right)',
+   make:rnd=>{const n=momentum_n,c=calcPick(rnd,[
+       {a:m=>'A '+m+' kg trolley',b:m=>'a '+m+' kg trolley',m1:[0.5,1,1.5,2,3],m2:[0.5,1,1.5,2,3],u:[1,2,3,4,5,6],end:'They stick together.'},
+       {a:m=>'A '+m+' kg railway truck',b:m=>'a '+m+' kg truck',m1:[2000,3000,4000,5000],m2:[1000,2000,3000,4000],u:[1,2,3,4],end:'They couple together.'},
+       {skate:true,m1:[40,45,50,55,60],m2:[50,60,65,70,75],u:[1,2,3,4],end:'They hold on to each other.'}]);
+     let m1,m2,u1,u2,v,k=0;do{m1=calcPick(rnd,c.m1);m2=calcPick(rnd,c.m2);u1=calcPick(rnd,c.u);u2=calcPick(rnd,c.u);v=(m1*u1-m2*u2)/(m1+m2);}while((!momentum_ok(v,2)||Math.abs(v)<0.05)&&++k<200);
+     v=+v.toFixed(2);const p1=+(m1*u1).toFixed(4),p2=+(m2*u2).toFixed(4),M=+(m1+m2).toFixed(4),P=+(p1-p2).toFixed(4);
+     let first,second;
+     if(c.skate){const g=calcPick(rnd,[['Camila','Aidan'],['Elena','Lucas'],['Hana','David'],['Ruby','Nabil'],['Charlotte','Edward']]);
+       first=g[0]+' ('+n(m1)+' kg) skates right at '+n(u1)+' m/s and collides with '+g[1]+' ('+n(m2)+' kg), who is skating left at '+n(u2)+' m/s.';}
+     else first=c.a(n(m1))+' moving right at '+n(u1)+' m/s collides with '+c.b(n(m2))+' moving left at '+n(u2)+' m/s.';
+     const dir=v>0?'to the right':'to the left';
+     return {q:first+' '+c.end+' Taking right as positive, their velocity afterwards is',unit:'m/s',answer:v,
+       working:'m₁ = '+n(m1)+' kg<br>u₁ = '+n(u1)+' m/s<br>m₂ = '+n(m2)+' kg<br>u₂ = −'+n(u2)+' m/s (moving left)<br>v = ?||m₁u₁ + m₂u₂ = (m₁ + m₂)v<br>'+n(m1)+' × '+n(u1)+' + '+n(m2)+' × (−'+n(u2)+') = ('+n(m1)+' + '+n(m2)+') × v<br>'+n(p1)+' − '+n(p2)+' = '+n(M)+' × v<br>'+n(P)+' = '+n(M)+' × v<br>v = [['+n(P)+'|'+n(M)+']]<br>v = '+n(v)+' m/s ('+dir+')'};}}
   ]);
 
 /* ================= 3. SAFETY ================= */
@@ -1529,14 +1586,41 @@ predictAct('safety','Airbags','Force = [[change in momentum|time taken]]. Choose
     {text:'It brings the passenger to a stop in a shorter time',why:'Stopping more quickly would mean a shorter time and therefore a bigger force. An airbag does the opposite.'}
   ],
   explain:'The change in momentum is the same, but spreading it over a longer time means a smaller rate of change of momentum, so a smaller force.'});
-calcAct('safety','Calculate the force','F = [[mv − mu|t]]. Work out the change in momentum first, and watch the signs if something bounces back.',[
+// numbers for the working: no float noise, real minus sign, a space in numbers of 10 000 and over
+const safety_n=x=>{const v=+(+x).toFixed(4),a=Math.abs(v),t=a>=10000?String(a).replace(/\B(?=(\d{3})+(?!\d))/g,' '):String(a);return (v<0?'−':'')+t;};
+const safety_ok=(x,dp)=>Math.abs(x*Math.pow(10,dp)-Math.round(x*Math.pow(10,dp)))<1e-9;
+let safety_ball=null; // the ball made for part 2, used again in part 3
+calcAct('safety','Calculate the force','F = [[mv − mu|t]]. Work out the change in momentum first, and watch the signs if something bounces back. Press New problems for another set.',[
   {q:'David (70 kg) is a passenger in a car. A seat belt brings him to rest from 15 m/s in 0.5 s. The force on him is',unit:'N',answer:2100,
-   working:'change in momentum = 70 × 15 − 0 = 1050 kg m/s<br>F = [[change in momentum|time taken]]<br>F = [[1050|0.5]]<br>F = 2100 N'},
+   working:'m = 70 kg<br>u = 15 m/s<br>v = 0 (at rest)<br>t = 0.5 s<br>F = ?||F = [[mv − mu|t]]<br>F = [[70 × 0 − 70 × 15|0.5]]<br>F = [[−1050|0.5]]<br>F = −2100 N<br>size of the force = 2100 N',
+   make:rnd=>{const n=safety_n,c=calcPick(rnd,[
+       {stop:'A seat belt brings',m:[50,60,65,70,75,80],u:[10,12,15,20],t:[0.2,0.4,0.5,0.6]},
+       {stop:'An airbag brings',m:[50,60,65,70,75,80],u:[10,12,15,20],t:[0.1,0.2,0.4,0.5]}]);
+     const P=calcPick(rnd,[['David','him'],['Edward','him'],['Yassin','him'],['Charlie','him'],['Fatimah','her'],['Elizabeth','her'],['Camila','her'],['Zahra','her']]);
+     let m,u,t,F,k=0;do{m=calcPick(rnd,c.m);u=calcPick(rnd,c.u);t=calcPick(rnd,c.t);F=m*u/t;}while(!safety_ok(F,0)&&++k<80);
+     F=Math.round(F);const p=m*u;
+     return {q:P[0]+' ('+n(m)+' kg) is a passenger in a car. '+c.stop+' '+P[1]+' to rest from '+n(u)+' m/s in '+n(t)+' s. The force on '+P[1]+' is',unit:'N',answer:F,
+       working:'m = '+n(m)+' kg<br>u = '+n(u)+' m/s<br>v = 0 (at rest)<br>t = '+n(t)+' s<br>F = ?||F = [[mv − mu|t]]<br>F = [['+n(m)+' × 0 − '+n(m)+' × '+n(u)+'|'+n(t)+']]<br>F = [[−'+n(p)+'|'+n(t)+']]<br>F = −'+n(F)+' N<br>size of the force = '+n(F)+' N'};}},
   {q:'A 0.16 kg cricket ball hits a bat at 30 m/s and rebounds at 20 m/s in the opposite direction. The size of its change in momentum is',unit:'kg m/s',answer:8,
-   working:'Take the rebound direction as positive: u = −30 m/s, v = +20 m/s<br>change in momentum = mv − mu<br>change in momentum = 0.16 × 20 − 0.16 × (−30)<br>change in momentum = 3.2 + 4.8<br>change in momentum = 8 kg m/s (not 0.16 × 10)'},
+   working:'m = 0.16 kg<br>u = −30 m/s (towards the bat)<br>v = 20 m/s (the rebound direction is positive)<br>change in momentum = ?||change in momentum = mv − mu<br>change in momentum = 0.16 × 20 − 0.16 × (−30)<br>change in momentum = 3.2 + 4.8<br>change in momentum = 8 kg m/s',
+   make:rnd=>{const n=safety_n,c=calcPick(rnd,[
+       {q:(m,u,v)=>'A '+m+' kg cricket ball hits a bat at '+u+' m/s and rebounds at '+v+' m/s in the opposite direction.',into:'towards the bat',m:[0.16],u:[20,25,30,35,40],v:[10,15,20,25]},
+       {q:(m,u,v)=>'A '+m+' kg tennis ball hits a racket at '+u+' m/s and rebounds at '+v+' m/s in the opposite direction.',into:'towards the racket',m:[0.06],u:[15,20,25,30],v:[20,25,30,40]},
+       {q:(m,u,v)=>'A '+m+' kg football hits a wall at '+u+' m/s and bounces back at '+v+' m/s in the opposite direction.',into:'towards the wall',m:[0.4,0.45],u:[10,12,15,20],v:[6,8,10,12]},
+       {q:(m,u,v)=>'A '+m+' kg hockey ball hits a stick at '+u+' m/s and rebounds at '+v+' m/s in the opposite direction.',into:'towards the stick',m:[0.16],u:[10,15,20],v:[15,20,25,30]}]);
+     let m,u,v,dp,k=0;do{m=calcPick(rnd,c.m);u=calcPick(rnd,c.u);v=calcPick(rnd,c.v);dp=m*(u+v);}while(!safety_ok(dp,2)&&++k<80);
+     dp=+dp.toFixed(2);const a=+(m*v).toFixed(4),b=+(m*u).toFixed(4);
+     safety_ball={m:m,dp:dp,sort:c.into};
+     return {q:c.q(n(m),n(u),n(v))+' The size of its change in momentum is',unit:'kg m/s',answer:dp,
+       working:'m = '+n(m)+' kg<br>u = −'+n(u)+' m/s ('+c.into+')<br>v = '+n(v)+' m/s (the rebound direction is positive)<br>change in momentum = ?||change in momentum = mv − mu<br>change in momentum = '+n(m)+' × '+n(v)+' − '+n(m)+' × (−'+n(u)+')<br>change in momentum = '+n(a)+' + '+n(b)+'<br>change in momentum = '+n(dp)+' kg m/s'};}},
   {q:'The ball is in contact with the bat for 0.002 s. The average force on it is',unit:'N',answer:4000,
-   working:'F = [[change in momentum|time taken]]<br>F = [[8|0.002]]<br>F = 4000 N'}
-
+   working:'change in momentum = 8 kg m/s (from the last question)<br>t = 0.002 s<br>F = ?||F = [[change in momentum|time taken]]<br>F = [[8|0.002]]<br>F = 4000 N',
+   make:rnd=>{const n=safety_n,ball=safety_ball||{dp:8,sort:'towards the bat'};
+     const what=ball.sort.replace('towards the ','');
+     let t,F,k=0;do{t=calcPick(rnd,[0.002,0.004,0.005,0.008,0.01,0.02]);F=ball.dp/t;}while((!safety_ok(F,0)||F>20000||F<20)&&++k<80);
+     F=Math.round(F);
+     return {q:'The ball is in contact with the '+what+' for '+n(t)+' s. The average force on it is',unit:'N',answer:F,
+       working:'change in momentum = '+n(ball.dp)+' kg m/s (from the last question)<br>t = '+n(t)+' s<br>F = ?||F = [[change in momentum|time taken]]<br>F = [['+n(ball.dp)+'|'+n(t)+']]<br>F = '+n(F)+' N'};}}
   ]);
 
 /* ================= 4. THIRD LAW ================= */
@@ -1573,11 +1657,11 @@ exploreFrame('moments','Balance the seesaw','Moment = force × perpendicular dis
 }
 calcAct('moments','Balance the beam','A 20 N weight hangs 30 cm left of a pivot and a 10 N weight hangs 15 cm left of it.',[
   {q:'The downward force 50 cm to the right of the pivot that balances the beam is',unit:'N',answer:15,
-   working:'total anticlockwise moment = 20 × 0.30 + 10 × 0.15<br>total anticlockwise moment = 6 + 1.5 = 7.5 N m<br>clockwise moment = anticlockwise moment<br>F × 0.50 = 7.5<br>F = [[7.5|0.50]]<br>F = 15 N'}
+   working:'F₁ = 20 N<br>d₁ = 30 cm = 0.30 m<br>F₂ = 10 N<br>d₂ = 15 cm = 0.15 m<br>d = 50 cm = 0.50 m<br>F = ?||clockwise moment = anticlockwise moment<br>F × 0.50 = 20 × 0.30 + 10 × 0.15<br>F × 0.50 = 6 + 1.5<br>F × 0.50 = 7.5<br>F = [[7.5|0.50]]<br>F = 15 N'}
 ],beamDiagram({x0:-0.4,x1:0.6,pivots:[0],forces:[{x:-0.3,label:'20 N'},{x:-0.15,label:'10 N'},{x:0.5,label:'F = ?'}],dims:[{a:-0.3,b:0,label:'30 cm',row:1},{a:-0.15,b:0,label:'15 cm'},{a:0,b:0.5,label:'50 cm'}],label:'A beam on a pivot with two weights on the left and an unknown force on the right'}));
 calcAct('moments','A metre rule','A uniform metre rule is pivoted at its 50 cm mark. A 2 N weight hangs at the 10 cm mark.',[
   {q:'To balance it, a 5 N weight must hang at the',unit:'cm mark',answer:66,
-   working:'The rule is uniform, so its own weight acts at the pivot and has no moment.<br>anticlockwise moment = 2 × 40 = 80 N cm<br>5 × d = 80<br>d = [[80|5]]<br>d = 16 cm to the right of the pivot<br>mark = 50 + 16 = 66 cm'}
+   working:'F₁ = 2 N<br>d₁ = 50 − 10 = 40 cm<br>F₂ = 5 N<br>d₂ = ?||The rule’s own weight acts at the pivot, so it has no moment.<br>clockwise moment = anticlockwise moment<br>5 × d₂ = 2 × 40<br>5 × d₂ = 80<br>d₂ = [[80|5]]<br>d₂ = 16 cm (to the right of the pivot)<br>mark = 50 + 16<br>mark = 66 cm'}
 
   ],beamDiagram({x0:0,x1:100,pivots:[50],forces:[{x:10,label:'2 N'},{x:66,label:'5 N'}],dims:[{a:10,b:50,label:'40 cm'},{a:50,b:66,label:'?'}],note:'0 cm                 metre rule                100 cm',label:'A metre rule pivoted at 50 cm with a 2 N weight at 10 cm and a 5 N weight to the right'}));
 
@@ -1626,8 +1710,8 @@ calcAct('moments','A metre rule','A uniform metre rule is pivoted at its 50 cm m
   draw();
 }
 calcAct('beams','Henry on a light plank','A light plank 4.0 m long rests on supports at each end. Henry, who weighs 600 N, stands 1.0 m from support A. Take moments about A: the force at A has no moment about it.',[
-  {q:'The upward force at B is',unit:'N',answer:150,working:'moments about A: F<sub>B</sub> × 4.0 = 600 × 1.0<br>F<sub>B</sub> × 4.0 = 600<br>F<sub>B</sub> = [[600|4.0]]<br>F<sub>B</sub> = 150 N'},
-  {q:'The upward force at A is',unit:'N',answer:450,working:'total upward force = total downward force<br>F<sub>A</sub> + 150 = 600<br>F<sub>A</sub> = 600 − 150<br>F<sub>A</sub> = 450 N (the support nearer Henry takes more of the weight)'}
+  {q:'The upward force at B is',unit:'N',answer:150,working:'W = 600 N<br>d<sub>W</sub> = 1.0 m (from A)<br>d<sub>B</sub> = 4.0 m (from A)<br>F<sub>B</sub> = ?||clockwise moment = anticlockwise moment (about A)<br>600 × 1.0 = F<sub>B</sub> × 4.0<br>600 = F<sub>B</sub> × 4.0<br>F<sub>B</sub> = [[600|4.0]]<br>F<sub>B</sub> = 150 N'},
+  {q:'The upward force at A is',unit:'N',answer:450,working:'W = 600 N<br>F<sub>B</sub> = 150 N<br>F<sub>A</sub> = ?||total upward force = total downward force<br>F<sub>A</sub> + 150 = 600<br>F<sub>A</sub> = 600 − 150<br>F<sub>A</sub> = 450 N (the support nearer Henry takes more of the weight)'}
 
   ],beamDiagram({x0:0,x1:4,supports:[{x:0,label:'A'},{x:4,label:'B'}],forces:[{x:1,label:'600 N'}],dims:[{a:0,b:1,label:'1.0 m'},{a:0,b:4,label:'4.0 m',row:1}],label:'A 4.0 m plank on supports A and B with a 600 N load 1.0 m from A'}));
 

@@ -326,6 +326,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-m{justify-self:center}
 .eqg-r{justify-self:start;min-width:0}
 .eqg-full{grid-column:1/-1}
+.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
+.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
+@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -533,7 +536,7 @@ function bar(parent,buttons){
 // Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
 // answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
 // a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
-const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const shownVal=a=>{const v=Number(a),t=String(a);if(!/e/i.test(t)&&!(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-3)))return t;const p=v.toPrecision(3).split('e');return p.length<2?t:p[0]+'×10^'+(+p[1]);};
 const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
 function answerBtn(b,fn){
   const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
@@ -982,6 +985,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -991,18 +1002,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -1024,8 +1054,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -1581,8 +1612,8 @@ createReorder({host:act('fission','Order','How a uranium-235 nucleus splits','Pu
     {id:'e',text:'The products fly apart: energy is released as their kinetic energy'}
   ],constraints:[['a','b'],['b','c'],['b','d'],['c','e'],['d','e']],why:'The neutron is absorbed first; the split gives two daughter nuclei and a few neutrons, which carry the energy away as kinetic energy.'});
 calcAct('fission','Balance a fission equation',N(235,92,'U')+' + '+N(1,0,'n')+' → '+N(141,56,'Ba')+' + '+N(92,'Z','Kr')+' + x '+N(1,0,'n')+'. The top numbers and the bottom numbers each add up to the same on both sides.',[
-  {q:'The number of neutrons released, x, is',unit:'',answer:3,working:'mass numbers: 235 + 1 = 141 + 92 + x<br>236 = 233 + x<br>x = 236 − 233<br>x = 3'},
-  {q:'The atomic number of the krypton nucleus, Z, is',unit:'',answer:36,working:'atomic numbers: 92 + 0 = 56 + Z + 0<br>92 = 56 + Z<br>Z = 92 − 56<br>Z = 36'}
+  {q:'The number of neutrons released, x, is',unit:'',answer:3,working:'mass numbers before = 235 + 1<br>mass numbers after = 141 + 92 + x<br>x = ?||235 + 1 = 141 + 92 + x<br>236 = 233 + x<br>x = 236 − 233<br>x = 3'},
+  {q:'The atomic number of the krypton nucleus, Z, is',unit:'',answer:36,working:'atomic numbers before = 92 + 0<br>atomic numbers after = 56 + Z + 0<br>Z = ?||92 + 0 = 56 + Z + 0<br>92 = 56 + Z<br>Z = 92 − 56<br>Z = 36'}
 ]);
 
 /* ================= 3. CHAIN REACTIONS AND REACTORS ================= */
@@ -1639,16 +1670,26 @@ predictAct('fusion','Why so hot?','Decide first, then see the answer.',{
   ],
   explain:'Nuclei are positively charged, so they repel each other. Only at very high temperatures (very fast nuclei) and pressures (many collisions) do they get close enough to fuse.'});
 calcAct('fusion','Balance a fusion equation',N(2,1,'H')+' + '+N(3,1,'H')+' → '+N(4,2,'He')+' + X. Find the particle X.',[
-  {q:'The mass number of X is',unit:'',answer:1,working:'2 + 3 = 4 + A<br>5 = 4 + A<br>A = 1'},
-  {q:'The atomic number of X is',unit:'',answer:0,working:'1 + 1 = 2 + Z<br>2 = 2 + Z<br>Z = 0<br>X is a neutron'}
+  {q:'The mass number of X is',unit:'',answer:1,working:'mass numbers before = 2 + 3<br>mass numbers after = 4 + A<br>A = ?||2 + 3 = 4 + A<br>5 = 4 + A<br>A = 5 − 4<br>A = 1'},
+  {q:'The atomic number of X is',unit:'',answer:0,working:'atomic numbers before = 1 + 1<br>atomic numbers after = 2 + Z<br>Z = ?||1 + 1 = 2 + Z<br>2 = 2 + Z<br>Z = 2 − 2<br>Z = 0 (X is a neutron)'}
 ]);
 
 /* ================= 5. UNITS AND KEY TERMS (ALL OF UNIT 7) ================= */
 // The one Units and Key Terms tab for the whole unit (CLAUDE.md, 2 Nov 2026).
+// New problems helpers (terms tab)
+const tm_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+const tm_n=x=>x>=10000?String(x).replace(/\B(?=(\d{3})+(?!\d))/g,' '):String(x);
 calcAct('terms','Convert the units','Write each value in the unit shown.',[
-  {q:'A half-life of 3 hours in minutes is',unit:'min',answer:180,working:'1 h = 60 min<br>3 h = 3 × 60 min<br>3 h = 180 min'},
-  {q:'A half-life of 2 days in hours is',unit:'h',answer:48,working:'1 day = 24 h<br>2 days = 2 × 24 h<br>2 days = 48 h'},
-  {q:'A count of 1200 in one minute, as an average count per second, is',unit:'counts per second',answer:20,working:'1 min = 60 s<br>counts per second = [[1200|60]]<br>counts per second = 20'}
+  {q:'A half-life of 3 hours in minutes is',unit:'min',answer:180,working:tm_w(['half-life = 3 h','1 h = 60 min','half-life in min = ?'],['half-life = 3 × 60','half-life = 180 min']),
+   make:rnd=>{const h=calcPick(rnd,[1.5,2,2.5,4,5,6,8,12]),m=+(h*60).toFixed(2);
+     return {q:'A half-life of '+h+' hours in minutes is',unit:'min',answer:m,working:tm_w(['half-life = '+h+' h','1 h = 60 min','half-life in min = ?'],['half-life = '+h+' × 60','half-life = '+m+' min'])};}},
+  {q:'A half-life of 2 days in hours is',unit:'h',answer:48,working:tm_w(['half-life = 2 days','1 day = 24 h','half-life in h = ?'],['half-life = 2 × 24','half-life = 48 h']),
+   make:rnd=>{const d=calcPick(rnd,[1.5,3,4,5,6,8,14]),h=+(d*24).toFixed(2),q='A half-life of '+d+' days in hours is';
+     return {q:q,unit:'h',answer:h,working:tm_w(['half-life = '+d+' days','1 day = 24 h','half-life in h = ?'],['half-life = '+d+' × 24','half-life = '+h+' h'])};}},
+  {q:'A count of 1200 in one minute, as an average count per second, is',unit:'counts per second',answer:20,working:tm_w(['count = 1200','time = 1 min = 60 s','counts per second = ?'],['counts per second = [[count|time]]','counts per second = [[1200|60]]','counts per second = 20']),
+   make:rnd=>{const c=calcPick(rnd,[[1,60],[2,120],[5,300],[10,600]]),cps=calcPick(rnd,[3,4,5,8,12,15,20,25,30,40]),n=cps*c[1],tw=c[0]===1?'one minute':c[0]+' minutes';
+     const by=calcPick(rnd,['A count','A GM tube’s count','Ruby’s count','Henry’s count']);
+     return {q:by+' of '+tm_n(n)+' in '+tw+', as an average count per second, is',unit:'counts per second',answer:cps,working:tm_w(['count = '+tm_n(n),'time = '+c[0]+' min = '+c[1]+' s','counts per second = ?'],['counts per second = [[count|time]]','counts per second = [['+tm_n(n)+'|'+c[1]+']]','counts per second = '+cps])};}}
 ]);
 createCrossword({host:act('terms','Crossword','Unit 7 Key words','Click a square or a clue and type. Check takes out any wrong letters.'),words:[
   {a:'CONTAMINATION',r:9,c:0,d:'a',clue:'Radioactive material getting onto or into an object, which then keeps giving out radiation'},

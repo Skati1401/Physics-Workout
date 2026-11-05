@@ -330,6 +330,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .eqg-m{justify-self:center}
 .eqg-r{justify-self:start;min-width:0}
 .eqg-full{grid-column:1/-1}
+.cw-split{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:start}
+.cw-given{padding-right:22px;border-right:1px solid var(--panel-border)}
+@media (max-width:560px){.cw-split{grid-template-columns:minmax(0,1fr);row-gap:6px}.cw-given{padding:0 0 6px;border-right:0;border-bottom:1px solid var(--panel-border)}}
 .eq b{font-weight:500;color:var(--accent)}
 .eq .why{font-family:var(--f-body);font-size:11.5px;color:var(--ink-faint);margin-left:.8em;white-space:nowrap}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -513,7 +516,7 @@ function bar(parent,buttons){
 // Show answer (Alex, 4 Nov 2026): appears after a Check with a wrong answer. It fills in and locks the right
 // answers, marked as shown (dashed) rather than correct, so a stuck student can see them and move on.
 // a shown number: plain, or 4.42×10^-19 for very big or small answers (the answer box accepts both)
-const shownVal=a=>{const t=String(a);if(!/e/i.test(t))return t;const p=Number(a).toPrecision(3).split('e');return p[0]+'×10^'+(+p[1]);};
+const shownVal=a=>{const v=Number(a),t=String(a);if(!/e/i.test(t)&&!(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-3)))return t;const p=v.toPrecision(3).split('e');return p.length<2?t:p[0]+'×10^'+(+p[1]);};
 const SHOWN_MSG='Answers shown (dashed). Read them through, then start again to try it on your own.';
 function answerBtn(b,fn){
   const btn=mk('button','btn btn-show','Show answer');btn.type='button';btn.hidden=true;
@@ -962,6 +965,14 @@ function createMemoryGame(cfg){
 
 /* ================= type-the-number ================= */
 let calcN=0;
+// Worked answers (Alex, 5 Nov 2026): a working written "givens||steps" shows the known values (s = …, u = …) down the
+// left and the equation with every step on the right, each column lined up on its = signs, as students should lay out
+// an exam answer (wide, not tall). The columns stack on phones. Without "||" the working is one column as before.
+const calcCol=t=>'<div class="eqg">'+String(t).split(/<br\s*\/?>/i).map(l=>{const i=l.indexOf(' = ');return i<0?'<span class="eqg-full">'+l+'</span>':'<span class="eqg-l">'+l.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+l.slice(i+3)+'</span>';}).join('')+'</div>';
+const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-split"><div class="cw-given">'+calcCol(t.slice(0,k))+'</div><div class="cw-eq">'+calcCol(t.slice(k+2))+'</div></div>';};
+// seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
+const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
@@ -971,18 +982,37 @@ function createCalc(cfg){
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
-      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+FR(q.working)+'</div></div>';
+      '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
       const inp=row.querySelector('.calc-num-input'),fb=row.querySelector('.calc-fb');
       inp.value=shownVal(qs[i].answer);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
-      row.querySelector('.cw').innerHTML=FR(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
+      row.querySelector('.cw').innerHTML=calcWork(qs[i].working);row.querySelector('.calc-working').hidden=false;sb.hidden=true;
       fb.textContent='Answer shown, with the working. Try the next one on your own.';fb.className='calc-fb';
     });
   });
   const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  // New problems (Alex, 5 Nov 2026): a question with make: rnd=>{q,unit,answer,working} (or cfg.makers, one per question)
+  // gets new versions from the "New problems" button. The first
+  // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
+  // shows the same problems.
+  const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  const apply=s=>{
+    seed=s;const rnd=calcRnd(s||1);
+    qs.forEach((q,i)=>{
+      const m=makers[i];
+      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
+      row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
+    });
+  };
+  if(makers.some(Boolean)){
+    const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+    nb.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));reset();b.say('New problems: same skills, new questions.','');});
+  }
   function check(){
     let ok=0,blank=0,bad=0;
     qs.forEach((q,i)=>{
@@ -1004,8 +1034,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled)}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
     setState:s=>{
+      if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
         const e=inp(i),v=s.v&&s.v[i];if(typeof v!=='string')return;
@@ -1595,42 +1626,17 @@ predictAct('power','Choose the fuse','Fuses come in 3 A, 5 A and 13 A.',{
     {text:'Any of them, as all fuses melt at once',why:'Each fuse melts above its own rating. It must be a little above the normal current.'}
   ],
   explain:'P = I × V, so 2300 = I × 230 and I = 10 A. Choose the fuse with the smallest rating that is above the normal current: 13 A.'});
-// New numbers (pilot, 4 Nov 2026): the first set is always the fixed questions below. "New numbers" makes a fresh
-// set of the same three questions (same rearrangement, new values) from a seed, saved with the answers, so a
-// reload shows the same numbers. Each maker returns {q, unit, answer, working} like a fixed question.
-const seededRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
-const pickOne=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
-const newNumbersCalc=(panel,title,intro,fixed,makers)=>{
-  const qs=fixed.map(q=>Object.assign({},q));
-  const g=calcAct(panel,title,intro,qs),host=g.host;
-  let seed=0;
-  const apply=s=>{
-    seed=s;const rnd=seededRnd(s),rows=$$('.calc-input-row',host);
-    qs.forEach((q,i)=>{
-      Object.assign(q,s?makers[i](rnd):fixed[i]);
-      $('label',rows[i]).innerHTML=q.q;$('.cw',rows[i]).innerHTML=FR(q.working);$('.calc-input-unit',rows[i]).textContent=q.unit;
-    });
-  };
-  const bar=$('.bar',host),btn=mk('button','btn','New numbers');btn.type='button';
-  bar.insertBefore(btn,$('.fb',bar));
-  btn.addEventListener('click',()=>{apply(1+Math.floor(Math.random()*2147483646));g.reset();const fb=$('.fb',bar);fb.textContent='New numbers: same questions, new values.';fb.className='fb';});
-  const getS=g.getState,setS=g.setState;
-  g.getState=()=>Object.assign(getS(),{seed:seed});
-  g.setState=st=>{apply((st&&st.seed)||0);setS(st);};
-  return g;
-};
 const amps=I=>Number.isInteger(I)?I.toFixed(1):String(I);
-newNumbersCalc('power','P = I × V','Use P = I × V. Give each answer in the unit shown. Press New numbers for another set.',[
-  {q:'A 1150 W microwave runs on the 230 V mains. The current is',unit:'A',answer:5,working:'P = I × V<br>1150 = I × 230<br>I = [[1150|230]]<br>I = 5 A'},
-  {q:'An electric drill has a power of 460 W and takes a current of 2.0 A. The voltage is',unit:'V',answer:230,working:'P = I × V<br>460 = 2.0 × V<br>V = [[460|2.0]]<br>V = 230 V'},
-  {q:'A 2.3 kW heater runs on the 230 V mains. The current is',unit:'A',answer:10,working:'2.3 kW = 2300 W<br>P = I × V<br>2300 = I × 230<br>I = [[2300|230]]<br>I = 10 A'}
-],[
-  rnd=>{const I=pickOne(rnd,[3,4,5,6,7,8]),P=I*230;
-    return {q:'A '+P+' W microwave runs on the 230 V mains. The current is',unit:'A',answer:I,working:'P = I × V<br>'+P+' = I × 230<br>I = [['+P+'|230]]<br>I = '+I+' A'};},
-  rnd=>{const c=pickOne(rnd,[[18,10],[18,12.5],[18,20],[110,2],[110,3],[110,4.5],[230,1.5],[230,2],[230,3]]),V=c[0],I=c[1],P=V*I;
-    return {q:'An electric drill has a power of '+P+' W and takes a current of '+amps(I)+' A. The voltage is',unit:'V',answer:V,working:'P = I × V<br>'+P+' = '+amps(I)+' × V<br>V = [['+P+'|'+amps(I)+']]<br>V = '+V+' V'};},
-  rnd=>{const kW=pickOne(rnd,[1.15,1.38,1.84,2.3,2.76,3.45]),W=Math.round(kW*1000),I=W/230;
-    return {q:'A '+kW+' kW heater runs on the 230 V mains. The current is',unit:'A',answer:I,working:kW+' kW = '+W+' W<br>P = I × V<br>'+W+' = I × 230<br>I = [['+W+'|230]]<br>I = '+I+' A'};}
+calcAct('power','P = I × V','Use P = I × V. Give each answer in the unit shown. Press New problems for another set.',[
+  {q:'A 1150 W microwave runs on the 230 V mains. The current is',unit:'A',answer:5,working:'P = 1150 W<br>V = 230 V<br>I = ?||P = I × V<br>1150 = I × 230<br>I = [[1150|230]]<br>I = 5 A',
+   make:rnd=>{const I=calcPick(rnd,[3,4,5,6,7,8]),P=I*230,what=calcPick(rnd,['microwave','kettle','toaster','hair dryer']);
+     return {q:'A '+P+' W '+what+' runs on the 230 V mains. The current is',unit:'A',answer:I,working:'P = '+P+' W<br>V = 230 V<br>I = ?||P = I × V<br>'+P+' = I × 230<br>I = [['+P+'|230]]<br>I = '+I+' A'};}},
+  {q:'An electric drill has a power of 460 W and takes a current of 2.0 A. The voltage is',unit:'V',answer:230,working:'P = 460 W<br>I = 2.0 A<br>V = ?||P = I × V<br>460 = 2.0 × V<br>V = [[460|2.0]]<br>V = 230 V',
+   make:rnd=>{const c=calcPick(rnd,[[18,10],[18,12.5],[18,20],[110,2],[110,3],[110,4.5],[230,1.5],[230,2],[230,3]]),V=c[0],I=c[1],P=V*I,what=calcPick(rnd,['An electric drill','A hedge trimmer','A floor sander']);
+     return {q:what+' has a power of '+P+' W and takes a current of '+amps(I)+' A. The voltage is',unit:'V',answer:V,working:'P = '+P+' W<br>I = '+amps(I)+' A<br>V = ?||P = I × V<br>'+P+' = '+amps(I)+' × V<br>V = [['+P+'|'+amps(I)+']]<br>V = '+V+' V'};}},
+  {q:'A 2.3 kW heater runs on the 230 V mains. The current is',unit:'A',answer:10,working:'P = 2.3 kW = 2300 W<br>V = 230 V<br>I = ?||P = I × V<br>2300 = I × 230<br>I = [[2300|230]]<br>I = 10 A',
+   make:rnd=>{const kW=calcPick(rnd,[1.15,1.38,1.84,2.3,2.76,3.45]),W=Math.round(kW*1000),I=+(W/230).toFixed(2),what=calcPick(rnd,['heater','kettle','oven']);
+     return {q:'A '+kW+' kW '+what+' runs on the 230 V mains. The current is',unit:'A',answer:I,working:'P = '+kW+' kW = '+W+' W<br>V = 230 V<br>I = ?||P = I × V<br>'+W+' = I × 230<br>I = [['+W+'|230]]<br>I = '+I+' A'};}}
 ]);
 
 /* ================= 6. ENERGY, a.c. AND d.c. ================= */
@@ -1645,11 +1651,24 @@ createSortGame({host:act('energy','Sort','a.c. or d.c.?','Sort each card, then p
     {id:'d2',cat:'d',text:'Flows in one direction only'},
     {id:'d3',cat:'d',text:'Supplied by a solar cell'}
   ]});
-calcAct('energy','E = I × V × t','Use E = I × V × t, with time in seconds.',[
-  {q:'A 12 V battery gives a current of 2.5 A for 10 minutes. The energy transferred is',unit:'J',answer:18000,working:'t = 10 × 60 = 600 s<br>E = I × V × t<br>E = 2.5 × 12 × 600<br>E = 18 000 J'},
-  {q:'Poppy’s kettle takes 10 A from the 230 V mains and transfers 690 000 J. The time it is on for is',unit:'s',answer:300,working:'E = I × V × t<br>690 000 = 10 × 230 × t<br>690 000 = 2300 × t<br>t = [[690 000|2300]]<br>t = 300 s'},
-  {q:'A 6.0 V motor transfers 900 J in 50 s. The current is',unit:'A',answer:3,working:'E = I × V × t<br>900 = I × 6.0 × 50<br>900 = I × 300<br>I = [[900|300]]<br>I = 3 A'}
-
+// number formatting for the energy makers: no float noise, spaces in numbers of 10 000 and over, 1 d.p. on small whole values
+const energy_fmt=x=>{const v=+(+x).toFixed(4),t=String(v),k=t.indexOf('.'),i=k<0?t:t.slice(0,k);return (Math.abs(v)>=10000?i.replace(/\B(?=(\d{3})+(?!\d))/g,' '):i)+(k<0?'':t.slice(k));};
+const energy_d1=x=>Number.isInteger(x)&&x<10?x.toFixed(1):energy_fmt(x);
+calcAct('energy','E = I × V × t','Use E = I × V × t, with time in seconds. Press New problems for another set.',[
+  {q:'A 12 V battery gives a current of 2.5 A for 10 minutes. The energy transferred is',unit:'J',answer:18000,working:'I = 2.5 A<br>V = 12 V<br>t = 10 min = 600 s<br>E = ?||E = I × V × t<br>E = 2.5 × 12 × 600<br>E = 18 000 J',
+   make:rnd=>{const c=calcPick(rnd,[['A {V} V battery gives',[6,9,12],[0.5,1.5,2,2.5,3]],['A {V} V car headlamp takes',[12],[4,5]],['Charlie’s {V} V electric bike motor takes',[24,36],[5,8,10]],['A {V} V motor takes',[6,12,24],[1.5,2,2.5,3,4]]]),
+       V=calcPick(rnd,c[1]),I=calcPick(rnd,c[2]),m=calcPick(rnd,[2,5,10,15,20]),t=m*60,E=I*V*t;
+     return {q:c[0].replace('{V}',energy_d1(V))+' a current of '+energy_d1(I)+' A for '+m+' minutes. The energy transferred is',unit:'J',answer:E,
+       working:'I = '+energy_d1(I)+' A<br>V = '+energy_d1(V)+' V<br>t = '+m+' min = '+t+' s<br>E = ?||E = I × V × t<br>E = '+energy_d1(I)+' × '+energy_d1(V)+' × '+t+'<br>E = '+energy_fmt(E)+' J'};}},
+  {q:'Poppy’s kettle takes 10 A from the 230 V mains and transfers 690 000 J. The time it is on for is',unit:'s',answer:300,working:'I = 10 A<br>V = 230 V<br>E = 690 000 J<br>t = ?||E = I × V × t<br>690 000 = 10 × 230 × t<br>690 000 = 2300 × t<br>t = [[690 000|2300]]<br>t = 300 s',
+   make:rnd=>{const c=calcPick(rnd,[['Poppy’s kettle',[10,12,13]],['A toaster',[4,5]],['Henry’s hair dryer',[5,6,8]],['An electric heater',[8,10]],['Fatimah’s iron',[4,5,6]]]),
+       I=calcPick(rnd,c[1]),t=calcPick(rnd,[60,90,120,180,240,300]),P=I*230,E=P*t;
+     return {q:c[0]+' takes '+I+' A from the 230 V mains and transfers '+energy_fmt(E)+' J. The time it is on for is',unit:'s',answer:t,
+       working:'I = '+I+' A<br>V = 230 V<br>E = '+energy_fmt(E)+' J<br>t = ?||E = I × V × t<br>'+energy_fmt(E)+' = '+I+' × 230 × t<br>'+energy_fmt(E)+' = '+energy_fmt(P)+' × t<br>t = [['+energy_fmt(E)+'|'+energy_fmt(P)+']]<br>t = '+t+' s'};}},
+  {q:'A 6.0 V motor transfers 900 J in 50 s. The current is',unit:'A',answer:3,working:'V = 6.0 V<br>E = 900 J<br>t = 50 s<br>I = ?||E = I × V × t<br>900 = I × 6.0 × 50<br>900 = I × 300<br>I = [[900|300]]<br>I = 3 A',
+   make:rnd=>{const what=calcPick(rnd,['motor','lamp','fan','heating element']),V=calcPick(rnd,[3,6,9,12]),t=calcPick(rnd,[20,30,40,50,60,100]),I=calcPick(rnd,[0.5,1.5,2,2.5,3,4]),Vt=V*t,E=I*Vt;
+     return {q:'A '+energy_d1(V)+' V '+what+' transfers '+energy_fmt(E)+' J in '+t+' s. The current is',unit:'A',answer:I,
+       working:'V = '+energy_d1(V)+' V<br>E = '+energy_fmt(E)+' J<br>t = '+t+' s<br>I = ?||E = I × V × t<br>'+energy_fmt(E)+' = I × '+energy_d1(V)+' × '+t+'<br>'+energy_fmt(E)+' = I × '+energy_fmt(Vt)+'<br>I = [['+energy_fmt(E)+'|'+energy_fmt(Vt)+']]<br>I = '+energy_fmt(I)+' A'};}}
   ]);
 
 /* ================= tabs, startup ================= */
