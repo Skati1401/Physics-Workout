@@ -43,12 +43,14 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the cards to `igcse.html`, then add the unit's activities to the Calculations and Graphs sets.
 
 - [ ] Key-word crosswords for other units, if Alex wants them.
+- [ ] Roll out the 1c suvat working layout to every Calculate card's working (workouts, practicals, sets): the known values listed down the left (e.g. s = …, u = …), the equation and every step on the right, as students should lay out an exam answer (wide, not tall). Model: `suvatWork()` / `eqCol()` in `falling-stopping-springs.html`, which also works in the Calculations set copy; stack the two columns on phones. Do it in another chat, engine change into every copy and `tools/practical-gen/template/engine.js` (Alex, 5 Nov 2026).
 
 ## 5. Build: core practicals
 
 How to build one: `tools/CORE-PRACTICALS.md`.
 
 - [ ] Review the six practicals published 4 Nov 2026: 3.17 `refraction-practical.html`, 3.19 `refractive-index-practical.html`, 3.25P `speed-of-sound-practical.html`, 2.23P `charging-practical.html`, 3.27P `sound-frequency-practical.html`, 7.6 `penetrating-power-practical.html` (what to check is in `tools/REVIEW.md`).
+- [ ] After Alex checks 1.22's new Experiment tab (students read the ruler, fill in their own table and plot it; the old run is the Show tab): use the same pattern on the other measure-and-plot practicals (5.4, 2.9, 5.14P, 3.19) (added 5 Nov 2026).
 - [ ] Core route for the other 13 IGCSE practicals (only 1.22 has one): about 12 minutes each, chosen from the Question Index, set in `page.json`, checked with `check.py` (`tools/CORE-PRACTICALS.md`, "Core route + Extra practice"). Start from the recommended route for each page in the Project doc `claude/practicals-review-2026-11-04.md` (added 5 Nov 2026).
 - [ ] Fix the errors the 4 Nov practicals review found, still live on 5 Nov 2026 (full list per page in `claude/practicals-review-2026-11-04.md`). The main ones:
   - 5.4 density: `setMethod` runs before the Method activities exist, so all four Orders show on load; make Irregular object the default.

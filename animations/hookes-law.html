@@ -283,6 +283,12 @@
     // the sample is elastic (back to its original length) or permanently stretched.
     // phase and Fpeak are also tracked outside Experiment mode, so the rubber band's unloading line shows there too.
     var EXP=false, step=1, phase='load', Fpeak=0, loadR=[], unloadR=[];
+    // Measure mode (?show=measure, Alex 5 Nov 2026): the practical page's "Do the experiment" tab. One spring, 100 g
+    // masses, loading only to 8 N. Nothing is read for the student: a magnified view of the ruler at the pointer
+    // replaces the graph, and the student writes each length in the table on the practical page and plots it there.
+    // The spring's true lengths (cm) at 0–8 N are MEAS_L; the practical page checks against the same numbers.
+    var MEAS=/[?&]show=measure\b/.test(location.search), MMAX=8;
+    var MEAS_D=[0,0.1,-0.1,0,0.1,-0.1,0,0.1,0];   // a small fixed scatter, so the points are not perfectly in line
     var stack=[];      // slotted masses on the hanger (grams), bottom first; outside Experiment mode
     var Fcur=0;        // the load now (N)
     // the picture eases to each new load: Fd is the load the picture shows, off a short-lived offset so it never jumps
@@ -293,8 +299,9 @@
     msEl.innerHTML=MSIZES.map(function(m){ return '<button type="button" data-n="'+m.N+'" aria-pressed="'+(m.N===step)+'">'+m.g+' g</button>'; }).join('');
     msEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; step=+b.dataset.n;
       Array.prototype.forEach.call(msEl.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); clearRun(); });
+    if(MEAS){ EXP=true; expBtn.setAttribute('aria-pressed','true'); }
     function clearRun(){ loadR=[]; unloadR=[]; phase='load'; Fpeak=0; fIn.value=0; Fcur=0; Fd=0; anim=null; stack=[];
-      $('#hk-slider').hidden=EXP; $('#hk-exp-btns').hidden=!EXP; $('#hk-results').hidden=!EXP; $('#hk-msize-wrap').hidden=!EXP; draw(); }
+      $('#hk-slider').hidden=EXP; $('#hk-exp-btns').hidden=!EXP; $('#hk-results').hidden=!EXP||MEAS; $('#hk-msize-wrap').hidden=!EXP||MEAS; draw(); }
     function noise(F){ return [0,1,-1,0,2,-1,1,-2,0,1,-1,0,1,-1,2,0,-1,1,0,-2,1][Math.round(F*2)%21]; }
     // Rubber band hysteresis: on the way down the extension at each load is larger than on the way up,
     // and at 0 N it is back at its original length (elastic), so the loading and unloading lines form a loop.
@@ -305,6 +312,7 @@
     // Outside Experiment mode the spring and wire simply follow their loading curve, as before.
     function xNow(F){
       var M=MATS[mat];
+      if(MEAS) return M.ext(F)+(MEAS_D[Math.round(F)]||0)*Math.min(1,F);
       if(phase!=='unload' || F>=Fpeak) return M.ext(F);
       if(mat==='rubber') return rubberDown(F, Fpeak);
       if(!EXP || Fpeak<=M.lop) return M.ext(F);
@@ -332,16 +340,17 @@
       if(F>0) x+=noise(F)*Math.min(res*(mat==='wire'?0.5:1), gap/4);   // the error never makes a reading go the wrong way
       return Math.max(0, Math.round(x/res)*res);
     }
-    function canAdd(){ return EXP ? (phase==='load' && Fpeak<10-1e-9) : Fcur<10-1e-9; }
+    var FMAX=MEAS?MMAX:10;
+    function canAdd(){ return EXP ? (phase==='load' && Fpeak<FMAX-1e-9) : Fcur<10-1e-9; }
     function addMass(){
-      if(phase!=='load' || Fpeak>=10-1e-9) return;
+      if(phase!=='load' || Fpeak>=FMAX-1e-9) return;
       change(function(){
         var prev=loadR.length?loadR[loadR.length-1].x:0, F=Math.round((Fpeak+step)*2)/2;
         Fpeak=F; fIn.value=F; loadR.push({F:F, x:reading(F, prev)});
       },'load');
     }
     function removeMass(){
-      var F=+fIn.value; if(F<=0 || Fpeak<=0) return;
+      var F=+fIn.value; if(MEAS || F<=0 || Fpeak<=0) return;
       change(function(){
         if(phase==='load'){ phase='unload'; }
         var prev=unloadR.length?unloadR[unloadR.length-1].x:loadR[loadR.length-1].x;
@@ -369,7 +378,7 @@
     function removeExplore(){ if(!stack.length) return; change(function(){ var g=stack.pop(); setLoad(Math.max(0,Math.round((Fcur-g/100)*2)/2)); }); }
     function onHanger(){ if(!EXP) return stack; var a=[], n=Math.round(Fcur/step); for(var i=0;i<n;i++) a.push(step*100); return a; }
     function piles(){   // the stock of masses on the bench, with how many are left
-      if(EXP) return [{g:step*100, n:Math.round((10-Fcur)/step)}];
+      if(EXP) return [{g:step*100, n:Math.round((FMAX-Fcur)/step)}];
       var n100=stack.filter(function(g){ return g===100; }).length, n50=stack.length-n100;
       return [{g:100, n:10-n100}, {g:50, n:Math.max(0,2-n50)}];
     }
@@ -396,6 +405,26 @@
     var drag=null;   // {from:'pile'|'hanger', g, sx, sy, moved, q}
     function inHangerZone(q, y1){ return Math.abs(q.x-X0)<48 && q.y>TOP+12 && q.y<y1+STEM+28; }
 
+    // Measure mode: the ruler magnified about the pointer, with millimetre marks, so the length can be read to 0.1 cm
+    var MG={x:330, y:22, w:240, h:236, z:60};   // z = px per cm in the magnified view
+    function magnifier(M, Lp){
+      var cy=MG.y+MG.h/2, RX=MG.x+70, g='', RXs=X0+44, py=TOP+14+Lp*M.px, half=MG.h/2/MG.z;
+      // where the magnified piece is on the real ruler
+      g+='<rect x="'+(RXs-3)+'" y="'+(py-half*M.px)+'" width="28" height="'+(2*half*M.px)+'" fill="none" stroke="var(--ink-soft)" stroke-dasharray="3 2"/>';
+      g+='<line x1="'+(RXs+25)+'" x2="'+MG.x+'" y1="'+(py-half*M.px)+'" y2="'+MG.y+'" stroke="var(--ink-faint)" stroke-dasharray="3 2"/><line x1="'+(RXs+25)+'" x2="'+MG.x+'" y1="'+(py+half*M.px)+'" y2="'+(MG.y+MG.h)+'" stroke="var(--ink-faint)" stroke-dasharray="3 2"/>';
+      g+='<defs><clipPath id="hk-mclip"><rect x="'+MG.x+'" y="'+MG.y+'" width="'+MG.w+'" height="'+MG.h+'" rx="10"/></clipPath></defs>';
+      g+='<rect x="'+MG.x+'" y="'+MG.y+'" width="'+MG.w+'" height="'+MG.h+'" rx="10" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="1.5"/>';
+      g+='<g clip-path="url(#hk-mclip)"><rect x="'+RX+'" y="'+MG.y+'" width="70" height="'+MG.h+'" fill="var(--units-soft)" stroke="var(--units)"/>';
+      var m0=Math.floor((Lp-half)*10)-1, m1=Math.ceil((Lp+half)*10)+1;
+      for(var mm=Math.max(0,m0); mm<=m1; mm++){
+        var y=cy+(mm/10-Lp)*MG.z, w=mm%10===0?30:mm%5===0?20:11;
+        g+='<line x1="'+RX+'" x2="'+(RX+w)+'" y1="'+y+'" y2="'+y+'" stroke="var(--units)" stroke-width="'+(mm%10===0?1.6:1)+'"/>';
+        if(mm%10===0) g+='<text x="'+(RX+36)+'" y="'+(y+5)+'" font-size="15" fill="var(--ink)">'+(mm/10)+'</text>';
+      }
+      g+='<line x1="'+(MG.x+6)+'" x2="'+(RX+2)+'" y1="'+cy+'" y2="'+cy+'" stroke="var(--accent)" stroke-width="2.5"/><path d="M'+(RX+2)+','+cy+' l-9,-6 v12 z" fill="var(--accent)"/></g>';
+      g+='<text x="'+(MG.x+MG.w/2)+'" y="'+(MG.y+MG.h+15)+'" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">ruler at the pointer, magnified (cm)</text>';
+      return g;
+    }
     function render(){
       var M=MATS[mat], F=Fd, x=dispX(), g='', top=TOP, i;
       var baseLen = mat==='wire'?60:M.orig*M.px, len=baseLen+x*M.px, y1=top+14+len;
@@ -411,7 +440,7 @@
       var sy=yb; hs.forEach(function(m){ g+=disc(X0, sy, m); sy-=th(m); });
       if(drag && drag.from==='pile' && drag.moved && drag.over) g+='<rect x="'+(X0-22)+'" y="'+(y1+4)+'" width="44" height="'+(STEM+10)+'" rx="6" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>';
       g+='<text x="'+(X0-22)+'" y="'+(yb+3)+'" text-anchor="end" font-size="11" fill="var(--ink)">'+num(Fcur,1)+' N</text>';
-      if(hs.length && !EXP || hs.length && EXP && Fpeak>0) g+='<rect data-grab="hanger" x="'+(X0-20)+'" y="'+(sy-6)+'" width="40" height="'+(yb-sy+10)+'" fill="transparent"/>';
+      if(hs.length && !EXP || hs.length && EXP && !MEAS && Fpeak>0) g+='<rect data-grab="hanger" x="'+(X0-20)+'" y="'+(sy-6)+'" width="40" height="'+(yb-sy+10)+'" fill="transparent"/>';
       if(EXP && mat==='wire'){   // a marker on the wire, read against a vernier scale
         g+='<rect x="'+(X0+14)+'" y="'+(y1-26)+'" width="16" height="40" fill="var(--units-soft)" stroke="var(--units)"/>';
         for(var vt=0; vt<=8; vt++) g+='<line x1="'+(X0+14)+'" x2="'+(X0+(vt%4?20:24))+'" y1="'+(y1-22+vt*4)+'" y2="'+(y1-22+vt*4)+'" stroke="var(--units)"/>';
@@ -434,7 +463,8 @@
         g+='<text x="'+cx+'" y="'+(PILE_Y+13)+'" text-anchor="middle" font-size="10" fill="var(--ink-soft)">'+p.g+' g</text>';
         if(n && addOK) g+='<rect data-grab="pile" data-g="'+p.g+'" x="'+(cx-DISC_W/2-4)+'" y="'+Math.min(yy-6, PILE_Y-26)+'" width="'+(DISC_W+8)+'" height="'+(PILE_Y+4-Math.min(yy-6, PILE_Y-26))+'" fill="transparent"/>';
       });
-      g+='<text x="'+((xs[0]+xs[xs.length-1])/2)+'" y="'+(PILE_Y+26)+'" text-anchor="middle" font-size="9.5" fill="var(--accent)">'+(addOK||!EXP?'drag onto the hanger':Fcur>0?'drag masses off the hanger':'')+'</text>';
+      g+='<text x="'+((xs[0]+xs[xs.length-1])/2)+'" y="'+(PILE_Y+26)+'" text-anchor="middle" font-size="9.5" fill="var(--accent)">'+(addOK||!EXP?'drag onto the hanger':Fcur>0&&!MEAS?'drag masses off the hanger':'')+'</text>';
+      if(MEAS){ scene.innerHTML=g+magnifier(M, M.orig+x); ghost.innerHTML = drag && drag.moved ? disc(drag.q.x, drag.q.y+th(drag.g)/2, drag.g) : ''; return; }
 
       // force-extension graph: extension across, force up (same as Task 1)
       function gx(e){ return GX+Math.min(e,M.xmax)/M.xmax*GW; } function gy(f){ return GY+GH-f/10*GH; }
@@ -501,6 +531,13 @@
       render();
       var dp=mat==='wire'?2:1, newL=M.orig+x;
       $('#hk-fo').textContent=F+' N';
+      if(MEAS){
+        var nm=Math.round(F);
+        $('#hk-note').textContent = nm===0 ? 'Start with no masses on the hanger. Read the length of the spring at the pointer in the magnified ruler, with your eye level with the pointer, and write it in your table below. Then drag a 100 g mass onto the hanger (or press Add a mass).'
+          : nm<MMAX ? 'Load: '+nm+' N. Read the length at the pointer and write it in your table. Then add the next 100 g mass.'
+          : 'Load: '+nm+' N, the last reading. Read the length, then work out every extension in your table and plot your graph.';
+        return;
+      }
       if(EXP){
         var dpx=mat==='wire'?2:1, wire=mat==='wire', fx=function(v){ return v.toFixed(dpx); };
         var last=phase==='unload'&&unloadR.length?unloadR[unloadR.length-1]:loadR[loadR.length-1];
@@ -538,9 +575,14 @@
       else note='Past the limit of proportionality: the line curves, so extension is no longer proportional to force.';
       $('#hk-note').textContent=note;
     }
-    draw();
+    if(MEAS) clearRun(); else draw();
   }
   watchEquals('.eq');
+  if(/[?&]show=measure\b/.test(location.search)){   // measure mode: hide everything the student does not need
+    ['#hk-exp','#working','[data-action="remove"]'].forEach(function(s){ var e=$(s); if(e) e.hidden=true; });
+    var mr=$('#hk-mat'); if(mr) mr.closest('.row').hidden=true;
+    document.documentElement.classList.add('measure');
+  }
   initHookeSim();
 })();
 </script>

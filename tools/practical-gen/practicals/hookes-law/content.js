@@ -49,9 +49,82 @@
   ]});
 }
 
-/* ================= EXPERIMENT ================= */
+/* ================= DO THE EXPERIMENT (Alex, 5 Nov 2026) ================= */
+// The student reads the ruler in the animation's measure mode (?show=measure), fills in the table and plots it.
+// HK_LEN must match the animation: MATS.spring.ext(F) + MEAS_D in animations/hookes-law.html (10 cm spring, 1.5 cm/N to 6 N).
+const HK_LEN=[10.0,11.6,12.9,14.5,16.1,17.4,19.0,21.1,24.0];
+let hkTable=null,hkPlotRows=()=>{};
 {
-  const body=act('experiment','Your turn','Take your own readings','Press Experiment, choose a mass size, then add the masses one at a time and watch your results table and graph fill in. Then take them off one at a time. Do it for the spring and then the rubber band. Which obeys Hooke’s law, up to what load, and which goes back to its original length? Extra: try the metal wire too.');
+  act('do','Your turn','Take your own readings','Start with no masses on the spring. Read its length at the pointer in the magnified ruler and write it in the table below. Add the 100 g masses one at a time (each adds 1 N) and read the length each time, up to 8 N.');
+}
+frameAct('do','animations/hookes-law.html','measure','Hooke’s law experiment: read the ruler at the pointer','Hooke’s law',false);
+{
+  const body=act('do','Calculate','Your results table','Write each length to the nearest 0.1 cm (1 mm). Then work out each extension: extension = length − original length. Press Check.');
+  const wrap=mk('div','table-scroll');body.appendChild(wrap);
+  wrap.innerHTML='<table class="units res-tbl hk-tbl"><thead><tr><th>Load (N)</th><th>Length (cm)</th><th>Extension (cm)</th></tr></thead><tbody>'+
+    HK_LEN.map((L,F)=>'<tr><td class="given">'+F+'</td><td><input class="calc-num-input" data-c="L" data-f="'+F+'" inputmode="decimal" autocomplete="off" aria-label="Length at '+F+' N, in cm"></td><td><input class="calc-num-input" data-c="x" data-f="'+F+'" inputmode="decimal" autocomplete="off" aria-label="Extension at '+F+' N, in cm"></td></tr>').join('')+'</tbody></table>';
+  const inp=(c,F)=>$('input[data-c="'+c+'"][data-f="'+F+'"]',wrap), all=()=>$$('input',wrap);
+  const val=e=>{const t=e.value.trim().replace(/[−–]/g,'-').replace(',','.');return t===''||!/^-?(\d+\.?\d*|\.\d+)$/.test(t)?NaN:parseFloat(t);};
+  const b=bar(body,[{label:'Check table',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  const ans=answerBtn(b,()=>{
+    HK_LEN.forEach((L,F)=>{
+      const l=inp('L',F),x=inp('x',F);
+      if(!l.disabled){l.value=L.toFixed(1);l.disabled=true;l.classList.add('is-shown');l.classList.remove('is-wrong');}
+      if(!x.disabled){const o=val(inp('L',0));x.value=(val(l)-o).toFixed(1).replace(/^-0\.0$/,'0.0');x.disabled=true;x.classList.add('is-shown');x.classList.remove('is-wrong');}
+    });
+    b.say('Answers shown (dashed), worked from the lengths in the table. Now plot them below.','');hkPlotRows();
+  });
+  function check(){
+    let ok=0,bad=0,blank=0;const o=val(inp('L',0));
+    HK_LEN.forEach((L,F)=>{
+      const l=inp('L',F),x=inp('x',F);
+      // a length is right to within 1 mm; an extension is right if it is this length minus the student's own original length
+      [[l,v=>Math.abs(v-L)<=0.1+1e-9],[x,v=>isFinite(val(l))&&isFinite(o)&&Math.abs(v-(val(l)-o))<=0.05+1e-9&&l.disabled&&inp('L',0).disabled]].forEach(([e,good])=>{
+        if(e.disabled){ok++;return;}
+        const v=val(e);
+        if(e.value.trim()===''){blank++;return;}
+        if(isFinite(v)&&good(v)){e.disabled=true;e.classList.remove('is-wrong');e.classList.add('pop');ok++;}
+        else{bad++;e.classList.add('is-wrong');}
+      });
+    });
+    const n=HK_LEN.length*2;
+    if(ok===n){b.say('All correct. Now plot your results.','good');celebrate(b.msg);ans.off();}
+    else{b.say(ok+' of '+n+' correct'+(blank?', '+blank+' left blank':'')+'.'+(bad?' Read the length level with the pointer, to the nearest mm. Extension = length − your length at 0 N.':''),bad?'bad':'');if(bad)ans.on();}
+    hkPlotRows();
+  }
+  function reset(){all().forEach(e=>{e.value='';e.disabled=false;e.classList.remove('is-wrong','is-shown','pop');});ans.off();b.say('','');hkPlotRows();}
+  all().forEach(e=>e.addEventListener('input',()=>e.classList.remove('is-wrong')));
+  hkTable={ext:F=>{const e=inp('x',F);return e.value.trim()===''||!e.disabled?null:e.value.trim();}};
+  track(body,{reset:reset,
+    getState:()=>({v:all().map(e=>e.value),ok:all().map(e=>e.disabled),sh:all().map(e=>e.classList.contains('is-shown'))}),
+    setState:s=>{reset();all().forEach((e,i)=>{if(!s||!s.v||typeof s.v[i]!=='string')return;e.value=s.v[i];if(s.ok&&s.ok[i]){e.disabled=true;if(s.sh&&s.sh[i])e.classList.add('is-shown');}});if(all().every(e=>e.disabled))b.say('All correct. Now plot your results.','good');hkPlotRows();},
+    isDone:()=>all().every(e=>e.disabled)});
+}
+{
+  const body=act('do','Plot','Plot your results','Plot each load against the extension from your table as a small cross. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
+  createPlot({host:body,
+    points:HK_LEN.slice(1).map((L,i)=>({x:+(L-HK_LEN[0]).toFixed(1),y:i+1})),
+    rowText:p=>{const e=hkTable&&hkTable.ext(p.y);return p.y+' N, '+(e?e+' cm':'your extension');},
+    graph:{xMin:0,xMax:14,yMin:0,yMax:8,xTicks:[0,2,4,6,8,10,12,14],yTicks:[0,2,4,6,8],minor:[0.4,0.5],snap:[0.2,0.5],xLabel:'extension (cm)',yLabel:'force (N)',W:560,H:340}});
+  // the list beside the graph shows each extension from the student's table once it is checked
+  // the animation and the results table side by side, so students read and write without scrolling
+  {const fr=$('#panel-do .anim-wrap'),tb=$('#panel-do .hk-tbl').closest('.act');if(fr&&tb){const sp=mk('div','hk-split');fr.parentNode.insertBefore(sp,fr);sp.appendChild(fr);sp.appendChild(tb);}}
+  hkPlotRows=()=>{$$('.plot-row',body).forEach((li,i)=>{const e=hkTable&&hkTable.ext(i+1),s=li.firstElementChild;if(s)s.textContent=(i+1)+' N, '+(e?e+' cm':'your extension');});};
+  hkPlotRows();
+}
+{
+  const body=act('do','Predict','Reading your results','');
+  createPredict({host:body,q:'Use your table and graph. Up to which load does your spring obey Hooke’s law?',options:[
+    {text:'To at least 6 N: each extra 1 N adds about 1.5 cm',correct:true},
+    {text:'Up to 8 N: the extension goes up every time',why:'Going up is not enough. From 6 N to 7 N the extension grows by about 2 cm, and from 7 N to 8 N by about 3 cm, so it is no longer in proportion.'},
+    {text:'Only to 1 N: after that the extensions are all different',why:'They are different, but 3.0 cm is about twice 1.5 cm and 4.5 cm is three times it, so they stay in proportion up to 6 N.'},
+    {text:'Never: no extension equals its load in newtons',why:'Proportional does not mean equal. It means doubling the force doubles the extension.'}
+  ],explain:'Up to 6 N each extra 1 N adds about 1.5 cm (the small differences are reading errors), so the points lie on a straight line through the origin. After 6 N each newton adds more, so the line curves. The spring obeys Hooke’s law to at least 6 N, and its limit of proportionality is between 6 N and 7 N.'});
+}
+
+/* ================= SHOW: the readings taken for you ================= */
+{
+  const body=act('experiment','Your turn','Watch the readings','Press Experiment, choose a mass size, then add the masses one at a time: here the results table and graph fill in by themselves. Then take them off one at a time. Try the spring, then the rubber band. Which obeys Hooke’s law, up to what load, and which goes back to its original length? Extra: try the metal wire too.');
 }
 frameAct('experiment','animations/hookes-law.html','','Hooke’s law animation: stretching a spring, wire or rubber band','Hooke’s law',false);
 
