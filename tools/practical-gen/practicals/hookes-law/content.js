@@ -270,7 +270,7 @@ function hookeGraph(label){
   ]});
 }
 {
-  const body=act('graphs','Predict','Which line?','');
+  const body=act('graphs','Multiple choice','Which line?','');
   createPredict({host:body,q:'Look at the graph above. Which line is the rubber band?',options:[
     {text:'Line B: it is never a straight line',correct:true},
     {text:'Line A: it is the steepest line',why:'Line A is straight up to 8 N, so it obeys Hooke’s law at first. A rubber band never does.'},
@@ -279,7 +279,7 @@ function hookeGraph(label){
   ],explain:'Lines A and C start as straight lines through the origin (springs obeying Hooke’s law). Line B is never straight: it stretches easily in the middle, then gets stiffer, which is what a rubber band does.'});
 }
 {
-  const body=act('graphs','Predict','Which spring is stiffer?','');
+  const body=act('graphs','Multiple choice','Which spring is stiffer?','');
   createPredict({host:body,q:'Which spring is stiffer (harder to stretch), A or C?',options:[
     {text:'A: it needs more force for each centimetre',correct:true},
     {text:'C: its line goes further across the graph',why:'Going further across means it stretched more, which makes it easier to stretch, not stiffer.'},
@@ -307,7 +307,7 @@ function swapGraph(label){
   ]});
 }
 {
-  const body=act('graphs','Predict','Stiffer, with the axes swapped','');
+  const body=act('graphs','Multiple choice','Stiffer, with the axes swapped','');
   createPredict({host:body,q:'On this graph, which spring is stiffer (harder to stretch), P or Q?',options:[
     {text:'Q: it stretches less for each newton',correct:true},
     {text:'P: its line is the steeper one on the graph',why:'With extension up the side, a steeper line means more stretch for each newton, so P is easier to stretch.'},
@@ -316,7 +316,7 @@ function swapGraph(label){
   ],explain:'With extension up the side, the stiffer spring has the less steep line. Q stretches 0.5 cm for each newton; P stretches 1.2 cm.'});
 }
 {
-  const body=act('graphs','Predict','Is steeper always stiffer?','');
+  const body=act('graphs','Multiple choice','Is steeper always stiffer?','');
   createPredict({host:body,q:'Elizabeth says, “The steeper line is always the stiffer spring.” Is she right?',options:[
     {text:'Only when force is up the side of the graph',correct:true},
     {text:'Yes, on every force–extension graph',why:'Look at P and Q: with extension up the side, the steeper line (P) is the easier spring to stretch.'},
@@ -398,17 +398,6 @@ function tableCalc(body,head,rows,unitNote){
   ],explain:'Each 2 N should add 1.6 cm, so 6 N should give about 4.8 cm, not 5.9 cm. An anomalous result does not fit the pattern: repeat it if you can, and leave it out when drawing the line of best fit.'});
 }
 
-/* ================= 5. CALCULATE ================= */
-{
-  const body=act('calculate','Calculate','Weight, mass and extension','Use g = 10 N/kg. Give each answer in the unit shown.');
-  createCalc({host:body,questions:[
-    {q:'A mass hanger and its masses have a total mass of 600 g. What weight do they put on the spring?',unit:'N',answer:6,working:'600 g = 0.6 kg<br>W = m × g<br>W = 0.6 × 10<br>W = 6 N'},
-    {q:'A load of 4.5 N is hanging on a spring. What mass is hanging?',unit:'kg',answer:0.45,working:'W = m × g<br>4.5 = m × 10<br>m = [[4.5|10]]<br>m = 0.45 kg'},
-    {q:'A spring is 8.0 cm long. With a load on it, it is 13.5 cm long. What is the extension in mm?',unit:'mm',answer:55,working:'extension = new length − original length<br>extension = 13.5 − 8.0<br>extension = 5.5 cm<br>5.5 cm = 55 mm'},
-    {q:'A spring obeys Hooke’s law. A 3.0 N load stretches it by 2.4 cm. How far does a 5.0 N load stretch it?',unit:'cm',answer:4.0,working:'extension per newton = [[2.4|3.0]]<br>extension per newton = 0.8 cm per N<br>extension = 0.8 × 5.0<br>extension = 4.0 cm'}
-  ]});
-}
-
 /* ================= 6. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
@@ -428,7 +417,7 @@ function tableCalc(body,head,rows,unitNote){
   ]});
 }
 {
-  const body=act('accuracy','Predict','Eye level','');
+  const body=act('accuracy','Multiple choice','Eye level','');
   createPredict({host:body,q:'Why should you read the ruler with your eye level with the pointer?',options:[
     {text:'Seen at an angle, the pointer lines up with a different mark',correct:true},
     {text:'It keeps your face close to the spring, which is safer',why:'Being close to a stretched spring is less safe, not more. Goggles keep you safe; eye level is about accuracy.'},
@@ -437,7 +426,7 @@ function tableCalc(body,head,rows,unitNote){
   ],explain:'Looking at an angle makes the pointer appear against the wrong mark (a parallax error). View the ruler perpendicularly, with your eye level with the pointer, and you read the mark it is really at. In an exam, say what your eye is level with: “eye level” on its own may not score.'});
 }
 {
-  const body=act('accuracy','Predict','Improving the data','');
+  const body=act('accuracy','Multiple choice','Improving the data','');
   createPredict({host:body,q:'Ali tests a rubber band with only three loads: 0.5 N, 1.0 N and 1.5 N. His points look like a straight line. How should he improve his data?',options:[
     {text:'Use more loads, over a wider range',correct:true},
     {text:'Repeat the three readings and average them',why:'Repeating makes each reading more reliable, but three loads close together still cannot show that the graph curves.'},
