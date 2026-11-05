@@ -1651,11 +1651,24 @@ createSortGame({host:act('energy','Sort','a.c. or d.c.?','Sort each card, then p
     {id:'d2',cat:'d',text:'Flows in one direction only'},
     {id:'d3',cat:'d',text:'Supplied by a solar cell'}
   ]});
-calcAct('energy','E = I × V × t','Use E = I × V × t, with time in seconds.',[
-  {q:'A 12 V battery gives a current of 2.5 A for 10 minutes. The energy transferred is',unit:'J',answer:18000,working:'t = 10 × 60 = 600 s<br>E = I × V × t<br>E = 2.5 × 12 × 600<br>E = 18 000 J'},
-  {q:'Poppy’s kettle takes 10 A from the 230 V mains and transfers 690 000 J. The time it is on for is',unit:'s',answer:300,working:'E = I × V × t<br>690 000 = 10 × 230 × t<br>690 000 = 2300 × t<br>t = [[690 000|2300]]<br>t = 300 s'},
-  {q:'A 6.0 V motor transfers 900 J in 50 s. The current is',unit:'A',answer:3,working:'E = I × V × t<br>900 = I × 6.0 × 50<br>900 = I × 300<br>I = [[900|300]]<br>I = 3 A'}
-
+// number formatting for the energy makers: no float noise, spaces in numbers of 10 000 and over, 1 d.p. on small whole values
+const energy_fmt=x=>{const v=+(+x).toFixed(4),t=String(v),k=t.indexOf('.'),i=k<0?t:t.slice(0,k);return (Math.abs(v)>=10000?i.replace(/\B(?=(\d{3})+(?!\d))/g,' '):i)+(k<0?'':t.slice(k));};
+const energy_d1=x=>Number.isInteger(x)&&x<10?x.toFixed(1):energy_fmt(x);
+calcAct('energy','E = I × V × t','Use E = I × V × t, with time in seconds. Press New problems for another set.',[
+  {q:'A 12 V battery gives a current of 2.5 A for 10 minutes. The energy transferred is',unit:'J',answer:18000,working:'I = 2.5 A<br>V = 12 V<br>t = 10 min = 600 s<br>E = ?||E = I × V × t<br>E = 2.5 × 12 × 600<br>E = 18 000 J',
+   make:rnd=>{const c=calcPick(rnd,[['A {V} V battery gives',[6,9,12],[0.5,1.5,2,2.5,3]],['A {V} V car headlamp takes',[12],[4,5]],['Charlie’s {V} V electric bike motor takes',[24,36],[5,8,10]],['A {V} V motor takes',[6,12,24],[1.5,2,2.5,3,4]]]),
+       V=calcPick(rnd,c[1]),I=calcPick(rnd,c[2]),m=calcPick(rnd,[2,5,10,15,20]),t=m*60,E=I*V*t;
+     return {q:c[0].replace('{V}',energy_d1(V))+' a current of '+energy_d1(I)+' A for '+m+' minutes. The energy transferred is',unit:'J',answer:E,
+       working:'I = '+energy_d1(I)+' A<br>V = '+energy_d1(V)+' V<br>t = '+m+' min = '+t+' s<br>E = ?||E = I × V × t<br>E = '+energy_d1(I)+' × '+energy_d1(V)+' × '+t+'<br>E = '+energy_fmt(E)+' J'};}},
+  {q:'Poppy’s kettle takes 10 A from the 230 V mains and transfers 690 000 J. The time it is on for is',unit:'s',answer:300,working:'I = 10 A<br>V = 230 V<br>E = 690 000 J<br>t = ?||E = I × V × t<br>690 000 = 10 × 230 × t<br>690 000 = 2300 × t<br>t = [[690 000|2300]]<br>t = 300 s',
+   make:rnd=>{const c=calcPick(rnd,[['Poppy’s kettle',[10,12,13]],['A toaster',[4,5]],['Henry’s hair dryer',[5,6,8]],['An electric heater',[8,10]],['Fatimah’s iron',[4,5,6]]]),
+       I=calcPick(rnd,c[1]),t=calcPick(rnd,[60,90,120,180,240,300]),P=I*230,E=P*t;
+     return {q:c[0]+' takes '+I+' A from the 230 V mains and transfers '+energy_fmt(E)+' J. The time it is on for is',unit:'s',answer:t,
+       working:'I = '+I+' A<br>V = 230 V<br>E = '+energy_fmt(E)+' J<br>t = ?||E = I × V × t<br>'+energy_fmt(E)+' = '+I+' × 230 × t<br>'+energy_fmt(E)+' = '+energy_fmt(P)+' × t<br>t = [['+energy_fmt(E)+'|'+energy_fmt(P)+']]<br>t = '+t+' s'};}},
+  {q:'A 6.0 V motor transfers 900 J in 50 s. The current is',unit:'A',answer:3,working:'V = 6.0 V<br>E = 900 J<br>t = 50 s<br>I = ?||E = I × V × t<br>900 = I × 6.0 × 50<br>900 = I × 300<br>I = [[900|300]]<br>I = 3 A',
+   make:rnd=>{const what=calcPick(rnd,['motor','lamp','fan','heating element']),V=calcPick(rnd,[3,6,9,12]),t=calcPick(rnd,[20,30,40,50,60,100]),I=calcPick(rnd,[0.5,1.5,2,2.5,3,4]),Vt=V*t,E=I*Vt;
+     return {q:'A '+energy_d1(V)+' V '+what+' transfers '+energy_fmt(E)+' J in '+t+' s. The current is',unit:'A',answer:I,
+       working:'V = '+energy_d1(V)+' V<br>E = '+energy_fmt(E)+' J<br>t = '+t+' s<br>I = ?||E = I × V × t<br>'+energy_fmt(E)+' = I × '+energy_d1(V)+' × '+t+'<br>'+energy_fmt(E)+' = I × '+energy_fmt(Vt)+'<br>I = [['+energy_fmt(E)+'|'+energy_fmt(Vt)+']]<br>I = '+energy_fmt(I)+' A'};}}
   ]);
 
 /* ================= tabs, startup ================= */
