@@ -48,9 +48,9 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 
 How to build one: `tools/CORE-PRACTICALS.md`.
 
+- [ ] Rebuild the other 13 IGCSE practical pages to the 1.22 Hooke's law model: one row of tabs, no core route, Do/Show Experiment, Multiple choice, no Calculate tab; required tabs Method, Variables, Do Experiment, Show Experiment (`tools/CORE-PRACTICALS.md`, "The 1.22 model"; added 5 Nov 2026)
 - [ ] Review the six practicals published 4 Nov 2026: 3.17 `refraction-practical.html`, 3.19 `refractive-index-practical.html`, 3.25P `speed-of-sound-practical.html`, 2.23P `charging-practical.html`, 3.27P `sound-frequency-practical.html`, 7.6 `penetrating-power-practical.html` (what to check is in `tools/REVIEW.md`).
 - [ ] After Alex checks 1.22's new Experiment tab (students read the ruler, fill in their own table and plot it; the old run is the Show tab): use the same pattern on the other measure-and-plot practicals (5.4, 2.9, 5.14P, 3.19) (added 5 Nov 2026).
-- [ ] Core route for the other 13 IGCSE practicals (only 1.22 has one): about 12 minutes each, chosen from the Question Index, set in `page.json`, checked with `check.py` (`tools/CORE-PRACTICALS.md`, "Core route + Extra practice"). Start from the recommended route for each page in the Project doc `claude/practicals-review-2026-11-04.md` (added 5 Nov 2026).
 - [ ] Fix the errors the 4 Nov practicals review found, still live on 5 Nov 2026 (full list per page in `claude/practicals-review-2026-11-04.md`). The main ones:
   - 5.4 density: `setMethod` runs before the Method activities exist, so all four Orders show on load; make Irregular object the default.
   - 1.5 motion: the "Three ramps" graph lines end at different distances and speeds; fix the end points.
@@ -72,6 +72,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## Done
 
+- [x] Core route for the other 13 IGCSE practicals (only 1.22 has one): about 12 minutes each, chosen from the Question Index, set in `page.json`, checked with `check.py` (`tools/CORE-PRACTICALS.md`, "Core route + Extra practice"). Start from the recommended route for each page in the Project doc `claude/practicals-review-2026-11-04.md` (added 5 Nov 2026). Superseded 5 Nov 2026: practical pages no longer have a core route (see the rebuild to-do in section 5).
 - [x] Two-column Calculate working (givens left, steps right) and a New problems button on every workout Calculate: 21 IGCSE, Year 9 and IB pages, about 190 questions; questions on a fixed graph, table or diagram keep their numbers (Alex, 5 Nov 2026).
 
 - 5 Nov 2026: IAL CP15 `gamma-absorption-practical.html` (8 tabs, from Alex’s CP15 worksheet), card on `ial.html`; `animations/gamma-radiation.html` gets a measure mode for its Do the Experiment tab, the “Why ln I?” explanation, and the second tab labelled CP15.

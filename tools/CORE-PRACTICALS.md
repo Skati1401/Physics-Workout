@@ -2,14 +2,15 @@
 
 Alex wants every IGCSE physics practical built the way 1.22 Hooke's law was. Each batch is built in its own chat.
 
-## Core route + Extra practice (Alex, 4 Nov 2026)
+## The 1.22 model (Alex, 5 Nov 2026)
 
-Every practical page is exam focused, with a **core route of about 12 minutes (15 is a guide, not a hard limit: Alex, 5 Nov 2026; report the minutes whenever a route changes and flag anything over 15)** and everything else kept as optional **Extra practice**. The pages are used when the practical is taught and by Year 11s revising for Papers 1 and 2. A review on 4 Nov 2026 found every page took 45–75 minutes (Project doc `claude/practicals-review-2026-11-04.md`).
+Every IGCSE practical page now follows `hookes-law-practical.html` as it stands on 5 Nov 2026 (the teaching-animations skill, "IGCSE practicals", has the details). This replaces the core route + Extra practice layout of 4 Nov.
 
-- **The core route:** the method Order, the Experiment run (its Your turn asks only for the runs that matter, about 5 minutes, then "Extra: …"), the one to three short skills the papers ask most for this practical (plot or sketch the graph, variables, reading or concluding from data, an improvement), and one exam-style written part, usually "describe the method", split out of the Exam act into its own `act('exam','Exam style', …)`.
-- **Choose it from the papers:** list every Question Index part tagged with the practical's spec points (4PH1 papers from 2019 count most) and pick what is asked most.
-- **Set it** with `core` and `coreMinutes` in `page.json` (see `tools/README.md`), with the core tabs first. Core activities must not need data that only an Extra activity shows.
-- **Check it:** `check.py` prints the route and its estimated minutes.
+- **One row of tabs**, in this order: Overview, Variables, Method, Accuracy, Do Experiment, Show Experiment, Results, Graph Analysis, Exam Qu Method, Exam Qu Analysis. No core route and no Extra practice: leave `core` and `coreMinutes` out of `page.json`.
+- **Required on every page:** Method (with its Order), Variables, Do Experiment and Show Experiment. The other tabs are used only where the practical gives them real work, and one exam question tab (or none) is fine.
+- **No Calculate tab** (equation drill belongs in the workout) and **no Plot on Results** (Do Experiment has the student's own plot). Questions that are not real predictions are Multiple choice.
+- **Time:** students do Do Experiment or Show Experiment, not both, and may skip the exam tabs, so aim for about 40 minutes without them. Give the estimate per tab whenever a page changes (count a typed results table as about 4 minutes).
+- **Choose the content from the papers:** list every Question Index part tagged with the practical's spec points (4PH1 papers from 2019 count most) and cover what is asked most.
 
 ## Starting a batch in a new chat
 
@@ -53,7 +54,7 @@ The new chat should then:
    - Match the method steps, the Order and Match wording, the model answers (bullet points) and the Exam tab to the marking points' phrasing: the details that score (e.g. "ruler held vertically / set square / eye level", "interrupter card", "speed at bottom = 2 × average speed").
    - Where a mark scheme accepts more than one method, offer them with a "Method type" switch, as in the 1.5 page's Overview and Method tabs.
    - Note the papers used in the batch notes below. Never copy a question onto the site; the repo is public.
-5. **Set the core route** (see "Core route + Extra practice" above) and check its minutes with `check.py`.
+5. **Check the tabs and time** against "The 1.22 model" above, and run `check.py`.
 6. **Review it critically**, using the skill's review list: numbers, wording, spec coverage, trims. Fix what you find before showing Alex.
 7. **Push the draft** to `main` and send Alex its link: `https://skati1401.github.io/Physics-Workout/<slug>-practical.html`.
 8. **Publish once Alex approves.**
