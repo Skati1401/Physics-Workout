@@ -179,7 +179,10 @@ function createBlankGame(cfg){
     },s.label||'Gap');
   });
   function say(t,c){if(cfg.msg)cfg.msg.say(t,c);}
-  const ans=cfg.msg&&cfg.msg.el?answerBtn(cfg.msg,showAll):{on(){},off(){}};
+  // fill:true (Alex, 5 Nov 2026): every fill-in-the-blanks passage has Check answers, Shuffle again and Fill in.
+  // Fill in is always there (in place of the Show answer button that only appears after a wrong Check).
+  const ans=cfg.msg&&cfg.msg.el&&!cfg.fill?answerBtn(cfg.msg,showAll):{on(){},off(){}};
+  if(cfg.fill&&cfg.msg&&cfg.msg.el){const fb=mk('button','btn','Fill in');fb.type='button';fb.addEventListener('click',showAll);const bs=cfg.msg.el.querySelectorAll('.btn');if(bs.length)bs[bs.length-1].after(fb);else cfg.msg.el.insertBefore(fb,cfg.msg.msg);}
   function showAll(){
     slots.forEach(s=>{
       if(locked[s.id])return;

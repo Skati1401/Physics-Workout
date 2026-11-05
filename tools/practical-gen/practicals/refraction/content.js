@@ -12,9 +12,9 @@ function clozeAct(tab,title,parts,distractors){
   body.appendChild(mk('div','pool-label','Word bank'));
   const pool=mk('div','chip-pool');body.appendChild(pool);
   const g={};
-  const b=bar(body,[{label:'Check',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
+  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
   const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
+  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
 }
 function answerBox(body,html){const d=mk('details','');d.innerHTML='<summary>Check your answer</summary><div>'+FR(html)+'</div>';body.appendChild(d);}
 

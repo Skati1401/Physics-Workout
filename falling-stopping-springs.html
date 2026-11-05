@@ -629,7 +629,10 @@ function createBlankGame(cfg){
     },s.label||'Gap');
   });
   function say(t,c){if(cfg.msg)cfg.msg.say(t,c);}
-  const ans=cfg.msg&&cfg.msg.el?answerBtn(cfg.msg,showAll):{on(){},off(){}};
+  // fill:true (Alex, 5 Nov 2026): every fill-in-the-blanks passage has Check answers, Shuffle again and Fill in.
+  // Fill in is always there (in place of the Show answer button that only appears after a wrong Check).
+  const ans=cfg.msg&&cfg.msg.el&&!cfg.fill?answerBtn(cfg.msg,showAll):{on(){},off(){}};
+  if(cfg.fill&&cfg.msg&&cfg.msg.el){const fb=mk('button','btn','Fill in');fb.type='button';fb.addEventListener('click',showAll);const bs=cfg.msg.el.querySelectorAll('.btn');if(bs.length)bs[bs.length-1].after(fb);else cfg.msg.el.insertBefore(fb,cfg.msg.msg);}
   function showAll(){
     slots.forEach(s=>{
       if(locked[s.id])return;
@@ -717,7 +720,7 @@ function createBlankGame(cfg){
   }
   function reset(){placed={};locked={};shown={};selected=null;ans.off();order=shuffle(cfg.chips.map(c=>c.id));say('','');render();}
   render();
-  return track(pool,{check:check,reset:reset,render:render,
+  return track(pool,{check:check,reset:reset,render:render,showAll:()=>{showAll();ans.off();},
     getState:()=>({o:order,p:placed,l:Object.keys(locked)}),
     setState:s=>{
       if(Array.isArray(s.o)&&s.o.length===order.length&&s.o.every(id=>chipMap[id]))order=s.o.slice();
@@ -1404,7 +1407,7 @@ function clozeAct(panel,title,intro,parts,distractors,o){
   let g;
   const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
   const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
-  g=createBlankGame({slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
+  g=createBlankGame({fill:true,slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
   return g;
 }
 // Quantity, symbol, unit, unit symbol. Each row gives one cell (g: q, s, u or us), chosen so the row has one right answer.
