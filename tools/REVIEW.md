@@ -98,7 +98,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `roller-coaster-energy.html` | IGCSE | ✅ Checked 2 Nov 2026 | Draggable objects. |
 | `motion-graphs.html` | IGCSE | 🔍 To review | 5 Nov 2026: drive the car by hand. Hold the car (or anywhere on the road) and drag: time runs only while held, the car follows forwards only, top speed 10 m/s, up to 6 m/s² so the velocity line is smooth; letting go pauses (Carry on goes back to the target speed). Working then reads the speed as the gradient of the distance–time graph over the last second. Check: it feels right on a laptop trackpad and a touch screen. |
 | `ramp-motion.html` | IGCSE | ❔ Not recorded | |
-| `force-mass-acceleration.html` | IGCSE | ❔ Not recorded | |
+| `force-mass-acceleration.html` | IGCSE | 🔍 To review | 5 Nov 2026: the trolley now uses the whole track: its front starts at 0 m and it runs right to an end stop at 10 m (it used to stop after 8 s, short of the end, at small accelerations). The force arrow sits above the trolley. Check: 1 N on 8 kg takes 12.6 s; 24 N on 8 kg takes 2.6 s and ends at 7.7 m/s. |
 | `skydiver.html` | IGCSE | ❔ Not recorded | |
 | `stopping-distance.html` | IGCSE | ❔ Not recorded | |
 | `hookes-law.html` | IGCSE | 🔍 To review | 3 Nov 2026: animated stretch (0.6 s, Slow motion 2.2 s), drag masses onto and off the hanger, rubber band unloads on a lower curve and returns to its original length.  |
