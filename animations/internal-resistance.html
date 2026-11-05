@@ -215,8 +215,9 @@
       <svg class="view" id="ir-svg" viewBox="0 0 600 300" tabindex="0" role="slider" aria-label="Rheostat contact: drag it along the track, or use the arrow keys, to change the external resistance R. The circuit is a cell with internal resistance, a switch, an ammeter, a rheostat and a voltmeter across the cell's terminals, with a graph of terminal p.d. against current on the right" aria-valuemin="0" aria-valuemax="20"></svg>
       <div class="under">
         <div class="btn-group">
-          <button class="btn btn-primary" id="ir-play" type="button" hidden>&#9654; Take reading</button>
+          <button class="btn btn-primary" id="ir-play" type="button">&#9654; Play</button>
           <button class="btn" id="ir-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="ir-slow" type="button" aria-pressed="false">Slow motion</button>
           <button class="btn" id="ir-exp" type="button" aria-pressed="false" title="Take your own readings and find the e.m.f. and internal resistance">Experiment</button>
           <button class="btn" id="ir-clear" type="button" hidden>Clear readings</button>
         </div>
@@ -541,12 +542,13 @@ function expKey(x, y, upLabel, downLabel){
   // Battery: AA cell. Car battery: lead–acid. Potato: zinc and copper strips in a potato (ε about 0.9 V, r a few kΩ).
   var CELLS={bat:{e:1.5, r:0.5}, car:{e:12.6, r:0.02}, pot:{e:0.90, r:2000}};
   var RMAX=20, STD_R=2.5, SEED=20261103, big=false;   // big: potato scale (R and r in kΩ, I in mA)
-  var svg=$('#ir-svg'), playBtn=$('#ir-play'), expBtn=$('#ir-exp');
+  var svg=$('#ir-svg'), playBtn=$('#ir-play'), slowBtn=$('#ir-slow'), expBtn=$('#ir-exp');
   var eIn=$('#ir-e'), rIn=$('#ir-r'), RIn=$('#ir-R');
-  var R=STD_R, swClosed=true, raf=0, last=0, trace=[];
+  var R=STD_R, swClosed=true, running=false, raf=0, last=0, dist=0, trace=[];
   var myst={n:0, e:1.5, r:1, shown:false};
   var X={rd:[], reading:0, just:null};      // Experiment readings
   function exp(){ return pressed(expBtn); }
+  function slowOn(){ return pressed(slowBtn); }
   var cellSeg=segGroup($('#ir-cell'), function(v){ setCell(v); });
   var jumpSeg=segGroup($('#ir-jump'), function(v){ jumpTo(v); });
   function cellKind(){ return cellSeg.value(); }
@@ -665,6 +667,11 @@ function expKey(x, y, upLabel, downLabel){
     g+=txt(L+18, 154, showI===null ? 'A: –' : fmtI(showI), {fs:11, w:600, c:'var(--ink)'});
     g+=txt(268, 288, showV===null ? '–' : showV.toFixed(2)+' V', {fs:11, w:600, c:'var(--topic)'});
     if(exp() && cellKind()==='myst') g+=txt(175, 150, 'ε = ?   r = ?', {a:'middle', fs:14, w:600, c:'var(--accent)'});
+    // current dots (conventional current, out of the + terminal)
+    if(on){
+      var path=[[106,Y],[L,Y],[L,TY],[cx,TY],[cx,TOP],[Rt,TOP],[Rt,Y],[114,Y]];
+      g+=flow(path, dist, 18);
+    }
     return g;
   }
   // a small picture of the source, above the cell symbol
@@ -703,6 +710,7 @@ function expKey(x, y, upLabel, downLabel){
   }
   function draw(){
     var g=arrowDefs()+scene()+graph();
+    if(running && slowOn()) g+=txt(336, 296, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
     svg.innerHTML=g;
     svg.setAttribute('aria-valuenow', R); svg.setAttribute('aria-valuetext', 'R = '+R.toFixed(1)+' ohms');
     readings();
@@ -760,18 +768,21 @@ function expKey(x, y, upLabel, downLabel){
 
     // buttons
     if(ex){ playBtn.innerHTML='&#9654; Take reading'; playBtn.disabled=X.reading>0; }
-    playBtn.hidden=!ex;
+    else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
   }
 
-  // ---- Experiment: one reading (the switch closes for a moment)
+  // ---- motion: charge flowing; in Experiment, one reading (the switch closes for a moment)
+  function speed(){ var e=E(), iref=e/(r()+STD_R); return Math.min(420, 60*I()/Math.max(iref,1e-9)); }
   function frame(now){
     var real=Math.min(0.05,(now-last)/1000); last=now;
+    if(running){ runFor+=real; if(runFor>=RUN_MAX) running=false; }
+    dist+=speed()*real*(slowOn()?0.3:1);
     if(X.reading){ X.reading-=real; if(X.reading<=0){ X.reading=0; takeReading(); } }
     draw();
-    if(X.reading) raf=requestAnimationFrame(frame);
+    if(running || X.reading) raf=requestAnimationFrame(frame);
   }
   function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
-  function stop(){ cancelAnimationFrame(raf); }
+  function stop(){ running=false; cancelAnimationFrame(raf); }
   function takeReading(){
     var i=E()/(R+r()), v=E()-i*r(), k=X.rd.length, prev=X.rd[k-1];
     var p={R:R, I:expReading(i, prev?prev.I:0, ires(), k, 1), V:expReading(v, prev?prev.V:0, 0.01, k+3, 1)};
@@ -796,12 +807,14 @@ function expKey(x, y, upLabel, downLabel){
   }
 
   playBtn.addEventListener('click', function(){
-    if(exp() && !X.reading){ X.reading=0.8; X.just=null; loop(); }
+    if(exp()){ if(!X.reading){ X.reading=0.8; X.just=null; loop(); } return; }
+    if(running){ stop(); draw(); } else { running=true; runFor=0; loop(); }
   });
   expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); setExp(); });
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
   $('#ir-reset').addEventListener('click', function(){
     stop(); if(exp()){ clearReadings(); return; }
-    R=STD_R; RIn.value=R; swClosed=true;  jumpSeg.pick(null); trace=[]; draw();
+    R=STD_R; RIn.value=R; swClosed=true;  jumpSeg.pick(null); trace=[]; dist=0; draw();
   });
   $('#ir-clear').addEventListener('click', clearReadings);
   $('#ir-new').addEventListener('click', function(){ newMystery(); clearReadings(); });
