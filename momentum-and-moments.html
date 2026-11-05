@@ -146,6 +146,10 @@ h1{font:800 clamp(34px,8vw,58px)/.92 var(--f-head);letter-spacing:0;margin:0 0 1
   border-radius:6px;background:var(--panel);color:var(--ink-soft);cursor:pointer;
 }
 .tab-btn:hover{color:var(--ink);background:var(--panel-2)}
+.qc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;align-items:start}
+.qc-item{display:flex;flex-direction:column;gap:10px;min-width:0;padding:12px 14px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
+.qc-n{margin:0;font:500 12px var(--f-mono);color:var(--ink-soft)}
+.qc-ctx{margin:0;color:var(--ink-soft)}
 .tab-btn.is-active{background:var(--ink);color:var(--bg);border-color:var(--ink);border-top-color:var(--grp,var(--ink))}
 .tab-btn[data-grp="b"]{--grp:var(--accent)} .tab-btn[data-grp="c"]{--grp:var(--liquid)} .tab-btn[data-grp="d"]{--grp:var(--gas)}
 
@@ -493,6 +497,19 @@ function act(panel,kind,title,intro){
   const body=mk('div','act-body');a.appendChild(body);
   $('#panel-'+panel+' .acts').appendChild(a);
   return body;
+}
+/* ================= quick check: a tab's short multiple-choice questions in one card =================
+   Review (4 Nov 2026): one card per tab instead of a row of single Predicts. Each question is a createPredict
+   (the same feedback, Try again and saved answers); ctx is the one-line set-up that used to be the Predict's intro. */
+function quickCheck(panel,title,qs){
+  const body=act(panel,'Quick check',title,'Answer each question. A wrong first answer tells you why, then you try again.');
+  const grid=mk('div','qc-grid');body.appendChild(grid);
+  qs.forEach((q,i)=>{
+    const box=mk('div','qc-item');grid.appendChild(box);
+    box.appendChild(mk('p','qc-n',(i+1)+' of '+qs.length+(q.title?' · '+FR(q.title):'')));
+    if(q.ctx)box.appendChild(mk('p','qc-ctx',FR(q.ctx)));
+    createPredict(Object.assign({},q,{host:box}));
+  });
 }
 function bar(parent,buttons){
   const b=mk('div','bar');
@@ -1663,6 +1680,26 @@ exploreFrame('moments','Balance the seesaw','Moment = force × perpendicular dis
     steps:S,constraints:chain(S.map(s=>s.id)),
     why:'Each hanging position gives one line through the centre of gravity, so two lines are needed to find where they cross.'});
 }
+quickCheck('cog','Where is the centre of gravity?',[
+  {title:'A metre rule',
+    q:'A uniform metre rule rests on a pivot. Its whole weight can be drawn as one arrow acting at',
+    options:[
+    {text:'the 50 cm mark, its centre',correct:true},
+    {text:'the pivot, wherever it is',why:'The centre of gravity is a point on the rule itself. Moving the pivot does not move it.'},
+    {text:'both ends, half at each',why:'The weight is spread along the rule, but it acts as one force through a single point.'},
+    {text:'the 0 cm mark, where it starts',why:'For a uniform rule the mass is spread evenly, so the balance point is the middle, not an end.'}
+    ],
+    explain:'Uniform means the mass is spread evenly, so the weight acts through the middle of the rule: the 50 cm mark. That is why a uniform rule pivoted at 50 cm has no moment from its own weight.'},
+  {title:'A ring',
+    q:'A flat metal ring hangs on a wall. Its centre of gravity is',
+    options:[
+    {text:'at the centre, in the empty hole',correct:true},
+    {text:'on the metal at the top of the ring',why:'Hanging a shape from a point puts its centre of gravity directly below that point, not at it.'},
+    {text:'nowhere, as a ring has none',why:'Every object has a centre of gravity: the point its weight acts through.'},
+    {text:'spread all the way round the ring',why:'The mass is spread round the ring, but the weight acts through one single point.'}
+    ],
+    explain:'The ring is symmetrical, so its centre of gravity is at its centre. There is no metal there: the centre of gravity can be outside the material of an object.'}
+]);
 calcAct('moments','Balance the beam','A 20 N weight hangs 30 cm left of a pivot and a 10 N weight hangs 15 cm left of it.',[
   {q:'The downward force 50 cm to the right of the pivot that balances the beam is',unit:'N',answer:15,
    working:'F₁ = 20 N<br>d₁ = 30 cm = 0.30 m<br>F₂ = 10 N<br>d₂ = 15 cm = 0.15 m<br>d = 50 cm = 0.50 m<br>F = ?||clockwise moment = anticlockwise moment<br>F × 0.50 = 20 × 0.30 + 10 × 0.15<br>F × 0.50 = 6 + 1.5<br>F × 0.50 = 7.5<br>F = [[7.5|0.50]]<br>F = 15 N'}
