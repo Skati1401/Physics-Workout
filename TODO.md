@@ -74,7 +74,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 - [x] Two-column Calculate working (givens left, steps right) and a New problems button on every workout Calculate: 21 IGCSE, Year 9 and IB pages, about 190 questions; questions on a fixed graph, table or diagram keep their numbers (Alex, 5 Nov 2026).
 
-- 5 Nov 2026: IAL CP15 `gamma-absorption-practical.html` (9 tabs, from Alex’s CP15 worksheet), card on `ial.html`; `animations/gamma-radiation.html` gets a measure mode for its Do the Experiment tab, the “Why ln I?” explanation, and the second tab labelled CP15.
+- 5 Nov 2026: IAL CP15 `gamma-absorption-practical.html` (8 tabs, from Alex’s CP15 worksheet), card on `ial.html`; `animations/gamma-radiation.html` gets a measure mode for its Do the Experiment tab, the “Why ln I?” explanation, and the second tab labelled CP15.
 
 - [x] Show answer button after a wrong Check on every marked activity, workouts and practicals; Calculate working opens only from it. Spot the error removed from the 17 practical pages too (20 cards) (Alex, 4 Nov 2026).
 

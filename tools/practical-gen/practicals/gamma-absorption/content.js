@@ -1,6 +1,5 @@
 /* IAL CP15 Investigate the absorption of gamma radiation by lead (spec points 137, 138, 140, 141).
    Built from Alex's worksheet (5.2 Nuclear Decay, CP15): I = I₀e^(−μx), background subtracted, ln I against x, μ and x½.
-   The Results tab uses the worksheet's data (background 73 and 67 counts in 5 minutes; 0 to 16.6 mm of lead).
    The Do the Experiment tab frames animations/gamma-radiation.html?show=measure, whose fixed counts must match GA_BG and GA_C. */
 function examPart(body,head,q,bullets){
   body.appendChild(mk('p','sub',head));
@@ -187,60 +186,6 @@ frameAct('experiment','animations/gamma-radiation.html','abs','Gamma absorption 
     {text:'ln I cannot be found for counts under 100',why:'ln works for any positive number. The reading is just less certain.'},
     {text:'The GM tube stops working when the count is low',why:'A GM tube counts low rates fine. It is the random variation that matters.'}
   ],explain:'I = 82 − 24 = 58 per minute. A count of about 80 varies by roughly √80 ≈ 9 (over 10%), and the background is over a quarter of it, so the corrected value is much less certain than at the start. Count for longer at the thick end.'});
-}
-
-/* ================= 4. RESULTS (Alex's worksheet data) ================= */
-const WS_X=[0,1.7,3.3,5.0,6.6,8.3,9.9,11.6,13.3,14.9,16.6], WS_R=[372,342,304,283,259,234,216,194,178,162,150];
-{
-  const body=act('results','Calculate','Complete the results table','Amelia counts the background twice for 5 minutes: 73 counts and 67 counts. Her counts per minute through the lead are below. Work out the missing values.');
-  const ln=v=>Math.log(v).toFixed(3);
-  // missing: I at 5.0 mm, and I and ln I at 11.6 mm and 16.6 mm
-  body.appendChild(resTable(['x (mm)','Count rate (min⁻¹)','I (min⁻¹)','ln (I / min⁻¹)'],WS_X.map((x,k)=>{
-    const I=WS_R[k]-14,gap=k===3||k===7||k===10;
-    return [x.toFixed(1),WS_R[k],gap?null:I,k===7||k===10?null:ln(I)];
-  })));
-  createCalc({host:body,questions:[
-    {q:'What is the background count rate, per minute?',unit:'min⁻¹',answer:14,working:'mean background = [[73 + 67|2]]<br>mean background = 70 counts in 5 minutes<br>background count rate = [[70|5]]<br>background count rate = 14.0 min⁻¹'},
-    {q:'What is I with 5.0 mm of lead?',unit:'min⁻¹',answer:269,working:'I = count rate − background count rate<br>I = 283 − 14.0<br>I = 269 min⁻¹'},
-    {q:'What is ln I with 11.6 mm of lead?',unit:'',answer:5.193,working:'I = 194 − 14.0<br>I = 180 min⁻¹<br>ln I = ln 180<br>ln I = 5.193'},
-    {q:'What is ln I with 16.6 mm of lead?',unit:'',answer:4.913,working:'I = 150 − 14.0<br>I = 136 min⁻¹<br>ln I = ln 136<br>ln I = 4.913'}
-  ]});
-}
-{
-  const body=act('results','Predict','The line of best fit','');
-  createPredict({host:body,q:'Amelia plots ln I against x. What line of best fit should she draw?',options:[
-    {text:'One straight line with points either side',correct:true},
-    {text:'Short straight lines joining each point to the next',why:'Joining the dots follows the random variation in every count. A line of best fit shows the trend.'},
-    {text:'A smooth curve through every point',why:'ln I against x should be straight for exponential absorption; a curve through every point hides that.'},
-    {text:'A straight line through the origin',why:'The line meets the ln I axis at ln I<sub>0</sub>, about 5.9 here, not at 0.'}
-  ],explain:'Draw one thin straight line with the points scattered evenly either side of it. It does not go through the origin: its intercept is ln I<sub>0</sub> and its gradient is −μ.'});
-}
-{
-  const body=act('results','Calculate','μ and the half-thickness','Amelia’s line of best fit passes through (0, 5.88) and (16.0, 4.94).');
-  createCalc({host:body,questions:[
-    {q:'What is the absorption coefficient, μ?',unit:'mm⁻¹',answer:0.0588,working:'gradient = [[change in ln I|change in x]]<br>gradient = [[4.94 − 5.88|16.0 − 0]]<br>gradient = [[−0.94|16.0]]<br>gradient = −0.0588 mm⁻¹<br>gradient = −μ<br>μ = 0.0588 mm⁻¹'},
-    {q:'What is the half-thickness, x½?',unit:'mm',answer:11.8,working:'x<sub>½</sub> = [[ln 2|μ]]<br>x<sub>½</sub> = [[0.6931|0.0588]]<br>x<sub>½</sub> = 11.8 mm'}
-  ]});
-}
-{
-  const body=act('results','Predict','Forgetting the background','');
-  createPredict({host:body,q:'Jordan uses Amelia’s counts but forgets to take off the background. His value of μ from the ln graph is:',options:[
-    {text:'Too small: the counts fall by a smaller fraction',correct:true},
-    {text:'Too big: every count is bigger than it should be',why:'Bigger counts alone would not change the gradient of ln I. The same 14 added to each count makes the low counts fall by a smaller fraction.'},
-    {text:'The same: the background cancels out on a ln graph',why:'It would cancel only if it multiplied every count. It is added to every count, so it does not.'},
-    {text:'Negative: the line slopes the other way',why:'The counts still go down as the lead gets thicker, so the line still slopes down.'}
-  ],explain:'Without the correction, ln 372 = 5.919 at 0 mm and ln 150 = 5.011 at 16.6 mm: a gradient of about −0.055 mm⁻¹ instead of −0.059 mm⁻¹. The background makes up a bigger share of the small counts, so the line is too shallow and curves slightly.'});
-}
-{
-  const body=act('results','Predict','An anomalous result','');
-  createPredict({host:body,q:'Isaac’s corrected count rates are below. Which result is anomalous, and what should he do?',
-    pre:resTable(['x (mm)','0','3','6','9','12','15'],[['I (min⁻¹)','400','324','263','245','173','140']]).outerHTML,
-    options:[
-    {text:'9 mm: repeat that count, and leave it out of the line',correct:true},
-    {text:'0 mm: it has no lead, so it does not belong on the graph',why:'The no-lead reading gives I<sub>0</sub>, the intercept. It belongs on the graph.'},
-    {text:'9 mm: keep it, because radioactive counts are random',why:'Random variation is small next to this: the pattern predicts about 213, not 245. Repeat it, and leave it out of the line.'},
-    {text:'15 mm: the smallest count is always the least reliable',why:'140 fits the pattern: each 3 mm takes I down by about 19%.'}
-  ],explain:'Each 3 mm of lead takes I down by the same fraction, about 0.81: 400, 324, 263, 213, 173, 140. At 9 mm I should be about 213, so 245 is anomalous. Repeat it if you can, and leave it out when drawing the line.'});
 }
 
 /* ================= 5. GRAPHS ================= */
