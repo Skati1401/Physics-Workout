@@ -66,15 +66,6 @@ function resTable(head,rows){
   ]});
 }
 
-{
-  const body=act('method','Predict','Moving the tube','');
-  createPredict({host:body,q:'After adding the thickest lead, Haris moves the GM tube closer to the source “to get a bigger count”. Why does this spoil his results?',options:[
-    {text:'Moving closer raises the count, whatever the lead does',correct:true},
-    {text:'Gamma rays need a long path to be absorbed by the lead',why:'The lead absorbs the gamma rays as they pass through it. The gap after the lead does not change that.'},
-    {text:'The GM tube only works at one fixed distance',why:'A GM tube detects radiation at any distance. The problem is that distance changes the count too.'},
-    {text:'Closer to the lead, the tube picks up radiation the lead gives out',why:'Lead does not become radioactive here. The count goes up because the tube is closer to the source.'}
-  ],explain:'Gamma rays spread out from the source, so the count rate falls with distance (the inverse-square law). If the distance changes as well as the lead, he cannot tell how much of the change was caused by the lead. The distance must be a control variable.'});
-}
 
 /* ================= DO THE EXPERIMENT (Alex, 5 Nov 2026) ================= */
 // The student reads the counter in the animation's measure mode (?show=measure), fills in the table and plots ln I.
@@ -127,17 +118,8 @@ frameAct('do','animations/gamma-radiation.html','measure','Gamma absorption expe
     isDone:()=>all().every(e=>e.disabled)});
 }
 {
-  const body=act('do','Predict','What do you plot?','');
-  createPredict({host:body,q:'Your corrected count rates should follow I = I<sub>0</sub>e<sup>−μx</sup>. Which graph is a straight line, so that you can find μ from it?',options:[
-    {text:'ln I up the side, against x along the bottom',correct:true},
-    {text:'I up the side, against x along the bottom',why:'I falls by the same fraction for each extra millimetre, so I against x is a curve that gets less steep. You cannot read μ from it easily.'},
-    {text:'ln I up the side, against ln x along the bottom',why:'That straightens a power law, I = kxⁿ. Here x is in the power of e, so you take ln of I only.'},
-    {text:'I up the side, against 1/x along the bottom',why:'That would test I ∝ [[1|x]]. With no lead (x = 0) it would even need 1/0.'}
-  ],explain:'Take ln of both sides: ln I = ln I<sub>0</sub> − μx. That is y = mx + c with y = ln I and the variable x, so ln I against x is a straight line. A straight line shows the fall really is exponential.'});
-}
-{
   const body=act('do','Plot','Plot your results','Plot ln I against x from your table as small crosses. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
-  createPlot({host:body,
+  createPlot({host:body,next:' Now find μ from the line of best fit below.',
     points:GA_X.map((x,k)=>({x:x,y:+GA_LN[k].toFixed(3)})),
     rowText:p=>{const k=GA_X.indexOf(p.x),e=gaTable&&gaTable.ln(k);return p.x+' mm, '+(e?'ln I = '+e:'your ln I');},
     graph:{xMin:0,xMax:24,yMin:4.4,yMax:6.2,xTicks:[0,4,8,12,16,20,24],yTicks:[4.4,4.6,4.8,5.0,5.2,5.4,5.6,5.8,6.0,6.2],minor:[1,0.04],snap:[1,0.02],xLabel:'x (mm)',yLabel:'ln (I / min⁻¹)',W:560,H:340}});
@@ -145,15 +127,6 @@ frameAct('do','animations/gamma-radiation.html','measure','Gamma absorption expe
   {const fr=$('#panel-do .anim-wrap'),tb=$('#panel-do .ga-tbl').closest('.act');if(fr&&tb){const sp=mk('div','hk-split');fr.parentNode.insertBefore(sp,fr);sp.appendChild(fr);sp.appendChild(tb);}}
   gaPlotRows=()=>{$$('.plot-row',body).forEach((li,k)=>{const e=gaTable&&gaTable.ln(k),s=li.firstElementChild;if(s)s.textContent=GA_X[k]+' mm, '+(e?'ln I = '+e:'your ln I');});};
   gaPlotRows();
-}
-{
-  const body=act('do','Predict','What is the gradient?','');
-  createPredict({host:body,q:'From ln I = ln I<sub>0</sub> − μx, what does the gradient of your ln I against x line equal?',options:[
-    {text:'−μ, so μ is the gradient without its minus sign',correct:true},
-    {text:'μ, because the line is for the absorption coefficient',why:'The line slopes down: the gradient is negative. It is −μ, so μ = −gradient.'},
-    {text:'ln I<sub>0</sub>, the count rate with no lead',why:'ln I<sub>0</sub> is the intercept on the ln I axis (where x = 0), not the gradient.'},
-    {text:'−x<sub>½</sub>, the half-thickness',why:'The half-thickness comes from μ afterwards: x<sub>½</sub> = [[ln 2|μ]].'}
-  ],explain:'Compare ln I = −μx + ln I<sub>0</sub> with y = mx + c: the gradient m = −μ and the intercept c = ln I<sub>0</sub>. With x in mm, μ comes out in mm⁻¹; × 1000 gives m⁻¹.'});
 }
 {
   const body=act('do','Calculate','μ and the half-thickness from your line','A good line of best fit through your points passes through (0, 6.12) and (24.0, 4.49). Read nothing else off the graph.');
@@ -169,24 +142,6 @@ frameAct('do','animations/gamma-radiation.html','measure','Gamma absorption expe
   act('experiment','Your turn','Watch the readings','Press Experiment, then Measure background. Add lead with the + buttons and press Count for 60 s at each thickness, from 0 to 30 mm: here the table and graph fill in by themselves. Switch between “I against x” and “ln I against x”: which is a straight line, and what value of μ does it give? Then press Count again at one thickness: why is the new count different?');
 }
 frameAct('experiment','animations/gamma-radiation.html','abs','Gamma absorption animation: a cobalt-60 source, lead sheets and a GM tube with a counter and graph','gamma radiation',false);
-{
-  const body=act('experiment','Predict','Counting again','');
-  createPredict({host:body,q:'Rose counts for 60 s with 8 mm of lead and gets 293. She counts again without changing anything and gets 278. Why?',options:[
-    {text:'Radioactive decay is random, so counts vary',correct:true},
-    {text:'The source is running out, so the count is falling',why:'Cobalt-60 has a half-life of about 5 years. Over a few minutes its activity does not change measurably.'},
-    {text:'The lead has absorbed gamma rays and become less dense',why:'Absorbing gamma rays does not change the lead. The same lead absorbs the same fraction every time.'},
-    {text:'She must have moved the GM tube between counts',why:'Nothing was moved. Even with identical set-ups, repeated counts differ.'}
-  ],explain:'Each nucleus decays at random, so the number of gamma rays reaching the tube in 60 s varies from one count to the next. That is why longer counts or repeats (and a mean) give more reliable values.'});
-}
-{
-  const body=act('experiment','Predict','Thick lead','');
-  createPredict({host:body,q:'With 30 mm of lead, Ollie’s count is 82 in 60 s and the background is 24 per minute. Why is this point the least reliable on his graph?',options:[
-    {text:'Background and random spread are a big share of it',correct:true},
-    {text:'Thick lead lets through gamma rays of a different energy',why:'The source still gives out the same gamma rays. The issue is how few of them are counted.'},
-    {text:'ln I cannot be found for counts under 100',why:'ln works for any positive number. The reading is just less certain.'},
-    {text:'The GM tube stops working when the count is low',why:'A GM tube counts low rates fine. It is the random variation that matters.'}
-  ],explain:'I = 82 − 24 = 58 per minute. A count of about 80 varies by roughly √80 ≈ 9 (over 10%), and the background is over a quarter of it, so the corrected value is much less certain than at the start. Count for longer at the thick end.'});
-}
 
 /* ================= 5. GRAPHS ================= */
 function lab(g0,t,x,y){return '<circle cx="'+g0.gx(x)+'" cy="'+g0.gy(y)+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+g0.gx(x)+'" y="'+(g0.gy(y)+5)+'" text-anchor="middle" font-size="14" fill="var(--ink)">'+t+'</text>';}
@@ -203,15 +158,6 @@ const GI={xMin:0,xMax:30,yMin:0,yMax:500,xTicks:[0,5,10,15,20,25,30],yTicks:[0,1
     {q:'Use your half-thickness to find μ.',unit:'mm⁻¹',answer:0.0693,working:'x<sub>½</sub> = [[ln 2|μ]]<br>10 = [[0.6931|μ]]<br>μ = [[0.6931|10]]<br>μ = 0.0693 mm⁻¹'}
   ]});
 }
-{
-  const body=act('graphs','Predict','Every half-thickness','');
-  createPredict({host:body,q:'On this graph, I falls from 480 to 240 per minute in the first 10 mm. What is I after 20 mm?',options:[
-    {text:'120 per minute: each 10 mm halves it again',correct:true},
-    {text:'0 per minute: two halves make a whole',why:'Each 10 mm halves what is left, so the second 10 mm takes 240 down to 120, not to 0.'},
-    {text:'160 per minute: it falls by a third each time',why:'Read it off the curve: at 20 mm the curve is at 120.'},
-    {text:'240 per minute: the lead stops absorbing',why:'Every millimetre of lead absorbs the same fraction of what reaches it, so I keeps falling.'}
-  ],explain:'Exponential absorption: every half-thickness of lead halves the count rate that reaches it. 480 → 240 → 120 → 60 per minute at 0, 10, 20 and 30 mm.'});
-}
 const GL={xMin:0,xMax:40,yMin:3,yMax:6.5,xTicks:[0,10,20,30,40],yTicks:[3,3.5,4,4.5,5,5.5,6,6.5],xLabel:'x (mm)',yLabel:'ln (I / min⁻¹)',W:560,H:340};
 {
   const body=act('graphs','Calculate','Two absorbers','The graph shows ln I against thickness for the same gamma source with lead (line P) and with aluminium (line Q). Use two points on each line.');
@@ -225,15 +171,6 @@ const GL={xMin:0,xMax:40,yMin:3,yMax:6.5,xTicks:[0,10,20,30,40],yTicks:[3,3.5,4,
     {q:'Line Q: what is μ for aluminium?',unit:'mm⁻¹',answer:0.015,working:'gradient = [[5.4 − 6.0|40 − 0]]<br>gradient = −0.015 mm⁻¹<br>gradient = −μ<br>μ = 0.015 mm⁻¹'},
     {q:'What is I with no absorber?',unit:'min⁻¹',answer:403,working:'Both lines meet the ln I axis at 6.0.<br>ln I<sub>0</sub> = 6.0<br>I<sub>0</sub> = e<sup>6.0</sup><br>I<sub>0</sub> = 403 min⁻¹'}
   ]});
-}
-{
-  const body=act('graphs','Predict','The steeper line','');
-  createPredict({host:body,q:'What does line P being steeper than line Q tell you?',options:[
-    {text:'Lead absorbs gamma rays more per millimetre',correct:true},
-    {text:'The gamma rays through lead started with more energy',why:'It is the same source for both, and both lines start at the same ln I<sub>0</sub>.'},
-    {text:'Aluminium does not absorb gamma rays at all',why:'Line Q still slopes down, so aluminium absorbs some: μ = 0.015 mm⁻¹.'},
-    {text:'The count through lead is larger at every thickness',why:'Line P is below line Q for every thickness above 0, so the count through lead is smaller.'}
-  ],explain:'The gradient is −μ, so the steeper line has the larger μ. Lead’s μ is about 5 times aluminium’s here: you would need about 46 mm of aluminium to halve the count rate, but only about 10 mm of lead.'});
 }
 
 /* ================= 6. CALCULATE ================= */
@@ -263,24 +200,6 @@ const GL={xMin:0,xMax:40,yMin:3,yMax:6.5,xTicks:[0,10,20,30,40],yTicks:[3,3.5,4,
     {id:'7',text:'Never point the source at anyone',cat:'s'},
     {id:'8',text:'Stand well back from the source while the counter is running',cat:'s'}
   ]});
-}
-{
-  const body=act('accuracy','Predict','Counting for longer','');
-  createPredict({host:body,q:'Asma’s 60 s counts vary by about √N, where N is the count. Why does counting for 5 minutes instead of 1 make her results more reliable?',options:[
-    {text:'√N is a smaller fraction of a bigger count',correct:true},
-    {text:'The source gives out gamma rays faster after a while',why:'The activity stays the same. Counting for longer just collects more counts.'},
-    {text:'Random variation stops after the first minute',why:'Decay stays random however long you count. The spread is smaller compared with the count.'},
-    {text:'The background goes away in a longer count',why:'The background is still there and still has to be taken off.'}
-  ],explain:'In 1 minute a count of 300 varies by about √300 ≈ 17, almost 6%. In 5 minutes she counts about 1500, varying by about √1500 ≈ 39, under 3%. Divide by 5 to get the count rate per minute.'});
-}
-{
-  const body=act('accuracy','Predict','Why lead?','');
-  createPredict({host:body,q:'Why is lead used to absorb the gamma rays, rather than paper or aluminium?',options:[
-    {text:'Gamma is very penetrating; dense lead absorbs most',correct:true},
-    {text:'Paper and aluminium let no radiation through at all',why:'Paper stops alpha, and a few mm of aluminium stops beta, but gamma rays pass through both easily.'},
-    {text:'Lead turns gamma rays into alpha particles',why:'Lead absorbs gamma rays; it does not change them into other radiation the tube could count.'},
-    {text:'Lead is the only material that gamma rays can enter',why:'Gamma rays pass into every material. Lead just absorbs a much bigger fraction per millimetre.'}
-  ],explain:'Gamma rays are weakly ionising and very penetrating, so they need a thick, dense absorber. Even lead only reduces them: each half-thickness (about 10 mm here) halves the count rate, and it never reaches exactly zero.'});
 }
 
 /* ================= EXAM PRACTICE ================= */

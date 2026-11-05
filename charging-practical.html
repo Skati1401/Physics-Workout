@@ -1416,7 +1416,9 @@ function createPlot(cfg){
   const list=mk('ol','plot-list');side.appendChild(list);
   let placed=[],locked=[],cur={x:0,y:0},wrongIdx=-1;
   const b=bar(side,[{label:'Check plot',primary:true,fn:check},{label:'Clear',fn:reset}]);
-  const ans=answerBtn(b,()=>{pts.forEach((p,i)=>{if(!locked[i]){placed[i]={x:p.x,y:p.y};locked[i]=true;}});wrongIdx=-1;render();b.say('Points shown. Read them through, then Clear to plot them on your own. Now choose the line of best fit below.','');});
+  // what to do next, after the last point: cfg.next overrides it (e.g. when no line-of-best-fit question follows)
+  const NEXT=cfg.next===undefined?' Now choose the line of best fit below.':cfg.next;
+  const ans=answerBtn(b,()=>{pts.forEach((p,i)=>{if(!locked[i]){placed[i]={x:p.x,y:p.y};locked[i]=true;}});wrongIdx=-1;render();b.say('Points shown. Read them through, then Clear to plot them on your own.'+NEXT,'');});
   function next(){for(let i=0;i<pts.length;i++)if(!placed[i])return i;return -1;}
   function cross(x,y,cls){const cx=gx(x),cy=gy(y);return '<path class="'+cls+'" d="M'+(cx-6)+','+(cy-6)+' L'+(cx+6)+','+(cy+6)+' M'+(cx+6)+','+(cy-6)+' L'+(cx-6)+','+(cy+6)+'"/>';}
   function render(){
@@ -1458,7 +1460,7 @@ function createPlot(cfg){
     let ok=0,bad=-1;
     pts.forEach((p,i)=>{if(!placed[i])return;if(Math.abs(placed[i].x-p.x)<=o.snap[0]/2+1e-9&&Math.abs(placed[i].y-p.y)<=o.snap[1]/2+1e-9)locked[i]=true;else if(bad<0)bad=i;});
     ok=locked.filter(Boolean).length;
-    if(ok===pts.length){b.say('All '+pts.length+' points plotted correctly. Now choose the line of best fit below.','good');wrongIdx=-1;render();return;}
+    if(ok===pts.length){b.say('All '+pts.length+' points plotted correctly.'+NEXT,'good');wrongIdx=-1;render();return;}
     if(bad>=0){ans.on();wrongIdx=bad;render();b.say(ok+' of '+pts.length+' correct. The red cross is in the wrong place: check the scale on each axis.','bad');
       setTimeout(()=>{if(!locked[bad])placed[bad]=null;wrongIdx=-1;render();},900);}
     else b.say(ok+' of '+pts.length+' correct so far. Plot the rest.','');
@@ -1471,7 +1473,7 @@ function createPlot(cfg){
       const good=v=>v&&typeof v.x==='number'&&typeof v.y==='number';
       pts.forEach((p,i)=>{const v=s.p&&s.p[i];if(good(v)){placed[i]={x:v.x,y:v.y};if(s.l&&s.l[i])locked[i]=true;}});
       render();
-      if(locked.filter(Boolean).length===pts.length)b.say('All '+pts.length+' points plotted correctly. Now choose the line of best fit below.','good');
+      if(locked.filter(Boolean).length===pts.length)b.say('All '+pts.length+' points plotted correctly.'+NEXT,'good');
     },
     isDone:()=>pts.every((p,i)=>locked[i])});
 }
