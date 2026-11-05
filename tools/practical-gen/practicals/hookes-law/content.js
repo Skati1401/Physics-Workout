@@ -1,6 +1,6 @@
 /* ================= 0. WHAT HOOKE'S LAW SAYS ================= */
 {
-  const body=act('law','Look','Hooke’s law on a graph','Almost every Hooke’s law question comes back to one idea: up to the limit of proportionality, the extension is directly proportional to the force.');
+  const body=act('overview','Look','Hooke’s law on a graph','Almost every Hooke’s law question comes back to one idea: up to the limit of proportionality, the extension is directly proportional to the force.');
   const G={xMin:0,xMax:16,yMin:0,yMax:6,xTicks:[0,2,4,6,8,10,12,14,16],yTicks:[0,1,2,3,4,5,6],xLabel:'extension (cm)',yLabel:'force (N)',W:560,H:340};
   const g0=lineGraph(Object.assign({points:[[0,0]]},G));
   const dash=(x,y)=>'<polyline points="'+g0.gx(0)+','+g0.gy(y)+' '+g0.gx(x)+','+g0.gy(y)+' '+g0.gx(x)+','+g0.gy(0)+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="5 4"/>';
@@ -20,42 +20,19 @@
     '<p class="sub">In an exam, write the whole statement, including “up to the limit of proportionality”. A straight line that does not pass through the origin is not direct proportion.</p>';
 }
 {
-  const body=act('law','Fill in the blanks','What Hooke’s law says','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
+  const body=act('overview','Fill in the blanks','Hooke’s law in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
   const parts=[
     'Hooke’s law says that the extension of a spring is ',['h1','directly proportional'],' to the ',['h2','force'],' on it, up to the ',['h3','limit of proportionality'],
-    '. So if the force on the spring doubles, its extension ',['h4','doubles'],', and each extra newton adds the ',['h5','same'],' extension. On a graph of force against extension, this part is a ',
-    ['h6','straight line'],' that passes through the ',['h7','origin'],'. Past the limit of proportionality the graph ',['h8','curves'],', and the spring no longer obeys Hooke’s law.'
+    '. So if the force doubles, the extension ',['h4','doubles'],'. On a graph of force against extension this part is a ',['h5','straight line'],
+    ' through the origin. If the spring goes back to its original length when the load is removed, its behaviour is ',['h6','elastic'],
+    '. A rubber band’s graph is ',['h7','curved'],', with no straight part, so it never obeys Hooke’s law.'
   ];
   const cloze=mk('div','cloze'),slots=[],chips=[];
   parts.forEach(p=>{
     if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
     else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
   });
-  ['inversely proportional','halves','mass','elastic limit'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
-
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'Hang a spring from a clamp, with a ruler clamped vertically beside it, and fix a ',['b1','pointer'],' to the spring so every length is measured between the same two points. Measure the original length, then add ',['b2','100 g'],' masses one at a time, measuring the new length each time; each mass adds a force of ',['b3','1 N'],
-    '. Extension = new length − ',['b4','original length'],'. Plot force against ',['b5','extension'],'. Where the graph is a straight line through the origin, extension is ',
-    ['b6','directly proportional'],' to force, so the spring obeys ',['b7','Hooke’s law'],'. The point where the straight line starts to curve is the ',['b8','limit of proportionality'],
-    '. If the spring goes back to its original length when the masses are removed, its behaviour is ',['b9','elastic'],'. A metal wire also obeys Hooke’s law at first, but its extension is tiny, so it is measured with a marker and a vernier scale. A rubber band’s graph is ',['b10','curved'],', with no straight part, so it never obeys Hooke’s law.'
-  ];
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  ['inversely proportional','plastic','volume','temperature'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
+  ['inversely proportional','halves','plastic','mass'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
   body.appendChild(cloze);
   body.appendChild(mk('div','pool-label','Word bank'));
   const pool=mk('div','chip-pool');body.appendChild(pool);

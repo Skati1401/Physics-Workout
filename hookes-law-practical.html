@@ -436,7 +436,6 @@ details.extra-block>div.acts{margin-top:14px;padding:0;background:none;font:inhe
 <button class="tab-btn" role="tab" id="tab-accuracy" data-tab="accuracy" aria-selected="false" aria-controls="panel-accuracy">Accuracy</button>
 <button class="tab-btn" role="tab" id="tab-do" data-tab="do" aria-selected="false" aria-controls="panel-do">Do Experiment</button>
 <button class="tab-btn" role="tab" id="tab-experiment" data-tab="experiment" aria-selected="false" aria-controls="panel-experiment">Show Experiment</button>
-<button class="tab-btn" role="tab" id="tab-law" data-tab="law" aria-selected="false" aria-controls="panel-law">Hooke’s Law</button>
 <button class="tab-btn" role="tab" id="tab-results" data-tab="results" aria-selected="false" aria-controls="panel-results">Results</button>
 <button class="tab-btn" role="tab" id="tab-graphs" data-tab="graphs" aria-selected="false" aria-controls="panel-graphs">Graph Analysis</button>
 <button class="tab-btn" role="tab" id="tab-exam" data-tab="exam" aria-selected="false" aria-controls="panel-exam">Exam Qu Method</button>
@@ -464,10 +463,6 @@ details.extra-block>div.acts{margin-top:14px;padding:0;background:none;font:inhe
 </section>
 <section id="panel-experiment" class="panel" role="tabpanel" aria-labelledby="tab-experiment" hidden>
 <div class="panel-head"><h2>Show the Experiment</h2><div class="spec"><b>1.22</b><b>1.23</b><b>1.24</b></div></div>
-<div class="acts"></div>
-</section>
-<section id="panel-law" class="panel" role="tabpanel" aria-labelledby="tab-law" hidden>
-<div class="panel-head"><h2>What Hooke’s Law Says</h2><div class="spec"><b>1.23</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-results" class="panel" role="tabpanel" aria-labelledby="tab-results" hidden>
@@ -505,10 +500,10 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='cp-hookes-law-v9',OLD_STORE_KEY='cp-hookes-law-v8';
+const STORE_KEY='cp-hookes-law-v10',OLD_STORE_KEY='cp-hookes-law-v9';
 // Core route (page.json "core"): {tab: [activity titles]}. Other activities on a core tab go under "Extra practice"; other tabs are extra tabs. null = no core route.
 const CORE=null;
-const TAB_IDS=["overview", "variables", "method", "accuracy", "do", "experiment", "law", "results", "graphs", "exam", "analysis"];
+const TAB_IDS=["overview", "variables", "method", "accuracy", "do", "experiment", "results", "graphs", "exam", "analysis"];
 let activeTab='overview';
 const reflowers=[];
 const tickers=[];
@@ -1492,7 +1487,7 @@ function createPlot(cfg){
 
 /* ================= 0. WHAT HOOKE'S LAW SAYS ================= */
 {
-  const body=act('law','Look','Hooke’s law on a graph','Almost every Hooke’s law question comes back to one idea: up to the limit of proportionality, the extension is directly proportional to the force.');
+  const body=act('overview','Look','Hooke’s law on a graph','Almost every Hooke’s law question comes back to one idea: up to the limit of proportionality, the extension is directly proportional to the force.');
   const G={xMin:0,xMax:16,yMin:0,yMax:6,xTicks:[0,2,4,6,8,10,12,14,16],yTicks:[0,1,2,3,4,5,6],xLabel:'extension (cm)',yLabel:'force (N)',W:560,H:340};
   const g0=lineGraph(Object.assign({points:[[0,0]]},G));
   const dash=(x,y)=>'<polyline points="'+g0.gx(0)+','+g0.gy(y)+' '+g0.gx(x)+','+g0.gy(y)+' '+g0.gx(x)+','+g0.gy(0)+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="5 4"/>';
@@ -1512,42 +1507,19 @@ function createPlot(cfg){
     '<p class="sub">In an exam, write the whole statement, including “up to the limit of proportionality”. A straight line that does not pass through the origin is not direct proportion.</p>';
 }
 {
-  const body=act('law','Fill in the blanks','What Hooke’s law says','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
+  const body=act('overview','Fill in the blanks','Hooke’s law in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
   const parts=[
     'Hooke’s law says that the extension of a spring is ',['h1','directly proportional'],' to the ',['h2','force'],' on it, up to the ',['h3','limit of proportionality'],
-    '. So if the force on the spring doubles, its extension ',['h4','doubles'],', and each extra newton adds the ',['h5','same'],' extension. On a graph of force against extension, this part is a ',
-    ['h6','straight line'],' that passes through the ',['h7','origin'],'. Past the limit of proportionality the graph ',['h8','curves'],', and the spring no longer obeys Hooke’s law.'
+    '. So if the force doubles, the extension ',['h4','doubles'],'. On a graph of force against extension this part is a ',['h5','straight line'],
+    ' through the origin. If the spring goes back to its original length when the load is removed, its behaviour is ',['h6','elastic'],
+    '. A rubber band’s graph is ',['h7','curved'],', with no straight part, so it never obeys Hooke’s law.'
   ];
   const cloze=mk('div','cloze'),slots=[],chips=[];
   parts.forEach(p=>{
     if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
     else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
   });
-  ['inversely proportional','halves','mass','elastic limit'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
-
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'Hang a spring from a clamp, with a ruler clamped vertically beside it, and fix a ',['b1','pointer'],' to the spring so every length is measured between the same two points. Measure the original length, then add ',['b2','100 g'],' masses one at a time, measuring the new length each time; each mass adds a force of ',['b3','1 N'],
-    '. Extension = new length − ',['b4','original length'],'. Plot force against ',['b5','extension'],'. Where the graph is a straight line through the origin, extension is ',
-    ['b6','directly proportional'],' to force, so the spring obeys ',['b7','Hooke’s law'],'. The point where the straight line starts to curve is the ',['b8','limit of proportionality'],
-    '. If the spring goes back to its original length when the masses are removed, its behaviour is ',['b9','elastic'],'. A metal wire also obeys Hooke’s law at first, but its extension is tiny, so it is measured with a marker and a vernier scale. A rubber band’s graph is ',['b10','curved'],', with no straight part, so it never obeys Hooke’s law.'
-  ];
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  ['inversely proportional','plastic','volume','temperature'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
+  ['inversely proportional','halves','plastic','mass'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
   body.appendChild(cloze);
   body.appendChild(mk('div','pool-label','Word bank'));
   const pool=mk('div','chip-pool');body.appendChild(pool);
