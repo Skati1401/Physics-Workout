@@ -35,7 +35,7 @@ function resTable(head,rows){
   body.appendChild(mk('div','pool-label','Word bank'));
   const pool=mk('div','chip-pool');body.appendChild(pool);
   const g={};
-  const b=bar(body,[{label:'Check',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
+  const b=bar(body,[{label:'Check',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()},{label:'Fill in',fn:()=>g.showAll()}]);
   const score=mk('span','score');b.el.insertBefore(score,b.msg);
   Object.assign(g,createBlankGame({slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
 }
