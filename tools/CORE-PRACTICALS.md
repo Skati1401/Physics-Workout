@@ -4,7 +4,7 @@ Alex wants every IGCSE physics practical built the way 1.22 Hooke's law was. Eac
 
 ## Core route + Extra practice (Alex, 4 Nov 2026)
 
-Every practical page is exam focused, with a **core route of about 12 minutes (15 at most)** and everything else kept as optional **Extra practice**. The pages are used when the practical is taught and by Year 11s revising for Papers 1 and 2. A review on 4 Nov 2026 found every page took 45–75 minutes (Project doc `claude/practicals-review-2026-11-04.md`).
+Every practical page is exam focused, with a **core route of about 12 minutes (15 is a guide, not a hard limit: Alex, 5 Nov 2026; report the minutes whenever a route changes and flag anything over 15)** and everything else kept as optional **Extra practice**. The pages are used when the practical is taught and by Year 11s revising for Papers 1 and 2. A review on 4 Nov 2026 found every page took 45–75 minutes (Project doc `claude/practicals-review-2026-11-04.md`).
 
 - **The core route:** the method Order, the Experiment run (its Your turn asks only for the runs that matter, about 5 minutes, then "Extra: …"), the one to three short skills the papers ask most for this practical (plot or sketch the graph, variables, reading or concluding from data, an improvement), and one exam-style written part, usually "describe the method", split out of the Exam act into its own `act('exam','Exam style', …)`.
 - **Choose it from the papers:** list every Question Index part tagged with the practical's spec points (4PH1 papers from 2019 count most) and pick what is asked most.
