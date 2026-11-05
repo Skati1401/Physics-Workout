@@ -93,7 +93,7 @@ Status of each practical's build is in `tools/CORE-PRACTICALS.md`. All five publ
 | `latent-heat.html` | IAL | 🔍 To review | New (2 Nov 2026), IAL CP13. Check the 40 W heater, 0.8 g/min room melting in each funnel, the 2% fusion loss and the 6 W (lagged) / 18 W (unlagged) vaporisation losses; the "No control" and "Ice from the freezer" options; vaporisation is a beaker on a balance only (the condenser version from slide 61 is not animated). |
 | `boyles-law.html` | IAL | 🔍 To review | New (2 Nov 2026), IAL CP14. Check: the gauge reads absolute pressure; the warming on compression (about +11 K at 250 kPa, settling with a 15 s time constant) behind "Read straight away" (about 5% high) vs "Wait to cool"; the 50 kPa step option; dragging the pump handle. |
 | `thermistor.html` | IAL | 🔍 To review | New (2 Nov 2026), IAL CP12. Check: the model thermistor (b = 3900 K, 5.0 kΩ at 25 °C), 0–80 °C range (your slides) vs 0–100 °C (Pearson sheet), the ohmmeter and thermometer precision, the No stirring option, the potential divider working (R_T from V_T/V_R, then T = b/(ln R_T − ln R₀)), and the mystery-beaker game. |
-| `gamma-radiation.html` | IAL | ✅ Checked 2 Nov 2026 | 2 Nov 2026: card taken off the IB list (not in the IB 2025 spec). |
+| `gamma-radiation.html` | IAL | 🔍 To review | 5 Nov 2026: second tab relabelled "CP15 Absorption by lead" and "CP15" taken off the eyebrow, so only that part reads as the core practical; tabs share the width on phones. Look at the tab labels. (Checked 2 Nov 2026; card taken off the IB list then.) |
 | `roller-coaster-energy.html` | IGCSE | ✅ Checked 2 Nov 2026 | Draggable objects. |
 | `motion-graphs.html` | IGCSE | ❔ Not recorded | |
 | `ramp-motion.html` | IGCSE | ❔ Not recorded | |
