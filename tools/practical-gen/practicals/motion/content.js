@@ -166,7 +166,7 @@ setMethod(method);
   ]});
 }
 {
-  const body=act('variables','Predict','A new question to test','');
+  const body=act('variables','Multiple choice','A new question to test','');
   createPredict({host:body,q:'Zahra wants to find out how the height of the ramp affects the car’s speed at the bottom. What is her independent variable?',options:[
     {text:'The height of the ramp',correct:true},
     {text:'The speed at the bottom',why:'That is what she measures for each height, so it is the dependent variable.'},
@@ -175,7 +175,7 @@ setMethod(method);
   ],explain:'The independent variable is the one she changes on purpose: the height of the ramp. For each height she measures the speed at the bottom, and keeps everything else the same.'});
 }
 {
-  const body=act('variables','Predict','Let go, don’t push','');
+  const body=act('variables','Multiple choice','Let go, don’t push','');
   createPredict({host:body,q:'Why must Charlie let go of the car rather than give it a little push?',options:[
     {text:'So it starts from rest, with no push, every run',correct:true},
     {text:'So that the stopwatch can start a little bit later',why:'The stopwatch should start the moment the car moves. Letting go is about the car’s starting speed.'},
@@ -190,7 +190,7 @@ setMethod(method);
 }
 frameAct('experiment','animations/ramp-motion.html','','Toy car on a ramp animation: timing the car with a stopwatch or light gates','toy car on a ramp',false);
 {
-  const body=act('experiment','Predict','Three different times','');
+  const body=act('experiment','Multiple choice','Three different times','');
   createPredict({host:body,q:'Charlie times the car to the same mark three times with a stopwatch: 1.25 s, 1.27 s and 1.20 s. Why are they different?',options:[
     {text:'His reaction time is different on each run',correct:true},
     {text:'The car speeds up by a different amount each run',why:'The same car on the same ramp speeds up in the same way each time. The difference comes from the timing.'},
@@ -199,7 +199,7 @@ frameAct('experiment','animations/ramp-motion.html','','Toy car on a ramp animat
   ],explain:'He has to press the button as he lets go and again as the car passes the mark. His reaction time is a little different each time, so the times differ. Other reasons: the car may not start from exactly the same position, may not be released from rest, or friction on it may vary. That is why you repeat and find a mean.'});
 }
 {
-  const body=act('experiment','Predict','Short times','');
+  const body=act('experiment','Multiple choice','Short times','');
   createPredict({host:body,q:'For the 20 cm mark the car takes only about 0.7 s. Why are light gates much better than a stopwatch here?',options:[
     {text:'Reaction time is a big part of so short a time',correct:true},
     {text:'A stopwatch cannot measure times below one second',why:'A stopwatch can show 0.70 s. The problem is that a person cannot press it at exactly the right moments.'},
@@ -235,7 +235,7 @@ function rmTable(){
     graph:{xMin:0,xMax:2,yMin:0,yMax:1.2,xTicks:[0,0.5,1,1.5,2],yTicks:[0,0.2,0.4,0.6,0.8,1,1.2],minor:[0.1,0.1],snap:[0.05,0.1],xLabel:'mean time (s)',yLabel:'distance (m)',W:560,H:340}});
 }
 {
-  const body=act('results','Predict','The line of best fit','');
+  const body=act('results','Multiple choice','The line of best fit','');
   createPredict({host:body,q:'What line of best fit should Zahra draw through her points?',options:[
     {text:'A smooth curve from the origin, getting steeper',correct:true},
     {text:'Short straight lines joining each point in turn',why:'Joining the dots follows every small timing error. A line of best fit shows the trend.'},
@@ -244,7 +244,7 @@ function rmTable(){
   ],explain:'At the start (time 0) the car is at distance 0, so the curve starts at the origin. It gets steeper and steeper because the car covers each 0.2 m more quickly: it is speeding up.'});
 }
 {
-  const body=act('results','Predict','The speed at the bottom','');
+  const body=act('results','Multiple choice','The speed at the bottom','');
   createPredict({host:body,q:'Charlie divides 1.20 m by 1.76 s to get 0.68 m/s, and says this is the car’s speed as it passes the 1.20 m mark. Is he right?',options:[
     {text:'No: that is the average; it was faster at the end',correct:true},
     {text:'Yes: speed is always distance divided by time',why:'Distance divided by time gives the average speed for the whole trip. The car sped up, so it was going faster than average at the end.'},
@@ -253,7 +253,7 @@ function rmTable(){
   ],explain:'Distance divided by time gives the average speed. The car started from rest and sped up steadily, so its speed at the end was about twice the average: about 1.36 m/s. To measure it directly, use a light gate at the mark.'});
 }
 {
-  const body=act('results','Predict','An anomalous result','');
+  const body=act('results','Multiple choice','An anomalous result','');
   createPredict({host:body,q:'Ananya’s three times to the 0.60 m mark are below. Which is anomalous, and what should she do?',
     pre:'<div class="table-scroll"><table class="units res-tbl" style="width:fit-content"><thead><tr><th>Run</th><th>1</th><th>2</th><th>3</th></tr></thead><tbody><tr><th>Time (s)</th><td>1.25</td><td>1.27</td><td>1.62</td></tr></tbody></table></div>',
     options:[
@@ -284,7 +284,7 @@ function rampGraph(){
   ]});
 }
 {
-  const body=act('graphs','Predict','Which is the highest ramp?','');
+  const body=act('graphs','Multiple choice','Which is the highest ramp?','');
   createPredict({host:body,q:'Look at the graph above. Which line is the car on the highest ramp?',options:[
     {text:'A: its gradient is steepest',correct:true},
     {text:'C: its line runs the longest',why:'C runs for the longest time because the car is slowest to reach the bottom, so its ramp is the lowest.'},
@@ -293,7 +293,7 @@ function rampGraph(){
   ],explain:'A steeper ramp gives a bigger acceleration, so the velocity–time line is steeper. Line A (1.2 m/s²) is the highest ramp and line C (0.4 m/s²) the lowest.'});
 }
 {
-  const body=act('graphs','Predict','A straight line','');
+  const body=act('graphs','Multiple choice','A straight line','');
   createPredict({host:body,q:'Each line on this velocity–time graph is straight. What does that tell you about the car?',options:[
     {text:'Its acceleration stays the same',correct:true},
     {text:'It moves at a steady speed',why:'A steady speed gives a flat line on a velocity–time graph. These lines slope up.'},
@@ -319,7 +319,7 @@ function ballGraph(){
   ]});
 }
 {
-  const body=act('graphs','Predict','Why the curve levels off','');
+  const body=act('graphs','Multiple choice','Why the curve levels off','');
   createPredict({host:body,q:'The ball’s velocity–time graph gets less and less steep, then flat. Why?',options:[
     {text:'Air resistance rises until it balances the weight',correct:true},
     {text:'The ball’s weight gets smaller as it falls further down',why:'The weight stays the same. It is air resistance that changes as the ball speeds up.'},
@@ -328,7 +328,7 @@ function ballGraph(){
   ],explain:'As the ball speeds up, air resistance grows, so the resultant force and the acceleration get smaller: the graph gets less steep. When air resistance equals the weight, the resultant force is zero and the ball falls at terminal velocity.'});
 }
 {
-  const body=act('graphs','Predict','A short drop','');
+  const body=act('graphs','Multiple choice','A short drop','');
   createPredict({host:body,q:'Zahra drops a tennis ball from 1 m in the lab. Why can she ignore air resistance for this drop?',options:[
     {text:'The ball is still slow, so air resistance is tiny',correct:true},
     {text:'There is no air resistance indoors at all',why:'There is air in the lab. It just cannot push much on a slow ball.'},
@@ -366,7 +366,7 @@ function ballGraph(){
   ]});
 }
 {
-  const body=act('accuracy','Predict','The front of the car','');
+  const body=act('accuracy','Multiple choice','The front of the car','');
   createPredict({host:body,q:'Why should Ananya stop the stopwatch when the front of the car passes each mark, every time?',options:[
     {text:'The distances are measured to the front of the car',correct:true},
     {text:'The front of the car is the part that moves fastest',why:'Every part of the car moves at the same speed. The point is to time to the same place you measured to.'},
@@ -375,7 +375,7 @@ function ballGraph(){
   ],explain:'The car starts with its front edge on the start line, so each distance runs to the front of the car. Timing to the back instead would add the car’s length to every distance.'});
 }
 {
-  const body=act('accuracy','Predict','Improving the graph','');
+  const body=act('accuracy','Multiple choice','Improving the graph','');
   createPredict({host:body,q:'Charlie only times the car to three marks, all within 30 cm of the start. His graph looks almost straight. How should he improve it?',options:[
     {text:'Use more marks, all the way down the ramp',correct:true},
     {text:'Repeat each of the three times and find the mean',why:'Repeats make each time more reliable, but three marks close together still cannot show that the graph curves.'},

@@ -120,7 +120,7 @@ ROUTE_JS = r"""
   }
   const est = a => {
     const k = (a.querySelector('.kind') || {}).textContent || '';
-    if (k === 'Predict') return 0.75;
+    if (k === 'Predict' || k === 'Multiple choice') return 0.75;
     if (k === 'Calculate') return Math.max(1, a.querySelectorAll('.calc-num-input').length);
     if (k === 'Spot the error') return Math.max(1, a.querySelectorAll('.err-block').length);
     if (k === 'Plot') return 2.5;
