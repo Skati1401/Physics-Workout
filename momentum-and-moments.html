@@ -146,10 +146,28 @@ h1{font:800 clamp(34px,8vw,58px)/.92 var(--f-head);letter-spacing:0;margin:0 0 1
   border-radius:6px;background:var(--panel);color:var(--ink-soft);cursor:pointer;
 }
 .tab-btn:hover{color:var(--ink);background:var(--panel-2)}
-.qc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;align-items:start}
-.qc-item{display:flex;flex-direction:column;gap:10px;min-width:0;padding:12px 14px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
-.qc-n{margin:0;font:500 12px var(--f-mono);color:var(--ink-soft)}
-.qc-ctx{margin:0;color:var(--ink-soft)}
+.mx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px;align-items:start}
+.mx-item{display:flex;flex-direction:column;gap:8px;min-width:0;padding:12px 14px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
+.mx-n{margin:0;font:500 12px var(--f-mono);color:var(--ink-soft)}
+.mx-q{margin:0;font-weight:600}
+.mx-svg{display:block;width:100%;height:auto;max-width:340px;margin:0 auto;cursor:crosshair;touch-action:manipulation;border-radius:6px;background:var(--panel)}
+.mx-svg:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.mx-svg.is-locked{cursor:default}
+.mx-obj{fill:var(--bg);stroke:var(--ink-soft);stroke-width:2}
+.mx-line{stroke:var(--ink-faint);stroke-width:1.5}
+.mx-plumb{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:5 4}
+.mx-pin{fill:var(--panel);stroke:var(--ink-soft);stroke-width:1.5}
+.mx-lbl{font:500 10px var(--f-mono);fill:var(--ink-soft)}
+.mx-x line{stroke:var(--ink);stroke-width:3;stroke-linecap:round}
+.mx-x.is-right line{stroke:var(--good)}
+.mx-x.is-wrong line{stroke:var(--bad)}
+.mx-x.is-shown line{stroke:var(--accent);stroke-dasharray:3 3}
+.mx-cur{stroke:var(--accent);stroke-width:1;stroke-dasharray:3 3;fill:none}
+.mx-fb{margin:0;color:var(--ink-soft)}
+.mx-fb.good{color:var(--good)} .mx-fb.bad{color:var(--bad)}
+@media (prefers-reduced-motion: no-preference){.mx-x.is-wrong{animation:shake .4s}.mx-x.is-right{animation:mxpop .25s}}
+@keyframes mxpop{50%{transform:scale(1.15)}}
+.mx-x{transform-box:fill-box;transform-origin:center}
 .tab-btn.is-active{background:var(--ink);color:var(--bg);border-color:var(--ink);border-top-color:var(--grp,var(--ink))}
 .tab-btn[data-grp="b"]{--grp:var(--accent)} .tab-btn[data-grp="c"]{--grp:var(--liquid)} .tab-btn[data-grp="d"]{--grp:var(--gas)}
 
@@ -498,19 +516,6 @@ function act(panel,kind,title,intro){
   $('#panel-'+panel+' .acts').appendChild(a);
   return body;
 }
-/* ================= quick check: a tab's short multiple-choice questions in one card =================
-   Review (4 Nov 2026): one card per tab instead of a row of single Predicts. Each question is a createPredict
-   (the same feedback, Try again and saved answers); ctx is the one-line set-up that used to be the Predict's intro. */
-function quickCheck(panel,title,qs){
-  const body=act(panel,'Quick check',title,'Answer each question. A wrong first answer tells you why, then you try again.');
-  const grid=mk('div','qc-grid');body.appendChild(grid);
-  qs.forEach((q,i)=>{
-    const box=mk('div','qc-item');grid.appendChild(box);
-    box.appendChild(mk('p','qc-n',(i+1)+' of '+qs.length+(q.title?' · '+FR(q.title):'')));
-    if(q.ctx)box.appendChild(mk('p','qc-ctx',FR(q.ctx)));
-    createPredict(Object.assign({},q,{host:box}));
-  });
-}
 function bar(parent,buttons){
   const b=mk('div','bar');
   buttons.forEach(x=>{const btn=mk('button','btn'+(x.primary?' primary':''),x.label);btn.type='button';btn.addEventListener('click',x.fn);b.appendChild(btn);});
@@ -528,6 +533,81 @@ function answerBtn(b,fn){
   btn.addEventListener('click',()=>{btn.hidden=true;fn();});
   b.el.insertBefore(btn,b.msg);
   return {on:()=>{btn.hidden=false;},off:()=>{btn.hidden=true;}};
+}
+
+/* ================= mark the point: click a diagram to put an X on it =================
+   5 Nov 2026 (Alex): each item is a small SVG picture; the student clicks (or moves the dashed cursor with
+   the arrow keys and presses Enter) to put an X where they think the point is. Tentative, then Check:
+   an X within tol of the target locks green; a wrong one turns red, then comes off. */
+function createMarkX(cfg){
+  const host=cfg.host,NS='http://www.w3.org/2000/svg',W=240,H=170;
+  const grid=mk('div','mx-grid');host.appendChild(grid);
+  const items=cfg.items.map((it,n)=>{
+    const box=mk('div','mx-item');grid.appendChild(box);
+    box.appendChild(mk('p','mx-n',(n+1)+' of '+cfg.items.length+' · '+it.title));
+    box.appendChild(mk('p','mx-q',it.q));
+    const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.setAttribute('class','mx-svg');
+    svg.setAttribute('tabindex','0');svg.setAttribute('role','application');
+    svg.setAttribute('aria-label',it.label+'. Click, or use the arrow keys and press Enter, to put an X on the centre of gravity.');
+    svg.innerHTML=it.svg+'<rect class="mx-cur" width="16" height="16" visibility="hidden"/><g class="mx-at" visibility="hidden"><g class="mx-x"><line x1="-7" y1="-7" x2="7" y2="7"/><line x1="-7" y1="7" x2="7" y2="-7"/></g></g>';
+    box.appendChild(svg);
+    const fb=mk('p','mx-fb');fb.setAttribute('aria-live','polite');box.appendChild(fb);
+    const o={it,svg,fb,x:svg.querySelector('.mx-x'),at:svg.querySelector('.mx-at'),cur:svg.querySelector('.mx-cur'),p:null,st:'',cx:W/2,cy:H/2};
+    function put(x,y){if(o.st==='right'||o.st==='shown')return;o.p=[Math.round(x),Math.round(y)];o.st='';draw();fb.textContent='';fb.className='mx-fb';saveSoon();}
+    svg.addEventListener('click',e=>{
+      const m=svg.getScreenCTM();if(!m)return;const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+      const q=pt.matrixTransform(m.inverse());put(q.x,q.y);
+    });
+    svg.addEventListener('keydown',e=>{
+      const d={ArrowLeft:[-4,0],ArrowRight:[4,0],ArrowUp:[0,-4],ArrowDown:[0,4]}[e.key];
+      if(d){e.preventDefault();o.cx=Math.max(0,Math.min(W,o.cx+d[0]));o.cy=Math.max(0,Math.min(H,o.cy+d[1]));drawCur();return;}
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();put(o.cx,o.cy);}
+    });
+    svg.addEventListener('focus',drawCur);svg.addEventListener('blur',()=>o.cur.setAttribute('visibility','hidden'));
+    function drawCur(){if(document.activeElement!==svg||o.st==='right'||o.st==='shown'){o.cur.setAttribute('visibility','hidden');return;}
+      o.cur.setAttribute('x',o.cx-8);o.cur.setAttribute('y',o.cy-8);o.cur.setAttribute('visibility','visible');}
+    o.draw=draw;
+    function draw(){
+      // the position is on the outer group, so the shake and pop animations on the X itself never move it
+      if(!o.p){o.at.setAttribute('visibility','hidden');}
+      else{o.at.setAttribute('visibility','visible');o.at.setAttribute('transform','translate('+o.p[0]+' '+o.p[1]+')');}
+      o.x.setAttribute('class','mx-x'+(o.st?' is-'+o.st:''));
+      svg.classList.toggle('is-locked',o.st==='right'||o.st==='shown');drawCur();
+    }
+    return o;
+  });
+  const b=bar(host,[{label:'Check',primary:true,fn:check},{label:'Shuffle again',fn:reset}]);
+  const ans=answerBtn(b,showAll);
+  // a target is a point with a radius (at, tol) or a box of accepted positions (box: [x1,y1,x2,y2]), like a mark scheme's region
+  const ok=o=>{const p=o.p,t=o.it;if(!p)return false;if(t.box)return p[0]>=t.box[0]&&p[0]<=t.box[2]&&p[1]>=t.box[1]&&p[1]<=t.box[3];return Math.hypot(p[0]-t.at[0],p[1]-t.at[1])<=t.tol;};
+  const aim=t=>t.box?[(t.box[0]+t.box[2])/2,(t.box[1]+t.box[3])/2]:t.at;
+  function check(){
+    if(items.some(o=>!o.p&&o.st!=='right'&&o.st!=='shown')){b.say('Put an X on every picture first.');return;}
+    let wrong=0;
+    items.forEach(o=>{
+      if(o.st==='right'||o.st==='shown')return;
+      if(ok(o)){o.st='right';o.fb.innerHTML='<strong>Right.</strong> '+o.it.explain;o.fb.className='mx-fb good';}
+      else{wrong++;o.st='wrong';o.fb.innerHTML='<strong>Not quite.</strong> '+o.it.hint;o.fb.className='mx-fb bad';
+        setTimeout(()=>{if(o.st==='wrong'){o.st='';o.p=null;o.draw();saveSoon();}},900);}
+      o.draw();
+    });
+    const n=items.filter(o=>o.st==='right').length;
+    b.say(n+' / '+items.length+' correct',wrong?'':'good');
+    if(wrong)ans.on();else{ans.off();celebrate(b.msg);}
+    saveSoon();
+  }
+  function showAll(){
+    items.forEach(o=>{if(o.st==='right')return;o.p=aim(o.it).slice();o.st='shown';o.fb.innerHTML=o.it.explain;o.fb.className='mx-fb';o.draw();});
+    b.say(SHOWN_MSG);saveSoon();
+  }
+  function reset(){items.forEach(o=>{o.p=null;o.st='';o.fb.textContent='';o.fb.className='mx-fb';o.draw();});ans.off();b.say('');saveSoon();}
+  return track(host,{reset,
+    getState:()=>({m:items.map(o=>[o.p,o.st==='wrong'?'':o.st])}),
+    setState:s=>{(s.m||[]).forEach((v,i)=>{const o=items[i];if(!o||!Array.isArray(v))return;o.p=Array.isArray(v[0])?v[0]:null;o.st=v[1]||'';
+      if(o.st==='right'){o.fb.innerHTML='<strong>Right.</strong> '+o.it.explain;o.fb.className='mx-fb good';}
+      if(o.st==='shown'){o.fb.innerHTML=o.it.explain;}
+      o.draw();});},
+    isDone:()=>items.every(o=>o.st==='right'||o.st==='shown')});
 }
 
 /* ================= saved answers and tab progress =================
@@ -1680,26 +1760,33 @@ exploreFrame('moments','Balance the seesaw','Moment = force × perpendicular dis
     steps:S,constraints:chain(S.map(s=>s.id)),
     why:'Each hanging position gives one line through the centre of gravity, so two lines are needed to find where they cross.'});
 }
-quickCheck('cog','Where is the centre of gravity?',[
-  {title:'A metre rule',
-    q:'A uniform metre rule rests on a pivot. Its whole weight can be drawn as one arrow acting at',
-    options:[
-    {text:'the 50 cm mark, its centre',correct:true},
-    {text:'the pivot, wherever it is',why:'The centre of gravity is a point on the rule itself. Moving the pivot does not move it.'},
-    {text:'both ends, half at each',why:'The weight is spread along the rule, but it acts as one force through a single point.'},
-    {text:'the 0 cm mark, where it starts',why:'For a uniform rule the mass is spread evenly, so the balance point is the middle, not an end.'}
-    ],
-    explain:'Uniform means the mass is spread evenly, so the weight acts through the middle of the rule: the 50 cm mark. That is why a uniform rule pivoted at 50 cm has no moment from its own weight.'},
-  {title:'A ring',
-    q:'A flat metal ring hangs on a wall. Its centre of gravity is',
-    options:[
-    {text:'at the centre, in the empty hole',correct:true},
-    {text:'on the metal at the top of the ring',why:'Hanging a shape from a point puts its centre of gravity directly below that point, not at it.'},
-    {text:'nowhere, as a ring has none',why:'Every object has a centre of gravity: the point its weight acts through.'},
-    {text:'spread all the way round the ring',why:'The mass is spread round the ring, but the weight acts through one single point.'}
-    ],
-    explain:'The ring is symmetrical, so its centre of gravity is at its centre. There is no metal there: the centre of gravity can be outside the material of an object.'}
-]);
+{
+  // the irregular card: its plumb lines are drawn through its real centre of gravity (the polygon's centroid)
+  const P=[[38,42],[150,22],[208,72],[182,146],[96,152],[28,112]];
+  let A=0,cx=0,cy=0;P.forEach((p,i)=>{const q=P[(i+1)%P.length],c=p[0]*q[1]-q[0]*p[1];A+=c;cx+=(p[0]+q[0])*c;cy+=(p[1]+q[1])*c;});
+  A/=2;cx/=6*A;cy/=6*A;
+  const holes=[[146,30],[36,106]];
+  const plumb=holes.map(h=>{const dx=cx-h[0],dy=cy-h[1],k=400/Math.hypot(dx,dy);return '<line class="mx-plumb" x1="'+h[0]+'" y1="'+h[1]+'" x2="'+(h[0]+dx*k).toFixed(1)+'" y2="'+(h[1]+dy*k).toFixed(1)+'"/>';}).join('');
+  const poly=P.map(p=>p.join(',')).join(' ');
+  createMarkX({host:act('cog','Mark the point','Where is the centre of gravity?','Click each picture to put an X where the object’s weight acts. Click again to move your X, then press Check.'),
+    items:[
+    {title:'A car',q:'A car parked on flat ground.',label:'Side view of a car on flat ground',
+      svg:'<line class="mx-line" x1="8" y1="141" x2="232" y2="141"/><path class="mx-obj" d="M28 118L28 98Q30 88 48 86L78 84L98 62L160 62L182 84L204 88Q212 92 212 104L212 118Z"/><path class="mx-line" fill="none" d="M84 84L104 68L128 68L128 84ZM134 68L156 68L172 84L134 84Z"/><circle class="mx-obj" cx="64" cy="124" r="16"/><circle class="mx-obj" cx="178" cy="124" r="16"/><circle class="mx-pin" cx="64" cy="124" r="5"/><circle class="mx-pin" cx="178" cy="124" r="5"/>',
+      box:[98,94,146,120],
+      hint:'Most of a car’s mass (engine, floor, axles, wheels) is low down, and it is spread out between the front and back wheels.',
+      explain:'The centre of gravity is about halfway between the wheels and low down, in the bottom half of the body. A low centre of gravity makes a car stable.'},
+    {title:'A van with a roof load',q:'The grey dot is the centre of gravity of the empty van. Heavy boxes are now strapped to its roof.',label:'Side view of a van with heavy boxes on its roof, and a dot showing where the centre of gravity was when the van was empty',
+      svg:'<line class="mx-line" x1="8" y1="141" x2="232" y2="141"/><path class="mx-obj" d="M24 118L24 42Q24 38 28 38L168 38L168 60L196 62Q212 70 214 90L214 118Z"/><path class="mx-line" fill="none" d="M172 64L194 66Q204 72 206 84L172 84Z"/><rect class="mx-obj" x="66" y="14" width="34" height="24"/><rect class="mx-obj" x="100" y="14" width="34" height="24"/><rect class="mx-obj" x="134" y="14" width="34" height="24"/><text class="mx-lbl" x="117" y="10" text-anchor="middle">heavy boxes</text><circle class="mx-obj" cx="60" cy="124" r="16"/><circle class="mx-obj" cx="182" cy="124" r="16"/><circle class="mx-pin" cx="60" cy="124" r="5"/><circle class="mx-pin" cx="182" cy="124" r="5"/><circle cx="116" cy="98" r="4" fill="var(--ink-faint)"/><text class="mx-lbl" x="124" y="101">empty</text>',
+      box:[94,40,140,88],
+      hint:'The heavy boxes add mass high up, above the middle of the van. Which way does that move the centre of gravity?',
+      explain:'The load is high up and over the middle of the van, so the centre of gravity moves straight up from the grey dot. A higher centre of gravity makes the van less stable, so it topples over more easily on a bend.'},
+    {title:'A flat card',q:'An odd-shaped card, after the plumb-line method.',label:'An odd-shaped flat card with two pin holes and two dashed plumb lines drawn on it',
+      svg:'<defs><clipPath id="mx-card"><polygon points="'+poly+'"/></clipPath></defs><polygon class="mx-obj" points="'+poly+'"/><g clip-path="url(#mx-card)">'+plumb+'</g>'+holes.map(h=>'<circle class="mx-pin" cx="'+h[0]+'" cy="'+h[1]+'" r="3.5"/>').join(''),
+      at:[+cx.toFixed(1),+cy.toFixed(1)],tol:10,
+      hint:'Each dashed line is where the plumb line hung when the card swung from one of the holes. The centre of gravity is on both lines.',
+      explain:'The card hangs with its centre of gravity straight below the pin, so it lies on each plumb line. The only point on both lines is where they cross.'}
+    ]});
+}
 calcAct('moments','Balance the beam','A 20 N weight hangs 30 cm left of a pivot and a 10 N weight hangs 15 cm left of it.',[
   {q:'The downward force 50 cm to the right of the pivot that balances the beam is',unit:'N',answer:15,
    working:'F₁ = 20 N<br>d₁ = 30 cm = 0.30 m<br>F₂ = 10 N<br>d₂ = 15 cm = 0.15 m<br>d = 50 cm = 0.50 m<br>F = ?||clockwise moment = anticlockwise moment<br>F × 0.50 = 20 × 0.30 + 10 × 0.15<br>F × 0.50 = 6 + 1.5<br>F × 0.50 = 7.5<br>F = [[7.5|0.50]]<br>F = 15 N'}
