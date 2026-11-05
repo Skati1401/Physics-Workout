@@ -1688,10 +1688,29 @@ createSortGame({host:act('redshift','Sort','Red-shift or blue-shift?','Sort each
   ]});
 
 /* ================= 4. THE RED-SHIFT EQUATION ================= */
+// New problems helpers (equation tab). The third question's maker uses the line made by the second (rs_last).
+const rs_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+const rs_n=(x,dp)=>String(+(+x).toFixed(dp));
+const RS_LINES=[393,410,434,486,589,656];
+let rs_last=null;
 calcAct('equation','[[Δλ|λ₀]] = [[v|c]]','Use [[change in wavelength|reference wavelength]] = [[velocity of galaxy|speed of light]], with c = 3.0 × 10⁸ m/s. Δλ = λ − λ₀.',[
-  {q:'A line at 656 nm in the lab is seen at 662.6 nm in a galaxy’s light. The galaxy’s velocity is',unit:'× 10⁶ m/s',answer:3.02,working:'Δλ = 662.6 − 656 = 6.6 nm<br>[[Δλ|λ₀]] = [[v|c]]<br>[[6.6|656]] = [[v|3.0 × 10⁸]]<br>v = [[6.6|656]] × 3.0 × 10⁸<br>v = 3.02 × 10⁶ m/s'},
-  {q:'A galaxy moves away at 1.5 × 10⁷ m/s. A line at 500 nm in the lab is shifted by',unit:'nm',answer:25,working:'[[Δλ|λ₀]] = [[v|c]]<br>[[Δλ|500]] = [[1.5 × 10⁷|3.0 × 10⁸]]<br>[[Δλ|500]] = 0.05<br>Δλ = 0.05 × 500<br>Δλ = 25 nm'},
-  {q:'For that galaxy, the observed wavelength of the 500 nm line is',unit:'nm',answer:525,working:'λ = λ₀ + Δλ<br>λ = 500 + 25<br>λ = 525 nm'}
+  {q:'A line at 656 nm in the lab is seen at 662.6 nm in a galaxy’s light. The galaxy’s velocity is',unit:'× 10⁶ m/s',answer:3.02,
+   working:rs_w(['λ₀ = 656 nm','λ = 662.6 nm','Δλ = 662.6 − 656 = 6.6 nm','c = 3.0 × 10⁸ m/s','v = ?'],['[[Δλ|λ₀]] = [[v|c]]','[[6.6|656]] = [[v|3.0 × 10⁸]]','v = [[6.6|656]] × 3.0 × 10⁸','v = 3.02 × 10⁶ m/s']),
+   make:rnd=>{let l0,d,v,k=0;do{l0=calcPick(rnd,RS_LINES);d=calcPick(rnd,[2.4,3.6,4.2,5.0,6.6,8.0,9.3,12.0,15.0]);v=+(d/l0*300).toPrecision(3);}while((v<1||v>9.99)&&++k<60);
+     const l=rs_n(l0+d,1),gal=calcPick(rnd,['a galaxy’s light','the light from a distant galaxy','the spectrum of a galaxy']);
+     return {q:'A line at '+l0+' nm in the lab is seen at '+l+' nm in '+gal+'. The galaxy’s velocity is',unit:'× 10⁶ m/s',answer:v,
+       working:rs_w(['λ₀ = '+l0+' nm','λ = '+l+' nm','Δλ = '+l+' − '+l0+' = '+rs_n(d,1)+' nm','c = 3.0 × 10⁸ m/s','v = ?'],['[[Δλ|λ₀]] = [[v|c]]','[['+rs_n(d,1)+'|'+l0+']] = [[v|3.0 × 10⁸]]','v = [['+rs_n(d,1)+'|'+l0+']] × 3.0 × 10⁸','v = '+v+' × 10⁶ m/s'])};}},
+  {q:'A galaxy moves away at 1.5 × 10⁷ m/s. A line at 500 nm in the lab is shifted by',unit:'nm',answer:25,
+   working:rs_w(['v = 1.5 × 10⁷ m/s','λ₀ = 500 nm','c = 3.0 × 10⁸ m/s','Δλ = ?'],['[[Δλ|λ₀]] = [[v|c]]','[[Δλ|500]] = [[1.5 × 10⁷|3.0 × 10⁸]]','[[Δλ|500]] = 0.05','Δλ = 0.05 × 500','Δλ = 25 nm']),
+   make:rnd=>{const c=calcPick(rnd,[['3.0 × 10⁶',0.01],['6.0 × 10⁶',0.02],['9.0 × 10⁶',0.03],['1.2 × 10⁷',0.04],['1.5 × 10⁷',0.05],['2.4 × 10⁷',0.08],['3.0 × 10⁷',0.1]]),l0=calcPick(rnd,RS_LINES.concat([500,600])),d=rs_n(c[1]*l0,2);
+     rs_last={l0:l0,d:d};
+     return {q:'A galaxy moves away at '+c[0]+' m/s. A line at '+l0+' nm in the lab is shifted by',unit:'nm',answer:+d,
+       working:rs_w(['v = '+c[0]+' m/s','λ₀ = '+l0+' nm','c = 3.0 × 10⁸ m/s','Δλ = ?'],['[[Δλ|λ₀]] = [[v|c]]','[[Δλ|'+l0+']] = [['+c[0]+'|3.0 × 10⁸]]','[[Δλ|'+l0+']] = '+c[1],'Δλ = '+c[1]+' × '+l0,'Δλ = '+d+' nm'])};}},
+  {q:'For that galaxy, the observed wavelength of the 500 nm line is',unit:'nm',answer:525,
+   working:rs_w(['λ₀ = 500 nm','Δλ = 25 nm','λ = ?'],['Δλ = λ − λ₀','25 = λ − 500','λ = 25 + 500','λ = 525 nm']),
+   make:rnd=>{const r=rs_last||{l0:500,d:'25'},l=rs_n(r.l0+(+r.d),2);
+     return {q:'For that galaxy, the observed wavelength of the '+r.l0+' nm line is',unit:'nm',answer:+l,
+       working:rs_w(['λ₀ = '+r.l0+' nm','Δλ = '+r.d+' nm','λ = ?'],['Δλ = λ − λ₀',r.d+' = λ − '+r.l0,'λ = '+r.d+' + '+r.l0,'λ = '+l+' nm'])};}}
 ]);
 
 /* ================= 5. THE EXPANDING UNIVERSE ================= */

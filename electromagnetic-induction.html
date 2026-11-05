@@ -1531,13 +1531,25 @@ const LHR_OPTS=up=>[
     constraints:[['a','b'],['b','c'],['c','d'],['d','e']],
     why:'The primary current makes a changing field, the core carries it to the secondary, and the changing field induces the output voltage.'
   });
+  // New problems helpers (transformers tab): numbers with a space every 3 digits from 10 000
+  const tr_n=x=>{const v=+(+x).toFixed(2),t=String(Math.abs(v)).split('.'),i=Math.abs(v)>=10000?t[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '):t[0];return (v<0?'−':'')+i+(t[1]?'.'+t[1]:'');};
+  const tr_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+  const VP='V<sub>p</sub>',VS='V<sub>s</sub>',NP='N<sub>p</sub>',NS='N<sub>s</sub>';
   createCalc({
     host:act('transformers','Calculate','The turns ratio','Use [[V<sub>p</sub>|V<sub>s</sub>]] = [[N<sub>p</sub>|N<sub>s</sub>]].'),
     questions:[
       {q:'A transformer has 2000 turns on its primary and 100 turns on its secondary. The primary is connected to 230 V. The output voltage is',unit:'V',answer:11.5,
-        working:'[[V<sub>p</sub>|V<sub>s</sub>]] = [[N<sub>p</sub>|N<sub>s</sub>]]<br>[[230|V<sub>s</sub>]] = [[2000|100]]<br>[[230|V<sub>s</sub>]] = 20<br>230 = 20 × V<sub>s</sub><br>V<sub>s</sub> = [[230|20]]<br>V<sub>s</sub> = 11.5 V'},
+        working:tr_w([NP+' = 2000',NS+' = 100',VP+' = 230 V',VS+' = ?'],['[['+VP+'|'+VS+']] = [['+NP+'|'+NS+']]','[[230|'+VS+']] = [[2000|100]]','[[230|'+VS+']] = 20','230 = 20 × '+VS,VS+' = [[230|20]]',VS+' = 11.5 V']),
+        make:rnd=>{const k=calcPick(rnd,[10,20,23,46,50,100]),Ns=calcPick(rnd,[50,100,150,200,250,400]),Np=k*Ns,Vs=+(230/k).toFixed(2);
+          const what=calcPick(rnd,['A transformer','A doorbell transformer','The transformer in a phone charger','A model railway transformer']);
+          return {q:what+' has '+tr_n(Np)+' turns on its primary and '+Ns+' turns on its secondary. The primary is connected to 230 V. The output voltage is',unit:'V',answer:Vs,
+            working:tr_w([NP+' = '+tr_n(Np),NS+' = '+Ns,VP+' = 230 V',VS+' = ?'],['[['+VP+'|'+VS+']] = [['+NP+'|'+NS+']]','[[230|'+VS+']] = [['+tr_n(Np)+'|'+Ns+']]','[[230|'+VS+']] = '+k,'230 = '+k+' × '+VS,VS+' = [[230|'+k+']]',VS+' = '+tr_n(Vs)+' V'])};}},
       {q:'A transformer steps 12 V up to 240 V. Its secondary coil has 4000 turns. The number of turns on the primary is',unit:'turns',answer:200,
-        working:'[[V<sub>p</sub>|V<sub>s</sub>]] = [[N<sub>p</sub>|N<sub>s</sub>]]<br>[[12|240]] = [[N<sub>p</sub>|4000]]<br>12 × 4000 = 240 × N<sub>p</sub><br>48 000 = 240 × N<sub>p</sub><br>N<sub>p</sub> = [[48 000|240]]<br>N<sub>p</sub> = 200 turns'}
+        working:tr_w([VP+' = 12 V',VS+' = 240 V',NS+' = 4000',NP+' = ?'],['[['+VP+'|'+VS+']] = [['+NP+'|'+NS+']]','[[12|240]] = [['+NP+'|4000]]','12 × 4000 = 240 × '+NP,'48 000 = 240 × '+NP,NP+' = [[48 000|240]]',NP+' = 200 turns']),
+        make:rnd=>{const Vp=calcPick(rnd,[6,12,20,24,25]),k=calcPick(rnd,[5,10,20,40,50]),Np=calcPick(rnd,[50,100,150,200,250,400]),Vs=k*Vp,Ns=k*Np;
+          const what=calcPick(rnd,['A transformer','A step-up transformer','The transformer in a neon sign','The transformer in Nabil’s science project']);
+          return {q:what+' steps '+Vp+' V up to '+tr_n(Vs)+' V. Its secondary coil has '+tr_n(Ns)+' turns. The number of turns on the primary is',unit:'turns',answer:Np,
+            working:tr_w([VP+' = '+Vp+' V',VS+' = '+tr_n(Vs)+' V',NS+' = '+tr_n(Ns),NP+' = ?'],['[['+VP+'|'+VS+']] = [['+NP+'|'+NS+']]','[['+Vp+'|'+tr_n(Vs)+']] = [['+NP+'|'+tr_n(Ns)+']]',Vp+' × '+tr_n(Ns)+' = '+tr_n(Vs)+' × '+NP,tr_n(Vp*Ns)+' = '+tr_n(Vs)+' × '+NP,NP+' = [['+tr_n(Vp*Ns)+'|'+tr_n(Vs)+']]',NP+' = '+Np+' turns'])};}}
     ]
   });
 }
@@ -1569,13 +1581,27 @@ const LHR_OPTS=up=>[
     constraints:[['a','b'],['b','c'],['c','d'],['d','e']],
     why:'The voltage is stepped up for the long journey, then stepped down before it reaches homes.'
   });
+  // New problems helpers (grid tab)
+  const gr_n=x=>{const v=+(+x).toFixed(2),t=String(Math.abs(v)).split('.'),i=Math.abs(v)>=10000?t[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '):t[0];return (v<0?'−':'')+i+(t[1]?'.'+t[1]:'');};
+  const gr_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+  const VP='V<sub>p</sub>',VS='V<sub>s</sub>',IP='I<sub>p</sub>',IS='I<sub>s</sub>',EQ=VP+' × '+IP+' = '+VS+' × '+IS;
   createCalc({
     host:act('grid','Calculate','Input power = output power','Use V<sub>p</sub> × I<sub>p</sub> = V<sub>s</sub> × I<sub>s</sub> (100% efficient).'),
     questions:[
       {q:'A power station transformer steps 25 000 V up to 400 000 V. The current in the primary is 800 A. The current in the secondary is',unit:'A',answer:50,
-        working:'V<sub>p</sub> × I<sub>p</sub> = V<sub>s</sub> × I<sub>s</sub><br>25 000 × 800 = 400 000 × I<sub>s</sub><br>20 000 000 = 400 000 × I<sub>s</sub><br>I<sub>s</sub> = [[20 000 000|400 000]]<br>I<sub>s</sub> = 50 A'},
+        working:gr_w([VP+' = 25 000 V',VS+' = 400 000 V',IP+' = 800 A',IS+' = ?'],[EQ,'25 000 × 800 = 400 000 × '+IS,'20 000 000 = 400 000 × '+IS,IS+' = [[20 000 000|400 000]]',IS+' = 50 A']),
+        make:rnd=>{let Vp,Vs,Ip,Is,k=0;do{Vp=calcPick(rnd,[20000,25000]);Vs=calcPick(rnd,[132000,275000,400000]);Ip=calcPick(rnd,[400,500,800,1000,1100,1200,1320,1600,2000]);Is=Vp*Ip/Vs;}while(Math.abs(Is*100-Math.round(Is*100))>1e-9&&++k<80);
+          Is=+Is.toFixed(2);
+          const what=calcPick(rnd,['A power station transformer','The step-up transformer at a gas-fired power station','The transformer at a nuclear power station','A step-up transformer at a power station']);
+          return {q:what+' steps '+gr_n(Vp)+' V up to '+gr_n(Vs)+' V. The current in the primary is '+gr_n(Ip)+' A. The current in the secondary is',unit:'A',answer:Is,
+            working:gr_w([VP+' = '+gr_n(Vp)+' V',VS+' = '+gr_n(Vs)+' V',IP+' = '+gr_n(Ip)+' A',IS+' = ?'],[EQ,gr_n(Vp)+' × '+gr_n(Ip)+' = '+gr_n(Vs)+' × '+IS,gr_n(Vp*Ip)+' = '+gr_n(Vs)+' × '+IS,IS+' = [['+gr_n(Vp*Ip)+'|'+gr_n(Vs)+']]',IS+' = '+gr_n(Is)+' A'])};}},
       {q:'A laptop charger steps 230 V down to 20 V. The output current is 4.6 A. The current in the primary is',unit:'A',answer:0.4,
-        working:'V<sub>p</sub> × I<sub>p</sub> = V<sub>s</sub> × I<sub>s</sub><br>230 × I<sub>p</sub> = 20 × 4.6<br>230 × I<sub>p</sub> = 92<br>I<sub>p</sub> = [[92|230]]<br>I<sub>p</sub> = 0.4 A'}
+        working:gr_w([VP+' = 230 V',VS+' = 20 V',IS+' = 4.6 A',IP+' = ?'],[EQ,'230 × '+IP+' = 20 × 4.6','230 × '+IP+' = 92',IP+' = [[92|230]]',IP+' = 0.4 A']),
+        make:rnd=>{const c=calcPick(rnd,[['A phone charger',5,[2.3]],['A laptop charger',20,[2.3,4.6]],['A laptop charger',19,[2.3,4.6]],['A games console power supply',12,[4.6,6.9,9.2]],['A garden lighting transformer',12,[2.3,4.6,6.9]]]);
+          const Vs=c[1],Is=calcPick(rnd,c[2]),P=+(Vs*Is).toFixed(2),Ip=+(P/230).toFixed(2);
+          const what=c[0]==='A laptop charger'?calcPick(rnd,['A laptop charger','Elena’s laptop charger','Aidan’s laptop charger']):c[0];
+          return {q:what+' steps 230 V down to '+Vs+' V. The output current is '+gr_n(Is)+' A. The current in the primary is',unit:'A',answer:Ip,
+            working:gr_w([VP+' = 230 V',VS+' = '+Vs+' V',IS+' = '+gr_n(Is)+' A',IP+' = ?'],[EQ,'230 × '+IP+' = '+Vs+' × '+gr_n(Is),'230 × '+IP+' = '+gr_n(P),IP+' = [['+gr_n(P)+'|230]]',IP+' = '+gr_n(Ip)+' A'])};}}
     ]
   });
 }
