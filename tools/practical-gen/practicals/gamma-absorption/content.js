@@ -67,25 +67,8 @@ function resTable(head,rows){
   ]});
 }
 
-/* ================= 3. VARIABLES ================= */
 {
-  const body=act('variables','Sort','Which kind of variable is it?','Sort each card into the right bin, then press Check.');
-  createSortGame({host:body,cats:[
-    {id:'i',label:'Independent',hint:'You change it',color:'--c1',soft:'--c1-soft'},
-    {id:'d',label:'Dependent',hint:'You measure it',color:'--c2',soft:'--c2-soft'},
-    {id:'c',label:'Control',hint:'You keep it the same',color:'--c3',soft:'--c3-soft'}
-  ],items:[
-    {id:'1',text:'The thickness of lead between the source and the tube',cat:'i'},
-    {id:'2',text:'The count on the counter in 60 s',cat:'d'},
-    {id:'3',text:'The corrected count rate, I',cat:'d'},
-    {id:'4',text:'The distance from the source to the GM tube',cat:'c'},
-    {id:'5',text:'The time for each count',cat:'c'},
-    {id:'6',text:'The source used for every reading',cat:'c'},
-    {id:'7',text:'The line from the source through the lead to the tube window',cat:'c'}
-  ]});
-}
-{
-  const body=act('variables','Predict','Moving the tube','');
+  const body=act('method','Predict','Moving the tube','');
   createPredict({host:body,q:'After adding the thickest lead, Haris moves the GM tube closer to the source “to get a bigger count”. Why does this spoil his results?',options:[
     {text:'Moving closer raises the count, whatever the lead does',correct:true},
     {text:'Gamma rays need a long path to be absorbed by the lead',why:'The lead absorbs the gamma rays as they pass through it. The gap after the lead does not change that.'},
