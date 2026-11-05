@@ -74,7 +74,7 @@ const GA_BG=120, GA_X=[0,4,8,12,16,20,24], GA_C=[476,366,290,224,181,141,112];
 const GA_BGR=GA_BG/5, GA_I=GA_C.map(c=>c-GA_BGR), GA_LN=GA_I.map(i=>Math.log(i));
 let gaTable=null,gaPlotRows=()=>{};
 {
-  act('do','Your turn','Take your own readings','Press Measure background and read the counter after 5 minutes (300 s). Then press Count for 60 s with no lead, and again after adding each 4 mm of lead, up to 24 mm. Write each count in the table. Then work out the corrected count rate, I = count − background count rate, and ln I.');
+  act('do','Your turn','Take your own readings','1. Measure background (5 minutes). 2. Count for 60 s with no lead, then after each extra 4 mm, up to 24 mm. 3. Write each count in the table, then work out I = count − background count rate, and ln I.');
 }
 frameAct('do','animations/gamma-radiation.html','measure','Gamma absorption experiment: read the counter','gamma radiation',false);
 {
@@ -124,7 +124,9 @@ frameAct('do','animations/gamma-radiation.html','measure','Gamma absorption expe
     rowText:p=>{const k=GA_X.indexOf(p.x),e=gaTable&&gaTable.ln(k);return p.x+' mm, '+(e?'ln I = '+e:'your ln I');},
     graph:{xMin:0,xMax:24,yMin:4.4,yMax:6.2,xTicks:[0,4,8,12,16,20,24],yTicks:[4.4,4.6,4.8,5.0,5.2,5.4,5.6,5.8,6.0,6.2],minor:[1,0.04],snap:[1,0.02],xLabel:'x (mm)',yLabel:'ln (I / min⁻¹)',W:560,H:340}});
   // the animation and the results table side by side, so students read and write without scrolling
-  {const fr=$('#panel-do .anim-wrap'),tb=$('#panel-do .ga-tbl').closest('.act');if(fr&&tb){const sp=mk('div','hk-split');fr.parentNode.insertBefore(sp,fr);sp.appendChild(fr);sp.appendChild(tb);}}
+  // the Your turn card sits above the animation in the left column, so the results table starts at the top on the right
+  {const fr=$('#panel-do .anim-wrap'),tb=$('#panel-do .ga-tbl').closest('.act'),yt=$('#panel-do .act[data-title="Take your own readings"]');
+   if(fr&&tb){const sp=mk('div','hk-split'),left=mk('div','ga-left');fr.parentNode.insertBefore(sp,fr);sp.appendChild(left);if(yt)left.appendChild(yt);left.appendChild(fr);sp.appendChild(tb);}}
   gaPlotRows=()=>{$$('.plot-row',body).forEach((li,k)=>{const e=gaTable&&gaTable.ln(k),s=li.firstElementChild;if(s)s.textContent=GA_X[k]+' mm, '+(e?'ln I = '+e:'your ln I');});};
   gaPlotRows();
 }
