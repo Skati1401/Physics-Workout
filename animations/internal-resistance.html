@@ -234,7 +234,7 @@
         <span class="rowlab" id="ir-mlab" hidden>Mystery</span>
         <div class="seg" id="ir-guess" hidden><button type="button" id="ir-new">New mystery cell</button><button type="button" id="ir-reveal">Reveal it</button></div>
         <span class="rowlab" id="ir-jlab">Jump to</span>
-        <div class="seg" id="ir-jump"><button type="button" data-v="open" aria-pressed="false">Open circuit</button><button type="button" data-v="std" aria-pressed="false">R = 2.5 &Omega;</button><button type="button" data-v="match" aria-pressed="false">R = r</button><button type="button" data-v="short" aria-pressed="false">Short circuit</button></div>
+        <div class="seg" id="ir-jump"><button type="button" data-v="open" aria-pressed="false">Open circuit</button><button type="button" data-v="std" aria-pressed="false">R = 2.5 &Omega;</button><button type="button" data-v="short" aria-pressed="false">Short circuit</button></div>
       </div>
       <p class="note" id="ir-note" aria-live="polite"></p>
       <div class="stats" id="ir-stats"></div>
@@ -641,7 +641,7 @@ function expKey(x, y, upLabel, downLabel){
     g+=wire([[106,Y],[L,Y],[L,163]])+wire([[L,137],[L,TY],[76,TY]])+wire([[104,TY],[TX0,TY]]);
     g+=wire([[cx,TY-8],[cx,TOP],[Rt,TOP],[Rt,Y],[230,Y]]);
     g+=meter(L,150,'A');
-    g+=switchH(90,TY,!on)+(exp()?'':'<rect class="grab" x="70" y="'+(TY-20)+'" width="40" height="32" fill="transparent"/>')+txt(90,TY+22,on?'closed':'open',{a:'middle',fs:9.5,c:'var(--ink-faint)'});
+    g+=switchH(90,TY,!on)+(exp()?'':'<rect class="grab" x="70" y="'+(TY-20)+'" width="40" height="32" fill="transparent"/>')+(on?'':txt(90,TY+22,'open',{a:'middle',fs:9.5,c:'var(--ink-faint)'}));
     // rheostat: the part of the track in use is shaded
     g+='<rect x="'+TX0+'" y="'+(TY-8)+'" width="'+(TX1-TX0)+'" height="16" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>';
     if(cx>TX0+0.5) g+='<rect x="'+TX0+'" y="'+(TY-8)+'" width="'+f1(cx-TX0)+'" height="16" fill="var(--topic-soft)" stroke="var(--ink)" stroke-width="1.8"/>';
@@ -658,23 +658,13 @@ function expKey(x, y, upLabel, downLabel){
     g+=txt(98,Y+2,'+',{a:'end',fs:11,c:'var(--ink-soft)'});
     // terminals and the voltmeter across them
     g+='<circle cx="70" cy="'+Y+'" r="3.5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/><circle cx="230" cy="'+Y+'" r="3.5" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>';
-    g+=wire([[50,Y],[50,283],[137,283]],'var(--ink-soft)',1.4)+wire([[163,283],[250,283],[250,Y]],'var(--ink-soft)',1.4)+jdot(50,Y)+jdot(250,Y)+meter(150,283,'V');
+    g+=wire([[50,Y],[50,283],[137,283]],'var(--ink-soft)',1.4)+wire([[163,283],[250,283],[250,Y]],'var(--ink-soft)',1.4)+jdot(50,Y)+jdot(250,Y)+meter(150,283,'V',true);
     // meter readings
     var showI = exp() ? (X.just ? X.just.I : null) : i, showV = exp() ? (X.just ? X.just.V : null) : v;
     if(exp() && X.reading) { showI=null; showV=null; }
-    g+=txt(L+18, big?178:154, showI===null ? 'A: –' : fmtI(showI), {fs:11, w:600, c:'var(--ink)'});
-    g+=txt(268, 288, showV===null ? '–' : showV.toFixed(2)+' V', {fs:11, w:600, c:'var(--ink)'});
-    // where each coulomb's energy goes: ε = V + Ir
-    var bx=96, bw=204, by=104, eMax=Math.max(e,0.01);
-    var wV = on ? bw*Math.max(0,v)/eMax : bw, wI = on ? bw*Math.max(0,i*rr)/eMax : 0;
-    if(!exp() || cellKind()!=='myst'){
-      g+=txt(bx, by-8, 'ε = '+e.toFixed(2)+' V: energy per coulomb', {fs:10, c:'var(--ink-soft)'});
-      g+='<rect x="'+bx+'" y="'+by+'" width="'+f1(wV)+'" height="20" fill="var(--topic)" opacity="0.85"/>';
-      g+='<rect x="'+f1(bx+wV)+'" y="'+by+'" width="'+f1(wI)+'" height="20" fill="var(--hot)" opacity="0.85"/>';
-      g+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="20" fill="none" stroke="var(--ink-soft)" stroke-width="1.2"/>';
-      g+=txt(bx, by+34, '■ V = '+v.toFixed(2)+' V across R (outside)', {fs:10, c:'var(--topic)', w:600});
-      g+=txt(bx, by+49, '■ Ir = '+(i*rr).toFixed(2)+' V lost inside the '+what(), {fs:10, c:'var(--hot)', w:600});
-    } else g+=txt(198, by+12, 'ε = ?   r = ?', {a:'middle', fs:14, w:600, c:'var(--accent)'});
+    g+=txt(L+18, 154, showI===null ? 'A: –' : fmtI(showI), {fs:11, w:600, c:'var(--ink)'});
+    g+=txt(268, 288, showV===null ? '–' : showV.toFixed(2)+' V', {fs:11, w:600, c:'var(--topic)'});
+    if(exp() && cellKind()==='myst') g+=txt(175, 150, 'ε = ?   r = ?', {a:'middle', fs:14, w:600, c:'var(--accent)'});
     return g;
   }
   // a small picture of the source, above the cell symbol
@@ -725,9 +715,9 @@ function expKey(x, y, upLabel, downLabel){
     $('#ir-eo').textContent=e.toFixed(2)+' V'; $('#ir-ro').textContent=fmtr(rr); $('#ir-Ro').textContent=fmtR(R);
     var s='', f=fit();
     if(ex){
-      s=stat('Readings', X.rd.length+(done()?'':' (6+)'))+stat('ε', f ? f.c.toFixed(2)+' V' : '?', true)+stat('r', f ? (big ? sig(-f.m/1000,3)+' kΩ' : sig(-f.m,3)+' Ω') : '?', true);
+      s=stat('Readings', String(X.rd.length))+stat('ε', f ? f.c.toFixed(2)+' V' : '?', true)+stat('r', f ? (big ? sig(-f.m/1000,3)+' kΩ' : sig(-f.m,3)+' Ω') : '?', true);
     } else {
-      s=stat('I', closed() ? fmtI(i) : '0 '+iUnit())+stat('V', v.toFixed(2)+' V', true)+stat('Lost volts Ir', (i*rr).toFixed(2)+' V')+stat('P in R', big ? sig(i*i*R*1e6,3)+' µW' : sig(i*i*R,3)+' W');
+      s=stat('E.m.f.', e.toFixed(2)+' V')+stat('Current', closed() ? fmtI(i) : '0 '+iUnit())+stat('Terminal V', v.toFixed(2)+' V', true)+stat('Lost volts', (i*rr).toFixed(2)+' V');
     }
     $('#ir-stats').innerHTML=s;
     if(ex) expTable($('#ir-table'), [{label:big?'R (kΩ)':'R (Ω)', key:'R', dp:big?2:1}, {label:'I ('+iUnit()+')', key:'I', dp:big?3:isCar()?1:2}, {label:'V (V)', key:'V', dp:2}], X.rd.map(function(p,k){ return {v:k, R:big?p.R/1000:p.R, I:p.I*iFac(), V:p.V}; }), X.rd.length-1);
@@ -741,7 +731,7 @@ function expKey(x, y, upLabel, downLabel){
       } else {
         w1='ε = I(R + r)<br>'+e.toFixed(2)+' = I × ('+nR(R)+' + '+nr(rr)+')<br>'+e.toFixed(2)+' = I × '+sig(R+rr,4)+'<br>I = [['+e.toFixed(2)+'|'+sig(R+rr,4)+']]<br>'+(big ? 'I = '+sig(i,4)+' A<br>I = <b>'+sig(i*1000,3)+' mA</b>' : 'I = <b>'+sig(i,3)+' A</b>');
         w2='V = ε − Ir<br>V = '+e.toFixed(2)+' − '+sig(i,4)+' × '+nr(rr)+'<br>V = '+e.toFixed(2)+' − '+sig(i*rr,4)+'<br>V = <b>'+sig(v,3)+' V</b>';
-        w3='Check: V = IR = '+sig(i,4)+' × '+nR(R)+' = '+sig(i*R,3)+' V. The lost volts Ir = '+sig(i*rr,3)+' V are the energy per coulomb transferred inside the '+what()+', warming it.';
+        w3='Check: V = IR = '+sig(i,4)+' × '+nR(R)+' = '+sig(i*R,3)+' V.';
       }
     } else if(f){
       var fc=iFac(), ru=big?' kΩ':' Ω', m=f.m/fc;
@@ -757,16 +747,15 @@ function expKey(x, y, upLabel, downLabel){
     var note, j=jumpSeg.value();
     if(ex){
       if(X.reading) note='Switch closed: reading the ammeter and voltmeter…';
-      else if(!X.rd.length) note='Experiment (CP8): drag the rheostat to set R, then press <b>Take reading</b>. The switch closes only while you read, so the cell does not warm up and change r.';
+      else if(!X.rd.length) note='Drag the rheostat to set R, then press <b>Take reading</b>. The switch closes only while you read, so r does not change.';
       else if(R<(big?300:0.3) && !done()) note='Careful: R is almost zero, a near short circuit. The current is large and the cell heats up. Use a bigger R.';
-      else if(!done()) note='You have '+X.rd.length+' reading'+(X.rd.length===1?'':'s')+'. '+(X.rd.length>=6 ? 'Spread them out more: you need a wide range of currents.' : 'Change R and take another.')+' Plot V against I.';
-      else note='Done: V against I is a straight line falling as I rises. Intercept ε = <b>'+f.c.toFixed(2)+' V</b>, gradient −r, so r = <b>'+(big ? sig(-f.m/1000,3)+' kΩ' : sig(-f.m,3)+' Ω')+'</b>.'+(my ? (myst.shown ? ' The mystery cell was ε = '+myst.e.toFixed(2)+' V, r = '+myst.r.toFixed(2)+' Ω.' : ' Press <b>Reveal it</b> to check.') : '');
-    } else if(!closed()) note='Open circuit: no current, so no lost volts. The voltmeter reads the e.m.f., <b>V = ε = '+e.toFixed(2)+' V</b>.';
-    else if(R===0) note='Short circuit: R = 0, so all of ε is lost inside the cell. V = 0 and I = ε/r = <b>'+(rr>0 ? fmtI(e/rr) : 'huge')+'</b>.'+(big ? ' The potato\'s huge r keeps even the short-circuit current tiny.' : isCar() ? ' A car battery\'s tiny r is why it can start a motor, and why shorting one is dangerous.' : ' The cell gets hot.');
-    else if(j==='match' || Math.abs(R-rr)<(big?5.1:0.051)) note='R = r: the p.d. splits equally, V = Ir = ε/2 = <b>'+(e/2).toFixed(2)+' V</b>. This is when the rheostat takes the most power from the cell.';
-    else if(big) note='A potato cell has a huge internal resistance (r = '+fmtr(rr)+'), so even a tiny current gives big lost volts and the terminal p.d. falls a lot. That is why a potato cannot light a lamp.';
-    else if(isCar()) note='A car battery has a tiny internal resistance (r = '+rr.toFixed(2)+' Ω), so the terminal p.d. hardly falls until the current is very large.';
-    else note='Lower R → bigger current I → more lost volts Ir, so the terminal p.d. <b>V = ε − Ir falls</b>. Drag the rheostat and watch the point move along the line.';
+      else if(!done()) note=X.rd.length+' reading'+(X.rd.length===1?'':'s')+'. '+(X.rd.length>=6 ? 'Spread them over a wider range of currents.' : 'Change R and take another (6 or more).');
+      else note='Intercept ε = <b>'+f.c.toFixed(2)+' V</b>, gradient −r, so r = <b>'+(big ? sig(-f.m/1000,3)+' kΩ' : sig(-f.m,3)+' Ω')+'</b>.'+(my ? (myst.shown ? ' The mystery cell was ε = '+myst.e.toFixed(2)+' V, r = '+myst.r.toFixed(2)+' Ω.' : ' Press <b>Reveal it</b> to check.') : '');
+    } else if(!closed()) note='Open circuit: no current, so no lost volts. <b>V = ε</b>.';
+    else if(R===0) note='Short circuit: V = 0, all of ε is lost inside. I = ε/r = <b>'+(rr>0 ? fmtI(e/rr) : 'huge')+'</b>.'+(big ? ' Tiny, even for a short circuit.' : isCar() ? ' That is why shorting a car battery is dangerous.' : ' The cell gets hot.');
+    else if(big) note='A potato has a <b>huge r</b>, so even a tiny current gives big lost volts and V falls a long way.';
+    else if(isCar()) note='A car battery has a <b>tiny r</b>, so V hardly falls even when the current is large.';
+    else note='Lower R → bigger I → more lost volts Ir, so <b>V = ε − Ir falls</b>.';
     if(note!==lastNote){ $('#ir-note').innerHTML=FR(note); lastNote=note; }
 
     // buttons
