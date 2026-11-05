@@ -619,7 +619,7 @@ function expKey(x, y, upLabel, downLabel){
 
   // ---- graph axes: V up to ε, I up to the short-circuit current ε/r (capped at R = 0.1 Ω when r = 0)
   function axisSpec(){
-    var e=E(), isc=e/Math.max(r(),0.1)*iFac(), ax=niceAxis(isc,5), ay=niceAxis(e,5);
+    var e=E(), isc=e/Math.max(r(),0.1)*iFac(), ax=niceAxis(isc,5), ay=niceAxis(e*1.15,5);
     if(exp() && cellKind()==='myst'){
       var im=0; X.rd.forEach(function(p){ im=Math.max(im,p.I); });
       ax=niceAxis(Math.max(1.6, im*1.15),4); ay=niceAxis(1.8,6);
@@ -698,11 +698,19 @@ function expKey(x, y, upLabel, downLabel){
       }
       return g;
     }
-    var show = traceSpread() > 0.15*a.x1 || jumpSeg.value()!==null;
+    var wOpen=workingOpen(), show = wOpen || traceSpread() > 0.15*a.x1 || jumpSeg.value()!==null;
     if(show){
       g+=curve(G,a,line,0,Math.min(a.x1, e/Math.max(rr,1e-9)*fac),'var(--topic)',false);
       g+=txt(G.x+6, gy(G,a,e)-6, 'intercept = ε', {fs:10, c:'var(--topic)'});
       g+=txt(G.x+G.w-4, G.y+12, 'gradient = −r', {a:'end', fs:10, c:'var(--topic)'});
+    }
+    if(wOpen){   // the two points the working reads off the line
+      var q=linePts();
+      [[q.x1,q.y1],[q.x2,q.y2]].forEach(function(pt){
+        var X0=gx(G,a,pt[0]), Y0=gy(G,a,pt[1]);
+        g+=ln(X0,Y0,X0,G.y+G.h,'var(--accent)',1.2,' stroke-dasharray="3 3"')+ln(G.x,Y0,X0,Y0,'var(--accent)',1.2,' stroke-dasharray="3 3"');
+        g+=expRing(+f1(X0), +f1(Y0), 4.5);
+      });
     }
     trace.forEach(function(p){ if(inBox(a,p[0]*fac,p[1])) g+='<circle cx="'+f1(gx(G,a,p[0]*fac))+'" cy="'+f1(gy(G,a,p[1]))+'" r="2.4" fill="var(--ink-soft)"/>'; });
     g+=pdot(G,a,I()*fac,V());
@@ -714,6 +722,19 @@ function expKey(x, y, upLabel, downLabel){
     svg.innerHTML=g;
     svg.setAttribute('aria-valuenow', R); svg.setAttribute('aria-valuetext', 'R = '+R.toFixed(1)+' ohms');
     readings();
+  }
+
+  // ---- reading the line (Watch mode): two grid points on V = ε − rI, in the graph's units
+  var workEl=document.querySelector('details.working');
+  function workingOpen(){ return !exp() && workEl.open; }
+  workEl.addEventListener('toggle', function(){ draw(); });
+  function linePts(){
+    var a=axisSpec(), fac=iFac(), e=E(), rr=r(), st=a.xs;
+    var end=rr>0 ? Math.min(a.x1, e/rr*fac) : a.x1;
+    var x2=Math.floor(end/st-1e-6)*st, x1=st;
+    if(x2<=x1){ x1=0; x2=Math.max(x2, st/2); }
+    var V=function(x){ return +(e-x/fac*rr).toFixed(2); };
+    return {x1:+x1.toFixed(6), x2:+x2.toFixed(6), y1:V(x1), y2:V(x2), dp:a.dpx};
   }
 
   // ---- readings, working, note
@@ -733,14 +754,11 @@ function expKey(x, y, upLabel, downLabel){
     // working
     var w1='', w2='', w3='';
     if(!ex){
-      if(!closed()){
-        w1='Switch open: I = 0<br>V = ε − Ir<br>V = '+e.toFixed(2)+' − 0 × '+nr(rr)+'<br>V = <b>'+e.toFixed(2)+' V</b>';
-        w3='With no current there are no lost volts: a voltmeter across an open cell reads its e.m.f. (an ideal voltmeter takes no current).';
-      } else {
-        w1='ε = I(R + r)<br>'+e.toFixed(2)+' = I × ('+nR(R)+' + '+nr(rr)+')<br>'+e.toFixed(2)+' = I × '+sig(R+rr,4)+'<br>I = [['+e.toFixed(2)+'|'+sig(R+rr,4)+']]<br>'+(big ? 'I = '+sig(i,4)+' A<br>I = <b>'+sig(i*1000,3)+' mA</b>' : 'I = <b>'+sig(i,3)+' A</b>');
-        w2='V = ε − Ir<br>V = '+e.toFixed(2)+' − '+sig(i,4)+' × '+nr(rr)+'<br>V = '+e.toFixed(2)+' − '+sig(i*rr,4)+'<br>V = <b>'+sig(v,3)+' V</b>';
-        w3='Check: V = IR = '+sig(i,4)+' × '+nR(R)+' = '+sig(i*R,3)+' V.';
-      }
+      var q=linePts(), ru=big?' kΩ':' Ω', u=iUnit(), m=(q.y2-q.y1)/(q.x2-q.x1);
+      w1='V = −r × I + ε  (y = mx + c)<br>y-intercept = ε<br>ε = <b>'+e.toFixed(2)+' V</b>';
+      w2='gradient = [[V₂ − V₁|I₂ − I₁]]<br>gradient = [['+q.y2.toFixed(2)+' − '+q.y1.toFixed(2)+'|'+sn(q.x2,q.dp)+' − '+sn(q.x1,q.dp)+']]<br>gradient = '+sig(m,3)+ru+'<br>r = <b>'+sig(-m,3)+ru+'</b>';
+      w3='Read off the line: the intercept on the V axis, and two points on the line (circled), at I = '+sn(q.x1,q.dp)+' '+u+' and '+sn(q.x2,q.dp)+' '+u+'.'+(big?' With I in mA, the gradient comes out in kΩ.':'');
+      if(rr===0) w3='The line is flat: r = 0, so V = ε at every current.';
     } else if(f){
       var fc=iFac(), ru=big?' kΩ':' Ω', m=f.m/fc;
       var x1=X.rd.reduce(function(m,p){ return Math.min(m,p.I); }, Infinity)*fc, x2=X.rd.reduce(function(m,p){ return Math.max(m,p.I); }, 0)*fc;
