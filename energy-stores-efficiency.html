@@ -403,6 +403,7 @@ svg.sankey{background:var(--panel)}
 <nav class="tabs" role="tablist" aria-label="Activities">
 <button class="tab-btn is-active" role="tab" id="tab-overview" data-tab="overview" data-grp="" aria-selected="true" aria-controls="panel-overview">Overview</button>
 <button class="tab-btn" role="tab" id="tab-stores" data-tab="stores" data-grp="b" aria-selected="false" aria-controls="panel-stores">Stores</button>
+<button class="tab-btn" role="tab" id="tab-transfers" data-tab="transfers" data-grp="b" aria-selected="false" aria-controls="panel-transfers">Transfers</button>
 <button class="tab-btn" role="tab" id="tab-conserve" data-tab="conserve" data-grp="b" aria-selected="false" aria-controls="panel-conserve">Conservation</button>
 <button class="tab-btn" role="tab" id="tab-efficiency" data-tab="efficiency" data-grp="b" aria-selected="false" aria-controls="panel-efficiency">Efficiency</button>
 <button class="tab-btn" role="tab" id="tab-sankey" data-tab="sankey" data-grp="b" aria-selected="false" aria-controls="panel-sankey">Sankey</button>
@@ -412,7 +413,11 @@ svg.sankey{background:var(--panel)}
 <div class="acts"></div>
 </section>
 <section id="panel-stores" class="panel" role="tabpanel" aria-labelledby="tab-stores" hidden>
-<div class="panel-head"><h2>Stores and Transfers</h2><div class="spec"><b>4.2</b></div></div>
+<div class="panel-head"><h2>Energy Stores</h2><div class="spec"><b>4.2</b></div></div>
+<div class="acts"></div>
+</section>
+<section id="panel-transfers" class="panel" role="tabpanel" aria-labelledby="tab-transfers" hidden>
+<div class="panel-head"><h2>Energy Transfers</h2><div class="spec"><b>4.2</b><b>4.3</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-conserve" class="panel" role="tabpanel" aria-labelledby="tab-conserve" hidden>
@@ -447,8 +452,8 @@ const raf=f=>requestAnimationFrame(f);
 
 // Units merge (3 Nov 2026): this unit's Units and Key Terms tabs are now one tab, so old links go there.
 try{const to={units:'work-and-power.html#units'}[location.hash.slice(1)];if(to){if(to[0]==='#')history.replaceState(null,'',to);else{location.replace(to);return;}}}catch(e){}
-const STORE_KEY='unit4a-energy-v4',OLD_STORE_KEY='unit4a-energy-v3';
-const TAB_IDS=['overview','stores','conserve','efficiency','sankey'];
+const STORE_KEY='unit4a-energy-v5',OLD_STORE_KEY='unit4a-energy-v4';
+const TAB_IDS=['overview','stores','transfers','conserve','efficiency','sankey'];
 let activeTab='overview';
 const reflowers=[];
 
@@ -1399,7 +1404,7 @@ function sankeySVG(o){
   ]});
   reflowers.push(tab=>{if(tab==='stores')raf(mg.reflow);});
 
-  createSortGame({host:act('stores','Sort','How is the energy transferred?','Drag each example into the way the energy is being transferred.'),
+  createSortGame({host:act('transfers','Sort','How is the energy transferred?','Drag each example into the way the energy is being transferred.'),
     cats:[{id:'m',label:'Mechanically',hint:'a force moves something',color:'--kin',soft:'--kin-soft'},
           {id:'e',label:'Electrically',hint:'charge flows in a circuit',color:'--elec',soft:'--elec-soft'},
           {id:'h',label:'By heating',hint:'a temperature difference',color:'--therm',soft:'--therm-soft'},
@@ -1489,25 +1494,9 @@ function sankeySVG(o){
   byId('sk-slow').addEventListener('click',()=>{slow=!slow;byId('sk-slow').setAttribute('aria-pressed',slow?'true':'false');byId('sk-slow').classList.toggle('is-on',slow);});
   reset();
 
-  createCalc({
-    host:act('conserve','Calculate','Energy in, energy out','Energy is conserved: the total energy output equals the energy put in.'),
-    questions:[
-      {q:'A television is supplied with 400 J. It gives out 120 J of light and 30 J of sound. The rest heats the surroundings. The energy transferred by heating is',unit:'J',answer:250,working:'energy in = 400 J<br>light = 120 J<br>sound = 30 J<br>heating = ?||energy in = light + sound + heating<br>400 = 120 + 30 + heating<br>400 = 150 + heating<br>heating = 400 − 150<br>heating = 250 J',
-       make:rnd=>{const d=calcPick(rnd,[['A television','light','sound'],['A laptop','light','sound'],['Ruby’s tablet','light','sound'],['A food mixer','energy to the kinetic store of its blades','sound'],['An electric fan','energy to the kinetic store of the air','sound']]);
-         const E=calcPick(rnd,[200,300,400,500,600,800,1000]),a=Math.round(E*calcPick(rnd,[0.2,0.3,0.4,0.5])),b=Math.round(E*calcPick(rnd,[0.05,0.1,0.15])),h=E-a-b;
-         return {q:d[0]+' is supplied with '+E+' J. '+(d[1]==='light'?'It gives out '+a+' J of light and '+b+' J of sound':'It transfers '+a+' J '+d[1].replace('energy ','')+' and '+b+' J by sound')+'. The rest heats the surroundings. The energy transferred by heating is',unit:'J',answer:h,
-           working:'energy in = '+E+' J<br>'+(d[1]==='light'?'light':'kinetic')+' = '+a+' J<br>sound = '+b+' J<br>heating = ?||energy in = '+(d[1]==='light'?'light':'kinetic')+' + sound + heating<br>'+E+' = '+a+' + '+b+' + heating<br>'+E+' = '+(a+b)+' + heating<br>heating = '+E+' − '+(a+b)+'<br>heating = '+h+' J'};}},
-      {q:'A ball rolls down a slope from rest. At the bottom it has 56 J in its kinetic store, and 4 J was transferred by heating on the way down. The energy it lost from its gravitational store is',unit:'J',answer:60,working:'kinetic = 56 J<br>heating = 4 J<br>gravitational store lost = ?||gravitational store lost = kinetic + heating<br>gravitational store lost = 56 + 4<br>gravitational store lost = 60 J',
-       make:rnd=>{const w=calcPick(rnd,[['A ball rolls down a slope from rest','it has',[20,36,48,56,72]],['A trolley rolls down a ramp from rest','it has',[30,45,60,84,90]],['Henry slides down a slide from rest','he has',[480,600,720,850,960]],['Elena skates down a ramp from rest','she has',[900,1200,1500,1750,2000]]]);
-         const k=calcPick(rnd,w[2]),h=Math.round(k*calcPick(rnd,[0.1,0.2,0.25,0.5])),g=k+h;
-         return {q:w[0]+'. At the bottom '+w[1]+' '+k+' J in the kinetic store, and '+h+' J was transferred by heating on the way down. The energy lost from the gravitational store is',unit:'J',answer:g,
-           working:'kinetic = '+k+' J<br>heating = '+h+' J<br>gravitational store lost = ?||gravitational store lost = kinetic + heating<br>gravitational store lost = '+k+' + '+h+'<br>gravitational store lost = '+g+' J'};}}
-    
-  ]
-  });
 
   createReorder({
-    host:act('conserve','Order','Ananya’s bungee jump','Put the energy changes in order, from standing on the platform to hanging still at the end.'),
+    host:act('transfers','Order','Ananya’s bungee jump','Put the energy changes in order, from standing on the platform to hanging still at the end.'),
     steps:[
       {id:'a',text:'Ananya stands on the platform. Her energy is in her gravitational store.'},
       {id:'b',text:'She falls. Her gravitational store decreases and her kinetic store increases.'},
@@ -1731,9 +1720,9 @@ byId('tab-overview').parentNode.addEventListener('keydown',e=>{
 });
 // The open tab is remembered in this browser only, so a reload returns to it.
 // Answers and the open tab are remembered in this browser only, so a reload keeps them.
-// 6 Nov 2026 (Alex): Conservation's Calculate moved above its Order, and the Useful or wasted? sort moved
-// from Sankey to Efficiency. Saved answers follow their activity to its new key.
-const CARRY={"overview-0":"overview-0","stores-0":"stores-0","stores-1":"stores-1","conserve-0":"conserve-1","conserve-1":"conserve-0","efficiency-0":"efficiency-1","sankey-0":"efficiency-0","sankey-1":"sankey-0","sankey-2":"sankey-1"};
+// 6 Nov 2026 (Alex): Stores split into Stores and Transfers (the transfer sort and the bungee Order moved there);
+// Conservation's Energy in, energy out Calculate removed. Saved answers follow their activity to its new key.
+const CARRY={"overview-0":"overview-0","stores-0":"stores-0","stores-1":"transfers-0","conserve-1":"transfers-1","efficiency-0":"efficiency-0","efficiency-1":"efficiency-1","sankey-0":"sankey-0","sankey-1":"sankey-1"};
 function readSaved(){
   try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
   try{const s=JSON.parse(localStorage.getItem(OLD_STORE_KEY)||'null');
