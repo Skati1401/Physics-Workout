@@ -48,6 +48,7 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 
 How to build one: `tools/CORE-PRACTICALS.md`.
 
+- [ ] Fix the 4.9 thermal energy transfer practical page `heat-transfer-practical.html` (Alex, 6 Nov 2026: needs fixing; what to fix still to agree). The 4b Practicals tab stays as it is and Unit 4 stays Draft until then.
 - [ ] Rebuild the other 13 IGCSE practical pages to the 1.22 Hooke's law model: one row of tabs, no core route, Do/Show Experiment, Multiple choice, no Calculate tab; required tabs Method, Variables, Do Experiment, Show Experiment (`tools/CORE-PRACTICALS.md`, "The 1.22 model"; added 5 Nov 2026)
 - [ ] Review the six practicals published 4 Nov 2026: 3.17 `refraction-practical.html`, 3.19 `refractive-index-practical.html`, 3.25P `speed-of-sound-practical.html`, 2.23P `charging-practical.html`, 3.27P `sound-frequency-practical.html`, 7.6 `penetrating-power-practical.html` (what to check is in `tools/REVIEW.md`).
 - [ ] After Alex checks 1.22's new Experiment tab (students read the ruler, fill in their own table and plot it; the old run is the Show tab): use the same pattern on the other measure-and-plot practicals (5.4, 2.9, 5.14P, 3.19) (added 5 Nov 2026).

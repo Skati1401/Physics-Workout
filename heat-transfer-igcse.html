@@ -325,6 +325,16 @@ svg.sankey{background:var(--panel)}
 @media (max-width:620px){.model-row{grid-template-columns:minmax(0,1fr)}}
 .model svg.pd{width:100%;max-width:220px;height:auto;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel-2)}
 .practice-q{margin:0 0 8px;font-weight:600}
+.house-split{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:820px){.house-split{grid-template-columns:minmax(0,1fr)}.house-wrap{max-width:360px}}
+.house-wrap svg{display:block;width:100%;height:auto}
+.house-rows{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.house-row{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr) minmax(0,2fr);gap:8px;align-items:center;padding:6px 8px;background:var(--panel-2);border:1px solid var(--panel-border);border-radius:8px}
+.house-place{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px}
+.house-place .drop-marker{position:static;transform:none;flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--ink-soft);background:var(--panel);font:600 12px var(--f-mono)}
+.house-row.house-head{background:none;border:0;padding:0 8px;font:500 11px var(--f-mono);color:var(--ink-soft)}
+.house-row .house-blank{width:100%;min-width:0;min-height:44px;margin:0;white-space:normal;text-align:center;font-size:13.5px}
+@media (max-width:620px){.house-row{grid-template-columns:minmax(0,1fr)}.house-row.house-head{display:none}}
 .ex-answer{display:block;width:100%;min-height:110px;margin:0 0 10px;padding:8px 10px;font:14px/1.5 var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;resize:vertical}
 .ex-answer:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .model details>div{font:14px/1.5 var(--f-body)}
@@ -485,7 +495,7 @@ const raf=f=>requestAnimationFrame(f);
 // Units merge (3 Nov 2026): this unit's Units and Key Terms tabs are now one tab, so old links go there.
 // Review (4 Nov 2026): evaporation (5.9P) is Unit 5, so the old Evaporation tab's links go to 5a's Particles tab.
 try{const to={terms:'work-and-power.html#terms',evaporation:'density-pressure-state.html#particles'}[location.hash.slice(1)];if(to){if(to[0]==='#')history.replaceState(null,'',to);else{location.replace(to);return;}}}catch(e){}
-const STORE_KEY='unit4b-heat-v4',OLD_STORE_KEY='unit4b-heat-v3';
+const STORE_KEY='unit4b-heat-v5',OLD_STORE_KEY='unit4b-heat-v4';
 const TAB_IDS=['overview','conduction','convection','radiation','methods','insulation','practical','exam'];
 let activeTab='overview';
 const reflowers=[];
@@ -1474,17 +1484,6 @@ function examQ(title,svg,q,bullets){
     {id:'gl',l:'A glider stays up for hours on a sunny afternoon',r:'Air above sun-warmed ground is heated and rises in columns that lift the glider'}
   ]});
   reflowers.push(tab=>{if(tab==='convection')raf(mg.reflow);});
-  createPredict({
-    host:act('convection','Predict','The fridge’s cooling unit','In many fridges the cooling unit is at the top.'),
-    q:'Why is the top the best place for it?',
-    options:[
-      {text:'Air it cools becomes denser and sinks',correct:true},
-      {text:'Cold air rises, so it must start at the top',why:'Cold air is denser than warm air, so it sinks rather than rises.'},
-      {text:'Heat rises, so the top of a fridge is warmest',why:'It is warm air that rises, not "heat". The unit is at the top so that the air it cools sinks.'},
-      {text:'It keeps the unit out of the way of the food',why:'That may be handy, but the physics reason is the convection current it sets up.'}
-    ],
-    explain:'Air cooled at the top contracts, becomes denser and sinks, while warmer air rises to be cooled. This convection current cools the whole fridge.'
-  });
 }
 
 /* ================= 4. RADIATION ================= */
@@ -1565,57 +1564,61 @@ frameAct('practical','animations/heat-transfer.html','','Thermal energy transfer
 
 /* ================= 6. INSULATION ================= */
 {
-  const mg=createMatchGame({host:act('insulation','Match','Reducing unwanted energy transfer','Link each feature to the reason it works.'),leftTitle:'Feature',rightTitle:'Why it works',narrowLeft:true,pairs:[
-    {id:'f3',l:'The gap between the panes of double glazing',r:'Trapped air or gas is a poor conductor, and the narrow gap limits convection'},
-    {id:'f4',l:'Fibreglass loft insulation',r:'Air trapped between the fibres is a poor conductor and cannot circulate'},
-    {id:'f5',l:'Foam pumped into a cavity wall',r:'It stops air flowing in the cavity, so convection currents cannot form'},
-    {id:'f6',l:'A thick duvet or padded coat',r:'It traps a layer of still air next to the body'}
-  ]});
-  reflowers.push(tab=>{if(tab==='insulation')raf(mg.reflow);});
+  /* ---- insulating a house: an insulation type and how it works for each lettered place ---- */
+  const hb=act('insulation','Label the diagram','Insulating a house','For each lettered part of the house, drag in the insulation used there and how it works. Some cards are not needed.');
+  const hsvg='<svg class="diagram house" viewBox="0 0 320 260" role="img" aria-label="Cross-section of a house with a loft, cavity walls, a window and a door">'+
+    '<path d="M20,104 L160,22 L300,104 Z" fill="var(--panel-2)" stroke="var(--ink-soft)" stroke-width="3" stroke-linejoin="round"/>'+
+    '<path d="M60,94 H260" stroke="var(--kin)" stroke-width="10" stroke-linecap="round" stroke-dasharray="3 4" opacity=".75"/>'+
+    '<rect x="40" y="104" width="240" height="140" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="3"/>'+
+    '<rect x="46" y="104" width="10" height="140" fill="var(--grav-soft)" stroke="var(--ink-faint)" stroke-width="1.5"/>'+
+    '<rect x="264" y="104" width="10" height="140" fill="var(--grav-soft)" stroke="var(--ink-faint)" stroke-width="1.5"/>'+
+    '<rect x="84" y="134" width="64" height="48" fill="var(--bg)" stroke="var(--ink-soft)" stroke-width="2.5"/><rect x="89" y="139" width="54" height="38" fill="none" stroke="var(--ink-faint)" stroke-width="1.5"/>'+
+    '<rect x="190" y="160" width="46" height="84" rx="2" fill="var(--panel-2)" stroke="var(--ink-soft)" stroke-width="2.5"/><circle cx="228" cy="204" r="3" fill="var(--ink-soft)"/>'+
+    '<path d="M186,244 H240" stroke="var(--therm)" stroke-width="6" stroke-linecap="round"/>'+
+    '<path d="M0,244 H320" stroke="var(--ink-faint)" stroke-width="2"/>'+
+    '<text x="160" y="80" font-size="11" text-anchor="middle" fill="var(--ink-soft)">Loft</text></svg>';
+  const HW=320,HH=260,HP=(x,y)=>({x:x/HW*100,y:y/HH*100});
+  const PLACES=[
+    {id:'A',name:'Loft floor',p:HP(110,94),type:'Fibreglass blanket',how:'Fibres trap air, a poor conductor, in a thick layer above the ceiling'},
+    {id:'B',name:'Outside walls',p:HP(51,210),type:'Cavity foam',how:'Fills the gap between the two walls, so air cannot circulate in convection currents'},
+    {id:'C',name:'Window',p:HP(116,158),type:'Double glazing',how:'A thin layer of trapped gas between two panes of glass is a poor conductor'},
+    {id:'D',name:'Bottom of the door',p:HP(213,244),type:'Draught excluder',how:'Blocks the gap, so cold air cannot flow in and warm air cannot flow out'}
+  ];
+  const split=mk('div','house-split');hb.appendChild(split);
+  const wrap=mk('div','graph-plot-wrap house-wrap');wrap.innerHTML=hsvg;split.appendChild(wrap);
+  const side=mk('div','house-side');split.appendChild(side);
+  const rows=mk('div','house-rows');side.appendChild(rows);
+  rows.appendChild(mk('div','house-row house-head','<span>Place</span><span>Insulation</span><span>How it works</span>'));
+  const hslots=[],hchips=[];
+  PLACES.forEach(pl=>{
+    const m=mk('div','graph-line-drop cap-c');m.style.left=pl.p.x+'%';m.style.top=pl.p.y+'%';
+    m.innerHTML='<span class="drop-marker">'+pl.id+'</span>';wrap.appendChild(m);
+    const r=mk('div','house-row');
+    r.innerHTML='<div class="house-place"><span class="drop-marker">'+pl.id+'</span>'+pl.name+'</div>';
+    const t=mk('span','blank house-blank'),h=mk('span','blank house-blank house-how');
+    r.appendChild(t);r.appendChild(h);rows.appendChild(r);
+    hslots.push({id:pl.id+'t',el:t,answer:pl.type,label:pl.name+': insulation'});
+    hslots.push({id:pl.id+'h',el:h,answer:pl.how,label:pl.name+': how it works'});
+    hchips.push({id:'t'+pl.id,text:pl.type});hchips.push({id:'h'+pl.id,text:pl.how});
+  });
+  hchips.push({id:'tx1',text:'Single glazing'});
+  hchips.push({id:'hx1',text:'Adds more particles, so energy is conducted through it faster'});
+  hchips.push({id:'hx2',text:'Absorbs the cold, so it cannot get into the house'});
+  side.appendChild(mk('div','pool-label','Cards'));
+  const hpool=mk('div','chip-pool');side.appendChild(hpool);
+  let hg;
+  const hbar=bar(hb,[{label:'Check answers',primary:true,fn:()=>hg.check()},{label:'Shuffle again',fn:()=>hg.reset()}]);
+  const hsc=mk('span','score');hbar.el.insertBefore(hsc,hbar.msg);
+  hg=createBlankGame({fill:true,slots:hslots,pool:hpool,chips:hchips,msg:hbar,score:hsc,isCorrect:(c,s)=>c.text===s.answer});
 
   createSortGame({host:act('insulation','Sort','Which transfer does it reduce most?','Each of these mainly cuts down one method of energy transfer.'),cats:CATS3,items:[
     {id:'c1',text:'A plastic handle on a saucepan',cat:'c'},
     {id:'c2',text:'A cork mat under a hot dish',cat:'c'},
-    {id:'v1',text:'A draught excluder along the bottom of a door',cat:'v'},
+    {id:'v3',text:'Keeping the windows shut on a cold, windy day',cat:'v'},
     {id:'v2',text:'A lid on a pan of hot water',cat:'v'},
     {id:'r1',text:'Shiny foil on the wall behind a radiator',cat:'r'},
     {id:'r2',text:'A shiny foil blanket around a runner',cat:'r'}
   ]});
-
-  /* ---- label the vacuum flask ---- */
-  const lb=act('insulation','Label the diagram','Inside a vacuum flask','Drag the right caption onto each lettered part. Some captions are not needed.');
-  const svg='<svg class="diagram flask" viewBox="0 0 300 330" role="img" aria-label="Cross-section of a vacuum flask">'+
-    '<rect x="52" y="40" width="196" height="270" rx="22" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="5"/>'+
-    '<rect x="74" y="62" width="152" height="226" rx="16" fill="var(--panel-2)" stroke="var(--grav)" stroke-width="4"/>'+
-    '<rect x="124" y="80" width="52" height="194" rx="10" fill="var(--therm-soft)" stroke="var(--grav)" stroke-width="4"/>'+
-    '<path d="M77.5,80 V270 M222.5,80 V270 M120.5,94 V264 M179.5,94 V264" stroke="var(--ink-faint)" stroke-width="3"/>'+
-    '<rect x="112" y="28" width="76" height="58" rx="6" fill="var(--cond-soft)" stroke="var(--cond)" stroke-width="3"/>'+
-    '<rect x="128" y="290" width="44" height="14" rx="3" fill="var(--panel-2)" stroke="var(--ink-faint)" stroke-width="2"/>'+
-    '<text x="150" y="176" font-size="12" text-anchor="middle" fill="var(--ink-soft)"><tspan x="150">hot</tspan><tspan x="150" dy="15">drink</tspan></text></svg>';
-  const W=300,H=330,P=(x,y)=>({x:x/W*100,y:y/H*100});
-  const SL=[
-    {id:'A',p:P(150,46),pos:'cap-up cap-c',text:'Poor conductor, and stops warm air rising out',short:'Stops warm air escaping'},
-    {id:'B',p:P(99,140),pos:'cap-down cap-l',text:'No particles, so no conduction or convection',short:'No particles: no conduction or convection'},
-    {id:'C',p:P(180,235),pos:'cap-down cap-l',text:'Reflects infrared radiation back to the drink',short:'Reflects infrared'},
-    {id:'D',p:P(150,297),pos:'cap-down cap-c',text:'Poor conductor that supports the fragile glass',short:'Insulating support'}
-  ];
-  const split=mk('div','label-split flask-split');lb.appendChild(split);
-  const wrap=mk('div','graph-plot-wrap flask-wrap');wrap.innerHTML=svg;split.appendChild(wrap);
-  const side=mk('div','label-side');split.appendChild(side);
-  const slots=[],chips=[];
-  SL.forEach(s=>{
-    const d=mk('div','graph-line-drop '+s.pos);d.style.left=s.p.x+'%';d.style.top=s.p.y+'%';
-    d.innerHTML='<span class="drop-marker">'+s.id+'</span>';wrap.appendChild(d);
-    slots.push({id:s.id,el:d,answer:s.text,label:'Part '+s.id});chips.push({id:'f'+s.id,text:s.text,short:s.short});
-  });
-  chips.push({id:'fx1',text:'Black surface absorbs infrared from outside',short:'Absorbs infrared'});
-  chips.push({id:'fx2',text:'Conducts energy out quickly to keep the drink cool',short:'Conducts energy out'});
-  side.appendChild(mk('div','pool-label','Captions'));
-  const pool=mk('div','chip-pool');side.appendChild(pool);
-  let gm;
-  const lbar=bar(lb,[{label:'Check labels',primary:true,fn:()=>gm.check()},{label:'Shuffle again',fn:()=>gm.reset()}]);
-  const lsc=mk('span','score');lbar.el.insertBefore(lsc,lbar.msg);
-  gm=createBlankGame({fill:true,slots:slots,pool:pool,chips:chips,msg:lbar,score:lsc,isCorrect:(c,s)=>c.text===s.answer,slotText:c=>c.short,placedClass:'drop-caption'});
 }
 
 /* ================= 8. EXAM EXPLAINS ================= */
@@ -1749,8 +1752,8 @@ byId('tab-overview').parentNode.addEventListener('keydown',e=>{
 });
 // The open tab is remembered in this browser only, so a reload returns to it.
 // Answers and the open tab are remembered in this browser only, so a reload keeps them.
-// Tabs restructured (6 Nov 2026): the cold bench moved from Which Method? to Conduction; the rest kept their places.
-const CARRY={"overview-0":"overview-0","methods-0":"methods-0","methods-1":"conduction-1","convection-0":"convection-0","convection-1":"convection-1","convection-2":"convection-2","radiation-0":"radiation-0","radiation-1":"radiation-1","practical-0":"practical-0","practical-1":"practical-1","practical-2":"practical-2","insulation-0":"insulation-0","insulation-1":"insulation-1","insulation-2":"insulation-2"};
+// 6 Nov 2026: fridge Predict cut, Insulation rebuilt (house labels + changed sort), so only the unchanged activities carry over.
+const CARRY={"overview-0":"overview-0","methods-0":"methods-0","conduction-0":"conduction-0","conduction-1":"conduction-1","convection-0":"convection-0","convection-1":"convection-1","radiation-0":"radiation-0","radiation-1":"radiation-1","practical-0":"practical-0","practical-1":"practical-1","practical-2":"practical-2"};
 function readSaved(){
   try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
   try{const s=JSON.parse(localStorage.getItem(OLD_STORE_KEY)||'null');
