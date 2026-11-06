@@ -988,15 +988,29 @@ const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Ma
 const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
+  function hintLabel(row,q,clear){
+    const h=q.hints||[],r=row.querySelector('.calc-hint-row'),ol=r.querySelector('.calc-hints'),bt=r.querySelector('.calc-hint-btn');
+    if(clear)ol.innerHTML='';
+    r.hidden=!h.length;const n=ol.children.length;
+    bt.textContent=n>=h.length?'No more hints':(n?'Next hint':'Hint')+' ('+(n+1)+' of '+h.length+')';bt.disabled=n>=h.length;
+  }
   const wrap=mk('div','calc-inputs');host.appendChild(wrap);
   qs.forEach((q,i)=>{
     const row=mk('div','calc-input-row');
     row.innerHTML='<div class="calc-input-label"><label for="'+id+'-'+i+'">'+q.q+'</label></div>'+
       '<div class="calc-input-wrap"><input class="calc-num-input" id="'+id+'-'+i+'" type="text" inputmode="'+(q.answer<0?'text':'decimal')+'" autocomplete="off" spellcheck="false"><span class="calc-input-unit">'+q.unit+'</span></div>'+
       '<div class="calc-fb" aria-live="polite"></div>'+
+      '<div class="calc-hint-row" hidden><button type="button" class="btn calc-hint-btn"></button><ol class="calc-hints" aria-live="polite"></ol></div>'+
       '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
       '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork(q.working)+'</div></div>';
     wrap.appendChild(row);
+    // Hints on demand (6 Nov 2026): a question with hints:[...] gets a Hint button that shows one more hint per press
+    row.querySelector('.calc-hint-btn').addEventListener('click',()=>{
+      const h=qs[i].hints||[],ol=row.querySelector('.calc-hints'),n=ol.children.length;
+      if(n<h.length){const li=mk('li','',FR(h[n]));ol.appendChild(li);}
+      hintLabel(row,qs[i]);
+    });
+    hintLabel(row,q);
     // Show answer: puts the answer in the box and opens the working for this question only
     const sb=row.querySelector('.calc-show');
     sb.addEventListener('click',()=>{
@@ -1016,8 +1030,8 @@ function createCalc(cfg){
     seed=s;const rnd=calcRnd(s||1);
     qs.forEach((q,i)=>{
       const m=makers[i];
-      Object.assign(q,{hint:undefined},s&&m?m(rnd):fixed[i]);
-      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');
+      Object.assign(q,{hint:undefined,hints:undefined},s&&m?m(rnd):fixed[i]);
+      const row=wrap.children[i],inp=row.querySelector('.calc-num-input');hintLabel(row,q,true);
       row.querySelector('label').innerHTML=q.q;row.querySelector('.calc-input-unit').textContent=q.unit;
       row.querySelector('.cw').innerHTML=calcWork(q.working);inp.inputMode=q.answer<0?'text':'decimal';
     });
@@ -1042,7 +1056,7 @@ function createCalc(cfg){
     else b.say(ok+' of '+qs.length+' correct'+(blank?', '+blank+' left blank':'')+'.',bad?'bad':'');
   }
   function reset(){
-    qs.forEach((q,i)=>{const inp=$('#'+id+'-'+i);inp.value='';inp.disabled=false;inp.classList.remove('is-wrong','is-shown');const row=inp.closest('.calc-input-row'),fb=row.querySelector('.calc-fb');fb.textContent='';fb.className='calc-fb';row.querySelector('.calc-working').hidden=true;row.querySelector('.calc-show').hidden=true;});
+    qs.forEach((q,i)=>{const inp=$('#'+id+'-'+i);inp.value='';inp.disabled=false;inp.classList.remove('is-wrong','is-shown');const row=inp.closest('.calc-input-row'),fb=row.querySelector('.calc-fb');fb.textContent='';fb.className='calc-fb';row.querySelector('.calc-working').hidden=true;row.querySelector('.calc-show').hidden=true;hintLabel(row,q,true);});
     b.say('','');
   }
   const inp=i=>document.getElementById(id+'-'+i);
