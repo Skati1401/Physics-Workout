@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reaction Time Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Five sheep make a run for it: fire the dart as soon as one moves, measure your reaction time, find the mean and link it to thinking distance.">
+<meta name="description" content="Interactive physics animation. Five sheep run for it at random moments: fire the dart as soon as each one moves, measure your reaction time, find the mean and link it to thinking distance.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -166,7 +166,7 @@
   .btn-fire:disabled{opacity:.35;}
   .keyhint{font:12px var(--font-mono);color:var(--ink-faint);align-self:center;}
   .rt-table{border-collapse:collapse;font:13px var(--font-mono);width:100%;}
-  .rt-table th,.rt-table td{border:1px solid var(--panel-border);padding:4px 8px;text-align:center;}
+  .rt-table th,.rt-table td{border:1px solid var(--panel-border);padding:2px 8px;text-align:center;}
   .rt-table th{font-weight:600;color:var(--ink-soft);background:var(--bg);font-size:12px;}
   .rt-table tr.now td{background:var(--accent-soft);}
   .rt-table tr.mean td{font-weight:600;}
@@ -225,13 +225,13 @@
       <div class="stats">
         <div class="stat up"><small>Reaction time</small><strong id="rt-last">&ndash;</strong></div>
         <div class="stat"><small>Sheep ran</small><strong id="rt-dist">&ndash;</strong></div>
-        <div class="stat"><small>Mean (average)</small><strong id="rt-mean">&ndash;</strong></div>
+        <div class="stat"><small>Penalties</small><strong id="rt-pen">0 s</strong></div>
       </div>
       <table class="rt-table" aria-label="Results">
         <thead><tr><th>Sheep</th><th>Reaction time (s)</th><th>Distance ran (m)</th></tr></thead>
         <tbody id="rt-rows"></tbody>
       </table>
-      <p class="hint">Each sheep runs at 8 m/s and the hedge is 12 m away, so a sheep escapes if you take longer than 1.5 s.</p>
+      <p class="hint">Sheep run at 8 m/s; the hedge is 12 m away, so a sheep escapes after 1.5 s.</p>
       <details class="working" id="working">
         <summary>Show working</summary>
         <div class="eq" id="rt-eq"></div>
@@ -279,12 +279,18 @@
     var SPEED_MS=8, FIELD_M=12, X0=58, XEND=592, PX_M=(XEND-X0)/FIELD_M, LANES=[48,92,136,180,224];
     var GUN={x:372,y:284}, DART_S=0.09, CAR_V=20;
     var svg=$('#rt-field'), fireBtn=$('#rt-fire'), startBtn=$('[data-action="rt-start"]');
-    var sheep, results, state, target, tStart, tWait, raf=0, lastNow=0, gunAng=-90, dart=null, phase=0;
+    var sheep, results, state, penalties, raf=0, lastNow=0, gunAng=-90, dart=null, phase=0, PENALTY=2;
     function newFlock(){
       sheep=LANES.map(function(y,i){ return {n:i+1, y:y, x:X0, st:'graze', ph:Math.random()*6.28}; });
-      results=[]; state='idle'; target=null; dart=null;
+      results=[]; penalties=0; state='idle'; dart=null;
     }
-    function remaining(){ return sheep.filter(function(s){ return s.st==='graze'; }); }
+    // each sheep gets its own random start time; at least 1.8 s apart, so only one runs at a time
+    function schedule(now){
+      var order=sheep.slice().sort(function(){ return Math.random()-0.5; }), t=now+1000+Math.random()*2000;
+      order.forEach(function(s){ s.tGo=t; t+=1800+Math.random()*2200; });
+    }
+    function lastGo(){ var m=0; sheep.forEach(function(s){ if(s.st==='graze') m=Math.max(m,s.tGo); }); return m; }
+    function running(){ return sheep.filter(function(s){ return s.st==='run'; }).sort(function(a,b){ return a.tGo-b.tGo; })[0]; }
 
     function sheepSVG(s){
       var g='<g transform="translate('+s.x.toFixed(1)+' '+s.y+')'+(s.st==='asleep'?' rotate(8)':'')+'">';
@@ -300,7 +306,7 @@
         g+='<circle cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" fill="var(--wool)" stroke="var(--ink-faint)" stroke-width="1"/>';
       });
       // head: down while grazing (bobbing), up and forward while running
-      var hy = s.st==='graze' ? 4+(REDUCED||state!=='wait'?0:Math.sin(phase*3+s.ph)*2.5) : (s.st==='asleep'?4:-6);
+      var hy = s.st==='graze' ? 4+(REDUCED||state!=='round'?0:Math.sin(phase*3+s.ph)*2.5) : (s.st==='asleep'?4:-6);
       g+='<ellipse cx="20" cy="'+hy.toFixed(1)+'" rx="7" ry="5.5" fill="var(--sheep-face)"/>';
       g+='<ellipse cx="15" cy="'+(hy-4).toFixed(1)+'" rx="3.2" ry="1.8" fill="var(--sheep-face)" transform="rotate(-25 15 '+(hy-4).toFixed(1)+')"/>';
       if(s.st==='asleep'){
@@ -342,28 +348,27 @@
     function aimAt(s){ return Math.atan2(s.y-GUN.y, s.x-GUN.x)*180/Math.PI; }
 
     function note(t, cls){ var n=$('#rt-note'); n.textContent=t; n.className='note'+(cls?' '+cls:''); }
+    function sum(){ var s=0; results.forEach(function(r){ s+=+fix(r.rt,2); }); return s; }
+    function mean(){ return results.length ? (sum()+PENALTY*penalties)/results.length : 0; }
     function table(){
       var rows='';
       for(var i=0;i<5;i++){
         var r=results[i];
         rows+='<tr'+(i===results.length-1&&r?' class="now"':'')+'><td>'+(i+1)+'</td><td>'+(r?fix(r.rt,2):'')+'</td><td>'+(r?fix(r.d,1):'')+'</td></tr>';
       }
-      var m=mean();
-      rows+='<tr class="mean"><td>Mean</td><td>'+(results.length===5?fix(m,2):'')+'</td><td>'+(results.length===5?fix(m*SPEED_MS,1):'')+'</td></tr>';
+      rows+='<tr><td>Penalties</td><td>'+(penalties?'+ '+fix(PENALTY*penalties,2):'0')+'</td><td></td></tr>';
+      rows+='<tr class="mean"><td>Mean</td><td>'+(results.length===5?fix(mean(),2):'')+'</td><td></td></tr>';
       $('#rt-rows').innerHTML=rows;
-      $('#rt-mean').textContent = results.length ? fix(m,2)+' s' : '–';
+      $('#rt-pen').textContent = penalties ? '+'+(PENALTY*penalties)+' s ('+penalties+')' : '0 s';
       working();
     }
-    function mean(){ if(!results.length) return 0; var s=0; results.forEach(function(r){ s+=r.rt; }); return s/results.length; }
     function working(){
-      var e=$('#rt-eq');
-      var last=results[results.length-1];
+      var e=$('#rt-eq'), last=results[results.length-1];
       if(!last){ e.innerHTML='reaction time = time you fired − time the sheep started<br>distance ran = speed × reaction time<br>mean = <b>?</b>'; return; }
       var h='distance ran = speed × reaction time<br>distance ran = '+SPEED_MS+' × '+fix(last.rt,2)+'<br>distance ran = '+fix(last.d,1)+' m';
       if(results.length===5){
-        var tot=0; results.forEach(function(r){ tot+=+fix(r.rt,2); });
-        var m=tot/5;
-        h+='<br><br>total = '+results.map(function(r){ return fix(r.rt,2); }).join(' + ')
+        var tot=sum()+PENALTY*penalties, m=tot/5;
+        h+='<br><br>total = '+results.map(function(r){ return fix(r.rt,2); }).join(' + ')+(penalties?' + '+penalties+' × '+PENALTY:'')
           +'<br>total = '+fix(tot,2)+' s'
           +'<br>mean = [[total|number of sheep]]'
           +'<br>mean = [['+fix(tot,2)+'|5]]'
@@ -376,76 +381,72 @@
       e.innerHTML=FR(h);
     }
     function buttons(){
-      startBtn.disabled = !(state==='idle' && remaining().length>0);
-      fireBtn.disabled = !(state==='wait' || state==='run');
+      startBtn.disabled = state!=='idle';
+      fireBtn.disabled = state!=='round';
     }
 
     function loop(now){
       var dt=Math.min(0.05,(now-lastNow)/1000); lastNow=now; phase+=dt;
-      if(state==='wait' && now>=tWait){
-        var left=remaining(); target=left[Math.floor(Math.random()*left.length)];
-        target.st='run'; state='run'; tStart=now; gunAng=aimAt(target);
-      } else if(state==='run'){
-        target.x = X0 + SPEED_MS*PX_M*(now-tStart)/1000;
-        gunAng=aimAt(target);
-        if(target.x>=XEND){ escaped(); draw(); return; }
-      } else if(state==='dart'){
-        dart.f+=dt/DART_S;
-        if(dart.f>=1){ dart=null; hit(); draw(); return; }
-      }
+      sheep.forEach(function(s){
+        if(s.st==='graze' && now>=s.tGo){ s.st='run'; }
+        if(s.st==='run'){
+          s.x = X0 + SPEED_MS*PX_M*(now-s.tGo)/1000;
+          if(s.x>=XEND) escaped(s, now);
+        }
+      });
+      var r=running(); if(r && !dart) gunAng=aimAt(r);
+      if(dart){ dart.f+=dt/DART_S; if(dart.f>=1){ var s=dart.s; dart=null; hit(s); } }
       draw();
-      raf=requestAnimationFrame(loop);
+      if(state==='round') raf=requestAnimationFrame(loop);
     }
     function start(){
-      if(state!=='idle' || !remaining().length) return;
-      state='wait'; tWait=performance.now()+1500+Math.random()*3000;
-      note('Watch the sheep… press Fire (or the space bar) the moment one starts to run.');
-      buttons(); lastNow=performance.now(); cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+      if(state!=='idle') return;
+      var now=performance.now(); schedule(now); state='round';
+      note('Watch the sheep. They will run one at a time, at random. Fire (or press the space bar) as soon as one moves. Firing early costs '+PENALTY+' s.');
+      buttons(); lastNow=now; cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
       fireBtn.focus({preventScroll:true});
     }
     function fire(ts){
-      if(state==='wait'){
-        cancelAnimationFrame(raf); state='idle';
-        note('Too soon! No sheep had moved yet, so that doesn’t count. Press Start to try again.','bad');
-        buttons(); draw(); startBtn.focus({preventScroll:true}); return;
+      if(state!=='round' || dart) return;
+      var r=running(), now=performance.now();
+      if(!r){
+        penalties++; table();
+        note('Too early! No sheep was running: + '+PENALTY+' s penalty. Wait until you see one move.','bad');
+        return;
       }
-      if(state!=='run') return;
-      var now=performance.now(), t=(ts && ts<=now && ts>tStart-1000 ? ts : now);
-      var rt=Math.max(0,(t-tStart)/1000);
+      var t=(ts && ts<=now && ts>r.tGo-1000 ? ts : now), rt=Math.max(0,(t-r.tGo)/1000);
       // the sheep is stopped where it was when you fired; the dart is very fast
-      target.x = X0 + SPEED_MS*PX_M*rt;
-      target.rt=rt; state='dart'; gunAng=aimAt(target);
+      r.x = X0 + SPEED_MS*PX_M*rt; r.rt=rt; r.st='stopped'; gunAng=aimAt(r);
       var a=gunAng*Math.PI/180;
-      dart={x0:GUN.x+Math.cos(a)*42, y0:GUN.y+Math.sin(a)*42, x1:target.x-4, y1:target.y-6, f:0};
-      target.st='stopped'; buttons();
+      dart={s:r, x0:GUN.x+Math.cos(a)*42, y0:GUN.y+Math.sin(a)*42, x1:r.x-4, y1:r.y-6, f:0};
     }
-    function hit(){
-      var rt=target.rt; target.st='asleep'; state='idle';
-      results.push({rt:rt, d:SPEED_MS*rt, n:target.n});
+    function hit(s){
+      var rt=s.rt; s.st='asleep';
+      results.push({rt:rt, d:SPEED_MS*rt, n:s.n});
       $('#rt-last').textContent=fix(rt,2)+' s';
       $('#rt-dist').textContent=fix(SPEED_MS*rt,1)+' m';
       table();
-      if(results.length<5) note('Hit! Your reaction time was '+fix(rt,2)+' s, so the sheep ran '+fix(SPEED_MS*rt,1)+' m first. '+(5-results.length)+' sheep left: press Start.','good');
-      else note('All five sheep stopped. Your mean reaction time is '+fix(mean(),2)+' s. A driver also has to move their foot to the brake, so a driver’s reaction time is longer (often about 0.7 s). Press New flock to go again.','good');
-      buttons(); if(results.length<5) startBtn.focus({preventScroll:true});
+      if(results.length<5){ note('Hit! Your reaction time was '+fix(rt,2)+' s, so the sheep ran '+fix(SPEED_MS*rt,1)+' m first. '+(5-results.length)+' sheep left: keep watching.','good'); return; }
+      state='done'; buttons();
+      note('All five sheep stopped. Your mean reaction time is '+fix(mean(),2)+' s'+(penalties?' (with '+penalties+' penalt'+(penalties>1?'ies':'y')+')':'')+'. A driver also has to move their foot to the brake, so a driver’s reaction time is longer (often about 0.7 s).','good');
+      $('[data-action="rt-reset"]').focus({preventScroll:true});
     }
-    function escaped(){
-      cancelAnimationFrame(raf); target.st='graze'; target.x=X0; gunAng=-90; state='idle';
-      note('That sheep escaped: you took longer than 1.5 s. The farmer brings it back. Press Start to try again.','bad');
-      buttons(); startBtn.focus({preventScroll:true});
+    function escaped(s, now){
+      // the farmer brings it back; it runs again later at another random time
+      s.st='graze'; s.x=X0; s.tGo=Math.max(now,lastGo())+1800+Math.random()*2200;
+      note('A sheep escaped: you took longer than 1.5 s. The farmer brings it back, and it will run again later.','bad');
     }
     function reset(){
       cancelAnimationFrame(raf); newFlock(); gunAng=-90;
       $('#rt-last').textContent='–'; $('#rt-dist').textContent='–';
-      note('Press Start. After a few seconds one sheep runs for the hedge: fire the dart as soon as you see it move.');
+      note('Press Start. The five sheep then run for the hedge one at a time, at random moments. Fire the dart as soon as you see one move. Firing when no sheep is running adds a '+PENALTY+' s penalty.');
       table(); buttons(); draw();
     }
-    // fire on press, not release, so the time is taken as soon as you act
     fireBtn.addEventListener('pointerdown', function(e){ if(e.button===0||e.pointerType!=='mouse'){ e.preventDefault(); fire(e.timeStamp); } });
     fireBtn.addEventListener('click', function(e){ if(e.detail===0) fire(); });   // keyboard or switch access
     document.addEventListener('keydown', function(e){
       if(e.repeat) return;
-      if((e.key===' '||e.code==='Space') && (state==='wait'||state==='run')){ e.preventDefault(); fire(e.timeStamp); }
+      if((e.key===' '||e.code==='Space') && state==='round'){ e.preventDefault(); fire(e.timeStamp); }
     });
     document.addEventListener('keyup', function(e){ if((e.key===' '||e.code==='Space') && document.activeElement===fireBtn) e.preventDefault(); });
     onAction('rt-start', start);
