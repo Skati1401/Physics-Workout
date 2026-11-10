@@ -682,8 +682,8 @@
     function arrowPick(key,a,b,label){ var p=sc.pr(a), q=sc.pr(b); A[key]=q; if(T.active) g+=ghost(p,q,key,label,T.sel===key); }
     if(T && T.kind==='force') [['up',[0,0,1]],['down',[0,0,-1]],['left',[-1,0,0]],['right',[1,0,0]]].forEach(function(e){
       arrowPick(e[0],addv(fb,e[1],14),addv(fb,e[1],60),'The '+(o.app==='rails'?'rod':'wire')+' moves '+(e[0]==='up'||e[0]==='down'?e[0]:'to the '+e[0])); });
-    if(T && T.kind==='current'){ var zc=W1[2]+17, y0=W1[1]+(o.app==='poles'?62:52), y1=W1[1]+(o.app==='poles'?12:8);
-      arrowPick('out',[W1[0]-15,y0,zc],[W1[0]-15,y1,zc],'The current comes towards you'); arrowPick('in',[W1[0]+15,y1,zc],[W1[0]+15,y0,zc],'The current goes away from you'); }
+    if(T && T.kind==='current'){ var zc=W1[2]+(vt?14:20), y0=W1[1]-6, y1=W1[1]-84, xo=vt?26:22;   // just in front of the wire, clear of the magnet
+      arrowPick('out',[W1[0]-xo,y0,zc],[W1[0]-xo,y1,zc],'The current comes towards you'); arrowPick('in',[W1[0]+xo,y1,zc],[W1[0]+xo,y0,zc],'The current goes away from you'); }
     if(T && T.mark && A[T.mark.k]) g+=badge(A[T.mark.k][0],A[T.mark.k][1],T.mark.ok);
     return g;
   }
@@ -746,7 +746,7 @@
     var bw=svg.getBoundingClientRect().width, narrow=bw>0 && bw<470;
     // while a question is open the picture holds just that question's diagram; after Go it widens to the full picture
     var VW=qa?(narrow?430:540):(narrow?430:860), VH=qa?(narrow?470:(view==='3d'?380:350)):(narrow?676:350);
-    if(svg.getAttribute('viewBox')!=='0 0 '+VW+' '+VH){ svg.setAttribute('viewBox','0 0 '+VW+' '+VH); svg.classList.toggle('tall',narrow); }
+    svg.setAttribute('viewBox','0 0 '+VW+' '+VH); svg.classList.toggle('tall',narrow);
     var o={app:st.app,n:st.n,c:st.c,d:d,on:on,flow:flowPh,hide:qa?Q.missing:null,comb:!Q && on && pressed(combBtn),
            force:on?16+fsize()*4.5:((qa && Q.missing!=='force')?34:0)};
     // T: what can be picked, in which picture, and (after Go) whether the pick was right
@@ -758,14 +758,21 @@
     function two(x,y,a,b){ return txt(x,y,a,{a:'middle',c:'var(--ink-faint)',fs:12.5})+txt(x,y+17,b,{a:'middle',c:'var(--ink-faint)',fs:12.5}); }
     if(qa){
       var cx=narrow?215:205, py=narrow?458:(view==='3d'?370:342);
-      if(view==='3d') g+=rig((narrow?rp[0]+8:rp[0])*rs+(narrow?10:0)-(narrow?0:6),rp[1]*rs+(narrow?8:0),rp[2]*rs,o,T);
+      if(view==='3d') g+='<g id="me-rig">'+rig((narrow?rp[0]+8:rp[0])*rs+(narrow?10:0),rp[1]*rs+(narrow?8:0),rp[2]*rs,o,T)+'</g>';
       else { g+=examEnd(cx,narrow?172:158,narrow?1.25:1.32,o,T); g+=txt(cx,narrow?408:318,'the '+thing()+', seen end-on',{a:'middle',fs:13}); }
       // what to click, right under the picture
       var ask=Q.pick?'Now press Go':{force:'Click the arrow for the way it moves',poles:'Click the pole you think is north',
         current:view==='3d'?'Click the arrow for the way the current flows':'Click the dot or the cross'}[Q.missing];
-      g+=txt(narrow?215:(view==='3d'?250:cx),py,ask,{a:'middle',fs:15,w:600,c:'var(--accent)',halo:1});
+      g+='<g id="me-ask">'+txt(narrow?215:(view==='3d'?250:cx),py,ask,{a:'middle',fs:15,w:600,c:'var(--accent)',halo:1})+'</g>';
       g+=keyRows(narrow?16:346,narrow?(view==='3d'?380:12):20,view==='3d');
-      setSvg(svg,g); $('#me-io').textContent=num(I(),1)+' A'; $('#me-bo').textContent=STR[B()]; drawQuizText(); return;
+      setSvg(svg,g);
+      // keep the whole circuit (cell, leads and labels) inside the picture: move the apparatus right if it would be cut off
+      var rg=svg.querySelector('#me-rig'); if(rg){ var bb=rg.getBBox(), sh=Math.max(0,12-bb.x); if(sh) rg.setAttribute('transform','translate('+f1(sh)+',0)'); }
+      // the prompt sits just under the apparatus, and the picture is cropped to what it holds, so the apparatus is drawn as large as it can be
+      if(rg){ var rb=rg.getBBox(), ak=svg.querySelector('#me-ask'), ab=ak.getBBox(), cx3=rb.x+(rg.getAttribute('transform')?sh:0)+rb.width/2;
+        ak.setAttribute('transform','translate('+f1(cx3-(ab.x+ab.width/2))+','+f1(rb.y+rb.height+26-(ab.y+ab.height))+')'); }
+      var all=svg.getBBox(); svg.setAttribute('viewBox',[all.x-8,all.y-8,all.width+16,all.height+16].map(f1).join(' '));
+      $('#me-io').textContent=num(I(),1)+' A'; $('#me-bo').textContent=STR[B()]; drawQuizText(); return;
     }
     g+=rig((narrow?rp[0]+8:rp[0])*rs+(narrow?10:0),rp[1]*rs+(narrow?8:0),rp[2]*rs,o,T3('3d'));
     g+=examEnd(Z.ex[0],Z.ex[1],1,o,T3('end'));
@@ -961,7 +968,7 @@
     }
     function draw(){
       var bw=svg.getBoundingClientRect().width, narrow=bw>0 && bw<520, VW=narrow?430:860, VH=narrow?622:350;
-      if(svg.getAttribute('viewBox')!=='0 0 '+VW+' '+VH){ svg.setAttribute('viewBox','0 0 '+VW+' '+VH); svg.classList.toggle('tall',narrow); }
+      svg.setAttribute('viewBox','0 0 '+VW+' '+VH); svg.classList.toggle('tall',narrow);
       var along=fd()==='along', bd=bendDown(), g='', k1=narrow?0.9:0.86, fx=4, fy=narrow?6:14;
       g+='<g transform="translate('+fx+','+fy+') scale('+k1+')">'+flat()+'</g>';
       g+=txt(fx+1,fy+k1*200,'source',{fs:12});
