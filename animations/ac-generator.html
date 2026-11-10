@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AC Generator Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Turn a coil in a magnetic field and plot the alternating voltage; change the speed, turns and magnet, then work out the frequency.">
+<title>AC and DC Generators Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation. Turn a coil in a magnetic field and plot the voltage: alternating through slip rings, direct through a split ring. Change the speed, turns and magnet, then work out the frequency.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -125,7 +125,7 @@
   .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
   .seg button:disabled{opacity:.45;cursor:default;}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
-  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;}   /* a one-line label and a two-line label: the numbers still sit level */
   .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
   .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
   .stat.hi strong{color:var(--accent);}
@@ -187,11 +187,11 @@
   <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
   <header class="page-head">
     <div class="eyebrow">Animations &middot; magnetism</div>
-    <h1>The a.c. Generator</h1>
+    <h1>a.c. and d.c. Generators</h1>
   </header>
   <section class="card stage">
     <div>
-      <svg class="view" id="ag-svg" viewBox="0 0 860 350" role="img" aria-label="An a.c. generator in 3D: a coil turning between the poles of a magnet, joined through slip rings and brushes to a voltmeter, beside a graph of the induced voltage against time and the same coil seen end-on"></svg>
+      <svg class="view" id="ag-svg" viewBox="0 0 860 350" role="img" aria-label="A generator in 3D: a coil turning between the poles of a magnet, joined through slip rings (a.c.) or a split ring (d.c.) and brushes to a voltmeter, beside a graph of the induced voltage against time and the same coil seen end-on"></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="ag-play" type="button">&#9654; Turn the coil</button>
@@ -458,7 +458,7 @@
   function svgPoint(svg, e){ var r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; return {x:vb.x+(e.clientX-r.left)/r.width*vb.width, y:vb.y+(e.clientY-r.top)/r.height*vb.height}; }
 
   var svg=$('#ag-svg'), playBtn=$('#ag-play'), slowBtn=$('#ag-slow'), expBtn=$('#ag-exp'), fIn=$('#ag-f'), nIn=$('#ag-n'), bIn=$('#ag-b'), ptsEl=$('#ag-points');
-  var DEG=Math.PI/180, TMAX=4, t=0, readings=[], running=false, raf=0, last=0, flowPh=0;   // flowPh: how far the current arrows have moved, px
+  var DEG=Math.PI/180, TMAX=4, t=0, readings=[], nRead=0, running=false, raf=0, last=0, flowPh=0;   // flowPh: how far the current arrows have moved, px
   var out=segGroup($('#ag-out'), changed);
   [fIn,nIn,bIn].forEach(function(x){ x.addEventListener('input', changed); });
   var STR=['','weak','medium','strong'];
@@ -470,6 +470,12 @@
   function volts(tt){ var v=vpk()*cA(tt); return out.value()==='dc'?Math.abs(v):v; }
   function yMax(){ var v=vpk()*1.1, s=[1,2,5,10,20]; for(var i=0;i<s.length;i++) if(s[i]>=v) return s[i]; return 20; }
   function exp(){ return pressed(expBtn); }
+  // Split ring: the output touches zero each time the coil is upright (every half turn), and that instant usually falls between two plotted times.
+  // nextZero(a) is the first such instant after time a, so every curve gets a point exactly on the axis there and each hump looks the same.
+  function nextZero(a){ var h=T()/2; return (Math.floor(a/h+1e-6)+1)*h; }
+  function curveTimes(to, n){ var a=[], k, z; for(k=0;k<=n;k++) a.push(k/n*to);
+    if(out.value()==='dc'){ for(z=nextZero(0); z<to-1e-6; z=nextZero(z)) a.push(z); a.sort(function(x,y){ return x-y; }); }
+    return a; }
   function done(){ return t>=TMAX-1e-9; }
 
   // Wide screens: the 3D machine on the left; the graph, with the coil seen end-on under it, on the right. Phones: one above the other.
@@ -491,11 +497,11 @@
     for(i=0.5;i<TMAX;i+=1) g+=line(gx(i),GY,gx(i),GY+GH,'var(--panel-border)',0.6,' stroke-dasharray="2 3"');
     [-YM,-YM/2,0,YM/2,YM].forEach(function(v){ if(!ac && v<0) return; g+=line(GX,gy(v),GX+GW,gy(v),v===0?'var(--ink-faint)':'var(--panel-border)',v===0?1.5:1)+txt(GX-7,gy(v)+4,num(v,1),{a:'end',fs:12,c:'var(--ink-soft)'}); });
     g+=txt(GX,GY-8,'voltage (V)',{fs:12.5})+txt(GX+GW,GY+GH+30,'time (s)',{a:'end',fs:12.5});
-    if(!exp()){ var th2=[]; for(var k=0;k<=400;k++){ var tt=k/400*TMAX; th2.push(gx(tt).toFixed(1)+','+gy(volts(tt)).toFixed(1)); }
+    if(!exp()){ var th2=curveTimes(TMAX,400).map(function(tt){ return gx(tt).toFixed(1)+','+gy(volts(tt)).toFixed(1); });
       g+='<polyline points="'+th2.join(' ')+'" fill="none" stroke="var(--topic)" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.55"/>'; }
     if(readings.length){
       if(exp()) readings.forEach(function(q){ g+='<circle cx="'+gx(q[0]).toFixed(1)+'" cy="'+gy(q[1]).toFixed(1)+'" r="2.6" fill="var(--topic)"/>'; });
-      else g+='<polyline points="'+readings.map(function(q){ return gx(q[0]).toFixed(1)+','+gy(q[1]).toFixed(1); }).join(' ')+'" fill="none" stroke="var(--topic)" stroke-width="3" stroke-linejoin="round"/>';
+      else g+='<polyline points="'+trace().map(function(q){ return gx(q[0]).toFixed(1)+','+gy(q[1]).toFixed(1); }).join(' ')+'" fill="none" stroke="var(--topic)" stroke-width="3" stroke-linejoin="round"/>';
     }
     if(t>0||running) g+='<circle cx="'+gx(t)+'" cy="'+gy(volts(t))+'" r="5.5" fill="var(--accent)" stroke="var(--panel)" stroke-width="2"/>';
     // the same moment end-on, with the key beside it
@@ -523,13 +529,21 @@
     $('#ag-note').innerHTML=n;
     playBtn.innerHTML=running?'&#10074;&#10074; Pause':(done()?'&#9654; Turn again':(t>0?'&#9654; Play':'&#9654; Turn the coil'));
   }
-  function record(to){ var dt=0.04; var nx=readings.length?readings[readings.length-1][0]+dt:0; while(nx<=to+1e-9){ readings.push([nx,volts(nx)]); nx+=dt; } }
+  // a reading every 0.04 s, plus (split ring) the instant the output touches zero between two readings
+  function record(to){ var dt=0.04, dc=out.value()==='dc';
+    while(nRead*dt<=to+1e-9){ var nx=nRead*dt;
+      if(dc && readings.length){ var z=nextZero(readings[readings.length-1][0]); if(z<nx-1e-6) readings.push([z,0]); }
+      readings.push([nx,volts(nx)]); nRead++; } }
+  // the solid line: the readings so far, carried on to this instant so it always ends at the moving dot
+  function trace(){ var a=readings.slice(), l=a[a.length-1][0];
+    if(t>l+1e-6){ if(out.value()==='dc'){ var z=nextZero(l); if(z<t-1e-6) a.push([z,0]); } a.push([t,volts(t)]); }
+    return a; }
   function rate(){ return pressed(slowBtn)?0.3:1; }
   function stop(){ running=false; cancelAnimationFrame(raf); }
   function frame(now){ if(!running) return; var dt=Math.min(0.05,(now-last)/1000)*rate(); t=Math.min(TMAX,t+dt); flowPh+=dt*(12+50*Math.abs(cA(t))); last=now; record(t);
     if(done()) stop(); draw(); if(running) raf=requestAnimationFrame(frame); }
   function mark(v){ Array.prototype.forEach.call(ptsEl.children,function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
-  function reset(){ stop(); t=0; readings=[]; mark(''); draw(); }
+  function reset(){ stop(); t=0; readings=[]; nRead=0; mark(''); draw(); }
   function changed(){ reset(); }
   playBtn.addEventListener('click',function(){ mark(''); if(running){ stop(); draw(); return; } if(done()) reset(); if(!readings.length) record(0); running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); });
   ptsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; reset(); t=(+b.dataset.v)*T(); record(t); mark(b.dataset.v); draw(); });
