@@ -728,13 +728,14 @@
       g+=line(f1(wx+F[0]*(r+4)),f1(wy+F[1]*(r+4)),f1(wx+F[0]*(r+L)),f1(wy+F[1]*(r+L)),'var(--accent)',4,' stroke-linecap="round"')+tri(wx+F[0]*(r+L+7),wy+F[1]*(r+L+7),Math.atan2(F[1],F[0])*180/Math.PI,5.2,'var(--accent)');
       var tx=wx+F[0]*(r+L+7), ty=wy+F[1]*(r+L+7);
       g+=vt?txt(f1(tx),f1(ty-11),'force',{a:'middle',c:'var(--accent)',w:600,fs:12,halo:1}):txt(f1(tx+9),f1(ty+(F[1]<0?6:2)),'force',{a:'start',c:'var(--accent)',w:600,fs:12,halo:1}); }
-    g+=wireEnd(wx,wy,r,o.hide==='current'?0:o.c,'var(--copper)');
-    if(o.hide==='current') g+='<text x="'+f1(wx)+'" y="'+f1(wy+4.5)+'" text-anchor="middle" font-size="13" font-weight="600" fill="var(--ink)">?</text>';
+    // a current question: the wire shows "?" until a choice is made, then the chosen dot or cross
+    var csel=(o.hide==='current' && T && T.kind==='current')?T.sel:null;
+    g+=wireEnd(wx,wy,r,o.hide==='current'?(csel==='out'?1:csel==='in'?-1:0):o.c,'var(--copper)');
+    if(o.hide==='current' && !csel) g+='<text x="'+f1(wx)+'" y="'+f1(wy+4.5)+'" text-anchor="middle" font-size="13" font-weight="600" fill="var(--ink)">?</text>';
     if(T && T.kind==='force') [['up',[0,-1]],['down',[0,1]],['left',[-1,0]],['right',[1,0]]].forEach(function(e){
       var p=[wx+e[1][0]*(r+8),wy+e[1][1]*(r+8)], q=[wx+e[1][0]*(r+38),wy+e[1][1]*(r+38)]; A[e[0]]=q;
       if(T.active) g+=ghost(p,q,e[0],'The '+(o.app==='rails'?'rod':'wire')+' moves '+(e[1][0]?'to the '+e[0]:e[0]),T.sel===e[0]); });
-    if(T && T.kind==='current'){ var pa=vt?[0,-32]:[-31,0], pb=vt?[0,32]:[31,0]; A.out=[wx+pa[0],wy+pa[1]]; A['in']=[wx+pb[0],wy+pb[1]];
-      if(T.active) g+=ghostSym(wx+pa[0],wy+pa[1],true,'out','The current comes out of the page, towards you',T.sel==='out')+ghostSym(wx+pb[0],wy+pb[1],false,'in','The current goes into the page, away from you',T.sel==='in'); }
+    if(T && T.kind==='current'){ A.out=A['in']=[wx+r+4,wy-r-4]; }   // the choice is made with the two buttons beside the diagram (see draw); the tick goes on the wire
     if(T && T.mark && A[T.mark.k]) g+=badge(A[T.mark.k][0],A[T.mark.k][1],T.mark.ok);
     return '<g transform="translate('+cx+','+cy+') scale('+k+')">'+g+'</g>';
   }
@@ -757,13 +758,20 @@
     function T3(z){ return (T && T.zone===z)?T:null; }
     function two(x,y,a,b){ return txt(x,y,a,{a:'middle',c:'var(--ink-faint)',fs:12.5})+txt(x,y+17,b,{a:'middle',c:'var(--ink-faint)',fs:12.5}); }
     if(qa){
-      var cx=narrow?215:205, py=narrow?458:(view==='3d'?370:342);
+      var cx=narrow?215:205; var py=narrow?((view!=='3d' && Q.missing==='current')?500:458):(view==='3d'?370:342);
       if(view==='3d') g+='<g id="me-rig">'+rig((narrow?rp[0]+8:rp[0])*rs+(narrow?10:0),rp[1]*rs+(narrow?8:0),rp[2]*rs,o,T)+'</g>';
       else { g+=examEnd(cx,narrow?172:158,narrow?1.25:1.32,o,T); g+=txt(cx,narrow?408:318,'the '+thing()+', seen end-on',{a:'middle',fs:13}); }
       // what to click, right under the picture
       var ask=Q.pick?'Now press Go':{force:'Click the arrow for the way it moves',poles:'Click the pole you think is north',
-        current:view==='3d'?'Click the arrow for the way the current flows':'Click the dot or the cross'}[Q.missing];
+        current:view==='3d'?'Click the arrow for the way the current flows':'Click out of the page or into the page'}[Q.missing];
       g+='<g id="me-ask">'+txt(narrow?215:(view==='3d'?250:cx),py,ask,{a:'middle',fs:15,w:600,c:'var(--accent)',halo:1})+'</g>';
+      if(view!=='3d' && Q.missing==='current'){
+        // two clear choices beside the diagram (under it on a phone); the chosen one shows in the wire
+        [['out',1,'out of the page'],['in',-1,'into the page']].forEach(function(c,i){
+          var bx=narrow?(i?222:18):360, by=narrow?424:(i?178:118), w=narrow?190:180, sel=Q.pick===c[0];
+          g+=pickG(c[0],'The current goes '+c[2],'<rect class="gs" x="'+bx+'" y="'+by+'" width="'+w+'" height="44" rx="8"/>'+
+            wireEnd(bx+22,by+22,10,c[1],'var(--copper)')+txt(bx+40,by+27,c[2],{fs:13.5,c:'var(--ink)',w:sel?600:400}),sel); });
+      }
       g+=keyRows(narrow?16:346,narrow?(view==='3d'?380:12):20,view==='3d');
       setSvg(svg,g);
       // keep the whole circuit (cell, leads and labels) inside the picture: move the apparatus right if it would be cut off
@@ -837,7 +845,7 @@
     var step={
       force:'Click one of the four dashed arrows beside the '+th+(v==='3d'?' on the apparatus.':'.'),
       poles:'Click the grey pole you think is north. It turns to N, and the other one to S.',
-      current:v==='3d'?'Click one of the two dashed arrows beside the '+th+': towards you or away from you.':'Click the dot (current out of the page) or the cross (current into the page) beside the '+th+'.'}[Q.missing];
+      current:v==='3d'?'Click one of the two dashed arrows beside the '+th+': towards you or away from you.':'Click <b>out of the page</b> (a dot in the '+th+') or <b>into the page</b> (a cross in the '+th+'). Your choice shows in the '+th+'.'}[Q.missing];
     $('#me-qdo').innerHTML=Q.done?'':'<li>'+step+'</li><li>Press <b>Go</b> to see if you were right.</li>';
     $('#me-qdo').hidden=Q.done;
     if(!Q.done) n=(v==='3d' && Q.missing!=='current'?'The current flows from the cell’s <b>+</b> terminal, round the circuit, to its <b>−</b> terminal. ':'')+'Use Fleming’s left-hand rule.';
