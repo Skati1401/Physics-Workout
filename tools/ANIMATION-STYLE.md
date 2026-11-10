@@ -59,7 +59,7 @@ Both model pages carry the same block of drawing code, marked `3D kit`: `scene3`
 
 ## The solid kit (batch 9, 10 Nov 2026)
 
-`roller-coaster-energy.html`, `heat-transfer.html`, `density.html` and `liquid-pressure.html` carry one identical block, marked `solid kit`, for bench apparatus that needs no camera: everything is drawn straight on, with depth going up and to the right. A fix goes into every page that has the block.
+`roller-coaster-energy.html`, `heat-transfer.html`, `density.html`, `liquid-pressure.html` and `reaction-time.html` carry one identical block, marked `solid kit`, for bench apparatus that needs no camera: everything is drawn straight on, with depth going up and to the right. A fix goes into every page that has the block.
 
 - `box(x, y, w, h, dx, dy, col)`: a solid block with a lit top, a plain front and a darker side (benches, bases, bars of a chart). `tube` is a round bar with a streak of light, `cyl` an upright cylinder (a can), `ell`, `pg`, `pl`, `ln`, `rect` the plain shapes, `arrow` a solid arrow.
 - `thermo(x, yb, y0, t0, y1, t1, T, o)`: a glass thermometer whose scale can be read: ticks and numbers stand beside the stem, in clear space. Give it enough length for about 2 px per degree, and repeat the reading as text only where the scale is too coarse to read to the precision asked for.

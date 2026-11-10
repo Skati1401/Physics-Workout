@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reaction Time Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Five sheep run for it at random moments: fire the dart as soon as each one moves, before it reaches the hedge 6 m away, measure your reaction time, find the mean and link it to thinking distance.">
+<meta name="description" content="Interactive physics animation. Measure your reaction time two ways: dart five sheep as each one bolts and find the mean, or brake a car when the light turns red and see its thinking, braking and stopping distance on a velocity–time graph.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -172,9 +172,19 @@
   .rt-table tr.mean td{font-weight:600;}
   .note.bad{background:var(--bad-soft);}
   .note.good{background:var(--good-soft);}
-  :root{--grass:#cfe8b4;--grass-line:#b5d698;--hedge:#4f7d2f;--fence:#8a5a2b;--wool:#f7f6f1;--sheep-face:#33302c;}
-  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--grass:#22361a;--grass-line:#2c4522;--hedge:#5f9a3a;--fence:#b07a45;--wool:#ecebe4;--sheep-face:#1d1b19;} }
-  :root[data-theme="dark"]{--grass:#22361a;--grass-line:#2c4522;--hedge:#5f9a3a;--fence:#b07a45;--wool:#ecebe4;--sheep-face:#1d1b19;}
+  .view.tall,.embed .view.tall{max-height:none;}
+  .title-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{font-size:12.5px;padding:8px 12px;white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .rt-table.car th{font-size:10.5px;padding:2px 3px;}
+  .rt-table.car td{padding:2px 3px;white-space:nowrap;}
+  :root{--grass:#cfe8b4;--grass-line:#b5d698;--hedge:#4f7d2f;--hedge-t:#73a548;--hedge-s:#3b6122;--soil:#9a7b55;--wool:#f7f6f1;--wool-s:#d9d6cb;--wool-o:#8f95a3;--sheep-face:#33302c;--dart:#e5392f;
+    --steel:#66748c;--steel-hi:#c3ccda;--steel-sh:#3f4a5e;--wood-f:#c99e6a;--wood-t:#e3c08f;--wood-s:#9c7444;--case:#3f4a5e;
+    --road:#6f7785;--road-s:#4c5361;--car:#2f6fe0;--car-glass:#cfe6f7;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--grass:#22361a;--grass-line:#2c4522;--hedge:#5f9a3a;--hedge-t:#7cb651;--hedge-s:#3f6b26;--soil:#5b4631;--wool:#ecebe4;--wool-s:#bdbab0;--wool-o:#5d6472;--sheep-face:#1d1b19;--dart:#ff5a4d;--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--wood-f:#8a6a43;--wood-t:#a8855a;--wood-s:#644b2d;--case:#56617a;--road:#5a6170;--road-s:#3b414c;--car:#5b8cf0;--car-glass:#9fc3df;} }
+  :root[data-theme="dark"]{--grass:#22361a;--grass-line:#2c4522;--hedge:#5f9a3a;--hedge-t:#7cb651;--hedge-s:#3f6b26;--soil:#5b4631;--wool:#ecebe4;--wool-s:#bdbab0;--wool-o:#5d6472;--sheep-face:#1d1b19;--dart:#ff5a4d;--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--wood-f:#8a6a43;--wood-t:#a8855a;--wood-s:#644b2d;--case:#56617a;--road:#5a6170;--road-s:#3b414c;--car:#5b8cf0;--car-glass:#9fc3df;}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -205,33 +215,38 @@
   <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
   <header class="page-head">
     <div class="eyebrow">Animations &middot; forces</div>
-    <h1>Reaction Time: Stop the Sheep</h1>
+    <div class="title-row" id="rt-title-row">
+      <h1 id="rt-h1">Reaction Time: Stop the Sheep</h1>
+      <div class="seg tabs" id="rt-part" role="group" aria-label="Which reaction test"><button type="button" data-v="sheep" aria-pressed="true">Stop the sheep</button><button type="button" data-v="car" aria-pressed="false">Stop the car</button></div>
+    </div>
   </header>
 
   <section class="card stage">
     <div>
-      <svg class="view" id="rt-field" viewBox="0 0 640 300" role="img" aria-label="Five sheep grazing at the left of a field, a hedge on the right and a dart gun at the bottom"></svg>
+      <svg class="view" id="rt-field" viewBox="0 0 860 350" role="img" aria-label="Five sheep grazing at the left of a field, a hedge on the right and a dart gun on a tripod in front. Beside the field, a velocity–time graph of the sheep that is running."></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" data-action="rt-start" type="button">&#9654; Start</button>
           <button class="btn btn-fire" id="rt-fire" type="button" disabled>Fire!</button>
           <button class="btn" data-action="rt-reset" type="button">&#8634; New flock</button>
         </div>
-        <span class="keyhint">or press the space bar to fire</span>
+        <span class="keyhint" id="rt-key">or press the space bar</span>
+        <div class="mass" id="rt-speed-wrap" hidden><label class="lab" for="rt-speed">Speed of the car, u <output id="rt-speed-o"></output></label><input type="range" id="rt-speed" min="10" max="30" step="5" value="20"></div>
       </div>
     </div>
-    <div class="side">
+    <div class="side" id="rt-side">
+      <div id="rt-road-wrap" hidden><div class="lab">Road surface (braking deceleration)</div><div class="seg" id="rt-road"></div></div>
       <p class="note" id="rt-note" aria-live="polite"></p>
-      <div class="stats">
+      <div class="stats" id="rt-stats">
         <div class="stat up"><small>Reaction time</small><strong id="rt-last">&ndash;</strong></div>
         <div class="stat"><small>Sheep ran</small><strong id="rt-dist">&ndash;</strong></div>
         <div class="stat"><small>Reached hedge</small><strong id="rt-esc">0</strong></div>
       </div>
-      <table class="rt-table" aria-label="Results">
-        <thead><tr><th>Sheep</th><th>Reaction time (s)</th><th>Distance ran (m)</th></tr></thead>
+      <table class="rt-table" id="rt-table" aria-label="Results">
+        <thead id="rt-head"></thead>
         <tbody id="rt-rows"></tbody>
       </table>
-      <p class="hint">Sheep run at 8 m/s and the hedge is 6 m away. A sheep that reaches it took 0.75 s, so 0.75 s is recorded for that run.</p>
+      <p class="hint" id="rt-hint">Sheep run at 8 m/s, so the 6 m to the hedge takes 0.75 s. A sheep that gets there is recorded as 0.75 s.</p>
       <details class="working" id="working">
         <summary>Show working</summary>
         <div class="eq" id="rt-eq"></div>
@@ -274,81 +289,203 @@
   }
   function watchEquals(sel){ Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }); }
 
-  function initReactionSim(){
-    // field: sheep start at x0 and stop when they reach xEnd (the hedge), 6 m away.
+    // ---- solid kit (the same block is in roller-coaster-energy.html, heat-transfer.html, density.html and liquid-pressure.html) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
+
+  /* One page, two reaction tests that share the picture, the buttons and the right-hand column:
+     "Stop the sheep" (five timed runs and a mean) and "Stop the car" (one car, a red light, a road surface and a speed to choose).
+     ?show=sheep or ?show=car opens one of them; with ?embed as well, only that one is offered.
+     The picture is 860 x 350; under 520px the same code uses a tall viewBox with the graph underneath. */
+  var svg=$('#rt-field'), fireBtn=$('#rt-fire'), startBtn=$('[data-action="rt-start"]'), resetBtn=$('[data-action="rt-reset"]');
+  function narrow(){ return window.innerWidth<=520; }
+  function setView(L){ svg.setAttribute('viewBox','0 0 '+L.W+' '+L.H); svg.classList.toggle('tall', !!L.tall); }
+  function note(t, cls){ var n=$('#rt-note'); n.textContent=t; n.className='note'+(cls?' '+cls:''); }
+  function tickText(v){ return String(Math.round(v*100)/100); }
+  // velocity–time axes. G: the plot's corners (x0, x1, y0, y1), tMax, tStep, vMax, vStep and the font size
+  function axes(G){
+    var g='', i, n, X=function(t){ return G.x0+t/G.tMax*(G.x1-G.x0); }, Y=function(v){ return G.y1-v/G.vMax*(G.y1-G.y0); };
+    for(i=0,n=Math.round(G.vMax/G.vStep);i<=n;i++){ var v=i*G.vStep; g+=ln(G.x0,Y(v),G.x1,Y(v),'var(--panel-border)',1)+txt(G.x0-7,Y(v)+4,tickText(v),{a:'end',fs:G.fs,c:'var(--ink-faint)'}); }
+    for(i=0,n=Math.round(G.tMax/G.tStep);i<=n;i++){ var t=i*G.tStep; g+=ln(X(t),G.y0,X(t),G.y1,'var(--panel-border)',1)+txt(X(t),G.y1+15,tickText(t),{a:'middle',fs:G.fs,c:'var(--ink-faint)'}); }
+    g+=ln(G.x0,G.y0,G.x0,G.y1,'var(--ink-soft)',2)+ln(G.x0,G.y1,G.x1,G.y1,'var(--ink-soft)',2);
+    g+=txt((G.x0+G.x1)/2,G.y1+32,'Time (s)',{a:'middle',fs:G.fs+1});
+    g+='<text transform="translate('+f1(G.x0-33)+' '+f1((G.y0+G.y1)/2)+') rotate(-90)" text-anchor="middle" font-size="'+(G.fs+1)+'" fill="var(--ink-soft)">Velocity (m/s)</text>';
+    return {g:g, X:X, Y:Y};
+  }
+
+  /* ============================== Stop the sheep ============================== */
+  function makeSheep(){
+    // the sheep start near the 0 m line and stop when they reach the hedge, 6 m further on.
     // A sheep that gets there before the dart is recorded with the time it took (0.75 s), not as lost.
-    var SPEED_MS=8, FIELD_M=6, T_MAX=FIELD_M/SPEED_MS, X0=68, XEND=592, PX_M=(XEND-X0)/FIELD_M, LANES=[48,92,136,180,224];
-    var GUN={x:372,y:284}, DART_S=0.09, CAR_V=20, WANDER=18;
-    var svg=$('#rt-field'), fireBtn=$('#rt-fire'), startBtn=$('[data-action="rt-start"]');
-    var sheep, results, state, raf=0, lastNow=0, gunAng=-90, dart=null, phase=0, reloadUntil=0, RELOAD_MS=1800;
+    var SPEED_MS=8, FIELD_M=6, T_MAX=FIELD_M/SPEED_MS, CAR_V=20, WANDER_M=0.15, DART_S=0.09, RELOAD_MS=1800;
+    var sheep, results, state='idle', raf=0, lastNow=0, gunAng=0, dart=null, phase=0, reloadUntil=0, shot=0, gRun=null, L=null;
+    // the gun stands in a column on the left, beside the start end of the field, with the stopwatch under it; the graph is on the right (or underneath)
+    function lay(){ return narrow()
+      ? {tall:true, W:430, H:468, X0:114, PX:44.6, fx0:74, fx1:424, fy0:26, fy1:222, lanes:[50,88,126,164,202], k:0.8, gun:{x:38,y:112}, gk:0.7, gt:0.6, fs:13, lfs:11.5, GL:[38,62],
+         G:{x0:58,x1:410,y0:290,y1:416,fs:12}, T:{x:12,y:250}, SW:{x:4,y:160,k:0.8}}
+      : {tall:false, W:860, H:350, X0:180, PX:59.6, fx0:114, fx1:594, fy0:28, fy1:330, lanes:[64,121,178,235,292], k:1.15, gun:{x:58,y:190}, gk:1.1, gt:1, fs:12, lfs:12, GL:[56,112],
+         G:{x0:652,x1:848,y0:52,y1:292,fs:11}, T:{x:612,y:16}, SW:{x:12,y:262,k:1.1}}; }
+    function px(m){ return L.X0+m*L.PX; }
     function newFlock(){
-      sheep=LANES.map(function(y,i){ return {n:i+1, y:y, x:X0, xs:X0, dir:1, st:'graze', ph:Math.random()*6.28, w:0.7+Math.random()*0.6}; });
-      results=[]; state='idle'; dart=null;
+      sheep=[0,1,2,3,4].map(function(i){ return {n:i+1, i:i, m:0, ms:0, dir:1, st:'graze', ph:Math.random()*6.28, w:0.7+Math.random()*0.6}; });
+      results=[]; state='idle'; dart=null; gRun=null; shot=0;
     }
     // each sheep gets its own random start time; at least 1.8 s apart, so only one runs at a time
     function schedule(now){
       var order=sheep.slice().sort(function(){ return Math.random()-0.5; }), t=now+1000+Math.random()*2000;
       order.forEach(function(s){ s.tGo=t; t+=1800+Math.random()*2200; });
     }
-    function lastGo(){ var m=0; sheep.forEach(function(s){ if(s.st==='graze') m=Math.max(m,s.tGo); }); return m; }
     function running(){ return sheep.filter(function(s){ return s.st==='run'; }).sort(function(a,b){ return a.tGo-b.tGo; })[0]; }
 
-    function sheepSVG(s){
-      var g='<g transform="translate('+s.x.toFixed(1)+' '+s.y+')'+(s.st==='asleep'?' rotate(8)':'')+(s.st==='graze'&&s.dir<0?' scale(-1 1)':'')+'">';
-      var run=s.st==='run', legA=run?Math.sin(phase*22)*7:(s.st==='graze'&&state==='round'?Math.sin(phase*9+s.ph)*3:0);
-      if(s.st!=='asleep'){
-        [[-11,legA],[-5,-legA],[7,-legA],[13,legA]].forEach(function(l){
-          g+='<line x1="'+l[0]+'" y1="6" x2="'+(l[0]+l[1])+'" y2="17" stroke="var(--sheep-face)" stroke-width="3" stroke-linecap="round"/>';
-        });
+    // the field: a slab of grass seen from in front and above, a fence on the left and the hedge on the right
+    function fieldSVG(){
+      var g='', i, w=L.fx1-L.fx0, h=L.fy1-L.fy0, XE=px(FIELD_M), hx=XE+24*L.k, hw=L.fx1-2-hx, hh=14;
+      g+=rect(L.fx0,L.fy1-5,w,12,'var(--soil)',' rx="4"')+rect(L.fx0,L.fy0,w,h,'var(--grass)',' rx="5"');
+      for(i=0;i<FIELD_M;i+=2) g+=rect(px(i),L.fy0,L.PX,h,'var(--grass-line)',' opacity=".4"');
+      for(i=0;i<=FIELD_M;i++){
+        g+=ln(px(i),L.fy0,px(i),L.fy1,'#fff',i?1:2,' opacity="'+(i?0.3:0.65)+'"')+ln(px(i),L.fy0-6,px(i),L.fy0,'var(--ink-faint)',1.2);
+        g+=txt(px(i),L.fy0-10,i+' m',{a:'middle',fs:L.fs-1,c:'var(--ink-soft)'});
       }
-      var dy=s.st==='asleep'?5:0;
-      g+='<g transform="translate(0 '+dy+')">';
-      [[-12,-2,8],[-5,-7,9],[4,-7,9],[11,-2,8],[-6,3,8],[5,3,8],[0,-2,9]].forEach(function(c){
-        g+='<circle cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" fill="var(--wool)" stroke="var(--ink-faint)" stroke-width="1"/>';
-      });
-      // head: down while grazing (bobbing), up and forward while running
-      var hy = s.st==='graze' ? 4+(REDUCED||state!=='round'?0:Math.sin(phase*3+s.ph)*2.5) : (s.st==='asleep'?4:-6);
-      g+='<ellipse cx="20" cy="'+hy.toFixed(1)+'" rx="7" ry="5.5" fill="var(--sheep-face)"/>';
-      g+='<ellipse cx="15" cy="'+(hy-4).toFixed(1)+'" rx="3.2" ry="1.8" fill="var(--sheep-face)" transform="rotate(-25 15 '+(hy-4).toFixed(1)+')"/>';
-      if(s.st==='asleep'){
-        g+='<line x1="18" y1="'+(hy-1)+'" x2="23" y2="'+(hy-1)+'" stroke="var(--wool)" stroke-width="1.3"/>';
-        g+='<line x1="-2" y1="-12" x2="-12" y2="-24" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/><path d="M-12,-24 l-5,0 l2,-4 z" fill="var(--bad)"/>';
-        g+='<text x="22" y="-14" font-size="12" fill="var(--ink-soft)">z z</text>';
-      } else {
-        g+='<circle cx="22" cy="'+(hy-1.5).toFixed(1)+'" r="1.4" fill="var(--wool)"/>';
-      }
-      g+='</g></g>';
+      for(i=0;i<11;i++){ var tx=L.fx0+26+((i*97)%(w-70)), ty=L.fy0+18+((i*61)%(h-30)); g+='<path d="M'+f1(tx)+' '+f1(ty)+' q3 -8 6 0 m3 0 q3 -6 5 0" stroke="var(--grass-line)" stroke-width="1.8" fill="none"/>'; }
+      // fence along the left edge: the top of a rail with its posts
+      g+=box(L.fx0+2,L.fy1-12,6,12,0,-(h-14),'var(--wood-f)',{top:'var(--wood-t)'});
+      for(i=0;i<6;i++) g+=rect(L.fx0+1,L.fy0+4+i*(h-22)/5,8,5,'var(--wood-s)',' rx="1"');
+      // the hedge: a leafy top and the near end
+      g+=rect(hx,L.fy0-10,hw,h+10-hh,'var(--hedge-t)',' rx="8"')+rect(hx,L.fy1-hh-2,hw,hh+2,'var(--hedge-s)',' rx="5"')+ell(hx+hw*0.3,L.fy1-hh+4,hw*0.24,4,'var(--hedge)')+ell(hx+hw*0.7,L.fy1-5,hw*0.24,4,'var(--hedge)');
+      for(i=0;i<Math.floor((h-hh)/13);i++){ var by=L.fy0-2+i*13;
+        g+=ell(hx+hw*(i%2?0.3:0.68),by,hw*0.3,7,'var(--hedge)',' opacity=".55"')+ell(hx+hw*(i%2?0.72:0.26),by+5,hw*0.22,5,'#fff',' opacity=".16"')+ell(hx+1,by+3,4.5,6.5,'var(--hedge-t)'); }
+      g+=L.tall ? txt(L.fx1,L.fy1+19,'hedge',{a:'end',fs:L.lfs,c:'var(--ink-soft)'}) : txt(hx+hw/2,L.fy0-15,'hedge',{a:'middle',fs:L.fs-1,c:'var(--ink-soft)'});
       return g;
     }
-    function draw(){
-      var g='';
-      g+='<rect x="0" y="16" width="640" height="236" fill="var(--grass)"/>';
-      for(var i=0;i<6;i++) g+='<path d="M'+(20+i*110)+' '+(40+(i%3)*70)+' q4 -8 8 0 M'+(70+i*100)+' '+(70+(i%2)*120)+' q4 -8 8 0" stroke="var(--grass-line)" stroke-width="2" fill="none"/>';
-      // hedge on the right: the edge of the field
-      g+='<rect x="604" y="16" width="36" height="236" fill="var(--hedge)" opacity="0.9"/>';
-      for(i=0;i<9;i++) g+='<circle cx="'+(608+(i%2)*16)+'" cy="'+(26+i*27)+'" r="14" fill="var(--hedge)"/>';
-      g+='<text x="598" y="12" text-anchor="end" font-size="11" fill="var(--ink-soft)">edge of the field ('+FIELD_M+' m)</text>';
-      // fence on the left and the scale
-      g+='<line x1="16" y1="16" x2="16" y2="252" stroke="var(--fence)" stroke-width="4"/>';
-      for(i=0;i<=FIELD_M;i++){ var mx=X0+i*PX_M; g+='<line x1="'+mx+'" y1="252" x2="'+mx+'" y2="258" stroke="var(--ink-faint)"/><text x="'+mx+'" y="270" text-anchor="middle" font-size="10" fill="var(--ink-faint)">'+i+' m</text>'; }
-      // distance each sheep ran (darted, or all the way to the hedge)
-      sheep.forEach(function(s){ if((s.st==='asleep'||s.st==='hedge') && s.x>s.xs+1) g+='<line x1="'+s.xs.toFixed(1)+'" y1="'+(s.y+20)+'" x2="'+s.x.toFixed(1)+'" y2="'+(s.y+20)+'" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 3"/>'; });
-      sheep.forEach(function(s){ g+=sheepSVG(s); });
-      // the dart gun on its stand, aimed with gunAng (degrees, -90 = straight up)
-      g+='<path d="M'+(GUN.x-16)+' 300 L'+GUN.x+' '+GUN.y+' L'+(GUN.x+16)+' 300" stroke="var(--ink-soft)" stroke-width="3" fill="none"/>';
-      g+='<g transform="translate('+GUN.x+' '+GUN.y+') rotate('+gunAng.toFixed(1)+')"><rect x="-8" y="-6" width="20" height="12" rx="3" fill="var(--ink)"/><rect x="8" y="-3" width="34" height="6" rx="2" fill="var(--ink)"/></g>';
-      g+='<circle cx="'+GUN.x+'" cy="'+GUN.y+'" r="5" fill="var(--ink-soft)"/>';
-      if(reloadUntil) g+='<text x="'+(GUN.x-26)+'" y="296" text-anchor="end" font-size="11" fill="var(--bad)">reloading…</text>';
-      g+='<text x="'+(GUN.x+26)+'" y="296" font-size="11" fill="var(--ink-soft)">dart gun</text>';
-      if(dart){
-        var k=Math.min(1,dart.f), dx=dart.x0+(dart.x1-dart.x0)*k, dy=dart.y0+(dart.y1-dart.y0)*k, a=Math.atan2(dart.y1-dart.y0,dart.x1-dart.x0);
-        g+='<line x1="'+(dx-Math.cos(a)*14).toFixed(1)+'" y1="'+(dy-Math.sin(a)*14).toFixed(1)+'" x2="'+dx.toFixed(1)+'" y2="'+dy.toFixed(1)+'" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>';
+    function sheepSVG(s){
+      var k=L.k, y=L.lanes[s.i], lying=s.st==='asleep', run=s.st==='run', g='', hy, fz=f1(12/k);
+      var legA=run?Math.sin(phase*22)*7:(s.st==='graze'&&state==='round'?Math.sin(phase*9+s.ph)*3:0);
+      var W=[[-12,-2,8],[-5,-7,9],[4,-7,9],[11,-2,8],[-6,3,8],[5,3,8],[0,-2,9]];
+      g+='<g transform="translate('+f1(px(s.m))+' '+y+') scale('+k+')">'+ell(lying?2:0,lying?16:18,lying?26:21,lying?5.5:4.5,'#000',' opacity=".17"');
+      g+='<g'+(lying?' transform="translate(0 5) rotate(6)"':(s.st==='graze'&&s.dir<0?' transform="scale(-1 1)"':''))+'>';
+      if(!lying) [[-11,legA],[-5,-legA],[7,-legA],[13,legA]].forEach(function(l){ g+=ln(l[0],6,l[0]+l[1],17,'var(--sheep-face)',3.2,' stroke-linecap="round"'); });
+      g+='<circle cx="-19" cy="-3" r="4.4" fill="var(--wool-o)"/><circle cx="-19" cy="-3" r="3.3" fill="var(--wool)"/>';
+      W.forEach(function(c){ g+='<circle cx="'+c[0]+'" cy="'+c[1]+'" r="'+(c[2]+1.2)+'" fill="var(--wool-o)"/>'; });   // one outline round the whole fleece
+      W.forEach(function(c){ g+='<circle cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" fill="var(--wool-s)"/>'; });           // shaded underneath
+      W.forEach(function(c){ g+='<circle cx="'+(c[0]-0.7)+'" cy="'+(c[1]-1.8)+'" r="'+(c[2]-0.9)+'" fill="var(--wool)"/>'; });
+      g+=ell(-3,-10,9,3,'#fff',' opacity=".55"')+'<path d="M-9,0 q3,-3.5 6,0 M2,2 q3,-3.5 6,0 M-2,-6 q2.5,-3 5,0" stroke="var(--wool-s)" stroke-width="1.3" fill="none" stroke-linecap="round"/>';
+      // head: down while grazing (bobbing), up while running or standing at the hedge
+      hy = s.st==='graze' ? 4+(REDUCED||state!=='round'?0:Math.sin(phase*3+s.ph)*2.5) : (lying?4:-6);
+      g+=ell(15.5,hy-4.5,3.6,2,'var(--sheep-face)',' transform="rotate(-25 15.5 '+f1(hy-4.5)+')"')+ell(20,hy,7.4,5.9,'var(--sheep-face)')+ell(18.5,hy-2.2,4,1.8,'#fff',' opacity=".13"');
+      g+='<circle cx="14.5" cy="'+f1(hy-6.5)+'" r="4.6" fill="var(--wool-o)"/><circle cx="14.2" cy="'+f1(hy-6.9)+'" r="3.6" fill="var(--wool)"/>';
+      if(lying){
+        g+=ln(20,hy-1,25,hy-1,'var(--wool)',1.4,' stroke-linecap="round"');
+        g+=ln(-3,-12,-11,-24,'var(--steel-sh)',2.4,' stroke-linecap="round"')+ln(-10,-22.5,-13,-27,'var(--dart)',5,' stroke-linecap="round"');
+        g+='<text x="22" y="-15" font-size="'+fz+'" fill="var(--ink-soft)">z z</text>';
+      } else g+='<circle cx="22.4" cy="'+f1(hy-1.6)+'" r="1.9" fill="#fff"/><circle cx="22.9" cy="'+f1(hy-1.6)+'" r="0.95" fill="#111"/>';
+      return g+'</g></g>';
+    }
+    // the dart gun: a rifle seen side on, with a wooden stock and a telescopic sight, turning on a tripod.
+    // It stands at the start end of the field, so every sheep is to its right and it never has to turn over.
+    var MUZ=[74,-3];
+    function muzzle(){ var a=gunAng*Math.PI/180, k=L.gk, c=Math.cos(a), s=Math.sin(a); return [L.gun.x+(MUZ[0]*c-MUZ[1]*s)*k, L.gun.y+(MUZ[0]*s+MUZ[1]*c)*k]; }
+    function gunSVG(now){
+      var G=L.gun, k=L.gk, t=L.gt, g='', f=shot?(now-shot)/170:2, rec=f<1?3.5*(1-f):0;
+      g+=ell(G.x,G.y+45*t,30*t,5*t,'#000',' opacity=".14"');
+      [[-21,45],[21,45],[2,47]].forEach(function(p){ g+=tube(G.x,G.y+3,G.x+p[0]*t,G.y+p[1]*t,4.6*t,'var(--steel-sh)','var(--steel)')+ell(G.x+p[0]*t,G.y+p[1]*t,4.6*t,2.4*t,'var(--ink)'); });
+      g+='<g transform="translate('+f1(G.x)+' '+f1(G.y)+') rotate('+f1(gunAng)+') scale('+k+') translate('+f1(-rec)+' 0)">';
+      g+=tube(24,-3,72,-3,4.4,'var(--steel-sh)','var(--steel-hi)')+rect(69.5,-6,4.5,6,'var(--ink)',' rx="1.4"')+tube(40,2.6,60,2.6,3.8,'var(--steel)','var(--steel-hi)');   // barrel, with the gas cylinder under it
+      g+=pg([[-47,-2],[-13,-5.5],[-13,3.5],[-24,5.5],[-47,13.5]],'var(--wood-f)')+pg([[-47,-2],[-13,-5.5],[-13,-2.6],[-47,1.6]],'var(--wood-t)')+pg([[-47,13.5],[-24,5.5],[-24,3.4],[-47,10.6]],'var(--wood-s)')+rect(-50.5,-3,4,17.5,'var(--ink)',' rx="1.6"');
+      g+=pg([[-14,2],[-5.5,2],[-9.5,16],[-17.5,16]],'var(--wood-s)')+pg([[-14,2],[-11,2],[-15,16],[-17.5,16]],'var(--wood-f)');
+      g+='<path d="M-6,3 q6,10 12.5,0" fill="none" stroke="var(--steel-sh)" stroke-width="1.8"/>'+ln(0.5,3.5,-0.8,8,'var(--steel-sh)',1.6,' stroke-linecap="round"');
+      g+=rect(-14,-6.5,38,10,'var(--steel-sh)',' rx="2.4"')+rect(-13,-5.6,36,2.8,'var(--steel-hi)',' rx="1.4" opacity=".5"');
+      g+=rect(24,-1.4,20,6.6,'var(--wood-f)',' rx="2.2"')+rect(24,-1.4,20,2.2,'var(--wood-t)',' rx="1.1"');
+      // the sight on top: eyepiece, tube, adjusting turret, wide front lens, and its two mounts
+      g+=rect(-3,-9.5,3,3.5,'var(--steel)')+rect(13,-9.5,3,3.5,'var(--steel)');
+      g+=rect(-14,-16.4,8,9.6,'var(--ink)',' rx="2.2"')+rect(-8,-15,32,6.6,'var(--ink)',' rx="3.3"')+rect(21,-17,10,10.8,'var(--ink)',' rx="2.8"')+rect(-7,-14.2,28,1.6,'#fff',' rx=".8" opacity=".3"');
+      g+=rect(5,-18,4.5,4,'var(--steel)',' rx="1"')+rect(29.4,-16,1.8,8.8,'#8fd3ff',' rx=".9" opacity=".85"');
+      if(f<1) g+=ell(80+10*f,-3,4+9*f,3+6*f,'#fff',' opacity="'+f1(0.75*(1-f))+'" stroke="var(--ink-faint)" stroke-width="0.8"');   // a puff of gas from the muzzle
+      g+='</g>'+ell(G.x,G.y+2,5*t,5*t,'var(--steel-sh)')+ell(G.x-1,G.y+1,2*t,2*t,'var(--steel-hi)');
+      g+=txt(L.GL[0],L.GL[1],'dart gun',{a:'middle',fs:L.lfs,c:'var(--ink-soft)'});
+      if(reloadUntil) g+=txt(L.GL[0],L.GL[1]-17,'reloading…',{a:'middle',fs:L.lfs,c:'var(--bad)',w:600});
+      return g;
+    }
+    function graphSVG(){
+      var G=L.G, A, g='', r=gRun;
+      G.tMax=0.8; G.tStep=0.2; G.vMax=10; G.vStep=2; A=axes(G);
+      g+=txt(L.T.x,L.T.y,'Velocity–time graph'+(r?', sheep '+r.n:''),{fs:L.fs+1,c:'var(--ink)',w:600});
+      g+=txt(L.T.x,L.T.y+18, r&&r.done ? 'area = '+SPEED_MS+' × '+fix(r.t,2)+' = '+fix(SPEED_MS*r.t,1)+' m ran' : 'area under the line = distance ran',{fs:L.fs,c:r&&r.done?'var(--motion)':'var(--ink-soft)'});
+      g+=A.g;
+      if(r && r.t>0){
+        g+=rect(A.X(0),A.Y(SPEED_MS),A.X(r.t)-A.X(0),A.Y(0)-A.Y(SPEED_MS),'var(--motion-soft)');
+        g+=pl(r.done?[[A.X(0),A.Y(SPEED_MS)],[A.X(r.t),A.Y(SPEED_MS)],[A.X(r.t),A.Y(0)]]:[[A.X(0),A.Y(SPEED_MS)],[A.X(r.t),A.Y(SPEED_MS)]],'var(--motion)',3);
       }
+      g+=stopwatch(L.SW.x,L.SW.y,fix(r?r.t:0,2)+' s',L.SW.k);
+      g+=txt(L.SW.x+1,L.SW.y+40*L.SW.k+16,'time since',{fs:L.lfs})+txt(L.SW.x+1,L.SW.y+40*L.SW.k+16+L.lfs+2,'it set off',{fs:L.lfs});
+      return g;
+    }
+    function draw(now){
+      var g='', k;
+      L=lay(); k=L.k; setView(L);
+      g+=fieldSVG();
+      // how far each sheep ran, from where it set off
+      sheep.forEach(function(s){ if((s.st==='asleep'||s.st==='hedge') && s.m>s.ms+0.02){ var y=L.lanes[s.i], left=s.st==='hedge'||s.m>4.5;
+        g+=ln(px(s.ms),y+22*k,px(s.m),y+22*k,'var(--accent)',2.2,' stroke-dasharray="5 4"');
+        g+=txt(px(s.m)+(left?-30:32)*k,y+5,fix(s.m-s.ms,1)+' m',{a:left?'end':'start',fs:L.fs,c:'var(--ink)',w:600,halo:1}); } });
+      sheep.forEach(function(s){ g+=sheepSVG(s); });
+      g+=gunSVG(now||0);
+      if(dart){
+        var f=Math.min(1,dart.f), dx=dart.x0+(dart.x1-dart.x0)*f, dy=dart.y0+(dart.y1-dart.y0)*f, a=Math.atan2(dart.y1-dart.y0,dart.x1-dart.x0), c=Math.cos(a), sn=Math.sin(a);
+        g+=ln(dx-c*15,dy-sn*15,dx,dy,'var(--steel-sh)',2.6,' stroke-linecap="round"')+ln(dx-c*20,dy-sn*20,dx-c*14,dy-sn*14,'var(--dart)',5.5,' stroke-linecap="round"');
+      }
+      g+=graphSVG();
       svg.innerHTML=g;
     }
-    function aimAt(s){ return Math.atan2(s.y-GUN.y, s.x-GUN.x)*180/Math.PI; }
+    function aimAt(s){ return Math.atan2(L.lanes[s.i]-L.gun.y, px(s.m)-L.gun.x)*180/Math.PI; }
 
-    function note(t, cls){ var n=$('#rt-note'); n.textContent=t; n.className='note'+(cls?' '+cls:''); }
     function hits(){ return results.filter(function(r){ return !r.hedge; }); }
     function sum(){ var s=0; results.forEach(function(r){ s+=+fix(r.rt,2); }); return s; }
     function mean(){ return results.length ? sum()/results.length : 0; }
@@ -356,19 +493,19 @@
       var rows='';
       for(var i=0;i<5;i++){
         var r=results[i];
-        rows+='<tr'+(i===results.length-1&&r?' class="now"':'')+'><td>'+(i+1)+'</td>'
-          +'<td>'+(r?fix(r.rt,2):'')+'</td><td>'+(r?fix(r.d,1):'')+'</td></tr>';
+        rows+='<tr'+(i===results.length-1&&r?' class="now"':'')+'><td>'+(i+1)+'</td><td>'+(r?fix(r.rt,2):'')+'</td><td>'+(r?fix(r.d,1):'')+'</td></tr>';
       }
       var done=results.length===5, h=hits().length;
       rows+='<tr class="mean"><td>Mean</td><td>'+(done?fix(mean(),2):'')+'</td><td></td></tr>';
+      $('#rt-head').innerHTML='<tr><th>Sheep</th><th>Reaction time (s)</th><th>Distance ran (m)</th></tr>';
       $('#rt-rows').innerHTML=rows;
       $('#rt-esc').textContent = String(results.length-h);
       working();
     }
     function working(){
       var e=$('#rt-eq'), H=results, last=H[H.length-1];
-      if(!last){ e.innerHTML='reaction time = time you fired − time the sheep started<br>distance ran = speed × reaction time<br>mean = <b>?</b>'; return; }
-      var h='distance ran = speed × reaction time<br>distance ran = '+SPEED_MS+' × '+fix(last.rt,2)+'<br>distance ran = '+fix(last.d,1)+' m';
+      if(!last){ e.innerHTML='reaction time = time you fired − time the sheep started<br>distance ran = area under the velocity–time graph<br>distance ran = speed × reaction time<br>mean = <b>?</b>'; return; }
+      var h='distance ran = area under the velocity–time graph<br>distance ran = speed × reaction time<br>distance ran = '+SPEED_MS+' × '+fix(last.rt,2)+'<br>distance ran = '+fix(last.d,1)+' m';
       if(results.length===5){
         var tot=sum(), m=tot/H.length;
         h+='<br><br>total = '+H.map(function(r){ return fix(r.rt,2); }).join(' + ')
@@ -394,18 +531,18 @@
       if(reloadUntil && now>=reloadUntil){ reloadUntil=0; buttons(); }
       sheep.forEach(function(s){
         // grazing sheep wander slowly back and forth around the 0 m line
-        if(s.st==='graze'){ s.x=X0+WANDER*Math.sin(phase*s.w+s.ph); s.dir=Math.cos(phase*s.w+s.ph)>=0?1:-1; }
-        if(s.st==='graze' && now>=s.tGo){ s.st='run'; s.xs=s.x; }
+        if(s.st==='graze'){ s.m=WANDER_M*Math.sin(phase*s.w+s.ph); s.dir=Math.cos(phase*s.w+s.ph)>=0?1:-1; }
+        if(s.st==='graze' && now>=s.tGo){ s.st='run'; s.ms=s.m; s.tGo=now; }   // timed from the frame in which it is first seen to move
         if(s.st==='run'){
           // distances are measured from where the sheep set off, so it reaches the hedge 6 m (0.75 s) later
-          s.x = s.xs + SPEED_MS*PX_M*Math.min(T_MAX,(now-s.tGo)/1000);
-          if(now-s.tGo>=T_MAX*1000) atHedge(s);
+          var el=(now-s.tGo)/1000; s.m=s.ms+SPEED_MS*Math.min(T_MAX,el); gRun={n:results.length+1, t:Math.min(T_MAX,el), done:false};
+          if(el>=T_MAX) atHedge(s);
         }
       });
       var r=running(); if(r && !dart && !reloadUntil) gunAng=aimAt(r);
       if(dart){ dart.f+=dt/DART_S; if(dart.f>=1){ var s=dart.s; dart=null; hit(s); } }
       if(state==='round' && results.length===5) finish();
-      draw();
+      draw(now);
       if(state==='round') raf=requestAnimationFrame(loop);
     }
     function start(){
@@ -417,7 +554,7 @@
     }
     function fire(ts){
       if(state!=='round' || dart || reloadUntil) return;
-      var r=running(), now=performance.now();
+      var r=running(), now=performance.now(); shot=now;
       if(!r){
         // a wasted shot: the bang startles the next sheep, and it runs while the gun is being reloaded
         reloadUntil=now+RELOAD_MS;
@@ -431,9 +568,9 @@
       }
       var t=(ts && ts<=now && ts>r.tGo-1000 ? ts : now), rt=Math.max(0,(t-r.tGo)/1000);
       // the sheep is stopped where it was when you fired; the dart is very fast
-      r.x = r.xs + SPEED_MS*PX_M*rt; r.rt=rt; r.st='stopped'; gunAng=aimAt(r);
-      var a=gunAng*Math.PI/180;
-      dart={s:r, x0:GUN.x+Math.cos(a)*42, y0:GUN.y+Math.sin(a)*42, x1:r.x-4, y1:r.y-6, f:0};
+      r.m=r.ms+SPEED_MS*rt; r.rt=rt; r.st='stopped'; gunAng=aimAt(r); gRun={n:results.length+1, t:rt, done:true};
+      var mz=muzzle();
+      dart={s:r, x0:mz[0], y0:mz[1], x1:px(r.m)-4*L.k, y1:L.lanes[r.i]-6*L.k, f:0};
     }
     function hit(s){
       var rt=s.rt; s.st='asleep';
@@ -445,7 +582,7 @@
     }
     // the sheep got to the hedge before the dart: that run counts as the time it took to get there
     function atHedge(s){
-      s.st='hedge'; s.x=s.xs+FIELD_M*PX_M;
+      s.st='hedge'; s.m=s.ms+FIELD_M; gRun={n:results.length+1, t:T_MAX, done:true};
       results.push({rt:T_MAX, d:FIELD_M, n:s.n, hedge:true});
       $('#rt-last').textContent=fix(T_MAX,2)+' s';
       $('#rt-dist').textContent=fix(FIELD_M,1)+' m';
@@ -456,25 +593,232 @@
       state='done'; reloadUntil=0; buttons();
       var h=hits().length, esc=5-h;
       if(!h) note('All five sheep reached the hedge, so '+fix(T_MAX,2)+' s is recorded for each run. Press New flock to try again.','bad');
-      else note('Round over: '+h+' stopped'+(esc?', '+esc+' reached the hedge ('+fix(T_MAX,2)+' s recorded)':'')+'. Your mean reaction time is '+fix(mean(),2)+' s. A driver also has to move their foot to the brake, so a driver’s reaction time is longer (often about 0.7 s).', esc?'':'good');
-      $('[data-action="rt-reset"]').focus({preventScroll:true});
+      else note('Round over: '+h+' stopped'+(esc?', '+esc+' reached the hedge':'')+'. Your mean reaction time is '+fix(mean(),2)+' s. A driver must also move a foot to the brake, so a driver’s reaction time is longer (often about 0.7 s).', esc?'':'good');
+      resetBtn.focus({preventScroll:true});
     }
     function reset(){
-      cancelAnimationFrame(raf); newFlock(); gunAng=-90; reloadUntil=0;
+      cancelAnimationFrame(raf); newFlock(); gunAng=0; reloadUntil=0;
       $('#rt-last').textContent='–'; $('#rt-dist').textContent='–';
       note('Press Start. The five sheep then run for the hedge one at a time, at random moments. Fire the dart as soon as you see one move. Fire too early and you must reload while a sheep runs.');
-      table(); buttons(); draw();
+      table(); buttons(); draw(0);
     }
-    fireBtn.addEventListener('pointerdown', function(e){ if(e.button===0||e.pointerType!=='mouse'){ e.preventDefault(); fire(e.timeStamp); } });
-    fireBtn.addEventListener('click', function(e){ if(e.detail===0) fire(); });   // keyboard or switch access
+    return {start:start, fire:fire, reset:reset, draw:function(){ draw(performance.now()); }, live:function(){ return state==='round'; },
+      stop:function(){ cancelAnimationFrame(raf); }};
+  }
+
+  /* ============================== Stop the car ============================== */
+  function makeCar(){
+    // One car at a steady speed u. The light turns red at a random moment (time 0); the student presses Brake.
+    // The car keeps its speed for the reaction time, then slows at the road's deceleration. Everything runs in real time.
+    var ROADS=[['Dry',7],['Wet',5],['Icy',2]], T_LIMIT=1.5;
+    var speedIn=$('#rt-speed'), u=20, a=7, st='idle', raf=0, lastNow=0, tPlan=0, tRed=0, tB=0, scroll=0, runs=[], prev=null, lastDone=null, cur=null, L=null;
+    function lay(){ return narrow()
+      ? {tall:true, W:430, H:532, k:0.85, x0:84, x1:416, ry:96, rh:26, fs:12.5, my:[34,52],
+         G:{x0:52,x1:416,y0:340,y1:482,fs:12}, SW:{x:10,y:176,k:1}, K:{x:10,y:[246,268,290,312],fs:12.5}, TL:{x:374,y:170,k:0.9,post:26}}
+      : {tall:false, W:860, H:350, k:1.25, x0:170, x1:822, ry:96, rh:30, fs:12, my:[36,54],
+         G:{x0:56,x1:556,y0:176,y1:306,fs:11}, SW:{x:592,y:170,k:1.1}, K:{x:592,y:[242,264,286,310],fs:11.5}, TL:{x:804,y:166,k:1,post:50}}; }
+    function roadName(){ return ROADS.filter(function(r){ return r[1]===a; })[0][0]; }
+    // the road in the picture is long enough for the slowest reaction allowed
+    function roadLen(){ var m=u*T_LIMIT+u*u/(2*a); return m<=60?Math.ceil(m/10)*10:(m<=200?Math.ceil(m/20)*20:Math.ceil(m/50)*50); }
+    function tAxis(){ var e=T_LIMIT+u/a, s=e<=3?0.5:(e<=6?1:(e<=12?2:5)); return {max:Math.ceil(e*1.02/s)*s, step:s}; }
+    function at(c,t){   // distance and speed t seconds after the light turned red
+      if(c.rt==null || t<=c.rt) return {x:c.u*t, v:c.u};
+      var d=Math.min(t,c.end)-c.rt; return {x:c.th+c.u*d-0.5*c.a*d*d, v:Math.max(0,c.u-c.a*d)};
+    }
+
+    function roadSVG(){
+      var g='', x, i, W=L.W, y0=L.ry, y1=L.ry+L.rh, off=scroll%140, surf=roadName();
+      g+=rect(0,y0-16,W,16,'var(--grass)');
+      for(x=-off;x<W+10;x+=140){ g+=rect(x+60,y0-27,4.5,17,'#f4f4f0',' rx="1" stroke="var(--ink-faint)" stroke-width="0.6"')+rect(x+60,y0-24,4.5,4,'var(--bad)'); }   // marker posts on the far verge
+      g+=rect(0,y0,W,L.rh,'var(--road)')+rect(0,y1,W,8,'var(--road-s)');
+      if(surf==='Wet'){ g+=rect(0,y0,W,L.rh,'#0a1530',' opacity=".3"'); for(x=-(scroll%230);x<W+60;x+=230) g+=ell(x+70,y0+L.rh*0.3,46,3.2,'#b9dcff',' opacity=".4"')+ell(x+170,y0+L.rh*0.74,34,2.6,'#b9dcff',' opacity=".34"'); }
+      if(surf==='Icy'){ g+=rect(0,y0,W,L.rh,'#e3f2ff',' opacity=".5"'); for(x=-(scroll%230);x<W+60;x+=230) g+=ell(x+60,y0+L.rh*0.34,52,3.6,'#fff',' opacity=".75"')+ell(x+175,y0+L.rh*0.76,40,3,'#fff',' opacity=".65"'); }
+      for(x=-(scroll%70);x<W+10;x+=70) g+=rect(x,y0+L.rh*0.4,32,2.6,'#fff',' opacity=".8"');
+      return g;
+    }
+    // the car, side on: x is its front bumper, y the road under its wheels
+    function carSVG(x, y, k, braking, turn){
+      var g='<g transform="translate('+f1(x)+' '+f1(y)+') scale('+k+')">'+ell(-42,1.5,47,4.6,'#000',' opacity=".22"');
+      g+='<path d="M-66,-27 L-57,-44 Q-55,-47 -51,-47 L-30,-47 Q-26,-47 -23,-44 L-11,-27 Z" fill="var(--car)"/>';
+      g+=pg([[-61.5,-28],[-54.5,-42.5],[-44,-42.5],[-44,-28]],'var(--car-glass)')+pg([[-40.5,-28],[-40.5,-42.5],[-30,-42.5],[-17.5,-28]],'var(--car-glass)');
+      g+=ell(-33.5,-34,3.3,3.8,'#1d2430',' opacity=".7"')+rect(-37.5,-30.5,8,3,'#1d2430',' rx="1.5" opacity=".7"');
+      g+=rect(-84,-28,84,20,'var(--car)',' rx="7"')+rect(-80,-26.4,74,3.2,'#fff',' rx="1.6" opacity=".3"')+rect(-84,-14,84,6,'#000',' rx="3" opacity=".2"');
+      g+=ln(-42.4,-27,-42.4,-10,'#000',1,' opacity=".28"')+rect(-39,-22,6,1.8,'#fff',' rx=".9" opacity=".5"');
+      g+=rect(-4.5,-25,4.5,6.5,'#ffe9a8',' rx="1.6"');
+      if(braking) g+=ell(-85,-21,10,7.5,'#ff2d1f',' opacity=".38"');
+      g+=rect(-84.5,-25,4,7.5,braking?'#ff2d1f':'#8f2018',' rx="1.6"');
+      [-64,-19].forEach(function(cx){ var c=Math.cos(turn), s=Math.sin(turn);
+        g+='<circle cx="'+cx+'" cy="-8" r="11.6" fill="#000" opacity=".4"/><circle cx="'+cx+'" cy="-8" r="9.6" fill="#1d2430"/><circle cx="'+cx+'" cy="-8" r="5" fill="var(--steel-hi)"/>'+
+           ln(cx-c*4.4,-8-s*4.4,cx+c*4.4,-8+s*4.4,'var(--steel-sh)',1.6)+ln(cx+s*4.4,-8-c*4.4,cx-s*4.4,-8+c*4.4,'var(--steel-sh)',1.6); });
+      return g+'</g>';
+    }
+    // the traffic light the driver is watching, on its post
+    function lightSVG(){
+      var T=L.TL, k=T.k, x=T.x, y=T.y, w=46*k, h=124*k, red=st==='react'||st==='brake'||st==='done', g='';
+      g+=tube(x+w/2,y+h,x+w/2,y+h+T.post,8*k,'var(--steel-sh)','var(--steel)')+box(x,y,w,h,5*k,-4*k,'var(--case)')+rect(x+4*k,y+4*k,w-8*k,h-8*k,'#000',' rx="'+f1(5*k)+'" opacity=".35"');
+      [['#ff3b2f','#5c1d17',red],['#ffb020','#5a4312',false],['#2fd45a','#14431f',!red]].forEach(function(c,i){ var cy=y+(22+i*40)*k, cx=x+w/2;
+        if(c[2]) g+=ell(cx,cy,23*k,23*k,c[0],' opacity=".28"');
+        g+=ell(cx,cy,15*k,15*k,c[2]?c[0]:c[1])+(c[2]?ell(cx-4*k,cy-5*k,5*k,3.4*k,'#fff',' opacity=".55"'):'');
+        g+='<path d="M'+f1(cx-17*k)+','+f1(cy-3*k)+' A'+f1(17*k)+','+f1(17*k)+' 0 0 1 '+f1(cx+17*k)+','+f1(cy-3*k)+'" fill="none" stroke="#000" stroke-width="'+f1(2.4*k)+'" opacity=".55"/>'; });
+      return g;
+    }
+    function graphSVG(){
+      var G=L.G, T=tAxis(), A, g='', c=cur, t;
+      G.tMax=T.max; G.tStep=T.step; G.vMax=30; G.vStep=5; A=axes(G);
+      function line(r, upTo){ var p=[[A.X(0),A.Y(r.u)]], e=Math.min(upTo,G.tMax);
+        if(r.rt==null || e<=r.rt) p.push([A.X(e),A.Y(r.u)]);
+        else { p.push([A.X(r.rt),A.Y(r.u)]); p.push([A.X(Math.min(e,r.end)),A.Y(at(r,e).v)]); if(e>r.end) p.push([A.X(e),A.Y(0)]); }
+        return p; }
+      g+=A.g;
+      if(prev) g+=pl(line(prev,prev.end),'var(--ink-faint)',2,' stroke-dasharray="6 4"');
+      if(c && c.t>0){
+        t=Math.min(c.t,G.tMax);
+        var t1=c.rt==null?t:Math.min(t,c.rt);
+        g+=rect(A.X(0),A.Y(c.u),A.X(t1)-A.X(0),A.Y(0)-A.Y(c.u),'var(--motion-soft)');
+        if(c.rt!=null && t>c.rt){ var t2=Math.min(t,c.end); g+=pg([[A.X(c.rt),A.Y(0)],[A.X(c.rt),A.Y(c.u)],[A.X(t2),A.Y(at(c,t2).v)],[A.X(t2),A.Y(0)]],'var(--accent-soft)'); }
+        g+=pl(line(c,t),'var(--motion)',3);
+      }
+      return g;
+    }
+    function keySVG(){
+      var K=L.K, c=cur, g='', fs=K.fs, has=c&&c.rt!=null, done=st==='done';
+      g+=stopwatch(L.SW.x,L.SW.y,fix(c?(c.rt!=null?c.rt:Math.min(c.t,T_LIMIT)):0,2)+' s',L.SW.k);
+      g+=txt(L.SW.x+78*L.SW.k+10,L.SW.y+17*L.SW.k,'reaction',{fs:L.fs})+txt(L.SW.x+78*L.SW.k+10,L.SW.y+17*L.SW.k+15,'time',{fs:L.fs});
+      g+=rect(K.x,K.y[0]-10.5,12,12,'var(--motion-soft)',' stroke="var(--motion)"')+txt(K.x+19,K.y[0],'thinking distance = '+(has?fix(c.th,1)+' m':'?'),{fs:fs,c:'var(--ink)'});
+      g+=rect(K.x,K.y[1]-10.5,12,12,'var(--accent-soft)',' stroke="var(--accent)"')+txt(K.x+19,K.y[1],'braking distance = '+(done?fix(c.br,1)+' m':'?'),{fs:fs,c:'var(--ink)'});
+      g+=txt(K.x+19,K.y[2],'stopping distance = '+(done?fix(c.stop,1)+' m':'?'),{fs:fs,c:'var(--ink)',w:600});
+      if(prev) g+=ln(K.x-1,K.y[3]-4,K.x+14,K.y[3]-4,'var(--ink-faint)',2,' stroke-dasharray="5 3"')+txt(K.x+19,K.y[3],'your last run',{fs:fs});
+      return g;
+    }
+    function draw(){
+      var g='', c=cur, D=roadLen(), sc, y, i, step, pos, anchored=c&&(st==='react'||st==='brake'||st==='done');
+      L=lay(); setView(L); sc=(L.x1-L.x0)/D; y=L.ry+L.rh*0.82; pos=anchored?at(c,c.t).x:0;
+      g+=roadSVG();
+      if(anchored){
+        // the road is measured from where the car was when the light turned red
+        step=D<=30?5:(D<=70?10:(D<=140?20:50));
+        for(i=0;i<=D+1e-9;i+=step){ var tx=L.x0+i*sc; g+=ln(tx,L.ry+L.rh+8,tx,L.ry+L.rh+14,'var(--ink-faint)',1.2)+txt(tx,L.ry+L.rh+27,i+' m',{a:'middle',fs:L.fs-0.5,c:'var(--ink-soft)'}); }
+        var xt=Math.min(pos, c.rt==null?pos:c.th);
+        if(xt>0) g+=rect(L.x0,L.ry+L.rh+1,xt*sc,6,'var(--motion)');
+        if(c.rt!=null && pos>c.th) g+=rect(L.x0+c.th*sc,L.ry+L.rh+1,(pos-c.th)*sc,6,'var(--accent)');
+        // flags on the far verge: the label stands beside its pole (to the right), or above it
+        var flag=function(d, label, row, col, above){ var fx=L.x0+d*sc;
+          return ln(fx,L.ry-14,fx,L.my[row]+(above?5:-9),col,1.6)+txt(above?fx:fx+5,L.my[row],label,{a:above?'middle':'start',fs:L.fs,c:col,w:600,halo:1}); };
+        g+=flag(0,'light turns red',0,'var(--bad)',!L.tall);
+        if(c.rt!=null) g+=flag(c.th,'brakes on',1,'var(--motion)',false);
+      }
+      g+=carSVG(L.x0+pos*sc, y, L.k, st==='brake'||st==='done', (scroll+pos*sc)/(9.6*L.k));
+      g+=txt(L.W-8,15,roadName()+' road · '+u+' m/s',{a:'end',fs:L.fs,c:'var(--ink-soft)'});
+      g+=graphSVG()+keySVG()+lightSVG();
+      svg.innerHTML=g;
+    }
+
+    function table(){
+      var rows='', list=runs.slice(-4), i;
+      for(i=0;i<4;i++){ var r=list[i];
+        rows+='<tr'+(r&&i===list.length-1?' class="now"':'')+'><td>'+(r?r.road+', '+r.u:'&nbsp;')+'</td><td>'+(r?fix(r.rt,2):'')+'</td><td>'+(r?fix(r.th,1):'')+'</td><td>'+(r?fix(r.br,1):'')+'</td><td>'+(r?fix(r.stop,1):'')+'</td></tr>'; }
+      $('#rt-head').innerHTML='<tr><th>Road, speed (m/s)</th><th>Reaction time (s)</th><th>Thinking distance (m)</th><th>Braking distance (m)</th><th>Stopping distance (m)</th></tr>';
+      $('#rt-rows').innerHTML=rows;
+    }
+    // the distances are read from the velocity–time graph, as areas
+    function working(){
+      var c=cur, e=$('#rt-eq');
+      if(st!=='done'){ e.innerHTML='thinking distance = area of the rectangle<br>thinking distance = speed × reaction time<br>thinking distance = <b>? m</b><br>braking distance = area of the triangle<br>braking distance = ½ × base × height<br>braking distance = <b>? m</b><br>stopping distance = thinking distance + braking distance<br>stopping distance = <b>? m</b>'; return; }
+      e.innerHTML=FR('Brakes on at '+fix(c.rt,2)+' s, stops at '+fix(c.end,3)+' s'
+        +'<br>thinking distance = area of the rectangle<br>thinking distance = '+c.u+' × '+fix(c.rt,2)+' = '+fix(c.th,1)+' m'
+        +'<br>braking distance = area of the triangle<br>braking distance = ½ × base × height'
+        +'<br>braking distance = ½ × ('+fix(c.end,3)+' − '+fix(c.rt,2)+') × '+c.u+' = '+fix(c.br,1)+' m'
+        +'<br>stopping distance = '+fix(c.th,1)+' + '+fix(c.br,1)+' = <b>'+fix(c.stop,1)+' m</b>');
+    }
+    function buttons(){
+      startBtn.disabled = !(st==='idle'||st==='done');
+      fireBtn.disabled = !(st==='drive'||st==='react');
+      fireBtn.textContent='Brake!';
+      $('#rt-speed-o').textContent=u+' m/s';
+    }
+    function idleNote(){ note('Press Start. The car drives at a steady '+u+' m/s. When the light turns red, press Brake (or the space bar) as fast as you can.'); }
+    function toIdle(msg, cls){ cancelAnimationFrame(raf); st='idle'; cur=null; scroll=0; if(lastDone){ prev=lastDone; lastDone=null; } if(msg) note(msg,cls); else idleNote(); buttons(); working(); draw(); }
+
+    function loop(now){
+      var dt=Math.min(0.05,(now-lastNow)/1000), c=cur, sc=(L.x1-L.x0)/roadLen(); lastNow=now;
+      if(st==='drive'){
+        scroll+=u*sc*dt;
+        if(now>=tPlan){ st='react'; tRed=now; cur=c={u:u, a:a, road:roadName(), rt:null, t:0}; }   // timed from the frame in which the red light is first shown
+      } else if(st==='react'){
+        c.t=(now-tRed)/1000;
+        if(c.t>=T_LIMIT){ toIdle('No braking within '+T_LIMIT+' s of the red light, so this run does not count. Press Start to try again.','bad'); return; }
+      } else if(st==='brake'){
+        c.t=c.rt+(now-tB)/1000;
+        if(c.t>=c.end){ c.t=c.end; finish(); return; }
+      }
+      draw();
+      raf=requestAnimationFrame(loop);
+    }
+    function start(){
+      if(!(st==='idle'||st==='done')) return;
+      var now=performance.now(); st='drive'; cur=null; scroll=0; if(lastDone){ prev=lastDone; lastDone=null; } tPlan=now+1500+Math.random()*3000;
+      note('The light is green. Watch it, and press Brake (or the space bar) as soon as it turns red.');
+      buttons(); working(); lastNow=now; cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+      fireBtn.focus({preventScroll:true});
+    }
+    function fire(ts){
+      var now=performance.now(), c=cur;
+      if(st==='drive'){ toIdle('Too early: the light was still green. Press Start and wait for the red light.','bad'); return; }
+      if(st!=='react') return;
+      var t=(ts && ts<=now && ts>tRed-1000 ? ts : now);
+      c.rt=Math.round(Math.max(0,(t-tRed)/1000)*100)/100; c.th=c.u*c.rt; c.br=c.u*c.u/(2*c.a); c.end=c.rt+c.u/c.a;
+      c.stop0=c.th+c.br; c.stop=+fix(c.th,1) + +fix(c.br,1);
+      tB=tRed+c.rt*1000; st='brake'; c.t=c.rt;
+      note('You reacted in '+fix(c.rt,2)+' s. The car kept going at '+c.u+' m/s for that time: a thinking distance of '+fix(c.th,1)+' m. Now the brakes are on.','good');
+      buttons();
+    }
+    function finish(){
+      var c=cur; cancelAnimationFrame(raf); st='done';
+      runs.push({road:c.road, u:c.u, rt:c.rt, th:c.th, br:c.br, stop:c.stop});
+      note('Stopped. Thinking distance '+fix(c.th,1)+' m (your reaction time, '+fix(c.rt,2)+' s) + braking distance '+fix(c.br,1)+' m ('+c.road.toLowerCase()+' road) = stopping distance '+fix(c.stop,1)+' m. Change the road or the speed and try again: which distance changes?');
+      table(); buttons(); working(); draw(); lastDone=c;
+      startBtn.focus({preventScroll:true});
+    }
+    function setup(){ u=+speedIn.value; toIdle(); }
+    speedIn.addEventListener('input', setup);
+    $('#rt-road').innerHTML=ROADS.map(function(r){ return '<button type="button" data-k="'+r[1]+'" aria-pressed="'+(r[1]===a)+'">'+r[0]+' ('+r[1]+' m/s²)</button>'; }).join('');
+    $('#rt-road').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; a=+b.dataset.k;
+      Array.prototype.forEach.call(this.children, function(x){ x.setAttribute('aria-pressed', String(x===b)); }); setup(); });
+    return {start:start, fire:fire, reset:function(){ runs=[]; prev=null; lastDone=null; table(); toIdle(); }, draw:draw, live:function(){ return st==='drive'||st==='react'; },
+      stop:function(){ cancelAnimationFrame(raf); }, show:function(){ table(); toIdle(); }};
+  }
+
+  function initReactionSim(){
+    var sheepSim=makeSheep(), carSim=makeCar(), partEl=$('#rt-part'), m=/[?&]show=(sheep|car)\b/.exec(location.search), part=m?m[1]:'sheep';
+    function sim(){ return part==='car'?carSim:sheepSim; }
+    function setPart(p){
+      sim().stop(); part=p; var car=p==='car';
+      Array.prototype.forEach.call(partEl.children, function(b){ b.setAttribute('aria-pressed', String(b.dataset.v===p)); });
+      $('#rt-h1').textContent='Reaction Time: Stop the '+(car?'Car':'Sheep');
+      $('#rt-road-wrap').hidden=!car; $('#rt-speed-wrap').hidden=!car; $('#rt-stats').hidden=car; $('#rt-hint').hidden=car;
+      $('#rt-table').classList.toggle('car', car);
+      
+      resetBtn.innerHTML=car?'&#8634; Clear results':'&#8634; New flock';
+      svg.setAttribute('aria-label', car
+        ? 'A car on a road, with a scale of distance under the road. Below it, the velocity–time graph of the car, a stopwatch, the thinking, braking and stopping distances, and the traffic light the driver is watching.'
+        : 'Five sheep grazing at the left of a field, a hedge on the right and a dart gun on a tripod in front. Beside the field, a velocity–time graph of the sheep that is running.');
+      if(car) carSim.show(); else sheepSim.reset();
+    }
+    partEl.addEventListener('click', function(e){ var b=e.target.closest('button'); if(b && b.dataset.v!==part) setPart(b.dataset.v); });
+    // in a frame there is no heading, so the switch goes to the top of the right-hand column; ?embed&show= offers one test only
+    if(EMBED){ if(m) partEl.hidden=true; else $('#rt-side').insertBefore(partEl, $('#rt-side').firstChild); }
+    fireBtn.addEventListener('pointerdown', function(e){ if(e.button===0||e.pointerType!=='mouse'){ e.preventDefault(); sim().fire(e.timeStamp); } });
+    fireBtn.addEventListener('click', function(e){ if(e.detail===0) sim().fire(); });   // keyboard or switch access
     document.addEventListener('keydown', function(e){
       if(e.repeat) return;
-      if((e.key===' '||e.code==='Space') && state==='round'){ e.preventDefault(); fire(e.timeStamp); }
+      if((e.key===' '||e.code==='Space') && sim().live()){ e.preventDefault(); sim().fire(e.timeStamp); }
     });
     document.addEventListener('keyup', function(e){ if((e.key===' '||e.code==='Space') && document.activeElement===fireBtn) e.preventDefault(); });
-    onAction('rt-start', start);
-    onAction('rt-reset', reset);
-    reset();
+    onAction('rt-start', function(){ sim().start(); });
+    onAction('rt-reset', function(){ sim().reset(); });
+    var wasNarrow=narrow();
+    window.addEventListener('resize', function(){ if(narrow()!==wasNarrow){ wasNarrow=narrow(); sim().draw(); } });
+    setPart(part);
   }
   watchEquals('.eq');
   initReactionSim();
