@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Loudspeaker Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. An alternating current in the coil makes the cone vibrate: see inside a cut-away speaker, change the size and frequency of the current, and predict on the picture which way the cone moves.">
+<meta name="description" content="Interactive physics animation. An alternating current in the coil makes the cone vibrate: see inside a cut-away speaker, watch the compressions and rarefactions of the sound wave leave the cone, change the size and frequency of the current, and predict on the picture which way the cone moves.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -217,7 +217,7 @@
   </header>
   <section class="card stage">
     <div>
-      <svg class="view" id="ls-svg" viewBox="0 0 860 350" role="group" aria-label="A loudspeaker. Left: the speaker in 3D with its front half cut away, showing the magnet, the coil fixed to the cone, and the air in front of the cone. Right: the same speaker cut in half, as in an exam diagram, with the field and the current in the coil."></svg>
+      <svg class="view" id="ls-svg" viewBox="0 0 860 350" role="group" aria-label="A loudspeaker. Left: the speaker in 3D with its front half cut away, showing the magnet and the coil fixed to the cone. Right: the same speaker cut in half, as in an exam diagram, with the field and the current in the coil, and the air in front of the cone, where the compressions, the rarefactions and one wavelength of the sound wave are marked."></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="ls-play" type="button">&#9654; Switch on</button>
@@ -261,6 +261,8 @@
   // loudspeaker.html is the one copy of this animation.
   // Redrawn to the motor and generator model on 10 Nov 2026 (tools/ANIMATION-STYLE.md): the speaker in 3D with its front half
   // cut away, beside the exam diagram; current arrows on the coil; and a dealt question answered on the picture, then Go.
+  // 10 Nov 2026 (later): the air is drawn in front of the cone of the exam diagram, flat and in line with it (in the 3D picture it
+  // sloped away from the speaker), with the compressions, the rarefactions and one wavelength marked as the wave travels.
   var EMBED = /[?&]embed\b/.test(location.search);
   if(EMBED){
     document.documentElement.classList.add('embed');
@@ -482,7 +484,7 @@
 
   // ================= the loudspeaker =================
   var svg=$('#ls-svg'), playBtn=$('#ls-play'), slowBtn=$('#ls-slow'), dealBtn=$('#ls-deal'), iIn=$('#ls-i'), fIn=$('#ls-f'), bIn=$('#ls-b'), ptsEl=$('#ls-points');
-  var TMAX=6, t=0, running=false, raf=0, last=0, VW=150, flowPh=0, Qs=null, score=0, dealt=0;   // VW: speed of the sound wave across the picture (px/s)
+  var TMAX=6, t=0, running=false, raf=0, last=0, VW=100, flowPh=0, Qs=null, score=0, dealt=0;   // VW: speed of the sound wave across the exam diagram (its units per second)
   var sup=segGroup($('#ls-sup'), function(){ Qs=null; changed(); });
   [iIn,fIn,bIn].forEach(function(x){ x.addEventListener('input', changed); });
   var SIZE=['','small','medium','large'], STR=['','weak','medium','strong'];
@@ -502,7 +504,11 @@
   function B(){ return +bIn.value; }
   function Fk(tt){ return I(tt)*B()/2; }                   // size of the force on the coil, F = BIL in proportion (medium magnet: same size as the current)
   function cone(tt){ return -9*Fk(tt)*pol(); }               // cone position (px): follows the force; negative = pulled in, towards the magnet
-  function src(tt){ return ac()?cone(tt):-12*dcSign()*pol()*Ipk()*B()/2*Math.exp(-Math.pow((tt-0.2)/0.09,2)); }  // what the air sees: d.c. gives one click
+  // What the air next to the cone does (a displacement, + away from the cone). With a.c. it copies the cone's motion; d.c. gives one pulse, a click.
+  // How squashed a compression looks depends only on the loudness (the size of the force, K = 2.25 to 20.25): the slope of the displacement
+  // goes from 0.22 to 0.8, so neighbouring particles never cross. For the same loudness a lower note moves the air further, as in a real sound.
+  function airAmp(){ var K=9*Ipk()*B()/2; return (0.22+0.58*Math.pow((K-2.25)/18,0.7))*VW/(2*Math.PI*f()); }
+  function src(tt){ return ac()?-airAmp()*pol()*Math.sin(2*Math.PI*f()*tt):-Math.min(0.75*12*Ipk()*B()/2,16)*dcSign()*pol()*Math.exp(-Math.pow((tt-0.4)/0.18,2)); }
   function done(){ return t>=TMAX-1e-9; }
   function on(){ return t>0||running; }
   function asking(){ return Qs && !Qs.done; }
@@ -510,7 +516,7 @@
   // ---------- the speaker in 3D, with its front half cut away ----------
   // The axis of the speaker is the X axis; the sound leaves to the right. Every part is a shape turned about that axis,
   // drawn for the back half only (y >= 0), plus the flat faces where it has been cut (the plane y = 0).
-  function speaker3(ox, oy, s, cur, dx, cs, narrow){
+  function speaker3(ox, oy, s, cur, dx, cs){
     var sc=scene3(ox,oy,s), g='', N=12, PI=Math.PI, pc=pol()>0, CN=pc?'north':'south', CS=pc?'south':'north', LT=[-0.29,-0.48,0.83], k;
     function pt(x,r,th){ return [x, r*Math.sin(th), r*Math.cos(th)]; }
     // a band between (x1,r1) and (x2,r2), turned through the back half. fa fills the side whose normal is (-dr, dx) in the (x, r) plane; fb the other side
@@ -572,15 +578,11 @@
     if(Math.abs(cur)>0.03){ var Lf=24+22*Math.abs(cur)*B()/2/2.25, dir=cur*pol()>0?-1:1, a0=P([150+X-dir*Lf/2,0,0]), a1=P([150+X+dir*Lf/2,0,0]), an=Math.atan2(a1[1]-a0[1],a1[0]-a0[0]);
       g+=line(f1(a0[0]),f1(a0[1]),f1(a1[0]-7*s*Math.cos(an)),f1(a1[1]-7*s*Math.sin(an)),'var(--accent)',4.5*s,' stroke-linecap="round"')+tri(a1[0],a1[1],an*180/PI,5.5*s,'var(--accent)');
       g+=txt(f1((a0[0]+a1[0])/2),f1((a0[1]+a1[1])/2-10*s),'F',{a:'middle',c:'var(--accent)',w:600,fs:14,halo:1}); }
-    // the air in front of the cone: each particle copies the cone's motion a little later
-    var x0=206, x1=narrow?430:444, x, z;
-    for(x=x0;x<=x1;x+=14){ var lag=(x-x0+20)/VW, sh=on()&&t>lag?src(t-lag):0;
-      for(z=-112;z<=112;z+=20){ var jit=((x*7+(z+200)*13)%9)-4, p=P([x+sh*0.9+jit*0.4,0,z+(((x+z+400)%3)-1)*3]); g+='<circle cx="'+f1(p[0])+'" cy="'+f1(p[1])+'" r="'+f1(2.5*s)+'" fill="var(--ink-faint)"/>'; } }
     // labels, in clear space
     function label(p3,off,text,anchor){ var p=P(p3), q=[p[0]+off[0]*s,p[1]+off[1]*s];
       return line(f1(p[0]),f1(p[1]),f1(q[0]),f1(q[1]),'var(--ink-faint)',1)+txt(f1(q[0]+(anchor==='end'?-3:(anchor==='middle'?0:3))),f1(q[1]+(off[1]<0?-3:11)),text,{a:anchor,fs:12,c:'var(--ink)',halo:1}); }
-    g+=label([8,0,80],[-8,-22],'magnet','start')+label([52+X,26,37],[18,-52],'coil','middle')+label([150+X,90,60],[26,-30],'cone','start');
-    var pa=P([(x0+x1)/2,0,128]); g+=txt(f1(pa[0]),f1(pa[1]),'air in front of the cone',{a:'middle',fs:12});
+    // (the word 'coil' stays where it is, clear of 'magnet'; only its leader line follows the coil)
+    g+=label([8,0,80],[-8,-22],'magnet','start')+label([52+X,26,37],[18-0.97*X,-52-0.121*X],'coil','middle')+label([150+X,90,60],[26,-30],'cone','start');
     return g;
   }
 
@@ -608,16 +610,49 @@
     return g;
   }
 
+  // ---------- the air in front of the cone of the exam diagram (drawn in that diagram's units) ----------
+  // Each particle copies the cone's motion a little later, so the pattern travels to the right while every particle only moves to and fro.
+  // A compression leaves the cone as it moves out fastest, a rarefaction as it moves in fastest; both are marked as they travel.
+  function air(narrow){
+    var x0=298, x1=narrow?500:612, y0=58, y1=266, R=2.6, GAP=36;   // GAP: from the mouth of the cone (x = 262) to the first particles
+    var g='', d='', col, row, x, y, n;
+    function at(xr){ var lag=(xr-x0+GAP)/VW; return on()&&t>lag?src(t-lag):0; }
+    for(x=x0,col=0;x<=x1;x+=10.5,col++){ var sh=at(x);
+      for(y=y0+(col%2?7.4:0),row=0;y<=y1;y+=14.8,row++){ if(col===7 && row===7) continue;
+        var px=x+sh+(((col*7+row*13)%9)-4)*0.2-R, py=y+(((col*5+row*11)%7)-3)*0.8;
+        d+='M'+f1(px)+','+f1(py)+'a'+R+','+R+' 0 1,0 '+(2*R)+',0a'+R+','+R+' 0 1,0 '+(-2*R)+',0'; } }
+    g+='<path d="'+d+'" fill="var(--ink-faint)"/>';
+    // one particle to follow: it moves to and fro about the same place
+    var qx=x0+7*10.5, qy=y0+7.4+7*14.8; g+='<circle cx="'+f1(qx+at(qx))+'" cy="'+f1(qy)+'" r="4.4" fill="var(--ink)" stroke="var(--panel)" stroke-width="1.4"/>';
+    g+=txt((x0+x1)/2,16,'air in front of the cone',{a:'middle',fs:12});
+    if(!ac() || !on()) return g;
+    var T=1/f(), lam=VW*T, every=Math.ceil(92/lam), ph=pol()>0?0.5:0, C=[], Rf=[];
+    function marks(phase, list){ for(n=0;n<40;n++){ var tau=(n+phase)*T; if(tau>t) break; if(tau<1e-6) continue; var xr=x0-GAP+VW*(t-tau); if(xr>=x0 && xr<=x1) list.push([xr,n]); } }
+    marks(ph,C); marks(0.5-ph,Rf);
+    function word(m, text, above){ var xr=m[0], op=Math.max(0,Math.min(1,(xr-(x0+22))/12,((x1-32)-xr)/12)), h='';
+      h+=line(f1(xr),above?y0-13:y1+6,f1(xr),above?y0-6:y1+13,'var(--ink-soft)',1.6,' stroke-linecap="round"');
+      if(m[1]%every===0 && op>0) h+='<g opacity="'+op.toFixed(2)+'">'+txt(f1(Math.max(xr,x0+34)),above?y0-18:y1+27,text,{a:'middle',fs:12,c:'var(--ink)'})+'</g>';
+      return h; }
+    C.forEach(function(m){ g+=word(m,'compression',false); }); Rf.forEach(function(m){ g+=word(m,'rarefaction',true); });
+    // one wavelength: from a compression to the next one, under their labels
+    // (the pair nearest the cone, once the nearer one has its label)
+    if(C.length>1){ var k=C.length-1; if(C[k][0]<x0+34 && k>1) k--; var b=C[k][0], a=C[k-1][0], yy=y1+41;
+      g+=line(f1(b+5),yy,f1(a-5),yy,'var(--ink-soft)',1.6)+tri(a,yy,0,4,'var(--ink-soft)')+tri(b,yy,180,4,'var(--ink-soft)');
+      g+=line(f1(a),yy-6,f1(a),yy+6,'var(--ink-soft)',1.2)+line(f1(b),yy-6,f1(b),yy+6,'var(--ink-soft)',1.2);
+      g+=txt(f1(Math.min(Math.max((a+b)/2,x0+34),x1-32)),yy+17,'wavelength',{a:'middle',fs:12,c:'var(--ink)'}); }
+    return g;
+  }
+
   function draw(){
     var bw=svg.getBoundingClientRect().width, narrow=bw>0 && bw<520, VWd=narrow?430:860, VH=narrow?676:350;
     if(svg.getAttribute('viewBox')!=='0 0 '+VWd+' '+VH){ svg.setAttribute('viewBox','0 0 '+VWd+' '+VH); svg.classList.toggle('tall',narrow); }
     var cur=on()?I(t):0, dx=on()?cone(t):0, cs=Math.abs(cur)<0.03?0:(cur>0?1:-1), shown=asking()?dcSign():cs, g='';
-    g+=speaker3(narrow?14:30,narrow?152:146,narrow?0.92:1.12,cur,dx,cs,narrow);
-    var fx=narrow?76:556, fy=narrow?330:6, fk=narrow?0.98:0.94;
-    g+='<g transform="translate('+fx+','+fy+') scale('+fk+')">'+flat(cur,dx,shown)+'</g>';
-    var capY=fy+fk*300+10, kx0=fx+fk*146-142;
+    g+=speaker3(narrow?104:26,narrow?152:146,narrow?0.92:1.12,cur,dx,cs);
+    var fx=narrow?-8:272, fy=narrow?330:6, fk=narrow?0.86:0.94;
+    g+='<g transform="translate('+fx+','+fy+') scale('+fk+')">'+flat(cur,dx,shown)+air(narrow)+'</g>';
+    var capY=fy+fk*300+10, kx0=narrow?fx+fk*146-62:fx+fk*146-142, k2x=narrow?0:150, k2y=narrow?19:0;
     g+=txt(fx+fk*146,capY,'cut in half: the exam diagram',{a:'middle',fs:12.5});
-    g+=wireEnd(kx0+7,capY+18,7,1,'var(--ink-soft)')+txt(kx0+19,capY+22,'out of the page',{fs:12})+wireEnd(kx0+157,capY+18,7,-1,'var(--ink-soft)')+txt(kx0+169,capY+22,'into the page',{fs:12});
+    g+=wireEnd(kx0+7,capY+18,7,1,'var(--ink-soft)')+txt(kx0+19,capY+22,'out of the page',{fs:12})+wireEnd(kx0+k2x+7,capY+18+k2y,7,-1,'var(--ink-soft)')+txt(kx0+k2x+19,capY+22+k2y,'into the page',{fs:12});
     setSvg(svg,g);
 
     $('#ls-bo').textContent=STR[B()];
@@ -639,9 +674,9 @@
       else n=(Qs.ok?'<b>Right.</b> ':'<b>Not quite.</b> ')+'At the top of the coil the field points '+(pc?'up':'down')+' (N to S) and the current is '+(dcSign()>0?'out of':'into')+' the page, so the left-hand rule gives a force to the <b>'+(qleft?'left':'right')+'</b>: the cone moves '+(qleft?'in':'out')+' once and stays there. ('+score+' right out of '+dealt+'.)'; }
     else if(!on()) n=ac()?'Press <b>Switch on</b>. The amplifier sends an <b>alternating current</b> through the coil, which sits in the field of a permanent magnet.':'Press <b>Switch on</b> to connect a battery to the coil instead.';
     else if(!ac()) n=t<0.8?'The steady current gives a force one way, so the cone moves in once and the air hears a single <b>click</b>.':'The current is steady, so the force stays the same and the cone just stays where it is. No vibration, no sound: a loudspeaker needs <b>a.c.</b>';
-    else if(done()) n='A bigger current or a stronger magnet gives a bigger force, so the cone moves further: a <b>louder</b> sound. A higher frequency current makes the cone vibrate faster: a <b>higher pitch</b>. The sound has the same frequency as the current.';
+    else if(done()) n='A bigger current or a stronger magnet gives a bigger force, so the cone moves further: a <b>louder</b> sound. A higher frequency current makes the cone vibrate faster: a <b>higher pitch</b>, with a shorter wavelength. The sound has the same frequency as the current.';
     else if(cs===0) n='The current is passing through zero, so for an instant there is <b>no force</b> on the coil.';
-    else n='The current in the coil is in the magnet’s field, so the coil feels a force (the motor effect). The current keeps <b>reversing</b>, so the force reverses and the cone moves in and out, squashing and stretching the air into a <b>sound wave</b>.';
+    else n='The current in the coil is in the magnet’s field, so the coil feels a force (the motor effect). The current keeps <b>reversing</b>, so the cone moves in and out: moving out squashes the air (a <b>compression</b>), moving in stretches it (a <b>rarefaction</b>). Each air particle only moves to and fro: watch the dark one.';
     $('#ls-note').innerHTML=n;
     playBtn.innerHTML=running?'&#10074;&#10074; Pause':(Qs?(Qs.done?'&#9654; Play again':'&#9654; Go'):(done()?'&#9654; Play again':(t>0?'&#9654; Play':'&#9654; Switch on')));
     dealBtn.textContent=Qs?'New question':'Deal a question';
