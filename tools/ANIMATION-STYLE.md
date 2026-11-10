@@ -48,7 +48,7 @@ Both model pages carry the same block of drawing code, marked `3D kit`: `scene3`
 
 ## Picture extras: the left hand, picks and hidden wires (batch 2, 10 Nov 2026)
 
-`motor-effect.html` and `loudspeaker.html` carry a block marked `picture extras`, with `scene3` from the 3D kit. A fix goes into both pages.
+`motor-effect.html` and `loudspeaker.html` carry a block marked `picture extras`; `motor-effect.html` also has `scene3` from the 3D kit. A fix to the picks goes into both pages. (`loudspeaker.html` shows only the flat exam diagram: Alex had its 3D cut-away speaker removed on 10 Nov 2026, so it keeps the picks but not `scene3`, `hand3`, `hiddenBy` or `flow3`.)
 
 - **`hand3(cx, cy, k, f, s, t, o)` draws a solid left hand** for Fleming's left-hand rule in the kit's camera: `f`, `s` and `t` are unit vectors along the field, the current and the force, and the hand's arrows carry one word each (Field, Current, Force or Motion); `handKey` adds the key naming the fingers. Because t = s × f, the hand cannot be drawn the wrong way round. Show it only once the answer is known. It needs the `--hand`, `--hand-hi` and `--hand-sh` colours. Never mirror a picture to change the view: a mirrored left hand is a right hand.
 - **Picks:** `ghost` (a dashed arrow), `ghostSym` (a dot or a cross) and `pickG` (anything else, such as a pole) make `<g class="pick" data-k="…">` targets; `wirePicks(svg, fn)` handles click, Enter and Space; `setSvg` redraws a picture and keeps the keyboard's place; `badge` puts the tick or cross on the pick after Go. Their CSS is the `.pick` block.
