@@ -79,8 +79,8 @@ Drawing and animation jobs worth running on Claude Fable, which draws SVG scenes
 - [ ] 6.6 magnetic field practical: draw field diagrams for a "find the mistake" activity (reversed arrow, line not reaching the magnet, lines crossing, no central line between N poles). Same job as the field-drawing item in section 5; do them together.
 - [ ] 2.9 I–V practical: a circuit-diagram activity, build it or find the errors (ammeter in parallel, voltmeter in series, cells the wrong way round). Same job as the circuit-diagram item in section 5.
 - [ ] 2.9 I–V: show the lamp curve continuing into the negative quadrant (sweep from −V to +V) in `animations/iv-characteristics.html` and the practical's graphs.
-- [ ] Practical runs that feel passive (the 4 Nov review): richer apparatus scenes, e.g. compass needles swinging and filings settling when the card is tapped (`magnetic-field-patterns.html`), a Leslie cube with a readable thermometer (`heat-transfer.html`).
-- [ ] Drawing pass on existing animations where the picture is plain: `gas-molecules.html` (5b), `heat-transfer.html` convection, `chain-reaction.html` (7b), `roller-coaster-energy.html` and the Year 9 half-pipe and bungee Predicts. The motor and generator pages were redrawn on 10 Nov 2026, so leave those. These pages are also in the animation batches (section 8: batches 9, 10 and 11); tick this when those are done.
+- [ ] Practical runs that feel passive (the 4 Nov review): richer apparatus scenes, e.g. compass needles swinging and filings settling when the card is tapped (`magnetic-field-patterns.html`), a Leslie cube with a readable thermometer (`heat-transfer.html`; done 10 Nov 2026, batch 9, so only the compass and filings are left, batch 1).
+- [ ] Drawing pass on existing animations where the picture is plain: `gas-molecules.html` (5b), `heat-transfer.html` convection, `chain-reaction.html` (7b), `roller-coaster-energy.html` and the Year 9 half-pipe and bungee Predicts. The motor and generator pages were redrawn on 10 Nov 2026, so leave those. These pages are also in the animation batches (section 8: batches 9, 10 and 11); tick this when those are done. Batch 9 (10 Nov 2026) did `heat-transfer.html` and `roller-coaster-energy.html`; `gas-molecules.html`, `chain-reaction.html` and the Year 9 Predicts are left.
 - [ ] Build: star life cycle and red shift animations for 8a/8b (no animation page yet; frame them in `universe-and-stars.html` and `cosmology.html`).
 
 ## 8. Animation batches: review every animation against the motor and generator model (Alex, 10 Nov 2026)
@@ -112,7 +112,7 @@ Each batch is one new chat. Alex calls a batch up by number, in any order: "Do a
 - [ ] Batch 6
 - [ ] Batch 7
 - [ ] Batch 8
-- [ ] Batch 9
+- [x] Batch 9 (10 Nov 2026): all four pages redrawn. `roller-coaster-energy.html`: solid coaster beside a bar chart of the energy stores, and a new Predict tab (click a letter on the picture, then Go). `heat-transfer.html`: solid apparatus for all three parts, the convection exam diagram beside the beaker, a 3D Leslie cube with a readable thermometer. `density.html`: restyled, solid balance, glassware and stand. `liquid-pressure.html`: rebuilt on the standard page (Dam | Manometer tabs, a pressure–depth graph and an Experiment on the dam). They share a new drawing block, the solid kit (`tools/ANIMATION-STYLE.md`). To review in `tools/REVIEW.md`.
 - [ ] Batch 10
 - [ ] Batch 11
 - [ ] Batch 12

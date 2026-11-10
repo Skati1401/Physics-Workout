@@ -19,6 +19,10 @@
     --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
     --topic:#7a3fc4;   --topic-soft:#eee3fb;
     --grav:#2f63c9;    --grav-soft:#e0e9fa;
+    --steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --rail:#2c3648;
+    --deck-t:#d3d9e3; --deck-f:#a3adbf; --deck-s:#7f8a9f;
+    --ground-t:#d5e6c8; --ground-f:#a4bf90; --ground-s:#86a374;
+    --car-f:#7a3fc4; --car-t:#b792ee; --car-s:#552a8f; --skin:#f0c7a3; --hair:#3b2a1e; --shirt:#f2b01e;
     --kin:#c2560c;     --kin-soft:#fbe4cd;
     --therm:#b8322a;   --therm-soft:#fbe2df;
     --font-display:'Big Shoulders',system-ui,sans-serif;
@@ -37,6 +41,10 @@
       --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
       --topic:#c29bff; --topic-soft:#2e1f4a;
       --grav:#86a9ff; --grav-soft:#1a2b55; --kin:#ff9f5c; --kin-soft:#3a2413; --therm:#ff8a80; --therm-soft:#402023;
+      --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --rail:#c3ccda;
+      --deck-t:#7d899e; --deck-f:#5c677c; --deck-s:#434d60;
+      --ground-t:#3f5a3a; --ground-f:#2c4229; --ground-s:#22331f;
+      --car-f:#9b6be6; --car-t:#cdb2ff; --car-s:#6a3fb5; --skin:#f0c7a3; --hair:#2a1d14; --shirt:#f2b01e;
       color-scheme:dark;
     }
   }
@@ -50,6 +58,10 @@
     --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
     --topic:#c29bff; --topic-soft:#2e1f4a;
     --grav:#86a9ff; --grav-soft:#1a2b55; --kin:#ff9f5c; --kin-soft:#3a2413; --therm:#ff8a80; --therm-soft:#402023;
+    --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --rail:#c3ccda;
+    --deck-t:#7d899e; --deck-f:#5c677c; --deck-s:#434d60;
+    --ground-t:#3f5a3a; --ground-f:#2c4229; --ground-s:#22331f;
+    --car-f:#9b6be6; --car-t:#cdb2ff; --car-s:#6a3fb5; --skin:#f0c7a3; --hair:#2a1d14; --shirt:#f2b01e;
     color-scheme:dark;
   }
 
@@ -136,12 +148,17 @@
   .dragme:focus-visible .focus-ring{stroke:var(--accent);stroke-width:3;}
   @media (max-width:560px){ .stage{padding:12px;} .eq{font-size:12.5px;padding:6px 8px;} .note{font-size:14px;} }
 
-  .ebars{display:flex;flex-direction:column;gap:7px;}
-  .ebar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;font-size:12.5px;color:var(--ink-soft);}
-  .ebar b{font:600 12.5px var(--font-mono);color:var(--ink);white-space:nowrap;}
-  .etrack{grid-column:1/-1;height:12px;background:var(--bg);border:1px solid var(--panel-border);border-radius:4px;overflow:hidden;}
-  .efill{height:100%;width:100%;transform-origin:left center;transform:scaleX(0);}
   .over{margin-top:8px;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{border-radius:0;margin-left:-1px;font-weight:600;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  /* things to click in the picture (Predict) */
+  .pick{cursor:pointer;}
+  .pick:focus{outline:none;}
+  .pick .ring{stroke:transparent;}
+  .pick:focus-visible .ring{stroke:var(--accent);}
+  #rc-car{pointer-events:none;}
 
   .embed body{background:transparent;}
   .embed .page{padding:0;max-width:none;display:flow-root;}
@@ -149,6 +166,7 @@
   .embed .hint{display:none;}
 
   .view{max-height:max(240px,calc(100vh - 330px));}
+  .view.tall,.embed .view.tall{max-height:none;}
   .under .sliders{flex-basis:100%;}
 </style>
 <script>
@@ -184,8 +202,8 @@
   </header>
   <section class="card stage">
     <div>
-      <svg class="view" id="rc-svg" viewBox="0 0 680 262" role="img" aria-label="A roller coaster cart at the top of a drop, with a second hill and a flat run to the end of the track">
-        <g id="rc-track"></g><g id="rc-fr"></g><g id="rc-car"></g><g id="rc-grab"></g>
+      <svg class="view" id="rc-svg" viewBox="0 50 860 300" role="img" aria-label="A roller coaster cart at the top of a drop, with a second hill and a flat run to the end of the track. Beside it, a bar chart of the cart's energy stores.">
+        <g id="rc-track"></g><g id="rc-q"></g><g id="rc-car"></g><g id="rc-chart"></g><g id="rc-grab"></g>
       </svg>
       <div class="under">
         <div class="btn-group">
@@ -193,7 +211,7 @@
           <button class="btn" id="rc-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="rc-slow" type="button" aria-pressed="false">Slow motion</button>
         </div>
-        <div class="sliders">
+        <div class="sliders" id="rc-sliders">
           <div><label class="lab" for="rc-m"><span>Mass m</span> <output id="rc-mo"></output></label><input type="range" id="rc-m" min="200" max="600" step="50" value="300"></div>
           <div><label class="lab" for="rc-u"><span>Start speed u</span> <output id="rc-uo"></output></label><input type="range" id="rc-u" min="0" max="10" step="1" value="0"></div>
           <div><label class="lab" for="rc-f"><span>Friction F</span> <output id="rc-fo"></output></label><input type="range" id="rc-f" min="0" max="400" step="25" value="100"></div>
@@ -203,7 +221,8 @@
       </div>
     </div>
     <div class="side">
-      <div>
+      <div class="seg tabs" id="rc-mode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Predict</button></div>
+      <div id="rc-jump">
         <div class="lab">Jump to a point</div>
         <div class="seg" id="rc-points"><button type="button" data-p="start" aria-pressed="false">Start</button><button type="button" data-p="bottom" aria-pressed="false">Bottom</button><button type="button" data-p="top2" aria-pressed="false">Top of hill 2</button><button type="button" data-p="end" aria-pressed="false">Finish</button></div>
       </div>
@@ -213,8 +232,7 @@
         <div class="stat hi"><small>Speed</small><strong id="rc-v">0 m/s</strong></div>
         <div class="stat"><small>Distance travelled</small><strong id="rc-d">0 m</strong></div>
       </div>
-      <div class="ebars" id="rc-bars"></div>
-      <p class="hint">Try it with no friction, then change the mass: the energies change, but does the speed?</p>
+      <p class="hint" id="rc-hint">Try it with no friction, then change the mass: the energies change, but does the speed?</p>
       <details class="working" id="rc-working">
         <summary>Show working</summary>
         <div class="eq" id="rc-eq"></div>
@@ -339,49 +357,234 @@
     return {p:p, h:h, d:dd, GPE:GPE, W:W, KE:KE, v:Math.sqrt(2*KE/P.m), dir:dirv, ended:ended};
   }
 
-  /* ---------- drawing ---------- */
-  function px(x){ return 20+x*10; } function py(y){ return 232-y*10; }
+  /* ---------- drawing ----------
+     One wide picture: the coaster as a solid object on the left, the bar chart of its energy stores on the right.
+     Under 520px the same code uses a tall viewBox with the chart underneath. In Predict a band at the top holds the question. */
+  // ---- solid kit (the same block is in roller-coaster-energy.html, heat-transfer.html, density.html and liquid-pressure.html) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
+
+  var svgEl=$('#rc-svg'), L=null, mode='explore', q=null, score=[0,0], lastKind='';
+  var modeEl=$('#rc-mode'), resetBtn=$('#rc-reset');
+  function narrow(){ return window.innerWidth<=520; }
+  function layout(){
+    var pr = mode==='predict';
+    L = narrow()
+      ? {tall:true, W:430, H:460, top:pr?0:62, S:5.7, k:0.74, X0:54, GY:226, wrap:50, qy:[16,33,50], C:{x:[124,215,306], bw:58, base:414, top:310, l:84, r:346}}
+      : {tall:false, W:860, H:350, top:pr?0:50, S:9.1, k:1, X0:86, GY:300, wrap:82, qy:[20,39], C:{x:[731,781,831], bw:34, base:300, top:122, l:708, r:855}};
+    svgEl.setAttribute('viewBox','0 '+L.top+' '+L.W+' '+(L.H-L.top)); svgEl.classList.toggle('tall', L.tall);
+  }
+  function px(x){ return L.X0+x*L.S; } function py(y){ return L.GY-y*L.S; }
+  var RX=7, RY=-5;   // from the front rail to the back rail (the track is seen a little from above and from the right)
+  var POSTS=[0.5,3.5,6,8,10,12,14,16,18,20,28,30,32,34,38,40,42,44];   // no post under the top of hill 2: the h2 arrow stands there
+  function handle(x,y,k){ return '<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="'+f1(9*k)+'" fill="var(--panel)" stroke="var(--topic)" stroke-width="1.8"/>'+
+    '<path d="M0,-5.4 L3.2,-1.6 L-3.2,-1.6 z M0,5.4 L3.2,1.6 L-3.2,1.6 z" fill="var(--topic)" transform="translate('+f1(x)+' '+f1(y)+') scale('+k+')"/>'; }
   function drawTrack(){
-    var g='<rect x="0" y="232" width="680" height="30" fill="var(--bg)"/><line x1="0" y1="232" x2="680" y2="232" stroke="var(--ink-faint)" stroke-width="1.5"/>';
-    for(var x=1;x<X_END;x+=2){ var y=yAt(x); if(y>0.3) g+='<line x1="'+px(x)+'" y1="'+py(y)+'" x2="'+px(x)+'" y2="232" stroke="var(--panel-border)" stroke-width="1.5"/>'; }
-    var pts=[]; for(var i=0;i<TX.length;i+=20) pts.push(px(TX[i]).toFixed(1)+','+py(TY[i]).toFixed(1));
-    g+='<line x1="'+px(0)+'" y1="'+py(P.h1)+'" x2="'+px(X_END)+'" y2="'+py(P.h1)+'" stroke="var(--grav)" stroke-width="1.2" stroke-dasharray="5 5" opacity=".7"/>';
-    g+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--ink-soft)" stroke-width="4" stroke-linejoin="round"/>';
-    g+='<rect x="'+(px(0)-6)+'" y="'+(py(P.h1)-14)+'" width="6" height="14" fill="var(--ink-soft)"/><rect x="'+px(X_END)+'" y="218" width="6" height="14" fill="var(--ink-soft)"/>';
-    g+='<text x="'+(px(X_END)-2)+'" y="'+(py(P.h1)-6)+'" font-size="12" text-anchor="end" fill="var(--grav)">start height h₁ = '+P.h1+' m</text>';
-    var ty=py(P.h2)-10; if(Math.abs(P.h2-P.h1)<2) ty=py(P.h2)+22;
-    g+='<text x="'+px(X_H2)+'" y="'+ty+'" font-size="12" text-anchor="middle" fill="var(--ink-soft)">h₂ = '+P.h2+' m</text>';
-    // small "↕ drag" labels beside the two points students can drag
-    g+='<text x="'+(px(X_TOP)+36)+'" y="'+(py(P.h1)-8)+'" font-size="11" fill="var(--ink-faint)">↕ drag</text>';
-    g+='<text x="'+(px(X_H2)+44)+'" y="'+ty+'" font-size="11" fill="var(--ink-faint)">↕ drag</text>';
-    g+='<text x="'+(px(X_END)-4)+'" y="252" font-size="11" text-anchor="end" fill="var(--ink-faint)">end of the track</text>';
+    layout();
+    var k=L.k, rx=RX*k, ry=RY*k, GY=L.GY, xa=px(0)-16*k, xb=px(X_END)+16*k, g='', i, x, y;
+    // the ground: a slab the supports stand on
+    g+=pg([[xa,GY+4],[xb,GY+4],[xb+rx*1.9,GY+4+ry*1.9],[xa+rx*1.9,GY+4+ry*1.9]],'var(--ground-t)')+
+       pg([[xb,GY+4],[xb+rx*1.9,GY+4+ry*1.9],[xb+rx*1.9,GY+10+ry*1.9],[xb,GY+10]],'var(--ground-s)')+rect(xa,GY+4,xb-xa,6,'var(--ground-f)');
+    // a height pole, banded every 5 m
+    var xp=px(0)-(L.tall?30:44);
+    for(i=0;i<4;i++) g+=rect(xp,py(5*i+5),5*k,5*L.S,i%2?'var(--deck-t)':'var(--bad)')+rect(xp+3.4*k,py(5*i+5),1.6*k,5*L.S,'#000',' opacity=".22"');
+    g+=rect(xp,py(20),5*k,20*L.S,'none',' stroke="var(--ink-soft)" stroke-width="0.8"');
+    for(i=0;i<=4;i++) g+=ln(xp-4,py(5*i),xp,py(5*i),'var(--ink-soft)',1)+txt(xp-7,py(5*i)+4,String(5*i),{a:'end',fs:12});
+    if(L.tall) g+=txt(xp+2,py(20)-9,'m',{a:'middle',fs:12});
+    else g+=txt(12,py(10),'height (m)',{a:'middle',fs:12,x:' transform="rotate(-90 12 '+f1(py(10))+')"'});
+    // back posts, then the back rail
+    var top=function(x){ return py(yAt(x)); };
+    POSTS.forEach(function(x){ if(yAt(x)*L.S<7) return; g+=ln(px(x)+rx,top(x)+ry+2,px(x)+rx,GY+ry,'var(--steel-sh)',2.2*k); });
+    var fr=[], bk=[];
+    for(i=0;i<TX.length;i+=16){ fr.push([px(TX[i]),py(TY[i])]); bk.push([px(TX[i])+rx,py(TY[i])+ry]); }
+    g+=pl(bk,'var(--steel-sh)',3*k);
+    // ties from post to post, and ledgers between the front posts
+    POSTS.forEach(function(x,j){ var h=yAt(x)*L.S; if(h<7) return;
+      for(y=GY-26*k; y>top(x)+8; y-=26*k) g+=ln(px(x),y,px(x)+rx,y+ry,'var(--steel-sh)',1.3*k);
+      var x2=POSTS[j+1]; if(x2===undefined || x2-x>2.6 || yAt(x2)*L.S<7) return;
+      for(y=GY-26*k; y>Math.max(top(x),top(x2))+8; y-=26*k) g+=ln(px(x),y,px(x2),y,'var(--steel)',1.3*k);
+    });
+    POSTS.forEach(function(x){ if(yAt(x)*L.S<7) return; g+=tube(px(x),top(x)+2,px(x),GY,3*k,'var(--steel)','var(--steel-hi)'); });
+    // the start platform: a deck under the rails
+    var dl=px(0)-9*k, dr=px(X_TOP)+3*k, dy=py(P.h1)+3.5*k;
+    g+=box(dl,dy,dr-dl,7*k,rx*1.5,ry*1.5-2*k,'var(--deck-f)',{top:'var(--deck-t)',side:'var(--deck-s)'});
+    // sleepers, then the front rail
+    for(x=0.4;x<X_END;x+=1.6){ y=py(yAt(x)); g+=ln(px(x),y,px(x)+rx,y+ry,'var(--steel)',2*k,' stroke-linecap="round"'); }
+    g+=pl(fr,'var(--rail)',4.2*k)+pl(fr.map(function(p){ return [p[0],p[1]-1.1*k]; }),'var(--steel-hi)',1.1*k,' opacity=".8"');
+    // buffers at both ends
+    g+=box(px(0)-8*k,py(P.h1)-14*k,6*k,14*k,rx,ry,'var(--bad)')+box(px(X_END)+2*k,GY-14*k,6*k,14*k,rx,ry,'var(--bad)');
+    // the start height, carried across so every other height can be judged against it
+    g+=ln(px(0),py(P.h1),px(X_END),py(P.h1),'var(--grav)',1.3,' stroke-dasharray="6 5" opacity=".85"');
+    g+=txt(px(X_END),py(P.h1)-7,(L.tall && mode==='predict'?'':'start height ')+'h₁ = '+P.h1+' m',{a:'end',fs:L.tall?12:13,c:'var(--grav)',halo:1});
+    // hill 2's height: an arrow under its top, the label under the ground
+    var xh=px(X_H2), yh=py(P.h2)+(mode==='predict'?5:24)*k;
+    if(GY+ry/2-yh>14) g+=ln(xh,yh,xh,GY+ry/2,'var(--ink-soft)',1.2)+'<path d="M'+f1(xh)+','+f1(GY+ry/2+1)+' l-3.4,-7 h6.8 z'+(mode==='predict'?' M'+f1(xh)+','+f1(yh-1)+' l-3.4,7 h6.8 z':'')+'" fill="var(--ink-soft)"/>';
+    g+=txt(xh,GY+25,'h₂ = '+P.h2+' m',{a:'middle',fs:L.tall?12:13});
+    if(!L.tall) g+=txt(px(X_END)+8,GY+25,'end of the track',{a:'end',fs:12,c:'var(--ink-faint)'});
+    // drag handles for the two heights (Explore only)
+    if(mode==='explore') g+=handle(px(0)-22*k,py(P.h1)+1,k)+handle(xh,py(P.h2)+14*k,k);
     $('#rc-track').innerHTML=g;
     // transparent hit areas (drawn above the cart): the start platform with its cart, and the top of hill 2
-    $('#rc-grab').innerHTML=
-      '<rect class="grab" data-k="h1" x="8" y="'+(py(P.h1)-48)+'" width="'+(px(X_TOP)+70)+'" height="64" fill="transparent"/>'+
-      '<rect class="grab" data-k="h2" x="'+(px(X_H2)-48)+'" y="'+(py(P.h2)-28)+'" width="140" height="58" fill="transparent"/>';
+    $('#rc-grab').innerHTML = mode!=='explore' ? '' :
+      '<rect class="grab" data-k="h1" x="'+f1(px(0)-34*k)+'" y="'+f1(py(P.h1)-48*k)+'" width="'+f1(px(X_TOP)-px(0)+74*k)+'" height="'+f1(66*k)+'" fill="transparent"><title>Drag up or down to change the start height</title></rect>'+
+      '<rect class="grab" data-k="h2" x="'+f1(xh-48*k)+'" y="'+f1(py(P.h2)-28*k)+'" width="'+f1(96*k)+'" height="'+f1(58*k)+'" fill="transparent"><title>Drag up or down to change the height of hill 2</title></rect>';
   }
   function drawCar(st){
     var a=-Math.atan2(yAt(Math.min(X_END,st.p.x+1.8))-yAt(Math.max(0,st.p.x-1.8)),3.6)*180/Math.PI,   // tilt with the track under the whole cart
-        X=px(st.p.x), Y=py(st.p.y);
-    var c='<g transform="translate('+X.toFixed(1)+' '+Y.toFixed(1)+') rotate('+a.toFixed(1)+')">'+
-      '<line x1="2" y1="-19" x2="2" y2="-30" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>'+
-      '<line x1="2" y1="-27" x2="12" y2="-22" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>'+
-      '<circle cx="2" cy="-36" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>'+
-      '<rect x="-18" y="-21" width="36" height="14" rx="4" fill="var(--topic-soft)" stroke="var(--topic)" stroke-width="2.5"/>'+
-      '<circle cx="-10" cy="-4" r="4" fill="var(--ink)"/><circle cx="10" cy="-4" r="4" fill="var(--ink)"/>';
+        X=px(st.p.x), Y=py(st.p.y), dx=6, dy=-4.3;
+    function wheel(x,y,r,c){ return '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+c+'"/><circle cx="'+x+'" cy="'+y+'" r="'+(r*0.38).toFixed(1)+'" fill="var(--steel-hi)"/>'; }
+    var c='<g transform="translate('+X.toFixed(1)+' '+Y.toFixed(1)+') rotate('+a.toFixed(1)+') scale('+L.k+')">'+
+      wheel(-11+dx,-4.6+dy,4.2,'var(--steel-sh)')+wheel(11+dx,-4.6+dy,4.2,'var(--steel-sh)')+
+      // the far side of the cart, seen over the near side
+      rect(-19+dx,-23+dy,38,14,'var(--car-s)',' rx="3"')+
+      // the rider: sitting in the cart, facing the way it first sets off
+      '<path d="M2,-12 L2,-29" stroke="var(--shirt)" stroke-width="8" stroke-linecap="round"/>'+
+      '<path d="M2,-26 L11,-21 L16,-23" fill="none" stroke="var(--skin)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '<circle cx="2.6" cy="-37.5" r="6.3" fill="var(--skin)" stroke="var(--hair)" stroke-width="0.7"/>'+
+      '<path d="M-3.8,-36.6 a6.4,6.4 0 0 1 10.6,-5.4 q-3.4,-0.4 -5.6,1.6 q-0.6,3.6 -3.4,6.4 z" fill="var(--hair)"/>'+
+      // lap bar, the near side with a lit top edge, and the end of the cart
+      ln(14,-24,18,-21,'var(--steel-hi)',2,' stroke-linecap="round"')+
+      pg([[19,-22],[19+dx,-22+dy],[19+dx,-9+dy],[19,-8]],'var(--car-s)')+
+      rect(-19,-22,38,14,'var(--car-f)',' rx="3"')+rect(-17,-21,34,2.4,'var(--car-t)',' rx="1.2"')+
+      rect(-19,-13.5,38,2.2,'#000',' opacity=".18"')+
+      wheel(-11,-4.6,4.6,'var(--rail)')+wheel(11,-4.6,4.6,'var(--rail)');
     var fr='';
-    if(P.F>0 && st.v>0.05 && !st.ended){   // friction acts against the motion
-      var L=12+P.F/400*34, s=st.dir>=0?-1:1, x0=s*20;
-      fr='<line x1="'+x0+'" y1="-12" x2="'+(x0+s*L)+'" y2="-12" stroke="var(--therm)" stroke-width="3.5"/>'+
-         '<path d="M'+(x0+s*(L+8))+',-12 L'+(x0+s*L)+',-17 L'+(x0+s*L)+',-7 Z" fill="var(--therm)"/>';
+    if(P.F>0 && st.v>0.05 && !st.ended && !(q && q.phase==='done')){   // friction acts against the motion
+      var len=12+P.F/400*34, s=st.dir>=0?-1:1, x0=s*24;
+      fr=ln(x0,-14,x0+s*len,-14,'var(--therm)',3.6)+
+         '<path d="M'+(x0+s*(len+9))+',-14 L'+(x0+s*len)+',-19.5 L'+(x0+s*len)+',-8.5 Z" fill="var(--therm)"/>';
     }
     $('#rc-car').innerHTML=c+fr+'</g>';
   }
-  var ROWS=[{k:'g',l:'Gravitational potential energy',c:'var(--grav)'},{k:'k',l:'Kinetic energy',c:'var(--kin)'},{k:'w',l:'Work done against friction (thermal store)',c:'var(--therm)'},{k:'t',l:'Total energy',c:'var(--ink-soft)'}];
-  $('#rc-bars').innerHTML=ROWS.map(function(r){ return '<div class="ebar"><span>'+r.l+'</span><b id="rc-v-'+r.k+'"></b><div class="etrack"><div class="efill" id="rc-f-'+r.k+'" style="background:'+r.c+'"></div></div></div>'; }).join('');
+  // the exam diagram: a bar chart of the energy stores, with the total as a dashed line
+  var BARS=[{k:'GPE',n:'gravitational potential energy',c:'var(--grav)'},{k:'KE',n:'kinetic energy',c:'var(--kin)'},{k:'thermal',n:'work done against friction, now in the thermal store',c:'var(--therm)'}];
+  function drawChart(st){
+    var C=L.C, H=C.base-C.top, E0=run.E0, v=[st.GPE,st.KE,st.W], g='', fs=L.tall?12.5:11.5;
+    g+=txt((C.l+C.r)/2,C.top-34,'Energy stores (J)',{a:'middle',fs:13,c:'var(--ink)',w:600});
+    g+=ln(C.l,C.top-6,C.l,C.base,'var(--ink-soft)',1.4)+ln(C.l,C.base,C.r,C.base,'var(--ink-soft)',1.4);
+    BARS.forEach(function(b,i){ var h=Math.max(0,Math.min(1,v[i]/E0))*H, x=C.x[i]-C.bw/2;
+      if(h>0.6) g+=box(x,C.base-h,C.bw,h,5,-3.5,b.c);
+      g+=txt(C.x[i],C.base+15,num(v[i]),{a:'middle',fs:fs,c:'var(--ink)',w:600})+txt(C.x[i],C.base+30,b.k,{a:'middle',fs:fs,c:b.c,w:600}); });
+    g+=ln(C.l,C.top,C.r,C.top,'var(--ink-soft)',1.3,' stroke-dasharray="5 4"')+txt(C.l+6,C.top-8,'total '+num(E0),{fs:fs,halo:1});
+    $('#rc-chart').innerHTML=g;
+    svgEl.setAttribute('aria-label','A roller coaster cart on a track with two hills. The cart is '+fix(st.h,1)+' m up, moving at '+fix(st.v,1)+' m/s. Energy stores: '+
+      BARS.map(function(b,i){ return b.n+' '+num(v[i])+' J'; }).join('; ')+'; total '+num(E0)+' J.');
+  }
+
+  /* ---------- Predict: a question is dealt, the student clicks a letter on the picture, then presses Go ---------- */
+  function setIns(o){ ins.m.value=o.m; ins.u.value=o.u; ins.f.value=o.F; ins.h1.value=o.h1; ins.h2.value=o.h2; }
+  function prep(){ read(); buildTrack(); run=simulate(); }
+  function pickOf(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function xOnHill2(h){ return X_HA+(X_HB-X_HA)/(2*Math.PI)*Math.acos(1-2*h/P.h2); }   // on the side of hill 2 nearer the start
+  function deal(){
+    var kind; do{ kind=pickOf(['level','below','above','fast']); }while(kind===lastKind); lastKind=kind;
+    q={kind:kind, phase:'ask', pick:null, ok:false};
+    if(kind==='fast'){
+      var c=pickOf(L.tall ? [[300,100,15,10],[400,150,18,8]] : [[300,100,15,10],[400,150,18,8],[250,75,12,6]]);
+      setIns({m:c[0],u:0,F:c[1],h1:c[2],h2:c[3]}); prep();
+      if(run.out!=='end' || run.tTop===null){ setIns({m:300,u:0,F:100,h1:15,h2:10}); prep(); }
+      q.ans='B'; q.tJudge=run.tEnd;
+      q.picks=[{id:'A',x:X_TOP,t:0,w:'at the start'},{id:'B',x:X_BOT,t:run.tBottom,w:'at the bottom of the first drop'},{id:'C',x:X_H2,t:run.tTop,w:'at the top of hill 2'},{id:'D',x:X_END,t:run.tEnd,w:'at the end of the track'}];
+    } else {
+      var dh=L.tall?5:4, h1=pickOf([10,12]), m=pickOf([250,300,400]), F=0, u=kind==='above'?(L.tall?10:9):0;   // the three letters sit dh metres apart, far enough to click
+      if(kind==='below'){   // the friction that brings it to rest closest to 3 m below its start height
+        var best=1e9; [50,75,100,125,150,175,200,250,300,350,400].forEach(function(f){ setIns({m:m,u:0,F:f,h1:h1,h2:20}); prep();
+          if(run.tTurn===null) return; var d=Math.abs(stateAt(run.tTurn).h-(h1-dh)); if(d<best){ best=d; F=f; } });
+      }
+      setIns({m:m,u:u,F:F,h1:h1,h2:20}); prep();
+      q.ans = kind==='above'?'A':kind==='level'?'B':'C'; q.tJudge=run.tTurn; q.hTop=stateAt(run.tTurn).h;
+      q.picks=[{id:'A',h:h1+dh,w:'above its start height'},{id:'B',h:h1,w:'level with its start height'},{id:'C',h:h1-dh,w:'below its start height'}];
+      q.picks.forEach(function(p){ p.x=xOnHill2(p.h); });
+    }
+    stop(); t=0; setMark(''); drawTrack(); draw();
+  }
+  function qSetup(){
+    if(q.kind==='fast') return 'The cart starts at rest, '+P.h1+' m up. Friction is '+P.F+' N all the way.';
+    return q.kind==='above' ? 'The cart is already moving at '+P.u+' m/s at the top, '+P.h1+' m up. There is no friction.' :
+      'The cart starts at rest, '+P.h1+' m up. '+(q.kind==='level'?'There is no friction.':'Friction is '+P.F+' N all the way.');
+  }
+  function qAsk(){ return q.kind==='fast' ? 'Where is it moving fastest?' : 'How high does it get on hill 2?'; }
+  function qWhy(){
+    if(q.kind==='fast') return 'It is fastest at the bottom of the first drop ('+num(stateAt(run.tBottom).v,1)+' m/s). Its GPE is lowest there, and friction has done less work than by the end of the track, which is just as low.';
+    if(q.kind==='level') return 'With no friction, no energy is transferred away. All of its GPE becomes kinetic energy and then GPE again, so it climbs back to its start height exactly: '+P.h1+' m.';
+    if(q.kind==='below') return 'Friction does work, transferring energy to the thermal store. Less than its starting GPE comes back, so it stops below its start height, at '+num(q.hTop,1)+' m.';
+    return 'It starts with kinetic energy as well as GPE. With no friction all of it is GPE at its highest point, so it climbs above its start height, to '+num(q.hTop,1)+' m.';
+  }
+  function drawQ(){
+    if(mode!=='predict' || !q){ $('#rc-q').innerHTML=''; return; }
+    var ask=q.phase==='ask', over=q.phase==='done', k=L.k, g='', lines, col='var(--ink)';
+    if(over){ var right=q.picks.filter(function(p){ return p.id===q.ans; })[0];
+      lines=wrapLines((q.ok?'✓ Right: ':'✗ Not quite: ')+(q.kind==='fast'?'it is fastest ':'it gets ')+right.w+' ('+q.ans+').'+(q.ok?'':' You chose '+q.pick+'.'),L.wrap); col=q.ok?'var(--good)':'var(--bad)'; }
+    else lines=wrapLines('Predict: '+qSetup()+' '+qAsk()+' Click '+(q.kind==='fast'?'A, B, C or D':'A, B or C')+(q.pick?' (you chose '+q.pick+')':'')+', then press Go.',L.wrap);
+    lines.slice(0,L.qy.length+1).forEach(function(s,i){ g+=txt(L.tall?8:16,L.qy[0]+i*(L.qy[1]-L.qy[0]),s,{fs:L.tall?12.5:13.5,c:col,w:over?600:500}); });
+    q.picks.forEach(function(p){
+      var X=px(p.x), Y=py(yAt(p.x)), sel=q.pick===p.id, st=over?(p.id===q.ans?'good':(sel?'bad':'')):'';
+      var c=st==='good'?'var(--good)':st==='bad'?'var(--bad)':'var(--topic)', fill=st==='good'?'var(--good-soft)':st==='bad'?'var(--bad-soft)':(sel?'var(--topic-soft)':'var(--panel)');
+      if(q.kind==='fast'){ g+=ln(X,Y-3,X,Y-49*k,c,1.2,' stroke-dasharray="3 3"'); Y-=62*k; }
+      g+='<g class="pick" data-pick="'+p.id+'" tabindex="'+(ask?0:-1)+'" role="button" aria-label="'+p.id+': '+p.w+'"'+(sel?' aria-pressed="true"':'')+'>'+
+        '<circle class="ring" cx="'+f1(X)+'" cy="'+f1(Y)+'" r="'+(L.tall?14:16)+'" fill="transparent" stroke-width="2.5"/>'+
+        '<circle cx="'+f1(X)+'" cy="'+f1(Y)+'" r="12.5" fill="'+fill+'" stroke="'+c+'" stroke-width="'+(sel||st?2.6:1.8)+'"'+(sel||st?'':' stroke-dasharray="4 3"')+'/>'+
+        txt(X,Y+4.6,p.id,{a:'middle',fs:13.5,c:c,w:700})+'</g>';
+      if(over && q.kind==='fast') g+=txt(X,Y-19,fix(stateAt(p.t).v,1)+' m/s',{a:p.id==='D'?'end':'middle',fs:12.5,c:'var(--ink)',w:600,halo:1,x:p.id==='D'?' dx="'+(L.tall?8:14)+'"':''});
+    });
+    setKeepFocus($('#rc-q'),g);
+  }
+  onPick(svgEl,function(id){ if(!q || q.phase!=='ask') return; q.pick=id; draw(); });
+  function judge(){ q.phase='done'; q.ok=q.pick===q.ans; score[1]++; if(q.ok) score[0]++; }
 
   function note(st){
+    if(mode==='predict' && q){
+      if(q.phase==='ask') return '<b>Predict.</b> '+qSetup()+' '+qAsk()+' Click a letter on the picture'+(q.pick?' (you chose <b>'+q.pick+'</b>)':'')+', then press <b>Go</b>.';
+      if(q.phase==='done') return '<b>'+(q.ok?'✓ Right.':'✗ Not quite.')+'</b> '+qWhy()+' Score: '+score[0]+' of '+score[1]+'.';
+    }
     var F=P.F, fric=F>0?' Friction also does work, transferring energy to the thermal store of the track and the air.':'';
     if(t===0) return 'The cart is at the top, '+P.h1+' m up, '+(P.u>0?'moving at '+P.u+' m/s.':'at rest.')+' Will it get over hill 2? Decide, then press Go.';
     if(st.ended){
@@ -399,12 +602,11 @@
     return (up<0?'Going down: GPE is transferred to kinetic energy, so the cart speeds up.':'Going up: kinetic energy is transferred to GPE, so the cart slows down.')+fric;
   }
   function draw(){
-    var st=stateAt(t), E0=run.E0;
-    drawCar(st);
+    var st=stateAt(t), E0=run.E0, pr=mode==='predict', done=pr && q && q.phase==='done';
+    if(done && q.kind!=='fast'){ st.KE=0; st.v=0; st.GPE=E0-st.W; }   // marked at its highest point, where it is at rest for a moment
+    drawCar(st); drawChart(st); drawQ();
     $('#rc-h').textContent=fix(st.h,1)+' m'; $('#rc-v').textContent=fix(st.v,1)+' m/s'; $('#rc-d').textContent=fix(st.d,1)+' m';
-    var v={g:st.GPE,k:st.KE,w:st.W,t:E0};
-    for(var k in v){ $('#rc-v-'+k).textContent=num(v[k])+' J'; $('#rc-f-'+k).style.transform='scaleX('+Math.max(0,Math.min(1,v[k]/E0))+')'; }
-    $('#rc-note').textContent=note(st);
+    $('#rc-note').innerHTML=note(st);
     var m=P.m, KE0=0.5*m*P.u*P.u, w='At the start:<br>GPE = m × g × h<br>GPE = '+m+' × 10 × '+P.h1+' = '+num(m*G*P.h1)+' J<br>KE = ½ × m × v²<br>KE = ½ × '+m+' × '+P.u+'² = '+num(KE0)+' J<br>total = '+num(m*G*P.h1)+' + '+num(KE0)+' = '+num(E0)+' J';
     if(t>0){
       w+='<br>Now:<br>GPE = '+m+' × 10 × '+num(st.h,2)+' = '+num(st.GPE)+' J<br>work done = F × d<br>work done = '+P.F+' × '+num(st.d,2)+' = '+num(st.W)+' J'+
@@ -416,14 +618,19 @@
     }
     $('#rc-eq').innerHTML=FR(w);
     // the hill 2 check is shown once the cart has reached hill 2's top or turned back, so it never gives the answer away
-    var showOver = (run.tTop!==null && t>=run.tTop) || (run.tTurn!==null && t>=run.tTurn) || st.ended;
+    var showOver = !pr && ((run.tTop!==null && t>=run.tTop) || (run.tTurn!==null && t>=run.tTurn) || st.ended);
     var ov=$('#rc-over'); ov.hidden=!showOver;
     if(showOver){
       var Gt=m*G*P.h2, Wt=Math.round(P.F*run.dTop), need=Gt+Wt;
       ov.innerHTML='Can it get over hill 2?<br>energy needed = GPE at the top + work done<br>GPE = '+m+' × 10 × '+P.h2+' = '+num(Gt)+' J<br>work done = '+P.F+' × '+num(run.dTop,2)+' = '+num(Wt)+' J<br>energy needed = '+num(Gt)+' + '+num(Wt)+' = '+num(need)+' J<br>'+
         (E0>need?'The '+num(E0)+' J it has is more than '+num(need)+' J, so it gets over.':(E0===need?'It has exactly '+num(need)+' J, so it only just reaches the top.':'The '+num(E0)+' J it has is less than '+num(need)+' J, so it cannot get over.'));
     }
-    goBtn.innerHTML = playing ? '&#10074;&#10074; Pause' : (t>0 && t<run.tEnd ? '&#9654; Play' : (t>=run.tEnd ? '&#9654; Go again' : '&#9654; Go'));
+    // in Predict nothing gives the answer away before the run is marked
+    $('#rc-working').hidden = pr && !done;
+    if(pr){ goBtn.innerHTML = playing ? '&#10074;&#10074; Pause' : (q.phase==='run' ? '&#9654; Play' : '&#9654; Go'); goBtn.disabled = done || (q.phase==='ask' && !q.pick); }
+    else { goBtn.disabled=false; goBtn.innerHTML = playing ? '&#10074;&#10074; Pause' : (t>0 && t<run.tEnd ? '&#9654; Play' : (t>=run.tEnd ? '&#9654; Go again' : '&#9654; Go')); }
+    resetBtn.innerHTML = pr ? 'New question' : '&#8634; Reset';
+    resetBtn.classList.toggle('btn-primary', !!done); goBtn.classList.toggle('btn-primary', !done);
   }
 
   /* ---------- controls ---------- */
@@ -437,6 +644,7 @@
   }
   function stop(){ playing=false; cancelAnimationFrame(raf); }
   function reset(){
+    if(mode==='predict'){ deal(); return; }
     stop(); read(); buildTrack(); run=simulate(); t=0; setMark('');
     var b=pointsEl.querySelector('[data-p="top2"]');
     b.textContent = run.tTop!==null ? 'Top of hill 2' : 'Highest on hill 2';
@@ -446,17 +654,19 @@
   function frame(now){
     if(!playing) return;
     var dt=Math.min(0.05,(now-last)/1000)*(slowBtn.getAttribute('aria-pressed')==='true'?0.3:1)*(t>12?4:1); last=now;   // a long roll back and forth plays faster after 12 s
-    t=Math.min(run.tEnd,t+dt);
-    if(t>=run.tEnd) stop();
+    var tStop = mode==='predict' && q ? q.tJudge : run.tEnd;   // a prediction of the height is marked at the highest point, with the cart still there
+    t=Math.min(tStop,t+dt);
+    if(t>=tStop){ stop(); if(mode==='predict' && q && q.phase==='run') judge(); }
     draw();
     if(playing) raf=requestAnimationFrame(frame);
   }
   goBtn.addEventListener('click',function(){
     if(playing){ stop(); draw(); return; }
-    if(t>=run.tEnd) t=0;
+    if(mode==='predict'){ if(!q || q.phase==='done' || !q.pick) return; q.phase='run'; }
+    else if(t>=run.tEnd) t=0;
     setMark(''); playing=true; last=performance.now(); raf=requestAnimationFrame(frame); draw();
   });
-  $('#rc-reset').addEventListener('click',reset);
+  resetBtn.addEventListener('click',reset);
   slowBtn.addEventListener('click',function(){ slowBtn.setAttribute('aria-pressed', String(slowBtn.getAttribute('aria-pressed')!=='true')); });
   pointsEl.addEventListener('click',function(e){
     var b=e.target.closest('button'); if(!b||b.disabled) return;
@@ -465,12 +675,19 @@
     setMark(p); draw();
   });
   Object.keys(ins).forEach(function(k){ ins[k].addEventListener('input',reset); });
+  modeEl.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b || b.dataset.v===mode) return;
+    mode=b.dataset.v; Array.prototype.forEach.call(modeEl.children,function(x){ x.setAttribute('aria-pressed', String(x===b)); });
+    var pr=mode==='predict';
+    $('#rc-sliders').hidden=pr; $('#rc-jump').hidden=pr; $('#rc-hint').hidden=pr;
+    if(pr){ score=[0,0]; deal(); } else { q=null; setIns({m:300,u:0,F:100,h1:15,h2:10}); reset(); }
+  });
 
   // drag a hill top up and down: the same as moving its height slider (which resets the run).
-  // The picture's scale is fixed (10 px per metre), so nothing needs freezing while dragging.
-  var svgEl=$('#rc-svg'), drag=null;
-  function svgPt(e){ var q=svgEl.createSVGPoint(); q.x=e.clientX; q.y=e.clientY; return q.matrixTransform(svgEl.getScreenCTM().inverse()); }
-  function metres(q){ return (232-q.y)/10; }
+  // The picture's scale is fixed while the window keeps its size, so nothing needs freezing while dragging.
+  var drag=null;
+  function svgPt(e){ var p=svgEl.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svgEl.getScreenCTM().inverse()); }
+  function metres(p){ return (L.GY-p.y)/L.S; }
   svgEl.addEventListener('pointerdown',function(e){
     var r=e.target.closest && e.target.closest('.grab'); if(!r) return;
     var el=ins[r.getAttribute('data-k')];
@@ -485,6 +702,8 @@
   });
   function endDrag(){ if(!drag) return; drag=null; svgEl.classList.remove('dragging'); }
   svgEl.addEventListener('pointerup',endDrag); svgEl.addEventListener('pointercancel',endDrag);
+  var wasNarrow=narrow();
+  window.addEventListener('resize',function(){ if(narrow()!==wasNarrow){ wasNarrow=narrow(); drawTrack(); draw(); } });
 
   watchEquals($('#rc-eq')); watchEquals($('#rc-over'));
   reset();

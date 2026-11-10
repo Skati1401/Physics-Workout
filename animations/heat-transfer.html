@@ -19,6 +19,9 @@
     --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
     --topic:#c62828;   --topic-soft:#fde3e1;
     --water:#d6e9fb;   --ice:#eef6fd;   --ice-edge:#9cc3e6;   --water-ink:#3b82c4;
+    --water-top:#eaf4fd; --glass:#9fb4c8; --glass-in:#f4f8fb; --thermo:#f3f6fa; --thread:#d7261e;
+    --steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --gauze:#b9c0cc; --hose:#8a3b2e;
+    --wood-f:#c99e6a; --wood-t:#e3c08f; --wood-s:#9c7444; --mat:#5d6470; --lid:#c5cbd5; --case:#3f4a5e;
     --font-display:'Big Shoulders',system-ui,sans-serif;
     --font-body:'IBM Plex Sans',system-ui,sans-serif;
     --font-mono:'IBM Plex Mono',ui-monospace,monospace;
@@ -35,6 +38,9 @@
       --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
       --topic:#ff7a6b; --topic-soft:#3d1714;
       --water:#1c3a5a; --ice:#2a3d52; --ice-edge:#6f9bc4; --water-ink:#7fb4ea;
+      --water-top:#2b5682; --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f;
+      --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --gauze:#6f7b8f; --hose:#a85546;
+      --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --mat:#3b414c; --lid:#8792a3; --case:#56617a;
       color-scheme:dark;
     }
   }
@@ -48,6 +54,9 @@
     --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
     --topic:#ff7a6b; --topic-soft:#3d1714;
       --water:#1c3a5a; --ice:#2a3d52; --ice-edge:#6f9bc4; --water-ink:#7fb4ea;
+      --water-top:#2b5682; --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f;
+      --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --gauze:#6f7b8f; --hose:#a85546;
+      --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --mat:#3b414c; --lid:#8792a3; --case:#56617a;
     color-scheme:dark;
   }
 
@@ -161,6 +170,8 @@
   .embed .page{padding:0;max-width:none;display:flow-root;}
   .embed .home-link,.embed .page-head{display:none;}
   .embed .view{max-height:460px;}
+  .view.tall,.embed .view.tall{max-height:none;}
+  .side>.seg.tabs{align-self:flex-start;}
 
 </style>
 <script>
@@ -200,7 +211,7 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="ht-svg" viewBox="0 0 600 300" role="img" aria-label=""></svg>
+      <svg class="view" id="ht-svg" viewBox="0 0 860 352" role="img" aria-label=""></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="ht-play" type="button">&#9654; Play</button>
@@ -299,8 +310,57 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     return {pick:pick, value:value};
   }
   function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
-  function txt(x,y,s,o){ o=o||{}; return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
-  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+(+x1).toFixed(1)+'" y1="'+(+y1).toFixed(1)+'" x2="'+(+x2).toFixed(1)+'" y2="'+(+y2).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||1.5)+'"'+(extra||'')+'/>'; }
+  // ---- solid kit (the same block is in roller-coaster-energy.html, heat-transfer.html, density.html and liquid-pressure.html) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
   // A small seeded random number generator (mulberry32), so the same setup gives the same readings.
   function rng(seed){ var a = seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
   // A Poisson count with mean m (Knuth for small m, a normal approximation for large m)
@@ -419,8 +479,6 @@ function expKey(x, y, upLabel, downLabel){
   function slowOn(){ return pressed(slowBtn); }
   function mmss(s){ s=Math.max(0,Math.round(s)); var m=Math.floor(s/60), r=s%60; return m+':'+(r<10?'0':'')+r; }
   function stat(lab, val, hi){ return '<div class="stat'+(hi?' hi':'')+'"><small>'+lab+'</small><strong>'+val+'</strong></div>'; }
-  function rect(x,y,w,h,fill,stroke,extra){ return '<rect x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'" width="'+(+w).toFixed(1)+'" height="'+(+h).toFixed(1)+'" fill="'+fill+'"'+(stroke?' stroke="'+stroke+'"':'')+(extra||'')+'/>'; }
-  function arrowHead(id,col){ return '<marker id="'+id+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+col+'"/></marker>'; }
 
   var modeSeg=segGroup($('#ht-mode'), function(){ setMode(); });
   var heatSeg=segGroup($('#ht-heat'), function(){ resetPart(); });
@@ -430,6 +488,7 @@ function expKey(x, y, upLabel, downLabel){
   var jumpSeg=segGroup($('#ht-jump'), function(v){ jumpTo(v); });
   var showQ=location.search.match(/[?&]show=(cond|conv|rad)\b/);
   if(showQ){ modeSeg.pick(showQ[1]); $('#ht-mode').hidden=true; }
+  else if(EMBED){ $('.side').insertBefore($('#ht-mode'), $('.side').firstChild); }
   function part(){ return modeSeg.value(); }
 
   var raf=0, last=0, running=false;
@@ -497,43 +556,54 @@ function expKey(x, y, upLabel, downLabel){
     }
     return 'rgb(214,38,30)';
   }
-  var RY=[78,134,190,246], X0=130, PXCM=14;
+  /* ================= the pictures =================
+     Each part is one wide picture of the apparatus as solid objects (viewBox about 860 wide); under 560px the
+     same function lays it out tall. The physics above works in its own units; these functions only draw it. */
+  function condLay(){ return narrow()
+    ? {W:430,H:384, tx:10,tw:76,ty:66,by:326, dx:24,dy:-13, X0:98, PX:10.4, RY:[112,172,232,292], sw:[346,8], key:[150,352], fs:12.5, tall:1}
+    : {W:860,H:352, tx:30,tw:118,ty:46,by:308, dx:36,dy:-20, X0:166, PX:19, RY:[98,154,210,266], sw:[772,8], key:[330,330], fs:13, tall:0}; }
   function drawCond(){
-    var ex=exp(), s='<defs>'+arrowHead('ht-ah','var(--ink-soft)')+'</defs>';
-    // tank of hot water
-    s+=rect(20,40,110,240,'var(--panel)','var(--ink-faint)',' stroke-width="2"');
-    s+=rect(22,58,106,220,'rgba(214,38,30,0.16)');
-    s+=txt(20,32,'hot water '+TW+' °C',{fs:11.5,c:'var(--ink)'});
-    s+=ln(40,20+30,40,250,'var(--ink-faint)',4)+'<circle cx="40" cy="254" r="6" fill="#d7261e"/>'+ln(40,140,40,252,'#d7261e',2.5);
-    // ruler line to the pins
-    s+=ln(X0,54,X0+PIN*100*PXCM,54,'var(--ink-faint)',1,' stroke-dasharray="3 3"')+ln(X0,50,X0,58,'var(--ink-faint)',1)+ln(X0+PIN*100*PXCM,50,X0+PIN*100*PXCM,58,'var(--ink-faint)',1);
-    s+=txt(X0+PIN*50*PXCM,50,'11 cm',{a:'middle',fs:10.5});
-    RODS.forEach(function(r,k){
-      var y=RY[k], T=C.T[k];
-      // inside the tank
-      s+=rect(96,y-5,X0-96,10,ex?r.col:heatCol(TW),r.k==='gl'?'var(--ink-faint)':'');
-      for(var i=0;i<RN;i++){
-        var x=X0+i*RDX*100*PXCM, w=RDX*100*PXCM+0.6;
-        s+=rect(x,y-5,w,10, ex?r.col:heatCol((T[i]+T[i+1])/2));
-      }
-      s+=rect(96,y-5,X0+RL*100*PXCM-96,10,'none','var(--ink-faint)',' stroke-width="1"');
-      s+=txt(X0+RL*100*PXCM-2,y-10,r.name,{a:'end',fs:11.5,c:'var(--ink)'});
-      // wax and pin
-      var px=X0+PIN*100*PXCM, d=C.drop[k], fall=0;
+    var L=condLay(), ex=exp(), s='', x0=L.X0, cm=L.PX, xe=x0+RL*100*cm, pxn=x0+PIN*100*cm, by=L.by, r=5;
+    var tl=L.tx, tr=L.tx+L.tw, tt=L.ty, th=by-tt, wy=tt+16, dx_=L.dx, dy_=L.dy, hot='rgba(214,38,30,';
+    // the bench
+    s+=box(4,by,L.W-10-dx_,9,dx_,dy_,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'});
+    // the glass tank: its back wall, then what is inside it, then the faces nearest to us
+    s+=rect(tl+dx_,tt+dy_,L.tw,th,'var(--glass-in)',' stroke="var(--glass)" stroke-width="1.5"');
+    RODS.forEach(function(rd,k){ var y=L.RY[k], xi=tl+L.tw*0.4+dx_/2; s+=rect(xi,y-r,x0-xi,2*r,ex?rd.col:heatCol(TW))+rect(xi,y-r,x0-xi,2*r*0.35,'#fff',' opacity=".28"'); });
+    s+=thermo(tl+22+dx_/2,by-12+dy_/2,by-40,0,tt-2,100,TW,{nonum:1,step:10,num:50});
+    s+=pg([[tl,wy],[tr,wy],[tr+dx_,wy+dy_],[tl+dx_,wy+dy_]],hot+'0.14)')+pg([[tr,wy],[tr+dx_,wy+dy_],[tr+dx_,by+dy_],[tr,by]],hot+'0.26)')+rect(tl,wy,L.tw,by-wy,hot+'0.17)');
+    s+=pg([[tl,tt],[tr,tt],[tr+dx_,tt+dy_],[tl+dx_,tt+dy_]],'none',' stroke="var(--glass)" stroke-width="2" stroke-linejoin="round"')+
+       pg([[tr,tt],[tr+dx_,tt+dy_],[tr+dx_,by+dy_],[tr,by]],'none',' stroke="var(--glass)" stroke-width="2" stroke-linejoin="round"')+
+       rect(tl,tt,L.tw,th,'none',' stroke="var(--glass)" stroke-width="2.4"')+ln(tl+9,tt+26,tl+9,by-16,'#fff',3,' stroke-linecap="round" opacity=".6"');
+    s+=txt(tl,tt-(L.tall?34:28),'hot water, '+TW+' °C',{fs:L.fs,c:'var(--ink)'});
+    // 11 cm from the water to each pin
+    var ya=L.RY[0]-30;
+    s+=ln(x0,ya,pxn,ya,'var(--ink-soft)',1.2)+'<path d="M'+f1(x0)+','+ya+' l7,-3.4 v6.8 z M'+f1(pxn)+','+ya+' l-7,-3.4 v6.8 z" fill="var(--ink-soft)"/>'+
+       ln(x0,ya-6,x0,ya+6,'var(--ink-soft)',1.2)+ln(pxn,ya-6,pxn,L.RY[3]+r,'var(--ink-faint)',1,' stroke-dasharray="3 4"')+txt((x0+pxn)/2,ya-7,'11 cm',{a:'middle',fs:L.fs-0.5});
+    // the rods: round bars pushed through bungs in the side of the tank
+    RODS.forEach(function(rd,k){
+      var y=L.RY[k], T=C.T[k], i, lastCol=rd.col;
+      for(i=0;i<RN;i++){ lastCol=ex?rd.col:heatCol((T[i]+T[i+1])/2); s+=rect(x0+i*RDX*100*cm,y-r,RDX*100*cm+0.6,2*r,lastCol); }
+      s+=rect(x0,y-r,xe-x0,2*r*0.36,'#fff',' opacity="'+(rd.k==='gl'?0.55:0.3)+'"')+rect(x0,y+r*0.35,xe-x0,r*0.65,'#000',' opacity=".16"');
+      if(rd.k==='gl') s+=rect(x0,y-r,xe-x0,2*r,'none',' stroke="var(--glass)" stroke-width="1"');
+      s+=ell(xe,y,2.6,r,lastCol)+ell(xe,y,2.6,r,'#fff',' opacity=".28"')+ell(x0,y,4.5,r+3.5,'#34343a')+ell(x0-0.8,y-1,2.2,r,'#fff',' opacity=".12"');
+      s+=txt(xe,y-r-7,rd.name,{a:'end',fs:L.fs,c:'var(--ink)'});
+      // the wax and its drawing pin
+      var d=C.drop[k], fall=0;
       if(d!=null) fall=RM?40:Math.min(40,(C.t-d)*6);
       if(fall<40){
         s+='<g opacity="'+(1-fall/40).toFixed(2)+'" transform="translate(0,'+fall.toFixed(1)+')">';
-        if(d==null) s+='<ellipse cx="'+px+'" cy="'+(y+7)+'" rx="7" ry="4" fill="#f3e3a6" stroke="#b49a3c"/>';
-        s+='<ellipse cx="'+px+'" cy="'+(y+12)+'" rx="6" ry="2.5" fill="var(--ink-soft)"/>'+ln(px,y+12,px,y+30,'var(--ink-soft)',2)+'</g>';
+        if(d==null) s+=ell(pxn,y+r+2,8,4.6,'#f3e3a6',' stroke="#b49a3c"')+ell(pxn-2.5,y+r+0.6,2.6,1.2,'#fff',' opacity=".6"');
+        s+=ln(pxn,y+r+8,pxn,y+r+25,'var(--steel)',1.8,' stroke-linecap="round"')+ell(pxn,y+r+8,6.5,2.5,'var(--steel)')+ell(pxn-1.5,y+r+7.4,3,1,'var(--steel-hi)')+'</g>';
       }
-      if(d!=null) s+=txt(px+12,y+26,(ex?'pin dropped':'dropped at '+mmss(d)),{fs:10.5,c:'var(--topic)'});
+      if(d!=null) s+=txt(pxn+14,y+r+22,(ex?'pin dropped':'dropped at '+mmss(d)),{fs:L.fs-1,c:'var(--topic)'});
     });
-    s+=txt(590,24,'stopwatch '+mmss(C.t),{a:'end',fs:13,c:'var(--ink)',w:600});
+    s+=stopwatch(L.sw[0],L.sw[1],mmss(C.t));
     if(!ex){
-      var gx=200; for(var j=0;j<=20;j++) s+=rect(gx+j*6,286,6.5,8,heatCol(20+j*3.5));
-      s+=txt(gx-6,293,'20 °C',{a:'end',fs:10})+txt(gx+132,293,'90 °C',{fs:10});
+      var gx_=L.key[0], gy_=L.key[1]; for(var j=0;j<=20;j++) s+=rect(gx_+j*7,gy_,7.5,9,heatCol(20+j*3.5));
+      s+=txt(gx_-7,gy_+9,'20 °C',{a:'end',fs:12})+txt(gx_+155,gy_+9,'90 °C',{fs:12});
     }
-    return s;
+    return {s:s, W:L.W, H:L.H, tall:L.tall};
   }
   function condNote(){
     var ex=exp(), done=C.t>=CEND-1e-9, order=RODS.map(function(r,k){ return [k,ex?C.rec[k]:C.drop[k]]; }).filter(function(a){ return a[1]!=null; }).sort(function(a,b){ return a[1]-b[1]; });
@@ -617,69 +687,98 @@ function expKey(x, y, upLabel, downLabel){
     V.marks.push({x:V.front.x, y:V.front.y, t:Math.round(V.t), w:where(V.front)});
     draw();
   }
+  // ---- convection: the beaker's water is BW × BH with its top left corner at (BX, BY)
+  var VL=null;
+  function convLay(){ var n=narrow(); BX=n?45:124; BY=n?84:58;
+    VL = n ? {W:430,H:642, dg:{x:115,y:452,w:200,h:110}, sw:[346,4], tall:1} : {W:860,H:380, dg:{x:616,y:96,w:204,h:130}, sw:[502,72], tall:0}; }
   function cvx(x){ return BX+x; } function cvy(y){ return BY+BH-y; }
-  function loopPath(x0,w,dir){   // a rounded loop inside one cell, with arrows showing the flow
-    var ix=x0+w*0.22, iw=w*0.56, iy=BH*0.2, ih=BH*0.6, r=Math.min(30,iw/2,ih/2);
-    var L=cvx(ix), R=cvx(ix+iw), T=cvy(iy+ih), B=cvy(iy);
+  // a rounded loop inside one cell, with arrows showing the flow. M maps the water's own coordinates to the picture.
+  function loopPath(x0,w,dir,M){
+    M=M||{X:cvx,Y:cvy,r:30,w:2.5};
+    var ix=x0+w*0.22, iw=w*0.56, iy=BH*0.2, ih=BH*0.6;
+    var Lx=M.X(ix), Rx=M.X(ix+iw), T=M.Y(iy+ih), B=M.Y(iy), r=Math.min(M.r,(Rx-Lx)/2,(B-T)/2);
     // dir 1: up on the right side (heat to the right); -1: up on the left side
     var d = dir>0
-      ? 'M'+R+','+(B-r)+' L'+R+','+(T+r)+' Q'+R+','+T+' '+(R-r)+','+T+' L'+(L+r)+','+T+' Q'+L+','+T+' '+L+','+(T+r)+' L'+L+','+(B-r)+' Q'+L+','+B+' '+(L+r)+','+B+' L'+(R-r)+','+B+' Q'+R+','+B+' '+R+','+(B-r)
-      : 'M'+L+','+(B-r)+' L'+L+','+(T+r)+' Q'+L+','+T+' '+(L+r)+','+T+' L'+(R-r)+','+T+' Q'+R+','+T+' '+R+','+(T+r)+' L'+R+','+(B-r)+' Q'+R+','+B+' '+(R-r)+','+B+' L'+(L+r)+','+B+' Q'+L+','+B+' '+L+','+(B-r);
-    var s='<path d="'+d+'" fill="none" stroke="var(--topic)" stroke-width="2.5" stroke-dasharray="10 6"/>';
-    // arrowheads at the middle of each side
-    var mids = dir>0 ? [[R,(T+B)/2,0,-1],[(L+R)/2,T,-1,0],[L,(T+B)/2,0,1],[(L+R)/2,B,1,0]] : [[L,(T+B)/2,0,-1],[(L+R)/2,T,1,0],[R,(T+B)/2,0,1],[(L+R)/2,B,-1,0]];
-    mids.forEach(function(m){ s+='<line x1="'+(m[0]-m[2]*6)+'" y1="'+(m[1]-m[3]*6)+'" x2="'+(m[0]+m[2]*4)+'" y2="'+(m[1]+m[3]*4)+'" stroke="var(--topic)" stroke-width="2.5" marker-end="url(#ht-ahc)"/>'; });
+      ? 'M'+Rx+','+(B-r)+' L'+Rx+','+(T+r)+' Q'+Rx+','+T+' '+(Rx-r)+','+T+' L'+(Lx+r)+','+T+' Q'+Lx+','+T+' '+Lx+','+(T+r)+' L'+Lx+','+(B-r)+' Q'+Lx+','+B+' '+(Lx+r)+','+B+' L'+(Rx-r)+','+B+' Q'+Rx+','+B+' '+Rx+','+(B-r)
+      : 'M'+Lx+','+(B-r)+' L'+Lx+','+(T+r)+' Q'+Lx+','+T+' '+(Lx+r)+','+T+' L'+(Rx-r)+','+T+' Q'+Rx+','+T+' '+Rx+','+(T+r)+' L'+Rx+','+(B-r)+' Q'+Rx+','+B+' '+(Rx-r)+','+B+' L'+(Lx+r)+','+B+' Q'+Lx+','+B+' '+Lx+','+(B-r);
+    var s='<path d="'+d+'" fill="none" stroke="var(--topic)" stroke-width="'+M.w+'" stroke-dasharray="10 6"/>';
+    var mids = dir>0 ? [[Rx,(T+B)/2,0,-1],[(Lx+Rx)/2,T,-1,0],[Lx,(T+B)/2,0,1],[(Lx+Rx)/2,B,1,0]] : [[Lx,(T+B)/2,0,-1],[(Lx+Rx)/2,T,1,0],[Rx,(T+B)/2,0,1],[(Lx+Rx)/2,B,-1,0]];
+    mids.forEach(function(m){ s+=arrow(m[0]-m[2]*8,m[1]-m[3]*8,m[0]+m[2]*8,m[1]+m[3]*8,'var(--topic)',M.w+0.6); });
     return s;
   }
+  function bunsen(fx,bench,gz,on){
+    var ty=bench-52, g='';
+    g+='<path d="M'+f1(fx+20)+','+(bench-4)+' C'+f1(fx+70)+','+(bench-4)+' '+f1(fx+80)+','+(bench+3)+' '+f1(fx+128)+','+(bench+1)+'" fill="none" stroke="var(--hose)" stroke-width="6.5" stroke-linecap="round"/>';
+    g+=ell(fx,bench-2,25,6.5,'var(--steel-sh)')+ell(fx,bench-5.5,25,6.5,'var(--steel)')+ell(fx-4,bench-7,15,3.4,'var(--steel-hi)',' opacity=".5"');
+    g+=rect(fx-5.5,ty,11,bench-7-ty,'var(--steel)')+rect(fx-3.6,ty,2.6,bench-7-ty,'var(--steel-hi)',' opacity=".8"')+rect(fx+2.4,ty,3.1,bench-7-ty,'#000',' opacity=".2"')+
+       rect(fx-8.5,bench-27,17,10,'var(--steel-sh)',' rx="2"')+ell(fx,bench-22,2.6,2.6,'#000',' opacity=".55"')+ell(fx,ty,5.5,1.8,'var(--steel-sh)');
+    if(on){ var fh=ty-gz+1;
+      g+='<path d="M'+f1(fx-7)+','+ty+' Q'+f1(fx-11)+','+f1(ty-fh*0.5)+' '+f1(fx)+','+f1(ty-fh)+' Q'+f1(fx+11)+','+f1(ty-fh*0.5)+' '+f1(fx+7)+','+ty+' z" fill="#3b82f6" opacity=".78"/>'+
+         '<path d="M'+f1(fx-3.6)+','+ty+' Q'+f1(fx-4.6)+','+f1(ty-fh*0.3)+' '+f1(fx)+','+f1(ty-fh*0.55)+' Q'+f1(fx+4.6)+','+f1(ty-fh*0.3)+' '+f1(fx+3.6)+','+ty+' z" fill="#dbeafe" opacity=".95"/>'; }
+    return g;
+  }
   function drawConv(){
-    var ex=exp(), xh=heatX(), top=heatSeg.value()==='top';
-    var s='<defs>'+arrowHead('ht-ahc','var(--topic)')+'</defs>';
-    // tripod and gauze
-    s+=ln(BX-10,BY+BH+6,BX+BW+10,BY+BH+6,'var(--ink-faint)',3);
-    s+=ln(BX+10,BY+BH+6,BX-5,298,'var(--ink-faint)',3)+ln(BX+BW-10,BY+BH+6,BX+BW+5,298,'var(--ink-faint)',3);
-    // water and beaker
-    s+=rect(BX,BY,BW,BH,'var(--water)');
-    s+='<path d="M'+(BX-4)+','+(BY-14)+' L'+(BX-4)+','+(BY+BH+2)+' L'+(BX+BW+4)+','+(BY+BH+2)+' L'+(BX+BW+4)+','+(BY-14)+'" fill="none" stroke="var(--ink-faint)" stroke-width="3"/>';
+    convLay();
+    var ex=exp(), xh=heatX(), top=heatSeg.value()==='top', on=running||V.t>0, s='';
+    var cxm=BX+BW/2, yb=BY+BH, ry=9, rimY=BY-24, gz=yb+ry+5, bench=gz+82, R_=BW/2+26;
+    s+=box(VL.tall?6:10,bench,VL.tall?402:566,9,16,-9,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'});
+    // the tripod's far leg, the back of its ring, and the gauze
+    s+=tube(cxm+14,gz-6,cxm+34,bench-7,4,'var(--steel-sh)','var(--steel)');
+    s+='<ellipse cx="'+cxm+'" cy="'+gz+'" rx="'+R_+'" ry="11" fill="none" stroke="var(--steel-sh)" stroke-width="4.5"/>'+ell(cxm,gz,BW/2+19,8.5,'var(--gauze)');
+    for(var gi=-4;gi<=4;gi++) s+=ln(cxm+gi*38-10,gz-7.5+Math.abs(gi)*0.9,cxm+gi*38+10,gz+7.5-Math.abs(gi)*0.9,'var(--steel-sh)',0.8,' opacity=".5"');
     // the heat source
-    var on=running||V.t>0;
-    if(xh!=null){
-      var fx=cvx(xh), fh=on?22:6;
-      s+=rect(fx-9,287,18,13,'var(--ink-faint)');
-      s+='<path d="M'+(fx-8)+',287 Q'+fx+','+(287-fh*2)+' '+(fx+8)+',287 z" fill="'+(on?'#f59e0b':'#93c5fd')+'" opacity="0.9"/>';
-      if(on) s+='<path d="M'+(fx-4)+',287 Q'+fx+','+(287-fh)+' '+(fx+4)+',287 z" fill="#2563eb" opacity="0.8"/>';
-      s+=txt(fx+14,296,'Bunsen burner',{fs:10.5});
-    } else {
-      var hy=cvy(BH-16);
-      s+=ln(BX+BW*0.3,hy,BX+BW*0.7,hy,on?'#d7261e':'var(--ink-faint)',5,' stroke-linecap="round"');
-      s+=ln(BX+BW*0.7,hy,BX+BW+30,BY-30,'var(--ink-faint)',3);
-      s+=txt(BX+BW+34,BY-26,'heater',{fs:10.5});
+    if(xh!=null){ s+=bunsen(cvx(xh),bench,gz,on); s+=txt(cvx(xh)+30,bench-30,'Bunsen burner',{fs:12.5,halo:1}); }
+    // the water in its beaker
+    s+='<path d="M'+BX+','+yb+' A'+(BW/2)+','+ry+' 0 0 0 '+(BX+BW)+','+yb+' z" fill="var(--water)"/>'+rect(BX,BY,BW,BH,'var(--water)')+ell(cxm,BY,BW/2,ry,'var(--water-top)');
+    if(on){   // a faint glow where the water is warmer
+      var gl=Math.min(1,V.t/90);
+      if(xh!=null) s+='<path d="M'+(cvx(xh)-18)+','+yb+' L'+(cvx(xh)+18)+','+yb+' L'+(cvx(xh)+40)+','+BY+' L'+(cvx(xh)-40)+','+BY+' z" fill="rgba(214,38,30,'+(0.10*gl).toFixed(3)+')"/>';
+      else s+=rect(BX,BY,BW,60,'rgba(214,38,30,'+(0.14*gl).toFixed(3)+')');
     }
-    // warm water: a faint glow where it is warmer
-    if(on){
-      var g=Math.min(1,V.t/90);
-      if(xh!=null) s+='<path d="M'+(cvx(xh)-18)+','+(BY+BH)+' L'+(cvx(xh)+18)+','+(BY+BH)+' L'+(cvx(xh)+40)+','+BY+' L'+(cvx(xh)-40)+','+BY+' z" fill="rgba(214,38,30,'+(0.10*g).toFixed(3)+')"/>';
-      else s+=rect(BX,BY,BW,60,'rgba(214,38,30,'+(0.14*g).toFixed(3)+')');
+    if(xh==null){   // an immersion heater just under the surface
+      var hy=cvy(BH-16), h1=BX+BW*0.3, h2=BX+BW*0.7;
+      s+=ln(h1,hy,h1,rimY-16,'var(--steel-sh)',3)+ln(h2,hy,h2,rimY-16,'var(--steel-sh)',3)+
+         '<path d="M'+h1+','+(rimY-16)+' H'+h2+' C'+(h2+60)+','+(rimY-16)+' '+(BX+BW+20)+','+(rimY-30)+' '+(BX+BW+(VL.tall?24:60))+','+(rimY-14)+'" fill="none" stroke="var(--ink-soft)" stroke-width="3" stroke-linecap="round"/>';
+      s+=ln(h1,hy,h2,hy,on?'#e5392f':'var(--steel)',7,' stroke-linecap="round"')+ln(h1+4,hy-1.6,h2-4,hy-1.6,'#fff',1.4,' stroke-linecap="round" opacity=".5"');
+      s+=txt(VL.tall?BX+BW*0.5:BX+BW+66,VL.tall?rimY-23:rimY-10,'heater',{a:VL.tall?'middle':'start',fs:12.5,halo:1});
     }
-    // crystal and dye
-    s+=rect(cvx(XC)-4,cvy(0)-6,8,6,'#5b1a6e');
+    // the crystal and its dye
+    s+=pg([[cvx(XC)-5,cvy(0)],[cvx(XC)-3,cvy(0)-6],[cvx(XC)+3,cvy(0)-7],[cvx(XC)+5,cvy(0)]],'#5b1a6e');
     var dc='rgba(126,34,160,0.42)';
     s+=V.dye.map(function(p){ return '<circle cx="'+cvx(p.x).toFixed(1)+'" cy="'+cvy(p.y).toFixed(1)+'" r="3.2" fill="'+dc+'"/>'; }).join('');
     // the student's marks of the front
     if(ex){
       if(V.marks.length>1) s+='<polyline points="'+V.marks.map(function(m){ return cvx(m.x).toFixed(1)+','+cvy(m.y).toFixed(1); }).join(' ')+'" fill="none" stroke="var(--ink)" stroke-width="1.6"/>';
-      V.marks.forEach(function(m,i){ s+='<circle cx="'+cvx(m.x).toFixed(1)+'" cy="'+cvy(m.y).toFixed(1)+'" r="4" fill="var(--ink)"/>'+txt(cvx(m.x)+6,cvy(m.y)-5,String(i+1),{fs:10,c:'var(--ink)'}); });
+      V.marks.forEach(function(m,i){ s+='<circle cx="'+cvx(m.x).toFixed(1)+'" cy="'+cvy(m.y).toFixed(1)+'" r="4" fill="var(--ink)"/>'+txt(cvx(m.x)+6,cvy(m.y)-5,String(i+1),{fs:11.5,c:'var(--ink)',w:600}); });
       if(running || V.t>0) s+='<circle cx="'+cvx(V.front.x).toFixed(1)+'" cy="'+cvy(V.front.y).toFixed(1)+'" r="7" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="3 2"/>';
     }
-    if(!ex || V.cmp){
-      if(xh!=null && V.t>20){
-        if(xh>40) s+=loopPath(0,xh,1);
-        s+=loopPath(xh,BW-xh,-1);
-      }
-    }
-    s+=txt(BX,BY-20,'potassium permanganate crystal',{fs:10.5});
-    s+=ln(BX+60,BY-16,cvx(XC),cvy(0)-8,'var(--ink-faint)',1,' stroke-dasharray="2 3"');
-    s+=txt(590,24,'time '+mmss(V.t),{a:'end',fs:13,c:'var(--ink)',w:600});
-    return s;
+    var show = ex ? V.cmp : V.t>20;
+    if(show && xh!=null){ if(xh>40) s+=loopPath(0,xh,1); s+=loopPath(xh,BW-xh,-1); }
+    // the glass: wall, rim, pouring lip, a streak of light and three graduations
+    s+='<path d="M'+(BX-5)+','+rimY+' L'+(BX-5)+','+yb+' A'+(BW/2+5)+','+(ry+3)+' 0 0 0 '+(BX+BW+5)+','+yb+' L'+(BX+BW+5)+','+rimY+'" fill="none" stroke="var(--glass)" stroke-width="3"/>'+
+       '<ellipse cx="'+cxm+'" cy="'+rimY+'" rx="'+(BW/2+5)+'" ry="'+(ry+1)+'" fill="none" stroke="var(--glass)" stroke-width="2.4"/>'+
+       ln(BX+9,rimY+18,BX+9,yb-12,'#fff',3.2,' stroke-linecap="round" opacity=".6"');
+    for(var k=1;k<=3;k++) s+=ln(BX+BW-24,BY+BH*(1-k/4),BX+BW-7,BY+BH*(1-k/4),'var(--glass)',1.6);
+    // the tripod's near legs and the front of its ring
+    s+='<path d="M'+(cxm-R_)+','+gz+' A'+R_+',11 0 0 0 '+(cxm+R_)+','+gz+'" fill="none" stroke="var(--steel)" stroke-width="4.5"/>'+
+       tube(cxm-R_+6,gz+4,cxm-R_-14,bench-1,4.5,'var(--steel)','var(--steel-hi)')+tube(cxm+R_-6,gz+4,cxm+R_+14,bench-1,4.5,'var(--steel)','var(--steel-hi)');
+    // labels in clear space
+    if(VL.tall){ s+=txt(BX,16,'potassium permanganate crystal',{fs:12.5})+ln(BX+70,21,cvx(XC),cvy(0)-9,'var(--ink-faint)',1,' stroke-dasharray="2 3"'); }
+    else { ['potassium','permanganate','crystal'].forEach(function(w,i){ s+=txt(BX-24,208+i*15,w,{a:'end',fs:12.5}); }); s+=ln(BX-20,236,cvx(XC)-6,cvy(0)-4,'var(--ink-faint)',1); }
+    s+=stopwatch(VL.sw[0],VL.sw[1],mmss(V.t));
+    // the exam diagram: the same beaker drawn flat, with the convection current
+    var d=VL.dg, MX=function(x){ return d.x+x/BW*d.w; }, MY=function(y){ return d.y+d.h-y/BH*(d.h-12); };
+    s+=txt(d.x+d.w/2,d.y-18,'Convection current',{a:'middle',fs:13.5,c:'var(--ink)',w:600});
+    s+=rect(d.x+1,d.y+12,d.w-2,d.h-12,'var(--water)')+ln(d.x,d.y+12,d.x+d.w,d.y+12,'var(--water-ink)',1.4)+
+       '<path d="M'+d.x+','+d.y+' V'+(d.y+d.h)+' H'+(d.x+d.w)+' V'+d.y+'" fill="none" stroke="var(--ink-soft)" stroke-width="2.4" stroke-linejoin="round"/>';
+    if(xh!=null) s+=arrow(MX(xh),d.y+d.h+32,MX(xh),d.y+d.h+6,'#e5392f',4)+txt(MX(xh)+12,d.y+d.h+28,'heat',{fs:12.5,c:'var(--topic)',w:600});
+    else s+=ln(d.x+d.w*0.3,d.y+24,d.x+d.w*0.7,d.y+24,'#e5392f',5,' stroke-linecap="round"')+txt(d.x+d.w/2,d.y+d.h+24,'heated at the top',{a:'middle',fs:12.5,c:'var(--topic)',w:600});
+    var cap;
+    if(!show){ s+=txt(d.x+d.w/2,d.y+d.h/2+20,'?',{a:'middle',fs:40,c:'var(--ink-faint)',w:600}); cap = ex ? ['Mark the front of the dye,','then press Compare.'] : ['Which way will the water move?','Press Play and watch the dye.']; }
+    else if(xh!=null){ var MM={X:MX,Y:MY,r:14,w:2}; if(xh>40) s+=loopPath(0,xh,1,MM); s+=loopPath(xh,BW-xh,-1,MM); cap=['Warm water is less dense: it rises.','Cooler, denser water sinks.']; }
+    else { s+=rect(d.x+2,d.y+13,d.w-4,26,'rgba(214,38,30,0.2)'); cap=['The warm water stays at the top:','no convection current.']; }
+    cap.forEach(function(c,i){ s+=txt(d.x+d.w/2,d.y+d.h+(xh!=null?52:44)+i*16,c,{a:'middle',fs:12.5}); });
+    return {s:s, W:VL.W, H:VL.H, tall:VL.tall};
   }
   function convTemps(){
     var t=V.t, top=heatSeg.value()==='top';
@@ -750,92 +849,120 @@ function expKey(x, y, upLabel, downLabel){
     R.rd[R.face]={d:R.d, tw:R.tw, r:Math.max(0,+(Math.round((v+expErr(i+R.face)*0.05*Math.min(1,v))/0.1)*0.1).toFixed(1))};
     R.justAdded=R.face; draw();
   }
-  // detector position: bench from the cube's face (x = 160) at 10 px per cm
-  function dx(d){ return 160+d*10; }
+  // ---- radiation 1: the Leslie cube. World axes: x along the bench towards the detector, z away from us, height up.
+  var QL=null;
+  function cubeLay(){ var n=narrow();
+    QL = n ? {W:430,H:330,CX:60,h:38,yb:252,S:6.6,ex:0.55,ey:-0.33,bz:46, meter:[296,8,124,48], inset:[212,50,15], tall:1}
+           : {W:860,H:336,CX:122,h:46,yb:262,S:10,ex:0.55,ey:-0.33,bz:58, meter:[690,16,152,60], inset:[408,58,20], tall:0};
+    QL.X0=QL.CX+QL.h; }
+  function dx(d){ return QL.X0+d*QL.S; }   // the detector's opening, d cm from the cube's face
   function drawWaves(x1,x2,y,n,amp,col,op){
-    var s='';
+    var s='', dir=x2>=x1?1:-1;
     for(var j=0;j<n;j++){
-      var yy=y+(j-(n-1)/2)*14, d='M'+x1+','+yy;
-      var dir=x2>=x1?1:-1;
-      for(var x=x1;dir*(x2-x)>=0;x+=4*dir) d+=' L'+x+','+(yy+amp*Math.sin((x-x1)/5)).toFixed(1);
-      s+='<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.6" opacity="'+op+'" marker-end="url(#ht-ahr)"/>';
+      var yy=y+(j-(n-1)/2)*13, d='M'+f1(x1)+','+f1(yy), x, xl=x2-dir*9;
+      for(x=x1;dir*(xl-x)>=0;x+=3*dir) d+=' L'+f1(x)+','+(yy+amp*Math.sin((x-x1)/5)*Math.min(1,dir*(xl-x)/12)).toFixed(1);
+      s+='<g opacity="'+op+'"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.7"/><path d="M'+f1(x2)+','+f1(yy)+' l'+(-9*dir)+',-4 v8 z" fill="'+col+'"/></g>';
     }
     return s;
   }
   function drawCube(){
-    var ex=exp(), v=leslie(R.face,R.d,R.tw);
-    var s='<defs>'+arrowHead('ht-ahr','#d7261e')+'</defs>';
-    s+=txt(20,22,'seen from above',{fs:10.5,c:'var(--ink-faint)'});
-    // bench and ruler
-    s+=rect(150,200,440,24,'var(--panel)','var(--panel-border)');
-    for(var c=0;c<=42;c++){ var x=dx(c); if(x>588) break; s+=ln(x,200,x,c%5===0?212:206,'var(--ink-faint)',1); if(c%10===0) s+=txt(x,221,String(c),{a:'middle',fs:9.5}); }
-    s+=txt(588,238,'distance (cm)',{a:'end',fs:10});
-    // the cube, rotating: face index i is drawn on side (i − face) … the face towards the detector is on the right
-    var cx=100, cy=150, h=46;
-    s+='<g transform="rotate('+R.ang.toFixed(1)+' '+cx+' '+cy+')">';
-    s+=rect(cx-h,cy-h,2*h,2*h,'var(--panel)','var(--ink-faint)');
-    s+=rect(cx-h+8,cy-h+8,2*h-16,2*h-16,'rgba(214,38,30,'+(0.06+0.2*(R.tw-40)/50).toFixed(2)+')');
-    // face 0 on the right at angle 0; face f at rotation 90·f (so turning by −90·f brings face f to the right)
-    FACES.forEach(function(F,i){
-      s+='<g transform="rotate('+(90*i)+' '+cx+' '+cy+')">'+rect(cx+h-3,cy-h,10,2*h,F.f,F.st||'var(--ink-faint)',' stroke-width="1.5"')+'</g>';
+    cubeLay();
+    var L=QL, ex=exp(), v=leslie(R.face,R.d,R.tw), s='', yb=L.yb, h=L.h, CX=L.CX, yc=yb-h, i;
+    function P3(x,up,z){ return [CX+x+L.ex*z, yb-up+L.ey*z]; }
+    // the bench, with a centimetre scale along its front edge
+    var bl=8-CX+L.ex*L.bz, br=L.W-12-CX-L.ex*L.bz, fy=P3(0,0,-L.bz)[1];
+    s+=pg([P3(bl,0,-L.bz),P3(br,0,-L.bz),P3(br,0,L.bz),P3(bl,0,L.bz)],'var(--wood-t)')+pg([P3(br,0,-L.bz),P3(br,0,L.bz),P3(br,-11,L.bz),P3(br,-11,-L.bz)],'var(--wood-s)')+
+       rect(P3(bl,0,-L.bz)[0],fy,br-bl,11,'var(--wood-f)');
+    for(var c=0;c<=40;c++){ var X=P3(h+c*L.S,0,-L.bz)[0]; s+=ln(X,fy,X,fy+(c%5?4:8),'var(--ink)',c%5?0.8:1.2); if(c%10===0) s+=txt(X,fy+25,String(c),{a:'middle',fs:12}); }
+    s+=txt(P3(h+40*L.S,0,-L.bz)[0]+6,fy+42,'distance from the cube (cm)',{a:'end',fs:12});
+    s+=ln(P3(h,0,-L.bz)[0],fy,P3(h,0,-h-6)[0],P3(h,0,-h-6)[1],'var(--ink-soft)',1,' stroke-dasharray="3 3"');
+    // a heatproof mat, then the cube: only the faces towards us are drawn, as the cube turns
+    var m=h*1.3; s+=pg([P3(-m,0,-m),P3(m,0,-m),P3(m,0,m),P3(-m,0,m)],'var(--mat)')+pg([P3(-m,0,-m),P3(m,0,-m),P3(m,-3,-m),P3(-m,-3,-m)],'#000',' opacity=".35"');
+    var rt=h*Math.SQRT2, faces=[];
+    FACES.forEach(function(F,k){
+      var th=(90*k+R.ang)*Math.PI/180, nx=Math.cos(th), nz=-Math.sin(th);
+      if(-L.ex*nx+nz >= -0.02) return;
+      var a1=th-Math.PI/4, a2=th+Math.PI/4, A=[rt*Math.cos(a1),-rt*Math.sin(a1)], B=[rt*Math.cos(a2),-rt*Math.sin(a2)];
+      function Q(u,w){ return P3(A[0]+(B[0]-A[0])*u, 2*h*w, A[1]+(B[1]-A[1])*u); }
+      var g=pg([Q(0,0),Q(1,0),Q(1,1),Q(0,1)],F.f,' stroke="'+(F.st||'var(--ink-faint)')+'" stroke-width="1.2" stroke-linejoin="round"');
+      g+=pg([Q(0,0),Q(1,0),Q(1,1),Q(0,1)],'#000',' opacity="'+(0.24*Math.max(0,nx)).toFixed(2)+'"');
+      if(k===1 || k===3){ var c1=k===1?'#fff':'#fff', o1=k===1?0.32:0.85;   // a shiny face catches the light
+        g+=pl([Q(0.18,0.12),Q(0.42,0.9)],c1,4,' opacity="'+o1+'"')+pl([Q(0.34,0.1),Q(0.54,0.78)],c1,2,' opacity="'+(o1*0.8).toFixed(2)+'"')+pl([Q(0.7,0.2),Q(0.82,0.62)],c1,1.6,' opacity="'+(o1*0.6).toFixed(2)+'"'); }
+      faces.push({z:nz, g:g});
     });
-    s+='</g>';
-    s+=txt(cx,cy+4,R.tw+' °C',{a:'middle',fs:12,c:'var(--ink)',w:600});
-    s+=txt(cx-h,cy-h-14,'facing the detector: '+FACES[R.face].n.toLowerCase(),{fs:11,c:'var(--ink)'});
-    // infrared waves to the detector
-    var settled=Math.abs(R.ang-R.angT)<0.5, n=Math.max(1,Math.round(FACES[R.face].e*4));
-    if(settled) s+=drawWaves(cx+h+14, dx(R.d)-6, cy, n, 3, '#d7261e', (0.25+0.6*FACES[R.face].e).toFixed(2));
-    // the detector (drag it along the bench)
-    var X=dx(R.d);
-    s+='<g id="ht-det" class="drag" tabindex="-1">'+rect(X,cy-16,46,32,'var(--ink-soft)','var(--ink)',' rx="3"')+'<path d="M'+X+','+(cy-10)+' L'+(X-8)+','+(cy-16)+' L'+(X-8)+','+(cy+16)+' L'+X+','+(cy+10)+' z" fill="var(--ink)"/>';
-    s+=txt(X+23,cy-30,'IR detector',{a:'middle',fs:10.5,c:'var(--ink)'})+txt(X+23,cy+32,'← drag →',{a:'middle',fs:10,c:'var(--ink-faint)'})+'</g>';
-    // meter
-    var shown = settled ? (ex ? (Math.round(v/0.1)*0.1).toFixed(1) : v.toFixed(1)) : '…';
-    s+=rect(470,30,110,52,'var(--panel)','var(--ink-faint)',' rx="6"')+rect(480,40,90,32,'var(--bg)','var(--panel-border)',' rx="3"');
-    s+=txt(525,63,shown+' mV',{a:'middle',fs:17,c:'var(--ink)',w:600});
-    s+=ln(525,82,X+40,cy-16,'var(--ink-faint)',1.2,' stroke-dasharray="3 3"');
-    return s;
+    faces.sort(function(a,b){ return b.z-a.z; }).forEach(function(f){ s+=f.g; });
+    var lid=[0,1,2,3].map(function(k){ var a=(45+90*k+R.ang)*Math.PI/180; return P3(rt*Math.cos(a),2*h,-rt*Math.sin(a)); });
+    s+=pg(lid,'var(--lid)',' stroke="var(--ink-faint)" stroke-width="1" stroke-linejoin="round"');
+    // the thermometer through the lid: read the water's temperature from its scale
+    var ly=yb-2*h, sc=L.tall?1.95:2.1;
+    s+=thermo(CX,ly+2,ly-10,30,ly-10-70*sc,100,R.tw,{step:5,num:10,side:-1,nobulb:1,fs:11.5,from:40})+txt(CX+9,ly-10-70*sc+4,'°C',{fs:11.5,c:'var(--ink)'})+ell(CX,ly+1,7.5,3.2,'#34343a');
+    // infrared from the face that is towards the detector
+    var settled=Math.abs(R.ang-R.angT)<0.5, n=Math.max(1,Math.round(FACES[R.face].e*4)), X0=dx(R.d);
+    if(settled) s+=drawWaves(CX+h+L.ex*h+10, X0-12, yc, n, 3, '#d7261e', (0.3+0.6*FACES[R.face].e).toFixed(2));
+    // the detector on its rider, with a pointer down to the scale (drag it along the bench)
+    var bw=L.tall?40:48;
+    s+='<g id="ht-det" class="drag" tabindex="-1">'+rect(X0-18,yc-44,bw+36,yb-yc+52,'transparent');
+    s+=pl([[X0,yb],[X0-L.ex*L.bz,fy]],'var(--topic)',2.2)+'<path d="M'+f1(X0-L.ex*L.bz)+','+f1(fy+1)+' l-4.5,-8 h9 z" fill="var(--topic)"/>';
+    s+=box(X0+4,yb-8,bw-8,8,13,-8,'var(--steel-sh)')+rect(X0+bw/2-3.5,yc+12,7,yb-yc-20,'var(--steel)')+rect(X0+bw/2-2,yc+12,2,yb-yc-20,'var(--steel-hi)',' opacity=".7"');
+    s+=pg([[X0,yc-8],[X0-11,yc-15],[X0-11,yc+15],[X0,yc+8]],'#1d2430')+ell(X0-11,yc,3,15,'#4a556a')+box(X0,yc-15,bw,30,11,-6.5,'var(--steel)')+rect(X0+5,yc-9,bw-10,5,'#fff',' rx="2" opacity=".3"');
+    s+=txt(X0+bw/2,yc-42,'IR detector',{a:'middle',fs:12.5,c:'var(--ink)',halo:1})+txt(X0+bw/2,yc-27,'← drag →',{a:'middle',fs:11.5,c:'var(--ink-faint)',halo:1})+'</g>';
+    // the millivoltmeter and its lead
+    var M=L.meter, shown = settled ? (ex ? (Math.round(v/0.1)*0.1).toFixed(1) : v.toFixed(1)) : '…';
+    s+='<path d="M'+f1(X0+bw+8)+','+f1(yc-8)+' C'+f1(X0+bw+60)+','+f1(yc-30)+' '+f1(M[0]+M[2]*0.5-40)+','+f1(M[1]+M[3]+70)+' '+f1(M[0]+M[2]*0.5)+','+f1(M[1]+M[3])+'" fill="none" stroke="var(--ink-soft)" stroke-width="2"/>';
+    s+=box(M[0],M[1],M[2],M[3],9,-5,'var(--case)')+rect(M[0]+9,M[1]+9,M[2]-18,M[3]-18,'var(--panel)',' rx="4"')+txt(M[0]+M[2]/2,M[1]+M[3]/2+6.5,shown+' mV',{a:'middle',fs:L.tall?17:19,c:'var(--ink)',w:600});
+    // the same thing seen from above, so the face towards the detector is easy to pick out
+    var ix=L.inset[0], iy=L.inset[1], hh=L.inset[2];
+    s+=txt(ix+10,iy-hh-13,'seen from above',{a:'middle',fs:12});
+    s+='<g transform="rotate('+R.ang.toFixed(1)+' '+ix+' '+iy+')">'+rect(ix-hh,iy-hh,2*hh,2*hh,'var(--lid)',' stroke="var(--ink-faint)"');
+    FACES.forEach(function(F,k){ s+='<g transform="rotate('+(90*k)+' '+ix+' '+iy+')">'+rect(ix+hh-2,iy-hh,6,2*hh,F.f,' stroke="'+(F.st||'var(--ink-faint)')+'" stroke-width="1"')+'</g>'; });
+    s+='</g>'+drawWaves(ix+hh+9,ix+hh+34,iy,1,2,'#d7261e',0.8)+pg([[ix+hh+38,iy-5],[ix+hh+33,iy-8],[ix+hh+33,iy+8],[ix+hh+38,iy+5]],'#1d2430')+rect(ix+hh+38,iy-8,16,16,'var(--steel)');
+    s+=txt(ix+10,iy+hh+24,'towards the detector:',{a:'middle',fs:12})+txt(ix+10,iy+hh+40,FACES[R.face].n.toLowerCase(),{a:'middle',fs:13,c:'var(--ink)',w:600});
+    return {s:s, W:L.W, H:L.H, tall:L.tall};
   }
-  var GX0=360, GX1=585, GY0=250, GY1=30;
+
+  // ---- radiation 2: two cans beside a radiant heater, with the temperature against time graph
+  var GX0=540, GX1=836, GY0=292, GY1=44;
   function gx(t){ return GX0+(t/10)*(GX1-GX0); } function gy(T){ return GY0-(T-15)/30*(GY0-GY1); }
   function drawCans(){
-    var ex=exp(), t=R.t, s='<defs>'+arrowHead('ht-ahr','#d7261e')+'</defs>';
-    var on=running||t>0;
-    // heater in the middle
-    s+=rect(150,110,22,150,on?'#ef4444':'var(--ink-faint)','var(--ink)',' rx="3"')+txt(161,102,'heater',{a:'middle',fs:10.5});
-    s+=rect(136,260,50,10,'var(--ink-faint)');
-    s+=ln(10,270,330,270,'var(--ink-faint)',2);
-    [[40,'matt black','#1f1f22',0.95],[222,'shiny','#d9dde3',0.15]].forEach(function(cn,i){
-      var x=cn[0], T=canT(cn[3],t);
-      s+=rect(x,170,60,100,cn[2],'var(--ink-faint)',' rx="3"')+rect(x-2,164,64,7,cn[2],'var(--ink-faint)');
-      if(i===1) s+=ln(x+10,178,x+10,262,'#ffffff',3,' opacity="0.8"');
-      // thermometer
-      var ty0=150, tb=176;
-      s+=rect(x+26,60,8,tb-60,'var(--panel)','var(--ink-faint)',' rx="4"')+'<circle cx="'+(x+30)+'" cy="'+(tb+4)+'" r="6" fill="#d7261e"/>';
-      var top=tb-(T-10)/40*(tb-70);
-      s+=ln(x+30,tb,x+30,top,'#d7261e',3);
-      s+=txt(x+30,50,(ex ? (Math.round(T*2)/2).toFixed(1) : T.toFixed(1))+' °C',{a:'middle',fs:12,c:'var(--ink)',w:600});
-      s+=txt(x+30,288,cn[1],{a:'middle',fs:10.5,c:'var(--ink)'});
+    var tall=narrow(), ox=tall?5:0, ex=exp(), t=R.t, on=running||t>0, s='', by=300, hx=210+ox;
+    if(tall){ GX0=62; GX1=404; GY0=636; GY1=400; } else { GX0=540; GX1=836; GY0=292; GY1=44; }
+    s+=box(14+ox,by,376,9,16,-9,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'});
+    // the radiant heater, the same distance from each can
+    if(on) s+=ell(hx,222,34,88,'#ef4444',' opacity=".13"');
+    s+=box(hx-22,by-8,44,8,10,-6,'var(--steel-sh)')+rect(hx-9,150,18,143,on?'#e5392f':'var(--steel)',' rx="9"')+rect(hx-5,158,4,128,'#fff',' rx="2" opacity="'+(on?0.45:0.3)+'"');
+    s+=txt(hx,138,'radiant heater',{a:'middle',fs:12.5,c:'var(--ink)'});
+    [[96,'matt black',0.95],[324,'shiny',0.15]].forEach(function(cn,i){
+      var cx=cn[0]+ox, T=canT(cn[2],t), yt=198, rx=33, ry=9, yb=by-ry+2;
+      s+=ell(cx,by+2,rx+7,6,'#000',' opacity=".12"');
+      if(i===0) s+=cyl(cx,yt,yb,rx,ry,'#232327',{top:'#3b3b42',hi:'#77777f',hiop:0.3,shade:0.3});
+      else s+=cyl(cx,yt,yb,rx,ry,'#cdd3db',{top:'#edf0f4',hi:'#ffffff',hiop:0.95,shade:0.2})+ln(cx+rx*0.12,yt+14,cx+rx*0.12,yb,'#fff',2.2,' stroke-linecap="round" opacity=".7"')+ln(cx-rx*0.86,yt+10,cx-rx*0.86,yb-4,'#8f98a6',1.6,' opacity=".6"');
+      // a thermometer through the lid: its scale can be read, and the reading is repeated above it
+      s+=thermo(cx,yt+1,yt-12,15,yt-12-30*4.2,45,T,{step:5,num:10,side:i?1:-1,nobulb:1,fs:11.5,from:15})+ell(cx,yt,7,2.8,'#34343a');
+      s+=txt(cx,yt-160,(ex ? (Math.round(T*2)/2).toFixed(1) : T.toFixed(1))+' °C',{a:'middle',fs:14,c:'var(--ink)',w:600});
+      s+=txt(cx,by+30,cn[1]+' can',{a:'middle',fs:12.5,c:'var(--ink)'});
+      // the distance from the heater
+      var xa=i?hx+13:cx+rx+4, xb=i?cx-rx-4:hx-13;
+      s+=ln(xa,178,xb,178,'var(--ink-soft)',1.1)+'<path d="M'+f1(xa)+',178 l7,-3.4 v6.8 z M'+f1(xb)+',178 l-7,-3.4 v6.8 z" fill="var(--ink-soft)"/>';
     });
-    if(on) s+=drawWaves(146,106,215,3,2.5,'#d7261e',0.6)+drawWaves(176,216,215,3,2.5,'#d7261e',0.6);
-    s+=txt(161,288,'same distance',{a:'middle',fs:10,c:'var(--ink-faint)'});
-    // graph (on phones it goes under the cans)
-    s+='<g'+(narrow()?' transform="translate(-316,300)"':'')+'>';
-    s+=ln(GX0,GY0,GX1,GY0,'var(--ink-soft)',1.2)+ln(GX0,GY0,GX0,GY1,'var(--ink-soft)',1.2);
-    for(var m=0;m<=10;m+=2){ s+=ln(gx(m),GY0,gx(m),GY0+4,'var(--ink-soft)',1)+txt(gx(m),GY0+16,String(m),{a:'middle',fs:10}); }
-    for(var T=15;T<=45;T+=5){ s+=ln(GX0-4,gy(T),GX0,gy(T),'var(--ink-soft)',1)+txt(GX0-7,gy(T)+4,String(T),{a:'end',fs:10}); if(T>15) s+=ln(GX0,gy(T),GX1,gy(T),'var(--panel-border)',0.8); }
-    s+=txt((GX0+GX1)/2,GY0+32,'time (min)',{a:'middle',fs:10.5});
-    s+='<text transform="translate('+(GX0-32)+','+((GY0+GY1)/2)+') rotate(-90)" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">temperature (°C)</text>';
+    if(on) s+=drawWaves(hx-14,96+ox+33+8,246,3,2.5,'#d7261e',0.65)+drawWaves(hx+14,324+ox-33-8,246,3,2.5,'#d7261e',0.65);
+    s+=txt(hx,by+30,'same distance',{a:'middle',fs:12,c:'var(--ink-faint)'});
+    // the graph (on phones it goes under the cans)
+    s+=ln(GX0,GY0,GX1,GY0,'var(--ink-soft)',1.4)+ln(GX0,GY0,GX0,GY1,'var(--ink-soft)',1.4);
+    for(var m=0;m<=10;m+=2){ s+=ln(gx(m),GY0,gx(m),GY0+5,'var(--ink-soft)',1)+txt(gx(m),GY0+19,String(m),{a:'middle',fs:12}); if(m) s+=ln(gx(m),GY0,gx(m),GY1,'var(--panel-border)',0.8); }
+    for(var T2=15;T2<=45;T2+=5){ s+=ln(GX0-5,gy(T2),GX0,gy(T2),'var(--ink-soft)',1)+txt(GX0-8,gy(T2)+4,String(T2),{a:'end',fs:12}); if(T2>15) s+=ln(GX0,gy(T2),GX1,gy(T2),'var(--panel-border)',0.8); }
+    s+=txt((GX0+GX1)/2,GY0+38,'time (min)',{a:'middle',fs:12.5});
+    s+=txt(GX0-38,(GY0+GY1)/2,'temperature (°C)',{a:'middle',fs:12.5,x:' transform="rotate(-90 '+(GX0-38)+' '+((GY0+GY1)/2)+')"'});
     if(ex){
       R.can.forEach(function(r){ s+=expCross(gx(r.t),gy(r.b))+expRing(gx(r.t),gy(r.s)); });
-      s+=expKey(GX1-4,GY0-10,'matt black','shiny');
-    } else if(t>0){
-      var pb='',ps='';
-      for(var k=0;k<=40;k++){ var tt=t*k/40; pb+=(k?' L':'M')+gx(tt).toFixed(1)+','+gy(canT(0.95,tt)).toFixed(1); ps+=(k?' L':'M')+gx(tt).toFixed(1)+','+gy(canT(0.15,tt)).toFixed(1); }
-      s+='<path d="'+pb+'" fill="none" stroke="var(--ink)" stroke-width="2"/><path d="'+ps+'" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="5 4"/>';
-      s+=txt(GX1-4,GY0-24,'— matt black',{a:'end',fs:10.5,c:'var(--ink)'})+txt(GX1-4,GY0-10,'- - shiny',{a:'end',fs:10.5,c:'var(--accent)'});
+      s+=txt(GX1-6,GY0-28,'× matt black',{a:'end',fs:12,c:'var(--ink)'})+txt(GX1-6,GY0-11,'○ shiny',{a:'end',fs:12,c:'var(--accent)'});
+    } else {
+      if(t>0){ var pb='',ps='';
+        for(var k=0;k<=40;k++){ var tt=t*k/40; pb+=(k?' L':'M')+gx(tt).toFixed(1)+','+gy(canT(0.95,tt)).toFixed(1); ps+=(k?' L':'M')+gx(tt).toFixed(1)+','+gy(canT(0.15,tt)).toFixed(1); }
+        s+='<path d="'+pb+'" fill="none" stroke="var(--ink)" stroke-width="2.2"/><path d="'+ps+'" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-dasharray="6 4"/>'; }
+      s+=ln(GX1-116,GY0-32,GX1-94,GY0-32,'var(--ink)',2.2)+txt(GX1-6,GY0-28,'matt black',{a:'end',fs:12,c:'var(--ink)'})+
+         ln(GX1-116,GY0-15,GX1-94,GY0-15,'var(--accent)',2.2,' stroke-dasharray="6 4"')+txt(GX1-6,GY0-11,'shiny',{a:'end',fs:12,c:'var(--accent)'});
     }
-    return s+'</g>';
+    return {s:s, W:tall?430:860, H:tall?684:352, tall:tall};
   }
   function radNote(){
     var ex=exp();
@@ -877,12 +1004,13 @@ function expKey(x, y, upLabel, downLabel){
   // drag the detector along the bench
   (function(){
     var dragging=false;
-    function toD(e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; var q=p.matrixTransform(svg.getScreenCTM().inverse()); return Math.max(5,Math.min(40,Math.round((q.x-160)/10))); }
+    var off=0;   // where on the detector it was picked up, so it does not jump to the pointer
+    function rawD(e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; var q=p.matrixTransform(svg.getScreenCTM().inverse()); return (q.x-QL.X0)/QL.S; }
     svg.addEventListener('pointerdown', function(e){
       if(part()!=='rad' || cans() || !e.target.closest('#ht-det')) return;
-      dragging=true; svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
+      dragging=true; off=rawD(e)-R.d; svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
     });
-    svg.addEventListener('pointermove', function(e){ if(!dragging) return; var d=toD(e); if(d!==R.d){ setD(d); } });
+    svg.addEventListener('pointermove', function(e){ if(!dragging) return; var d=Math.max(5,Math.min(40,Math.round(rawD(e)-off))); if(d!==R.d){ setD(d); } });
     function end(){ if(!dragging) return; dragging=false; svg.classList.remove('dragging'); }
     svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
     svg.addEventListener('keydown', function(e){
@@ -904,13 +1032,12 @@ function expKey(x, y, upLabel, downLabel){
 
   /* ---------------- shared wiring ---------------- */
   function draw(){
-    var p=part(), ex=exp(), s;
-    if(p==='cond'){ s=drawCond(); noteEl.innerHTML=condNote(); statsEl.innerHTML=condStats(); if(ex) condTable(); }
-    else if(p==='conv'){ s=drawConv(); noteEl.innerHTML=convNote(); statsEl.innerHTML=convStats(); if(ex) convTable(); }
-    else { s=cans()?drawCans():drawCube(); noteEl.innerHTML=radNote(); statsEl.innerHTML=radStats(); if(ex) radTable(); }
-    svg.setAttribute('viewBox', p==='rad' && !cans() ? '0 8 600 240' : p==='rad' && narrow() ? '0 0 330 595' : '0 0 600 300');
-    if(narrow() && !(p==='rad' && cans())) s=s.replace(/font-size="([\d.]+)"/g, function(m,f){ return 'font-size="'+(+f*1.6).toFixed(1)+'"'; });   // bigger labels on a phone
-    svg.innerHTML=s;
+    var p=part(), ex=exp(), o;
+    if(p==='cond'){ o=drawCond(); noteEl.innerHTML=condNote(); statsEl.innerHTML=condStats(); if(ex) condTable(); }
+    else if(p==='conv'){ o=drawConv(); noteEl.innerHTML=convNote(); statsEl.innerHTML=convStats(); if(ex) convTable(); }
+    else { o=cans()?drawCans():drawCube(); noteEl.innerHTML=radNote(); statsEl.innerHTML=radStats(); if(ex) radTable(); }
+    svg.setAttribute('viewBox','0 0 '+o.W+' '+o.H); svg.classList.toggle('tall',!!o.tall);
+    svg.innerHTML=o.s;
     $('#ht-do').textContent=R.d+' cm'; $('#ht-two').textContent=R.tw+' °C';
     setPlayLabel();
     cmpBtn.disabled=!(V.marks.length>=5) || V.cmp;
@@ -940,8 +1067,8 @@ function expKey(x, y, upLabel, downLabel){
     svg.setAttribute('tabindex', p==='rad' && !cn ? '0' : '-1');
     svg.setAttribute('aria-label', p==='cond' ? 'A tank of hot water with rods of copper, aluminium, iron and glass sticking out of its side. A drawing pin is stuck with wax to each rod, 11 cm from the water.'
       : p==='conv' ? 'A beaker of water on a tripod with a potassium permanganate crystal at the bottom on the left, heated from below or at the top. Purple dye shows how the water moves.'
-      : cn ? 'A radiant heater between two cans of water, one matt black and one shiny, each with a thermometer. A temperature against time graph is on the right.'
-      : 'A Leslie cube of hot water seen from above, with an infrared detector on a bench. Use the arrow keys to move the detector.');
+      : cn ? 'A radiant heater between two cans of water, one matt black and one shiny, each with a thermometer. A temperature against time graph is beside them.'
+      : 'A Leslie cube of hot water with a thermometer through its lid, and an infrared detector on a bench joined to a millivoltmeter. A small picture shows the cube from above. Use the arrow keys to move the detector.');
   }
   function resetPart(){
     stop();
