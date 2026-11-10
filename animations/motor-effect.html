@@ -174,7 +174,11 @@
   .fixed #mode{display:none;}
   .embed #mode{margin-bottom:10px;}
   .qstep{font:600 12px var(--font-mono);color:var(--accent);margin:0 0 4px;}
-  .qtext{font-size:15px;line-height:1.5;margin:0;}
+  .qtext{font-size:17px;line-height:1.5;margin:0;}
+  .qdo{margin:10px 0 0;padding:8px 12px 8px 32px;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:6px;font-size:15px;line-height:1.5;}
+  .qdo li+li{margin-top:2px;}
+  /* while a question is open, the picture holds only the question's diagram, so it takes less of the width */
+  @media (min-width:861px){ .stage.qa{grid-template-columns:minmax(0,520px) minmax(300px,1fr);} }
   #st-particles .stats{grid-template-columns:repeat(3,minmax(0,1fr));}
   #st-particles .stat strong{font-size:14px;}
   /* predict on the picture: things in the picture that can be clicked */
@@ -251,6 +255,7 @@
       <div class="quiz-only" id="me-quiz" hidden>
         <p class="qstep" id="me-qstep"></p>
         <p class="qtext" id="me-qtext"></p>
+        <ol class="qdo" id="me-qdo"></ol>
       </div>
       <div class="explore-only">
         <div class="seg" id="me-app" role="group" aria-label="Apparatus"><button type="button" data-v="poles" aria-pressed="true">Straight wire</button><button type="button" data-v="rails" aria-pressed="false">Rod on rails</button><button type="button" data-v="swing" aria-pressed="false">Swing</button></div>
@@ -572,8 +577,7 @@
   // the right answer's key for each kind of question, in each view
   function ansKey(kind, view){
     if(kind==='poles') return st.n>0?'p1':'p2';
-    if(kind==='current') return view==='plan'?(st.c>0?'cd':'cu'):(st.c>0?'out':'in');
-    if(view==='plan') return sgn()>0?'out':'in';
+    if(kind==='current') return st.c>0?'out':'in';
     return vert()?(sgn()>0?'right':'left'):(sgn()>0?'up':'down');
   }
   function setLabels(){ var b=$('#me-mag').children; b[0].textContent=vert()?'N on top':'N left'; b[1].textContent=vert()?'N below':'N right'; }
@@ -721,7 +725,9 @@
     if(o.app==='swing') g+=line(0,-116,wx,wy,'var(--copper)',2.6,' stroke-linecap="round"')+'<circle cx="0" cy="-116" r="3.2" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="1.6"/>';
     var F=vt?[sg,0]:[0,-sg];
     if(o.force){ var L=Math.min(36,o.force*0.8);
-      g+=line(f1(wx+F[0]*(r+4)),f1(wy+F[1]*(r+4)),f1(wx+F[0]*(r+L)),f1(wy+F[1]*(r+L)),'var(--accent)',4,' stroke-linecap="round"')+tri(wx+F[0]*(r+L+7),wy+F[1]*(r+L+7),Math.atan2(F[1],F[0])*180/Math.PI,5.2,'var(--accent)'); }
+      g+=line(f1(wx+F[0]*(r+4)),f1(wy+F[1]*(r+4)),f1(wx+F[0]*(r+L)),f1(wy+F[1]*(r+L)),'var(--accent)',4,' stroke-linecap="round"')+tri(wx+F[0]*(r+L+7),wy+F[1]*(r+L+7),Math.atan2(F[1],F[0])*180/Math.PI,5.2,'var(--accent)');
+      var tx=wx+F[0]*(r+L+7), ty=wy+F[1]*(r+L+7);
+      g+=vt?txt(f1(tx),f1(ty-11),'force',{a:'middle',c:'var(--accent)',w:600,fs:12,halo:1}):txt(f1(tx+9),f1(ty+(F[1]<0?6:2)),'force',{a:'start',c:'var(--accent)',w:600,fs:12,halo:1}); }
     g+=wireEnd(wx,wy,r,o.hide==='current'?0:o.c,'var(--copper)');
     if(o.hide==='current') g+='<text x="'+f1(wx)+'" y="'+f1(wy+4.5)+'" text-anchor="middle" font-size="13" font-weight="600" fill="var(--ink)">?</text>';
     if(T && T.kind==='force') [['up',[0,-1]],['down',[0,1]],['left',[-1,0]],['right',[1,0]]].forEach(function(e){
@@ -732,32 +738,15 @@
     if(T && T.mark && A[T.mark.k]) g+=badge(A[T.mark.k][0],A[T.mark.k][1],T.mark.ok);
     return '<g transform="translate('+cx+','+cy+') scale('+k+')">'+g+'</g>';
   }
-  // the straight wire seen from above: it runs up the page, and the force is into or out of the page (Practise only)
-  function examPlan(cx, cy, k, o, T){
-    var g='', A={}, i, sg=o.c*o.n, grey=o.hide==='poles';
-    g+=flatPole(o,T,A,-100,-52,38,104,true,'Left')+flatPole(o,T,A,62,-52,38,104,false,'Right');
-    if(!grey) for(i=-2;i<=2;i++){ g+=line(-o.n*62,i*19,o.n*62,i*19,'var(--topic)',1.3,' opacity="0.6"');
-      [0.2,0.8].forEach(function(u){ g+=tri(-o.n*62+o.n*124*u+o.n*3,i*19,o.n>0?0:180,3.4,'var(--topic)'); }); }
-    g+=line(0,-108,0,104,'var(--copper)',8,' stroke-linecap="round"')+line(0,-104,0,100,'var(--copper-hi)',2.8,' stroke-linecap="round"');
-    if(o.hide!=='current') [-88,88].forEach(function(y){ g+=tri(0,y+(o.c>0?7:-7),o.c>0?90:-90,6.2,'var(--cur)',' stroke="var(--panel)" stroke-width="0.9" stroke-linejoin="round"'); });
-    if(o.force){ var out=sg>0;
-      g+='<circle cx="-34" cy="-80" r="11" fill="var(--panel)" stroke="var(--accent)" stroke-width="2.6"/>'+(out?'<circle cx="-34" cy="-80" r="3.3" fill="var(--accent)"/>':'<path d="M-40,-86 L-28,-74 M-28,-86 L-40,-74" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"/>');
-      g+=txt(-50,-76,'force',{a:'end',c:'var(--accent)',w:600,fs:13,halo:1}); }
-    if(T && T.kind==='force'){ A.out=[-36,-82]; A['in']=[36,-82]; A.left=[-52,84]; A.right=[52,84];
-      if(T.active) g+=ghostSym(-36,-82,true,'out','The force is out of the page',T.sel==='out')+ghostSym(36,-82,false,'in','The force is into the page',T.sel==='in')+
-        ghost([-12,84],[-52,84],'left','The force is to the left',T.sel==='left')+ghost([12,84],[52,84],'right','The force is to the right',T.sel==='right'); }
-    if(T && T.kind==='current'){ A.cu=[-19,-104]; A.cd=[19,-66];
-      if(T.active) g+=ghost([-19,-66],[-19,-104],'cu','The current goes up the page',T.sel==='cu')+ghost([19,-104],[19,-66],'cd','The current goes down the page',T.sel==='cd'); }
-    if(T && T.mark && A[T.mark.k]) g+=badge(A[T.mark.k][0],A[T.mark.k][1],T.mark.ok);
-    return '<g transform="translate('+cx+','+cy+') scale('+k+')">'+g+'</g>';
-  }
-
   // ---------- putting the picture together ----------
   var RIGPOS={poles:[196,126,0.98], rails:[236,150,1.04], swing:[250,196,0.95]};
   function draw(){
-    var bw=svg.getBoundingClientRect().width, narrow=bw>0 && bw<520, VW=narrow?430:860, VH=narrow?676:350;
+    var qa=Q && !Q.done, view=Q?Q.view:'end';
+    stageW.classList.toggle('qa',!!qa);
+    var bw=svg.getBoundingClientRect().width, narrow=bw>0 && bw<470;
+    // while a question is open the picture holds just that question's diagram; after Go it widens to the full picture
+    var VW=qa?(narrow?430:540):(narrow?430:860), VH=qa?(narrow?470:(view==='3d'?380:350)):(narrow?676:350);
     if(svg.getAttribute('viewBox')!=='0 0 '+VW+' '+VH){ svg.setAttribute('viewBox','0 0 '+VW+' '+VH); svg.classList.toggle('tall',narrow); }
-    var qa=Q && !Q.done, view=Q?Q.view:'end', plan=Q && Q.view==='plan';
     var o={app:st.app,n:st.n,c:st.c,d:d,on:on,flow:flowPh,hide:qa?Q.missing:null,comb:!Q && on && pressed(combBtn),
            force:on?16+fsize()*4.5:((qa && Q.missing!=='force')?34:0)};
     // T: what can be picked, in which picture, and (after Go) whether the pick was right
@@ -767,17 +756,20 @@
     var rp=RIGPOS[st.app], rs=narrow?0.9:1, g='';
     function T3(z){ return (T && T.zone===z)?T:null; }
     function two(x,y,a,b){ return txt(x,y,a,{a:'middle',c:'var(--ink-faint)',fs:12.5})+txt(x,y+17,b,{a:'middle',c:'var(--ink-faint)',fs:12.5}); }
-    if(qa && view!=='3d'){
-      // a 2D question: the exam diagram on its own, drawn large; the apparatus appears with Go
-      g+=(plan?examPlan:examEnd)(215,narrow?170:158,narrow?1.25:1.32,o,T);
-      g+=txt(215,narrow?338:340,plan?'the wire, seen from above':'the '+thing()+', seen end-on',{a:'middle',fs:13});
-      g+=two(Z.ex[0],Z.ex[1]-8,'Press Go to see','the apparatus');
-    } else {
-      g+=rig((narrow?rp[0]+8:rp[0])*rs+(narrow?10:0),rp[1]*rs+(narrow?8:0),rp[2]*rs,o,T3('3d'));
-      if(qa) g+=two(Z.ex[0],Z.ex[1]-8,'Press Go to see','it end-on');
-      else { g+=(plan?examPlan:examEnd)(Z.ex[0],Z.ex[1],1,o,T3(plan?'plan':'end'));
-        g+=txt(Z.ex[0],Z.cap,plan?'the wire, seen from above':'the same '+thing()+', seen end-on',{a:'middle',fs:12.5}); }
+    if(qa){
+      var cx=narrow?215:205, py=narrow?458:(view==='3d'?370:342);
+      if(view==='3d') g+=rig((narrow?rp[0]+8:rp[0])*rs+(narrow?10:0)-(narrow?0:6),rp[1]*rs+(narrow?8:0),rp[2]*rs,o,T);
+      else { g+=examEnd(cx,narrow?172:158,narrow?1.25:1.32,o,T); g+=txt(cx,narrow?408:318,'the '+thing()+', seen end-on',{a:'middle',fs:13}); }
+      // what to click, right under the picture
+      var ask=Q.pick?'Now press Go':{force:'Click the arrow for the way it moves',poles:'Click the pole you think is north',
+        current:view==='3d'?'Click the arrow for the way the current flows':'Click the dot or the cross'}[Q.missing];
+      g+=txt(narrow?215:(view==='3d'?250:cx),py,ask,{a:'middle',fs:15,w:600,c:'var(--accent)',halo:1});
+      g+=keyRows(narrow?16:346,narrow?(view==='3d'?380:12):20,view==='3d');
+      setSvg(svg,g); $('#me-io').textContent=num(I(),1)+' A'; $('#me-bo').textContent=STR[B()]; drawQuizText(); return;
     }
+    g+=rig((narrow?rp[0]+8:rp[0])*rs+(narrow?10:0),rp[1]*rs+(narrow?8:0),rp[2]*rs,o,T3('3d'));
+    g+=examEnd(Z.ex[0],Z.ex[1],1,o,T3('end'));
+    g+=txt(Z.ex[0],Z.cap,'the same '+thing()+', seen end-on',{a:'middle',fs:12.5});
     g+=keyRows(Z.key[0],Z.key[1],true);
     // the left hand: only once the current is on, so it never gives the answer away
     if(on){ g+=hand3(Z.hand[0],Z.hand[1],narrow?0.7:0.74,Bv(),Iv(),Fv(),{x0:Z.hx[0],x1:Z.hx[1],thumb:'Motion'});
@@ -810,10 +802,10 @@
   function changed(){ reset(); }
 
   // ---------- Practise: predict on the picture, then Go ----------
-  // Each question shows one picture (the apparatus in 3D, the wire end-on, or the wire from above) with one thing missing:
+  // Each question shows one picture (the apparatus in 3D or the wire end-on) with one thing missing:
   // the force, the poles or the current. The student clicks the answer on the picture; Go shows what really happens and marks the click.
-  // New question deals each of the nine kinds once, in a shuffled order, and goes round the three sets of apparatus.
-  var KINDS=[['3d','force'],['3d','poles'],['3d','current'],['end','force'],['end','poles'],['end','current'],['plan','force'],['plan','poles'],['plan','current']];
+  // New question deals each of the six kinds once, in a shuffled order, and goes round the three sets of apparatus.
+  var KINDS=[['3d','force'],['3d','poles'],['3d','current'],['end','force'],['end','poles'],['end','current']];
   var deck=[], appDeck=[], lastKind=null, dealt=0, score=0;
   var qmode=segGroup($('#me-qmode'), setQMode);
   function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), x=a[i]; a[i]=a[j]; a[j]=x; } return a; }
@@ -822,22 +814,26 @@
     stop(); on=false; finished=false; t=0; d=0;
     if(!deck.length){ deck=shuffle(KINDS.slice()); if(deck[deck.length-1]===lastKind) deck.unshift(deck.pop()); }
     lastKind=deck.pop(); dealt++;
-    if(lastKind[0]==='plan') st.app='poles';
-    else { if(!appDeck.length){ appDeck=shuffle(['poles','rails','swing']); if(appDeck[appDeck.length-1]===st.app) appDeck.unshift(appDeck.pop()); } st.app=appDeck.pop(); }
+    if(!appDeck.length){ appDeck=shuffle(['poles','rails','swing']); if(appDeck[appDeck.length-1]===st.app) appDeck.unshift(appDeck.pop()); }
+    st.app=appDeck.pop();
     st.n=pick([1,-1]); st.c=pick([1,-1]);
     Q={view:lastKind[0], missing:lastKind[1], pick:null, done:false, ok:null, n:dealt};
     draw();
   }
-  var DIRW={up:'up',down:'down',left:'to the left',right:'to the right',out:'out of the page',in:'into the page'};
   function drawQuizText(){
-    var v=Q.view, th=thing(), where=v==='3d'?'on the apparatus':'on the diagram';
+    var v=Q.view, th=thing(), fw=forceWord(), cw=curWord(), bw=fieldWord(), n;
     $('#me-qstep').textContent='Question '+Q.n+' · '+score+' right so far';
     $('#me-qtext').innerHTML={
-      force:'Which way does the '+th+' move when the current is switched on? <b>Click an arrow</b> '+where+', then press <b>Go</b>.',
-      poles:'The <b>force</b> on the '+th+' is shown. Which pole is the <b>north pole</b>? <b>Click it</b>, then press <b>Go</b>.',
-      current:'The <b>force</b> on the '+th+' is shown. Which way is the <b>current</b> in the '+th+'? <b>Click '+(v==='end'?'the dot or the cross':'an arrow')+'</b>, then press <b>Go</b>.'}[Q.missing];
-    var n, fw=v==='plan'?(sgn()>0?'out of the page':'into the page'):forceWord(), cw=v==='plan'?(st.c>0?'down the page':'up the page'):curWord(), bw=fieldWord();
-    if(!Q.done) n=(v==='3d' && Q.missing!=='current'?'The current flows from the cell’s <b>+</b> terminal, round the circuit, to its <b>−</b> terminal. ':'')+'Use Fleming’s left-hand rule'+(Q.pick?', then press <b>Go</b> to see what happens.':'.');
+      force:'Which way does the '+th+' move when the current is switched on?',
+      poles:'The orange arrow shows the <b>force</b> on the '+th+'. Which pole is the <b>north pole</b>?',
+      current:'The orange arrow shows the <b>force</b> on the '+th+'. Which way does the <b>current</b> flow in the '+th+'?'}[Q.missing];
+    var step={
+      force:'Click one of the four dashed arrows beside the '+th+(v==='3d'?' on the apparatus.':'.'),
+      poles:'Click the grey pole you think is north. It turns to N, and the other one to S.',
+      current:v==='3d'?'Click one of the two dashed arrows beside the '+th+': towards you or away from you.':'Click the dot (current out of the page) or the cross (current into the page) beside the '+th+'.'}[Q.missing];
+    $('#me-qdo').innerHTML=Q.done?'':'<li>'+step+'</li><li>Press <b>Go</b> to see if you were right.</li>';
+    $('#me-qdo').hidden=Q.done;
+    if(!Q.done) n=(v==='3d' && Q.missing!=='current'?'The current flows from the cell’s <b>+</b> terminal, round the circuit, to its <b>−</b> terminal. ':'')+'Use Fleming’s left-hand rule.';
     else { var why={
         force:'First finger along the field (N to S, '+bw+'), second finger along the current ('+cw+'): the thumb gives the force, <b>'+fw+'</b>.',
         poles:'Thumb along the force ('+fw+'), second finger along the current ('+cw+'): the first finger gives the field, '+bw+'. The field runs from N to S, so the north pole is '+(vert()?(st.n>0?'<b>on top</b>':'<b>underneath</b>'):(st.n>0?'<b>on the left</b>':'<b>on the right</b>'))+'.',
