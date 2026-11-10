@@ -44,6 +44,17 @@ Both model pages carry the same block of drawing code, marked `3D kit`: `scene3`
 - **Nothing gives the answer away before Go:** hide theory curves, readings and working until the run is marked. The question is also written in the picture, in clear space, with the verdict (✓ or ✗ and the answer in words) in the same place afterwards.
 - **Current in a hidden part of a wire:** cut the path into pieces, mark which can be seen, and give `flowMarks` each visible piece with the phase less the length before it, so the arrowheads keep step along the whole wire. To turn the arrowheads round, reverse the pieces and use the total length less the phase.
 
+## Picture extras: the left hand, picks and hidden wires (batch 2, 10 Nov 2026)
+
+`motor-effect.html` and `loudspeaker.html` carry a block marked `picture extras`, with `scene3` from the 3D kit. A fix goes into both pages.
+
+- **`hand3(cx, cy, k, f, s, t, o)` draws a solid left hand** for Fleming's left-hand rule in the kit's camera: `f`, `s` and `t` are unit vectors along the field, the current and the force, and the hand's arrows carry one word each (Field, Current, Force or Motion); `handKey` adds the key naming the fingers. Because t = s × f, the hand cannot be drawn the wrong way round. Show it only once the answer is known. It needs the `--hand`, `--hand-hi` and `--hand-sh` colours. Never mirror a picture to change the view: a mirrored left hand is a right hand.
+- **Picks:** `ghost` (a dashed arrow), `ghostSym` (a dot or a cross) and `pickG` (anything else, such as a pole) make `<g class="pick" data-k="…">` targets; `wirePicks(svg, fn)` handles click, Enter and Space; `setSvg` redraws a picture and keeps the keyboard's place; `badge` puts the tick or cross on the pick after Go. Their CSS is the `.pick` block.
+- **Hidden wires:** list the solid blocks as `[x0,x1,y0,y1,z0,z1]`; `hiddenBy(p, solids)` says whether a point is behind one. Draw the blocks first, back to front, then only the pieces of wire that can be seen (`vseg` in `motor-effect.html`), and give `flow3` the same test so no current arrow shows through a magnet.
+- **Three sets of apparatus for the motor effect (Alex, 10 Nov 2026):** a straight wire between two poles (field across, force up or down), a rod on rails and a wire swing (U-shaped magnet on its side, field vertical, force sideways). Explore starts on the straight wire and has a switch; questions go round all three, and the layout may change from one question to the next.
+- **A question's own picture is drawn large and alone;** the other views (and the hand) appear with Go, so they never give the answer away.
+- `motor-effect.html` keeps its older tab names, Explore and Practise (batch 3's pages use Explore and Predict).
+
 ## Checks before pushing
 
 1. `node --check` on the page's scripts (CLAUDE.md, "Check before you commit").

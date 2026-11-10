@@ -105,7 +105,7 @@ Each batch is one new chat. Alex calls a batch up by number, in any order: "Do a
 
 - [x] Model pages: `dc-motor.html` and `ac-generator.html` redrawn (10 Nov 2026). Alex to check them (`tools/REVIEW.md`), especially the cell's + on the left brush for "Normal".
 - [ ] Batch 1
-- [ ] Batch 2
+- [x] Batch 2 (10 Nov 2026): both pages rebuilt. `motor-effect.html`: one wide picture (3D apparatus, exam diagram, drawn left hand), an apparatus switch (straight wire, rod on rails, swing), predict on the picture then Go in Explore, Practise (nine kinds of question) and charged particles. `loudspeaker.html`: cut-away 3D speaker beside the exam diagram, current arrows, and a dealt question answered on the cone. To review in `tools/REVIEW.md`.
 - [x] Batch 3 (10 Nov 2026): all three pages rebuilt. `magnet-and-coil.html`: 3D coil, magnet and meter, Predict (the meter's direction), IGCSE / IAL / IB switch with Lenz's law. `transformer.html`: 3D core and coils, Predict the voltmeter. `national-grid.html`: build the grid on two bases, then send; IGCSE / IAL / IB switch with P = I²R. To review in `tools/REVIEW.md`.
 - [ ] Batch 4
 - [ ] Batch 5
