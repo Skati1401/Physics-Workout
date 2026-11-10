@@ -72,6 +72,17 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 - [ ] IAL 132: the derivation of ½m⟨c²⟩ = 3/2 kT (an Order activity or a step-by-step reveal).
 - [ ] `ial.html` holds only Core Practicals so far; IAL workouts are still to plan.
 
+## 7. Fable visuals (ideas, added 10 Nov 2026)
+
+Drawing and animation jobs worth running on Claude Fable, which draws SVG scenes better than the other models; keep page logic on the usual model, as Fable costs more. Fable can still draw convincing pictures with wrong physics, so drive every motion from the page's equations, not drawn keyframes, and check directions (field lines, current, rotation) before publishing. Build with the `teaching-animations` or `interactive-revision-lab` skill as usual.
+
+- [ ] 6.6 magnetic field practical: draw field diagrams for a "find the mistake" activity (reversed arrow, line not reaching the magnet, lines crossing, no central line between N poles). Same job as the field-drawing item in section 5; do them together.
+- [ ] 2.9 I–V practical: a circuit-diagram activity, build it or find the errors (ammeter in parallel, voltmeter in series, cells the wrong way round). Same job as the circuit-diagram item in section 5.
+- [ ] 2.9 I–V: show the lamp curve continuing into the negative quadrant (sweep from −V to +V) in `animations/iv-characteristics.html` and the practical's graphs.
+- [ ] Practical runs that feel passive (the 4 Nov review): richer apparatus scenes, e.g. compass needles swinging and filings settling when the card is tapped (`magnetic-field-patterns.html`), a Leslie cube with a readable thermometer (`heat-transfer.html`).
+- [ ] Drawing pass on existing animations where the picture is plain: `gas-molecules.html` (5b), `heat-transfer.html` convection, `chain-reaction.html` (7b), `roller-coaster-energy.html` and the Year 9 half-pipe and bungee Predicts. The motor and generator pages were redrawn on 10 Nov 2026, so leave those.
+- [ ] Build: star life cycle and red shift animations for 8a/8b (no animation page yet; frame them in `universe-and-stars.html` and `cosmology.html`).
+
 ## Done
 
 - [x] Core route for the other 13 IGCSE practicals (only 1.22 has one): about 12 minutes each, chosen from the Question Index, set in `page.json`, checked with `check.py` (`tools/CORE-PRACTICALS.md`, "Core route + Extra practice"). Start from the recommended route for each page in the Project doc `claude/practicals-review-2026-11-04.md` (added 5 Nov 2026). Superseded 5 Nov 2026: practical pages no longer have a core route (see the rebuild to-do in section 5).
