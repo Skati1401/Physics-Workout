@@ -844,6 +844,7 @@
 
   // ---------- charged particles' diagrams (6.11P, Triple Award) ----------
   // Exam papers shade the region of field and give its direction in words; every left-hand-rule question uses a positive particle.
+  // The region is also filled with crosses (into the page) or dots (out of it).
   // Force on a positive particle moving along v in a field b out of the page: F = v x B = b * (vy, -vx).
   function qvB(v,b){ return [b*v[1],-b*v[0]]; }
   var PART={proton:['var(--north-f)','+'],electron:['var(--south-f)','−'],neutron:['var(--coilb)','']};
@@ -855,16 +856,26 @@
   }
   // the shaded region of field, with its direction in words (b: 1 out of the page, -1 into it, 0 not known, null leave the second line out)
   function fieldRect(x,y,w,h){ return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="6" fill="var(--topic-soft)" stroke="var(--topic)" stroke-dasharray="5 4"/>'; }
+  // A field into or out of the page is drawn as crosses or dots all over the region (Alex, 10 Nov 2026), as well as said in words.
+  // b: 1 dots (out of the page), -1 crosses (into it); step: the gap between them (closer = stronger field)
+  function fieldMarks(x,y,w,h,b,step){
+    var g='', nx=Math.round(w/(step||38)), ny=Math.round(h/(step||38)), i, j, e=4.5;
+    for(i=0;i<nx;i++) for(j=0;j<ny;j++){ var cx=f1(x+(i+0.5)*w/nx), cy=f1(y+(j+0.5)*h/ny);
+      g+=b<0?'<path d="M'+(cx-e)+','+(cy-e)+' L'+(+cx+e)+','+(+cy+e)+' M'+(+cx+e)+','+(cy-e)+' L'+(cx-e)+','+(+cy+e)+'"/>'
+            :'<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="none"/><circle cx="'+cx+'" cy="'+cy+'" r="1.7" fill="var(--topic)" stroke="none"/>'; }
+    return '<g stroke="var(--topic)" stroke-width="1.5" stroke-linecap="round" opacity="0.5">'+g+'</g>';
+  }
   // the words go in one corner of the region: pos.l = left-hand side, pos.b = bottom (so they are clear of the particle and the arrows)
   function fieldWords(x,y,w,h,b,extra,pos){
     pos=pos||{}; var L=pos.l, n=(b===null?1:2)+(extra?1:0), ty=pos.b?y+h-12-(n-1)*15:y+19, tx=L?x+(b?38:10):x+w-(b?38:10), sx=L?x+20:x+w-20, sy=ty+3, an=L?'start':'end', g='';
+    g+='<rect x="'+(L?x+3:x+w-(b?153:124))+'" y="'+(ty-15)+'" width="'+(b?150:121)+'" height="'+(n*15+7)+'" rx="4" fill="var(--topic-soft)"/>';   // a clear patch, so the words are not crossed by the marks or the lines
     g+=txt(tx,ty,'magnetic field',{a:an,fs:12.5,c:'var(--topic)',w:600,halo:b===null})+(b===null?'':txt(tx,ty+15,b?zword(b):'direction: ?',{a:an,fs:12.5,c:'var(--topic)',w:600}));
     if(b>0) g+='<circle cx="'+sx+'" cy="'+sy+'" r="9" fill="none" stroke="var(--topic)" stroke-width="2"/><circle cx="'+sx+'" cy="'+sy+'" r="3" fill="var(--topic)"/>';
     if(b<0) g+='<path d="M'+(sx-8)+','+(sy-8)+' L'+(sx+8)+','+(sy+8)+' M'+(sx+8)+','+(sy-8)+' L'+(sx-8)+','+(sy+8)+'" stroke="var(--topic)" stroke-width="2.4" stroke-linecap="round"/>';
     if(extra) g+=txt(L?x+10:x+w-10,ty+(b===null?15:30),extra,{a:an,fs:12.5,c:'var(--accent)',w:600});
     return g;
   }
-  function fieldBox(x,y,w,h,b,extra,pos){ return fieldRect(x,y,w,h)+fieldWords(x,y,w,h,b,extra,pos); }
+  function fieldBox(x,y,w,h,b,extra,pos,step){ return fieldRect(x,y,w,h)+(b?fieldMarks(x,y,w,h,b,step):'')+fieldWords(x,y,w,h,b,extra,pos); }
   // One particle in a region of field. S: b, along (field lines along the page instead: their page direction), name, p0, v, F (page vectors; F null = no force),
   //   showV, showF: the arrows given before Go; away: the page direction the field's words keep clear of (never one that gives the answer away). After Go the particle moves: round an arc when there is a force, straight on when there is none.
   function partScene(Q,L,S){
@@ -875,6 +886,7 @@
       [-105,-63,-21,21,63,105].forEach(function(off){ var a=hzl?[cx-d[0]*140,cy+off]:[cx+off,cy-d[1]*114], b=hzl?[cx+d[0]*140,cy+off]:[cx+off,cy+d[1]*114];
         g+=line(f1(a[0]),f1(a[1]),f1(b[0]),f1(b[1]),'var(--topic)',1.4,' opacity="0.7"');
         [0.12,0.9].forEach(function(t){ g+=tri(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,ang(d),3.6,'var(--topic)'); }); }); }
+    if(!S.along && S.b) g+=fieldMarks(rx,ry,rw,rh,S.b);
     g+=fieldWords(rx,ry,rw,rh,S.along?null:S.b,null,{l:S.away[0]>0.5,b:S.away[1]>0.5});
     if(Q.done){
       if(F){ var R=70, ph=1.0*u, C=[p[0]+R*F[0],p[1]+R*F[1]], pts=[], c=Math.cos(ph), s=Math.sin(ph);
@@ -938,7 +950,7 @@
   };
   // A proton on a circular path. Q.th: where it is on the circle (degrees), Q.s: +1 anticlockwise (field into the page for a positive particle).
   function circScene(Q,L,rx,R2,extra,low){
-    var ry=22, cx=rx+155, cy=ry+155, R=80, th=Q.th*DEG, rh=[Math.cos(th),Math.sin(th)], g=fieldBox(rx,ry,310,310,-Q.s,extra,{b:low}), u=Q.done?Q.u:0;
+    var ry=22, cx=rx+155, cy=ry+155, R=80, th=Q.th*DEG, rh=[Math.cos(th),Math.sin(th)], u=Q.done?Q.u:0, g=fieldBox(rx,ry,310,310,-Q.s,extra,{b:low},(Q.done && R2)?(R2<80?27:52):38);   // after a change in the field, the marks are closer together (stronger) or further apart (weaker)
     function P(q){ return [cx+q[0],cy-q[1]]; }
     var p0=[R*rh[0],R*rh[1]], C=[0,0], r=R;
     g+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.6" stroke-dasharray="6 5"'+((Q.done && R2)?' opacity="0.45"':'')+'/>';
