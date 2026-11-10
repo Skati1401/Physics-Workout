@@ -17,7 +17,7 @@
     --good:#15803d; --good-soft:#dcf5e3;
     --bad:#c0311a; --bad-soft:#fbe1db;
     --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
-    --topic:#0f7a86;   --topic-soft:#d6f1f3;
+    --topic:#0f7a86;   --topic-soft:#d6f1f3; --fld:#8ff6ff; --fld-edge:#053a42;
     --north:#d23b3b;   --north-soft:#fbdede;
     --south:#2f62d6;   --south-soft:#dde7fb;
     --copper:#b8651b;  --filing:#3b4352;
@@ -40,7 +40,7 @@
       --good:#4ade80; --good-soft:#123321;
       --bad:#f27159; --bad-soft:#3a1712;
       --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
-      --topic:#4fd1dc; --topic-soft:#123236;
+      --topic:#4fd1dc; --topic-soft:#123236; --fld:#8ff6ff; --fld-edge:#04262c;
       --north:#ff7a7a; --north-soft:#3d1a1a;
       --south:#7da3ff; --south-soft:#1a2440;
       --copper:#f0a35e; --filing:#c3cad6;
@@ -60,7 +60,7 @@
     --good:#4ade80; --good-soft:#123321;
     --bad:#f27159; --bad-soft:#3a1712;
     --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
-    --topic:#4fd1dc; --topic-soft:#123236;
+    --topic:#4fd1dc; --topic-soft:#123236; --fld:#8ff6ff; --fld-edge:#04262c;
     --north:#ff7a7a; --north-soft:#3d1a1a;
     --south:#7da3ff; --south-soft:#1a2440;
     --copper:#f0a35e; --filing:#c3cad6;
@@ -408,6 +408,7 @@
   function hiding(){ return (exp() && !done()) || (!!q && q.phase!=='done'); }   // answers stay hidden until the run (or the question) is finished
   function done(){ return t>=TMAX-1e-9; }
   function on(){ return t>0||running; }
+  function fieldLines(){ return Math.max(1,Math.ceil(Vin()/4)); }   // how many field lines at the field's biggest: 2 or 4 V gives 1, 12 V gives 3, 24 V gives 6
   function type(){ return Ns()>Np()?'step-up':Ns()<Np()?'step-down':'neither'; }
 
   // Directions (right-hand grip rule; check again if the windings are redrawn):
@@ -463,12 +464,15 @@
     g+=Q4([[-90,-20,110],[90,-20,110],[90,20,110],[-90,20,110]],'var(--iron-t)')+Q4([[90,-20,-110],[90,20,-110],[90,20,110],[90,-20,110]],'var(--iron-s)');
     [-10,0,10].forEach(function(Y){ g+=L3([-90,Y,110],[90,Y,110],'var(--iron-in)',0.7,' opacity="0.45"')+L3([90,Y,-110],[90,Y,110],'var(--iron-in)',0.7,' opacity="0.6"'); });
     g+='<path d="M'+P([[-90,-20,-110],[90,-20,-110],[90,-20,110],[-90,-20,110]].map(sc.pr)).replace(/ /g,' L')+' Z M'+P([[-50,-20,-70],[50,-20,-70],[50,-20,70],[-50,-20,70]].map(sc.pr)).replace(/ /g,' L')+' Z" fill="var(--iron-f)" fill-rule="evenodd" stroke="var(--iron-in)" stroke-width="1" stroke-linejoin="round"/>';
-    // the field in the core: a loop round it, as strong as the field, with arrows pointing the way it points
-    var op=Math.min(1,Math.abs(b)), cw=b>=0;
+    // the field in the core: loops round it, with arrows pointing the way it points. Each line is bright with a dark edge so it shows on the grey iron.
+    // A bigger input voltage gives a stronger field, so more lines (fieldLines(): 1 to 6); as the field grows they appear from the middle of the limb outwards.
+    var op=Math.min(1,Math.abs(b)), cw=b>=0, NL=fieldLines(), mid=(NL-1)/2;
     if(op>0.04){
-      [[70,90],[62,82]].forEach(function(e){ g+='<polygon points="'+P([[-e[0],-20.5,-e[1]],[e[0],-20.5,-e[1]],[e[0],-20.5,e[1]],[-e[0],-20.5,e[1]]].map(sc.pr))+'" fill="none" stroke="var(--topic)" stroke-width="'+(2.2*s).toFixed(1)+'" stroke-linejoin="round" opacity="'+(0.25+0.75*op).toFixed(2)+'"/>'; });
-      [[0,86,cw?1:-1],[0,-86,cw?-1:1]].forEach(function(e){ var a=sc.pr([e[0]-6*e[2],-20.5,e[1]]), c=sc.pr([e[0]+8*e[2],-20.5,e[1]]);
-        g+=tri(c[0],c[1],Math.atan2(c[1]-a[1],c[0]-a[0])*180/PI,(6+4*op)*s,'var(--topic)',' stroke="var(--iron-f)" stroke-width="1"'); });
+      for(i=0;i<NL;i++){ var d=(i-mid)*5.6, o=Math.max(0,Math.min(1,op*(NL+0.5)-(Math.round(Math.abs(i-mid)*2)-(i<mid?1:0)))); if(o<0.03) continue;
+        var loop=P([[-70-d,-20.5,-90-d],[70+d,-20.5,-90-d],[70+d,-20.5,90+d],[-70-d,-20.5,90+d]].map(sc.pr));
+        g+='<g opacity="'+o.toFixed(2)+'"><polygon points="'+loop+'" fill="none" stroke="var(--fld-edge)" stroke-width="'+(3.8*s).toFixed(1)+'" stroke-linejoin="round"/><polygon points="'+loop+'" fill="none" stroke="var(--fld)" stroke-width="'+(2*s).toFixed(1)+'" stroke-linejoin="round"/></g>'; }
+      [[0,90,cw?1:-1],[0,-90,cw?-1:1]].forEach(function(e){ var a=sc.pr([e[0]-6*e[2],-20.5,e[1]]), c=sc.pr([e[0]+8*e[2],-20.5,e[1]]);
+        g+=tri(c[0],c[1],Math.atan2(c[1]-a[1],c[0]-a[0])*180/PI,(7+4*op)*s,'var(--fld)',' stroke="var(--fld-edge)" stroke-width="'+(1.4*s).toFixed(1)+'" stroke-linejoin="round"'); });
     }
     // in front of the core: the near side of every turn
     g+=wires(sec.side,'var(--copper)',(sec.w*s).toFixed(1));
@@ -524,7 +528,7 @@
     // the circuit symbol, with what the moving arrowheads and the loop in the core stand for
     var SX=L.SY.x, SY=L.SY.y;
     g+=txt(SX-14,SY-12,'circuit symbol',{fs:12.5,c:'var(--ink)'})+symbol(SX-10,SY,0.62);
-    g+=tri(SX+122,SY+10,0,4.6,'var(--cur)')+txt(SX+130,SY+14,'current',{fs:12})+line(SX+108,SY+32,SX+124,SY+32,'var(--topic)',2.4)+txt(SX+130,SY+36,'field in core',{fs:12});
+    g+=tri(SX+122,SY+10,0,4.6,'var(--cur)')+txt(SX+130,SY+14,'current',{fs:12})+line(SX+106,SY+32,SX+122,SY+32,'var(--fld-edge)',4.4,' stroke-linecap="round"')+line(SX+106,SY+32,SX+122,SY+32,'var(--fld)',2,' stroke-linecap="round"')+txt(SX+130,SY+36,'field in core',{fs:12});
     g+=predictSvg(L,m,YM);
     svg.innerHTML=g;
 
