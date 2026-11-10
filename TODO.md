@@ -110,7 +110,8 @@ Each batch is one new chat. Alex calls a batch up by number, in any order: "Do a
 - [ ] Batch 4
 - [ ] Batch 5 (`reaction-time.html` done 10 Nov 2026: redrawn with a side-on dart rifle, solid sheep, field and hedge, a velocity–time graph and stopwatch, and a new "Stop the car" test; the other four pages are still to do)
 - [ ] Batch 6
-- [ ] Batch 7
+- [x] Batch 7 (10 Nov 2026): all four pages redrawn. `resistivity.html` and `internal-resistance.html`: solid apparatus on the bench (digital meters, cells, rheostat, metre rule, micrometer) with purple current arrows, beside the graph and the circuit diagram. `photoelectric.html`: solid lamp, glass tube, supply and microammeter; the electrons shown going round the wires (for Alex to confirm). `electron-diffraction.html`: solid glass tube on a stand with its high-voltage supply, and a larger screen. They share a new drawing block, the instrument kit (`tools/ANIMATION-STYLE.md`). To review in `tools/REVIEW.md`.
+- [ ] After batch 6: add its "build the circuit" task (the student places the ammeter and voltmeter, then Go) to `resistivity.html` and `internal-resistance.html`, with question kinds from the IAL papers. Left out of batch 7 so the mechanic is built once, in batch 6.
 - [ ] Batch 8
 - [x] Batch 9 (10 Nov 2026): all four pages redrawn. `roller-coaster-energy.html`: solid coaster beside a bar chart of the energy stores, and a new Predict tab (click a letter on the picture, then Go). `heat-transfer.html`: solid apparatus for all three parts, the convection exam diagram beside the beaker, a 3D Leslie cube with a readable thermometer. `density.html`: restyled, solid balance, glassware and stand. `liquid-pressure.html`: rebuilt on the standard page (Dam | Manometer tabs, a pressure–depth graph and an Experiment on the dam). They share a new drawing block, the solid kit (`tools/ANIMATION-STYLE.md`). To review in `tools/REVIEW.md`.
 - [ ] Batch 10

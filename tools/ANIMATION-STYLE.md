@@ -60,7 +60,7 @@ Both model pages carry the same block of drawing code, marked `3D kit`: `scene3`
 
 ## The solid kit (batch 9, 10 Nov 2026)
 
-`roller-coaster-energy.html`, `heat-transfer.html`, `density.html`, `liquid-pressure.html` and `reaction-time.html` carry one identical block, marked `solid kit`, for bench apparatus that needs no camera: everything is drawn straight on, with depth going up and to the right. A fix goes into every page that has the block.
+`roller-coaster-energy.html`, `heat-transfer.html`, `density.html`, `liquid-pressure.html`, `reaction-time.html` and the four batch 7 pages (see "The instrument kit") carry one identical block, marked `solid kit`, for bench apparatus that needs no camera: everything is drawn straight on, with depth going up and to the right. A fix goes into every page that has the block.
 
 - `box(x, y, w, h, dx, dy, col)`: a solid block with a lit top, a plain front and a darker side (benches, bases, bars of a chart). `tube` is a round bar with a streak of light, `cyl` an upright cylinder (a can), `ell`, `pg`, `pl`, `ln`, `rect` the plain shapes, `arrow` a solid arrow.
 - `thermo(x, yb, y0, t0, y1, t1, T, o)`: a glass thermometer whose scale can be read: ticks and numbers stand beside the stem, in clear space. Give it enough length for about 2 px per degree, and repeat the reading as text only where the scale is too coarse to read to the precision asked for.
@@ -69,6 +69,20 @@ Both model pages carry the same block of drawing code, marked `3D kit`: `scene3`
 - **A picture that already had its own units keeps them.** `density.html` draws its scene in the same 380 × 300 units as before, inside a group that is 1.15 times larger in the wide picture (`SC`); pointer positions are divided by `SC` before they are used. `heat-transfer.html` gives each part a layout function (`condLay`, `convLay`, `cubeLay`) that returns the wide or the tall positions; the physics never reads them.
 - **A cube that turns** (the Leslie cube): work out each face's outward direction from the angle, draw only the faces towards the viewer, and add a small "seen from above" picture where the face that matters is hard to see.
 - **Predict by letter:** where the answer is a place on the picture rather than a direction, deal three or four dashed rings with letters (`roller-coaster-energy.html`); after Go, the right one turns green and the values appear beside the rings.
+
+## The instrument kit (batch 7, 10 Nov 2026)
+
+`resistivity.html`, `internal-resistance.html`, `photoelectric.html` and `electron-diffraction.html` carry one identical block, marked `instrument kit`, straight after the solid kit (which it needs). It is for pictures of circuits on a bench, drawn straight on. A fix goes into every page that has the block. Batch 6 (the circuit pages) can copy it.
+
+- `dmm(M, o)`: a **digital meter** with a reading on its display (`o.text`, `o.unit`), a letter on the case (A, V) and a terminal on each side; `dmmGeom(M)` gives where the leads plug in. Digital, because these practicals read to 0.001 A and 0.01 V, which a needle cannot show. `M.posts = [x1, x2]` puts the terminals on top instead (a supply standing under what it feeds, as in `electron-diffraction.html`). The same function draws a supply: leave out the letter and colour the terminals with `o.tl` and `o.tr`.
+- `lead(points)`: an insulated lead. `hang(a, b, sag)` and `bez(a, c1, c2, b)` give the points of a lead that hangs or curves, so the current arrows can follow it. A voltmeter's leads are the lighter `--lead-v` and carry no arrows.
+- `flowPath(pieces, phase, gap, size)`: current arrows along a whole loop given as pieces `[points, visible]`; mark the piece through a meter, a cell or a resistor as not visible and the arrows keep step either side of it. `tri` and `flowMarks` are the 3D kit's.
+- `shadow`, `stud`, `rod` and `icase` (a case with a lit top and a darker side) for the rest of the bench. No bench is drawn: each object throws a soft shadow, so the labels between the objects are in clear space.
+- `sizeView(svg, wide, tall)` picks the wide (860) or the tall (430) picture from the SVG's width; each page calls it in `layout()` at the start of `draw()`, and a `ResizeObserver` redraws when the shape changes.
+- Colour tokens it needs (copy the line marked "instrument kit colours" from all three theme blocks of `resistivity.html`).
+- **Layout for apparatus, graph and circuit diagram together** (the two electricity pages): the apparatus fills the left 500 of the 860; the graph is top right and the circuit diagram under it, about 340 × 110. The circuit helper block's `axes()` has larger text in these two pages than in the other electricity pages, for the wider picture.
+- **Names to watch when the kit goes into an older page:** `resistivity.html` had its own `dmm()` (the wire's diameter, now `dia()`), and `photoelectric.html` has `SUP` (superscript digits), so its supply is `PSU`.
+- **Electrons or conventional current (photoelectric, for Alex to confirm):** where the picture already shows electrons moving (photoelectrons crossing a tube), the wires show the electrons going round as dots of the same colour (`flowDots`), with a line saying conventional current is the other way. Everywhere else the wires carry the purple conventional-current arrows.
 
 ## Field patterns on a card (batch 1, 10 Nov 2026)
 
