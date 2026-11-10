@@ -69,6 +69,16 @@ Both model pages carry the same block of drawing code, marked `3D kit`: `scene3`
 - **A cube that turns** (the Leslie cube): work out each face's outward direction from the angle, draw only the faces towards the viewer, and add a small "seen from above" picture where the face that matters is hard to see.
 - **Predict by letter:** where the answer is a place on the picture rather than a direction, deal three or four dashed rings with letters (`roller-coaster-energy.html`); after Go, the right one turns green and the values appear beside the rings.
 
+## Field patterns on a card (batch 1, 10 Nov 2026)
+
+`magnetic-field-patterns.html` and `electromagnet-field-patterns.html` share these pieces (a fix goes into both):
+
+- **The card keeps its own units** (560 × 340, which the physics, filings and Experiment use). `layout()` places it in the wide or tall picture (`L.cx`, `L.cy`, `L.cs`); `cardG()` wraps card drawing in that transform, `cardPoint()` turns a pointer into card units, and the filings canvas uses the same numbers.
+- **Filings settle tap by tap:** Sprinkle drops them at random; each **Tap the card** turns every filing a fraction `k` of the way still left (near 1 where the field is strong, about 0.2 where it is weak) and jolts the card. With no field (current off) `k` is 0.
+- **The compass needle swings** to the field and settles (`swing()`, a damped spring on the needle's angle, updated in place so a drag is never interrupted). Under reduced motion it turns straight to the field.
+- **The exam diagram:** for the magnets, a smaller copy of the card with flat poles and arrowed lines beside it, showing "?" until the filings have been tapped, Field lines is on, or a question is answered. For wires and coils the card seen from above is itself the exam diagram, and the 3D picture beside it shows where the card is.
+- **Predict** deals a spot with eight dashed arrows round it (which way the compass's north end points), lettered spots, or the ends of a solenoid or core; only questions whose answer is clear (within 8° of an arrow, or a field at least three times stronger) are dealt.
+
 ## Checks before pushing
 
 1. `node --check` on the page's scripts (CLAUDE.md, "Check before you commit").
