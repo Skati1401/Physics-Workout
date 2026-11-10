@@ -452,7 +452,7 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='unit6b-v5',OLD_STORE_KEY='unit6b-v4';
+const STORE_KEY='unit6b-v6',OLD_STORE_KEY='unit6b-v5';
 const TAB_IDS=['overview','induction','generators','transformers','grid','units','terms'];
 let activeTab='overview';
 const reflowers=[];
@@ -1372,7 +1372,8 @@ function seg(host,opts,initial,fn){
 // The framed page reports its height, and the frame grows to fit it.
 function frameAct(panel,file,show,title,name,first){
   const w=mk('div','anim-wrap');
-  w.innerHTML='<iframe class="anim-frame" src="'+file+'?embed'+(show?'&show='+show:'')+'" title="'+title+'"></iframe><p class="anim-open"><a href="'+file+'">Open the '+name+' animation full screen &rarr;</a></p>';
+  const q=file.indexOf('?')<0?'?':'&';
+  w.innerHTML='<iframe class="anim-frame" src="'+file+q+'embed'+(show?'&show='+show:'')+'" title="'+title+'"></iframe><p class="anim-open"><a href="'+file+'">Open the '+name+' animation full screen &rarr;</a></p>';
   const acts=$('#panel-'+panel+' .acts');if(first)acts.prepend(w);else acts.appendChild(w);
 }
 window.addEventListener('message',e=>{
@@ -1484,7 +1485,7 @@ const LHR_OPTS=up=>[
 
 /* ================= 8. INDUCTION ================= */
 {
-  frameAct('induction','animations/magnet-and-coil.html','','Magnet and coil animation: pushing a magnet into a coil and pulling it out','magnet and coil',true);
+  frameAct('induction','animations/magnet-and-coil.html?level=igcse','','Magnet and coil animation: pushing a magnet into a coil and pulling it out','magnet and coil',true);
   createSortGame({host:act('induction','Sort','Changing the induced voltage','A magnet is moved into a coil connected to a voltmeter. What does each change do to the reading?'),
     cats:[cat('b','Bigger voltage','','l'),cat('r','Voltage reverses','','n'),cat('z','No voltage','','a')],
     items:[
@@ -1501,18 +1502,6 @@ const LHR_OPTS=up=>[
 /* ================= 9. GENERATORS ================= */
 {
   frameAct('generators','animations/ac-generator.html','','a.c. generator animation: a coil turning in a magnetic field, with a graph of the voltage','a.c. generator',true);
-  createPredict({
-    host:act('generators','Predict','Turn it twice as fast','Decide first, then see what happens.'),
-    q:'The coil of an a.c. generator is turned twice as fast. What happens to the alternating voltage it produces?',
-    options:[
-      {text:'Bigger peaks, at the same frequency as before',why:'Each turn now takes half the time, so there are twice as many cycles each second.'},
-      {text:'Higher frequency, with the peaks the same size',why:'The coil cuts the field lines faster, so a bigger voltage is induced as well.'},
-      {text:'Bigger peaks and a higher frequency together',correct:true},
-      {text:'No change, as the same coil and magnet are used',why:'The size of the induced voltage depends on how fast the field changes, and that has doubled.'}
-    ],
-    explain:'Turning faster changes the field through the coil faster, so the peak voltage is bigger. Each turn is one cycle, so the frequency is higher too.',
-    reveal:barsHTML([{l:'Peak voltage',v:1,t:'bigger',c:'var(--gas)'},{l:'Frequency',v:1,t:'higher',c:'var(--liquid)'}])
-  });
   createReorder({
     host:act('generators','Order','A bicycle dynamo','A dynamo turns a magnet inside a coil. Put the explanation in order.'),
     steps:[
@@ -1530,17 +1519,6 @@ const LHR_OPTS=up=>[
 /* ================= 10. TRANSFORMERS ================= */
 {
   frameAct('transformers','animations/transformer.html','','Transformer animation: a primary and secondary coil on an iron core, with a graph of input and output voltage','transformer',true);
-  createPredict({
-    host:act('transformers','Predict','A battery on the primary','Decide first, then see what happens.'),
-    q:'The primary coil of a transformer is connected to a 12 V battery instead of a 12 V a.c. supply. What is the output from the secondary coil?',
-    options:[
-      {text:'The same voltage as with the a.c. supply',why:'A steady d.c. current makes a steady field, and a steady field induces no voltage.'},
-      {text:'No steady output voltage at all',correct:true},
-      {text:'A d.c. voltage, made larger by the turns',why:'A steady d.c. current makes a steady field, and a steady field induces no voltage.'},
-      {text:'Twice the voltage, as d.c. is steadier',why:'Steady is the problem: the field in the core has to keep changing.'}
-    ],
-    explain:'A transformer needs a changing magnetic field in its core. A direct current makes a field that does not change, so no voltage is induced in the secondary (apart from a brief flick when the switch is closed or opened).'
-  });
   createReorder({
     host:act('transformers','Order','How a transformer works','Put the explanation in order.'),
     steps:[
@@ -1578,7 +1556,7 @@ const LHR_OPTS=up=>[
 
 /* ================= 11. NATIONAL GRID ================= */
 {
-  frameAct('grid','animations/national-grid.html','','National Grid animation: build the grid with step-up and step-down transformers, then send the power','National Grid',true);
+  frameAct('grid','animations/national-grid.html?level=igcse','','National Grid animation: build the grid with step-up and step-down transformers, then send the power','National Grid',true);
   createPredict({
     host:act('grid','Predict','Why such a high voltage?','Decide first, then see the answer.'),
     q:'Why is electricity sent across the country at a very high voltage, such as 400 000 V?',
@@ -1726,8 +1704,9 @@ byId('tab-overview').parentNode.addEventListener('keydown',e=>{
 // Answers and the open tab are remembered in this browser only, so a reload keeps them.
 // Review (4 Nov 2026): fewer activities per page. Answers saved before it are carried over once for the
 // activities that did not change (old key -> new key); the rest start fresh.
-// Saved answers carry over by key (Units and Key Terms split into two tabs, 5 Nov 2026); null = drop.
-const CARRY={"terms-0": "units-0", "terms-1": "terms-0"};
+// Saved answers carry over by key; null = drop. 10 Nov 2026: the Generators and Transformers Predicts were cut
+// (the framed animations now answer them), so the activities after them move up one place.
+const CARRY={"generators-0": null, "generators-1": "generators-0", "transformers-0": null, "transformers-1": "transformers-0", "transformers-2": "transformers-1"};
 function readSaved(){
   try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
   try{const s=JSON.parse(localStorage.getItem(OLD_STORE_KEY)||'null');

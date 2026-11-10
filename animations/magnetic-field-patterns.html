@@ -456,8 +456,8 @@
     });
     return g;
   }
-  function neutralMark(){ var nt=SETUPS[setup].neutral; if(!nt) return '';
-    return '<path d="M'+(nt[0]-6)+','+(nt[1]-6)+' L'+(nt[0]+6)+','+(nt[1]+6)+' M'+(nt[0]+6)+','+(nt[1]-6)+' L'+(nt[0]-6)+','+(nt[1]+6)+'" stroke="var(--accent)" stroke-width="2.5"/>'+txt(nt[0],nt[1]-14,'neutral point',{a:'middle',c:'var(--accent)',fs:12.5,w:600,halo:1,hc:'var(--card)'}); }
+  function neutralMark(lift){ var nt=SETUPS[setup].neutral; if(!nt) return '';
+    return '<path d="M'+(nt[0]-6)+','+(nt[1]-6)+' L'+(nt[0]+6)+','+(nt[1]+6)+' M'+(nt[0]+6)+','+(nt[1]-6)+' L'+(nt[0]-6)+','+(nt[1]+6)+'" stroke="var(--accent)" stroke-width="2.5"/>'+txt(nt[0],nt[1]-(lift||14),'neutral point',{a:'middle',c:'var(--accent)',fs:12.5,w:600,halo:1,hc:'var(--card)'}); }
   function magnets(){ var fs=setup==='close'?30:17, g=''; SETUPS[setup].mags.forEach(function(m){ g+=solidMag(m,fs); }); return g; }
   var CLIP='<defs><clipPath id="fp-clip"><rect x="0" y="0" width="'+W+'" height="'+H+'" rx="8"/></clipPath></defs>';
 
@@ -662,9 +662,19 @@
     if(setup==='close') return 'In the gap the lines are close together and evenly spaced: the field is strong and uniform there.';
     return 'The field lines are closest together at a pole, so the field is strongest there.';
   }
-  function strengthWord(p){ var r=Math.hypot.apply(null,field(p[0],p[1]))/fieldRef(); return r>0.35?'strong':(r>0.08?'medium':(r>0.012?'weak':'zero')); }
+  // Only the neutral point has no field; anywhere else far from the magnets the field is very weak, not zero.
+  function strengthWord(p,j){ if(q.kind==='zero' && j===q.ans) return 'zero'; var r=Math.hypot.apply(null,field(p[0],p[1]))/fieldRef(); return r>0.35?'strong':(r>0.08?'medium':(r>0.012?'weak':'very weak')); }
+  // The word goes beside its spot in clear space: never over a magnet, never off the card.
+  function wordPlace(p,w){
+    var tries=[[20,-14,'start'],[-20,-14,'end'],[20,24,'start'],[-20,24,'end']];
+    for(var i=0;i<tries.length;i++){ var t=tries[i], x0=t[2]==='start'?p[0]+t[0]:p[0]+t[0]-w, x1=x0+w, y=p[1]+t[1];
+      if(x0<8 || x1>552 || y<16 || y>334) continue;
+      if(inMag(x0,y,6)||inMag(x1,y,6)||inMag((x0+x1)/2,y,6)||inMag(x0,y-10,6)||inMag(x1,y-10,6)) continue;
+      return t; }
+    return p[0]>480?[-20,-14,'end']:[20,-14,'start'];
+  }
   function drawPred(){
-    var done=q.phase==='done', c=CLIP+'<g clip-path="url(#fp-clip)">'+(done?cardLines(false)+neutralMark():'')+'</g>'+magnets(), i;
+    var done=q.phase==='done', c=CLIP+'<g clip-path="url(#fp-clip)">'+(done?cardLines(false)+neutralMark(q.kind==='zero'?28:14):'')+'</g>'+magnets(), i;
     function st(v){ return done ? (v===q.ans?'good':(v===q.pick?'bad':'')) : (v===q.pick?'on':''); }
     function col(v){ var s=st(v); return s==='good'?'var(--good)':s==='bad'?'var(--bad)':s==='on'?'var(--accent)':'var(--ink-soft)'; }
     if(q.kind==='dir'){
@@ -684,7 +694,7 @@
           '<circle class="ring" cx="'+f1(p[0])+'" cy="'+f1(p[1])+'" r="19" fill="none" stroke-width="2.5"/>'+
           '<circle cx="'+f1(p[0])+'" cy="'+f1(p[1])+'" r="14" fill="var(--card)" fill-opacity=".85" stroke="'+cc+'" stroke-width="'+(sel||done?2.6:1.8)+'"'+(sel||done?'':' stroke-dasharray="4 3"')+'/>'+
           txt(p[0],p[1]+5,'ABC'[j],{a:'middle',fs:14,c:cc,w:700})+'</g>';
-        if(done) c+=txt(p[0]+(p[0]>480?-20:20),p[1]+(p[1]<40?24:-14),strengthWord(p),{a:p[0]>480?'end':'start',fs:12.5,c:cc,w:600,halo:1,hc:'var(--card)'});
+        if(done){ var wd=strengthWord(p,j), wp=(wd==='zero')?[0,36,'middle']:wordPlace(p,wd.length*7.6); c+=txt(p[0]+wp[0],p[1]+wp[1],wd,{a:wp[2],fs:12.5,c:cc,w:600,halo:1,hc:'var(--card)'}); }
       });
     }
     var g=cardG(c), y0=L.n?L.py+20:L.py+22, ql=wrapLines(questionText(),L.n?44:30);

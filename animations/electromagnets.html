@@ -562,9 +562,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     function circuitPieces(G){
       var p=[[[SL,[SL[0],Y0],[CX+13,Y0]],true]];
       G.front.forEach(function(f,k){ p.push([f,k%2===0]); p.push([G.back[k],false]); });   // arrows on every other turn, so the coil stays clear
-      p.push([[[CX+13,Y1],[CX+13,196],[418,196],[418,178]],true]);
-      p.push([[[418,178],[418,116]],false]);           // through the ammeter
-      p.push([[[418,116],[418,104]],true]);
+      p.push([[[CX+13,Y1],[CX+13,196],[418,196],[418,184]],true]);
+      p.push([[[418,184],[418,110]],false]);           // through the ammeter (no arrows on its face or its top)
+      p.push([[[418,110],[418,104]],true]);
       p.push([[[418,104],[418,70]],true]);             // the switch lever
       p.push([[[418,70],SR],true]);
       return p;
@@ -652,7 +652,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       if(core!=='none') g+=ln(xm-52,B+6,xm+52,B+6,c,1.6)+ln(xm-52,B+10,xm+52,B+10,c,1.6);
       g+=txt(xm,B+30,core==='none'?'coil (no core)':(core==='iron'?'coil on a soft iron core':'coil on a steel core'),{a:'middle',fs:12});
       // the current goes from + round the circuit: down the left side to the coil, then up through the ammeter and back through the switch
-      if(on){ var path=[[L,ym+8],[L,B],[R,B],[R,T],[L,T],[L,ym-8]]; if(pol<0) path.reverse(); g+=flowMarks(path,flowPh,30,4.2); }
+      // no arrows on the cell's plates or across the ammeter's circle
+      if(on) g+=flowPath([[[[L,ym+8],[L,ym+14]],false],[[[L,ym+14],[L,B],[R,B],[R,ym+22]],true],[[[R,ym+22],[R,ym-22]],false],
+                          [[[R,ym-22],[R,T],[L,T],[L,ym-14]],true],[[[L,ym-14],[L,ym-8]],false]], flowPh, 30, 4.2, pol<0);
       g+=tri(x0+20,y0+h-20,0,4.2,'var(--cur)')+txt(x0+28,y0+h-15,'current, + to −',{fs:12});
       return g;
     }
@@ -834,7 +836,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       // wires: live in at top right → arm pivot; fixed contact → down → electromagnet coil → out to the appliances
       g+=lead([[556,80],[ARMP.x,80]])+lead([[370,104],[370,312],[182,312],[182,214]])+lead([[98,214],[98,246],[4,246]]);
       g+=txt(552,70,'live in',{a:'end',fs:12,halo:1});
-      g+=txt(6,236,'to the',{fs:12,halo:1})+txt(6,264,'appliances',{fs:12,halo:1});
+      g+=txt(6,222,'to the',{fs:12,halo:1})+txt(6,237,'appliances',{fs:12,halo:1});   // both lines above the lead
       // electromagnet: iron core with the coil wound on it
       g+=box(80,188,132,26,8,-6,'var(--iron)',{top:'var(--iron-hi)',side:'var(--iron-sh)'});
       for(var k=0;k<9;k++){ var x=100+k*10; g+=copper([[x,184],[x+4,192],[x+6,200],[x+4,208],[x,216]],3.2); }
@@ -861,12 +863,13 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         g+=flowPath([[[[556,80],[ARMP.x,80]],true],[[[ARMP.x,80],a0,mc],false],[[mc,[370,104]],false],[[[370,104],[370,312],[182,312],[182,214]],true],[[[182,214],[98,214]],false],[[[98,214],[98,246],[4,246]],true]], flowPh, 30, 4.4, false);
       }
       // meter: the electromagnet's pull against the pull needed to trip it
-      var mx=392, mw=150, my=262, fill=Math.min(1.25,pull)/1.25*mw, trip80=mw/1.25;
-      g+=txt(mx,my-9,'pull of the electromagnet',{fs:12,halo:1});
+      // inside the case, clear of its side wall and of the lead at x = 370
+      var mx=392, mw=78, my=262, fill=Math.min(1.25,pull)/1.25*mw, trip80=mw/1.25;
+      g+=txt(mx,my-24,'pull of the',{fs:12,halo:1})+txt(mx,my-9,'electromagnet',{fs:12,halo:1});
       g+=rect(mx,my,mw,14,'var(--bg)',' rx="3" stroke="var(--panel-border)"');
       g+=rect(mx,my,fill,14,pull>1?'var(--bad)':'var(--topic)',' rx="3"');
       g+=ln(mx+trip80,my-4,mx+trip80,my+18,'var(--ink)',2,' stroke-dasharray="3 2"');
-      g+=txt(mx+trip80,my+32,'trips at '+trip+' A',{a:'middle',fs:12,c:'var(--ink)',halo:1});
+      g+=txt(474,my+32,'trips at '+trip+' A',{a:'end',fs:11.5,c:'var(--ink)',halo:1});
       g+=diagram(LB.dx,LB.dy,LB.dw,LB.dh);
       svg.innerHTML=g;
       flow();
