@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reaction Time Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Five sheep run for it at random moments: fire the dart as soon as each one moves (fire early and one gets away), measure your reaction time, find the mean and link it to thinking distance.">
+<meta name="description" content="Interactive physics animation. Five sheep run for it at random moments: fire the dart as soon as each one moves, before it reaches the hedge 6 m away, measure your reaction time, find the mean and link it to thinking distance.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -225,13 +225,13 @@
       <div class="stats">
         <div class="stat up"><small>Reaction time</small><strong id="rt-last">&ndash;</strong></div>
         <div class="stat"><small>Sheep ran</small><strong id="rt-dist">&ndash;</strong></div>
-        <div class="stat"><small>Escaped</small><strong id="rt-esc">0</strong></div>
+        <div class="stat"><small>Reached hedge</small><strong id="rt-esc">0</strong></div>
       </div>
       <table class="rt-table" aria-label="Results">
         <thead><tr><th>Sheep</th><th>Reaction time (s)</th><th>Distance ran (m)</th></tr></thead>
         <tbody id="rt-rows"></tbody>
       </table>
-      <p class="hint">Sheep run at 8 m/s; the hedge is 10 m away, so a sheep escapes after 1.25 s.</p>
+      <p class="hint">Sheep run at 8 m/s and the hedge is 6 m away. A sheep that reaches it took 0.75 s, so 0.75 s is recorded for that run.</p>
       <details class="working" id="working">
         <summary>Show working</summary>
         <div class="eq" id="rt-eq"></div>
@@ -275,9 +275,10 @@
   function watchEquals(sel){ Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }); }
 
   function initReactionSim(){
-    // field: sheep start at x0 and escape when they reach xEnd (the hedge), 10 m away
-    var SPEED_MS=8, FIELD_M=10, X0=68, XEND=592, PX_M=(XEND-X0)/FIELD_M, LANES=[48,92,136,180,224];
-    var GUN={x:372,y:284}, DART_S=0.09, CAR_V=20, WANDER=0.35*PX_M;
+    // field: sheep start at x0 and stop when they reach xEnd (the hedge), 6 m away.
+    // A sheep that gets there before the dart is recorded with the time it took (0.75 s), not as lost.
+    var SPEED_MS=8, FIELD_M=6, T_MAX=FIELD_M/SPEED_MS, X0=68, XEND=592, PX_M=(XEND-X0)/FIELD_M, LANES=[48,92,136,180,224];
+    var GUN={x:372,y:284}, DART_S=0.09, CAR_V=20, WANDER=18;
     var svg=$('#rt-field'), fireBtn=$('#rt-fire'), startBtn=$('[data-action="rt-start"]');
     var sheep, results, state, raf=0, lastNow=0, gunAng=-90, dart=null, phase=0, reloadUntil=0, RELOAD_MS=1800;
     function newFlock(){
@@ -317,7 +318,6 @@
         g+='<circle cx="22" cy="'+(hy-1.5).toFixed(1)+'" r="1.4" fill="var(--wool)"/>';
       }
       g+='</g></g>';
-      if(s.st==='escaped') g='';
       return g;
     }
     function draw(){
@@ -327,19 +327,18 @@
       // hedge on the right: the edge of the field
       g+='<rect x="604" y="16" width="36" height="236" fill="var(--hedge)" opacity="0.9"/>';
       for(i=0;i<9;i++) g+='<circle cx="'+(608+(i%2)*16)+'" cy="'+(26+i*27)+'" r="14" fill="var(--hedge)"/>';
-      g+='<text x="598" y="12" text-anchor="end" font-size="11" fill="var(--ink-soft)">edge of the field (10 m)</text>';
+      g+='<text x="598" y="12" text-anchor="end" font-size="11" fill="var(--ink-soft)">edge of the field ('+FIELD_M+' m)</text>';
       // fence on the left and the scale
       g+='<line x1="16" y1="16" x2="16" y2="252" stroke="var(--fence)" stroke-width="4"/>';
-      for(i=0;i<=FIELD_M;i+=2){ var mx=X0+i*PX_M; g+='<line x1="'+mx+'" y1="252" x2="'+mx+'" y2="258" stroke="var(--ink-faint)"/><text x="'+mx+'" y="270" text-anchor="middle" font-size="10" fill="var(--ink-faint)">'+i+' m</text>'; }
-      // distance each darted sheep ran
-      sheep.forEach(function(s){ if(s.st==='asleep' && s.x>s.xs+1) g+='<line x1="'+s.xs.toFixed(1)+'" y1="'+(s.y+20)+'" x2="'+s.x.toFixed(1)+'" y2="'+(s.y+20)+'" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 3"/>'; });
+      for(i=0;i<=FIELD_M;i++){ var mx=X0+i*PX_M; g+='<line x1="'+mx+'" y1="252" x2="'+mx+'" y2="258" stroke="var(--ink-faint)"/><text x="'+mx+'" y="270" text-anchor="middle" font-size="10" fill="var(--ink-faint)">'+i+' m</text>'; }
+      // distance each sheep ran (darted, or all the way to the hedge)
+      sheep.forEach(function(s){ if((s.st==='asleep'||s.st==='hedge') && s.x>s.xs+1) g+='<line x1="'+s.xs.toFixed(1)+'" y1="'+(s.y+20)+'" x2="'+s.x.toFixed(1)+'" y2="'+(s.y+20)+'" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 3"/>'; });
       sheep.forEach(function(s){ g+=sheepSVG(s); });
       // the dart gun on its stand, aimed with gunAng (degrees, -90 = straight up)
       g+='<path d="M'+(GUN.x-16)+' 300 L'+GUN.x+' '+GUN.y+' L'+(GUN.x+16)+' 300" stroke="var(--ink-soft)" stroke-width="3" fill="none"/>';
       g+='<g transform="translate('+GUN.x+' '+GUN.y+') rotate('+gunAng.toFixed(1)+')"><rect x="-8" y="-6" width="20" height="12" rx="3" fill="var(--ink)"/><rect x="8" y="-3" width="34" height="6" rx="2" fill="var(--ink)"/></g>';
       g+='<circle cx="'+GUN.x+'" cy="'+GUN.y+'" r="5" fill="var(--ink-soft)"/>';
       if(reloadUntil) g+='<text x="'+(GUN.x-26)+'" y="296" text-anchor="end" font-size="11" fill="var(--bad)">reloading…</text>';
-      sheep.forEach(function(s){ if(s.st==='escaped') g+='<text x="596" y="'+(s.y+4)+'" text-anchor="end" font-size="11" fill="var(--bad)">escaped →</text>'; });
       g+='<text x="'+(GUN.x+26)+'" y="296" font-size="11" fill="var(--ink-soft)">dart gun</text>';
       if(dart){
         var k=Math.min(1,dart.f), dx=dart.x0+(dart.x1-dart.x0)*k, dy=dart.y0+(dart.y1-dart.y0)*k, a=Math.atan2(dart.y1-dart.y0,dart.x1-dart.x0);
@@ -350,31 +349,31 @@
     function aimAt(s){ return Math.atan2(s.y-GUN.y, s.x-GUN.x)*180/Math.PI; }
 
     function note(t, cls){ var n=$('#rt-note'); n.textContent=t; n.className='note'+(cls?' '+cls:''); }
-    function hits(){ return results.filter(function(r){ return !r.esc; }); }
-    function sum(){ var s=0; hits().forEach(function(r){ s+=+fix(r.rt,2); }); return s; }
-    function mean(){ var h=hits(); return h.length ? sum()/h.length : 0; }
+    function hits(){ return results.filter(function(r){ return !r.hedge; }); }
+    function sum(){ var s=0; results.forEach(function(r){ s+=+fix(r.rt,2); }); return s; }
+    function mean(){ return results.length ? sum()/results.length : 0; }
     function table(){
       var rows='';
       for(var i=0;i<5;i++){
         var r=results[i];
         rows+='<tr'+(i===results.length-1&&r?' class="now"':'')+'><td>'+(i+1)+'</td>'
-          +(r&&r.esc?'<td colspan="2">escaped</td>':'<td>'+(r?fix(r.rt,2):'')+'</td><td>'+(r?fix(r.d,1):'')+'</td>')+'</tr>';
+          +'<td>'+(r?fix(r.rt,2):'')+'</td><td>'+(r?fix(r.d,1):'')+'</td></tr>';
       }
       var done=results.length===5, h=hits().length;
-      rows+='<tr class="mean"><td>Mean</td><td>'+(done&&h?fix(mean(),2):(done?'no hits':''))+'</td><td></td></tr>';
+      rows+='<tr class="mean"><td>Mean</td><td>'+(done?fix(mean(),2):'')+'</td><td></td></tr>';
       $('#rt-rows').innerHTML=rows;
       $('#rt-esc').textContent = String(results.length-h);
       working();
     }
     function working(){
-      var e=$('#rt-eq'), H=hits(), last=H[H.length-1];
+      var e=$('#rt-eq'), H=results, last=H[H.length-1];
       if(!last){ e.innerHTML='reaction time = time you fired − time the sheep started<br>distance ran = speed × reaction time<br>mean = <b>?</b>'; return; }
       var h='distance ran = speed × reaction time<br>distance ran = '+SPEED_MS+' × '+fix(last.rt,2)+'<br>distance ran = '+fix(last.d,1)+' m';
       if(results.length===5){
         var tot=sum(), m=tot/H.length;
         h+='<br><br>total = '+H.map(function(r){ return fix(r.rt,2); }).join(' + ')
           +'<br>total = '+fix(tot,2)+' s'
-          +'<br>mean = [[total|number of sheep hit]]'
+          +'<br>mean = [[total|number of sheep]]'
           +'<br>mean = [['+fix(tot,2)+'|'+H.length+']]'
           +'<br>mean = <b>'+fix(m,2)+' s</b>'
           +'<br><br>A car at '+CAR_V+' m/s keeps going at the same speed while the driver reacts:'
@@ -398,9 +397,9 @@
         if(s.st==='graze'){ s.x=X0+WANDER*Math.sin(phase*s.w+s.ph); s.dir=Math.cos(phase*s.w+s.ph)>=0?1:-1; }
         if(s.st==='graze' && now>=s.tGo){ s.st='run'; s.xs=s.x; }
         if(s.st==='run'){
-          // distances are measured from where the sheep set off, so it escapes 10 m (1.25 s) later
-          s.x = s.xs + SPEED_MS*PX_M*(now-s.tGo)/1000;
-          if(now-s.tGo>=FIELD_M/SPEED_MS*1000) escaped(s);
+          // distances are measured from where the sheep set off, so it reaches the hedge 6 m (0.75 s) later
+          s.x = s.xs + SPEED_MS*PX_M*Math.min(T_MAX,(now-s.tGo)/1000);
+          if(now-s.tGo>=T_MAX*1000) atHedge(s);
         }
       });
       var r=running(); if(r && !dart && !reloadUntil) gunAng=aimAt(r);
@@ -412,7 +411,7 @@
     function start(){
       if(state!=='idle') return;
       var now=performance.now(); schedule(now); state='round'; reloadUntil=0;
-      note('Watch the sheep. They run one at a time, at random. Fire (or press the space bar) as soon as one moves. Fire too early and you must reload, and a sheep gets away.');
+      note('Watch the sheep. They run one at a time, at random. Fire (or press the space bar) as soon as one moves. Fire too early and you must reload while a sheep runs.');
       buttons(); lastNow=now; cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
       fireBtn.focus({preventScroll:true});
     }
@@ -444,21 +443,26 @@
       table();
       if(results.length<5) note('Hit! Your reaction time was '+fix(rt,2)+' s, so the sheep ran '+fix(SPEED_MS*rt,1)+' m first. '+(5-results.length)+' sheep left: keep watching.','good');
     }
-    function escaped(s){
-      s.st='escaped'; results.push({esc:true, n:s.n}); table();
-      if(results.length<5) note('A sheep escaped over the hedge. '+(5-results.length)+' sheep left: keep watching.','bad');
+    // the sheep got to the hedge before the dart: that run counts as the time it took to get there
+    function atHedge(s){
+      s.st='hedge'; s.x=s.xs+FIELD_M*PX_M;
+      results.push({rt:T_MAX, d:FIELD_M, n:s.n, hedge:true});
+      $('#rt-last').textContent=fix(T_MAX,2)+' s';
+      $('#rt-dist').textContent=fix(FIELD_M,1)+' m';
+      table();
+      if(results.length<5) note('The sheep reached the hedge ('+FIELD_M+' m) before you fired, so '+fix(T_MAX,2)+' s is recorded for this run. '+(5-results.length)+' sheep left: keep watching.','bad');
     }
     function finish(){
       state='done'; reloadUntil=0; buttons();
       var h=hits().length, esc=5-h;
-      if(!h) note('All five sheep escaped! Press New flock to try again.','bad');
-      else note('Round over: '+h+' stopped, '+esc+' escaped. Your mean reaction time is '+fix(mean(),2)+' s. A driver also has to move their foot to the brake, so a driver’s reaction time is longer (often about 0.7 s).', esc?'':'good');
+      if(!h) note('All five sheep reached the hedge, so '+fix(T_MAX,2)+' s is recorded for each run. Press New flock to try again.','bad');
+      else note('Round over: '+h+' stopped'+(esc?', '+esc+' reached the hedge ('+fix(T_MAX,2)+' s recorded)':'')+'. Your mean reaction time is '+fix(mean(),2)+' s. A driver also has to move their foot to the brake, so a driver’s reaction time is longer (often about 0.7 s).', esc?'':'good');
       $('[data-action="rt-reset"]').focus({preventScroll:true});
     }
     function reset(){
       cancelAnimationFrame(raf); newFlock(); gunAng=-90; reloadUntil=0;
       $('#rt-last').textContent='–'; $('#rt-dist').textContent='–';
-      note('Press Start. The five sheep then run for the hedge one at a time, at random moments. Fire the dart as soon as you see one move. Fire too early and you must reload, and a sheep gets away.');
+      note('Press Start. The five sheep then run for the hedge one at a time, at random moments. Fire the dart as soon as you see one move. Fire too early and you must reload while a sheep runs.');
       table(); buttons(); draw();
     }
     fireBtn.addEventListener('pointerdown', function(e){ if(e.button===0||e.pointerType!=='mouse'){ e.preventDefault(); fire(e.timeStamp); } });
