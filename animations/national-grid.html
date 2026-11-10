@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>National Grid Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation. Build the National Grid: stand a step-up or a step-down transformer on each base, send the power, and see the current, the heating of the cables and the voltage at the homes.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -20,7 +21,11 @@
     --north:#d23b3b;   --north-soft:#fbdede;
     --south:#2f62d6;   --south-soft:#dde7fb;
     --copper:#b8651b;  --filing:#3b4352;
-    --core:#7d8796;    --core-soft:#e3e6eb;
+    --north-f:#d94444; --north-t:#ec8585; --north-s:#b23030;
+    --south-f:#3d6bd9; --south-t:#7f9eee; --south-s:#2a50ae;
+    --copper-hi:#e6a25c; --coilb:#5f6d84; --coilb-hi:#97a3b7; --cur:#7c3aed; --insul:#262d3a;
+    --brush-t:#687385; --brush-f:#4a5464; --brush-s:#343c4a;
+    --bob-f:#f1ede3; --bob-s:#c9c2b2; --wall-f:#c5cad4; --wall-t:#e3e6ec; --wall-s:#9da4b2; --roof-f:#b5533c; --roof-s:#8f3f2d; --lamp:#ffcf4a; --ground:#dfe5d8; --pad:#aeb4bf; --pad-t:#c9ced7;
     --font-display:'Big Shoulders',system-ui,sans-serif;
     --font-body:'IBM Plex Sans',system-ui,sans-serif;
     --font-mono:'IBM Plex Mono',ui-monospace,monospace;
@@ -38,7 +43,12 @@
       --topic:#4fd1dc; --topic-soft:#123236;
       --north:#ff7a7a; --north-soft:#3d1a1a;
       --south:#7da3ff; --south-soft:#1a2440;
-      --copper:#f0a35e; --filing:#c3cad6; --core:#9aa4b5; --core-soft:#2a313d;
+      --copper:#f0a35e; --filing:#c3cad6;
+      --north-f:#d95252; --north-t:#ee9090; --north-s:#a83636;
+      --south-f:#4a78e0; --south-t:#8aa9f3; --south-s:#3157b5;
+      --copper-hi:#ffd0a0; --coilb:#8f9db3; --coilb-hi:#c3ccda; --cur:#c4a1ff; --insul:#0c1017;
+      --brush-t:#8a94a6; --brush-f:#667083; --brush-s:#4a5364;
+      --bob-f:#d6d1c5; --bob-s:#99937f; --wall-f:#5a657a; --wall-t:#7a869c; --wall-s:#3f485a; --roof-f:#b85a44; --roof-s:#7c3829; --lamp:#ffd257; --ground:#222b29; --pad:#4a5364; --pad-t:#5d677a;
       color-scheme:dark;
     }
   }
@@ -53,7 +63,12 @@
     --topic:#4fd1dc; --topic-soft:#123236;
     --north:#ff7a7a; --north-soft:#3d1a1a;
     --south:#7da3ff; --south-soft:#1a2440;
-    --copper:#f0a35e; --filing:#c3cad6; --core:#9aa4b5; --core-soft:#2a313d;
+    --copper:#f0a35e; --filing:#c3cad6;
+      --north-f:#d95252; --north-t:#ee9090; --north-s:#a83636;
+      --south-f:#4a78e0; --south-t:#8aa9f3; --south-s:#3157b5;
+      --copper-hi:#ffd0a0; --coilb:#8f9db3; --coilb-hi:#c3ccda; --cur:#c4a1ff; --insul:#0c1017;
+      --brush-t:#8a94a6; --brush-f:#667083; --brush-s:#4a5364;
+      --bob-f:#d6d1c5; --bob-s:#99937f; --wall-f:#5a657a; --wall-t:#7a869c; --wall-s:#3f485a; --roof-f:#b85a44; --roof-s:#7c3829; --lamp:#ffd257; --ground:#222b29; --pad:#4a5364; --pad-t:#5d677a;
     color-scheme:dark;
   }
 
@@ -143,7 +158,22 @@
   .embed .hint{display:none;}
 
   .view{max-height:max(240px,calc(100vh - 330px));}
+  .view.tall,.embed .view.tall{max-height:none;}
   .under .sliders{flex-basis:100%;}
+  .toprow{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{font-size:12.5px;padding:8px 10px;white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  /* things in the picture that are clicked to answer a question */
+  .pick{cursor:pointer;}
+  .pick:focus{outline:none;}
+  .pick .ring{stroke:transparent;}
+  .pick:focus-visible .ring{stroke:var(--accent);}
+
+  .view{max-height:max(240px,calc(100vh - 340px));}
+  .view.tall,.embed .view.tall{max-height:none;}
+  .under .sliders{flex-basis:auto;}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -178,7 +208,7 @@
   </header>
   <section class="card stage">
     <div>
-      <svg class="view" id="ng-svg" viewBox="0 0 640 300" role="img" aria-label="A power station, a step-up transformer, transmission cables, a step-down transformer and homes"></svg>
+      <svg class="view" id="ng-svg" viewBox="0 0 860 350" role="img" aria-label="A power station, a place for a transformer, pylons carrying transmission cables, a second place for a transformer, and homes, with a bar showing how much of the power reaches the homes"></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="ng-play" type="button">&#9654; Send the power</button>
@@ -187,17 +217,22 @@
         </div>
         <div class="sliders">
           <div><label class="lab" for="ng-p"><span>Power sent</span> <output id="ng-po"></output></label><input type="range" id="ng-p" min="20" max="100" step="10" value="100"></div>
+          <div id="ng-r-row" hidden><label class="lab" for="ng-r"><span>Resistance of the cables</span> <output id="ng-ro"></output></label><input type="range" id="ng-r" min="1" max="10" step="1" value="2"></div>
         </div>
       </div>
+      <p class="hint" style="margin-top:8px">Click a base in the picture to change what stands on it (or select it and press Enter).</p>
     </div>
     <div class="side">
+      <div class="toprow">
+        <div class="seg tabs" id="ng-level" role="group" aria-label="Level"><button type="button" data-v="ks4" aria-pressed="true">IGCSE</button><button type="button" data-v="ial" aria-pressed="false">IAL</button><button type="button" data-v="ib" aria-pressed="false">IB</button></div>
+      </div>
       <div>
-        <div class="lab">Voltage in the transmission cables</div>
-        <div class="seg" id="ng-v"><button type="button" data-v="25000" aria-pressed="false">25 000 V (no step-up)</button><button type="button" data-v="132000" aria-pressed="false">132 000 V</button><button type="button" data-v="400000" aria-pressed="true">400 000 V</button></div>
+        <div class="lab">A step-up transformer here raises the voltage to</div>
+        <div class="seg" id="ng-v"><button type="button" data-v="132000" aria-pressed="false">132 000 V</button><button type="button" data-v="400000" aria-pressed="true">400 000 V</button></div>
       </div>
       <p class="note" id="ng-note" aria-live="polite"></p>
       <div class="stats">
-        <div class="stat"><small>Cable voltage</small><strong id="ng-sv">&ndash;</strong></div>
+        <div class="stat"><small id="ng-svl">Cable voltage</small><strong id="ng-sv">&ndash;</strong></div>
         <div class="stat"><small>Cable current</small><strong id="ng-si">&ndash;</strong></div>
         <div class="stat"><small>Wasted heating cables</small><strong id="ng-sw">&ndash;</strong></div>
         <div class="stat hi"><small>Reaches homes</small><strong id="ng-sh">&ndash;</strong></div>
@@ -211,8 +246,17 @@
 
 </div>
 <script>
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
 (function(){
   // national-grid.html is the one copy of this animation.
+  // With ?embed the page drops its heading so a workout tab can show it in a frame, and tells that page its height.
   var EMBED = /[?&]embed\b/.test(location.search);
   if(EMBED){
     document.documentElement.classList.add('embed');
@@ -252,109 +296,304 @@
     function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
     return {pick:pick, value:value};
   }
-  // a pole of a magnet: coloured block with its letter
-  function poleRect(x,y,w,h,pole,fs){
-    var c = pole==='N' ? 'north' : 'south';
-    return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="var(--'+c+'-soft)" stroke="var(--'+c+')" stroke-width="2"/>'+
-      '<text x="'+(x+w/2)+'" y="'+(y+h/2+(fs||16)*0.36)+'" text-anchor="middle" font-size="'+(fs||16)+'" font-weight="600" fill="var(--'+c+')">'+pole+'</text>';
-  }
-  // a wire seen end-on: dot = current out of the page, cross = into the page
-  function wireEnd(x,y,r,dir,col){
-    var g='<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="var(--panel)" stroke="'+(col||'var(--copper)')+'" stroke-width="3"/>';
-    if(dir>0) g+='<circle cx="'+x+'" cy="'+y+'" r="'+(r*0.28)+'" fill="var(--ink)"/>';
-    else if(dir<0){ var d=r*0.55; g+='<path d="M'+(x-d)+','+(y-d)+' L'+(x+d)+','+(y+d)+' M'+(x+d)+','+(y-d)+' L'+(x-d)+','+(y+d)+'" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>'; }
+  function line(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+(w||2)+'"'+(extra||'')+'/>'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+x+'" y="'+y+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11.5)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="3.5" stroke-linejoin="round"':'')+'>'+s+'</text>'; }
+  // ---- 3D kit (part of the block in dc-motor.html and ac-generator.html: tri, flowMarks and scene3; a fix there goes here too) ----
+  // world axes: X to the right, Y away from you, Z up. The camera looks from the front, 14 degrees from the right and 30 degrees from above.
+  // a solid arrowhead with its tip at (x, y), pointing along ang (degrees, screen)
+  function tri(x,y,ang,size,col,extra){ return '<path d="M0,0 L'+(-size*1.7).toFixed(1)+','+(size*0.8).toFixed(1)+' L'+(-size*1.7).toFixed(1)+','+(-size*0.8).toFixed(1)+' z" transform="translate('+x.toFixed(1)+','+y.toFixed(1)+') rotate('+ang.toFixed(1)+')" fill="'+col+'"'+(extra||'')+'/>'; }
+  // small arrowheads that travel along a wire the way the (conventional) current flows; pts are screen points
+  function flowMarks(pts, phase, gap, size){
+    var g='', d=[], tot=0, i;
+    for(i=1;i<pts.length;i++){ var l=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]); d.push(l); tot+=l; }
+    for(var s=((phase%gap)+gap)%gap; s<tot; s+=gap){
+      var acc=0; for(i=0;i<d.length;i++){ if(s<=acc+d[i]) break; acc+=d[i]; }
+      if(i>=d.length || d[i]<0.5) continue;
+      var u=(s-acc)/d[i], a=pts[i], b=pts[i+1];
+      g+=tri(a[0]+(b[0]-a[0])*u+0, a[1]+(b[1]-a[1])*u+0, Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI, size, 'var(--cur)', ' stroke="var(--panel)" stroke-width="0.8" stroke-linejoin="round"');
+    }
     return g;
   }
-  function line(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+(w||2)+'"'+(extra||'')+'/>'; }
-  function txt(x,y,s,o){ o=o||{}; return '<text x="'+x+'" y="'+y+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11.5)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function scene3(ox, oy, s){
+    var PHI=14*DEG, EL=30*DEG, cp=Math.cos(PHI), sp=Math.sin(PHI), ce=Math.cos(EL), se=Math.sin(EL), items=[];
+    function pr(p){ var d=-p[0]*sp+p[1]*cp; return [ox+s*(p[0]*cp+p[1]*sp), oy-s*(p[2]*ce+d*se), d*ce-p[2]*se]; }
+    function xy(p){ var a=pr(p); return a[0].toFixed(1)+','+a[1].toFixed(1); }
+    function add(k, svg){ items.push([k, svg]); }
+    function poly(list, fill, o){ o=o||{}; var k=0; list.forEach(function(q){ k+=pr(q)[2]; });
+      add(k/list.length+(o.bias||0), '<polygon points="'+list.map(xy).join(' ')+'" fill="'+fill+'" stroke="'+(o.stroke||fill)+'" stroke-width="'+(o.sw||0.7)+'" stroke-linejoin="round"'+(o.extra||'')+'/>'); }
+    function seg(a,b,col,w,o){ o=o||{};
+      var n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2])/14));
+      for(var i=0;i<n;i++){ var u=i/n, v=(i+1)/n,
+        P=pr([a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u,a[2]+(b[2]-a[2])*u]), Q=pr([a[0]+(b[0]-a[0])*v,a[1]+(b[1]-a[1])*v,a[2]+(b[2]-a[2])*v]);
+        add((P[2]+Q[2])/2+(o.bias||0), '<line x1="'+P[0].toFixed(1)+'" y1="'+P[1].toFixed(1)+'" x2="'+Q[0].toFixed(1)+'" y2="'+Q[1].toFixed(1)+'" stroke="'+col+'" stroke-width="'+w.toFixed(1)+'" stroke-linecap="'+(o.cap||'round')+'"'+(o.extra||'')+'/>'); } }
+    // a round wire: its colour with a lighter streak along the middle
+    function tube(a,b,col,hi,w){ seg(a,b,col,w*s); seg(a,b,hi,w*s*0.42,{bias:-14}); }
+    function head(a,b,size,col,extra){ var P=pr(a), Q=pr(b); add(Q[2]-1, tri(Q[0],Q[1],Math.atan2(Q[1]-P[1],Q[0]-P[0])*180/Math.PI,size*s,col,extra)); }
+    // a block: the faces you can see are the top, the front and the right-hand side
+    function box(x0,x1,y0,y1,z0,z1,top,front,side,edge){
+      function f(list,fill){ return '<polygon points="'+list.map(xy).join(' ')+'" fill="'+fill+'" stroke="'+edge+'" stroke-width="1" stroke-linejoin="round"/>'; }
+      return f([[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]],top)+f([[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[x1,y0,z1]],side)+f([[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1]],front);
+    }
+    function out(){ items.sort(function(a,b){ return b[0]-a[0]; }); return items.map(function(x){ return x[1]; }).join(''); }
+    return {pr:pr, xy:xy, add:add, poly:poly, seg:seg, tube:tube, head:head, box:box, out:out, s:s, view:[-sp*ce, cp*ce, -se]};
+  }
+  // ---- bench kit (the same block is in magnet-and-coil.html, transformer.html and national-grid.html) ----
+  function P(list){ return list.map(function(q){ return q[0].toFixed(1)+','+q[1].toFixed(1); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+P(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,stroke,extra){ return '<polygon points="'+P(list)+'" fill="'+fill+'" stroke="'+(stroke||fill)+'" stroke-width="1" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pathLen(pts){ var t=0; for(var j=1;j<pts.length;j++) t+=Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]); return t; }
+  // break a sentence into lines of at most n characters
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  // The case of a bench instrument that faces you: a front, a lit top and a darker right-hand side.
+  function caseBox(x,t,w,h,front){ var ex=10, ey=-9;
+    return pg([[x+3,t+6],[x+3+ex,t+ey],[x+w+ex,t+ey],[x+w-3,t+6]],'var(--brush-t)','var(--brush-s)')+
+      pg([[x+w-6,t+3],[x+w+ex,t+ey],[x+w+ex,t+h+ey-4],[x+w-6,t+h-3]],'var(--brush-s)','var(--brush-s)')+
+      '<rect x="'+x+'" y="'+t+'" width="'+w+'" height="'+h+'" rx="7" fill="'+(front||'var(--brush-f)')+'" stroke="var(--brush-s)" stroke-width="1.2"/>'; }
+  // A bench meter: a case, a dial with a scale and a needle, and two terminals (on top, or on its left side with M.posts = 'left').
+  // M = {cx, top, w, h}. The needle turns about (px, py); span is the angle (degrees) of full scale either side of zero.
+  function meterGeom(M){ var ex=10, ey=-9, x=M.cx-M.w/2, left=M.posts==='left';
+    return {cx:M.cx, top:M.top, w:M.w, h:M.h, ex:ex, ey:ey, px:M.cx, py:M.top+M.h-26, r:Math.min(M.w/2-22, M.h-42), span:M.span||55, left:left,
+      tl:left?[x-10, M.top+M.h*0.25]:[M.cx-M.w*0.27+ex/2, M.top+ey/2-9], tr:left?[x-10, M.top+M.h*0.75]:[M.cx+M.w*0.27+ex/2, M.top+ey/2-9]}; }
+  function meterPt(m,deg,r){ return [m.px+r*Math.sin(deg*DEG), m.py-r*Math.cos(deg*DEG)]; }
+  // o.needle from -1 to 1; o.div divisions each side of zero (o.major: every so many is longer); o.labels [[-1..1, text]]; o.unit on the case; o.label under it
+  function meterBox(m, o){
+    var x=m.cx-m.w/2, t=m.top, w=m.w, h=m.h, g='', k, a, p, q, div=o.div||4;
+    if(m.left) [[m.tl,'var(--north-f)'],[m.tr,'var(--insul)']].forEach(function(e){
+      g+='<rect x="'+e[0][0].toFixed(1)+'" y="'+(e[0][1]-4).toFixed(1)+'" width="12" height="8" rx="2" fill="'+e[1]+'"/>'; });
+    else [[m.tl,'var(--north-f)'],[m.tr,'var(--insul)']].forEach(function(e){
+      g+='<rect x="'+(e[0][0]-4.5).toFixed(1)+'" y="'+e[0][1].toFixed(1)+'" width="9" height="10" rx="2" fill="'+e[1]+'"/><ellipse cx="'+e[0][0].toFixed(1)+'" cy="'+e[0][1].toFixed(1)+'" rx="4.5" ry="2.2" fill="var(--brush-t)"/>'; });
+    g+=caseBox(x,t,w,h);
+    g+='<rect x="'+(x+8)+'" y="'+(t+8)+'" width="'+(w-16)+'" height="'+(h-30)+'" rx="4" fill="var(--panel)" stroke="var(--ink-faint)" stroke-width="1"/>';
+    for(k=-div;k<=div;k++){ a=k/div*m.span; var big=(k%(o.major||1)===0); p=meterPt(m,a,m.r); q=meterPt(m,a,m.r-(big?8:5));
+      g+=line(p[0].toFixed(1),p[1].toFixed(1),q[0].toFixed(1),q[1].toFixed(1),'var(--ink-soft)',k===0?2.2:(big?1.5:1)); }
+    (o.labels||[]).forEach(function(e){ p=meterPt(m,e[0]*m.span,m.r-19); g+=txt(p[0].toFixed(1),(p[1]+4).toFixed(1),e[1],{a:'middle',fs:o.lfs||11,c:'var(--ink)'}); });
+    if(o.needle!==null && o.needle!==undefined){ p=meterPt(m,Math.max(-1.06,Math.min(1.06,o.needle))*m.span,m.r-3);
+      g+=line(m.px,m.py,p[0].toFixed(1),p[1].toFixed(1),'var(--accent)',2.6,' stroke-linecap="round"'); }
+    g+='<circle cx="'+m.px+'" cy="'+m.py+'" r="3.6" fill="var(--ink)"/>';
+    if(o.unit) g+=txt(m.cx,t+h-7,o.unit,{a:'middle',fs:12,c:'#fff',w:600});
+    if(o.label) g+=txt(m.cx,t+h+16,o.label,{a:'middle',fs:12.5});
+    return g;
+  }
+  // a slice of the dial between two needle angles (degrees)
+  function meterWedge(m,a0,a1){ var r=m.r+3, p=meterPt(m,a0,r), q=meterPt(m,a1,r);
+    return 'M'+m.px+','+m.py+' L'+p[0].toFixed(1)+','+p[1].toFixed(1)+' A'+r+','+r+' 0 0 1 '+q[0].toFixed(1)+','+q[1].toFixed(1)+' Z'; }
   // pointer position in SVG user units
   function svgPoint(svg, e){ var r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; return {x:vb.x+(e.clientX-r.left)/r.width*vb.width, y:vb.y+(e.clientY-r.top)/r.height*vb.height}; }
+  // things in the picture that are clicked to answer: one handler for mouse, touch and keyboard (Enter or Space)
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  // redraw a group without losing which pick has the keyboard focus
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
 
-  var svg=$('#ng-svg'), playBtn=$('#ng-play'), slowBtn=$('#ng-slow'), pIn=$('#ng-p');
-  var VG=25000, R=2, TMAX=8, t=0, running=false, raf=0, last=0;   // generator voltage; resistance of the cables (ohms)
-  var vG=segGroup($('#ng-v'), changed); pIn.addEventListener('input', changed);
+  var svg=$('#ng-svg'), playBtn=$('#ng-play'), slowBtn=$('#ng-slow'), pIn=$('#ng-p'), rIn=$('#ng-r');
+  var DEG=Math.PI/180, PI=Math.PI;
+  var VG=25000, TMAX=8, t=0, running=false, raf=0, last=0, flowPh=0, uiSig='';   // VG: the generator's voltage
+  var pads=[0,0];                                                               // what stands on each base: 0 nothing, 1 a step-up transformer, 2 a step-down transformer
+  var NAME=['empty','step-up','step-down'];
+  var vG=segGroup($('#ng-v'), changed), levelSeg=segGroup($('#ng-level'), function(){ $('#ng-r-row').hidden=!ks5(); changed(); });
+  pIn.addEventListener('input', changed); rIn.addEventListener('input', changed);
+  svg.innerHTML='<g id="ng-scene"></g><g id="ng-ui"></g>';
 
   // Same power each time: P = V x I, so a higher cable voltage means a smaller current.
-  // The heating in the cables depends on the current squared (P = I squared x R, R = 2 ohms here).
-  function P(){ return (+pIn.value)*1e6; } function V(){ return +vG.value(); }
-  function Ic(){ return P()/V(); } function Ig(){ return P()/VG; }
-  function loss(){ return Ic()*Ic()*R; }
+  // The heating in the cables depends on the current squared (P = I squared x R; R = 2 ohms unless the IAL / IB slider changes it).
+  function ks5(){ return levelSeg.value()!=='ks4'; }
+  function Pw(){ return (+pIn.value)*1e6; } function R(){ return ks5()?+rIn.value:2; }
+  function K(){ return (+vG.value())/VG; }                                       // how many times each transformer changes the voltage
+  function V(){ return pads[0]===1?VG*K():(pads[0]===2?VG/K():VG); }             // voltage in the cables
+  function Ic(){ return Pw()/V(); } function Ig(){ return Pw()/VG; }
+  function over(){ return Ic()*Ic()*R()>=Pw(); }                                 // the cables would waste more than is sent: nothing gets through
+  function loss(){ return Math.min(Pw(), Ic()*Ic()*R()); }
+  function Vh(){ return pads[1]===2?230:(pads[1]===1?V()*K():V()); }             // voltage at the homes (the step-down transformer is chosen to give 230 V)
+  function built(){ return pads[0]===1 && pads[1]===2; }
   function MW(w){ return w>=1e6?num(w/1e6,1)+' MW':num(w/1e3,0)+' kW'; }
-  function stepped(){ return V()>VG; }
+  function volt(v){ return num(v,v<10000 && v%1?1:0)+' V'; }
   function done(){ return t>=TMAX-1e-9; }
   function on(){ return t>0||running; }
 
-  function tfBox(x,lab,active){
-    var c=active?'var(--ink)':'var(--ink-faint)';
-    var g='<rect x="'+x+'" y="118" width="44" height="54" rx="4" fill="'+(active?'var(--core-soft)':'none')+'" stroke="'+c+'" stroke-width="2"'+(active?'':' stroke-dasharray="4 3"')+'/>';
-    g+='<circle cx="'+(x+15)+'" cy="145" r="10" fill="none" stroke="'+(active?'var(--copper)':c)+'" stroke-width="2.5"/><circle cx="'+(x+29)+'" cy="145" r="10" fill="none" stroke="'+(active?'var(--copper)':c)+'" stroke-width="2.5"/>';
-    return g+txt(x+22,188,lab,{a:'middle',fs:10.5,c:c});
+  // ---- the scene: everything is drawn as a solid object seen from the front, a little from the right and from above ----
+  function box3(x,y,w,h,d,f,tp,sd,edge){ var dx=d*0.72, dy=-d*0.5;
+    return pg([[x,y],[x+dx,y+dy],[x+w+dx,y+dy],[x+w,y]],tp,edge)+pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],sd,edge)+
+      '<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+'" fill="'+f+'" stroke="'+edge+'" stroke-width="1" stroke-linejoin="round"/>'; }
+  function station(x,gy,k){
+    var g='', hw=84*k, hh=46*k, y=gy-hh, tx=x+46*k, tw=46*k, ty=y-60*k, tb=y+12*k, i;
+    // cooling tower, with steam when the station is running
+    if(on()) for(i=0;i<3;i++){ var u=((t*0.35+i/3)%1); g+='<circle cx="'+(tx+tw/2+12*k*u+(i-1)*5*k).toFixed(1)+'" cy="'+(ty-6*k-30*k*u).toFixed(1)+'" r="'+((8+9*u)*k).toFixed(1)+'" fill="var(--wall-t)" opacity="'+(0.75*(1-u)).toFixed(2)+'"/>'; }
+    g+='<path d="M'+tx+','+tb+' C'+(tx+10*k)+','+(tb-26*k)+' '+(tx+10*k)+','+(ty+20*k)+' '+(tx+5*k)+','+ty+' L'+(tx+tw-5*k)+','+ty+' C'+(tx+tw-10*k)+','+(ty+20*k)+' '+(tx+tw-10*k)+','+(tb-26*k)+' '+(tx+tw)+','+tb+' Z" fill="url(#ng-tow)" stroke="var(--wall-s)" stroke-width="1"/>';
+    g+='<ellipse cx="'+(tx+tw/2)+'" cy="'+ty+'" rx="'+(tw/2-5*k)+'" ry="'+(4*k)+'" fill="var(--wall-s)" stroke="var(--wall-s)"/>';
+    // chimney, then the generator hall with its windows
+    g+=box3(x+12*k,y-58*k,11*k,60*k,8*k,'var(--wall-f)','var(--wall-t)','var(--wall-s)','var(--wall-s)')+'<rect x="'+(x+12*k)+'" y="'+(y-52*k)+'" width="'+(11*k)+'" height="'+(5*k)+'" fill="var(--roof-f)"/>';
+    g+=box3(x,y,hw,hh,20*k,'var(--wall-f)','var(--wall-t)','var(--wall-s)','var(--wall-s)');
+    for(i=0;i<4;i++) g+='<rect x="'+(x+8*k+i*11*k).toFixed(1)+'" y="'+(y+8*k).toFixed(1)+'" width="'+(7*k).toFixed(1)+'" height="'+(10*k).toFixed(1)+'" fill="'+(on()?'var(--lamp)':'var(--wall-s)')+'"/>';
+    g+='<circle cx="'+(x+hw-18*k)+'" cy="'+(y+hh/2+2*k)+'" r="'+(12*k)+'" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>'+txt(x+hw-18*k,y+hh/2+6.5*k,'G',{a:'middle',fs:13,c:'var(--ink)',w:600});
+    return {g:g, out:[x+hw+14*k,y+12*k], cx:x+hw/2+6*k};
   }
-  function pylon(x){ return '<path d="M'+(x-12)+',206 L'+x+',112 L'+(x+12)+',206 M'+(x-18)+',122 H'+(x+18)+' M'+(x-14)+',140 H'+(x+14)+' M'+(x-7)+',160 L'+(x+7)+',180 M'+(x+7)+',160 L'+(x-7)+',180" fill="none" stroke="var(--ink-faint)" stroke-width="2"/>'; }
-  function house(x){ return '<path d="M'+x+',176 V150 L'+(x+14)+',136 L'+(x+28)+',150 V176 Z" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2"/><rect x="'+(x+10)+'" y="160" width="8" height="16" fill="var(--ink-faint)"/>'; }
+  // a transformer on its base, or the empty base with a post that carries the line straight across
+  function trafo(cx,gy,type,k){
+    var g='', w=40*k, h=36*k, x=cx-w/2, y=gy-h-4*k, i;
+    g+=box3(cx-30*k,gy-4*k,58*k,5*k,20*k,'var(--pad)','var(--pad-t)','var(--wall-s)','var(--wall-s)');
+    if(!type){
+      var top=[cx+5*k,gy-52*k];
+      g+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+w+'" height="'+h+'" rx="3" fill="none" stroke="var(--ink-faint)" stroke-width="1.4" stroke-dasharray="5 4"/>';
+      g+=line(cx+5*k,gy-6*k,top[0],top[1],'var(--ink-soft)',3*k,' stroke-linecap="round"')+'<circle cx="'+top[0]+'" cy="'+top[1]+'" r="'+(3.2*k)+'" fill="var(--bob-f)" stroke="var(--ink-soft)"/>';
+      g+='<circle cx="'+(cx-7*k)+'" cy="'+(y+h/2)+'" r="'+(9*k)+'" fill="var(--panel)" stroke="var(--accent)" stroke-width="1.6"/>'+line(cx-12*k,y+h/2,cx-2*k,y+h/2,'var(--accent)',2.2)+line(cx-7*k,y+h/2-5*k,cx-7*k,y+h/2+5*k,'var(--accent)',2.2);
+      return {g:g, inp:top, out:top};
+    }
+    g+=box3(x,y,w,h,16*k,'var(--brush-f)','var(--brush-t)','var(--brush-s)','var(--brush-s)');
+    for(i=0;i<6;i++) g+=line(x+4*k+i*6.4*k,y+h-11*k,x+4*k+i*6.4*k,y+h-2*k,'var(--brush-s)',1.6*k);
+    // on the plate: the coils, with more turns on the high-voltage side
+    var n1=type===1?2:5, n2=7-n1, py=y+4*k, ph=17*k;
+    function loops(px,n,dir){ var rr=ph/(2*n), d='M'+px.toFixed(1)+','+py.toFixed(1); for(var j=0;j<n;j++) d+=' a'+rr.toFixed(2)+','+rr.toFixed(2)+' 0 0 '+(dir>0?1:0)+' 0,'+(2*rr).toFixed(2); return '<path d="'+d+'" fill="none" stroke="var(--copper-hi)" stroke-width="'+(1.8*k).toFixed(1)+'"/>'; }
+    g+='<rect x="'+(x+4*k).toFixed(1)+'" y="'+(y+2*k).toFixed(1)+'" width="'+(w-8*k).toFixed(1)+'" height="'+(ph+4*k).toFixed(1)+'" rx="2" fill="var(--insul)"/>'+loops(cx-6*k,n1,-1)+loops(cx+6*k,n2,1)+line(cx-1.5*k,py,cx-1.5*k,py+ph,'#fff',1.2*k,' opacity="0.8"')+line(cx+1.5*k,py,cx+1.5*k,py+ph,'#fff',1.2*k,' opacity="0.8"');
+    // bushings on top: the taller one is the high-voltage side
+    function bush(bx,hb){ var s='', by=y-5*k; for(var j=0;j<hb;j++) s+='<rect x="'+(bx-(4.5-j*0.35)*k).toFixed(1)+'" y="'+(by-(j+1)*4*k).toFixed(1)+'" width="'+((9-j*0.7)*k).toFixed(1)+'" height="'+(3*k).toFixed(1)+'" rx="1.4" fill="var(--bob-f)" stroke="var(--bob-s)" stroke-width="0.7"/>'; return {s:s, top:[bx,by-hb*4*k-1]}; }
+    var b1=bush(cx-6*k,type===1?3:6), b2=bush(cx+16*k,type===1?6:3);
+    return {g:g+b1.s+b2.s, inp:b1.top, out:b2.top};
+  }
+  // one pylon; near and far are where the four cables hang
+  function pylon(x,gy,k){
+    var top=gy-118*k, ax=9*k, ay=6*k, sx=2.5*k, sy=-1.75*k, near=[], far=[], g='', i;
+    function face(ox,oy,col,w){
+      var H=gy-top-22*k, lv=[0,0.3,0.56,0.78,1], d='M'+(x-13*k+ox)+','+(gy+oy)+' L'+(x-4*k+ox)+','+(top+22*k+oy)+' L'+(x-3*k+ox)+','+(top+oy)+' M'+(x+13*k+ox)+','+(gy+oy)+' L'+(x+4*k+ox)+','+(top+22*k+oy)+' L'+(x+3*k+ox)+','+(top+oy);
+      for(i=0;i<4;i++){ var y0=gy-H*lv[i], y1=gy-H*lv[i+1], h0=(13-9*lv[i])*k, h1=(13-9*lv[i+1])*k;
+        d+=' M'+(x-h0+ox).toFixed(1)+','+(y0+oy).toFixed(1)+' L'+(x+h1+ox).toFixed(1)+','+(y1+oy).toFixed(1)+' M'+(x+h0+ox).toFixed(1)+','+(y0+oy).toFixed(1)+' L'+(x-h1+ox).toFixed(1)+','+(y1+oy).toFixed(1); }
+      return '<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"/>'; }
+    g+=face(5*k,-3.5*k,'var(--ink-faint)',1.2)+face(0,0,'var(--ink-soft)',1.9);
+    [top+7*k,top+27*k].forEach(function(y){ var n=[x-ax+sx,y+ay+sy], f=[x+ax+sx,y-ay+sy];
+      g+=line(n[0].toFixed(1),n[1].toFixed(1),f[0].toFixed(1),f[1].toFixed(1),'var(--ink-soft)',2.6*k,' stroke-linecap="round"');
+      [n,f].forEach(function(p){ g+=line(p[0].toFixed(1),p[1].toFixed(1),p[0].toFixed(1),(p[1]+7*k).toFixed(1),'var(--bob-s)',2.6*k,' stroke-linecap="round"'); });
+      near.push([n[0],n[1]+7*k]); far.push([f[0],f[1]+7*k]); });
+    return {g:g, near:near, far:far};
+  }
+  function house(x,gy,k,lit){
+    var w=38*k, h=25*k, dx=12*k*0.72, dy=-12*k*0.5, y=gy-h, ap=[x+w/2,y-15*k], g='';
+    g+=pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,gy+dy],[x+w,gy]],'var(--wall-s)','var(--wall-s)');
+    g+=pg([ap,[ap[0]+dx,ap[1]+dy],[x+w+dx+2,y+dy+1],[x+w+2,y+1]],'var(--roof-s)','var(--roof-s)');
+    g+=pg([[x,gy],[x,y],ap,[x+w,y],[x+w,gy]],'var(--wall-t)','var(--wall-s)');
+    g+=pl([[x-2,y+1.5],ap,[x+w+2,y+1.5]],'var(--roof-f)',(3.2*k).toFixed(1));
+    g+='<rect x="'+(x+6*k).toFixed(1)+'" y="'+(y+6*k).toFixed(1)+'" width="'+(10*k).toFixed(1)+'" height="'+(9*k).toFixed(1)+'" fill="'+(lit?'var(--lamp)':'var(--wall-s)')+'" stroke="var(--wall-s)" stroke-width="0.8"/>';
+    g+='<rect x="'+(x+23*k).toFixed(1)+'" y="'+(gy-14*k).toFixed(1)+'" width="'+(9*k).toFixed(1)+'" height="'+(14*k).toFixed(1)+'" fill="var(--wall-s)"/>';
+    return {g:g, ap:ap};
+  }
+  // a hanging cable from a to b, as a list of points
+  function hang(a,b,sag){ var o=[], n=10; for(var j=0;j<=n;j++){ var u=j/n; o.push([a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u+sag*4*u*(1-u)]); } return o; }
+  function geom(){
+    var narrow=svg.getBoundingClientRect().width<520;
+    return narrow ? {n:1, VW:430, VH:372, k:0.8, gy:206, sx:4, p1:118, py:[184,254], p2:318, hs:[352,391], task:[12,16,50], lab:232, bar:[16,398,304]}
+                  : {n:0, VW:860, VH:350, k:1, gy:196, sx:12, p1:172, py:[264,400,536], p2:630, hs:[694,746,798], task:[14,20,100], lab:222, bar:[60,740,282]};
+  }
 
   function draw(){
-    var g='', Imax=P()/VG, frac=Ic()/Imax, lf=loss()/P();
-    // power station
-    g+='<rect x="8" y="120" width="62" height="56" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2"/><rect x="18" y="86" width="12" height="34" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="2"/>';
-    g+='<circle cx="48" cy="148" r="12" fill="none" stroke="var(--ink)" stroke-width="2"/>'+txt(48,152,'G',{a:'middle',fs:11,c:'var(--ink)',w:600})+txt(39,196,'power station',{a:'middle',fs:10.5});
-    g+=line(70,145,92,145,'var(--ink-soft)',2.5);
-    g+=tfBox(92,stepped()?'step-up':'no step-up',stepped());
-    // cables between the pylons, glowing as they heat up
-    var xs=[150,250,350,450], cy=[122,140];
-    xs.forEach(function(x){ g+=pylon(x); });
-    var glow=on()?Math.min(1,lf*3.2):0;
-    cy.forEach(function(y,k){
-      var d='M136,'+(k?150:140); xs.forEach(function(x,i){ d+=(i? ' Q'+(x-50)+','+(y+24)+' '+x+','+y : ' L'+x+','+y); }); d+=' L508,'+(k?150:140);
-      g+='<path d="'+d+'" fill="none" stroke="var(--ink-soft)" stroke-width="2.5"/>';
-      if(glow>0.01) g+='<path d="'+d+'" fill="none" stroke="var(--bad)" stroke-width="'+(3+5*glow).toFixed(1)+'" opacity="'+(0.25+0.65*glow).toFixed(2)+'"/>';
-    });
+    var L=geom(), k=L.k, gy=L.gy, i, g='';
+    var vb='0 0 '+L.VW+' '+L.VH; if(svg.getAttribute('viewBox')!==vb){ svg.setAttribute('viewBox',vb); svg.classList.toggle('tall',!!L.n); }
+    var lf=loss()/Pw(), live=on(), glow=live?Math.min(1,lf*3.2):0, wave=Math.sin(PI*t), safe=Vh()===230, power=live && !over();
+    g+='<defs><linearGradient id="ng-tow" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="var(--wall-t)"/><stop offset="0.55" stop-color="var(--wall-f)"/><stop offset="1" stop-color="var(--wall-s)"/></linearGradient></defs>';
+    g+='<rect x="'+(L.n?2:6)+'" y="'+(gy-9)+'" width="'+(L.VW-(L.n?4:12))+'" height="20" rx="10" fill="var(--ground)"/>';
+    var st=station(L.sx,gy,k), A=trafo(L.p1,gy,pads[0],k), B=trafo(L.p2,gy,pads[1],k), pys=L.py.map(function(x){ return pylon(x,gy,k); }), hs=L.hs.map(function(x){ return house(x,gy,k,power && safe); });
+    // the four cables: two on the far side of the pylons (drawn first), two on the near side
+    function cable(side,lvl){ var pts=[], prev=A.out; pys.forEach(function(p,j){ var q=p[side][lvl]; pts=pts.concat(hang(prev,q,j?0.085*(q[0]-prev[0]):3)); prev=q; }); return pts.concat(hang(prev,B.inp,3)); }
+    function wire(pts,far){ var s=pl(pts,far?'var(--ink-faint)':'var(--ink-soft)',far?1.5:2.2);
+      if(glow>0.01) s+=pl(pts,'var(--bad)',(2.5+4.5*glow).toFixed(1),' opacity="'+((far?0.5:1)*(0.25+0.6*glow)).toFixed(2)+'"'); return s; }
+    var fU=cable('far',0), fL=cable('far',1), nU=cable('near',0), nL=cable('near',1);
+    g+=st.g+wire(fU,1)+wire(fL,1);
+    pys.forEach(function(p){ g+=p.g; });
+    var feed=hang(st.out,A.inp,2), drop=[B.out,[L.hs[0]-9*k,gy-46*k]].concat(hs.map(function(h){ return h.ap; }));
+    g+=line(L.hs[0]-9*k,gy-2,L.hs[0]-9*k,gy-46*k,'var(--ink-soft)',2.4*k,' stroke-linecap="round"');
+    hs.forEach(function(h){ g+=h.g; });
+    g+=pl(feed,'var(--ink-soft)',2.6)+A.g+B.g+pl(drop,'var(--ink-soft)',1.6)+wire(nU)+wire(nL);
     // heat rising off the cables: more wiggles for more waste
-    if(on() && glow>0.02){ var nh=Math.max(1,Math.round(glow*8)); for(var h=0;h<nh;h++){ var hx=170+h*(260/nh), ph=(t*1.3+h*0.37)%1, hy=110-ph*44;
-      g+='<path d="M'+hx+','+hy+' q5,-6 0,-12 q-5,-6 0,-12" fill="none" stroke="var(--bad)" stroke-width="2" opacity="'+((1-ph)*glow).toFixed(2)+'"/>'; } }
-    // moving charge: the number of dots shows the size of the current
-    if(on()){ var nd=Math.max(2,Math.round(4+26*frac)), sp=(t*0.18)%1;
-      for(var k2=0;k2<nd;k2++){ var u=((k2/nd)+sp)%1, x=150+u*300, seg=Math.min(2,Math.floor(u*3)), uu=u*3-seg, y=cy[0]+48*uu*(1-uu);
-        g+='<circle cx="'+x.toFixed(1)+'" cy="'+(y+1).toFixed(1)+'" r="3" fill="var(--accent)"/>'; } }
-    g+=tfBox(464,'step-down',true);
-    g+=line(508,145,526,145,'var(--ink-soft)',2.5);
-    [528,562,596].forEach(function(x){ g+=house(x); });
-    g+=line(526,176,626,176,'var(--ink-soft)',1.5);
-    // labels: voltages and currents in each part
-    g+=txt(39,232,num(VG,0)+' V',{a:'middle',fs:11,c:'var(--ink)'})+txt(39,248,num(Ig(),0)+' A',{a:'middle',fs:11,c:'var(--accent)'});
-    g+=txt(300,232,num(V(),0)+' V',{a:'middle',fs:12,c:'var(--ink)',w:600})+txt(300,250,num(Ic(),0)+' A in the cables',{a:'middle',fs:12,c:'var(--accent)',w:600});
-    g+=txt(578,232,'230 V',{a:'middle',fs:11,c:'var(--ink)'})+txt(578,248,'homes',{a:'middle',fs:10.5});
+    var x0=L.py[0], x1=L.py[L.py.length-1];
+    if(live && glow>0.02){ var nh=Math.max(1,Math.round(glow*(L.n?4:8))); for(i=0;i<nh;i++){ var hx=x0+14+i*((x1-x0-20)/nh), ph=(t*1.3+i*0.37)%1, hy=gy-112*k-ph*40*k;
+      g+='<path d="M'+hx.toFixed(1)+','+hy.toFixed(1)+' q5,-6 0,-12 q-5,-6 0,-12" fill="none" stroke="var(--bad)" stroke-width="2" opacity="'+((1-ph)*glow).toFixed(2)+'"/>'; } }
+    // the current: arrowheads on the cables. More current, more arrowheads; it is a.c., so they keep turning round (slowed right down)
+    if(live && Math.abs(wave)>0.12){
+      var frac=Math.min(1,Ic()/Ig()/1), tot=pathLen(nU), gap=tot/(3+(L.n?12:24)*frac), rev=wave<0;
+      [nU,nL].forEach(function(c,j){ var pts=(rev!==(j===1))?c.slice().reverse():c; g+=flowMarks(pts,(rev!==(j===1))?tot-flowPh:flowPh,gap,4.4); });
+      g+=flowMarks(rev?feed.slice().reverse():feed,rev?pathLen(feed)-flowPh:flowPh,L.n?18:15,4.4);
+    }
+    // a warning over the homes when the voltage there is not 230 V
+    if(live && !safe && !over()){ var wx=(L.hs[0]+L.hs[L.hs.length-1])/2+19*k, wy=gy-66*k;
+      g+='<path d="M'+wx+','+(wy-13)+' L'+(wx+13)+','+(wy+10)+' L'+(wx-13)+','+(wy+10)+' Z" fill="var(--bad)" stroke="var(--panel)" stroke-width="1.5" stroke-linejoin="round"/>'+txt(wx,wy+7,'!',{a:'middle',fs:14,c:'#fff',w:600}); }
+    // labels under the ground: what each part is, with its voltage and current
+    var ly=L.lab, hx2=(L.hs[0]+L.hs[L.hs.length-1])/2+19*k, mid=(x0+x1)/2;
+    g+=txt(st.cx,ly,L.n?'station':'power station',{a:'middle',fs:12.5,c:'var(--ink)'})+txt(st.cx,ly+17,volt(VG),{a:'middle',fs:12.5})+txt(st.cx,ly+33,num(Ig(),0)+' A',{a:'middle',fs:12.5,c:'var(--cur)',w:600});
+    [[L.p1,0],[L.p2,1]].forEach(function(e){ var okp=pads[e[1]]===e[1]+1;
+      g+=txt(e[0]+3*k,ly,(live?(okp?'✓ ':'✗ '):'')+NAME[pads[e[1]]],{a:'middle',fs:12.5,c:live?(okp?'var(--good)':'var(--bad)'):'var(--ink)',w:live?600:400}); });
+    g+=txt(mid,ly+17,live?volt(V()):'? V',{a:'middle',fs:13.5,c:'var(--ink)',w:600})+txt(mid,ly+34,(live?num(Ic(),0):'?')+(L.n?' A in cables':' A in the cables'),{a:'middle',fs:13.5,c:'var(--cur)',w:600});
+    var dead=live && over();   // nothing gets through, so there is no voltage to talk about at the homes
+    g+=txt(hx2,ly,'homes',{a:'middle',fs:12.5,c:'var(--ink)'})+txt(hx2,ly+17,dead?'no power':(live?volt(Vh()):'? V'),{a:'middle',fs:12.5,c:(safe||!live)&&!dead?'var(--ink-soft)':'var(--bad)',w:(safe||!live)&&!dead?400:600});
+    if(live && !safe && !dead) g+=txt(hx2,ly+33,L.n?'dangerous':'too dangerous',{a:'middle',fs:12.5,c:'var(--bad)',w:600});
     // where the energy goes
-    var BX=60, BW=520, by=268, wd=Math.max(2,BW*lf);
-    g+='<rect x="'+BX+'" y="'+by+'" width="'+BW+'" height="14" fill="var(--good-soft)" stroke="var(--good)"/><rect x="'+(BX+BW-wd)+'" y="'+by+'" width="'+wd+'" height="14" fill="var(--bad)" opacity="0.85"/>';
-    g+=txt(BX,by+28,'reaches homes: '+num(100-lf*100,lf<0.01?2:1)+'%',{fs:10.5,c:'var(--good)'})+txt(BX+BW,by+28,'wasted heating the cables: '+num(lf*100,lf<0.01?2:1)+'%',{a:'end',fs:10.5,c:'var(--bad)'});
-    svg.innerHTML=g;
+    var BX=L.bar[0], BW=L.bar[1], by=L.bar[2], wd=Math.max(2,BW*lf), dp=lf<0.01?2:1;
+    if(live) g+='<rect x="'+BX+'" y="'+by+'" width="'+BW+'" height="14" fill="var(--good-soft)" stroke="var(--good)"/><rect x="'+(BX+BW-wd)+'" y="'+by+'" width="'+wd+'" height="14" fill="var(--bad)" opacity="0.85"/>';
+    else g+='<rect x="'+BX+'" y="'+by+'" width="'+BW+'" height="14" fill="var(--bg)" stroke="var(--ink-faint)" stroke-dasharray="5 4"/>';
+    g+=txt(BX,by+31,'reaches homes: '+(live?num(100-lf*100,dp)+'%':'?'),{fs:12.5,c:'var(--good)'})+txt(BX+BW,by+(L.n?48:31),'wasted heating the cables: '+(live?num(lf*100,dp)+'%':'?'),{a:'end',fs:12.5,c:'var(--bad)'});
+    // the task, then the verdict, along the top
+    var msg, col='var(--ink)';
+    if(!live) msg='Build the grid: click each base to choose what stands on it, then send the power.';
+    else if(built()){ msg='✓ This is how the National Grid is built: step up, send, step down.'; col='var(--good)'; }
+    else { msg='✗ Not yet: '+(pads[0]===1?'':(over()?'all':num(lf*100,0)+'%')+' of the power is wasted')+(pads[0]!==1 && !safe && !over()?', and ':'')+(safe||over()?'':'the homes get '+volt(Vh()))+'. Change a base and send again.'; col='var(--bad)'; }
+    wrapLines(msg,L.task[2]).forEach(function(s,j){ g+=txt(L.task[0],L.task[1]+j*17,s,{fs:13.5,c:col,w:600}); });
+    $('#ng-scene').innerHTML=g;
+    drawUi(L);
 
-    $('#ng-po').textContent=num(P()/1e6,0)+' MW';
-    $('#ng-sv').textContent=num(V(),0)+' V'; $('#ng-si').textContent=num(Ic(),0)+' A';
-    $('#ng-sw').textContent=MW(loss());
-    $('#ng-sh').textContent=MW(P()-loss());
-    var Pn=num(P(),0);
-    var w='Power sent: P = '+num(P()/1e6,0)+' MW = '+Pn+' W<br>P = V × I<br>'+Pn+' = '+num(V(),0)+' × I<br>I = [['+Pn+'|'+num(V(),0)+']]<br>I = <b>'+num(Ic(),0)+' A</b> in the cables';
-    if(stepped()) w+='<br>Step-up transformer (100% efficient):<br>V<sub>p</sub> × I<sub>p</sub> = V<sub>s</sub> × I<sub>s</sub><br>'+num(VG,0)+' × I<sub>p</sub> = '+num(V(),0)+' × '+num(Ic(),0)+'<br>I<sub>p</sub> = [['+num(V(),0)+' × '+num(Ic(),0)+'|'+num(VG,0)+']]<br>I<sub>p</sub> = '+num(Ig(),0)+' A from the generator';
-    $('#ng-eq').innerHTML=FR(w);
-    var n, x25=Ig()/Ic();
-    if(!on()) n='The power station generates at '+num(VG,0)+' V. Choose the voltage for the cables, then press <b>Send the power</b>. The same power is sent each time.';
-    else if(!stepped()) n='With no step-up the cables carry a huge current of '+num(Ic(),0)+' A. The cables get hot and <b>'+num(lf*100,0)+'%</b> of the power is wasted heating them.';
-    else n='The step-up transformer raises the voltage '+num(V()/VG,1)+' times, so the current in the cables is '+num(x25,1)+' times <b>smaller</b> ('+num(Ic(),0)+' A). Heating depends on the current squared, so '+num(x25*x25,0)+' times less energy is wasted. Step-down transformers then bring the voltage down to a safe 230 V for homes.';
+    $('#ng-po').textContent=num(Pw()/1e6,0)+' MW'; $('#ng-ro').textContent=rIn.value+' Ω';
+    var eff=(1-lf)*100;
+    $('#ng-svl').textContent=ks5()?'Efficiency':'Cable voltage';
+    $('#ng-sv').textContent=!live?'?':(ks5()?num(eff,eff>99?2:1)+'%':volt(V())); $('#ng-si').textContent=live?num(Ic(),0)+' A':'?';
+    $('#ng-sw').textContent=live?MW(loss()):'?';
+    $('#ng-sh').textContent=live?MW(Pw()-loss()):'?';
+    var Pn=num(Pw(),0), Vn=num(V(),V()%1?1:0);
+    var w='Power sent: P = '+num(Pw()/1e6,0)+' MW = '+Pn+' W<br>P = V × I<br>'+Pn+' = '+Vn+' × I<br>I = [['+Pn+'|'+Vn+']]<br>I = <b>'+num(Ic(),0)+' A</b> in the cables';
+    if(pads[0]) w+='<br>'+(pads[0]===1?'Step-up':'Step-down')+' transformer (100% efficient):<br>V<sub>p</sub> × I<sub>p</sub> = V<sub>s</sub> × I<sub>s</sub><br>'+num(VG,0)+' × I<sub>p</sub> = '+Vn+' × '+num(Ic(),0)+'<br>I<sub>p</sub> = [['+Vn+' × '+num(Ic(),0)+'|'+num(VG,0)+']]<br>I<sub>p</sub> = '+num(Ig(),0)+' A from the generator';
+    if(ks5()){
+      var raw=Ic()*Ic()*R();
+      w+='<br>Power wasted in the cables (R = '+R()+' Ω):<br>P = I²R<br>P = '+num(Ic(),0)+'² × '+R()+'<br>P = '+num(raw,0)+' W';
+      if(over()) w+='<br>That is more than the '+Pn+' W sent: the cables cannot carry this current, so nothing useful gets through.';
+      else w+='<br>efficiency = [[useful power out|total power in]] × 100%<br>efficiency = [['+num(Pw()-raw,0)+'|'+Pn+']] × 100%<br>efficiency = <b>'+num(eff,eff>99?2:1)+'%</b>';
+    }
+    $('#ng-eq').innerHTML=live?FR(w):'Build the grid and send the power first.';
+    var n, kk=K();
+    if(!live) n='The power station generates at '+num(VG,0)+' V. <b>Click each base</b> in the picture to stand a step-up or a step-down transformer on it (or leave it empty), then press <b>Send the power</b>. The same power is sent each time.';
+    else {
+      if(pads[0]===1) n='The step-up transformer raises the voltage '+num(kk,1)+' times, so the current in the cables is '+num(kk,1)+' times <b>smaller</b> ('+num(Ic(),0)+' A). Heating depends on the current squared, so '+num(kk*kk,0)+' times less energy is wasted.';
+      else if(pads[0]===2) n='A step-down transformer here <b>lowers</b> the voltage '+num(kk,1)+' times, so the current in the cables is '+num(kk,1)+' times bigger ('+num(Ic(),0)+' A). '+(over()?'The cables cannot carry it: all of the power is wasted heating them.':'The cables get very hot and <b>'+num(lf*100,0)+'%</b> of the power is wasted.');
+      else n='With no step-up the cables carry a huge current of '+num(Ic(),0)+' A. The cables get hot and <b>'+num(lf*100,0)+'%</b> of the power is wasted heating them.';
+      if(over()) n+=' No power reaches the homes.';
+      else if(pads[1]===2) n+=' The step-down transformer then brings the voltage down to a safe 230 V for homes.';
+      else if(pads[1]===1) n+=' A step-up transformer at the homes raises the voltage again, to '+volt(Vh())+': far too <b>dangerous</b>.';
+      else n+=' With no step-down transformer the homes get '+volt(Vh())+': far too <b>dangerous</b>.';
+      if(ks5() && !over()) n+=' Power wasted = I²R, so the efficiency is '+num(eff,eff>99?2:1)+'%.';
+    }
     $('#ng-note').innerHTML=n;
     playBtn.innerHTML=running?'&#10074;&#10074; Pause':(done()?'&#9654; Send again':(t>0?'&#9654; Play':'&#9654; Send the power'));
   }
+  // the two bases are the things to click: each click (or Enter) puts the next thing on the base
+  function drawUi(L){
+    var sig=[L.n,pads[0],pads[1]].join('|'); if(sig===uiSig) return; uiSig=sig;
+    var g='', k=L.k;
+    [[L.p1,'next to the power station'],[L.p2,'next to the homes']].forEach(function(e,i){
+      g+='<g class="pick" data-pick="'+i+'" tabindex="0" role="button" aria-label="Base '+e[1]+': '+(pads[i]?'a '+NAME[pads[i]]+' transformer':'empty')+'. Press to change it."><rect class="ring" x="'+(e[0]-34*k).toFixed(1)+'" y="'+(L.gy-76*k).toFixed(1)+'" width="'+(76*k).toFixed(1)+'" height="'+(84*k).toFixed(1)+'" rx="8" fill="var(--panel)" fill-opacity="0.01" stroke-width="3"/></g>'; });
+    setKeepFocus($('#ng-ui'), g);
+  }
+
   function rate(){ return pressed(slowBtn)?0.3:1; }
   function stop(){ running=false; cancelAnimationFrame(raf); }
-  function frame(now){ if(!running) return; t=Math.min(TMAX,t+Math.min(0.05,(now-last)/1000)*rate()); last=now;
+  function frame(now){ if(!running) return; var dt=Math.min(0.05,(now-last)/1000)*rate(); t=Math.min(TMAX,t+dt); last=now; flowPh+=Math.sin(PI*t)*dt*70;
     if(done()) stop(); draw(); if(running) raf=requestAnimationFrame(frame); }
-  function reset(){ stop(); t=0; draw(); }
-  function changed(){ reset(); }
-  playBtn.addEventListener('click',function(){ if(running){ stop(); draw(); return; } if(done()) reset(); running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); });
+  function clear(){ stop(); t=0; flowPh=0; draw(); }
+  function reset(){ pads=[0,0]; clear(); }
+  function changed(){ clear(); }
+  onPick(svg, function(i){ pads[+i]=(pads[+i]+1)%3; clear(); });
+  playBtn.addEventListener('click',function(){ if(running){ stop(); draw(); return; } if(done()) clear(); running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); });
   slowBtn.addEventListener('click',function(){ toggle(slowBtn); });
   $('#ng-reset').addEventListener('click',reset);
   watchEquals($('#ng-eq'));
+  window.addEventListener('resize', function(){ if(!running) draw(); });
+  if(PW_LEVEL==='ial'||PW_LEVEL==='ib') levelSeg.pick(PW_LEVEL);   // IAL and IB show the same deeper view
+  $('#ng-r-row').hidden=!ks5();
   reset();
 
 })();

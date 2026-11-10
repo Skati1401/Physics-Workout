@@ -35,6 +35,15 @@ Both model pages carry the same block of drawing code, marked `3D kit`: `scene3`
 - Colour tokens the kit needs (copy all three theme blocks from `dc-motor.html`): `--north-f/-t/-s`, `--south-f/-t/-s`, `--copper-hi`, `--coilb`, `--coilb-hi`, `--cur`, `--insul`, `--brush-t/-f/-s`.
 - Directions: `c` is the current in side A (+1 towards you, a dot in the end-on view); `sig` is +1 when the current leaves the coil through the right-hand brush. The split ring is at the front of the coil, so with N on the left and + on the left brush, side A on the right carries current towards you and is pushed up. Work the direction out from F = I l × B or v × B for every new case; do not copy a sign from another page.
 
+## The bench kit and the Predict tab (batch 3, 10 Nov 2026)
+
+`magnet-and-coil.html`, `transformer.html` and `national-grid.html` carry a second small block, marked `bench kit`, for apparatus that is not the motor rig: `caseBox` and `meterBox` (a solid bench meter with a scale, a needle and terminals on top or on its left side; `meterGeom`, `meterPt` and `meterWedge` give its geometry), `pl`, `pg`, `pathLen`, `wrapLines`, `onPick` and `setKeepFocus`. They also carry only part of the 3D kit (`tri`, `flowMarks`, `scene3`). A fix goes into every page that has the block.
+
+- **Predict is a tab beside Explore** at the top of the right-hand column ("Explore | Predict", then the level switch if the page has one). In Predict the setup controls are hidden, a question is dealt, and the buttons under the picture are Go (or Switch on) and New question.
+- **The things to click are in the picture**, each a `<g class="pick" data-pick="…" tabindex="0" role="button">` with a `.ring` shape for the keyboard focus outline; `onPick(svg, fn)` handles click, Enter and Space. Draw them in their own group and redraw it with `setKeepFocus`, only when the question changes, so a redraw of the moving picture never drops the focus.
+- **Nothing gives the answer away before Go:** hide theory curves, readings and working until the run is marked. The question is also written in the picture, in clear space, with the verdict (✓ or ✗ and the answer in words) in the same place afterwards.
+- **Current in a hidden part of a wire:** cut the path into pieces, mark which can be seen, and give `flowMarks` each visible piece with the phase less the length before it, so the arrowheads keep step along the whole wire. To turn the arrowheads round, reverse the pieces and use the total length less the phase.
+
 ## Checks before pushing
 
 1. `node --check` on the page's scripts (CLAUDE.md, "Check before you commit").

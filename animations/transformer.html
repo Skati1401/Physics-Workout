@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Transformer Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Change the turns on each coil and watch the changing field in the core induce a bigger or smaller voltage; then try a battery instead.">
+<meta name="description" content="Interactive physics animation. Change the turns on each coil and watch the changing field in the core induce a bigger or smaller voltage; try a battery instead, then predict the voltmeter reading before you switch on.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -21,7 +21,11 @@
     --north:#d23b3b;   --north-soft:#fbdede;
     --south:#2f62d6;   --south-soft:#dde7fb;
     --copper:#b8651b;  --filing:#3b4352;
-    --core:#7d8796;    --core-soft:#e3e6eb;
+    --north-f:#d94444; --north-t:#ec8585; --north-s:#b23030;
+    --south-f:#3d6bd9; --south-t:#7f9eee; --south-s:#2a50ae;
+    --copper-hi:#e6a25c; --coilb:#5f6d84; --coilb-hi:#97a3b7; --cur:#7c3aed; --insul:#262d3a;
+    --brush-t:#687385; --brush-f:#4a5464; --brush-s:#343c4a;
+    --iron-f:#8b95a5; --iron-t:#b7bfcc; --iron-s:#6b7586; --iron-in:#4f596a;
     --font-display:'Big Shoulders',system-ui,sans-serif;
     --font-body:'IBM Plex Sans',system-ui,sans-serif;
     --font-mono:'IBM Plex Mono',ui-monospace,monospace;
@@ -39,7 +43,12 @@
       --topic:#4fd1dc; --topic-soft:#123236;
       --north:#ff7a7a; --north-soft:#3d1a1a;
       --south:#7da3ff; --south-soft:#1a2440;
-      --copper:#f0a35e; --filing:#c3cad6; --core:#9aa4b5; --core-soft:#2a313d;
+      --copper:#f0a35e; --filing:#c3cad6;
+      --north-f:#d95252; --north-t:#ee9090; --north-s:#a83636;
+      --south-f:#4a78e0; --south-t:#8aa9f3; --south-s:#3157b5;
+      --copper-hi:#ffd0a0; --coilb:#8f9db3; --coilb-hi:#c3ccda; --cur:#c4a1ff; --insul:#0c1017;
+      --brush-t:#8a94a6; --brush-f:#667083; --brush-s:#4a5364;
+      --iron-f:#7f8a9c; --iron-t:#aab4c4; --iron-s:#5d6779; --iron-in:#394252;
       color-scheme:dark;
     }
   }
@@ -54,7 +63,12 @@
     --topic:#4fd1dc; --topic-soft:#123236;
     --north:#ff7a7a; --north-soft:#3d1a1a;
     --south:#7da3ff; --south-soft:#1a2440;
-    --copper:#f0a35e; --filing:#c3cad6; --core:#9aa4b5; --core-soft:#2a313d;
+    --copper:#f0a35e; --filing:#c3cad6;
+      --north-f:#d95252; --north-t:#ee9090; --north-s:#a83636;
+      --south-f:#4a78e0; --south-t:#8aa9f3; --south-s:#3157b5;
+      --copper-hi:#ffd0a0; --coilb:#8f9db3; --coilb-hi:#c3ccda; --cur:#c4a1ff; --insul:#0c1017;
+      --brush-t:#8a94a6; --brush-f:#667083; --brush-s:#4a5364;
+      --iron-f:#7f8a9c; --iron-t:#aab4c4; --iron-s:#5d6779; --iron-in:#394252;
     color-scheme:dark;
   }
 
@@ -144,7 +158,23 @@
   .embed .hint{display:none;}
 
   .view{max-height:max(240px,calc(100vh - 330px));}
+  .view.tall,.embed .view.tall{max-height:none;}
   .under .sliders{flex-basis:100%;}
+  .toprow{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{font-size:12.5px;padding:8px 10px;white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  /* things in the picture that are clicked to answer a question */
+  .pick{cursor:pointer;}
+  .pick:focus{outline:none;}
+  .pick .ring{stroke:transparent;}
+  .pick:focus-visible .ring{stroke:var(--accent);}
+
+  .view{max-height:max(240px,calc(100vh - 330px));}
+  .view.tall,.embed .view.tall{max-height:none;}
+  .under .sliders{flex-basis:100%;}
+  #tf-mode button,#tf-sup button{padding:8px 8px;}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -179,15 +209,16 @@
   </header>
   <section class="card stage">
     <div>
-      <svg class="view" id="tf-svg" viewBox="0 0 640 320" role="img" aria-label="A transformer: a primary coil and a secondary coil on an iron core, with a supply and a voltmeter, beside a graph of input and output voltage against time"></svg>
+      <svg class="view" id="tf-svg" viewBox="0 0 860 350" role="img" aria-label="A transformer in 3D: a primary coil and a secondary coil wound on an iron core, joined to a supply and a voltmeter, beside a graph of input and output voltage against time and the transformer's circuit symbol"></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="tf-play" type="button">&#9654; Switch on</button>
+          <button class="btn" id="tf-new" type="button" hidden>New question</button>
           <button class="btn" id="tf-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="tf-slow" type="button" aria-pressed="false">Slow motion</button>
           <button class="btn" id="tf-exp" type="button" aria-pressed="false" title="Hide the theory curves and plot the readings as the transformer runs">Experiment</button>
         </div>
-        <div class="sliders">
+        <div class="sliders" id="tf-sliders">
           <div><label class="lab" for="tf-np"><span>Primary turns N<sub>p</sub></span> <output id="tf-npo"></output></label><input type="range" id="tf-np" min="100" max="1000" step="100" value="200"></div>
           <div><label class="lab" for="tf-ns"><span>Secondary turns N<sub>s</sub></span> <output id="tf-nso"></output></label><input type="range" id="tf-ns" min="100" max="2000" step="100" value="400"></div>
           <div><label class="lab" for="tf-vp"><span>Input voltage V<sub>p</sub></span> <output id="tf-vpo"></output></label><input type="range" id="tf-vp" min="2" max="24" step="2" value="12"></div>
@@ -195,11 +226,11 @@
       </div>
     </div>
     <div class="side">
-      <div>
-        <div class="lab">Supply</div>
-        <div class="seg" id="tf-sup"><button type="button" data-v="ac" aria-pressed="true">a.c. supply</button><button type="button" data-v="dc" aria-pressed="false">Battery (d.c.)</button></div>
+      <div class="toprow">
+        <div class="seg tabs" id="tf-mode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Predict</button></div>
+        <div class="seg tabs" id="tf-sup" role="group" aria-label="Supply"><button type="button" data-v="ac" aria-pressed="true">a.c. supply</button><button type="button" data-v="dc" aria-pressed="false">Battery (d.c.)</button></div>
       </div>
-      <div>
+      <div id="tf-points-row">
         <div class="lab">Jump to a point</div>
         <div class="seg" id="tf-points"><button type="button" data-v="0" aria-pressed="false">Field passing zero</button><button type="button" data-v="0.25" aria-pressed="false">Field at its biggest</button><button type="button" data-v="0.5" aria-pressed="false">Field reversing</button><button type="button" data-v="0.75" aria-pressed="false">Biggest, other way</button></div>
       </div>
@@ -208,7 +239,7 @@
         <div class="stat"><small>Input voltage</small><strong id="tf-si">&ndash;</strong></div>
         <div class="stat"><small>Output now</small><strong id="tf-sn">0 V</strong></div>
         <div class="stat hi"><small>Output voltage</small><strong id="tf-so">&ndash;</strong></div>
-        <div class="stat"><small>Type</small><strong id="tf-st">&ndash;</strong></div>
+        <div class="stat"><small id="tf-stl">Type</small><strong id="tf-st">&ndash;</strong></div>
       </div>
       <details class="working">
         <summary>Show working</summary>
@@ -261,27 +292,103 @@
     function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
     return {pick:pick, value:value};
   }
-  // a pole of a magnet: coloured block with its letter
-  function poleRect(x,y,w,h,pole,fs){
-    var c = pole==='N' ? 'north' : 'south';
-    return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="var(--'+c+'-soft)" stroke="var(--'+c+')" stroke-width="2"/>'+
-      '<text x="'+(x+w/2)+'" y="'+(y+h/2+(fs||16)*0.36)+'" text-anchor="middle" font-size="'+(fs||16)+'" font-weight="600" fill="var(--'+c+')">'+pole+'</text>';
-  }
-  // a wire seen end-on: dot = current out of the page, cross = into the page
-  function wireEnd(x,y,r,dir,col){
-    var g='<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="var(--panel)" stroke="'+(col||'var(--copper)')+'" stroke-width="3"/>';
-    if(dir>0) g+='<circle cx="'+x+'" cy="'+y+'" r="'+(r*0.28)+'" fill="var(--ink)"/>';
-    else if(dir<0){ var d=r*0.55; g+='<path d="M'+(x-d)+','+(y-d)+' L'+(x+d)+','+(y+d)+' M'+(x+d)+','+(y-d)+' L'+(x-d)+','+(y+d)+'" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>'; }
+  function line(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+(w||2)+'"'+(extra||'')+'/>'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+x+'" y="'+y+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11.5)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="3.5" stroke-linejoin="round"':'')+'>'+s+'</text>'; }
+  // ---- 3D kit (part of the block in dc-motor.html and ac-generator.html: tri, flowMarks and scene3; a fix there goes here too) ----
+  // world axes: X to the right, Y away from you, Z up. The camera looks from the front, 14 degrees from the right and 30 degrees from above.
+  // a solid arrowhead with its tip at (x, y), pointing along ang (degrees, screen)
+  function tri(x,y,ang,size,col,extra){ return '<path d="M0,0 L'+(-size*1.7).toFixed(1)+','+(size*0.8).toFixed(1)+' L'+(-size*1.7).toFixed(1)+','+(-size*0.8).toFixed(1)+' z" transform="translate('+x.toFixed(1)+','+y.toFixed(1)+') rotate('+ang.toFixed(1)+')" fill="'+col+'"'+(extra||'')+'/>'; }
+  // small arrowheads that travel along a wire the way the (conventional) current flows; pts are screen points
+  function flowMarks(pts, phase, gap, size){
+    var g='', d=[], tot=0, i;
+    for(i=1;i<pts.length;i++){ var l=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]); d.push(l); tot+=l; }
+    for(var s=((phase%gap)+gap)%gap; s<tot; s+=gap){
+      var acc=0; for(i=0;i<d.length;i++){ if(s<=acc+d[i]) break; acc+=d[i]; }
+      if(i>=d.length || d[i]<0.5) continue;
+      var u=(s-acc)/d[i], a=pts[i], b=pts[i+1];
+      g+=tri(a[0]+(b[0]-a[0])*u+0, a[1]+(b[1]-a[1])*u+0, Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI, size, 'var(--cur)', ' stroke="var(--panel)" stroke-width="0.8" stroke-linejoin="round"');
+    }
     return g;
   }
-  function line(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+(w||2)+'"'+(extra||'')+'/>'; }
-  function txt(x,y,s,o){ o=o||{}; return '<text x="'+x+'" y="'+y+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11.5)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function scene3(ox, oy, s){
+    var PHI=14*DEG, EL=30*DEG, cp=Math.cos(PHI), sp=Math.sin(PHI), ce=Math.cos(EL), se=Math.sin(EL), items=[];
+    function pr(p){ var d=-p[0]*sp+p[1]*cp; return [ox+s*(p[0]*cp+p[1]*sp), oy-s*(p[2]*ce+d*se), d*ce-p[2]*se]; }
+    function xy(p){ var a=pr(p); return a[0].toFixed(1)+','+a[1].toFixed(1); }
+    function add(k, svg){ items.push([k, svg]); }
+    function poly(list, fill, o){ o=o||{}; var k=0; list.forEach(function(q){ k+=pr(q)[2]; });
+      add(k/list.length+(o.bias||0), '<polygon points="'+list.map(xy).join(' ')+'" fill="'+fill+'" stroke="'+(o.stroke||fill)+'" stroke-width="'+(o.sw||0.7)+'" stroke-linejoin="round"'+(o.extra||'')+'/>'); }
+    function seg(a,b,col,w,o){ o=o||{};
+      var n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2])/14));
+      for(var i=0;i<n;i++){ var u=i/n, v=(i+1)/n,
+        P=pr([a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u,a[2]+(b[2]-a[2])*u]), Q=pr([a[0]+(b[0]-a[0])*v,a[1]+(b[1]-a[1])*v,a[2]+(b[2]-a[2])*v]);
+        add((P[2]+Q[2])/2+(o.bias||0), '<line x1="'+P[0].toFixed(1)+'" y1="'+P[1].toFixed(1)+'" x2="'+Q[0].toFixed(1)+'" y2="'+Q[1].toFixed(1)+'" stroke="'+col+'" stroke-width="'+w.toFixed(1)+'" stroke-linecap="'+(o.cap||'round')+'"'+(o.extra||'')+'/>'); } }
+    // a round wire: its colour with a lighter streak along the middle
+    function tube(a,b,col,hi,w){ seg(a,b,col,w*s); seg(a,b,hi,w*s*0.42,{bias:-14}); }
+    function head(a,b,size,col,extra){ var P=pr(a), Q=pr(b); add(Q[2]-1, tri(Q[0],Q[1],Math.atan2(Q[1]-P[1],Q[0]-P[0])*180/Math.PI,size*s,col,extra)); }
+    // a block: the faces you can see are the top, the front and the right-hand side
+    function box(x0,x1,y0,y1,z0,z1,top,front,side,edge){
+      function f(list,fill){ return '<polygon points="'+list.map(xy).join(' ')+'" fill="'+fill+'" stroke="'+edge+'" stroke-width="1" stroke-linejoin="round"/>'; }
+      return f([[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]],top)+f([[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[x1,y0,z1]],side)+f([[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1]],front);
+    }
+    function out(){ items.sort(function(a,b){ return b[0]-a[0]; }); return items.map(function(x){ return x[1]; }).join(''); }
+    return {pr:pr, xy:xy, add:add, poly:poly, seg:seg, tube:tube, head:head, box:box, out:out, s:s, view:[-sp*ce, cp*ce, -se]};
+  }
+  // ---- bench kit (the same block is in magnet-and-coil.html, transformer.html and national-grid.html) ----
+  function P(list){ return list.map(function(q){ return q[0].toFixed(1)+','+q[1].toFixed(1); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+P(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,stroke,extra){ return '<polygon points="'+P(list)+'" fill="'+fill+'" stroke="'+(stroke||fill)+'" stroke-width="1" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pathLen(pts){ var t=0; for(var j=1;j<pts.length;j++) t+=Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]); return t; }
+  // break a sentence into lines of at most n characters
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  // The case of a bench instrument that faces you: a front, a lit top and a darker right-hand side.
+  function caseBox(x,t,w,h,front){ var ex=10, ey=-9;
+    return pg([[x+3,t+6],[x+3+ex,t+ey],[x+w+ex,t+ey],[x+w-3,t+6]],'var(--brush-t)','var(--brush-s)')+
+      pg([[x+w-6,t+3],[x+w+ex,t+ey],[x+w+ex,t+h+ey-4],[x+w-6,t+h-3]],'var(--brush-s)','var(--brush-s)')+
+      '<rect x="'+x+'" y="'+t+'" width="'+w+'" height="'+h+'" rx="7" fill="'+(front||'var(--brush-f)')+'" stroke="var(--brush-s)" stroke-width="1.2"/>'; }
+  // A bench meter: a case, a dial with a scale and a needle, and two terminals (on top, or on its left side with M.posts = 'left').
+  // M = {cx, top, w, h}. The needle turns about (px, py); span is the angle (degrees) of full scale either side of zero.
+  function meterGeom(M){ var ex=10, ey=-9, x=M.cx-M.w/2, left=M.posts==='left';
+    return {cx:M.cx, top:M.top, w:M.w, h:M.h, ex:ex, ey:ey, px:M.cx, py:M.top+M.h-26, r:Math.min(M.w/2-22, M.h-42), span:M.span||55, left:left,
+      tl:left?[x-10, M.top+M.h*0.25]:[M.cx-M.w*0.27+ex/2, M.top+ey/2-9], tr:left?[x-10, M.top+M.h*0.75]:[M.cx+M.w*0.27+ex/2, M.top+ey/2-9]}; }
+  function meterPt(m,deg,r){ return [m.px+r*Math.sin(deg*DEG), m.py-r*Math.cos(deg*DEG)]; }
+  // o.needle from -1 to 1; o.div divisions each side of zero (o.major: every so many is longer); o.labels [[-1..1, text]]; o.unit on the case; o.label under it
+  function meterBox(m, o){
+    var x=m.cx-m.w/2, t=m.top, w=m.w, h=m.h, g='', k, a, p, q, div=o.div||4;
+    if(m.left) [[m.tl,'var(--north-f)'],[m.tr,'var(--insul)']].forEach(function(e){
+      g+='<rect x="'+e[0][0].toFixed(1)+'" y="'+(e[0][1]-4).toFixed(1)+'" width="12" height="8" rx="2" fill="'+e[1]+'"/>'; });
+    else [[m.tl,'var(--north-f)'],[m.tr,'var(--insul)']].forEach(function(e){
+      g+='<rect x="'+(e[0][0]-4.5).toFixed(1)+'" y="'+e[0][1].toFixed(1)+'" width="9" height="10" rx="2" fill="'+e[1]+'"/><ellipse cx="'+e[0][0].toFixed(1)+'" cy="'+e[0][1].toFixed(1)+'" rx="4.5" ry="2.2" fill="var(--brush-t)"/>'; });
+    g+=caseBox(x,t,w,h);
+    g+='<rect x="'+(x+8)+'" y="'+(t+8)+'" width="'+(w-16)+'" height="'+(h-30)+'" rx="4" fill="var(--panel)" stroke="var(--ink-faint)" stroke-width="1"/>';
+    for(k=-div;k<=div;k++){ a=k/div*m.span; var big=(k%(o.major||1)===0); p=meterPt(m,a,m.r); q=meterPt(m,a,m.r-(big?8:5));
+      g+=line(p[0].toFixed(1),p[1].toFixed(1),q[0].toFixed(1),q[1].toFixed(1),'var(--ink-soft)',k===0?2.2:(big?1.5:1)); }
+    (o.labels||[]).forEach(function(e){ p=meterPt(m,e[0]*m.span,m.r-19); g+=txt(p[0].toFixed(1),(p[1]+4).toFixed(1),e[1],{a:'middle',fs:o.lfs||11,c:'var(--ink)'}); });
+    if(o.needle!==null && o.needle!==undefined){ p=meterPt(m,Math.max(-1.06,Math.min(1.06,o.needle))*m.span,m.r-3);
+      g+=line(m.px,m.py,p[0].toFixed(1),p[1].toFixed(1),'var(--accent)',2.6,' stroke-linecap="round"'); }
+    g+='<circle cx="'+m.px+'" cy="'+m.py+'" r="3.6" fill="var(--ink)"/>';
+    if(o.unit) g+=txt(m.cx,t+h-7,o.unit,{a:'middle',fs:12,c:'#fff',w:600});
+    if(o.label) g+=txt(m.cx,t+h+16,o.label,{a:'middle',fs:12.5});
+    return g;
+  }
+  // a slice of the dial between two needle angles (degrees)
+  function meterWedge(m,a0,a1){ var r=m.r+3, p=meterPt(m,a0,r), q=meterPt(m,a1,r);
+    return 'M'+m.px+','+m.py+' L'+p[0].toFixed(1)+','+p[1].toFixed(1)+' A'+r+','+r+' 0 0 1 '+q[0].toFixed(1)+','+q[1].toFixed(1)+' Z'; }
   // pointer position in SVG user units
   function svgPoint(svg, e){ var r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; return {x:vb.x+(e.clientX-r.left)/r.width*vb.width, y:vb.y+(e.clientY-r.top)/r.height*vb.height}; }
+  // things in the picture that are clicked to answer: one handler for mouse, touch and keyboard (Enter or Space)
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  // redraw a group without losing which pick has the keyboard focus
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
 
   var svg=$('#tf-svg'), playBtn=$('#tf-play'), slowBtn=$('#tf-slow'), expBtn=$('#tf-exp'), npIn=$('#tf-np'), nsIn=$('#tf-ns'), vpIn=$('#tf-vp'), ptsEl=$('#tf-points');
-  var F=0.5, W=2*Math.PI*F, TAU=0.12, TMAX=4, t=0, readings=[], running=false, raf=0, last=0, dotP=0;
-  var sup=segGroup($('#tf-sup'), changed);
+  var DEG=Math.PI/180, PI=Math.PI;
+  var F=0.5, W=2*Math.PI*F, TAU=0.12, TMAX=4, t=0, readings=[], running=false, raf=0, last=0, flowPh=0, G=null, MG=null;
+  var q=null, lastQ=-1, score=[0,0];
+  var sup=segGroup($('#tf-sup'), changed), modeSeg=segGroup($('#tf-mode'), modeChanged);
   [npIn,nsIn,vpIn].forEach(function(x){ x.addEventListener('input', changed); });
 
   // Model (slowed right down: mains is 50 Hz, this is 0.5 Hz).
@@ -297,82 +404,144 @@
   function vs(tt){ return ac()?vsPk()*Math.cos(W*tt):vsPk()*Math.exp(-tt/TAU); }
   function yMax(){ var v=Math.max(Vin(),vsPk())*1.1, s=[5,10,20,50,100,200,500]; for(var i=0;i<s.length;i++) if(s[i]>=v) return s[i]; return 500; }
   function exp(){ return pressed(expBtn); }
+  function predicting(){ return modeSeg.value()==='predict'; }
+  function hiding(){ return (exp() && !done()) || (!!q && q.phase!=='done'); }   // answers stay hidden until the run (or the question) is finished
   function done(){ return t>=TMAX-1e-9; }
   function on(){ return t>0||running; }
   function type(){ return Ns()>Np()?'step-up':Ns()<Np()?'step-down':'neither'; }
 
-  // the primary circuit, for the moving charges: supply top, along to the coil, down the coil, back to the supply
-  var PATH=[[30,134],[30,82],[86,82],[86,218],[30,218],[30,166]];
-  var PLEN=0; for(var i=1;i<PATH.length;i++) PLEN+=Math.hypot(PATH[i][0]-PATH[i-1][0],PATH[i][1]-PATH[i-1][1]);
-  function along(s){ s=((s%PLEN)+PLEN)%PLEN; for(var i=1;i<PATH.length;i++){ var a=PATH[i-1],b=PATH[i],l=Math.hypot(b[0]-a[0],b[1]-a[1]); if(s<=l) return [a[0]+(b[0]-a[0])*s/l, a[1]+(b[1]-a[1])*s/l]; s-=l; } return PATH[0]; }
+  // Directions (right-hand grip rule; check again if the windings are redrawn):
+  // the primary is wound so that a current going in at its TOP end crosses the front of the limb from left to right as it works down.
+  // Seen from above that is anticlockwise, so the field in the left limb points UP: round the core it goes clockwise as you look at it.
+  // field > 0 means that way round (the supply's top terminal is then +, which is how the battery is connected).
 
-  function coil(x0,n,col){   // loops wound round a limb of the core, front half bright
-    var g='', top=88, h=124, k=Math.min(20,Math.max(1,Math.round(n/100))), d=h/k;
-    for(var i=0;i<k;i++){ var y=top+(i+0.5)*d; var sl=Math.min(d*0.3,7); g+=line(x0-6,y+sl,x0+46,y-sl,col,Math.min(4,Math.max(2,d*0.55)),' stroke-linecap="round"'); }
+  // wide screens: supply, core and voltmeter on the left, the graph with the circuit symbol under it on the right; phones: one above the other
+  function geom(){
+    var narrow=svg.getBoundingClientRect().width<520;
+    return narrow ? {n:1, VW:430, VH:612, s:0.7, ox:182, oy:122, S:{x:6, top:92, w:66, h:58}, M:{cx:340, top:70, w:150, h:104, posts:'left', span:60}, Q:{x:10, y:262, n:52}, GR:{x:50, y:340, w:366, h:150}, SY:{x:110, y:548}}
+                  : {n:0, VW:860, VH:350, s:0.92, ox:236, oy:150, S:{x:12, top:118, w:84, h:66}, M:{cx:452, top:92, w:172, h:114, posts:'left', span:60}, Q:{x:14, y:322, n:72}, GR:{x:596, y:34, w:248, h:186}, SY:{x:612, y:268}};
+  }
+  // the turns of one coil, round a limb whose middle is at x = xc. Each turn is cut into the part you can see and the part behind the core.
+  function coil(sc, xc, N, fromRight){
+    var k=Math.min(20,Math.max(1,Math.round(N/100))), d=124/k, hw=26, hd=26, o={k:k, w:Math.min(4,Math.max(2.2,d*0.55)), front:[], side:[], back:[]};
+    for(var i=0;i<k;i++){ var z0=62-d*i, z=function(f){ return z0-d*f; }, P3=function(l){ return l.map(sc.pr); };
+      if(!fromRight){ o.front.push(P3([[xc-hw,-hd,z(0)],[xc+hw,-hd,z(0.3)]])); o.side.push(P3([[xc+hw,-hd,z(0.3)],[xc+hw,hd,z(0.5)]])); o.back.push(P3([[xc+hw,hd,z(0.5)],[xc-hw,hd,z(0.8)],[xc-hw,-hd,z(1)]])); }
+      else { o.side.push(P3([[xc+hw,-hd,z(0)],[xc+hw,hd,z(0.2)]])); o.back.push(P3([[xc+hw,hd,z(0.2)],[xc-hw,hd,z(0.5)],[xc-hw,-hd,z(0.7)]])); o.front.push(P3([[xc-hw,-hd,z(0.7)],[xc+hw,-hd,z(1)]])); }
+    }
+    o.top=sc.pr([xc+(fromRight?hw:-hw),-hd,62]); o.bot=sc.pr([xc+(fromRight?hw:-hw),-hd,-62]);
+    return o;
+  }
+  function wires(list,col,w,extra){ return list.map(function(p){ return pl(p,col,w,extra); }).join(''); }
+  // the transformer's circuit symbol, as it is drawn in exam questions
+  function symbol(x,y,k){
+    var g='', i, c1=x+70*k, c2=x+110*k, top=y, n=4, r=7*k, bot=top+2*r*n, np=Np()>Ns()?5:(Np()<Ns()?3:4), ns=8-np;   // more loops on the coil with more turns
+    function bumps(cx,dir,m){ var rr=r*n/m, d='M'+cx+','+top; for(i=0;i<m;i++) d+=' a'+rr.toFixed(2)+','+rr.toFixed(2)+' 0 0 '+(dir>0?1:0)+' 0,'+(2*rr).toFixed(2); return '<path d="'+d+'" fill="none" stroke="var(--copper)" stroke-width="2.4"/>'; }
+    g+=bumps(c1,1,np)+bumps(c2,-1,ns);
+    g+=line(x+86*k,top-2,x+86*k,bot+2,'var(--ink)',2)+line(x+94*k,top-2,x+94*k,bot+2,'var(--ink)',2);
+    g+='<path d="M'+c1+','+top+' H'+(x+14*k)+' V'+(top+r*n-10)+' M'+(x+14*k)+','+(top+r*n+10)+' V'+bot+' H'+c1+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.8"/>';
+    g+='<path d="M'+c2+','+top+' H'+(x+166*k)+' V'+(top+r*n-10)+' M'+(x+166*k)+','+(top+r*n+10)+' V'+bot+' H'+c2+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.8"/>';
+    if(ac()) g+='<circle cx="'+(x+14*k)+'" cy="'+(top+r*n)+'" r="10" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>'+txt(x+14*k,top+r*n+5,'~',{a:'middle',fs:16,c:'var(--ink)'});
+    else g+=line(x+4*k,top+r*n-4,x+24*k,top+r*n-4,'var(--ink)',2)+line(x+9*k,top+r*n+4,x+19*k,top+r*n+4,'var(--ink)',4.5)+line(x+14*k,top+r*n-10,x+14*k,top+r*n-4,'var(--ink-soft)',1.8)+line(x+14*k,top+r*n+4,x+14*k,top+r*n+10,'var(--ink-soft)',1.8);
+    g+='<circle cx="'+(x+166*k)+'" cy="'+(top+r*n)+'" r="10" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>'+txt(x+166*k,top+r*n+4.5,'V',{a:'middle',fs:12,c:'var(--ink)',w:600});
     return g;
   }
+
   function draw(){
-    var g='<defs>'+arrowHead('tf-fa','var(--topic)')+'</defs>';
-    var b=on()?field(t):0, vo=on()?vs(t):0;
-    // iron core
-    g+='<path d="M90,40 H270 V260 H90 Z M130,80 V220 H230 V80 Z" fill="var(--core-soft)" stroke="var(--core)" stroke-width="2" fill-rule="evenodd"/>';
-    g+=txt(180,32,'iron core',{a:'middle',fs:11.5});
-    // field in the core: arrows round the loop, as strong as the field, pointing the way it points
+    var L=G=geom(), s=L.s, sc=scene3(L.ox,L.oy,s), g='', i, k;
+    var vb='0 0 '+L.VW+' '+L.VH; if(svg.getAttribute('viewBox')!==vb){ svg.setAttribute('viewBox',vb); svg.classList.toggle('tall',!!L.n); }
+    var b=on()?field(t):0, vo=on()?vs(t):0, YM=yMax(), hide=hiding();
+    function Q4(list,fill,stroke){ return pg(list.map(sc.pr),fill,stroke||'var(--iron-in)'); }
+    function L3(a,c,col,w,extra){ var A=sc.pr(a), C=sc.pr(c); return line(A[0].toFixed(1),A[1].toFixed(1),C[0].toFixed(1),C[1].toFixed(1),col,w,extra); }
+    var pri=coil(sc,-70,Np(),false), sec=coil(sc,70,Ns(),true);
+
+    // behind the core: the far side of every turn
+    g+=wires(pri.back,'var(--copper)',(pri.w*s).toFixed(1),' opacity="0.5"')+wires(sec.back,'var(--copper)',(sec.w*s).toFixed(1),' opacity="0.5"');
+    // the iron core: the faces seen through the window first, then the top, the right-hand side and the front. The thin lines are its laminations.
+    g+=Q4([[-50,-20,-70],[-50,20,-70],[-50,20,70],[-50,-20,70]],'var(--iron-s)')+Q4([[-50,-20,-70],[50,-20,-70],[50,20,-70],[-50,20,-70]],'var(--iron-t)');
+    [-10,0,10].forEach(function(Y){ g+=L3([-50,Y,-70],[-50,Y,70],'var(--iron-in)',0.7,' opacity="0.6"')+L3([-50,Y,-70],[50,Y,-70],'var(--iron-in)',0.7,' opacity="0.45"'); });
+    g+=wires(pri.side,'var(--copper)',(pri.w*s).toFixed(1));
+    g+=Q4([[-90,-20,110],[90,-20,110],[90,20,110],[-90,20,110]],'var(--iron-t)')+Q4([[90,-20,-110],[90,20,-110],[90,20,110],[90,-20,110]],'var(--iron-s)');
+    [-10,0,10].forEach(function(Y){ g+=L3([-90,Y,110],[90,Y,110],'var(--iron-in)',0.7,' opacity="0.45"')+L3([90,Y,-110],[90,Y,110],'var(--iron-in)',0.7,' opacity="0.6"'); });
+    g+='<path d="M'+P([[-90,-20,-110],[90,-20,-110],[90,-20,110],[-90,-20,110]].map(sc.pr)).replace(/ /g,' L')+' Z M'+P([[-50,-20,-70],[50,-20,-70],[50,-20,70],[-50,-20,70]].map(sc.pr)).replace(/ /g,' L')+' Z" fill="var(--iron-f)" fill-rule="evenodd" stroke="var(--iron-in)" stroke-width="1" stroke-linejoin="round"/>';
+    // the field in the core: a loop round it, as strong as the field, with arrows pointing the way it points
     var op=Math.min(1,Math.abs(b)), cw=b>=0;
     if(op>0.04){
-      var sides=[[140,60,220,60],[250,100,250,200],[220,240,140,240],[110,200,110,100]];
-      sides.forEach(function(s){ var x1=cw?s[0]:s[2], y1=cw?s[1]:s[3], x2=cw?s[2]:s[0], y2=cw?s[3]:s[1];
-        g+=line(x1,y1,x2,y2,'var(--topic)',3.5,' opacity="'+op.toFixed(2)+'" marker-end="url(#tf-fa)"'); });
+      [[70,90],[62,82]].forEach(function(e){ g+='<polygon points="'+P([[-e[0],-20.5,-e[1]],[e[0],-20.5,-e[1]],[e[0],-20.5,e[1]],[-e[0],-20.5,e[1]]].map(sc.pr))+'" fill="none" stroke="var(--topic)" stroke-width="'+(2.2*s).toFixed(1)+'" stroke-linejoin="round" opacity="'+(0.25+0.75*op).toFixed(2)+'"/>'; });
+      [[0,86,cw?1:-1],[0,-86,cw?-1:1]].forEach(function(e){ var a=sc.pr([e[0]-6*e[2],-20.5,e[1]]), c=sc.pr([e[0]+8*e[2],-20.5,e[1]]);
+        g+=tri(c[0],c[1],Math.atan2(c[1]-a[1],c[0]-a[0])*180/PI,(6+4*op)*s,'var(--topic)',' stroke="var(--iron-f)" stroke-width="1"'); });
     }
-    // coils
-    g+=coil(90,Np(),'var(--copper)')+coil(230,Ns(),'var(--copper)');
-    // primary circuit and supply
-    g+='<polyline points="'+PATH.map(function(p){return p.join(',');}).join(' ')+'" fill="none" stroke="var(--ink-soft)" stroke-width="2"/>';
-    if(ac()) g+='<circle cx="30" cy="150" r="16" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+txt(30,156,'~',{a:'middle',fs:20,c:'var(--ink)'});
-    else g+=line(30,134,30,144,'var(--ink-soft)',2)+line(16,144,44,144,'var(--ink)',2.5)+line(23,154,37,154,'var(--ink)',5)+line(30,154,30,166,'var(--ink-soft)',2)+txt(48,142,'+',{fs:12});
-    // moving charges in the primary: their speed follows the current, which sets the field
-    if(on()) for(var s=0;s<PLEN;s+=24){ var q=along(s+dotP); g+='<circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" r="3" fill="var(--accent)"/>'; }
-    // secondary circuit and voltmeter
-    g+='<polyline points="274,82 330,82 330,128" fill="none" stroke="var(--ink-soft)" stroke-width="2"/><polyline points="330,172 330,218 274,218" fill="none" stroke="var(--ink-soft)" stroke-width="2"/>';
-    g+='<circle cx="330" cy="150" r="22" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>';
-    var nd=Math.max(-1,Math.min(1,vo/yMax()))*1.1, nx=330+16*Math.sin(nd), ny=158-16*Math.cos(nd);
-    g+=line(330,158,nx.toFixed(1),ny.toFixed(1),'var(--topic)',2.5,' stroke-linecap="round"')+txt(330,168,'V',{a:'middle',fs:10,c:'var(--ink)'});
-    g+=txt(110,278,'primary',{a:'middle'})+txt(110,294,'N<tspan baseline-shift="sub" font-size="8">p</tspan> = '+Np(),{a:'middle',fs:10.5,c:'var(--ink-faint)'});
-    g+=txt(250,278,'secondary',{a:'middle'})+txt(250,294,'N<tspan baseline-shift="sub" font-size="8">s</tspan> = '+Ns(),{a:'middle',fs:10.5,c:'var(--ink-faint)'});
+    // in front of the core: the near side of every turn
+    g+=wires(sec.side,'var(--copper)',(sec.w*s).toFixed(1));
+    [pri,sec].forEach(function(c){ g+=wires(c.front,'var(--copper)',((c.w+0.8)*s).toFixed(1))+wires(c.front,'var(--copper-hi)',(c.w*0.4*s).toFixed(1)); });
+    // the supply, its leads and the voltmeter
+    var S=L.S, sx=S.x+S.w+12, py1=S.top+S.h*0.3-2, py2=S.top+S.h*0.72-2, m=MG=meterGeom(L.M);
+    var lx=(sx+10+pri.top[0])/2, rx=(sec.top[0]+m.tl[0])/2+2;
+    var leadT=[[sx+10,py1],[lx,py1],[lx,pri.top[1]],pri.top], leadB=[pri.bot,[lx,pri.bot[1]],[lx,py2],[sx+10,py2]];
+    g+=pl(leadT,'var(--ink-soft)',(2.4*s).toFixed(1))+pl(leadB,'var(--ink-soft)',(2.4*s).toFixed(1));
+    g+=pl([sec.top,[rx,sec.top[1]],[rx,m.tl[1]],[m.tl[0]+10,m.tl[1]]],'var(--ink-soft)',(2.4*s).toFixed(1))+pl([sec.bot,[rx,sec.bot[1]],[rx,m.tr[1]],[m.tr[0]+10,m.tr[1]]],'var(--ink-soft)',(2.4*s).toFixed(1));
+    [[py1,ac()?'var(--copper-hi)':'var(--north-f)'],[py2,ac()?'var(--copper-hi)':'var(--insul)']].forEach(function(e){ g+='<rect x="'+(sx-3)+'" y="'+(e[0]-4).toFixed(1)+'" width="13" height="8" rx="2" fill="'+e[1]+'" stroke="var(--brush-s)" stroke-width="0.6"/>'; });
+    g+=caseBox(S.x,S.top,S.w,S.h,ac()?'var(--brush-f)':'var(--insul)');
+    var cxs=S.x+S.w/2, cys=S.top+S.h/2;
+    if(ac()) g+='<circle cx="'+cxs+'" cy="'+cys+'" r="'+(S.h*0.3).toFixed(1)+'" fill="var(--panel)" stroke="var(--ink-faint)" stroke-width="1.2"/><path d="M'+(cxs-S.h*0.19)+','+cys+' q'+(S.h*0.095)+','+(-S.h*0.26)+' '+(S.h*0.19)+',0 t'+(S.h*0.19)+',0" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/>';
+    else g+='<rect x="'+S.x+'" y="'+S.top+'" width="'+S.w+'" height="'+(S.h*0.3).toFixed(1)+'" rx="7" fill="var(--copper)"/>'+txt(S.x+S.w-12,py1+6,'+',{a:'middle',fs:17,c:'#fff',w:600})+txt(S.x+S.w-12,py2+6,'−',{a:'middle',fs:17,c:'#fff',w:600});
+    g+=txt(cxs+4,S.top+S.h+17,ac()?'a.c. supply':'battery',{a:'middle',fs:12.5})+txt(cxs+4,S.top+S.h+33,Vin()+' V'+(ac()?'':' d.c.'),{a:'middle',fs:12.5,c:'var(--ink)',w:600});
+    var labs=L.n?[[-1,num(YM,0)],[0,'0'],[1,num(YM,0)]]:[[-1,num(YM,0)],[-0.5,num(YM/2,1)],[0,'0'],[0.5,num(YM/2,1)],[1,num(YM,0)]];
+    g+=meterBox(m,{needle:vo/YM, div:10, major:5, labels:labs, unit:'V', label:'voltmeter'});
+    // the current in the primary: arrowheads that travel with it, stop when it is zero and turn round when it reverses
+    if(on() && Math.abs(b)>0.05){
+      var seq=[{p:leadT,v:1}], run=0, tot=0;
+      for(i=0;i<pri.k;i++){ seq.push({p:pri.front[i],v:1}); seq.push({p:pri.side[i],v:0}); seq.push({p:pri.back[i],v:0}); }
+      seq.push({p:leadB,v:1});
+      seq.forEach(function(e){ tot+=pathLen(e.p); });
+      if(b<0){ seq.reverse(); seq.forEach(function(e){ e.p=e.p.slice().reverse(); }); }
+      seq.forEach(function(e){ if(e.v) g+=flowMarks(e.p, (b<0?tot-flowPh:flowPh)-run, 40*s, 4.4*s); run+=pathLen(e.p); });
+    }
+    // labels, in the clear space round the picture
+    var ic=sc.pr([-30,20,110]), pb=sc.pr([-70,-26,-110]), sb=sc.pr([70,-26,-110]), ly=Math.max(pb[1],sb[1])+(L.n?16:20);
+    g+=line(ic[0].toFixed(1),(ic[1]-3).toFixed(1),ic[0].toFixed(1),(ic[1]-12).toFixed(1),'var(--ink-faint)',1)+txt(ic[0].toFixed(1),(ic[1]-16).toFixed(1),'iron core',{a:'middle',fs:12.5,c:'var(--ink)',halo:1});
+    g+=txt(pb[0].toFixed(1),ly,L.n?'primary':'primary coil',{a:'middle',fs:12.5,c:'var(--ink)'})+txt(pb[0].toFixed(1),ly+16,'N<tspan baseline-shift="sub" font-size="9">p</tspan> = '+Np(),{a:'middle',fs:12.5});
+    g+=txt((sb[0]+(L.n?0:6)).toFixed(1),ly,L.n?'secondary':'secondary coil',{a:'middle',fs:12.5,c:'var(--ink)'})+txt((sb[0]+(L.n?0:6)).toFixed(1),ly+16,'N<tspan baseline-shift="sub" font-size="9">s</tspan> = '+Ns(),{a:'middle',fs:12.5});
     // voltage-time graph: input and output
-    var GX=388, GY=30, GW=236, GH=240, YM=yMax(), y0=GY+GH/2;
+    var GX=L.GR.x, GY=L.GR.y, GW=L.GR.w, GH=L.GR.h, y0=GY+GH/2;
     function gx(tt){ return GX+tt/TMAX*GW; } function gy(v){ return y0-v/YM*(GH/2); }
     g+='<rect x="'+GX+'" y="'+GY+'" width="'+GW+'" height="'+GH+'" fill="var(--bg)" stroke="var(--panel-border)"/>';
-    for(var k=0;k<=TMAX;k++){ g+=line(gx(k),GY,gx(k),GY+GH,'var(--panel-border)',1)+txt(gx(k),GY+GH+14,String(k),{a:'middle',fs:10,c:'var(--ink-faint)'}); }
-    [-YM,-YM/2,0,YM/2,YM].forEach(function(v){ g+=line(GX,gy(v),GX+GW,gy(v),v===0?'var(--ink-faint)':'var(--panel-border)',v===0?1.5:1)+txt(GX-5,gy(v)+4,num(v,1),{a:'end',fs:10,c:'var(--ink-faint)'}); });
-    g+=txt(GX,GY-8,'voltage (V)',{fs:11})+txt(GX+GW,GY+GH+30,'time (s)',{a:'end',fs:11});
-    g+=line(GX+96,GY-12,GX+112,GY-12,'var(--accent)',2.5)+txt(GX+116,GY-8,'input',{fs:10.5})+line(GX+160,GY-12,GX+176,GY-12,'var(--topic)',2.5)+txt(GX+180,GY-8,'output',{fs:10.5});
-    if(!exp()){
+    for(k=0;k<=TMAX;k++){ g+=line(gx(k),GY,gx(k),GY+GH,'var(--panel-border)',1)+txt(gx(k),GY+GH+15,String(k),{a:'middle',fs:12}); }
+    [-YM,-YM/2,0,YM/2,YM].forEach(function(v){ g+=line(GX,gy(v),GX+GW,gy(v),v===0?'var(--ink-faint)':'var(--panel-border)',v===0?1.5:1)+txt(GX-7,gy(v)+4,num(v,1),{a:'end',fs:12}); });
+    g+=txt(GX,GY-9,'voltage (V)',{fs:12.5})+txt(GX+GW,GY+GH+31,'time (s)',{a:'end',fs:12.5});
+    g+=line(GX+GW-128,GY-13,GX+GW-114,GY-13,'var(--accent)',3)+txt(GX+GW-110,GY-9,'input',{fs:12})+line(GX+GW-62,GY-13,GX+GW-48,GY-13,'var(--topic)',3)+txt(GX+GW-44,GY-9,'output',{fs:12});
+    if(!exp() && !q){
       ['vp','vs'].forEach(function(w){ var pts=[]; for(var k=0;k<=400;k++){ var tt=k/400*TMAX; pts.push(gx(tt).toFixed(1)+','+gy(w==='vp'?vp(tt):vs(tt)).toFixed(1)); }
         g+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--'+(w==='vp'?'accent':'topic')+')" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.5"/>'; });
     }
     if(readings.length){
       if(exp()) readings.forEach(function(r){ g+='<circle cx="'+gx(r[0]).toFixed(1)+'" cy="'+gy(r[1]).toFixed(1)+'" r="2" fill="var(--accent)"/><circle cx="'+gx(r[0]).toFixed(1)+'" cy="'+gy(r[2]).toFixed(1)+'" r="2.4" fill="var(--topic)"/>'; });
       else{
-        g+='<polyline points="'+readings.map(function(r){ return gx(r[0]).toFixed(1)+','+gy(r[1]).toFixed(1); }).join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="2.4"/>';
-        g+='<polyline points="'+readings.map(function(r){ return gx(r[0]).toFixed(1)+','+gy(r[2]).toFixed(1); }).join(' ')+'" fill="none" stroke="var(--topic)" stroke-width="2.6"/>';
+        g+='<polyline points="'+readings.map(function(r){ return gx(r[0]).toFixed(1)+','+gy(r[1]).toFixed(1); }).join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/>';
+        g+='<polyline points="'+readings.map(function(r){ return gx(r[0]).toFixed(1)+','+gy(r[2]).toFixed(1); }).join(' ')+'" fill="none" stroke="var(--topic)" stroke-width="3" stroke-linejoin="round"/>';
       }
     }
     if(on()) g+='<circle cx="'+gx(t)+'" cy="'+gy(vo)+'" r="5" fill="var(--topic)" stroke="var(--panel)" stroke-width="2"/>';
+    // the circuit symbol, with what the moving arrowheads and the loop in the core stand for
+    var SX=L.SY.x, SY=L.SY.y;
+    g+=txt(SX-14,SY-12,'circuit symbol',{fs:12.5,c:'var(--ink)'})+symbol(SX-10,SY,0.62);
+    g+=tri(SX+122,SY+10,0,4.6,'var(--cur)')+txt(SX+130,SY+14,'current',{fs:12})+line(SX+108,SY+32,SX+124,SY+32,'var(--topic)',2.4)+txt(SX+130,SY+36,'field in core',{fs:12});
+    g+=predictSvg(L,m,YM);
     svg.innerHTML=g;
 
     $('#tf-npo').textContent=Np(); $('#tf-nso').textContent=Ns(); $('#tf-vpo').textContent=Vin()+' V';
-    var hide=exp() && !done();
     $('#tf-si').textContent=Vin()+' V'+(ac()?'':' d.c.');
     $('#tf-sn').textContent=num(vo,1)+' V';
     $('#tf-so').textContent=hide?'?':(ac()?num(vsPk(),2)+' V':'0 V');
-    $('#tf-st').textContent=ac()?type():'no output';
+    $('#tf-stl').textContent=predicting()?'Right so far':'Type';
+    $('#tf-st').textContent=predicting()?(score[0]+' of '+score[1]):(ac()?type():'no output');
     var vsub='V<sub>s</sub>', vpsub='V<sub>p</sub>', nps='N<sub>p</sub>', nss='N<sub>s</sub>';
-    if(!ac()) $('#tf-eq').innerHTML='With a battery the current settles to a steady value, so the field in the core stops changing.<br>No changing field means no induced voltage, so the output is 0 V (after a brief flick at switch-on).';
+    if(q && q.phase!=='done') $('#tf-eq').innerHTML='Make your prediction and switch on first.';
+    else if(!ac()) $('#tf-eq').innerHTML='With a battery the current settles to a steady value, so the field in the core stops changing.<br>No changing field means no induced voltage, so the output is 0 V (after a brief flick at switch-on).';
     else if(hide) $('#tf-eq').innerHTML='Finish the experiment, then read the peak output voltage off your graph and check it with the turns.';
     else $('#tf-eq').innerHTML=FR('[['+vpsub+'|'+vsub+']] = [['+nps+'|'+nss+']]<br>[['+Vin()+'|'+vsub+']] = [['+Np()+'|'+Ns()+']]<br>'+Vin()+' × '+Ns()+' = '+Np()+' × '+vsub+'<br>'+num(Vin()*Ns(),0)+' = '+Np()+' × '+vsub+'<br>'+vsub+' = [['+num(Vin()*Ns(),0)+'|'+Np()+']]<br>'+vsub+' = <b>'+num(vsPk(),2)+' V</b><br>'+(type()==='neither'?'Same turns on each coil, so the voltage is unchanged.':nss+(type()==='step-up'?' &gt; ':' &lt; ')+nps+', so this is a <b>'+type()+'</b> transformer.'));
     var n, a=Math.abs(b);
-    if(exp()){
+    if(q) n=predictNote(YM);
+    else if(exp()){
       if(done()) n='Experiment finished. Read the peak output voltage off your graph and compare it with the input. Is the ratio the same as the turns ratio? Change the turns and repeat.';
       else n='Experiment: the input and output voltages are plotted as the transformer runs, like a data logger.';
     } else if(!on()) n=ac()?'Press <b>Switch on</b>. The a.c. supply drives an alternating current in the primary coil, which makes a magnetic field in the iron core.':'Press <b>Switch on</b> to connect the battery and watch the voltmeter on the secondary.';
@@ -382,24 +551,81 @@
     else if(a>0.94) n='The field in the core is at its biggest, but for an instant it is <b>not changing</b>, so the output voltage is zero.';
     else n='The alternating current makes a field in the iron core that keeps growing, shrinking and reversing. The core carries this <b>changing</b> field through the secondary coil, which induces an alternating voltage across it.';
     $('#tf-note').innerHTML=n;
+    var over=!!q && q.phase==='done';
     playBtn.innerHTML=running?'&#10074;&#10074; Pause':(done()?'&#9654; Run again':(t>0?'&#9654; Play':'&#9654; Switch on'));
+    playBtn.disabled=!!q && ((q.phase==='ask' && q.pick===null) || (over && done()));
+    playBtn.classList.toggle('btn-primary',!over); $('#tf-new').classList.toggle('btn-primary',over);
     Array.prototype.forEach.call(ptsEl.children,function(x){ x.disabled=!ac(); });
   }
+
+  // ---- Predict: a transformer is dealt, the student clicks the voltmeter's scale, then Switch on shows the reading ----
+  // every answer falls on a division of the scale
+  var QS=[[200,400,10,1],[400,100,20,1],[100,500,4,1],[600,300,20,1],[300,900,10,1],[200,2000,4,1],[1000,500,20,1],[400,800,20,1],[200,400,6,1],[600,300,16,1],[100,300,4,1],[200,400,12,0],[400,100,6,0],[100,500,8,0]];
+  function deal(){
+    var i; do{ i=Math.floor(Math.random()*QS.length); }while(i===lastQ); lastQ=i; var c=QS[i];
+    stop(); t=0; flowPh=0; readings=[]; mark('');
+    npIn.value=c[0]; nsIn.value=c[1]; vpIn.value=c[2]; sup.pick(c[3]?'ac':'dc');
+    q={ans:c[3]?c[2]*c[1]/c[0]:0, pick:null, phase:'ask', ok:null};
+    draw();
+  }
+  function setPick(v){ if(!q || q.phase!=='ask') return; var YM=yMax(), st=YM/10; q.pick=Math.max(-YM,Math.min(YM,Math.round(v/st)*st)); draw(); }
+  function judge(){ if(q && q.phase==='run' && t>=(ac()?2:1.2)){ q.phase='done'; q.ok=Math.abs(Math.abs(q.pick)-q.ans)<yMax()/20-1e-9; score[1]++; if(q.ok) score[0]++; } }
+  function predictNote(YM){
+    var set='This transformer has '+Np()+' turns on the primary and '+Ns()+' on the secondary, with '+Vin()+' V '+(ac()?'a.c.':'from a battery')+' across the primary. ';
+    if(q.phase==='ask') return '<b>Predict.</b> '+set+(ac()?'How far will the voltmeter&rsquo;s needle swing?':'Where will the voltmeter&rsquo;s needle settle?')+' Click its scale'+(q.pick===null?'':' (you chose <b>'+num(Math.abs(q.pick),1)+' V</b>)')+', then press <b>Switch on</b>.';
+    if(q.phase==='run') return 'Watch the voltmeter.';
+    var why=ac()?'The voltages are in the same ratio as the turns: '+Ns()+' is '+(Ns()>Np()?num(Ns()/Np(),2)+' times as many turns as '+Np()+', so the output is '+num(Ns()/Np(),2)+' × '+Vin()+' V':'only '+FR('[['+Ns()+'|'+Np()+']]')+' of the turns, so the output is that fraction of '+Vin()+' V')+' = <b>'+num(q.ans,1)+' V</b>.'
+      :'A battery gives a steady current, so the field in the core does not change. After a brief flick at switch-on the output is <b>0 V</b>, whatever the turns.';
+    return (q.ok?'<b>Right.</b> ':'<b>Not quite.</b> ')+why+' Press <b>New question</b> for another.';
+  }
+  function predictSvg(L,m,YM){
+    if(!q) return '';
+    var g='', ask=q.phase==='ask', over=q.phase==='done', y=L.Q.y, qx=L.Q.x, p, a;
+    var ask1=(ac()?'How far will the needle swing?':'Where will the needle settle?')+' Click the voltmeter’s scale.';
+    if(!over){ wrapLines('Question: '+ask1,L.Q.n).forEach(function(s,i){ g+=txt(qx,y,i?s:'<tspan fill="var(--accent)">Question:</tspan>'+s.slice(9),{fs:13,c:'var(--ink)',w:600}); y+=17; });
+      if(q.pick!==null) g+=txt(qx,y+2,'Your prediction: '+num(Math.abs(q.pick),1)+' V',{fs:12.5}); }
+    else wrapLines((q.ok?'✓ Right: ':'✗ Not quite: ')+(ac()?'the needle swings to '+num(q.ans,1)+' V each way.':'the needle settles at 0 V.')+(q.ok?'':' You chose '+num(Math.abs(q.pick),1)+' V.'),L.Q.n).forEach(function(s){ g+=txt(qx,y,s,{fs:13.5,c:q.ok?'var(--good)':'var(--bad)',w:600}); y+=17; });
+    // the scale is one big thing to click; the arrow keys move the prediction one division at a time
+    g+='<g class="pick" data-pick="dial" tabindex="'+(ask?0:-1)+'" role="slider" aria-label="Your prediction of the voltmeter reading, in volts: click the scale or use the arrow keys" aria-valuemin="0" aria-valuemax="'+YM+'" aria-valuenow="'+(q.pick===null?0:Math.abs(q.pick))+'">'+
+      '<path class="ring" d="'+meterWedge(m,-m.span-5,m.span+5)+'" fill="none" stroke-width="4" stroke-linejoin="round"/><path d="'+meterWedge(m,-m.span-5,m.span+5)+'" fill="var(--panel)" fill-opacity="0.01"/>';
+    function marker(v,col,dash){ var a=v/YM*m.span, p=meterPt(m,a,m.r-3), o=meterPt(m,a,m.r+4);
+      return line(m.px,m.py,p[0].toFixed(1),p[1].toFixed(1),col,2.4,' stroke-linecap="round"'+(dash?' stroke-dasharray="5 4"':''))+'<circle cx="'+o[0].toFixed(1)+'" cy="'+o[1].toFixed(1)+'" r="4.5" fill="'+col+'" stroke="var(--panel)" stroke-width="1.5"/>'; }
+    if(q.pick!==null) g+=marker(q.pick,over?(q.ok?'var(--good)':'var(--bad)'):'var(--cur)',1);
+    if(over && !q.ok){ g+=marker(q.ans,'var(--good)',0); if(q.ans>0) g+=marker(-q.ans,'var(--good)',0); }
+    return g+'</g>';
+  }
+
   function record(to){ var dt=0.02; var nx=readings.length?readings[readings.length-1][0]+dt:0; while(nx<=to+1e-9){ readings.push([nx,vp(nx),vs(nx)]); nx+=dt; } }
   function rate(){ return pressed(slowBtn)?0.3:1; }
   function stop(){ running=false; cancelAnimationFrame(raf); }
   function frame(now){ if(!running) return; var dt=Math.min(0.05,(now-last)/1000)*rate(); last=now;
-    t=Math.min(TMAX,t+dt); dotP+=field(t)*dt*90; record(t);
+    t=Math.min(TMAX,t+dt); flowPh+=field(t)*dt*90; record(t); judge();
     if(done()) stop(); draw(); if(running) raf=requestAnimationFrame(frame); }
   function mark(v){ Array.prototype.forEach.call(ptsEl.children,function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
-  function reset(){ stop(); t=0; dotP=0; readings=[]; mark(''); draw(); }
-  function changed(){ reset(); }
-  playBtn.addEventListener('click',function(){ mark(''); if(running){ stop(); draw(); return; } if(done()) reset(); if(!readings.length) record(0); running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); });
-  ptsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; reset(); t=(+b.dataset.v)/F+(+b.dataset.v===0?1/F:0); record(t); mark(b.dataset.v); draw(); });
+  function reset(){ stop(); t=0; flowPh=0; readings=[]; mark(''); if(q && q.phase!=='ask'){ q.phase='ask'; q.ok=null; } draw(); }
+  function changed(){ if(predicting()) return; reset(); }
+  function showControls(){ var pr=predicting();
+    ['#tf-reset','#tf-exp','#tf-sliders','#tf-points-row','#tf-sup'].forEach(function(id){ $(id).hidden=pr; }); $('#tf-new').hidden=!pr; }
+  function modeChanged(){ showControls();
+    if(predicting()){ if(exp()) toggle(expBtn); score=[0,0]; deal(); }
+    else { q=null; npIn.value=200; nsIn.value=400; vpIn.value=12; sup.pick('ac'); reset(); } }
+  playBtn.addEventListener('click',function(){ mark(''); if(running){ stop(); draw(); return; }
+    if(q){ if(q.phase==='ask'){ if(q.pick===null) return; q.phase='run'; } else if(done()) return; }
+    else if(done()) reset();
+    if(!readings.length) record(0); running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); });
+  ptsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; reset(); t=(+b.dataset.v)/F+(+b.dataset.v===0?1/F:0); flowPh=40; record(t); mark(b.dataset.v); draw(); });
+  // predicting: click the scale, or focus it and use the arrow keys
+  svg.addEventListener('click',function(e){ if(!q || q.phase!=='ask' || !e.target.closest('.pick')) return; var p=svgPoint(svg,e), a=Math.atan2(p.x-MG.px, MG.py-p.y)/DEG; setPick(Math.max(-MG.span,Math.min(MG.span,a))/MG.span*yMax()); focusDial(); });
+  svg.addEventListener('keydown',function(e){ if(!q || q.phase!=='ask' || !e.target.closest('.pick')) return; var k={ArrowLeft:-1,ArrowDown:-1,ArrowRight:1,ArrowUp:1}[e.key]; if(!k) return; e.preventDefault();
+    setPick((q.pick===null?0:q.pick)+k*yMax()/10); focusDial(); });
+  function focusDial(){ var d=svg.querySelector('.pick'); if(d && d.focus) d.focus(); }
   slowBtn.addEventListener('click',function(){ toggle(slowBtn); });
   expBtn.addEventListener('click',function(){ toggle(expBtn); reset(); });
   $('#tf-reset').addEventListener('click',reset);
+  $('#tf-new').addEventListener('click',deal);
   watchEquals($('#tf-eq'));
+  window.addEventListener('resize', function(){ if(!running) draw(); });
+  showControls();
   reset();
 
 })();
