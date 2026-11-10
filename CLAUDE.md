@@ -90,6 +90,7 @@ Animation is feedback, not decoration. CSS transitions and `@keyframes` only.
 
 ## Animation page layout (Alex, 20 Oct 2026)
 
+- **The picture's style (Alex, 10 Nov 2026).** `animations/dc-motor.html` and `animations/ac-generator.html` are the model for how an animation's picture is drawn: the apparatus as solid objects in 3D beside the exam diagram, moving current arrows, labels in clear space (never over the picture), predict on the picture then Go. The standard, the shared 3D drawing kit and the checks (`tools/anim-check.py`) are in `tools/ANIMATION-STYLE.md`; the batches for the other animations are in `TODO.md`, section 8.
 - **Fit one laptop screen.** At 1366×657 the whole stage card (picture, buttons, choices, readings) ends above the bottom of the window. Measure it in Playwright; don't guess. `newtons-laws.html` is the model.
 - **Header:** when a page has part or symbol pickers, put them on the title line, to the right of the `<h1>`, not in a row of their own.
 - **Buttons straight under the picture.** Go, Push, Fire, Play, Reset and Slow motion sit right under the scene they control. A graph goes below the buttons, never between the picture and its buttons.

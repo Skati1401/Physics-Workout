@@ -288,7 +288,7 @@
     return g;
   }
   function line(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+(w||2)+'"'+(extra||'')+'/>'; }
-  function txt(x,y,s,o){ o=o||{}; return '<text x="'+x+'" y="'+y+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11.5)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+x+'" y="'+y+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11.5)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="3.5" stroke-linejoin="round"':'')+'>'+s+'</text>'; }
   // a solid arrowhead with its tip at (x, y), pointing along ang (degrees, screen)
   function tri(x,y,ang,size,col,extra){ return '<path d="M0,0 L'+(-size*1.7).toFixed(1)+','+(size*0.8).toFixed(1)+' L'+(-size*1.7).toFixed(1)+','+(-size*0.8).toFixed(1)+' z" transform="translate('+x.toFixed(1)+','+y.toFixed(1)+') rotate('+ang.toFixed(1)+')" fill="'+col+'"'+(extra||'')+'/>'; }
   // small arrowheads that travel along a wire the way the (conventional) current flows; pts are screen points
@@ -338,7 +338,7 @@
   // o.plusLeft the cell's + is joined to the left brush; o.meter needle from -1 to 1; o.flow phase of the current arrows (px);
   // o.force length of the force arrows (0 = none); o.spin +1 anticlockwise, -1 clockwise, 0 no arrow; o.on circuit live
   function rig3(ox, oy, s, o){
-    var sc=scene3(ox,oy,s), R=70, L=92, PX0=112, PX1=172, PY=72, PZ=78, RC=24, RI=11, BL=20, W=74, ZB=104, WD=7.5;
+    var sc=scene3(ox,oy,s), R=70, L=92, PX0=112, PX1=172, PY=72, PZ=78, RC=24, RI=11, BL=20, W=74, ZB=120, WD=7.5;
     var th=o.th, ca=Math.cos(th), sa=Math.sin(th), slip=o.ring==='slip', fd=o.nl?1:-1, PI=Math.PI, k;
     var CA='var(--copper)', CAh='var(--copper-hi)', CB='var(--coilb)', CBh='var(--coilb-hi)', INS='var(--insul)';
     function rim(r,y,sg){ return [sg*r*ca, y, sg*r*sa]; }
@@ -418,14 +418,15 @@
     if(o.spin){ var pl=[], a0=th+o.spin*0.45; for(k=0;k<=14;k++){ var aa=a0+o.spin*0.8*k/14; pl.push(sc.pr([30*Math.cos(aa),L+16,30*Math.sin(aa)])); }
       var e1=pl[13], e2=pl[14];
       g+='<polyline points="'+pl.slice(0,14).map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' ')+'" fill="none" stroke="var(--ink)" stroke-width="'+f1(2.2*s)+'" stroke-linecap="round"/>'+tri(e2[0],e2[1],Math.atan2(e2[1]-e1[1],e2[0]-e1[0])*180/PI,4.2*s,'var(--ink)'); }
-    var la=sc.pr(rim(R+15,-L-6,1)), lb=sc.pr(rim(R+15,-L-6,-1));
-    g+=txt(f1(la[0]),f1(la[1]+5),'A',{a:'middle',c:CA,w:600,fs:14*s})+txt(f1(lb[0]),f1(lb[1]+5),'B',{a:'middle',c:CB,w:600,fs:14*s});
-    // labels with leader lines
-    var bp=sc.pr([RC+BL,yR,5]);
-    function lab(from,tx,ty,s1){ return line(f1(from[0]),f1(from[1]),f1(tx-4),f1(ty-4),'var(--ink-faint)',1)+txt(f1(tx),f1(ty),s1,{fs:13,c:'var(--ink)'}); }
+    // A and B sit just outside the far end of the coil, each beside its own half, clear of the poles, rings, circuit and force arrows
+    [[1,'A',CA],[-1,'B',CB]].forEach(function(e){ var p=sc.pr(rim(R*0.8,L,e[0])), q=sc.pr(rim(R,L,e[0])), m=sc.pr([0,L,0]), dx=q[0]-m[0], dy=q[1]-m[1], dl=Math.hypot(dx,dy)||1, nx=-dy/dl, ny=dx/dl;
+      if(nx*5-ny*11<0){ nx=-nx; ny=-ny; }
+      g+=txt(f1(p[0]+nx*13*s),f1(p[1]+ny*13*s+5*s),e[1],{a:'middle',c:e[2],w:600,fs:14*s,halo:1}); });
+    // labels: in the clear space inside the circuit, under the parts they name, so no text lies over the picture
     if(o.labels!==false){
-      g+=lab(bp,D[0]+96*s,D[1]-64*s,'brush');
-      g+=lab(sc.pr([RC*0.75,yBf,-RC*0.3]),D[0]+96*s,D[1]-42*s,slip?'slip rings':'split ring');
+      var rb=sc.pr([0,yBf,-RC]), bq=sc.pr([RC+BL/2,yR,-7]), ly=rb[1]+19*s;
+      g+=line(f1(rb[0]-12*s),f1(rb[1]+1),f1(rb[0]-12*s),f1(ly-12*s),'var(--ink-faint)',1)+txt(f1(rb[0]-15*s),f1(ly),slip?'slip rings':'split ring',{a:'middle',fs:12*s,c:'var(--ink)',halo:1});
+      g+=line(f1(bq[0]),f1(bq[1]+2),f1(bq[0]+6*s),f1(ly-12*s),'var(--ink-faint)',1)+txt(f1(bq[0]-5*s),f1(ly),'brush',{fs:12*s,c:'var(--ink)',halo:1});
     }
     return g;
   }
@@ -441,7 +442,7 @@
     if(o.force && o.c) [[A,o.c],[B,-o.c]].forEach(function(s){ var up=s[1]*(o.nl?1:-1), fl=o.force*Math.max(0.7,k);
       g+=line(s[0][0],s[0][1]-up*(wr+3),s[0][0],s[0][1]-up*(wr+3+fl),'var(--accent)',Math.max(3,4*k),' marker-end="url(#'+o.pre+'-fa)"'); });
     g+=wireEnd(A[0],A[1],wr,o.c,'var(--copper)')+wireEnd(B[0],B[1],wr,-o.c,'var(--coilb)');
-    var lr=R+wr+11, la=[cx+lr*Math.cos(th),cy-lr*Math.sin(th)], lb=[cx-lr*Math.cos(th),cy+lr*Math.sin(th)];
+    var lr=R+wr+(R>60?11:7), la=[cx+lr*Math.cos(th),cy-lr*Math.sin(th)], lb=[cx-lr*Math.cos(th),cy+lr*Math.sin(th)];
     g+=txt(la[0].toFixed(1),(la[1]+5).toFixed(1),'A',{a:'middle',c:'var(--copper)',w:600,fs:14})+txt(lb[0].toFixed(1),(lb[1]+5).toFixed(1),'B',{a:'middle',c:'var(--coilb)',w:600,fs:14});
     if(o.spin){ var r2=R*0.6, s0=th+o.spin*0.5, s1=th+o.spin*1.2;
       g+='<path d="M'+(cx+r2*Math.cos(s0)).toFixed(1)+','+(cy-r2*Math.sin(s0)).toFixed(1)+' A'+r2+','+r2+' 0 0 '+(o.spin>0?0:1)+' '+(cx+r2*Math.cos(s1)).toFixed(1)+','+(cy-r2*Math.sin(s1)).toFixed(1)+'" fill="none" stroke="var(--ink-soft)" stroke-width="2" marker-end="url(#'+o.pre+'-ta)"/>'; }
@@ -473,16 +474,16 @@
 
   // Wide screens: the 3D machine on the left; the graph, with the coil seen end-on under it, on the right. Phones: one above the other.
   function draw(){
-    var narrow=svg.getBoundingClientRect().width<520, VW=narrow?430:860, VH=narrow?760:350;
+    var narrow=svg.getBoundingClientRect().width<520, VW=narrow?430:860, VH=narrow?790:350;
     if(svg.getAttribute('viewBox')!=='0 0 '+VW+' '+VH){ svg.setAttribute('viewBox','0 0 '+VW+' '+VH); svg.classList.toggle('tall',narrow); }
     var g='<defs>'+arrowHead('ag-ba','var(--topic)')+arrowHead('ag-ta','var(--ink-soft)')+arrowHead('ag-fa','var(--accent)')+'</defs>';
     var th=theta(t), c=cA(t), cs=Math.abs(c)<0.06?0:(c>0?1:-1), ac=out.value()==='ac', YM=yMax();
     var sig=ac?-cs:cs*(Math.cos(th)>=0?1:-1);            // +1: the current leaves the coil through the right-hand brush
     var spin=(running||t>0)?1:0;
     // the needle goes right when the current leaves through the left brush, which is when the graph is positive
-    g+=rig3(narrow?214:200,126,narrow?1.03:0.98,{th:th,nl:true,c:cs,sig:sig,ring:ac?'slip':'split',aLeft:true,device:'meter',meter:Math.max(-1,Math.min(1,volts(t)/YM)),flow:flowPh,force:0,spin:spin,on:true});
+    g+=rig3(narrow?214:200,narrow?136:134,narrow?1.03:0.98,{th:th,nl:true,c:cs,sig:sig,ring:ac?'slip':'split',aLeft:true,device:'meter',meter:Math.max(-1,Math.min(1,volts(t)/YM)),flow:flowPh,force:0,spin:spin,on:true});
     // voltage-time graph
-    var GX=narrow?48:462, GY=narrow?372:26, GW=narrow?366:380, GH=narrow?180:176;
+    var GX=narrow?48:462, GY=narrow?392:26, GW=narrow?366:380, GH=narrow?180:170;
     var y0=ac?GY+GH/2:GY+GH-16;
     function gx(tt){ return GX+tt/TMAX*GW; } function gy(v){ return y0-v/YM*(ac?GH/2:GH-16); }
     g+='<rect x="'+GX+'" y="'+GY+'" width="'+GW+'" height="'+GH+'" fill="var(--bg)" stroke="var(--panel-border)"/>';
@@ -498,7 +499,7 @@
     }
     if(t>0||running) g+='<circle cx="'+gx(t)+'" cy="'+gy(volts(t))+'" r="5.5" fill="var(--accent)" stroke="var(--panel)" stroke-width="2"/>';
     // the same moment end-on, with the key beside it
-    var ex=narrow?112:560, ey=narrow?690:296, eR=narrow?52:40, kx=narrow?232:668, ky=narrow?668:284;
+    var ex=narrow?112:560, ey=narrow?712:285, eR=narrow?52:38, kx=narrow?232:668, ky=narrow?690:282;
     g+=endOn(ex,ey,eR,{th:th,nl:true,c:cs,force:0,spin:spin,pre:'ag'});
     g+=txt(kx,ky-18,narrow?'the coil, seen end-on':'the same coil, seen end-on',{fs:12.5,c:'var(--ink)'})+keyRows(kx,ky,true,true);
     svg.innerHTML=g;

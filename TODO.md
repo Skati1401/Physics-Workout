@@ -80,8 +80,43 @@ Drawing and animation jobs worth running on Claude Fable, which draws SVG scenes
 - [ ] 2.9 I–V practical: a circuit-diagram activity, build it or find the errors (ammeter in parallel, voltmeter in series, cells the wrong way round). Same job as the circuit-diagram item in section 5.
 - [ ] 2.9 I–V: show the lamp curve continuing into the negative quadrant (sweep from −V to +V) in `animations/iv-characteristics.html` and the practical's graphs.
 - [ ] Practical runs that feel passive (the 4 Nov review): richer apparatus scenes, e.g. compass needles swinging and filings settling when the card is tapped (`magnetic-field-patterns.html`), a Leslie cube with a readable thermometer (`heat-transfer.html`).
-- [ ] Drawing pass on existing animations where the picture is plain: `gas-molecules.html` (5b), `heat-transfer.html` convection, `chain-reaction.html` (7b), `roller-coaster-energy.html` and the Year 9 half-pipe and bungee Predicts. The motor and generator pages were redrawn on 10 Nov 2026, so leave those.
+- [ ] Drawing pass on existing animations where the picture is plain: `gas-molecules.html` (5b), `heat-transfer.html` convection, `chain-reaction.html` (7b), `roller-coaster-energy.html` and the Year 9 half-pipe and bungee Predicts. The motor and generator pages were redrawn on 10 Nov 2026, so leave those. These pages are also in the animation batches (section 8: batches 9, 10 and 11); tick this when those are done.
 - [ ] Build: star life cycle and red shift animations for 8a/8b (no animation page yet; frame them in `universe-and-stars.html` and `cosmology.html`).
+
+## 8. Animation batches: review every animation against the motor and generator model (Alex, 10 Nov 2026)
+
+Each batch is one new chat. Alex calls a batch up by number, in any order: "Do animation batch 3 from `TODO.md` section 8, following `tools/ANIMATION-STYLE.md`." The chat reviews each page, rebuilds or restyles what falls short of the model (`animations/dc-motor.html`, `animations/ac-generator.html`) straight to `main`, and asks Alex only where there is a real choice. "Run on" is the suggested model and effort level: high where pictures are redrawn in 3D or a wrong direction would teach wrong physics, medium where it is mostly restyling flat pictures and graphs.
+
+| Batch | Pages (`animations/`) | Run on | Look for |
+|---|---|---|---|
+| 1 | `magnetic-field-patterns.html`, `electromagnet-field-patterns.html`, `electromagnets.html` | Fable high | Solid magnets, coils and cores; compass needles that swing and filings that settle (section 7); a predict-on-the-picture mode for field direction |
+| 2 | `motor-effect.html`, `loudspeaker.html` | Fable high | Fleming's left-hand rule as predict on the picture, then Go: a button deals a question in the diagram, the student clicks which way the wire moves (or which pole, or which way the current goes), Go shows it (Alex, 10 Nov 2026). Replaces the answer buttons in Practise. 3D kit for the magnet and wire |
+| 3 | `magnet-and-coil.html`, `transformer.html`, `national-grid.html` | Fable high | Solid coil, magnet and core; moving current arrows; predict the meter's direction on the picture before Go |
+| 4 | `motion-graphs.html`, `ramp-motion.html`, `force-mass-acceleration.html`, `friction.html`, `skydiver.html` | Fable medium | Trolleys, ramps and people drawn as solid objects; the graph beside the scene; labels clear of the picture |
+| 5 | `reaction-time.html`, `stopping-distance.html`, `momentum-collision.html`, `hookes-law.html`, `seesaw-moments.html` | Fable medium | As batch 4; `hookes-law.html` was animated on 3 Nov 2026, so probably a light pass |
+| 6 | `series-parallel.html`, `iv-characteristics.html`, `potential-divider.html`, `electrostatic-charging.html` | Fable high | Build a circuit: a button deals a task ("Make a circuit that measures the current in the lamp and the p.d. across it"), the student adds the ammeter and voltmeter themselves, presses Go, and sees it work or what goes wrong in the wrong place (Alex, 10 Nov 2026; `series-parallel.html` already has drag-in meters, so extend that and add it to `iv-characteristics.html`). Real apparatus beside the circuit diagram; current arrows. The lamp curve into the negative quadrant (section 7) |
+| 7 | `resistivity.html`, `internal-resistance.html`, `photoelectric.html`, `electron-diffraction.html` (IAL and IB) | Fable high | Apparatus drawn solid beside its graph; current arrows; labels |
+| 8 | `refraction.html`, `speed-of-sound.html`, `oscilloscope.html` | Fable high | Glass blocks, ray box and oscilloscope as solid objects; predict which way the ray bends on the picture, then Go |
+| 9 | `roller-coaster-energy.html`, `heat-transfer.html`, `density.html`, `liquid-pressure.html` | Fable high | Plain pictures named in section 7 (roller coaster, convection, Leslie cube with a readable thermometer) |
+| 10 | `heating-curve.html`, `specific-heat.html`, `gas-molecules.html` | Fable high | Three large pages (about 1 370 lines each): `gas-molecules.html` is named in section 7. Do one page at a time |
+| 11 | `film-badge.html`, `random-decay.html`, `radiation-in-fields.html`, `chain-reaction.html`, `penetrating-power.html` | Fable medium | `chain-reaction.html` is named in section 7; predict which way α and β bend on the picture, then Go |
+| 12 | `projectile-lab.html`, `shoot-the-monkey.html`, `free-body-diagrams.html`, `newtons-laws.html`, `inclined-plane.html` (IAL and IB) | Fable medium | Newer pages, likely a light pass: labels, sizes, solid objects |
+| 13 | `thermistor.html`, `latent-heat.html`, `boyles-law.html`, `gamma-radiation.html` (IAL practicals) | Fable medium | Apparatus drawn solid; keep every `?show=` mode and the fixed readings the practical pages check against |
+
+- [x] Model pages: `dc-motor.html` and `ac-generator.html` redrawn (10 Nov 2026). Alex to check them (`tools/REVIEW.md`), especially the cell's + on the left brush for "Normal".
+- [ ] Batch 1
+- [ ] Batch 2
+- [ ] Batch 3
+- [ ] Batch 4
+- [ ] Batch 5
+- [ ] Batch 6
+- [ ] Batch 7
+- [ ] Batch 8
+- [ ] Batch 9
+- [ ] Batch 10
+- [ ] Batch 11
+- [ ] Batch 12
+- [ ] Batch 13
 
 ## Done
 
