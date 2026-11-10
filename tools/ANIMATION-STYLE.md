@@ -25,6 +25,7 @@ Another chat may be pushing to the repo: `git pull --rebase` before every push, 
 - **Text is readable from the back of a room:** 12–14 in `viewBox` units for labels, never under 11.
 - **Predict on the picture, then Go (Alex, 10 Nov 2026).** Where a rule gives a direction or a position (Fleming's left-hand rule, induced current, which way a ray bends, where the image forms), the page has a question mode: a button deals a question in the diagram, the student clicks on the diagram where or which way they think (an arrow, a spot, a pole), then presses Go and the animation shows what really happens and marks the click. No row of answer buttons under the picture when the answer can be given on the picture itself.
 - **Build it yourself where the exam asks for it (Alex, 10 Nov 2026).** Circuit pages deal a task ("Make a circuit that measures the current in the lamp and the p.d. across it"), let the student add the ammeter and the voltmeter themselves (drag or click into place), and on Go show it working, or what goes wrong when a meter is in the wrong place.
+- **Numbers in the reading boxes sit level (Alex, 10 Nov 2026).** `.stat` is a column (`display:flex;flex-direction:column;justify-content:space-between`), so the number is on the bottom line of every box whether its label takes one line or two. Every animation page has this; keep it when a page is rebuilt.
 - Everything in `CLAUDE.md` still holds: fits one laptop screen, buttons under the picture, drag the objects, Experiment toggle, dark mode, reduced motion, no capitals-only text.
 
 ## The 3D kit
