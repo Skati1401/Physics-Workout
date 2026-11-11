@@ -90,7 +90,7 @@
 
 /* ================= 4. EXPERIMENT ================= */
 {
-  act('experiment','Your turn','Take your own readings','Press Experiment. Read θ and R at 0 °C, then heat 10 °C at a time up to 80 °C and watch your table and graph fill in. Choose “ln R against 1/T” to find b and R₀. Then do it again with No stirring: how far out is b, and why? Your calibration is used again in the Divider tab, to find the temperature of a mystery beaker.');
+  act('experiment','Your turn','Take your own readings','Press Experiment. Read θ and R at 0 °C, then heat 10 °C at a time up to 80 °C and watch your table and graph fill in. Choose “ln R against 1/T” to find b and R₀. Then do it again with No stirring: how far out is b, and why?');
 }
 frameAct('experiment','animations/thermistor.html','cal','Thermistor calibration animation','thermistor calibration',false);
 {
@@ -294,11 +294,11 @@ frameAct('divider','animations/thermistor.html','pd','Thermistor potential divid
 {
   const body=act('exam','Exam style','Calibrating a thermistor','Amelia calibrates an NTC thermistor. From her graph of ln R against 1/T she finds b = 3900 K and ln (R₀ / Ω) = −4.57. One result in her table is missing.');
   const tbl=mk('div','table-scroll');
-  tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>θ (°C)</th><th>0</th><th>30</th><th>50</th><th>70</th></tr></thead><tbody><tr><th>R (kΩ)</th><td>16.6</td><td>4.03</td><td><b>?</b></td><td>0.898</td></tr></tbody></table>';
+  tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>θ (°C)</th><th>0</th><th>30</th><th>60</th><th>80</th></tr></thead><tbody><tr><th>R (kΩ)</th><td>16.6</td><td>4.03</td><td><b>?</b></td><td>0.651</td></tr></tbody></table>';
   body.appendChild(tbl);
   body.appendChild(mk('p','sub','(a) 3 marks'));
   createCalc({host:body,questions:[
-    {q:'Calculate the missing resistance at 50 °C.',unit:'kΩ',answer:1.82,working:'T = 50 + 273 = 323 K<br>ln R = [[b|T]] + ln R₀<br>ln R = [[3900|323]] + (−4.57)<br>ln R = 7.504<br>R = e<sup>7.504</sup><br>R = 1816 Ω = 1.82 kΩ'}
+    {q:'Calculate the missing resistance at 60 °C.',unit:'kΩ',answer:1.26,working:'T = 60 + 273 = 333 K<br>ln R = [[b|T]] + ln R₀<br>ln R = [[3900|333]] + (−4.57)<br>ln R = 11.71 − 4.57<br>ln R = 7.142<br>R = e<sup>7.142</sup><br>R = 1264 Ω = 1.26 kΩ'}
   ]});
   body.appendChild(mk('p','sub','(b) 6 marks'));
   body.appendChild(mk('p','','Describe how Amelia should obtain accurate readings of θ and R from 0 °C to 80 °C.'));

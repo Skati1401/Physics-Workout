@@ -653,8 +653,10 @@ function expKey(x, y, upLabel, downLabel){
   var R={gen:[], fa:[], fb:[], fc:[]}, justAdded=null;
   function cyclesOnScreen(){ return freq()*SC.nx*tb()/1000; }
   function readDiv(){ return Math.round(Math.abs(cur[1]-cur[0])*10)/10; }
+  // A repeat must be a new measurement: the same time base and number of cycles would give the same reading again
+  function sameSetting(){ return R[src()].some(function(r){ return r.tb===tb() && r.n===nCyc; }); }
   function recordReading(){
-    if(!run || run.over || !trig() || readDiv()===0 || R[src()].length>=3) return;
+    if(!run || run.over || !trig() || readDiv()===0 || R[src()].length>=3 || sameSetting()) return;
     var D=readDiv(), T=D*tb()/nCyc, f=1000/T;
     R[src()].push({v:R[src()].length+1, tb:tb(), n:nCyc, D:D, T:T, f:f}); justAdded=R[src()].length;
     draw();
@@ -698,8 +700,9 @@ function expKey(x, y, upLabel, downLabel){
       else if(!trig()) note='The trace is not steady: turn the <b>trigger</b> on before you measure.';
       else if(done) note='Done: mean of three readings <b>'+Math.round(mean)+' Hz</b>. '+w3+' Try another source.';
       else if(setHint || yHint) note=(setHint+' '+yHint).trim();
+      else if(sameSetting()) note='You already have a reading over '+nCyc+' cycle'+(nCyc>1?'s':'')+' at this time base. Repeat it over a <b>different number of cycles</b>, or change the time base, so each reading is a new measurement.';
       else note='Drag cursors 1 and 2 to the same point on two waves (e.g. crossing the centre line going up), as many cycles apart as you can. Set the cycles, then <b>Record</b> ('+(rs.length+1)+' of 3).';
-      $('#os-rec').disabled = !run || run.over || !trig() || D===0 || done;
+      $('#os-rec').disabled = !run || run.over || !trig() || D===0 || done || sameSetting();
       $('#os-n').textContent=nCyc;
     }
     $('#os-eq1').innerHTML=FR(w1); $('#os-eq2').innerHTML=FR(w2); $('#os-eq2').hidden=!w2; $('#os-eq3').innerHTML=FR(w3); $('#os-eq3').hidden=!w3;

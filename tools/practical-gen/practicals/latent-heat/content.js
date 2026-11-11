@@ -307,7 +307,7 @@ function meltGraph(){
   createPredict({host:body,q:'Amelia finds L<sub>v</sub> = 2.6 × 10⁶ J kg⁻¹. The accepted value is 2.26 × 10⁶ J kg⁻¹. What is the most likely reason?',options:[
     {text:'Energy was lost from the beaker to the room',correct:true},
     {text:'The water was boiling before she started',why:'That is what she should do. It means every joule counted goes into boiling, not warming.'},
-    {text:'Some steam condensed back into the beaker',why:'Then the beaker would lose less mass for the energy counted, but drops on the inside are tiny. Energy lost to the room is far bigger.'},
+    {text:'Some water splashed out as it boiled',why:'Splashing would make the beaker lose extra mass, so Δm would be too big and L<sub>v</sub> too low, not too high.'},
     {text:'The joulemeter counted less than was supplied',why:'Too little energy counted would make ΔE too small, and L<sub>v</sub> too low, not too high.'}
   ],explain:'Some of the energy supplied heats the beaker and the air round it instead of boiling water. So less water boils away than the energy counted, Δm is too small, and L = [[ΔE|Δm]] comes out too high. Lagging the beaker cuts this.'});
 }

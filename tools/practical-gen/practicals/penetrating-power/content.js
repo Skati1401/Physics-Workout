@@ -67,7 +67,7 @@ function resTable(head,rows){
 
 /* ================= 3. VARIABLES ================= */
 {
-  const body=act('variables','Sort','Which variable is it?','Ananya measures the count through different absorbers. Sort each variable, then press Check.');
+  const body=act('variables','Sort','Which variable is it?','Ananya compares how well different materials absorb the radiation from one source, using a 1 cm thick sheet of each. Sort each variable, then press Check.');
   createSortGame({host:body,cats:[
     {id:'i',label:'Independent',hint:'What she changes',color:'--c1',soft:'--c1-soft'},
     {id:'d',label:'Dependent',hint:'What she measures',color:'--c2',soft:'--c2-soft'},
@@ -167,12 +167,13 @@ frameAct('experiment','animations/penetrating-power.html','','Penetrating power 
 
 {
   const body=act('results','Predict','The best absorber','');
-  createPredict({host:body,q:'Lucas says: “Paper is the best absorber of source Q, because it gives the largest drop in the count.” Is he right?',options:[
+  createPredict({host:body,pre:resTable(['Absorber, 1 cm thick','Corrected count in 1 min'],[['None','2110'],['Paper (a stack of sheets)','560'],['Aluminium','520'],['Lead','280']]).outerHTML,
+    q:'To compare materials fairly, Lucas puts a 1 cm thick sheet of each material in front of source Q in turn. He says: “Paper is the best absorber, because it gives the largest drop in the count.” Is he right?',options:[
     {text:'No: lead gives the lowest count',correct:true},
-    {text:'Yes: the drop with paper is biggest',why:'The paper stops the alpha, but lead stops far more of the radiation overall: its count is the lowest.'},
+    {text:'Yes: the drop with paper is biggest',why:'The paper stops the alpha, but so does every 1 cm sheet. Lead lets the least radiation through: its count is the lowest.'},
     {text:'Yes: paper stops all the alpha',why:'Paper stops the alpha, but the best absorber is the one with the lowest count, and that is lead.'},
-    {text:'No: aluminium gives the lowest count',why:'Aluminium gives 566 counts; lead gives only 180, so lead absorbs most.'}
-  ],explain:'A better absorber lets less radiation through, so it gives a lower count. Lead gives the lowest corrected count (180 per minute), so lead is the best absorber.'});
+    {text:'No: aluminium gives the lowest count',why:'Aluminium gives 520 counts; lead gives only 280, so lead absorbs most.'}
+  ],explain:'A better absorber lets less radiation through, so it gives a lower count. With the same thickness of each, lead gives the lowest corrected count (280 per minute), so lead is the best absorber. The paper, 5 mm aluminium and 2 cm lead in the other tables are for finding what a source emits, not for comparing materials: they are different thicknesses, so they would not be a fair test of which material absorbs best.'});
 }
 
 /* ================= 6. ALPHA, BETA, GAMMA ================= */
@@ -259,7 +260,7 @@ frameAct('experiment','animations/penetrating-power.html','','Penetrating power 
     {id:'4',text:'Use the source for as short a time as possible',cat:'s'},
     {id:'5',text:'Measure the background and take it away from every count',cat:'a'},
     {id:'6',text:'Count for longer, or repeat each count and find the mean',cat:'a'},
-    {id:'7',text:'Keep the distance and absorber thickness the same',cat:'a'}
+    {id:'7',text:'Keep the distance the same, and the absorber thickness when comparing materials',cat:'a'}
   ]});
 }
 {

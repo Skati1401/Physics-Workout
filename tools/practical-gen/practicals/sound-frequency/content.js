@@ -75,7 +75,7 @@ function scopeSVG(o){
 
 /* ================= 3. EXPERIMENT ================= */
 {
-  act('experiment','Your turn','Take your own readings','Press Experiment. For Fork A, Fork B, Fork C and the hidden tone: press Play, turn the trigger on, choose a time base that shows several complete cycles and a Y-gain that fills the screen. Then drag the two cursors to the same point on two waves, set the number of cycles between them, and record three readings. How close is your mean to the stamped value?');
+  act('experiment','Your turn','Take your own readings','Press Experiment. For Fork A, Fork B, Fork C and the hidden tone: press Play, turn the trigger on, choose a time base that shows several complete cycles and a Y-gain that fills the screen. Then drag the two cursors to the same point on two waves, set the number of cycles between them, and record three readings. Make each reading a new measurement: across a different number of cycles, or with a different time base. How close is your mean to the stamped value?');
 }
 frameAct('experiment','animations/oscilloscope.html','','Frequency of a sound wave animation: a signal generator or tuning fork, a microphone and an oscilloscope','frequency of a sound wave',false);
 {
@@ -104,7 +104,7 @@ frameAct('experiment','animations/oscilloscope.html','','Frequency of a sound wa
   split.appendChild(mk('div','graph-box',scopeSVG({per:4,amp:2.5,tag:'A',tb:'time base 0.5 ms/div',label:'Trace A: a sine wave, one cycle every 4 divisions, time base 0.5 ms per division'})));
   const side=mk('div','graph-side');split.appendChild(side);
   createCalc({host:side,questions:[
-    {q:'How many complete cycles are on the screen?',unit:'cycles',answer:2.5,working:'One cycle is 4 divisions wide.<br>cycles = [[10|4]]<br>cycles = 2.5'},
+    {q:'How many cycles fit across the 10 divisions of the screen? (Count part of a cycle as a decimal.)',unit:'cycles',answer:2.5,working:'One cycle is 4 divisions wide.<br>cycles = [[10|4]]<br>cycles = 2.5<br>(Only 2 of these are complete cycles: count those when you measure T.)'},
     {q:'What is the period, T?',unit:'ms',answer:2,working:'T = divisions for one cycle × time base<br>T = 4 × 0.5<br>T = 2.0 ms'},
     {q:'What is the frequency?',unit:'Hz',answer:500,working:'T = 2.0 ms<br>T = 0.0020 s<br>f = [[1|T]]<br>f = [[1|0.0020]]<br>f = 500 Hz'}
   ]});

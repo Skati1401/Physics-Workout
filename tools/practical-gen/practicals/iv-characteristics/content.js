@@ -48,6 +48,49 @@
   ]});
 }
 
+/* The circuit diagram: the most-asked 2.9 item. Build it (the animation's Build mode, modelled on May 2023 P1 2(a), Nov 2024 P1 9(a),
+   Nov 2020 P1 5(a)), then find the errors in a drawn circuit (Jan 2015 P1 10(a): cells the wrong way round, ammeter in parallel, voltmeter in series). */
+{
+  act('method','Your turn','Build the circuit','The animation deals a task. Put the ammeter and the voltmeter into the circuit diagram, then press Go to see whether it works. In the exam: correct symbols, the ammeter in series, the voltmeter in parallel with the component, and a variable resistor (or a variable supply) to change the current.');
+}
+frameAct('method','animations/iv-characteristics.html','build','Build the I–V circuit: put the meters into the circuit diagram','current–voltage characteristics',false);
+function faultyCircuitSVG(){
+  const ln=(x1,y1,x2,y2,w)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="var(--ink)" stroke-width="'+(w||2)+'"/>';
+  const meter=(x,y,t)=>'<circle cx="'+x+'" cy="'+y+'" r="14" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+x+'" y="'+(y+5)+'" text-anchor="middle" font-size="15" fill="var(--ink)">'+t+'</text>';
+  let s='<svg class="graph" viewBox="0 0 400 230" role="img" aria-label="Ali’s circuit diagram: two cells, a switch, a variable resistor, a voltmeter, a filament lamp and an ammeter">';
+  s+='<rect x="1" y="1" width="398" height="228" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';
+  // top: two cells, the second turned round (long plate = positive)
+  s+=ln(40,40,146,40)+ln(146,26,146,54)+ln(154,33,154,47,5)+ln(154,40,186,40)+ln(186,33,186,47,5)+ln(194,26,194,54)+ln(194,40,300,40);
+  // right: the lamp, with the ammeter across it
+  s+=ln(300,40,300,96)+'<circle cx="300" cy="110" r="14" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+ln(290,100,310,120)+ln(310,100,290,120)+ln(300,124,300,190);
+  s+=ln(300,75,360,75)+ln(360,75,360,96)+meter(360,110,'A')+ln(360,124,360,145)+ln(360,145,300,145);
+  s+='<circle cx="300" cy="75" r="3.5" fill="var(--ink)"/><circle cx="300" cy="145" r="3.5" fill="var(--ink)"/>';
+  // bottom: the voltmeter and the variable resistor in the main loop
+  s+=ln(300,190,234,190)+meter(220,190,'V')+ln(206,190,140,190)+'<rect x="100" y="181" width="40" height="18" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+ln(100,190,40,190);
+  s+='<path d="M94,206 L144,172" stroke="var(--ink)" stroke-width="2"/><path d="M144,172 L134,173 L139,181 z" fill="var(--ink)"/>';
+  // left: an open switch
+  s+=ln(40,190,40,124)+'<circle cx="40" cy="120" r="3.5" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+ln(40,120,56,94)+'<circle cx="40" cy="88" r="3.5" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+ln(40,84,40,40);
+  return s+'</svg>';
+}
+{
+  const body=act('method','Sort','Find the errors in Ali’s circuit','Ali draws the circuit he will use to find the I–V characteristic of a filament lamp. Look at where each part is connected, then sort it and press Check.');
+  const box=mk('div','graph-box',faultyCircuitSVG());box.style.maxWidth='460px';box.style.marginBottom='14px';body.appendChild(box);
+  createSortGame({host:body,cats:[
+    {id:'ok',label:'Connected correctly',hint:'Leave it as it is',color:'--c1',soft:'--c1-soft'},
+    {id:'no',label:'Connected wrongly',hint:'Ali must change it',color:'--c2',soft:'--c2-soft'}
+  ],items:[
+    {id:'1',text:'The ammeter',cat:'no'},
+    {id:'2',text:'The voltmeter',cat:'no'},
+    {id:'3',text:'The two cells',cat:'no'},
+    {id:'4',text:'The variable resistor',cat:'ok'},
+    {id:'5',text:'The switch',cat:'ok'},
+    {id:'6',text:'The filament lamp',cat:'ok'}
+  ]});
+  const d=mk('details','');
+  d.innerHTML='<summary>Why</summary><div><ul><li>The ammeter is in parallel with the lamp: it must be in series, so the same current flows through it.</li><li>The voltmeter is in series: it must be in parallel across the lamp.</li><li>The second cell faces the wrong way, so the two cells cancel: each cell’s long plate must join the next cell’s short plate.</li><li>The variable resistor and the switch are in series, as they should be.</li></ul></div>';
+  body.appendChild(d);
+}
+
 /* ================= 3. VARIABLES ================= */
 {
   const body=act('variables','Sort','Which kind of variable is it?','Sort each card into the right bin, then press Check.');
@@ -329,22 +372,22 @@ function swapGraph(label){
 
 /* ================= EXAM PRACTICE ================= */
 {
-  const body=act('exam','Exam style','Testing a filament lamp','Zahra tests a filament lamp and records these results. One reading is missing.');
+  const body=act('exam','Exam style','Testing a filament lamp','Zahra tests a 12 V filament lamp and records these results. One reading is missing.');
   const tbl=mk('div','table-scroll');
-  tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Voltage (V)</th><th>0</th><th>0.5</th><th>1.0</th><th>2.0</th><th>4.0</th><th>6.0</th></tr></thead><tbody><tr><th>Current (A)</th><td>0</td><td>0.050</td><td><b>?</b></td><td>0.16</td><td>0.25</td><td>0.30</td></tr></tbody></table>';
+  tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Voltage (V)</th><th>0</th><th>1.0</th><th>2.0</th><th>4.0</th><th>8.0</th><th>12.0</th></tr></thead><tbody><tr><th>Current (A)</th><td>0</td><td>0.080</td><td><b>?</b></td><td>0.24</td><td>0.33</td><td>0.40</td></tr></tbody></table>';
   body.appendChild(tbl);
   body.appendChild(mk('p','sub','(a) 2 marks'));
   createCalc({host:body,questions:[
-    {q:'At low voltages the lamp stays cool and its resistance stays at 10 Ω. Predict the missing current at 1.0 V.',unit:'A',answer:0.1,working:'At 0.5 V: R = [[0.5|0.050]] = 10 Ω<br>V = I × R<br>1.0 = I × 10<br>I = [[1.0|10]]<br>I = 0.10 A'}
+    {q:'At low voltages the lamp stays cool and its resistance stays the same. Predict the missing current at 2.0 V.',unit:'A',answer:0.16,working:'At 1.0 V: R = [[1.0|0.080]] = 12.5 Ω<br>V = I × R<br>2.0 = I × 12.5<br>I = [[2.0|12.5]]<br>I = 0.16 A'}
   ]});
   body.appendChild(mk('p','sub','(b) 3 marks'));
   createCalc({host:body,questions:[
-    {q:'Calculate the resistance of the lamp at 6.0 V.',unit:'Ω',answer:20,working:'V = I × R<br>6.0 = 0.30 × R<br>R = [[6.0|0.30]]<br>R = 20 Ω'}
+    {q:'Calculate the resistance of the lamp at 12.0 V.',unit:'Ω',answer:30,working:'V = I × R<br>12.0 = 0.40 × R<br>R = [[12.0|0.40]]<br>R = 30 Ω'}
   ]});
   body.appendChild(mk('p','sub','(c) 3 marks'));
   body.appendChild(mk('p','','Zahra says the lamp’s current is directly proportional to the voltage. Discuss whether she is right. Use data from the table. Write your answer, then check it.'));
   const d1=mk('details','');
-  d1.innerHTML='<summary>Check your answer</summary><div><ul><li>The current increases as the voltage increases, but at a decreasing rate (non-linear).</li><li>If it were proportional, doubling the voltage would double the current.</li><li>From 2.0 V to 4.0 V the current only goes from 0.16 A to 0.25 A, not 0.32 A.</li><li>The resistance rises from 10 Ω (at 0.5 V) to 20 Ω (at 6.0 V), so the I–V graph would curve, not be a straight line through the origin.</li><li>So she is wrong (except at the lowest voltages, where the lamp is still cool).</li></ul></div>';
+  d1.innerHTML='<summary>Check your answer</summary><div><ul><li>The current increases as the voltage increases, but at a decreasing rate (non-linear).</li><li>If it were proportional, doubling the voltage would double the current.</li><li>From 4.0 V to 8.0 V the current only goes from 0.24 A to 0.33 A, not 0.48 A.</li><li>The resistance rises from 12.5 Ω (at 1.0 V) to 30 Ω (at 12.0 V), so the I–V graph would curve, not be a straight line through the origin.</li><li>So she is wrong (except at the lowest voltages, where the lamp is still cool).</li></ul></div>';
   body.appendChild(d1);
   body.appendChild(mk('p','sub','(d) 2 marks'));
   body.appendChild(mk('p','','Explain why the resistance of the lamp increases as the current increases.'));

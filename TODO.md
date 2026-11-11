@@ -67,17 +67,7 @@ Follow-ups:
 
 ## Done
 
-- [x] Fix the errors the 4 Nov practicals review found, still live on 5 Nov 2026 (full list per page in `claude/practicals-review-2026-11-04.md`). The main ones: Done (Alex, 11 Nov 2026).
-  - 5.4 density: `setMethod` runs before the Method activities exist, so all four Orders show on load; make Irregular object the default.
-  - 1.5 motion: the "Three ramps" graph lines end at different distances and speeds; fix the end points.
-  - 3.27P: Trace A Q1 asks for "complete" cycles with the answer 2.5; identical repeats possible without moving the cursors.
-  - 3.25P: delete "Much over 200 m, the sound gets hard to hear"; "Why miss the origin?" contradicts the animation; Exam (f) uses past-paper data.
-  - 5.14P: the "more mass than measured" distractor in "Why is the value too high?" would really give a high c.
-  - 6.6: "Tapping the card" marks a creditworthy answer wrong.
-  - 7.6: the absorber thickness is a control, yet paper, 5 mm Al and 2 cm lead are compared ("The best absorber").
-  - 2.23P Exam (f): add "electrons". CP12: line 93 says the calibration carries to the Divider tab (it doesn't). CP13: the "steam condensed back" distractor would really make L_v high.
-  - Duplicate exam numbers to change: 2.9 Exam (b), 3.25P Exam (b), 3.17 Exam (d), 3.19 Exam (d), CP12 Exam (a).
-  - Missing activities worth adding: sketch the heating curve (5.11P); circuit diagram (2.9): build it or find the errors (ammeter in parallel, voltmeter in series, cells the wrong way round); field-drawing mistakes (6.6): find the mistake in field diagrams (reversed arrow, line not reaching the magnet, lines crossing, no central line between N poles). Draw the 2.9 and 6.6 pictures on Claude Fable (section 7).
+- [x] Fix the errors the 4 Nov practicals review found (11 Nov 2026): every listed bug and wording fix (5.4 method switch and Irregular default, 1.5 three ramps the same length, 3.27P "complete" cycles and identical repeats (the oscilloscope now refuses a repeat at the same setting), 3.25P 200 m sentence, origin explanation and Exam (f) data, 5.14P and CP13 distractors, 6.6 tapping, 7.6 absorber thickness, 2.23P electrons, CP12 Divider sentence); new numbers for the duplicated exam parts (2.9 (b), 3.25P (b), 3.17 (d), 3.19 (d), CP12 (a)); and the three missing activities: sketch the heating curve (5.11P, a joined Plot), find the errors in a circuit plus the animation's Build mode (2.9), find the mistake in four field drawings (6.6). Not done: the 6.6 "no central line between the N poles" drawing (needs the May 2026 P1R 2(a)(i) diagram to model it); the drawings are plain SVG, not a Fable drawing pass. The rest of the review's per-page notes (cuts, repetition) belong to the 1.22-model rebuild above. To review in `tools/REVIEW.md`.
 - [x] 2.9 I–V practical page `iv-characteristics-practical.html`: its graphs should show the lamp curve continuing into the negative quadrant, as the animation now does (batch 6, 11 Nov 2026). Done (Alex, 11 Nov 2026).
 - [x] Drawing pass on the Year 9 half-pipe and bungee Predicts (plain pictures; not in any animation batch). The other plain pages are in their batches: `gas-molecules.html` in batch 10, `chain-reaction.html` in batch 11. Done (Alex, 11 Nov 2026). The Year 9 page lost both on 26 Oct 2026, so the half-pipe was redrawn on 4a `energy-stores-efficiency.html`, Conservation (solid ramp and skater; motion and numbers unchanged). The bungee is an Order with no picture and was left as it is (Alex). 4a is back to 🔍 in `tools/REVIEW.md`.
 

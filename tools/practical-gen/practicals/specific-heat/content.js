@@ -344,7 +344,7 @@ function energyGraph(){
   createPredict({host:body,q:'Charlotte’s value for aluminium is 993 J/kg °C. The accepted value is 900 J/kg °C. What is the most likely reason?',options:[
     {text:'Energy also heated the thermometer and surroundings',correct:true},
     {text:'The joulemeter counted less energy than was supplied',why:'Less energy counted would make ΔQ too small, and her value of c lower, not higher.'},
-    {text:'Her block had more mass than the 1.00 kg she measured',why:'A balance measures mass very accurately. The big error is energy that never heated the block.'},
+    {text:'Her block had less mass than the 1.00 kg she used',why:'A smaller block would warm up more, so ΔT would be bigger. With 1.00 kg in the calculation, her value of c would come out too low, not too high.'},
     {text:'She read the highest temperature far too early',why:'She kept reading until 12 minutes, after the temperature had stopped rising.'}
   ],explain:'Some of the energy also heats the thermometer, the heater and the surroundings (the air and the bench), not just the block. The block’s temperature change is smaller than it would be, and a smaller ΔT on the bottom of c = [[ΔQ|m × ΔT]] gives a bigger c.'});
 }

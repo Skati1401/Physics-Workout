@@ -416,6 +416,7 @@ table.units.res-tbl{min-width:0}
 @media (max-width:900px){.plot-split{grid-template-columns:minmax(0,1fr)}}
 .plot-svg{cursor:crosshair;touch-action:manipulation;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel)}
 .graph .g-minor{stroke:var(--panel-border);stroke-width:.5;opacity:.7}
+.graph .g-sketch{stroke-width:2.5;opacity:.75}
 .graph .pc{stroke:var(--ink);stroke-width:2.2;fill:none}
 .graph .pc.ok{stroke:var(--good)}
 .graph .pc.no{stroke:var(--bad)}
@@ -567,7 +568,7 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='cp-refractive-index-v1',OLD_STORE_KEY='';
+const STORE_KEY='cp-refractive-index-v2',OLD_STORE_KEY='cp-refractive-index-v1';
 // Core route (page.json "core"): {tab: [activity titles]}. Other activities on a core tab go under "Extra practice"; other tabs are extra tabs. null = no core route.
 const CORE=null;
 const TAB_IDS=["overview", "method", "variables", "experiment", "results", "graphs", "calculate", "accuracy", "exam"];
@@ -1521,6 +1522,8 @@ function createPlot(cfg){
     if(o.xMin<0&&o.xMax>0)s+='<line class="g-axis g-axis0" x1="'+gx(0)+'" x2="'+gx(0)+'" y1="'+pt+'" y2="'+(H-pb)+'"/>';
     if(o.yMin<0&&o.yMax>0)s+='<line class="g-axis g-axis0" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+gy(0)+'" y2="'+gy(0)+'"/>';
     s+='<text class="g-lab" x="'+(pl+(W-pl-pr)/2)+'" y="'+(H-8)+'" text-anchor="middle">'+o.xLabel+'</text><text class="g-lab" transform="translate(16 '+(pt+(H-pt-pb)/2)+') rotate(-90)" text-anchor="middle">'+o.yLabel+'</text>';
+    // cfg.join: a sketch graph, so each point is joined to the one before it once both are plotted
+    if(cfg.join)for(let i=1;i<pts.length;i++)if(placed[i-1]&&placed[i])s+='<path class="g-line g-sketch" d="M'+gx(placed[i-1].x)+','+gy(placed[i-1].y)+' L'+gx(placed[i].x)+','+gy(placed[i].y)+'"/>';
     placed.forEach((p,i)=>{if(p)s+=cross(p.x,p.y,'pc'+(locked[i]?' ok':'')+(i===wrongIdx?' no':''));});
     if(next()>=0)s+='<circle class="pcur" cx="'+gx(cur.x)+'" cy="'+gy(cur.y)+'" r="7"/>';
     s+='</svg>';
@@ -1553,7 +1556,7 @@ function createPlot(cfg){
     pts.forEach((p,i)=>{if(!placed[i])return;if(Math.abs(placed[i].x-p.x)<=o.snap[0]/2+1e-9&&Math.abs(placed[i].y-p.y)<=o.snap[1]/2+1e-9)locked[i]=true;else if(bad<0)bad=i;});
     ok=locked.filter(Boolean).length;
     if(ok===pts.length){b.say('All '+pts.length+' points plotted correctly.'+NEXT,'good');wrongIdx=-1;render();return;}
-    if(bad>=0){ans.on();wrongIdx=bad;render();b.say(ok+' of '+pts.length+' correct. The red cross is in the wrong place: check the scale on each axis.','bad');
+    if(bad>=0){ans.on();wrongIdx=bad;render();b.say(ok+' of '+pts.length+' correct. '+(cfg.wrong||'The red cross is in the wrong place: check the scale on each axis.'),'bad');
       setTimeout(()=>{if(!locked[bad])placed[bad]=null;wrongIdx=-1;render();},900);}
     else b.say(ok+' of '+pts.length+' correct so far. Plot the rest.','');
   }
@@ -1841,7 +1844,7 @@ const GB={xMin:0,xMax:1,yMin:0,yMax:0.8,xTicks:[0,0.2,0.4,0.6,0.8,1],yTicks:[0,0
   answerBox(body,'<ul><li>Work out sin i and sin r for each pair of angles.</li><li>Plot sin i (y-axis) against sin r (x-axis) and draw a straight line of best fit through the origin.</li><li>The refractive index is the gradient of the line.</li></ul><p class="sub">Also accepted: work out n = [[sin i|sin r]] for every pair and find the mean. "Repeat and average" on its own does not score.</p>');
   body.appendChild(mk('p','sub','(d) 2 marks'));
   createCalc({host:body,questions:[
-    {q:'Use the reading at i = 60° to calculate the refractive index.',unit:'',answer:1.51,working:'n = [[sin i|sin r]]<br>n = [[sin 60°|sin 35°]]<br>n = [[0.8660|0.5736]]<br>n = 1.51'}
+    {q:'Use the reading at i = 75° to calculate the refractive index.',unit:'',answer:1.5,working:'n = [[sin i|sin r]]<br>n = [[sin 75°|sin 40°]]<br>n = [[0.9659|0.6428]]<br>n = 1.50'}
   ]});
   body.appendChild(mk('p','sub','(e) 3 marks'));
   createCalc({host:body,questions:[

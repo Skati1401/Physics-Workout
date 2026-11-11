@@ -290,7 +290,7 @@ frameAct('experiment','animations/electrostatic-charging.html','','Charging by f
     'Electrons rubbed onto it flow through the rod and the person to earth, so no charge builds up.',
     'Hold it with an insulating handle, so the charge cannot flow away.']);
   examPart(body,'(f) 3 marks','Explain why an aircraft is connected to earth before it is refuelled.',[
-    'Friction between the fuel and the pipe charges the aircraft.',
+    'Friction between the fuel and the pipe transfers electrons, so the aircraft becomes charged.',
     'A spark could ignite the fuel, causing a fire or explosion.',
     'With an earth wire, charge flows to earth, so no charge builds up and there is no spark.']);
   examPart(body,'(g) 3 marks','Explain how charging the drops of paint and the car body helps a car to be sprayed evenly.',[

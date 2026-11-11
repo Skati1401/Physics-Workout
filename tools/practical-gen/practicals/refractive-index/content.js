@@ -269,7 +269,7 @@ const GB={xMin:0,xMax:1,yMin:0,yMax:0.8,xTicks:[0,0.2,0.4,0.6,0.8,1],yTicks:[0,0
   answerBox(body,'<ul><li>Work out sin i and sin r for each pair of angles.</li><li>Plot sin i (y-axis) against sin r (x-axis) and draw a straight line of best fit through the origin.</li><li>The refractive index is the gradient of the line.</li></ul><p class="sub">Also accepted: work out n = [[sin i|sin r]] for every pair and find the mean. "Repeat and average" on its own does not score.</p>');
   body.appendChild(mk('p','sub','(d) 2 marks'));
   createCalc({host:body,questions:[
-    {q:'Use the reading at i = 60° to calculate the refractive index.',unit:'',answer:1.51,working:'n = [[sin i|sin r]]<br>n = [[sin 60°|sin 35°]]<br>n = [[0.8660|0.5736]]<br>n = 1.51'}
+    {q:'Use the reading at i = 75° to calculate the refractive index.',unit:'',answer:1.5,working:'n = [[sin i|sin r]]<br>n = [[sin 75°|sin 40°]]<br>n = [[0.9659|0.6428]]<br>n = 1.50'}
   ]});
   body.appendChild(mk('p','sub','(e) 3 marks'));
   createCalc({host:body,questions:[

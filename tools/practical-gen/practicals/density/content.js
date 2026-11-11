@@ -1,9 +1,9 @@
 /* ================= METHOD TYPE: regular block, irregular object or liquid =================
    Each way of measuring the volume has its own Overview passage and its own Order; the switch is shared by
    the Overview and Method tabs and remembered in this browser (copied from the 5.14P page). */
-const METHODS=[{k:'reg',label:'Regular block'},{k:'irr',label:'Irregular object'},{k:'liq',label:'Liquid'}];
+const METHODS=[{k:'irr',label:'Irregular object'},{k:'reg',label:'Regular block'},{k:'liq',label:'Liquid'}];
 const MKEY='cp-density-method';
-let method='reg';try{const v=localStorage.getItem(MKEY);if(METHODS.some(m=>m.k===v))method=v;}catch(e){}
+let method='irr';try{const v=localStorage.getItem(MKEY);if(METHODS.some(m=>m.k===v))method=v;}catch(e){}
 const methodGames=[];
 function methodPicker(panel){
   const w=mk('div','method-pick');
@@ -59,7 +59,6 @@ clozeAct('overview','liq','The practical with a liquid',[
   ['l3','empty'],'. (Or put the empty cylinder on the balance and press tare, so the balance shows the mass of the liquid alone.) Density is the mass of the liquid divided by its volume. Add more liquid and repeat. A graph of total mass against volume is a straight line that does not go through the ',['l4','origin'],
   ': it crosses the mass axis at the mass of the empty cylinder, and its ',['l5','gradient'],' is the density. Water has a density of 1.0 g/cm³, which is ',['l6','1000'],' kg/m³.'
 ],['1','100','full','area']);
-setMethod(method);
 
 /* ================= 2. METHOD ================= */
 methodPicker('method');
@@ -123,6 +122,9 @@ methodPicker('method');
     {id:'q',l:'Two set squares',r:'Held against the ruler either side of a ball, to measure its diameter'}
   ]}));
 }
+
+/* The switch is set once both pickers and every method's activities exist, so only the chosen method shows on load. */
+setMethod(method);
 
 /* ================= 3. VARIABLES ================= */
 {

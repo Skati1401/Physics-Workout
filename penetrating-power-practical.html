@@ -416,6 +416,7 @@ table.units.res-tbl{min-width:0}
 @media (max-width:900px){.plot-split{grid-template-columns:minmax(0,1fr)}}
 .plot-svg{cursor:crosshair;touch-action:manipulation;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel)}
 .graph .g-minor{stroke:var(--panel-border);stroke-width:.5;opacity:.7}
+.graph .g-sketch{stroke-width:2.5;opacity:.75}
 .graph .pc{stroke:var(--ink);stroke-width:2.2;fill:none}
 .graph .pc.ok{stroke:var(--good)}
 .graph .pc.no{stroke:var(--bad)}
@@ -1521,6 +1522,8 @@ function createPlot(cfg){
     if(o.xMin<0&&o.xMax>0)s+='<line class="g-axis g-axis0" x1="'+gx(0)+'" x2="'+gx(0)+'" y1="'+pt+'" y2="'+(H-pb)+'"/>';
     if(o.yMin<0&&o.yMax>0)s+='<line class="g-axis g-axis0" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+gy(0)+'" y2="'+gy(0)+'"/>';
     s+='<text class="g-lab" x="'+(pl+(W-pl-pr)/2)+'" y="'+(H-8)+'" text-anchor="middle">'+o.xLabel+'</text><text class="g-lab" transform="translate(16 '+(pt+(H-pt-pb)/2)+') rotate(-90)" text-anchor="middle">'+o.yLabel+'</text>';
+    // cfg.join: a sketch graph, so each point is joined to the one before it once both are plotted
+    if(cfg.join)for(let i=1;i<pts.length;i++)if(placed[i-1]&&placed[i])s+='<path class="g-line g-sketch" d="M'+gx(placed[i-1].x)+','+gy(placed[i-1].y)+' L'+gx(placed[i].x)+','+gy(placed[i].y)+'"/>';
     placed.forEach((p,i)=>{if(p)s+=cross(p.x,p.y,'pc'+(locked[i]?' ok':'')+(i===wrongIdx?' no':''));});
     if(next()>=0)s+='<circle class="pcur" cx="'+gx(cur.x)+'" cy="'+gy(cur.y)+'" r="7"/>';
     s+='</svg>';
@@ -1553,7 +1556,7 @@ function createPlot(cfg){
     pts.forEach((p,i)=>{if(!placed[i])return;if(Math.abs(placed[i].x-p.x)<=o.snap[0]/2+1e-9&&Math.abs(placed[i].y-p.y)<=o.snap[1]/2+1e-9)locked[i]=true;else if(bad<0)bad=i;});
     ok=locked.filter(Boolean).length;
     if(ok===pts.length){b.say('All '+pts.length+' points plotted correctly.'+NEXT,'good');wrongIdx=-1;render();return;}
-    if(bad>=0){ans.on();wrongIdx=bad;render();b.say(ok+' of '+pts.length+' correct. The red cross is in the wrong place: check the scale on each axis.','bad');
+    if(bad>=0){ans.on();wrongIdx=bad;render();b.say(ok+' of '+pts.length+' correct. '+(cfg.wrong||'The red cross is in the wrong place: check the scale on each axis.'),'bad');
       setTimeout(()=>{if(!locked[bad])placed[bad]=null;wrongIdx=-1;render();},900);}
     else b.say(ok+' of '+pts.length+' correct so far. Plot the rest.','');
   }
@@ -1639,7 +1642,7 @@ function resTable(head,rows){
 
 /* ================= 3. VARIABLES ================= */
 {
-  const body=act('variables','Sort','Which variable is it?','Ananya measures the count through different absorbers. Sort each variable, then press Check.');
+  const body=act('variables','Sort','Which variable is it?','Ananya compares how well different materials absorb the radiation from one source, using a 1 cm thick sheet of each. Sort each variable, then press Check.');
   createSortGame({host:body,cats:[
     {id:'i',label:'Independent',hint:'What she changes',color:'--c1',soft:'--c1-soft'},
     {id:'d',label:'Dependent',hint:'What she measures',color:'--c2',soft:'--c2-soft'},
@@ -1739,12 +1742,13 @@ frameAct('experiment','animations/penetrating-power.html','','Penetrating power 
 
 {
   const body=act('results','Predict','The best absorber','');
-  createPredict({host:body,q:'Lucas says: “Paper is the best absorber of source Q, because it gives the largest drop in the count.” Is he right?',options:[
+  createPredict({host:body,pre:resTable(['Absorber, 1 cm thick','Corrected count in 1 min'],[['None','2110'],['Paper (a stack of sheets)','560'],['Aluminium','520'],['Lead','280']]).outerHTML,
+    q:'To compare materials fairly, Lucas puts a 1 cm thick sheet of each material in front of source Q in turn. He says: “Paper is the best absorber, because it gives the largest drop in the count.” Is he right?',options:[
     {text:'No: lead gives the lowest count',correct:true},
-    {text:'Yes: the drop with paper is biggest',why:'The paper stops the alpha, but lead stops far more of the radiation overall: its count is the lowest.'},
+    {text:'Yes: the drop with paper is biggest',why:'The paper stops the alpha, but so does every 1 cm sheet. Lead lets the least radiation through: its count is the lowest.'},
     {text:'Yes: paper stops all the alpha',why:'Paper stops the alpha, but the best absorber is the one with the lowest count, and that is lead.'},
-    {text:'No: aluminium gives the lowest count',why:'Aluminium gives 566 counts; lead gives only 180, so lead absorbs most.'}
-  ],explain:'A better absorber lets less radiation through, so it gives a lower count. Lead gives the lowest corrected count (180 per minute), so lead is the best absorber.'});
+    {text:'No: aluminium gives the lowest count',why:'Aluminium gives 520 counts; lead gives only 280, so lead absorbs most.'}
+  ],explain:'A better absorber lets less radiation through, so it gives a lower count. With the same thickness of each, lead gives the lowest corrected count (280 per minute), so lead is the best absorber. The paper, 5 mm aluminium and 2 cm lead in the other tables are for finding what a source emits, not for comparing materials: they are different thicknesses, so they would not be a fair test of which material absorbs best.'});
 }
 
 /* ================= 6. ALPHA, BETA, GAMMA ================= */
@@ -1831,7 +1835,7 @@ frameAct('experiment','animations/penetrating-power.html','','Penetrating power 
     {id:'4',text:'Use the source for as short a time as possible',cat:'s'},
     {id:'5',text:'Measure the background and take it away from every count',cat:'a'},
     {id:'6',text:'Count for longer, or repeat each count and find the mean',cat:'a'},
-    {id:'7',text:'Keep the distance and absorber thickness the same',cat:'a'}
+    {id:'7',text:'Keep the distance the same, and the absorber thickness when comparing materials',cat:'a'}
   ]});
 }
 {

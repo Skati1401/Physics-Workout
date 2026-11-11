@@ -201,7 +201,7 @@ setMethod(method);
     {text:'So the sound is loud enough for Sophie to hear',why:'The sound is louder when she is closer, not further away.'},
     {text:'So the light has time to arrive before the sound',why:'Light arrives almost instantly at any distance. The problem is timing by hand.'},
     {text:'So the sound has time to reach its full speed',why:'Sound travels at a steady speed through the air from the start.'}
-  ],explain:'Over 10 m the sound takes only about 0.03 s, far shorter than a reaction time of about 0.2 s. Over 100 m or more it takes 0.3 s or longer, so the same reaction-time error is a much smaller fraction of the time. Much over 200 m, the sound gets hard to hear.'});
+  ],explain:'Over 10 m the sound takes only about 0.03 s, far shorter than a reaction time of about 0.2 s. Over 100 m or more it takes 0.3 s or longer, so the same reaction-time error is a much smaller fraction of the time.'});
 }
 
 /* ================= EXPERIMENT ================= */
@@ -328,11 +328,11 @@ function henryGraph(label){
 {
   const body=act('graphs','Predict','Why miss the origin?','');
   createPredict({host:body,q:'Henry’s line crosses the time axis at 0.05 s, not at 0. What is the most likely reason?',options:[
-    {text:'Every timing is about 0.05 s too long',correct:true},
+    {text:'Every timing is out by the same 0.05 s',correct:true},
     {text:'The sound took 0.05 s to start moving',why:'Sound leaves the blocks at full speed straight away.'},
     {text:'He measured every distance 0.05 m too short',why:'A distance error would shift the line up or down, and 0.05 m is far too small to see on this scale.'},
     {text:'The light took 0.05 s to reach him',why:'Light takes about a millionth of a second over these distances.'}
-  ],explain:'The same error in every timing (a systematic error, here from reaction time) moves the whole line along the time axis. It does not change the gradient.'});
+  ],explain:'The same error in every timing (a systematic error, here from reaction time) moves the whole line along the time axis. Henry’s times are each about 0.05 s too long: perhaps he is slower to stop the stopwatch on the sound than to start it on seeing the blocks hit. A timer who is slower to start makes every time too short, and the line crosses below the origin instead, as in the animation’s Direct runs. Either way the gradient does not change.'});
 }
 {
   const body=act('graphs','Predict','Gradient or one point?','');
@@ -428,7 +428,7 @@ function micGraph(label){
 {
   const body=act('exam','Exam style','Measuring the speed of sound','Ananya and her friends time a bang over a field at five distances. The table shows the mean times. One result is missing.');
   const tbl=mk('div','table-scroll');
-  tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Distance (m)</th><th>100</th><th>150</th><th>200</th><th>250</th><th>300</th></tr></thead><tbody><tr><th>Mean time (s)</th><td>0.29</td><td>0.44</td><td>0.59</td><td><b>?</b></td><td>0.88</td></tr></tbody></table>';
+  tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Distance (m)</th><th>100</th><th>150</th><th>200</th><th>250</th><th>300</th></tr></thead><tbody><tr><th>Mean time (s)</th><td>0.29</td><td>0.44</td><td>0.59</td><td><b>?</b></td><td>0.89</td></tr></tbody></table>';
   body.appendChild(tbl);
   body.appendChild(mk('p','sub','(a) 2 marks'));
   createCalc({host:body,questions:[
@@ -436,7 +436,7 @@ function micGraph(label){
   ]});
   body.appendChild(mk('p','sub','(b) 3 marks'));
   createCalc({host:body,questions:[
-    {q:'Calculate the speed of sound, using the result for 300 m.',unit:'m/s',answer:341,working:'speed = [[distance|time]]<br>speed = [[300|0.88]]<br>speed = 341 m/s'}
+    {q:'Calculate the speed of sound, using the result for 300 m.',unit:'m/s',answer:337,working:'speed = [[distance|time]]<br>speed = [[300|0.89]]<br>speed = 337 m/s'}
   ]});
   body.appendChild(mk('p','sub','(c) 5 marks'));
   body.appendChild(mk('p','','Elena tries the same practical on her own. She measures 50 m with a metre rule. She makes a bang, and times it once with a stopwatch, starting when she hears the bang leave and stopping when she hears it arrive. Evaluate her method.'));
@@ -456,7 +456,7 @@ function micGraph(label){
   body.appendChild(d3);
   body.appendChild(mk('p','sub','(f) 3 marks'));
   createCalc({host:body,questions:[
-    {q:'Two microphones are 0.68 m apart. On the oscilloscope the two pulses are 4.0 divisions apart, with a time base of 0.5 ms/div. Calculate the speed of sound.',unit:'m/s',answer:340,working:'Δt = 4.0 × 0.5<br>Δt = 2.0 ms<br>Δt = 0.0020 s<br>speed = [[distance|time]]<br>speed = [[0.68|0.0020]]<br>speed = 340 m/s'}
+    {q:'Two microphones are 0.86 m apart. On the oscilloscope the two pulses are 5.0 divisions apart, with a time base of 0.5 ms/div. Calculate the speed of sound.',unit:'m/s',answer:344,working:'Δt = 5.0 × 0.5<br>Δt = 2.5 ms<br>Δt = 0.0025 s<br>speed = [[distance|time]]<br>speed = [[0.86|0.0025]]<br>speed = 344 m/s'}
   ]});
   body.appendChild(mk('p','sub','(g) 2 marks'));
   body.appendChild(mk('p','','Ananya hears an echo from a building. State what this shows about sound waves, and name the type of wave sound is.'));

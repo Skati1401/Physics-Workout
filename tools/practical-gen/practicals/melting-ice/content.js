@@ -186,6 +186,16 @@ function waxGraph(){
   return lineGraph(Object.assign({label:'Temperature against time for a heated solid',points:P,extra:lab(g0,'A',3,40)+lab(g0,'B',10,55)+lab(g0,'C',17,70)},GW)).svg;
 }
 {
+  /* Sketch the curve: the most-asked 5.11P item (May 2022 P2 7(d), May 2023 P2 2(b)(iii), Jan 2022 P2 2(b)): start and end values,
+     one flat section at the melting point, and the ice section steeper than the water section. The corners are plotted and joined. */
+  const body=act('graphs','Plot','Sketch the heating curve','Freya heats crushed ice at −10 °C with a heater of constant power. The ice reaches 0 °C after 2 minutes, and has all melted after 10 minutes. The water then warms to 20 °C. Water needs about twice as much energy as ice to warm by 1 °C. Plot the four corners of the graph in order; each is joined to the one before. Work out when the water reaches 20 °C first.');
+  createPlot({host:body,join:true,wrong:'The red cross is in the wrong place. Check the scales; for the last corner, how fast does the water warm compared with the ice?',
+    points:[{x:0,y:-10,t:'Start: the ice at −10 °C'},{x:2,y:0,t:'The ice starts to melt'},{x:10,y:0,t:'All the ice has melted'},{x:18,y:20,t:'The water reaches 20 °C'}],
+    rowText:p=>p.t,
+    next:' The ice line rises at 5 °C per minute. Water needs twice the energy for each 1 °C, so it rises at half that rate, 2.5 °C per minute, and takes 8 minutes to warm by 20 °C. In an exam sketch, the marks are for: the start and end temperatures marked on the axis; one flat section at 0 °C; and the ice section steeper than the water section.',
+    graph:{xMin:0,xMax:20,yMin:-10,yMax:25,xTicks:[0,2,4,6,8,10,12,14,16,18,20],yTicks:[-10,-5,0,5,10,15,20,25],minor:[1,5],snap:[1,5],xLabel:'time (min)',yLabel:'temperature (°C)',W:560,H:340}});
+}
+{
   const body=act('graphs','Calculate','Read the graph','Ruby heats a solid wax gently and records its temperature. Read your answers off the graph.');
   const split=mk('div','graph-split');body.appendChild(split);
   split.appendChild(mk('div','graph-box',waxGraph()));

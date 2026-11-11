@@ -416,6 +416,7 @@ table.units.res-tbl{min-width:0}
 @media (max-width:900px){.plot-split{grid-template-columns:minmax(0,1fr)}}
 .plot-svg{cursor:crosshair;touch-action:manipulation;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel)}
 .graph .g-minor{stroke:var(--panel-border);stroke-width:.5;opacity:.7}
+.graph .g-sketch{stroke-width:2.5;opacity:.75}
 .graph .pc{stroke:var(--ink);stroke-width:2.2;fill:none}
 .graph .pc.ok{stroke:var(--good)}
 .graph .pc.no{stroke:var(--bad)}
@@ -1524,6 +1525,8 @@ function createPlot(cfg){
     if(o.xMin<0&&o.xMax>0)s+='<line class="g-axis g-axis0" x1="'+gx(0)+'" x2="'+gx(0)+'" y1="'+pt+'" y2="'+(H-pb)+'"/>';
     if(o.yMin<0&&o.yMax>0)s+='<line class="g-axis g-axis0" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+gy(0)+'" y2="'+gy(0)+'"/>';
     s+='<text class="g-lab" x="'+(pl+(W-pl-pr)/2)+'" y="'+(H-8)+'" text-anchor="middle">'+o.xLabel+'</text><text class="g-lab" transform="translate(16 '+(pt+(H-pt-pb)/2)+') rotate(-90)" text-anchor="middle">'+o.yLabel+'</text>';
+    // cfg.join: a sketch graph, so each point is joined to the one before it once both are plotted
+    if(cfg.join)for(let i=1;i<pts.length;i++)if(placed[i-1]&&placed[i])s+='<path class="g-line g-sketch" d="M'+gx(placed[i-1].x)+','+gy(placed[i-1].y)+' L'+gx(placed[i].x)+','+gy(placed[i].y)+'"/>';
     placed.forEach((p,i)=>{if(p)s+=cross(p.x,p.y,'pc'+(locked[i]?' ok':'')+(i===wrongIdx?' no':''));});
     if(next()>=0)s+='<circle class="pcur" cx="'+gx(cur.x)+'" cy="'+gy(cur.y)+'" r="7"/>';
     s+='</svg>';
@@ -1556,7 +1559,7 @@ function createPlot(cfg){
     pts.forEach((p,i)=>{if(!placed[i])return;if(Math.abs(placed[i].x-p.x)<=o.snap[0]/2+1e-9&&Math.abs(placed[i].y-p.y)<=o.snap[1]/2+1e-9)locked[i]=true;else if(bad<0)bad=i;});
     ok=locked.filter(Boolean).length;
     if(ok===pts.length){b.say('All '+pts.length+' points plotted correctly.'+NEXT,'good');wrongIdx=-1;render();return;}
-    if(bad>=0){ans.on();wrongIdx=bad;render();b.say(ok+' of '+pts.length+' correct. The red cross is in the wrong place: check the scale on each axis.','bad');
+    if(bad>=0){ans.on();wrongIdx=bad;render();b.say(ok+' of '+pts.length+' correct. '+(cfg.wrong||'The red cross is in the wrong place: check the scale on each axis.'),'bad');
       setTimeout(()=>{if(!locked[bad])placed[bad]=null;wrongIdx=-1;render();},900);}
     else b.say(ok+' of '+pts.length+' correct so far. Plot the rest.','');
   }
@@ -1576,9 +1579,9 @@ function createPlot(cfg){
 /* ================= METHOD TYPE: regular block, irregular object or liquid =================
    Each way of measuring the volume has its own Overview passage and its own Order; the switch is shared by
    the Overview and Method tabs and remembered in this browser (copied from the 5.14P page). */
-const METHODS=[{k:'reg',label:'Regular block'},{k:'irr',label:'Irregular object'},{k:'liq',label:'Liquid'}];
+const METHODS=[{k:'irr',label:'Irregular object'},{k:'reg',label:'Regular block'},{k:'liq',label:'Liquid'}];
 const MKEY='cp-density-method';
-let method='reg';try{const v=localStorage.getItem(MKEY);if(METHODS.some(m=>m.k===v))method=v;}catch(e){}
+let method='irr';try{const v=localStorage.getItem(MKEY);if(METHODS.some(m=>m.k===v))method=v;}catch(e){}
 const methodGames=[];
 function methodPicker(panel){
   const w=mk('div','method-pick');
@@ -1634,7 +1637,6 @@ clozeAct('overview','liq','The practical with a liquid',[
   ['l3','empty'],'. (Or put the empty cylinder on the balance and press tare, so the balance shows the mass of the liquid alone.) Density is the mass of the liquid divided by its volume. Add more liquid and repeat. A graph of total mass against volume is a straight line that does not go through the ',['l4','origin'],
   ': it crosses the mass axis at the mass of the empty cylinder, and its ',['l5','gradient'],' is the density. Water has a density of 1.0 g/cm³, which is ',['l6','1000'],' kg/m³.'
 ],['1','100','full','area']);
-setMethod(method);
 
 /* ================= 2. METHOD ================= */
 methodPicker('method');
@@ -1698,6 +1700,9 @@ methodPicker('method');
     {id:'q',l:'Two set squares',r:'Held against the ruler either side of a ball, to measure its diameter'}
   ]}));
 }
+
+/* The switch is set once both pickers and every method's activities exist, so only the chosen method shows on load. */
+setMethod(method);
 
 /* ================= 3. VARIABLES ================= */
 {

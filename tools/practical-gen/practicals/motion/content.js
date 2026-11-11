@@ -266,21 +266,21 @@ function rmTable(){
 
 /* ================= 6. GRAPHS ================= */
 function lab(g0,t,x,y){return '<circle cx="'+g0.gx(x)+'" cy="'+g0.gy(y)+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+g0.gx(x)+'" y="'+(g0.gy(y)+5)+'" text-anchor="middle" font-size="14" fill="var(--ink)">'+t+'</text>';}
-const GV={xMin:0,xMax:2.5,yMin:0,yMax:2.0,xTicks:[0,0.5,1,1.5,2,2.5],yTicks:[0,0.4,0.8,1.2,1.6,2.0],xLabel:'time (s)',yLabel:'velocity (m/s)',W:560,H:340};
+const GV={xMin:0,xMax:3.0,yMin:0,yMax:2.4,xTicks:[0,0.5,1,1.5,2,2.5,3],yTicks:[0,0.4,0.8,1.2,1.6,2.0,2.4],xLabel:'time (s)',yLabel:'velocity (m/s)',W:560,H:340};
 function rampGraph(){
   const g0=lineGraph(Object.assign({points:[[0,0]]},GV));
-  return lineGraph(Object.assign({label:'Velocity against time for three ramps A, B and C',segments:[{pts:[[0,0],[1.5,1.8]]},{pts:[[0,0],[2.25,1.8]],cls:'g-line-b'},{pts:[[0,0],[2.5,1.0]],cls:'g-line-c'}],
-    extra:lab(g0,'A',1.5,1.8)+lab(g0,'B',2.25,1.8)+lab(g0,'C',2.5,1.0)},GV)).svg;
+  return lineGraph(Object.assign({label:'Velocity against time for three ramps A, B and C',segments:[{pts:[[0,0],[1.5,2.4]]},{pts:[[0,0],[2.0,1.8]],cls:'g-line-b'},{pts:[[0,0],[3.0,1.2]],cls:'g-line-c'}],
+    extra:lab(g0,'A',1.5,2.4)+lab(g0,'B',2.0,1.8)+lab(g0,'C',3.0,1.2)},GV)).svg;
 }
 {
-  const body=act('graphs','Calculate','Three ramps','The same toy car is released from rest on three ramps of different heights, A, B and C. Light gates give these velocity–time graphs. Read your answers off the graph.');
+  const body=act('graphs','Calculate','Three ramps','The same toy car is released from rest at the top of three ramps, A, B and C. Each ramp is 1.8 m long, but its top is raised to a different height. Light gates give these velocity–time graphs, which end when the car reaches the bottom. Read your answers off the graph.');
   const split=mk('div','graph-split');body.appendChild(split);
   split.appendChild(mk('div','graph-box',rampGraph()));
   const side=mk('div','graph-side');split.appendChild(side);
   createCalc({host:side,questions:[
-    {q:'Ramp B: what is the car’s acceleration?',unit:'m/s²',answer:0.8,working:'acceleration = gradient of the velocity–time graph<br>acceleration = [[change in velocity|time taken]]<br>acceleration = [[1.2 − 0|1.5 − 0]]<br>acceleration = 0.8 m/s²'},
+    {q:'Ramp B: what is the car’s acceleration?',unit:'m/s²',answer:0.9,working:'acceleration = gradient of the velocity–time graph<br>acceleration = [[change in velocity|time taken]]<br>acceleration = [[1.8 − 0|2.0 − 0]]<br>acceleration = 0.9 m/s²'},
     {q:'Ramp C: how far does the car travel in the first 2.0 s?',unit:'m',answer:0.8,working:'distance = area under the velocity–time graph<br>At 2.0 s, velocity = 0.8 m/s<br>distance = ½ × 2.0 × 0.8<br>distance = 0.8 m'},
-    {q:'Ramp A: how long does the car take to reach 1.2 m/s?',unit:'s',answer:1.0,working:'Read across from 1.2 m/s to line A, then down.<br>time = 1.0 s'}
+    {q:'Ramp A: how long does the car take to reach 1.6 m/s?',unit:'s',answer:1.0,working:'Read across from 1.6 m/s to line A, then down.<br>time = 1.0 s'}
   ]});
 }
 {
@@ -290,7 +290,7 @@ function rampGraph(){
     {text:'C: its line runs the longest',why:'C runs for the longest time because the car is slowest to reach the bottom, so its ramp is the lowest.'},
     {text:'B: it lies between the two',why:'B has the middle gradient, so it is the middle ramp.'},
     {text:'All the same: it is one car',why:'The same car speeds up faster on a steeper ramp, so the lines have different gradients.'}
-  ],explain:'A steeper ramp gives a bigger acceleration, so the velocity–time line is steeper. Line A (1.2 m/s²) is the highest ramp and line C (0.4 m/s²) the lowest.'});
+  ],explain:'A steeper ramp gives a bigger acceleration, so the velocity–time line is steeper. Line A (1.6 m/s²) is the highest ramp and line C (0.4 m/s²) the lowest. The area under each line is the same, 1.8 m, because every ramp is the same length; on the highest ramp the car covers it in the shortest time and reaches the highest speed.'});
 }
 {
   const body=act('graphs','Multiple choice','A straight line','');

@@ -416,6 +416,7 @@ table.units.res-tbl{min-width:0}
 @media (max-width:900px){.plot-split{grid-template-columns:minmax(0,1fr)}}
 .plot-svg{cursor:crosshair;touch-action:manipulation;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel)}
 .graph .g-minor{stroke:var(--panel-border);stroke-width:.5;opacity:.7}
+.graph .g-sketch{stroke-width:2.5;opacity:.75}
 .graph .pc{stroke:var(--ink);stroke-width:2.2;fill:none}
 .graph .pc.ok{stroke:var(--good)}
 .graph .pc.no{stroke:var(--bad)}
@@ -1521,6 +1522,8 @@ function createPlot(cfg){
     if(o.xMin<0&&o.xMax>0)s+='<line class="g-axis g-axis0" x1="'+gx(0)+'" x2="'+gx(0)+'" y1="'+pt+'" y2="'+(H-pb)+'"/>';
     if(o.yMin<0&&o.yMax>0)s+='<line class="g-axis g-axis0" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+gy(0)+'" y2="'+gy(0)+'"/>';
     s+='<text class="g-lab" x="'+(pl+(W-pl-pr)/2)+'" y="'+(H-8)+'" text-anchor="middle">'+o.xLabel+'</text><text class="g-lab" transform="translate(16 '+(pt+(H-pt-pb)/2)+') rotate(-90)" text-anchor="middle">'+o.yLabel+'</text>';
+    // cfg.join: a sketch graph, so each point is joined to the one before it once both are plotted
+    if(cfg.join)for(let i=1;i<pts.length;i++)if(placed[i-1]&&placed[i])s+='<path class="g-line g-sketch" d="M'+gx(placed[i-1].x)+','+gy(placed[i-1].y)+' L'+gx(placed[i].x)+','+gy(placed[i].y)+'"/>';
     placed.forEach((p,i)=>{if(p)s+=cross(p.x,p.y,'pc'+(locked[i]?' ok':'')+(i===wrongIdx?' no':''));});
     if(next()>=0)s+='<circle class="pcur" cx="'+gx(cur.x)+'" cy="'+gy(cur.y)+'" r="7"/>';
     s+='</svg>';
@@ -1553,7 +1556,7 @@ function createPlot(cfg){
     pts.forEach((p,i)=>{if(!placed[i])return;if(Math.abs(placed[i].x-p.x)<=o.snap[0]/2+1e-9&&Math.abs(placed[i].y-p.y)<=o.snap[1]/2+1e-9)locked[i]=true;else if(bad<0)bad=i;});
     ok=locked.filter(Boolean).length;
     if(ok===pts.length){b.say('All '+pts.length+' points plotted correctly.'+NEXT,'good');wrongIdx=-1;render();return;}
-    if(bad>=0){ans.on();wrongIdx=bad;render();b.say(ok+' of '+pts.length+' correct. The red cross is in the wrong place: check the scale on each axis.','bad');
+    if(bad>=0){ans.on();wrongIdx=bad;render();b.say(ok+' of '+pts.length+' correct. '+(cfg.wrong||'The red cross is in the wrong place: check the scale on each axis.'),'bad');
       setTimeout(()=>{if(!locked[bad])placed[bad]=null;wrongIdx=-1;render();},900);}
     else b.say(ok+' of '+pts.length+' correct so far. Plot the rest.','');
   }
@@ -1639,9 +1642,9 @@ function createPlot(cfg){
   createPredict({host:body,q:'Why does Nabil tap the card after sprinkling the iron filings?',options:[
     {text:'It lets the filings turn to line up with the field',correct:true},
     {text:'It magnetises the filings so they stick to each other',why:'The magnet’s field magnetises the filings. Tapping just frees them to turn.'},
-    {text:'It spreads the filings out evenly so no part is missed',why:'Sprinkling spreads them. Tapping frees them from the friction of the card so they can turn.'},
+    {text:'It shakes the filings towards the north pole',why:'A tap does not push the filings towards either pole. It frees them from the friction of the card so they can turn.'},
     {text:'It makes the magnetic field of the bar magnet stronger',why:'Tapping the card cannot change the magnet’s field. It only frees the filings to turn.'}
-  ],explain:'Friction holds each filing where it lands. A gentle tap frees them for a moment, so each one turns to line up with the magnetic field.'});
+  ],explain:'Friction holds each filing where it lands. A gentle tap frees them for a moment, so each one turns to line up with the magnetic field. Tapping also helps spread the filings out, and mark schemes credit “tap to spread the filings” too.'});
 }
 {
   const body=act('filings','Predict','What filings cannot show','');
@@ -1739,6 +1742,41 @@ function barFieldSVG(marks){
     {text:'Straight up, away from the magnet',why:'At R the field line runs along the magnet, from the N end towards the S end.'},
     {text:'Straight down, into the magnet',why:'The field line at R runs along the magnet, not into it.'}
   ],explain:'A compass needle lines up along the field line, with its north end pointing the way of the arrow: from N to S. Above the middle of the magnet that is to the right.'});
+}
+
+/* Find the mistake in a field drawing (May 2021 P1 2(b), May 2023 P1R 4(b), Jan 2021 P1R 8(a)): lines start and end on the magnet,
+   never cross, and carry arrows from N to S. Each drawing has one mistake. */
+function mistakeFieldSVG(tag,kind){
+  const ah=(x,y,d)=>'<path d="M'+(x-5*d)+','+(y-5)+' L'+(x+5*d)+','+y+' L'+(x-5*d)+','+(y+5)+' z" fill="var(--accent)"/>';
+  const L=d=>'<path d="'+d+'" fill="none" stroke="var(--accent)" stroke-width="2"/>';
+  const lines={
+    ti:'M84,66 C70,30 170,30 156,66', to:'M80,70 C30,0 210,0 160,70',
+    bi:'M84,84 C70,120 170,120 156,84', bo:'M80,80 C30,150 210,150 160,80'};
+  if(kind==='gap')lines.bi='M84,84 C70,120 162,122 146,100';
+  if(kind==='cross')lines.ti='M84,66 C40,-15 150,60 156,66';   // starts inside the outer line, swings out past it on the left, then back in
+  let s='<svg class="graph" viewBox="0 0 240 150" role="img" aria-label="Drawing '+tag+': field lines round a bar magnet">';
+  s+='<rect x="1" y="1" width="238" height="148" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';
+  Object.values(lines).forEach(d=>{s+=L(d);});
+  s+=L('M80,75 L18,75')+L('M222,75 L160,75');
+  if(kind!=='none'){
+    s+=(kind==='cross'?'<path d="M-5,-5 L5,0 L-5,5 z" fill="var(--accent)" transform="translate(101.3 33.4) rotate(22.4)"/>':ah(120,39,1))+ah(120,17.5,kind==='rev'?-1:1)+ah(120,111,1)+ah(120,132.5,1)+ah(40,75,-1)+ah(196,75,-1);
+  }
+  s+='<rect x="80" y="66" width="40" height="18" fill="var(--c2-soft)" stroke="var(--c2)" stroke-width="2"/><text x="100" y="80" text-anchor="middle" font-size="12" fill="var(--c2)">N</text>';
+  s+='<rect x="120" y="66" width="40" height="18" fill="var(--c1-soft)" stroke="var(--c1)" stroke-width="2"/><text x="140" y="80" text-anchor="middle" font-size="12" fill="var(--c1)">S</text>';
+  s+='<circle cx="22" cy="20" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="22" y="25" text-anchor="middle" font-size="14" fill="var(--ink)">'+tag+'</text>';
+  return s+'</svg>';
+}
+{
+  const body=act('results','Match','Find the mistake in each drawing','Four students drew the field round a bar magnet. Each drawing has one mistake. Pair each drawing with its mistake. A field drawing scores when its lines go from pole to pole, never cross, and have arrows from N to S.');
+  const grid=mk('div','');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px;margin-bottom:14px';
+  [['A','rev'],['B','gap'],['C','cross'],['D','none']].forEach(([t,k])=>{const b=mk('div','graph-box',mistakeFieldSVG(t,k));grid.appendChild(b);});
+  body.appendChild(grid);
+  createMatchGame({host:body,leftTitle:'Drawing',rightTitle:'Its mistake',pairs:[
+    {id:'a',l:'Drawing A',r:'An arrow points from S to N'},
+    {id:'b',l:'Drawing B',r:'A line does not start and end on the magnet'},
+    {id:'c',l:'Drawing C',r:'Two field lines cross'},
+    {id:'d',l:'Drawing D',r:'There are no arrows to show the direction'}
+  ]});
 }
 
 /* ================= 6. TWO MAGNETS ================= */

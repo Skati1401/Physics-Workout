@@ -276,25 +276,25 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
 {
   const body=act('exam','Exam style','A semicircular block','Charlie shines a ray through the curved side of a semicircular glass block, towards the centre of the flat face. He measures the angle in the glass and the angle in the air. One reading is missing.');
   const tbl=mk('div','table-scroll');
-  tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Angle in the glass (°)</th><th>10</th><th>20</th><th>30</th><th>35</th><th>40</th><th>45</th></tr></thead><tbody><tr><th>Angle in the air (°)</th><td>15.1</td><td>30.9</td><td>48.6</td><td><b>?</b></td><td>74.6</td><td>no ray</td></tr></tbody></table>';
+  tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Angle in the glass (°)</th><th>10</th><th>20</th><th>30</th><th>35</th><th>40</th><th>45</th></tr></thead><tbody><tr><th>Angle in the air (°)</th><td>15.3</td><td>31.3</td><td>49.5</td><td><b>?</b></td><td>77.7</td><td>no ray</td></tr></tbody></table>';
   body.appendChild(tbl);
   body.appendChild(mk('p','sub','(a) 1 mark'));
   body.appendChild(mk('p','','Name the piece of equipment Charlie uses to measure the angles.'));
   answerBox(body,'<ul><li>A protractor.</li></ul>');
   body.appendChild(mk('p','sub','(b) 3 marks'));
   createCalc({host:body,questions:[
-    {q:FR('The glass has a refractive index of 1.50. Use n = [[sin (angle in air)|sin (angle in glass)]] to find the missing angle in the air.'),unit:'°',answer:59.4,working:'n = [[sin (angle in air)|sin (angle in glass)]]<br>1.50 = [[sin r|sin 35°]]<br>sin r = 1.50 × sin 35°<br>sin r = 1.50 × 0.5736<br>sin r = 0.8604<br>r = 59.4°'}
+    {q:FR('The glass has a refractive index of 1.52. Use n = [[sin (angle in air)|sin (angle in glass)]] to find the missing angle in the air.'),unit:'°',answer:60.7,working:'n = [[sin (angle in air)|sin (angle in glass)]]<br>1.52 = [[sin r|sin 35°]]<br>sin r = 1.52 × sin 35°<br>sin r = 1.52 × 0.5736<br>sin r = 0.8718<br>r = 60.7°'}
   ]});
   body.appendChild(mk('p','sub','(c) 2 marks'));
   body.appendChild(mk('p','','Explain why the ray does not bend where it goes into the curved side of the block.'));
   answerBox(body,'<ul><li>The ray travels along a radius, so it meets the curved surface along the normal.</li><li>The angle of incidence is 0°, so the angle of refraction is 0°: no change of direction.</li></ul>');
   body.appendChild(mk('p','sub','(d) 3 marks'));
   createCalc({host:body,questions:[
-    {q:'Calculate the critical angle of the glass (n = 1.50).',unit:'°',answer:41.8,working:'sin c = [[1|n]]<br>sin c = [[1|1.50]]<br>sin c = 0.6667<br>c = 41.8°'}
+    {q:'Calculate the critical angle of the glass (n = 1.52).',unit:'°',answer:41.1,working:'sin c = [[1|n]]<br>sin c = [[1|1.52]]<br>sin c = 0.6579<br>c = 41.1°'}
   ]});
   body.appendChild(mk('p','sub','(e) 3 marks'));
   body.appendChild(mk('p','','Explain why there is no ray in the air when the angle in the glass is 45°.'));
-  answerBox(body,'<ul><li>The light is totally internally reflected.</li><li>45° is greater than the critical angle (41.8°).</li><li>The light is going from glass into air, from a higher to a lower refractive index (it would speed up).</li></ul><p class="sub">Each point scores. "It reflects" alone does not: say total internal reflection.</p>');
+  answerBox(body,'<ul><li>The light is totally internally reflected.</li><li>45° is greater than the critical angle (41.1°).</li><li>The light is going from glass into air, from a higher to a lower refractive index (it would speed up).</li></ul><p class="sub">Each point scores. "It reflects" alone does not: say total internal reflection.</p>');
   body.appendChild(mk('p','sub','(f) 5 marks'));
   body.appendChild(mk('p','','Charlie then uses a rectangular block. Describe how he should trace the ray and measure the angles of incidence and refraction. You may draw a diagram.'));
   answerBox(body,'<ul><li>Put the block on paper and draw round it.</li><li>Shine a narrow ray from a ray box (or laser) at the block, at an angle to the normal.</li><li>Mark the incident ray and the emergent ray with two crosses each, far apart.</li><li>Remove the block, join the crosses, and join the entry and exit points to show the ray inside.</li><li>Draw the normal at the point where the ray goes in.</li><li>Measure the angle of incidence and the angle of refraction from the normal with a protractor.</li><li>Repeat for a range of angles of incidence.</li></ul><p class="sub">Any five points score. A labelled diagram showing the normal, i and r can score too.</p>');
