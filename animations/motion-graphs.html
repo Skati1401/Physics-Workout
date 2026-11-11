@@ -192,6 +192,9 @@
   .view .grab{cursor:grab;} .view.dragging,.view.dragging *{cursor:grabbing;}
   .stats{grid-template-columns:repeat(auto-fit,minmax(76px,1fr));}
   @media (max-width:560px){ .stats.four{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  .pred .ex-only{display:none!important;}
+  html:not(.pred) .pr-only{display:none!important;}
+  .side .seg.tabs{align-self:flex-start;}
   /* end batch 4 */
 </style>
 <script>
@@ -302,20 +305,22 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="mg-svg" viewBox="0 0 860 346" role="img" aria-label="A car on a road with its motion graphs drawn below it as it moves."></svg>
+      <svg class="view" id="mg-svg" viewBox="0 0 860 346" role="img" aria-label="A car on a road with its motion graphs drawn below it as it moves."><g id="mg-main"></g><g id="mg-pk"></g></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" data-action="mg-go" id="mg-go" type="button">Go</button>
-          <button class="btn" data-action="mg-reset" type="button">&#8634; Reset</button>
+          <button class="btn ex-only" data-action="mg-reset" type="button">&#8634; Reset</button>
+          <button class="btn pr-only" id="mg-new" type="button">New question</button>
           <button class="btn" id="slow" type="button" aria-pressed="false">Slow motion</button>
         </div>
-        <div class="mass"><label class="lab" for="mg-v"><span id="mg-vl">Target speed</span> <output id="mg-vo"></output></label><input type="range" id="mg-v" min="0" max="10" step="1" value="5"></div>
+        <div class="mass ex-only"><label class="lab" for="mg-v"><span id="mg-vl">Target speed</span> <output id="mg-vo"></output></label><input type="range" id="mg-v" min="0" max="10" step="1" value="5"></div>
       </div>
     </div>
     <div class="side">
+      <div class="seg tabs" id="mg-tab" role="group" aria-label="Mode" hidden><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Predict</button></div>
       <p class="note" id="mg-note" aria-live="polite"></p>
-      <p class="hint" id="mg-hint"></p>
-      <div class="stats">
+      <p class="hint ex-only" id="mg-hint"></p>
+      <div class="stats" id="mg-stats">
         <div class="stat"><small>Time</small><strong id="mg-t">0.0 s</strong></div>
         <div class="stat"><small id="mg-spl">Speed</small><strong id="mg-sp">0.0 m/s</strong></div>
         <div class="stat"><small id="mg-dl">Distance</small><strong id="mg-d">0.0 m</strong></div>
@@ -429,10 +434,14 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
      IGCSE: distance–time and velocity–time; the car only goes forwards, and can be driven by hand.
      IAL and IB (the level switch): displacement, velocity and acceleration against time; the road runs from −100 m to +100 m
      and the target velocity can be negative, so every graph can go below its axis.
-     Under 520px the same code uses a tall viewBox with the graphs stacked. The car and the road are drawn as in stopping-distance.html. */
+     Under 520px the same code uses a tall viewBox with the graphs stacked. The car and the road are drawn as in stopping-distance.html.
+     Predict (IAL and IB only, ?show=predict): one graph of a dealt journey is given and the student clicks which of four sketches
+     (A to D) is another of its graphs, then Go drives the journey. This is the papers' commonest motion-graph question
+     (checked 11 Nov 2026: WPH11 Oct 2020 Q10, Jan 2021 Q3, Jan 2022 Q3, Oct 2022 Q4, June 2025 Q20(b), Jan 2026 A Q16(b);
+     IB P1 Nov 2006 Q4, Nov 2009 Q2, May 2017 TZ1 Q2). The sketches have no numbers, as in the papers. */
   function initMotionGraphs(){
-    var vIn=$('#mg-v'), ACC=2, TMAX=20, svg=$('#mg-svg'), levelEl=$('#mg-level'), L=null;
-    var level='ks4';
+    var vIn=$('#mg-v'), ACC=2, TMAX=20, svg=$('#mg-svg'), mainG=$('#mg-main'), pkG=$('#mg-pk'), levelEl=$('#mg-level'), tabEl=$('#mg-tab'), L=null;
+    var level='ks4', PRED=false, Q=null;
     function ks5(){ return level!=='ks4'; }
     function ms(){ return ks5() ? 'm s⁻¹' : 'm/s'; }
     function ms2(){ return ks5() ? 'm s⁻²' : 'm/s²'; }
@@ -512,6 +521,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       g+=ln(G.x0,G.y0,G.x0,G.y1,'var(--ink-soft)',2)+ln(G.x0,gy(0),G.x1,gy(0),'var(--ink-soft)',2);
       g+=txt((G.x0+G.x1)/2,G.y1+32,ks5()?'Time t / s':'Time (s)',{a:'middle',fs:12});
       g+='<text transform="translate('+f1(G.x0-(o.min<0?40:36))+' '+f1((G.y0+G.y1)/2)+') rotate(-90)" text-anchor="middle" font-size="12" fill="var(--ink-soft)">'+o.lab+'</text>';
+      if(o.ghost) g+=pl(o.ghost.map(function(q){ return [gx(q[0]),gy(Math.max(o.min,Math.min(o.max,q[o.idx])))]; }),'var(--ink-faint)',2,' stroke-dasharray="6 4" stroke-linecap="butt"');
       var all=pts.concat([[t,d,v,acc]]), line=all.map(function(q){ return [gx(q[0]),gy(Math.max(o.min,Math.min(o.max,q[o.idx])))]; });
       if(o.area) g+=pg([[gx(0),gy(0)]].concat(line).concat([[gx(t),gy(0)]]),'var(--motion-soft)',' opacity=".7"');
       g+=pl(line,o.col,2.5,' stroke-linecap="butt"');
@@ -532,15 +542,18 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       else if(drag===null && t<TMAX) g+=txt(Math.max(carX-42*L.k,34),top-9,'← drag →',{a:'middle',fs:L.fs,c:'var(--accent)',w:600,halo:1});
       if(!ks5()) g+='<rect class="grab" x="0" y="'+f1(L.ry-44)+'" width="'+L.W+'" height="'+f1(L.rh+54)+'" fill="transparent"/>';
       g+='<g'+(ks5()?'':' class="grab"')+'>'+carSVG(carX, yRoad, L.k, acc*v<-1e-6, (d-dMin())*sc/(9.6*L.k), 'var(--car)')+'</g>';
-      if(ks5()){
-        g+=graph(L.G[0],{min:-100,max:100,ticks:[-100,-50,0,50,100],lab:'Displacement s / m',col:'var(--motion)',idx:1});
-        g+=graph(L.G[1],{min:-10,max:10,ticks:[-10,-5,0,5,10],lab:'Velocity v / m s⁻¹',col:'var(--accent)',idx:2,area:1});
-        g+=graph(L.G[2],{min:-2.5,max:2.5,ticks:[-2,-1,0,1,2],lab:'Acceleration a / m s⁻²',col:'var(--balance)',idx:3,area:1});
+      if(PRED && Q){   // the graph that is given, and the question; the four sketches to choose from are drawn by drawPicks
+        var sp=SPEC[Q.given], O=optLay();
+        g+=graph(L.G[0],{min:sp.min,max:sp.max,ticks:sp.ticks,lab:sp.lab,col:sp.col,idx:sp.idx,ghost:Q.sim});
+        wrapLines('Which sketch (A to D) is the car’s '+SPEC[Q.ask].name+' graph?', O.wrap).forEach(function(s,i){ g+=txt(O.tx,O.ty+i*15,s,{fs:L.fs,c:'var(--ink)',w:600}); });
+      }
+      else if(ks5()){
+        g+=graph(L.G[0],SPEC.s)+graph(L.G[1],SPEC.v)+graph(L.G[2],SPEC.a);
       }else{
         g+=graph(L.G[0],{min:0,max:200,ticks:[0,50,100,150,200],lab:'Distance (m)',col:'var(--motion)',idx:1});
         g+=graph(L.G[1],{min:0,max:10,ticks:[0,2,4,6,8,10],lab:'Velocity (m/s)',col:'var(--accent)',idx:2,area:1});
       }
-      svg.innerHTML=g;
+      mainG.innerHTML=g;
       $('#mg-vo').textContent=(ks5()&&+vIn.value>0?'+':'')+String(vIn.value).replace('-','−')+' '+ms(); $('#mg-t').textContent=f1x(t)+' s'; $('#mg-sp').textContent=f1x(v)+' '+ms(); $('#mg-d').textContent=f1x(d)+' m'; $('#mg-a').textContent=f1x(acc)+' '+ms2();
       var target=+vIn.value, a=Math.abs(v-target)<0.01?0:(v<target?ACC:-ACC);
       if(hitEnd) a=0;
@@ -580,14 +593,93 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         else if(v===0) note='Stopped: the distance–time line is flat, and the velocity is zero.';
         else note='Steady speed: a straight sloping line on the distance–time graph, and a flat line on the velocity–time graph.';
       }
+      if(PRED && Q){
+        var gn=SPEC[Q.given].name, an=SPEC[Q.ask].name, right='ABCD'.charAt(Q.opts.map(function(o){ return o.kind; }).indexOf('right'));
+        if(Q.done) note=(Q.opts[Q.pick].kind==='right'?'Correct. ':'Not quite: it is sketch '+right+'. '+WRONG[Q.opts[Q.pick].kind].replace('#',SPEC[Q.other].name))+RULE[Q.given+Q.ask]+' Press New question for another journey.';
+        else if(running) note='The car is driving the journey. Watch how it moves while the line is drawn.';
+        else note='The dashed line is the car’s '+gn+' graph. The car starts from rest at s = 0. Click the sketch (A to D) that is its '+an+' graph, then press Go.'+(Q.need?' Choose a sketch first.':'');
+      }
       $('#mg-eq').innerHTML=FR(lines);
       $('#mg-note').textContent=note;
-      $('#mg-go').textContent = running?'Pause':(t>0&&t<TMAX?'Carry on':'Go');
+      $('#mg-go').textContent = PRED?'Go':(running?'Pause':(t>0&&t<TMAX?'Carry on':'Go'));
+      $('#mg-go').disabled = PRED && (!Q || Q.locked);
+      // in Predict nothing gives the answer away: the readings appear once the question is marked, and there is no working
+      $('#mg-stats').hidden = PRED && !(Q && Q.done); $('#working').hidden = PRED;
     }
+    // ---- Predict: one graph of a dealt journey is given; which sketch is another of its graphs? ----
+    var SPEC={s:{min:-100,max:100,ticks:[-100,-50,0,50,100],lab:'Displacement s / m',col:'var(--motion)',idx:1,name:'displacement–time',q:'s'},
+      v:{min:-10,max:10,ticks:[-10,-5,0,5,10],lab:'Velocity v / m s⁻¹',col:'var(--accent)',idx:2,area:1,name:'velocity–time',q:'v'},
+      a:{min:-2.5,max:2.5,ticks:[-2,-1,0,1,2],lab:'Acceleration a / m s⁻²',col:'var(--balance)',idx:3,area:1,name:'acceleration–time',q:'a'}};
+    // each journey: [time, new target velocity]. Every one stays on the road.
+    var JOURNEYS=[[[0,8],[9,0]], [[0,6],[7,-6]], [[0,-8],[8,0],[14,6]], [[0,4],[6,10],[11,2]], [[0,10],[5,-10]], [[3,6],[10,0],[14,-4]], [[0,-6],[6,8],[15,0]], [[2,-10],[9,-2]]];
+    var KINDS=[['s','v'],['v','s'],['v','a'],['a','v']];
+    var RULE={sv:'The velocity is the gradient of the displacement–time graph: constant where that line is straight, changing where it curves, and negative where it slopes down.',
+      vs:'The gradient of the displacement–time graph is the velocity: it curves while the velocity changes and is straight while the velocity is constant. The area under the velocity–time graph is the change in displacement.',
+      va:'The acceleration is the gradient of the velocity–time graph: constant where that line is straight and sloping, zero where it is flat, and negative where it slopes down.',
+      av:'The area under the acceleration–time graph is the change in velocity: the velocity rises steadily while a is positive, stays constant while a is zero and falls while a is negative.'};
+    var WRONG={same:'Yours has the same shape as the graph you were given. ', flip:'Yours has every sign the wrong way round. ', other:'Yours is the car’s # graph. '};
+    function simulate(sched){
+      var T=0, V=0, D=0, h=0.02, k=0, target=0, out=[], prev=null, a, i, n=Math.round(TMAX/h);
+      for(i=0;i<n;i++){
+        while(k<sched.length && T>=sched[k][0]-1e-9){ target=sched[k][1]; k++; }
+        a=V<target-1e-9?Math.min(ACC,(target-V)/h):(V>target+1e-9?-Math.min(ACC,(V-target)/h):0);
+        if(prev===null) out.push([0,0,0,a]);
+        else if(Math.abs(a-prev)>1e-9){ out.push([T,D,V,prev]); out.push([T,D,V,a]); }
+        else if(T-out[out.length-1][0]>=0.1-1e-9) out.push([T,D,V,a]);
+        prev=a; V+=a*h; D+=V*h; T+=h;
+      }
+      out.push([TMAX,D,V,prev]); return out;
+    }
+    function optLay(){ return L.tall ? {x:[76,256,76,256], y:[336,336,476,476], w:150, h:104, tx:58, ty:298, wrap:44}
+      : {x:[340,472,604,736], y:[156,156,156,156], w:104, h:112, tx:330, ty:130, wrap:70}; }
+    function drawPicks(){
+      if(!PRED || !Q){ pkG.innerHTML=''; return; }
+      var O=optLay(), g='', sp=SPEC[Q.ask];
+      Q.opts.forEach(function(o,i){
+        var x=O.x[i], y=O.y[i], w=O.w, h=O.h, mid=y+h/2, mx=0, sel=Q.pick===i, col=Q.done ? (o.kind==='right'?'var(--good)':(sel?'var(--bad)':'var(--ink-faint)')) : (sel?'var(--accent)':'var(--ink)');
+        o.ser.forEach(function(q){ mx=Math.max(mx,Math.abs(q[1])); });
+        g+='<g class="pick'+(Q.locked?' off':'')+'" data-pick="'+i+'" tabindex="'+(Q.locked?-1:0)+'" role="button" aria-label="Sketch '+'ABCD'.charAt(i)+(sel?' (chosen)':'')+(Q.done&&o.kind==='right'?' (correct)':'')+'">'+
+          '<rect class="ring" x="'+f1(x-14)+'" y="'+f1(y-16)+'" width="'+f1(w+30)+'" height="'+f1(h+42)+'" rx="8" fill="'+(sel&&!Q.done?'var(--accent-soft)':'transparent')+'" stroke-width="2"'+(Q.done&&(sel||o.kind==='right')?' style="stroke:'+col+'"':'')+'/>'+
+          ln(x,y,x,y+h,'var(--ink-soft)',1.6)+ln(x,mid,x+w,mid,'var(--ink-soft)',1.6)+txt(x,y-4,sp.q,{a:'middle',fs:12,c:'var(--ink-soft)'})+txt(x+w,mid+14,'t',{a:'end',fs:12,c:'var(--ink-soft)',halo:1})+txt(x-4,mid+4,'0',{a:'end',fs:11,c:'var(--ink-faint)'})+
+          pl(o.ser.map(function(q){ return [x+q[0]/TMAX*w, mid-(mx?q[1]/mx:0)*(h/2-5)]; }),col,sel||(Q.done&&o.kind==='right')?2.8:2,' stroke-linecap="butt"')+
+          txt(x+w/2,y+h+20,'ABCD'.charAt(i),{a:'middle',fs:13,c:col,w:700})+'</g>'; });
+      setKeepFocus(pkG, g);
+    }
+    function setTo(tq){   // put the car where the dealt journey has it at time tq
+      var S=Q.sim, i=Q.i||0; while(i<S.length-1 && S[i+1][0]<=tq+1e-9) i++; Q.i=i;
+      var e=S[i], nx=S[Math.min(i+1,S.length-1)], f=nx[0]>e[0] ? (tq-e[0])/(nx[0]-e[0]) : 0;
+      pts=S.slice(0,i+1); t=tq; d=e[1]+f*(nx[1]-e[1]); v=e[2]+f*(nx[2]-e[2]); acc=e[3];
+    }
+    function newQ(){
+      var j, kd, tries=0;
+      do { j=Math.floor(Math.random()*JOURNEYS.length); kd=KINDS[Math.floor(Math.random()*KINDS.length)]; } while(Q && j===Q.j && ++tries<20);
+      var sim=simulate(JOURNEYS[j]), other='sva'.replace(kd[0],'').replace(kd[1],''), col=function(key,sign){ var ix=SPEC[key].idx; return sim.map(function(q){ return [q[0],sign*q[ix]]; }); };
+      // the right sketch; the given graph's own shape; the car's third graph; and the right one with every sign changed
+      var opts=[{kind:'right',ser:col(kd[1],1)},{kind:'same',ser:col(kd[0],1)},{kind:'other',ser:col(other,1)},{kind:'flip',ser:col(kd[1],-1)}], k, r, sw;
+      for(k=opts.length-1;k>0;k--){ r=Math.floor(Math.random()*(k+1)); sw=opts[k]; opts[k]=opts[r]; opts[r]=sw; }
+      stop(); drag=null; hand=false; hitEnd=false; t=0; v=0; d=0; path=0; acc=0; pts=[[0,0,0,0]]; seg={t:0,v:0,d:0,mode:0};
+      Q={j:j, given:kd[0], ask:kd[1], other:other, sim:sim, opts:opts, pick:null, done:false, locked:false, i:0};
+      L=lay(); drawPicks(); draw();
+    }
+    onPick(svg, function(id){ if(!PRED || !Q || Q.locked) return; Q.pick=+id; Q.need=false; drawPicks(); draw(); });
+    $('#mg-new').addEventListener('click', newQ);
+    function setTab(tab){
+      var p=tab==='predict' && ks5(); if(p===PRED) return;
+      PRED=p; document.documentElement.classList.toggle('pred',p);
+      Array.prototype.forEach.call(tabEl.children,function(x){ x.setAttribute('aria-pressed',String((x.dataset.v==='predict')===p)); });
+      if(p) newQ(); else { Q=null; drawPicks(); reset(); }
+    }
+    // on the page itself the Explore | Predict switch sits on the title line; in a frame (no title) it stays at the top of the right-hand column
+    if(!EMBED) $('.head-line').insertBefore(tabEl, levelEl);
+    tabEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setTab(b.dataset.v); });
     function stop(){ running=false; cancelAnimationFrame(raf); }
-    function frame(now){ if(!running) return; var dt=Math.min(0.05,(now-last)/1000)*SPEED(); last=now; step(Math.min(dt,TMAX-t)); if(t>=TMAX-1e-9){ t=TMAX; stop(); } draw(); if(running) raf=requestAnimationFrame(frame); }
-    function reset(){ stop(); drag=null; hand=false; lastA=0; hitEnd=false; t=0; v=0; d=0; path=0; acc=0; pts=[[0,0,0,0]]; seg={t:0,v:0,d:0,mode:0}; draw(); }
+    function frame(now){ if(!running) return; var dt=Math.min(0.05,(now-last)/1000)*SPEED(); last=now;
+      if(PRED){   // drive the dealt journey, four times as fast as the clock, then mark the sketch that was chosen
+        setTo(Math.min(TMAX,t+dt*4)); if(t>=TMAX-1e-9){ stop(); Q.done=true; drawPicks(); } draw(); if(running) raf=requestAnimationFrame(frame); return; }
+      step(Math.min(dt,TMAX-t)); if(t>=TMAX-1e-9){ t=TMAX; stop(); } draw(); if(running) raf=requestAnimationFrame(frame); }
+    function reset(){ if(PRED){ newQ(); return; } stop(); drag=null; hand=false; lastA=0; hitEnd=false; t=0; v=0; d=0; path=0; acc=0; pts=[[0,0,0,0]]; seg={t:0,v:0,d:0,mode:0}; draw(); }
     onAction('mg-go',function(){
+      if(PRED){ if(!Q || Q.locked) return; if(Q.pick===null){ Q.need=true; draw(); return; } Q.locked=true; drawPicks(); running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); return; }
       if(t>=TMAX) return;
       if(running){ stop(); draw(); return; }
       running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw();
@@ -596,7 +688,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     // IGCSE: drive the car by hand. Hold it (or anywhere on the road) and move along; time runs only while held
     function roadM(e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; var q=p.matrixTransform(svg.getScreenCTM().inverse()); return {m:Math.max(0,Math.min(200,(q.x-L.x0+42*L.k)/(L.x1-L.x0)*200)), y:q.y}; }
     svg.addEventListener('pointerdown', function(e){
-      if(ks5()) return;
+      if(ks5() || PRED) return;
       var q=roadM(e); if(q.y<L.ry-44 || q.y>L.ry+L.rh+10 || t>=TMAX) return;
       stop(); drag=q.m; hand=true; seg={t:t,v:v,d:d,mode:0};
       svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
@@ -615,14 +707,16 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       $('#mg-eyebrow').innerHTML=ks5()?'Animations &middot; mechanics':'Animations &middot; motion';
       $('#mg-hint').textContent=ks5()?'Press Go, then change the target velocity while the car is moving: negative is backwards. The car speeds up or slows down at 2 m s⁻². Displacement is measured from the start line in the middle of the road.'
         :'Press Go, then change the target speed while the car is moving (it speeds up or slows down at 2 m/s²). Or hold the car and drive it with the mouse: time runs while you hold it.';
+      tabEl.hidden=!ks5(); if(!ks5() && PRED){ PRED=false; Q=null; document.documentElement.classList.remove('pred'); drawPicks(); Array.prototype.forEach.call(tabEl.children,function(x){ x.setAttribute('aria-pressed',String(x.dataset.v==='explore')); }); }
       svg.setAttribute('aria-label',ks5()?'A car on a road with its displacement–time, velocity–time and acceleration–time graphs. The road runs from −100 m to +100 m.':'A car on a road with its distance–time and velocity–time graphs. Hold the car and drag it along the road to drive it yourself.');
       reset();
     }
     levelEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setLevel(b.dataset.v); });
     // opened from the IAL or IB list (?level=): start on that level. In an IGCSE workout's frame there is no level switch.
     if(PW_LEVEL==='igcse' || (EMBED && !PW_LEVEL)) levelEl.hidden=true;
-    var wasNarrow=narrow(); window.addEventListener('resize',function(){ if(narrow()!==wasNarrow){ wasNarrow=narrow(); draw(); } });
+    var wasNarrow=narrow(); window.addEventListener('resize',function(){ if(narrow()!==wasNarrow){ wasNarrow=narrow(); L=lay(); drawPicks(); draw(); } });
     setLevel(PW_LEVEL==='ial' || PW_LEVEL==='ib' ? PW_LEVEL : 'ks4');
+    if(/[?&]show=predict\b/.test(location.search)) setTab('predict');
   }
   watchEquals('.eq');
   initMotionGraphs();

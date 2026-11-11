@@ -169,6 +169,8 @@
   :root{--balance:#6d3bce;}
   @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--balance:#b393f5;} }
   :root[data-theme="dark"]{--balance:#b393f5;}
+  /* in a workout frame the fixed points go under the picture, so the frame fits one laptop screen */
+  .under #fa-ptsbox{flex:1 1 100%;}
   /* end batch 4 */
 </style>
 <script>
@@ -279,7 +281,7 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="fa-svg" viewBox="0 0 860 340" role="img" aria-label="A skydiver falling, the force diagram of her weight and the air resistance on her, and her velocity–time graph."><g id="fa-main"></g><g id="fa-pk"></g></svg>
+      <svg class="view" id="fa-svg" viewBox="0 0 860 340" role="img" aria-label="A skydiver falling, the force diagram of her weight and the air resistance on her, and her velocity–time graph. At IAL and IB her acceleration–time graph is drawn under it."><g id="fa-main"></g><g id="fa-pk"></g></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="fa-play" type="button">&#9654; Jump</button>
@@ -296,7 +298,7 @@
     </div>
     <div class="side">
       <div class="seg tabs" id="fa-tab" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Predict</button></div>
-      <div class="ex-only">
+      <div class="ex-only" id="fa-ptsbox">
         <div class="lab">Jump to a point</div>
         <div class="seg pts" id="fa-points"><button type="button" data-p="start" aria-pressed="false">Start</button><button type="button" data-p="mid" aria-pressed="false">Mid fall</button><button type="button" data-p="term1" aria-pressed="false">Terminal velocity 1</button><button type="button" data-p="slow" aria-pressed="false">Parachute slowing her</button><button type="button" data-p="term2" aria-pressed="false">Terminal velocity 2</button></div>
       </div>
@@ -419,11 +421,15 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
      Predict (?show=predict): a point P is marked on the graph of the standard journey; the student clicks the arrow that
      shows the air resistance at P, then Go runs the journey to P and marks it.
      A level switch (IGCSE | IAL | IB): IAL and IB add the resultant force and the acceleration as readings, a = ΣF/m with
-     g = 9.81 (IAL) or 9.8 (IB) N kg⁻¹, and the tangent to the graph, whose gradient is the acceleration. */
+     g = 9.81 (IAL) or 9.8 (IB) N kg⁻¹, the tangent to the graph, whose gradient is the acceleration, and her
+     acceleration–time graph under the velocity–time graph (the papers ask for its shape and for the areas under it).
+     At IAL and IB half the Predict questions ask for the arrow that shows her acceleration at P.
+     Question kinds and wording checked against the papers on 11 Nov 2026: 4PH1 Jan 2022 1P Q6(b), Jan 2014 1P Q7,
+     May 2019 1P Q8; WPH11 Oct 2020 Q14, June 2025 Q20; IB May 2019 TZ1 P1 Q3, May 2026 TZ2 P2 Q8. */
   function initFallingSim(){
     var mIn=$('#fa-m'), KC=0.25, KO=30, TMAX=60, PLAY=5, OPEN=3, TCHUTE=25;
     // the canopy takes OPEN seconds to fill; that part, and the slowing straight after, play in slow motion
-    var t=0, v=0, dist=0, chuteAt=null, pts=[[0,0]], running=false, last=0, raf=0, playBtn=$('#fa-play'), pointsEl=$('#fa-points'), slowBtn=$('#fa-slow');
+    var t=0, v=0, dist=0, chuteAt=null, pts=[[0,0,10]], running=false, last=0, raf=0, playBtn=$('#fa-play'), pointsEl=$('#fa-points'), slowBtn=$('#fa-slow');
     var svg=$('#fa-svg'), mainG=$('#fa-main'), pkG=$('#fa-pk'), levelEl=$('#fa-level'), tabEl=$('#fa-tab'), L=null;
     var level='ks4', PRED=false, Q=null, std=[];
     function ks5(){ return level!=='ks4'; }
@@ -445,16 +451,18 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     function slowOn(){ return slowBtn.getAttribute('aria-pressed')==='true'; }
     function rate(){ return autoRate()*(slowOn()?0.3:1); }
     function drag(){ return k(t)*v*v; }
+    function accNow(){ return (m()*G()-drag())/m(); }
     function step(dt){   // small fixed steps keep the parachute opening stable
       var n=Math.ceil(dt/0.005), h=dt/n;
       for(var i=0;i<n;i++){ var a=(m()*G()-k(t)*v*v)/m(); v=Math.max(0,v+a*h); dist+=v*h; t+=h; }
-      if(!pts.length||t-pts[pts.length-1][0]>=0.2) pts.push([t,v]);
+      if(!pts.length||t-pts[pts.length-1][0]>=0.2) pts.push([t,v,accNow()]);
     }
     function advance(to){ while(t<to-1e-9) step(Math.min(0.2,to-t)); }
     function narrow(){ return window.innerWidth<=520; }
-    function lay(){ return narrow()
-      ? {tall:true, W:430, H:566, fs:11.5, S:{x:6,y:6,w:196,h:296,cx:104,cy:204,k:1.2}, F:{x:314,y:150,sc:0.062,cap:96,px:[262,302,342,382],wx:228,ty:20,vw:29,vx:216}, GR:{x0:52,x1:414,y0:340,y1:510}}
-      : {tall:false, W:860, H:340, fs:12, S:{x:6,y:6,w:208,h:328,cx:110,cy:222,k:1.3}, F:{x:326,y:160,sc:0.07,cap:118,px:[296,338,380,422],wx:250,ty:24,vw:33,vx:232}, GR:{x0:500,x1:848,y0:24,y1:284}}; }
+    // IAL and IB: the acceleration–time graph (GA) sits under a shorter velocity–time graph (GR), on the same time axis
+    function lay(){ var two=ks5(); return narrow()
+      ? {tall:true, W:430, H:two?716:566, fs:11.5, S:{x:6,y:6,w:196,h:296,cx:104,cy:204,k:1.2}, F:{x:314,y:150,sc:0.062,cap:96,px:[262,302,342,382],wx:228,ty:20,vw:29,vx:216}, GR:{x0:52,x1:414,y0:340,y1:two?490:510}, GA:{y0:520,y1:660}}
+      : {tall:false, W:860, H:340, fs:12, S:{x:6,y:6,w:208,h:328,cx:110,cy:222,k:1.3}, F:{x:326,y:160,sc:0.07,cap:118,px:[296,338,380,422],wx:250,ty:24,vw:33,vx:232}, GR:{x0:500,x1:848,y0:24,y1:two?150:284}, GA:{y0:176,y1:296}}; }
     // ---- the scene: sky, clouds going up past her, the aeroplane she has just left, the parachute and the skydiver ----
     function scene(){
       var S=L.S, cx=S.cx, cy=S.cy, K=S.k, g='', i, f=opened(t), open=chuteAt!==null&&t>=chuteAt, u=Math.min(1,v/20);
@@ -486,19 +494,25 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       return g;
     }
     // ---- the force diagram: a dot for the skydiver, with every arrow to the same scale ----
-    function upArrow(x, y, len, col, dashed, w){
-      if(len<3) return '<circle cx="'+f1(x)+'" cy="'+f1(y-9)+'" r="5" fill="none" stroke="'+col+'" stroke-width="'+(w||2)+'"'+(dashed?' stroke-dasharray="3 2.5"':'')+'/>'+txt(x,y-22,'no arrow',{a:'middle',fs:10.5,c:col});
+    // an arrow from (x, y): upwards when len is positive, downwards when it is negative; none: the words for no arrow at all
+    function upArrow(x, y, len, col, dashed, w, none){
+      var s=len<0?-1:1;
+      if(Math.abs(len)<3) return '<circle cx="'+f1(x)+'" cy="'+f1(y-9)+'" r="5" fill="none" stroke="'+col+'" stroke-width="'+(w||2)+'"'+(dashed?' stroke-dasharray="3 2.5"':'')+'/>'+txt(x,y-22,none||'no arrow',{a:'middle',fs:10.5,c:col});
       if(!dashed) return arrow(x,y,x,y-len,col,w||4);
-      return ln(x,y,x,y-len+9,col,2.2,' stroke-dasharray="4 3"')+'<path d="M'+f1(x)+','+f1(y-len)+' L'+f1(x-6.5)+','+f1(y-len+11)+' L'+f1(x+6.5)+','+f1(y-len+11)+' Z" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linejoin="round"/>';
+      return ln(x,y,x,y-len+9*s,col,2.2,' stroke-dasharray="4 3"')+'<path d="M'+f1(x)+','+f1(y-len)+' L'+f1(x-6.5)+','+f1(y-len+11*s)+' L'+f1(x+6.5)+','+f1(y-len+11*s)+' Z" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linejoin="round"/>';
     }
     function cut(x, y, col){ return rect(x-6,y-3,12,6,'var(--panel)')+ln(x-6,y+1,x+6,y-5,col,1.6)+ln(x-6,y+5,x+6,y-1,col,1.6); }   // a break in an arrow that is too long to draw to scale
     function forces(){
       var F=L.F, W=m()*G(), D=drag(), R=W-D, g='', x=PRED?F.wx:F.x, y=F.y, wl=W*F.sc, dl=Math.min(D*F.sc,F.cap), eqv=function(k,val){ return (ks5()?sym(k,1)+' = ':'')+val+' N'; };
       if(PRED){
-        wrapLines('At P, which arrow shows the air resistance on '+NAME()+'?', L.tall?30:32).forEach(function(s,i){ g+=txt(F.vx,F.ty+i*15,s,{fs:L.fs,c:'var(--ink)',w:600}); });
-        g+=arrow(x,y,x,y+wl,'var(--ink)',4)+txt(x,y+wl+15,'weight',{a:'middle',fs:L.fs,c:'var(--ink)'})+txt(x,y+wl+29,nN(W)+' N',{a:'middle',fs:L.fs,c:'var(--ink)',w:600});
-        if(Q && Q.done){ g+=upArrow(x,y,dl,'var(--accent)',false)+(D*F.sc>F.cap?cut(x,y-dl/2,'var(--accent)'):'')+txt(x,y-Math.max(dl,16)-8,nN(D)+' N',{a:'middle',fs:L.fs,c:'var(--accent)',w:600,halo:1});
-          wrapLines((Q.pick===Q.ans?'✓ ':'✗ ')+Q.why, F.vw).forEach(function(s,i){ g+=txt(F.vx,y+wl+50+i*15,s,{fs:L.fs,c:Q.pick===Q.ans?'var(--good)':'var(--bad)',w:600}); }); }
+        var qa=Q && Q.kind==='acc';
+        wrapLines(qa?'At P, which arrow shows '+NAME()+'’s acceleration?':'At P, which arrow shows the air resistance on '+NAME()+'?', L.tall?30:32).forEach(function(s,i){ g+=txt(F.vx,F.ty+i*15,s,{fs:L.fs,c:'var(--ink)',w:600}); });
+        if(qa){   // the arrow given is g, to compare with; her acceleration is in the readings once the question is marked
+          g+=arrow(x,y,x,y+wl,'var(--ink)',4)+txt(x,y+wl+15,'g',{a:'middle',fs:L.fs,c:'var(--ink)'})+txt(x,y+wl+29,G()+' '+ms2(),{a:'middle',fs:L.fs,c:'var(--ink)',w:600});
+        }
+        else g+=arrow(x,y,x,y+wl,'var(--ink)',4)+txt(x,y+wl+15,'weight',{a:'middle',fs:L.fs,c:'var(--ink)'})+txt(x,y+wl+29,nN(W)+' N',{a:'middle',fs:L.fs,c:'var(--ink)',w:600});
+        if(Q && Q.done){ if(!qa) g+=upArrow(x,y,dl,'var(--accent)',false)+(D*F.sc>F.cap?cut(x,y-dl/2,'var(--accent)'):'')+txt(x+12,y-Math.max(dl,16)-8,nN(D)+' N',{a:'end',fs:L.fs,c:'var(--accent)',w:600,halo:1});
+          wrapLines((Q.pick===Q.ans?'✓ ':'✗ ')+Q.why, F.vw-(ks5()&&!L.tall?2:0)).forEach(function(s,i){ g+=txt(F.vx,y+wl+50+i*15,s,{fs:L.fs,c:Q.pick===Q.ans?'var(--good)':'var(--bad)',w:600}); }); }
         return g+'<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="5" fill="var(--ink)"/>';
       }
       g+=txt(x,F.ty,'Forces on '+NAME(),{a:'middle',fs:L.fs,c:'var(--ink)',w:600});
@@ -514,22 +528,36 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     }
     // the arrows to choose from in Predict, in their own group so the keyboard keeps its place while the picture moves
     var PICKS=[['none','no air resistance',0],['less','air resistance smaller than her weight',0.5],['equal','air resistance equal to her weight',1],['more','air resistance bigger than her weight',1.7]];
+    // IAL and IB also ask for her acceleration at P: its direction, and its size compared with g
+    var PICKS_A=[['g','acceleration downwards, equal to g',-1],['less','acceleration downwards, smaller than g',-0.5],['zero','zero acceleration',0],['up','acceleration upwards',0.7]];
     function drawPicks(){
       if(!PRED || !Q){ pkG.innerHTML=''; return; }
-      var F=L.F, wl=m()*G()*F.sc, g='';
-      PICKS.forEach(function(p,i){ var x=F.px[i], len=Math.min(p[2]*wl,F.cap), sel=Q.pick===p[0], col=Q.done ? (p[0]===Q.ans?'var(--good)':(sel?'var(--bad)':'var(--ink-faint)')) : (sel?'var(--accent)':'var(--ink-soft)');
+      var F=L.F, wl=m()*G()*F.sc, g='', qa=Q.kind==='acc', y0=qa?F.y-F.cap/2:F.y;
+      (qa?PICKS_A:PICKS).forEach(function(p,i){ var x=F.px[i], len=qa?p[2]*wl:Math.min(p[2]*wl,F.cap), sel=Q.pick===p[0], col=Q.done ? (p[0]===Q.ans?'var(--good)':(sel?'var(--bad)':'var(--ink-faint)')) : (sel?'var(--accent)':'var(--ink-soft)');
         g+='<g class="pick'+(Q.locked?' off':'')+'" data-pick="'+p[0]+'" tabindex="'+(Q.locked?-1:0)+'" role="button" aria-label="Arrow '+'ABCD'.charAt(i)+': '+p[1]+(sel?' (chosen)':'')+'">'+
           '<rect class="ring" x="'+f1(x-17)+'" y="'+f1(F.y-F.cap-6)+'" width="34" height="'+f1(F.cap+38)+'" rx="6" fill="'+(sel&&!Q.done?'var(--accent-soft)':'transparent')+'" stroke-width="2"/>'+
-          upArrow(x,F.y,len,col,!(sel||(Q.done&&p[0]===Q.ans)),sel?4:2)+'<circle cx="'+f1(x)+'" cy="'+f1(F.y)+'" r="3" fill="'+col+'"/>'+txt(x,F.y+22,'ABCD'.charAt(i),{a:'middle',fs:13,c:col,w:700})+'</g>'; });
+          upArrow(x,y0,len,col,!(sel||(Q.done&&p[0]===Q.ans)),sel?4:2,qa?'zero':'')+'<circle cx="'+f1(x)+'" cy="'+f1(y0)+'" r="3" fill="'+col+'"/>'+txt(x,F.y+22,'ABCD'.charAt(i),{a:'middle',fs:13,c:col,w:700})+'</g>'; });
       setKeepFocus(pkG, g);
     }
     function graph(){
       var R=L.GR, g='', i, VMAX=70, gx=function(tt){ return R.x0+tt/TMAX*(R.x1-R.x0); }, gy=function(vv){ return R.y1-vv/VMAX*(R.y1-R.y0); };
-      for(i=0;i<=60;i+=10) g+=ln(gx(i),R.y0,gx(i),R.y1,'var(--panel-border)',1)+txt(gx(i),R.y1+15,String(i),{a:'middle',fs:11,c:'var(--ink-faint)'});
+      var two=ks5();
+      for(i=0;i<=60;i+=10) g+=ln(gx(i),R.y0,gx(i),R.y1,'var(--panel-border)',1)+(two?'':txt(gx(i),R.y1+15,String(i),{a:'middle',fs:11,c:'var(--ink-faint)'}));
       for(i=0;i<=70;i+=10) g+=ln(R.x0,gy(i),R.x1,gy(i),'var(--panel-border)',1)+txt(R.x0-6,gy(i)+4,String(i),{a:'end',fs:11,c:'var(--ink-faint)'});
       g+=ln(R.x0,R.y0,R.x0,R.y1,'var(--ink-soft)',2)+ln(R.x0,R.y1,R.x1,R.y1,'var(--ink-soft)',2);
-      g+=txt((R.x0+R.x1)/2,R.y1+33,ks5()?'Time t / s':'Time (s)',{a:'middle',fs:12});
-      g+='<text transform="translate('+f1(R.x0-32)+' '+f1((R.y0+R.y1)/2)+') rotate(-90)" text-anchor="middle" font-size="12" fill="var(--ink-soft)">'+(ks5()?'Velocity v / m s⁻¹':'Velocity (m/s)')+'</text>';
+      if(!two) g+=txt((R.x0+R.x1)/2,R.y1+33,'Time (s)',{a:'middle',fs:12});
+      g+='<text transform="translate('+f1(R.x0-32)+' '+f1((R.y0+R.y1)/2)+') rotate(-90)" text-anchor="middle" font-size="'+(two?11:12)+'" fill="var(--ink-soft)">'+(two?'Velocity v / m s⁻¹':'Velocity (m/s)')+'</text>';
+      if(two){   // the acceleration–time graph: the area above the axis is the velocity gained, the area below it the velocity lost
+        var A=L.GA, AMIN=-30, AMAX=10, ay=function(a){ return A.y1-(Math.max(AMIN,Math.min(AMAX,a))-AMIN)/(AMAX-AMIN)*(A.y1-A.y0); }, low=0, lowT=0;
+        for(i=0;i<=60;i+=10) g+=ln(gx(i),A.y0,gx(i),A.y1,'var(--panel-border)',1)+txt(gx(i),A.y1+15,String(i),{a:'middle',fs:11,c:'var(--ink-faint)'});
+        for(i=AMIN;i<=AMAX;i+=10) g+=ln(R.x0,ay(i),R.x1,ay(i),'var(--panel-border)',1)+txt(R.x0-6,ay(i)+4,String(i).replace('-','−'),{a:'end',fs:11,c:'var(--ink-faint)'});
+        g+=ln(R.x0,A.y0,R.x0,A.y1,'var(--ink-soft)',2)+ln(R.x0,ay(0),R.x1,ay(0),'var(--ink-soft)',2)+txt((R.x0+R.x1)/2,A.y1+33,'Time t / s',{a:'middle',fs:12});
+        g+='<text transform="translate('+f1(R.x0-32)+' '+f1((A.y0+A.y1)/2)+') rotate(-90)" text-anchor="middle" font-size="11" fill="var(--ink-soft)">Acceleration a / m s⁻²</text>';
+        var al=pts.concat([[t,v,accNow()]]), aline=al.map(function(q){ if(q[2]<low){ low=q[2]; lowT=q[0]; } return [gx(q[0]),ay(q[2])]; });
+        g+=pg([[gx(0),ay(0)]].concat(aline).concat([[gx(t),ay(0)]]),'var(--balance)',' opacity=".2"')+pl(aline,'var(--balance)',2.2);
+        if(low<AMIN) g+=txt(gx(lowT)+7,A.y1-5,'down to '+s3(low).replace('-','−'),{fs:10.5,c:'var(--balance)'});   // the opening parachute takes the line off the scale
+        if(t>0) g+='<circle cx="'+f1(gx(t))+'" cy="'+f1(ay(accNow()))+'" r="4.5" fill="var(--balance)" stroke="var(--panel)" stroke-width="2"/>';
+      }
       if(PRED && Q) g+=pl(std.map(function(q){ return [gx(q[0]),gy(q[1])]; }),'var(--ink-faint)',2,' stroke-dasharray="6 4"');
       g+=pl(pts.concat([[t,v]]).map(function(q){ return [gx(q[0]),gy(q[1])]; }),'var(--motion)',2.5);
       if(ks5() && !PRED && t>0){   // the tangent at this moment: its gradient is the acceleration
@@ -549,19 +577,19 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       var W=m()*G(), D=drag(), F=W-D, f=opened(t), open=chuteAt!==null&&t>=chuteAt, dir=Math.abs(F)<0.5?'':(F>0?' downwards':' upwards'), N=NAME(), a=Math.abs(F)<0.5?0:Math.abs(F)/m();
       $('#fa-mo').textContent=m()+' kg'; $('#fa-w').textContent=nN(W)+' N'; $('#fa-air').textContent=nN(D)+' N'; $('#fa-t').textContent=Math.round(t)+' s'; $('#fa-v').textContent=num(v,1)+' '+ms();
       $('#fa-res').textContent=(Math.abs(F)<0.5?'0':s3(Math.abs(F)))+' N'+(dir?(F>0?' ↓':' ↑'):''); $('#fa-acc').textContent=(F<-0.5?'−':'')+s3(a)+' '+ms2();
-      if(ks5()) $('#fa-eq').innerHTML=FR(sym('W')+' = mg<br>'+sym('W')+' = '+m()+' × '+G()+' = '+s4(W)+' N<br>'+sym('F')+' = '+sym('W')+' − '+sym('D')+'<br>'+sym('F')+' = '+s4(W)+' − '+s4(D)+' = '+(dir?s4(Math.abs(F)):'0')+' N'+dir+'<br>'+sym('F')+' = ma<br>'+(dir?s4(Math.abs(F)):'0')+' = '+m()+'a<br>a = [['+(dir?s4(Math.abs(F)):'0')+'|'+m()+']] = <b>'+s3(a)+' '+ms2()+'</b>'+dir+'<br>The gradient of the tangent to the velocity–time graph is a.');
+      if(ks5()) $('#fa-eq').innerHTML=FR(sym('W')+' = mg<br>'+sym('W')+' = '+m()+' × '+G()+' = '+s4(W)+' N<br>'+sym('F')+' = '+sym('W')+' − '+sym('D')+'<br>'+sym('F')+' = '+s4(W)+' − '+s4(D)+' = '+(dir?s4(Math.abs(F)):'0')+' N'+dir+'<br>'+sym('F')+' = ma<br>'+(dir?s4(Math.abs(F)):'0')+' = '+m()+'a<br>a = [['+(dir?s4(Math.abs(F)):'0')+'|'+m()+']] = <b>'+s3(a)+' '+ms2()+'</b>'+dir+'<br>The gradient of the tangent to the velocity–time graph is a.<br>The area under the acceleration–time graph is her change in velocity.');
       else $('#fa-eq').innerHTML=FR('W = mg<br>W = '+m()+' × 10 = '+num(W)+' N<br>F = W − air resistance<br>F = '+num(W)+' − '+num(D)+' = '+num(Math.abs(F))+' N'+dir+'<br>F = ma<br>'+num(Math.abs(F))+' = '+m()+'a<br>a = [['+num(Math.abs(F))+'|'+m()+']] = <b>'+num(a,1)+' m/s²</b>'+dir);
       var note='';
       if(PRED && Q){
         if(Q.done) note=(Q.pick===Q.ans?'Correct. ':'Not quite. ')+Q.why+' Press New question for another point.';
         else if(running) note=N+' is falling. Watch the graph reach P.';
-        else note=N+' jumps, then opens her parachute after '+TCHUTE+' s. The dashed line is her velocity–time graph. Click the arrow (A to D) that shows the air resistance on her at point P, then press Go.'+(Q.need?' Choose an arrow first.':'');
+        else note=N+' jumps, then opens her parachute after '+TCHUTE+' s. The dashed line is her velocity–time graph. Click the arrow (A to D) that shows '+(Q.kind==='acc'?'her acceleration':'the air resistance on her')+' at point P, then press Go.'+(Q.need?' Choose an arrow first.':'');
       }
-      else if(t===0) note=N+' is about to jump: the only force on her is her weight.';
-      else if(open && f<1 && F>=-0.5) note='The parachute is opening. Air resistance is growing fast as the canopy fills.';
-      else if(open && F<-0.5) note='The parachute is open: air resistance is now bigger than her weight, so the resultant force is upwards and she slows down.';
-      else if(Math.abs(F)<0.02*W) note=open?'Air resistance balances her weight again at a much lower speed: a new, lower '+TV()+'.':'Air resistance has grown until it balances her weight: zero resultant force, so she falls at a steady '+TV()+'.';
-      else note='Weight is bigger than air resistance, so she accelerates. As she speeds up the air resistance grows, so her acceleration gets smaller.';
+      else if(t===0) note=N+' is about to jump. Her speed is zero, so there is no air resistance: the only force on her is her weight'+(ks5()?', and her acceleration is g.':'.');
+      else if(open && f<1 && F>=-0.5) note='The parachute is opening, so the air resistance increases greatly.';
+      else if(open && F<-0.5) note='The air resistance is now greater than her weight, so the resultant force is upwards and she decelerates. As her speed decreases the air resistance decreases, so her deceleration decreases.';
+      else if(Math.abs(F)<0.02*W) note=open?'The air resistance has decreased until it equals her weight again. The resultant force is zero, so she falls at a new, lower '+TV()+'.':'The air resistance has increased until it equals her weight. The resultant force is zero, so her acceleration is zero: she falls at a constant '+TV()+'.';
+      else note='Her weight is greater than the air resistance, so the resultant force is downwards and she accelerates. As her speed increases the air resistance increases, so the resultant force and her acceleration decrease.';
       $('#fa-note').textContent=note;
       $('#fa-chute').disabled = !(t>0) || chuteAt!==null || t>=TMAX;
       if(PRED) playBtn.innerHTML='&#9654; Go'; else playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : (t>0 && t<TMAX ? '&#9654; Play' : '&#9654; Jump');
@@ -571,7 +599,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     }
     function stop(){ running=false; cancelAnimationFrame(raf); }
     function mark(p){ Array.prototype.forEach.call(pointsEl.children,function(x){ x.setAttribute('aria-pressed', String(x.dataset.p===p)); }); }
-    function zero(){ stop(); t=0; v=0; dist=0; chuteAt=null; pts=[[0,0]]; }
+    function zero(){ stop(); t=0; v=0; dist=0; chuteAt=null; pts=[[0,0,G()]]; }
     function reset(){ if(PRED){ newQ(); return; } zero(); mark(''); draw(); }
     function frame(now){ if(!running) return; var dt=Math.min(0.05,(now-last)/1000)*rate(); last=now;
       if(PRED){   // run the standard journey as far as P, then mark the arrow that was chosen
@@ -595,15 +623,22 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     }
     function jumpTo(p){ goTo(p); mark(p); draw(); }
     // ---- Predict: deal a point P on the standard journey ----
-    var WHY={start:['none','At the moment she jumps her speed is zero, so there is no air resistance yet.'],
-      mid:['less','She is still speeding up, so the air resistance is smaller than her weight.'],
-      term1:['equal','Her velocity is steady, so the air resistance equals her weight: the resultant force is zero.'],
-      slow:['more','She is slowing down, so the air resistance is bigger than her weight.'],
-      term2:['equal','Her velocity is steady again, so the air resistance equals her weight: the resultant force is zero.']};
+    // the reasons follow the mark schemes: which arrow is longer, judged by eye (4PH1 Jan 2022 6(b)(ii), Jan 2014 7(c), May 2019 8(a)(i))
+    var WHY={start:['none','At the moment she jumps her speed is zero, so there is no air resistance yet: the only force is her weight.'],
+      mid:['less','She is still accelerating, so her weight is greater than the air resistance: the downward arrow is longer.'],
+      term1:['equal','Her velocity is constant, so the forces are balanced: the two arrows are the same length.'],
+      slow:['more','She is decelerating, so the air resistance is greater than her weight: the upward arrow is longer.'],
+      term2:['equal','Her velocity is constant again, so the forces are balanced: the two arrows are the same length.']};
+    var WHY_A={start:['g','There is no air resistance yet, so the resultant force is her weight and her acceleration is g.'],
+      mid:['less','The resultant force is downwards but smaller than her weight, because the air resistance acts upwards: a is less than g.'],
+      term1:['zero','Her velocity is constant, so the resultant force is zero and so is her acceleration.'],
+      slow:['up','The air resistance is greater than her weight, so the resultant force and her acceleration are upwards.'],
+      term2:['zero','Her velocity is constant again, so the resultant force and her acceleration are zero.']};
     function newQ(){
       var list=['start','mid','term1','slow','term2'].filter(function(p){ return !Q || p!==Q.p; }), p=list[Math.floor(Math.random()*list.length)];
       zero(); advance(TCHUTE); chuteAt=TCHUTE; advance(TMAX); std=pts.slice();
-      goTo(p); Q={p:p, t:t, v:v, ans:WHY[p][0], why:WHY[p][1], pick:null, done:false, locked:false};
+      var kind=ks5() && Math.random()<0.5 ? 'acc' : 'drag', why=(kind==='acc'?WHY_A:WHY)[p];
+      goTo(p); Q={p:p, kind:kind, t:t, v:v, ans:why[0], why:why[1], pick:null, done:false, locked:false};
       zero(); L=lay(); drawPicks(); draw();
     }
     onPick(svg, function(id){ if(!PRED || !Q || Q.locked) return; Q.pick=id; Q.need=false; drawPicks(); draw(); });
@@ -616,6 +651,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     }
     // on the page itself the Explore | Predict switch sits on the title line, so the card still fits one laptop screen; in a frame (no title) it stays at the top of the right-hand column
     if(!EMBED) $('.head-line').insertBefore(tabEl, levelEl);
+    else $('.under').appendChild($('#fa-ptsbox'));
     tabEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setTab(b.dataset.v); });
     pointsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) jumpTo(b.dataset.p); });
     playBtn.addEventListener('click',function(){
