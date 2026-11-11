@@ -1719,20 +1719,28 @@ const mgA=createMatchGame({host:act('atoms','Match','Atom words','Select a word,
     {id:'n',l:'Nucleon',r:'A proton or a neutron'}
   ]});
 reflowers.push(t=>{if(t==='atoms')raf(mgA.reflow);});
+// New problems helpers (atoms and equations tabs): [A, Z, symbol, name of the new nucleus]
+const eq_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
+const EQ_ALPHA=[[238,92,'U'],[226,88,'Ra'],[222,86,'Rn'],[239,94,'Pu'],[241,95,'Am'],[210,84,'Po'],[232,90,'Th']];
+const EQ_BETA=[[90,38,'Sr','yttrium'],[14,6,'C','nitrogen'],[131,53,'I','xenon'],[137,55,'Cs','barium'],[60,27,'Co','nickel'],[3,1,'H','helium'],[32,15,'P','sulfur']];
+const EQ_NEUT=[[87,36,'Kr','krypton'],[5,2,'He','helium'],[13,4,'Be','beryllium'],[10,3,'Li','lithium']];
 // New problems helpers (atoms tab)
 const at_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
 const AT_NUC=[[12,6,'C','carbon'],[14,6,'C','carbon'],[16,8,'O','oxygen'],[23,11,'Na','sodium'],[27,13,'Al','aluminium'],[35,17,'Cl','chlorine'],[37,17,'Cl','chlorine'],[40,19,'K','potassium'],[56,26,'Fe','iron'],[60,27,'Co','cobalt'],[90,38,'Sr','strontium'],[131,53,'I','iodine'],[137,55,'Cs','caesium'],[226,88,'Ra','radium'],[235,92,'U','uranium'],[238,92,'U','uranium'],[239,94,'Pu','plutonium'],[241,95,'Am','americium']];
-const at_neut=rnd=>{const c=calcPick(rnd,AT_NUC),n=c[0]-c[1];
-  return {q:'The number of neutrons in a '+N(c[0],c[1],c[2])+' nucleus is',unit:'',answer:n,
-    working:at_w(['mass number A = '+c[0],'atomic number Z = '+c[1],'neutrons = ?'],['neutrons = A − Z','neutrons = '+c[0]+' − '+c[1],'neutrons = '+n])};};
-calcAct('atoms','Counting particles','Use the mass number (top) and atomic number (bottom).',[
-  {q:'The number of neutrons in a '+N(14,6,'C')+' nucleus is',unit:'',answer:8,working:at_w(['mass number A = 14','atomic number Z = 6','neutrons = ?'],['neutrons = A − Z','neutrons = 14 − 6','neutrons = 8']),make:at_neut},
-  {q:'The number of neutrons in a '+N(238,92,'U')+' nucleus is',unit:'',answer:146,working:at_w(['mass number A = 238','atomic number Z = 92','neutrons = ?'],['neutrons = A − Z','neutrons = 238 − 92','neutrons = 146']),make:at_neut},
-  {q:'The number of electrons in a neutral '+N(37,17,'Cl')+' atom is',unit:'',answer:17,working:at_w(['atomic number Z = 17','electrons = ?'],['electrons = protons (neutral atom)','electrons = Z','electrons = 17']),
-   make:rnd=>{const c=calcPick(rnd,AT_NUC);
-     return {q:'The number of electrons in a neutral '+N(c[0],c[1],c[2])+' atom is',unit:'',answer:c[1],
-       working:at_w(['atomic number Z = '+c[1],'electrons = ?'],['electrons = protons (neutral atom)','electrons = Z','electrons = '+c[1]])};}}
-  ]);
+// Two questions (11 Nov 2026): the first rearranges A = Z + N for the neutrons or the protons; the second follows an alpha or
+// beta decay first, then counts the particles in the new nucleus. New problems changes the nucleus and what is asked.
+const at_q1=rnd=>{const c=calcPick(rnd,AT_NUC),nn=c[0]-c[1];
+  return rnd()<0.6?{q:'The number of neutrons in a '+N(c[0],c[1],c[2])+' nucleus is',unit:'',answer:nn,working:at_w(['mass number A = '+c[0],'atomic number Z = '+c[1],'neutrons N = ?'],['A = Z + N',c[0]+' = '+c[1]+' + N','N = '+c[0]+' − '+c[1],'N = '+nn])}
+    :{q:(/^[aeiou]/.test(c[3])?'An ':'A ')+c[3]+' nucleus has a mass number of '+c[0]+' and contains '+nn+' neutrons. The number of protons in it is',unit:'',answer:c[1],working:at_w(['mass number A = '+c[0],'neutrons N = '+nn,'protons Z = ?'],['A = Z + N',c[0]+' = Z + '+nn,'Z = '+c[0]+' − '+nn,'Z = '+c[1]])};};
+const at_q2=rnd=>{if(rnd()<0.5){const c=calcPick(rnd,EQ_ALPHA),A=c[0]-4,Z=c[1]-2,nn=A-Z;
+    return {q:N(c[0],c[1],c[2])+' gives out an alpha particle. The number of neutrons in the new nucleus is',unit:'',answer:nn,
+      hints:['An alpha particle is '+N(4,2,'He')+': the mass number falls by 4 and the atomic number by 2.','Then neutrons = A − Z for the new nucleus.'],
+      working:at_w(['A before = '+c[0],'Z before = '+c[1],'alpha particle: A = 4, Z = 2','neutrons in the new nucleus = ?'],['new A = '+c[0]+' − 4 = '+A,'new Z = '+c[1]+' − 2 = '+Z,'A = Z + N',A+' = '+Z+' + N','N = '+A+' − '+Z,'N = '+nn])};}
+  const c=calcPick(rnd,EQ_BETA),Z=c[1]+1,nn=c[0]-Z;
+  return {q:N(c[0],c[1],c[2])+' gives out a beta particle. The number of neutrons in the new nucleus is',unit:'',answer:nn,
+    hints:['In beta decay a neutron turns into a proton: A stays the same and Z goes up by 1.','Then neutrons = A − Z for the new nucleus.'],
+    working:at_w(['A before = '+c[0],'Z before = '+c[1],'beta particle: A = 0, Z = −1','neutrons in the new nucleus = ?'],['new A = '+c[0],'new Z = '+c[1]+' + 1 = '+Z+' ('+c[3]+')','A = Z + N',c[0]+' = '+Z+' + N','N = '+c[0]+' − '+Z,'N = '+nn])};};
+calcAct('atoms','Counting particles','Use the mass number (top) and atomic number (bottom): A = Z + N. Press New problems for another pair.',[calcFix(at_q1,1),calcFix(at_q2,2)]);
 
 /* ================= 3. ALPHA, BETA AND GAMMA ================= */
 exploreFrameQ('radiation','Expose a film badge','Choose a source, predict which patches of the badge go dark, then expose it. The badge has an open window and patches behind paper, aluminium and lead.',
@@ -1751,28 +1759,21 @@ createSortGame({host:act('radiation','Sort','Alpha, beta or gamma?','Sort each d
   ]});
 
 /* ================= 4. DECAY EQUATIONS ================= */
-// New problems helpers (equations tab): [A, Z, symbol, name of the new nucleus]
-const eq_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
-const EQ_ALPHA=[[238,92,'U'],[226,88,'Ra'],[222,86,'Rn'],[239,94,'Pu'],[241,95,'Am'],[210,84,'Po'],[232,90,'Th']];
-const EQ_BETA=[[90,38,'Sr','yttrium'],[14,6,'C','nitrogen'],[131,53,'I','xenon'],[137,55,'Cs','barium'],[60,27,'Co','nickel'],[3,1,'H','helium'],[32,15,'P','sulfur']];
-const EQ_NEUT=[[87,36,'Kr','krypton'],[5,2,'He','helium'],[13,4,'Be','beryllium'],[10,3,'Li','lithium']];
-calcAct('equations','Balance the equations','The mass numbers (top) and the atomic numbers (bottom) must add up to the same on both sides.',[
-  {q:N(238,92,'U')+' gives out an alpha particle. The mass number of the new nucleus is',unit:'',answer:234,
-   working:eq_w(['mass number before = 238','alpha particle: mass number = 4','new mass number A = ?'],['238 = A + 4','A = 238 − 4','A = 234']),
-   make:rnd=>{const c=calcPick(rnd,EQ_ALPHA),A=c[0]-4;
-     return {q:N(c[0],c[1],c[2])+' gives out an alpha particle. The mass number of the new nucleus is',unit:'',answer:A,
-       working:eq_w(['mass number before = '+c[0],'alpha particle: mass number = 4','new mass number A = ?'],[c[0]+' = A + 4','A = '+c[0]+' − 4','A = '+A])};}},
-  {q:N(90,38,'Sr')+' gives out a beta particle. The atomic number of the new nucleus is',unit:'',answer:39,
-   working:eq_w(['atomic number before = 38','beta particle: atomic number = −1','new atomic number Z = ?'],['38 = Z + (−1)','Z = 38 + 1','Z = 39 (yttrium)']),
-   make:rnd=>{const c=calcPick(rnd,EQ_BETA),Z=c[1]+1;
-     return {q:N(c[0],c[1],c[2])+' gives out a beta particle. The atomic number of the new nucleus is',unit:'',answer:Z,
-       working:eq_w(['atomic number before = '+c[1],'beta particle: atomic number = −1','new atomic number Z = ?'],[c[1]+' = Z + (−1)','Z = '+c[1]+' + 1','Z = '+Z+' ('+c[3]+')'])};}},
-  {q:N(87,36,'Kr')+' gives out a neutron. The mass number of the new nucleus is',unit:'',answer:86,
-   working:eq_w(['mass number before = 87','neutron: mass number = 1','new mass number A = ?'],['87 = A + 1','A = 87 − 1','A = 86 (still krypton)']),
-   make:rnd=>{const c=calcPick(rnd,EQ_NEUT),A=c[0]-1;
-     return {q:N(c[0],c[1],c[2])+' gives out a neutron. The mass number of the new nucleus is',unit:'',answer:A,
-       working:eq_w(['mass number before = '+c[0],'neutron: mass number = 1','new mass number A = ?'],[c[0]+' = A + 1','A = '+c[0]+' − 1','A = '+A+' (still '+c[3]+')'])};}}
-  ]);
+// Two questions (11 Nov 2026): the first balances one decay (alpha, beta or neutron) for the new A or Z; the second follows a
+// chain of an alpha and then one or two beta decays. New problems changes the nucleus and what is asked.
+const eqb_q1=rnd=>{const k=calcPick(rnd,['a','b','n']);
+  if(k==='a'){const c=calcPick(rnd,EQ_ALPHA),askZ=rnd()<0.5,A=c[0]-4,Z=c[1]-2;
+    return askZ?{q:N(c[0],c[1],c[2])+' gives out an alpha particle. The atomic number of the new nucleus is',unit:'',answer:Z,working:eq_w(['atomic number before = '+c[1],'alpha particle: atomic number = 2','new atomic number Z = ?'],[c[1]+' = Z + 2','Z = '+c[1]+' − 2','Z = '+Z])}
+      :{q:N(c[0],c[1],c[2])+' gives out an alpha particle. The mass number of the new nucleus is',unit:'',answer:A,working:eq_w(['mass number before = '+c[0],'alpha particle: mass number = 4','new mass number A = ?'],[c[0]+' = A + 4','A = '+c[0]+' − 4','A = '+A])};}
+  if(k==='b'){const c=calcPick(rnd,EQ_BETA),Z=c[1]+1;
+    return {q:N(c[0],c[1],c[2])+' gives out a beta particle. The atomic number of the new nucleus is',unit:'',answer:Z,working:eq_w(['atomic number before = '+c[1],'beta particle: atomic number = −1','new atomic number Z = ?'],[c[1]+' = Z + (−1)','Z = '+c[1]+' + 1','Z = '+Z+' ('+c[3]+')'])};}
+  const c=calcPick(rnd,EQ_NEUT),A=c[0]-1;
+  return {q:N(c[0],c[1],c[2])+' gives out a neutron. The mass number of the new nucleus is',unit:'',answer:A,working:eq_w(['mass number before = '+c[0],'neutron: mass number = 1','new mass number A = ?'],[c[0]+' = A + 1','A = '+c[0]+' − 1','A = '+A+' (still '+c[3]+')'])};};
+const eqb_q2=rnd=>{const c=calcPick(rnd,EQ_ALPHA),b=calcPick(rnd,[1,2]),A=c[0]-4,Z=c[1]-2+b,askA=false;
+  return {q:N(c[0],c[1],c[2])+' gives out an alpha particle, then the new nucleus gives out '+(b===1?'a beta particle':'two beta particles, one after the other')+'. The '+(askA?'mass':'atomic')+' number of the final nucleus is',unit:'',answer:askA?A:Z,
+    hints:['Alpha: A falls by 4 and Z falls by 2.','Each beta: A stays the same and Z goes up by 1.'],
+    working:eq_w(['A before = '+c[0],'Z before = '+c[1],'final '+(askA?'A':'Z')+' = ?'],askA?['after the alpha: A = '+c[0]+' − 4 = '+A,'beta decay does not change A','final A = '+A]:['after the alpha: Z = '+c[1]+' − 2 = '+(c[1]-2),'after '+(b===1?'the beta':'two betas')+': Z = '+(c[1]-2)+' + '+b,'final Z = '+Z])};};
+calcAct('equations','Balance the equations','The mass numbers (top) and the atomic numbers (bottom) must add up to the same on both sides. Press New problems for another pair.',[calcFix(eqb_q1,1),calcFix(eqb_q2,2)]);
 
 /* ================= 5. BACKGROUND RADIATION ================= */
 // Review (4 Nov 2026): the Background tab is merged into Alpha, Beta, Gamma (#background forwards there).
@@ -1800,21 +1801,25 @@ const hl_chain=(a,n)=>{const out=[a];for(let k=0;k<n;k++){a/=2;out.push(a);}retu
 const hl_start=(rnd,n,list)=>calcPick(rnd,list.filter(a=>a%Math.pow(2,n)===0));
 const HL_UNITS=[['min','min',[2,3,4,5,6,8,10,15,20]],['hours','hours',[2,3,4,5,6,8,12]],['days','days',[2,3,4,5,6,8]],['s','s',[10,15,20,30,40]]];
 const HL_WHAT=['A source’s','A sample’s','A radioactive tracer’s','The school source’s'];
-calcAct('halflife','Half-life calculations','Halve the activity once for each half-life.',[
-  {q:'A source’s activity falls from 1200 Bq to 300 Bq in 10 minutes. Its half-life is',unit:'min',answer:5,
-   working:hl_w(['activity at the start = 1200 Bq','activity at the end = 300 Bq','time = 10 min','half-life = ?'],['1200 → 600 → 300','number of half-lives = 2','2 × half-life = 10','half-life = [[10|2]]','half-life = 5 min']),
-   make:rnd=>{const u=calcPick(rnd,HL_UNITS),T=calcPick(rnd,u[2]),n=calcPick(rnd,[2,3,4]),A0=hl_start(rnd,n,[800,1200,1600,2000,2400,3200,4000,4800,6400]),A=A0/Math.pow(2,n),t=n*T;
-     const what=calcPick(rnd,HL_WHAT),unitWord=u[0]==='min'?'minutes':u[0]==='s'?'seconds':u[0];
-     return {q:what+' activity falls from '+hl_n(A0)+' Bq to '+hl_n(A)+' Bq in '+t+' '+unitWord+'. Its half-life is',unit:u[1],answer:T,
-       working:hl_w(['activity at the start = '+hl_n(A0)+' Bq','activity at the end = '+hl_n(A)+' Bq','time = '+t+' '+u[1],'half-life = ?'],[hl_chain(A0,n),'number of half-lives = '+n,n+' × half-life = '+t,'half-life = [['+t+'|'+n+']]','half-life = '+T+' '+u[1]])};}},
-  {q:'A sample has 6000 undecayed nuclei. Its half-life is 20 s. The number left after 1 minute is',unit:'',answer:750,
-   working:hl_w(['nuclei at the start = 6000','half-life = 20 s','time = 1 min = 60 s','number left = ?'],['number of half-lives = [[60|20]]','number of half-lives = 3','6000 → 3000 → 1500 → 750','number left = 750']),
-   make:rnd=>{const c=calcPick(rnd,[[10,1],[15,1],[20,1],[30,2],[40,2],[30,1.5],[60,3],[60,4]]),T=c[0],tm=c[1],ts=tm*60,n=ts/T;
-     const N0=hl_start(rnd,n,[1600,2400,3200,4000,4800,6000,6400,8000,9600,12000,16000]),Nl=N0/Math.pow(2,n);
-     const tw=tm===1?'1 minute':hl_n(tm)+' minutes';
-     return {q:calcPick(rnd,['A sample','A small source','A sample of a radioactive gas'])+' has '+hl_n(N0)+' undecayed nuclei. Its half-life is '+T+' s. The number left after '+tw+' is',unit:'',answer:Nl,
-       working:hl_w(['nuclei at the start = '+hl_n(N0),'half-life = '+T+' s','time = '+hl_n(tm)+' min = '+ts+' s','number left = ?'],['number of half-lives = [['+ts+'|'+T+']]','number of half-lives = '+n,hl_chain(N0,n),'number left = '+hl_n(Nl)])};}}
-  ]);
+// Two questions (11 Nov 2026): the first finds the half-life, or the time to fall to a value, from the number of halvings;
+// the second needs a unit change (minutes to seconds, days to hours) or works backwards to the start. New problems changes
+// the numbers, the units and which quantity is asked for.
+const hl_q1=rnd=>{const u=calcPick(rnd,HL_UNITS),T=calcPick(rnd,u[2]),n=calcPick(rnd,[2,3,4]),A0=hl_start(rnd,n,[800,1200,1600,2000,2400,3200,4000,4800,6400]),A=A0/Math.pow(2,n),t=n*T;
+  const what=calcPick(rnd,HL_WHAT),uw=u[0]==='min'?'minutes':u[0]==='s'?'seconds':u[0];
+  return rnd()<0.6?{q:what+' activity falls from '+hl_n(A0)+' Bq to '+hl_n(A)+' Bq in '+t+' '+uw+'. Its half-life is',unit:u[1],answer:T,
+      working:hl_w(['activity at the start = '+hl_n(A0)+' Bq','activity at the end = '+hl_n(A)+' Bq','time = '+t+' '+u[1],'half-life = ?'],[hl_chain(A0,n),'number of half-lives = '+n,n+' × half-life = '+t,'half-life = [['+t+'|'+n+']]','half-life = '+T+' '+u[1]])}
+    :{q:what+' activity is '+hl_n(A0)+' Bq and its half-life is '+T+' '+uw+'. The time it takes for the activity to fall to '+hl_n(A)+' Bq is',unit:u[1],answer:t,
+      working:hl_w(['activity at the start = '+hl_n(A0)+' Bq','activity at the end = '+hl_n(A)+' Bq','half-life = '+T+' '+u[1],'time = ?'],[hl_chain(A0,n),'number of half-lives = '+n,'time = '+n+' × '+T,'time = '+t+' '+u[1]])};};
+const hl_q2=rnd=>{if(rnd()<0.5){const c=calcPick(rnd,[[10,1],[15,1],[20,1],[30,2],[40,2],[30,1.5],[60,3],[60,4]]),T=c[0],tm=c[1],ts=tm*60,n=ts/T;
+    const N0=hl_start(rnd,n,[1600,2400,3200,4000,4800,6000,6400,8000,9600,12000,16000]),Nl=N0/Math.pow(2,n),tw=tm===1?'1 minute':hl_n(tm)+' minutes';
+    return {q:calcPick(rnd,['A sample','A small source','A sample of a radioactive gas'])+' has '+hl_n(N0)+' undecayed nuclei. Its half-life is '+T+' s. The number left after '+tw+' is',unit:'',answer:Nl,
+      hints:['Change '+tw+' into seconds.','Number of half-lives = [[time|half-life]].','Halve the number once for each half-life.'],
+      working:hl_w(['nuclei at the start = '+hl_n(N0),'half-life = '+T+' s','time = '+hl_n(tm)+' min = '+ts+' s','number left = ?'],['number of half-lives = [['+ts+'|'+T+']]','number of half-lives = '+n,hl_chain(N0,n),'number left = '+hl_n(Nl)])};}
+  const c=calcPick(rnd,[[6,1],[8,2],[12,2],[12,1.5],[6,2],[8,1]]),T=c[0],d=c[1],th=d*24,n=th/T,A=calcPick(rnd,[25,50,60,75,100,125]),A0=A*Math.pow(2,n),dw=d===1?'1 day':hl_n(d)+' days';
+  return {q:'A medical tracer has a half-life of '+T+' hours. '+dw[0].toUpperCase()+dw.slice(1)+' after it is made, its activity is '+hl_n(A)+' MBq. Its activity when it was made was',unit:'MBq',answer:A0,
+    hints:['Change '+dw+' into hours.','Number of half-lives = [[time|half-life]].','Work backwards: double the activity once for each half-life.'],
+    working:hl_w(['half-life = '+T+' h','time = '+hl_n(d)+' × 24 = '+th+' h','activity now = '+hl_n(A)+' MBq','activity at the start = ?'],['number of half-lives = [['+th+'|'+T+']]','number of half-lives = '+n,'double '+n+' times: '+Array.from({length:n+1},(_,i)=>hl_n(A*Math.pow(2,i))).join(' → '),'activity at the start = '+hl_n(A0)+' MBq'])};};
+calcAct('halflife','Half-life calculations','Halve the activity once for each half-life. Press New problems for another pair.',[calcFix(hl_q1,1),calcFix(hl_q2,2)]);
 {
   const pts=[];for(let i=0;i<=120;i++){const t=i;pts.push([t,400*Math.pow(0.5,t/20)]);}
   calcAct('halflife','Read the half-life off the graph','The graph shows the activity of a source. Read the values off the curve.',[

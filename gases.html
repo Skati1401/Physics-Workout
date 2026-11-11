@@ -1751,18 +1751,21 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
       {id:'k7',text:'Water boils at 100 K',cat:'f'},
       {id:'k8',text:'To change °C into K you subtract 273',cat:'f'}
     ]});
-  const kv_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
+    // Two questions (11 Nov 2026): the first rearranges T = θ + 273 for θ; the second turns two Celsius temperatures into kelvin
+  // and compares the average kinetic energy (it is proportional to T in kelvin). New problems changes the numbers.
+  const kv_q1=rnd=>{const s=calcPick(rnd,[['Liquid nitrogen boils at',[77]],['Liquid oxygen boils at',[90]],['A freezer is at',[248,253,255]],['A gas is at',[173,223,350,400,450,500]],['The air in a tyre is at',[293,298,303]],['Water boils at',[373]]]),T=calcPick(rnd,s[1]),c=T-273,w=s[0];
+    return {q:w+' '+T+' K. This temperature in °C is',unit:'°C',answer:c,working:'T = '+T+' K<br>θ = ?||T = θ + 273<br>'+T+' = θ + 273<br>θ = '+T+' − 273<br>θ = '+calcNum(c)+' °C'};};
+  const kv_q2=rnd=>{const n=calcNum;return rnd()<0.6?(()=>{const p=calcPick(rnd,[[27,327],[27,627],[-73,127],[-23,227],[-123,27],[127,527]]),a=p[0],b=p[1],Ta=a+273,Tb=b+273,f=Tb/Ta;
+      return {q:'A gas is heated from '+n(a)+' °C to '+n(b)+' °C. By what factor does the average kinetic energy of its molecules increase?',unit:'times',answer:f,
+        hints:['Change both temperatures into kelvin first.','The average kinetic energy is proportional to the kelvin temperature, so the factor is [[new T|old T]].'],
+        working:'θ₁ = '+n(a)+' °C<br>θ₂ = '+n(b)+' °C<br>factor = ?||T₁ = '+n(a)+' + 273 = '+Ta+' K<br>T₂ = '+n(b)+' + 273 = '+Tb+' K<br>factor = [[T₂|T₁]]<br>factor = [['+Tb+'|'+Ta+']]<br>factor = '+n(f)};})()
+    :(()=>{const a=calcPick(rnd,[-73,-23,27,77]),k=calcPick(rnd,[2,3]),Ta=a+273,Tb=k*Ta,b=Tb-273;
+      return {q:'A gas is at '+n(a)+' °C. The temperature in °C at which the average kinetic energy of its molecules is '+(k===2?'doubled':'three times as big')+' is',unit:'°C',answer:b,
+        hints:['Change '+n(a)+' °C into kelvin.','The average kinetic energy is proportional to the kelvin temperature: multiply T by '+k+'.','Change back into °C.'],
+        working:'θ₁ = '+n(a)+' °C<br>θ₂ = ?||T₁ = '+n(a)+' + 273 = '+Ta+' K<br>T₂ = '+k+' × '+Ta+' = '+Tb+' K<br>T₂ = θ₂ + 273<br>'+Tb+' = θ₂ + 273<br>θ₂ = '+Tb+' − 273<br>θ₂ = '+n(b)+' °C'};})();};
   createCalc({
-    host:act('kelvin','Calculate','Convert and compare','Use T (K) = θ (°C) + 273.'),
-    questions:[
-      {q:'Convert −50 °C to kelvin.',unit:'K',answer:223,working:'θ = −50 °C<br>T = ?||T = θ + 273<br>T = (−50) + 273<br>T = 223 K',
-       make:rnd=>{const th=calcPick(rnd,[-196,-183,-120,-78,-50,-40,-25,-18,-10]),T=th+273;
-         return {q:'Convert '+kv_n(th)+' °C to kelvin.',unit:'K',answer:T,working:'θ = '+kv_n(th)+' °C<br>T = ?||T = θ + 273<br>T = ('+kv_n(th)+') + 273<br>T = '+T+' K'};}},
-      {q:'A gas is heated from 300 K to 600 K. By what factor does the average kinetic energy of its molecules increase?',unit:'times',answer:2,hint:'The average kinetic energy is proportional to the Kelvin temperature. Compare 600 with 300.',working:'T₁ = 300 K<br>T₂ = 600 K<br>factor = ?||average KE ∝ T<br>factor = [[T₂|T₁]]<br>factor = [[600|300]]<br>factor = 2 times',
-       make:rnd=>{const c=calcPick(rnd,[[200,400],[200,600],[250,500],[300,450],[300,900],[400,600],[150,600],[280,700]]),f=+(c[1]/c[0]).toFixed(2),what=calcPick(rnd,['A gas is heated','The air in a sealed flask is heated','The helium in a balloon is heated','Some nitrogen in a sealed cylinder is heated']);
-         return {q:what+' from '+c[0]+' K to '+c[1]+' K. By what factor does the average kinetic energy of its molecules increase?',unit:'times',answer:f,hint:'The average kinetic energy is proportional to the Kelvin temperature. Compare '+c[1]+' with '+c[0]+'.',
-           working:'T₁ = '+c[0]+' K<br>T₂ = '+c[1]+' K<br>factor = ?||average KE ∝ T<br>factor = [[T₂|T₁]]<br>factor = [['+c[1]+'|'+c[0]+']]<br>factor = '+f+' times'};}}
-    ]
+    host:act('kelvin','Calculate','Convert and compare','Use T (K) = θ (°C) + 273. Press New problems for another pair.'),
+    questions:[calcFix(kv_q1,1),calcFix(kv_q2,2)]
   });
 }
 
@@ -1770,24 +1773,27 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
 {
   frameAct('laws','animations/gas-molecules.html','laws','Gas laws animation: pressure against volume or temperature','gas laws',false);
 
-  const gl_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
+    // Two questions (11 Nov 2026): the first rearranges p₁V₁ = p₂V₂ for p₂, V₂ or V₁; the second uses [[p₁|T₁]] = [[p₂|T₂]] with
+  // temperatures in °C (change to kelvin first). New problems changes the numbers and which quantity is asked for.
+  const gl_q1=rnd=>{const n=calcNum;let p1,V1,p2,V2,k=0;do{p1=calcPick(rnd,[100,120,150,200,250,300]);V1=calcPick(rnd,[0.2,0.3,0.6,1.2,1.5,2.4]);p2=calcPick(rnd,[50,80,100,150,200,300,400,600]);V2=p1*V1/p2;}while((p2===p1||Math.abs(V2*100-Math.round(V2*100))>1e-9)&&++k<200);
+    const w=calcPick(rnd,['A gas','A weather balloon','A gas in a cylinder','The air in a large tank']);
+    return calcPick(rnd,[
+      {q:w+' has a pressure of '+p1+' kPa and a volume of '+n(V1)+' m³. Its pressure is changed to '+p2+' kPa at constant temperature. The new volume is',unit:'m³',answer:V2,
+        working:'p₁ = '+p1+' kPa<br>V₁ = '+n(V1)+' m³<br>p₂ = '+p2+' kPa<br>V₂ = ?||p₁V₁ = p₂V₂<br>'+p1+' × '+n(V1)+' = '+p2+'V₂<br>'+n(p1*V1)+' = '+p2+'V₂<br>V₂ = [['+n(p1*V1)+'|'+p2+']]<br>V₂ = '+n(V2)+' m³'},
+      {q:w+' has a pressure of '+p1+' kPa and a volume of '+n(V1)+' m³. At constant temperature its volume changes to '+n(V2)+' m³. The new pressure is',unit:'kPa',answer:p2,
+        working:'p₁ = '+p1+' kPa<br>V₁ = '+n(V1)+' m³<br>V₂ = '+n(V2)+' m³<br>p₂ = ?||p₁V₁ = p₂V₂<br>'+p1+' × '+n(V1)+' = p₂ × '+n(V2)+'<br>'+n(p1*V1)+' = '+n(V2)+'p₂<br>p₂ = [['+n(p1*V1)+'|'+n(V2)+']]<br>p₂ = '+p2+' kPa'}]);};
+  const gl_q2=rnd=>{const n=calcNum,w=calcPick(rnd,['A sealed can','A car tyre','A sealed bottle','A gas cylinder']);
+    if(rnd()<0.5){let a,b,p1,p2,k=0;do{a=calcPick(rnd,[7,17,27,47,77]);b=calcPick(rnd,[47,77,127,177,227]);p1=calcPick(rnd,[100,120,150,200,250,300]);p2=p1*(b+273)/(a+273);}while((b<=a||Math.abs(p2-Math.round(p2))>1e-9)&&++k<200);
+      return {q:w+' at '+a+' °C has a pressure of '+p1+' kPa. It is heated to '+b+' °C. The new pressure is',unit:'kPa',answer:p2,
+        hints:['Change both temperatures into kelvin: add 273.','Substitute into [[p₁|T₁]] = [[p₂|T₂]] and rearrange for p₂.'],
+        working:'p₁ = '+p1+' kPa<br>T₁ = '+a+' + 273 = '+(a+273)+' K<br>T₂ = '+b+' + 273 = '+(b+273)+' K<br>p₂ = ?||[[p₁|T₁]] = [[p₂|T₂]]<br>[['+p1+'|'+(a+273)+']] = [[p₂|'+(b+273)+']]<br>p₂ = [['+p1+' × '+(b+273)+'|'+(a+273)+']]<br>p₂ = '+n(p2)+' kPa'};}
+    let a,p1,p2,T2,k=0;do{a=calcPick(rnd,[7,17,27,47]);p1=calcPick(rnd,[100,150,200,250,300]);p2=calcPick(rnd,[120,150,180,200,250,300,360,400]);T2=(a+273)*p2/p1;}while((p2<=p1||Math.abs(T2-Math.round(T2))>1e-9||T2>800)&&++k<300);
+    return {q:w+' at '+a+' °C has a pressure of '+p1+' kPa. The temperature in °C at which its pressure is '+p2+' kPa is',unit:'°C',answer:T2-273,
+      hints:['Change '+a+' °C into kelvin.','Rearrange [[p₁|T₁]] = [[p₂|T₂]] for T₂.','Change T₂ back into °C: subtract 273.'],
+      working:'p₁ = '+p1+' kPa<br>T₁ = '+a+' + 273 = '+(a+273)+' K<br>p₂ = '+p2+' kPa<br>θ₂ = ?||[[p₁|T₁]] = [[p₂|T₂]]<br>[['+p1+'|'+(a+273)+']] = [['+p2+'|T₂]]<br>'+p1+'T₂ = '+p2+' × '+(a+273)+'<br>T₂ = [['+n(p2*(a+273))+'|'+p1+']]<br>T₂ = '+n(T2)+' K<br>θ₂ = '+n(T2)+' − 273<br>θ₂ = '+n(T2-273)+' °C'};};
   createCalc({
-    host:act('laws','Calculate','Use the gas laws','For temperature questions, change °C into kelvin first. Pressure and volume stay in the units given.'),
-    questions:[
-      {q:'A gas has a pressure of 200 kPa and a volume of 0.6 m³. Its pressure is changed to 300 kPa at constant temperature. The new volume is',unit:'m³',answer:0.4,working:'p₁ = 200 kPa<br>V₁ = 0.6 m³<br>p₂ = 300 kPa<br>V₂ = ?||p₁ × V₁ = p₂ × V₂<br>200 × 0.6 = 300 × V₂<br>120 = 300 × V₂<br>V₂ = [[120|300]]<br>V₂ = 0.4 m³',
-       make:rnd=>{let p1,V1,p2,V2,k=0;const what=calcPick(rnd,['A gas','The air in a bicycle pump','The air trapped in a syringe','The gas in a cylinder','A bubble of air under water']);
-         const unit=what.includes('syringe')||what.includes('pump')||what.includes('bubble')?'cm³':'m³';
-         do{p1=calcPick(rnd,[100,120,150,200,250,300]);p2=calcPick(rnd,[50,100,150,200,250,300,400,500,600]);V1=unit==='cm³'?calcPick(rnd,[20,30,40,50,60,80,120]):calcPick(rnd,[0.2,0.3,0.4,0.5,0.6,0.8,1.2]);V2=+(p1*V1/p2).toFixed(6);}while((p1===p2||Math.abs(V2*100-Math.round(V2*100))>1e-6)&&++k<100);
-         const pv=+(p1*V1).toFixed(4);
-         return {q:what+' has a pressure of '+p1+' kPa and a volume of '+gl_n(V1)+' '+unit+'. Its pressure is changed to '+p2+' kPa at constant temperature. The new volume is',unit:unit,answer:V2,
-           working:'p₁ = '+p1+' kPa<br>V₁ = '+gl_n(V1)+' '+unit+'<br>p₂ = '+p2+' kPa<br>V₂ = ?||p₁ × V₁ = p₂ × V₂<br>'+p1+' × '+gl_n(V1)+' = '+p2+' × V₂<br>'+gl_n(pv)+' = '+p2+' × V₂<br>V₂ = [['+gl_n(pv)+'|'+p2+']]<br>V₂ = '+gl_n(V2)+' '+unit};}},
-      {q:'A sealed can at 20 °C has a pressure of 150 kPa. It is heated to 100 °C. The new pressure is',unit:'kPa',answer:191,hint:'Check that you have changed both temperatures to kelvin.',working:'p₁ = 150 kPa<br>T₁ = 20 °C = 20 + 273 = 293 K<br>T₂ = 100 °C = 100 + 273 = 373 K<br>p₂ = ?||[[p₁|T₁]] = [[p₂|T₂]]<br>[[150|293]] = [[p₂|373]]<br>p₂ = [[150 × 373|293]]<br>p₂ = 191 kPa',
-       make:rnd=>{const w=calcPick(rnd,[['A sealed can','heated',1],['A sealed glass jar of air','warmed in the sun',1],['A sealed flask of air','heated',1],['A sealed bottle of air','cooled in a fridge',0],['A gas cylinder','cooled overnight',0]]);
-         const p1=calcPick(rnd,w[0]==='A sealed glass jar of air'?[100,101,102]:[100,120,150,200,250]),a=w[2]?calcPick(rnd,[10,15,20,25]):calcPick(rnd,[20,25,30]),b=w[2]?(w[0]==='A sealed glass jar of air'?a+calcPick(rnd,[20,25,30,35]):calcPick(rnd,[60,80,100,120,150])):calcPick(rnd,[-10,-5,0,4,5]);
-         const T1=a+273,T2=b+273,p2=+(p1*T2/T1).toPrecision(3);
-         return {q:w[0]+' at '+a+' °C has a pressure of '+p1+' kPa. It is '+w[1]+' to '+gl_n(b)+' °C. The new pressure is',unit:'kPa',answer:p2,hint:'Check that you have changed both temperatures to kelvin.',
-           working:'p₁ = '+p1+' kPa<br>T₁ = '+a+' °C = '+a+' + 273 = '+T1+' K<br>T₂ = '+gl_n(b)+' °C = '+(b<0?'('+gl_n(b)+')':b)+' + 273 = '+T2+' K<br>p₂ = ?||[[p₁|T₁]] = [[p₂|T₂]]<br>[['+p1+'|'+T1+']] = [[p₂|'+T2+']]<br>p₂ = [['+p1+' × '+T2+'|'+T1+']]<br>p₂ = '+gl_n(p2)+' kPa'};}}
-    ]
+    host:act('laws','Calculate','Use the gas laws','For temperature questions, change °C into kelvin first. Pressure and volume stay in the units given. Press New problems for another pair.'),
+    questions:[calcFix(gl_q1,1),calcFix(gl_q2,2)]
   });
 }
 

@@ -1629,44 +1629,50 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
 }
 /* ================= 3. DENSITY ================= */
 {
-  const dn_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
+    // Two questions (11 Nov 2026): the first rearranges ρ = m/V for m or V; the second changes g/cm³ to kg/m³, cm³ to m³, or uses
+  // a measuring cylinder. New problems changes the numbers, the material and which quantity is asked for.
+  const dn_q1=rnd=>{const n=calcNum,w=calcPick(rnd,[['petrol',750,1],['olive oil',920,1],['sea water',1030,1],['ethanol',790,1],['diesel',850,1],['mercury',13600,1],['aluminium',2700],['steel',7800]]),V=calcPick(rnd,[0.002,0.004,0.005,0.02,0.05,0.2]),m=w[1]*V;
+    return rnd()<0.5?{q:n(m)+' kg of '+w[0]+' has a density of '+n(w[1])+' kg/m³. Its volume is',unit:'m³',answer:V,working:'m = '+n(m)+' kg<br>ρ = '+n(w[1])+' kg/m³<br>V = ?||ρ = [[m|V]]<br>'+n(w[1])+' = [['+n(m)+'|V]]<br>'+n(w[1])+'V = '+n(m)+'<br>V = [['+n(m)+'|'+n(w[1])+']]<br>V = '+n(V)+' m³'}
+      :{q:(w[2]?'A tank holds '+n(V)+' m³ of '+w[0]+' (density '+n(w[1])+' kg/m³). The mass of the '+w[0]+' is':'A block of '+w[0]+' (density '+n(w[1])+' kg/m³) has a volume of '+n(V)+' m³. Its mass is'),unit:'kg',answer:m,working:'V = '+n(V)+' m³<br>ρ = '+n(w[1])+' kg/m³<br>m = ?||ρ = [[m|V]]<br>'+n(w[1])+' = [[m|'+n(V)+']]<br>m = '+n(w[1])+' × '+n(V)+'<br>m = '+n(m)+' kg'};};
+  const dn_q2=rnd=>{const n=calcNum;return calcPick(rnd,[
+    ()=>{const w=calcPick(rnd,[['A stone',[2.4,2.5,2.6,2.7,2.8]],['A brass key',[8.4,8.5]],['A piece of glass',[2.5,2.6]],['An iron bolt',[7.8,7.9]],['Ali’s pebble',[2.5,2.6,2.7]]]);
+      const rho=calcPick(rnd,w[1]),V=calcPick(rnd,w[1][0]>5?[2,4,5,10]:[20,25,40,50,80]),a=calcPick(rnd,[20,30,40,50,60]),b=a+V,m=rho*V;
+      return {q:w[0]+' raises the water level in a measuring cylinder from '+a+' cm³ to '+b+' cm³. Its density is '+n(rho)+' g/cm³. Its mass is',unit:'g',answer:m,
+        hints:['The volume of the object = the rise in the water level.','Then rearrange ρ = [[m|V]] for m.'],
+        working:'V = '+b+' − '+a+' = '+V+' cm³<br>ρ = '+n(rho)+' g/cm³<br>m = ?||ρ = [[m|V]]<br>'+n(rho)+' = [[m|'+V+']]<br>m = '+n(rho)+' × '+V+'<br>m = '+n(m)+' g'};},
+    ()=>{const w=calcPick(rnd,[['cooking oil',0.92,'A tank holds'],['ice',0.92,'A block of ice has a volume of'],['aluminium',2.7,'A sheet of aluminium has a volume of'],['copper',8.9,'A block of copper has a volume of'],['sea water',1.03,'A tank holds']]),V=calcPick(rnd,[0.002,0.005,0.01,0.02]),m=w[1]*1000*V;
+      return {q:'The density of '+w[0]+' is '+n(w[1])+' g/cm³. '+w[2]+' '+n(V)+' m³'+(w[2]==='A tank holds'?' of '+w[0]:'')+'. Its mass, in kg, is',unit:'kg',answer:m,
+        hints:['Change g/cm³ into kg/m³: multiply by 1000.','Then rearrange ρ = [[m|V]] for m.'],
+        working:'ρ = '+n(w[1])+' g/cm³ = '+n(w[1]*1000)+' kg/m³<br>V = '+n(V)+' m³<br>m = ?||ρ = [[m|V]]<br>'+n(w[1]*1000)+' = [[m|'+n(V)+']]<br>m = '+n(w[1]*1000)+' × '+n(V)+'<br>m = '+n(m)+' kg'};},
+    ()=>{const rho=calcPick(rnd,[800,1000,2500,2700,7800]),cm3=calcPick(rnd,[200,400,500,2000]),V=cm3/1e6,m=rho*V;
+      return {q:(rho<1100?'A bottle holds '+cm3+' cm³ of a liquid of density '+n(rho)+' kg/m³. The mass of the liquid is':'A block of density '+n(rho)+' kg/m³ has a volume of '+cm3+' cm³. Its mass is'),unit:'kg',answer:m,
+        hints:['Change '+cm3+' cm³ into m³: divide by 1 000 000.','Then rearrange ρ = [[m|V]] for m.'],
+        working:'V = '+cm3+' cm³ = '+n(V)+' m³<br>ρ = '+n(rho)+' kg/m³<br>m = ?||ρ = [[m|V]]<br>'+n(rho)+' = [[m|'+n(V)+']]<br>m = '+n(rho)+' × '+n(V)+'<br>m = '+n(m)+' kg'};}
+  ])();};
   createCalc({
-    host:act('density','Calculate','Density, mass and volume','Use ρ = [[m|V]]. Give your answer in the unit shown.'),
-    questions:[
-      {q:'1.5 kg of petrol has a density of 750 kg/m³. Its volume is',unit:'m³',answer:0.002,working:'m = 1.5 kg<br>ρ = 750 kg/m³<br>V = ?||ρ = [[m|V]]<br>750 = [[1.5|V]]<br>750 × V = 1.5<br>V = [[1.5|750]]<br>V = 0.002 m³',
-       make:rnd=>{const w=calcPick(rnd,[['petrol',750],['olive oil',900],['sea water',1030],['milk',1030],['diesel',850],['ethanol',800]]);
-         const V=calcPick(rnd,[0.001,0.002,0.004,0.005,0.01,0.02,0.05]),m=+(w[1]*V).toPrecision(6);
-         return {q:dn_n(m)+' kg of '+w[0]+' has a density of '+dn_n(w[1])+' kg/m³. Its volume is',unit:'m³',answer:V,
-           working:'m = '+dn_n(m)+' kg<br>ρ = '+dn_n(w[1])+' kg/m³<br>V = ?||ρ = [[m|V]]<br>'+dn_n(w[1])+' = [['+dn_n(m)+'|V]]<br>'+dn_n(w[1])+' × V = '+dn_n(m)+'<br>V = [['+dn_n(m)+'|'+dn_n(w[1])+']]<br>V = '+dn_n(V)+' m³'};}},
-      {q:'A stone has a mass of 270 g. It raises the water level in a measuring cylinder from 50 cm³ to 150 cm³. Its density is',unit:'g/cm³',answer:2.7,working:'m = 270 g<br>V = 150 − 50 = 100 cm³<br>ρ = ?||ρ = [[m|V]]<br>ρ = [[270|100]]<br>ρ = 2.7 g/cm³',
-       make:rnd=>{const w=calcPick(rnd,[['A stone',[2.4,2.5,2.6,2.7,2.8]],['A brass key',[8.4,8.5]],['A piece of glass',[2.5,2.6]],['An iron bolt',[7.8,7.9]],['Ali’s pebble',[2.5,2.6,2.7]]]);
-         const rho=calcPick(rnd,w[1]),V=calcPick(rnd,w[1][0]>5?[2,4,5,10]:[20,25,40,50,80,100]),a=calcPick(rnd,[20,30,40,50,60]),b=a+V,m=+(rho*V).toFixed(1);
-         return {q:w[0]+' has a mass of '+dn_n(m)+' g. It raises the water level in a measuring cylinder from '+a+' cm³ to '+b+' cm³. Its density is',unit:'g/cm³',answer:rho,
-           working:'m = '+dn_n(m)+' g<br>V = '+b+' − '+a+' = '+V+' cm³<br>ρ = ?||ρ = [[m|V]]<br>ρ = [['+dn_n(m)+'|'+V+']]<br>ρ = '+dn_n(rho)+' g/cm³'};}}
-    
-  ]
+    host:act('density','Calculate','Density, mass and volume','Use ρ = [[m|V]]. Give your answer in the unit shown. Press New problems for another pair.'),
+    questions:[calcFix(dn_q1,1),calcFix(dn_q2,2)]
   });
 }
 
 /* ================= 4. PRESSURE ================= */
 {
-  const pr_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
+    // Two questions (11 Nov 2026): the first rearranges p = F/A for F or A; the second changes cm² to m², or finds the force
+  // from a mass first (W = mg). New problems changes the numbers, the object and which quantity is asked for.
+  const pr_q1=rnd=>{const n=calcNum,c=calcPick(rnd,[['a brick',[20,25,30,40],[0.01,0.015,0.02]],['a box',[50,60,80,120],[0.05,0.1,0.2]],['a wardrobe',[600,800,1200],[0.004,0.006,0.008]],['a tyre',[2000,2500,3000],[0.01,0.02,0.025]]]),F=calcPick(rnd,c[1]),A=calcPick(rnd,c[2]),P=F/A;
+    return rnd()<0.5?{q:'A force of '+n(F)+' N from '+c[0]+' produces a pressure of '+n(P)+' Pa. The area it presses on is',unit:'m²',answer:A,working:'F = '+n(F)+' N<br>p = '+n(P)+' Pa<br>A = ?||p = [[F|A]]<br>'+n(P)+' = [['+n(F)+'|A]]<br>'+n(P)+'A = '+n(F)+'<br>A = [['+n(F)+'|'+n(P)+']]<br>A = '+n(A)+' m²'}
+      :{q:'The pressure under '+c[0]+' is '+n(P)+' Pa and the area it presses on is '+n(A)+' m². The force it exerts is',unit:'N',answer:F,working:'p = '+n(P)+' Pa<br>A = '+n(A)+' m²<br>F = ?||p = [[F|A]]<br>'+n(P)+' = [[F|'+n(A)+']]<br>F = '+n(P)+' × '+n(A)+'<br>F = '+n(F)+' N'};};
+  const pr_q2=rnd=>{const n=calcNum;return rnd()<0.5?(()=>{const who=calcPick(rnd,[['Zahra','her'],['Henry','his'],['Julia','her'],['Ali','his']]),F=calcPick(rnd,[400,500,600,700]),cm=calcPick(rnd,[200,250,400,500]),A=cm/1e4,P=F/A;
+      return {q:who[0]+' weighs '+F+' N and stands on both feet. The total area of '+who[1]+' shoes touching the floor is '+cm+' cm². The pressure on the floor is',unit:'Pa',answer:P,
+        hints:['Change '+cm+' cm² into m²: divide by 10 000 (1 m² = 100 cm × 100 cm).','Then p = [[F|A]].'],
+        working:'F = '+F+' N<br>A = '+cm+' cm² = '+n(A)+' m²<br>p = ?||p = [[F|A]]<br>p = [['+F+'|'+n(A)+']]<br>p = '+n(P)+' Pa'};})()
+    :(()=>{const m=calcPick(rnd,[40,60,80,120,200]),A=calcPick(rnd,[0.02,0.04,0.05,0.1]),F=m*10,P=F/A,w=calcPick(rnd,['crate','statue','fish tank']);
+      return {q:'A '+m+' kg '+w+' stands on a base of area '+n(A)+' m². Take g = 10 N/kg. The pressure it exerts on the floor is',unit:'Pa',answer:P,
+        hints:['The force on the floor is the weight: W = mg.','Then p = [[F|A]].'],
+        working:'m = '+m+' kg<br>g = 10 N/kg<br>A = '+n(A)+' m²<br>p = ?||W = mg<br>W = '+m+' × 10<br>W = '+n(F)+' N<br>p = [[F|A]]<br>p = [['+n(F)+'|'+n(A)+']]<br>p = '+n(P)+' Pa'};})();};
   createCalc({
-    host:act('pressure','Calculate','Pressure, force and area','Use p = [[F|A]].'),
-    questions:[
-      {q:'A brick weighs 30 N. Its smallest face has an area of 0.015 m². Resting on that face, the pressure is',unit:'Pa',answer:2000,working:'F = 30 N<br>A = 0.015 m²<br>p = ?||p = [[F|A]]<br>p = [[30|0.015]]<br>p = 2000 Pa',
-       make:rnd=>{const w=calcPick(rnd,[['A brick','Its smallest face','Resting on that face',[20,25,30,40],[0.01,0.015,0.02]],['A box','Its base','Resting on the floor',[50,60,80,120,150],[0.05,0.1,0.2,0.25]],['A wardrobe','Its four feet have a total area of','Standing on its feet',[600,800,1200],[0.004,0.006,0.008]],['Henry','His two shoes have a total area of','Standing on both feet',[500,600,700],[0.025,0.04,0.05]]]);
-         const F=calcPick(rnd,w[3]),A=calcPick(rnd,w[4]),P=+(F/A).toPrecision(6);
-         const mid=w[1].endsWith('of')?w[1]+' '+pr_n(A)+' m²':w[1]+' has an area of '+pr_n(A)+' m²';
-         return {q:w[0]+' weighs '+F+' N. '+mid+'. '+w[2]+', the pressure is',unit:'Pa',answer:P,
-           working:'F = '+F+' N<br>A = '+pr_n(A)+' m²<br>p = ?||p = [[F|A]]<br>p = [['+F+'|'+pr_n(A)+']]<br>p = '+pr_n(P)+' Pa'};}},
-      {q:'A force of 120 N produces a pressure of 30 000 Pa. The area is',unit:'m²',answer:0.004,working:'F = 120 N<br>p = 30 000 Pa<br>A = ?||p = [[F|A]]<br>30 000 = [[120|A]]<br>30 000 × A = 120<br>A = [[120|30 000]]<br>A = 0.004 m²',
-       make:rnd=>{const w=calcPick(rnd,[['A force of ','N produces a pressure of ','Pa. The area is',[40,60,80,100,120,150,200],[0.002,0.004,0.005,0.01,0.02,0.025]],['Zahra stands on one foot. Her weight is ','N and the pressure under her foot is ','Pa. The area of her foot touching the ground is',[450,500,550,600],[0.01,0.0125,0.015,0.02]],['A table leg presses on the floor with a force of ','N. The pressure under the leg is ','Pa. The area of the end of the leg is',[60,80,100,120,150],[0.0005,0.001,0.002,0.004]],['A tyre presses on the road with a force of ','N. The pressure under it is ','Pa. The area of tyre touching the road is',[2000,2500,3000,4000],[0.01,0.0125,0.02,0.025]]]);
-         const F=calcPick(rnd,w[3]),A=calcPick(rnd,w[4]),P=+(F/A).toPrecision(6);
-         return {q:w[0]+F+' '+w[1]+pr_n(P)+' '+w[2],unit:'m²',answer:A,
-           working:'F = '+F+' N<br>p = '+pr_n(P)+' Pa<br>A = ?||p = [[F|A]]<br>'+pr_n(P)+' = [['+F+'|A]]<br>'+pr_n(P)+' × A = '+F+'<br>A = [['+F+'|'+pr_n(P)+']]<br>A = '+pr_n(A)+' m²'};}}
-    
-  ]
+    host:act('pressure','Calculate','Pressure, force and area','Use p = [[F|A]]. 1 m² = 10 000 cm². Press New problems for another pair.'),
+    questions:[calcFix(pr_q1,1),calcFix(pr_q2,2)]
   });
 }
 
@@ -1689,22 +1695,24 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
     explain:'At any point in a liquid at rest, the pressure acts equally in all directions.',
     reveal:arrowsViz
   });
-  const fl_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
+    // Two questions (11 Nov 2026): the first rearranges p = hρg for the depth or the density; the second is a manometer, or a
+  // pressure in kPa. New problems changes the numbers, the liquid and which quantity is asked for.
+  const fl_q1=rnd=>{const n=calcNum,w=calcPick(rnd,[['oil',800],['sea water',1030],['water',1000],['paraffin',800],['glycerol',1260]]),h=calcPick(rnd,[2,4,5,8,10,15]),rg=w[1]*10,P=h*rg;
+    return rnd()<0.6?{q:'In '+w[0]+' (ρ = '+n(w[1])+' kg/m³) the pressure difference is '+n(P)+' Pa. The depth is',unit:'m',answer:h,
+        working:'ρ = '+n(w[1])+' kg/m³<br>p = '+n(P)+' Pa<br>g = 10 N/kg<br>h = ?||p = hρg<br>'+n(P)+' = h × '+n(w[1])+' × 10<br>'+n(P)+' = '+n(rg)+'h<br>h = [['+n(P)+'|'+n(rg)+']]<br>h = '+h+' m'}
+      :{q:'At a depth of '+h+' m in a liquid the pressure difference is '+n(P)+' Pa. The density of the liquid is',unit:'kg/m³',answer:w[1],
+        working:'h = '+h+' m<br>p = '+n(P)+' Pa<br>g = 10 N/kg<br>ρ = ?||p = hρg<br>'+n(P)+' = '+h+' × ρ × 10<br>'+n(P)+' = '+n(h*10)+'ρ<br>ρ = [['+n(P)+'|'+n(h*10)+']]<br>ρ = '+n(w[1])+' kg/m³'};};
+  const fl_q2=rnd=>{const n=calcNum;return rnd()<0.5?(()=>{const liq=calcPick(rnd,[['mercury',13600,[0.05,0.1,0.15,0.2,0.25]],['water',1000,[0.1,0.2,0.3,0.4,0.5]]]),h=calcPick(rnd,liq[2]),hi=rnd()<0.7,P=Math.round(h*liq[1]*10),G=hi?100000+P:100000-P;
+      return {q:'In a '+liq[0]+' manometer (ρ = '+n(liq[1])+' kg/m³) the level on the gas side is '+h+' m '+(hi?'lower':'higher')+' than on the open side. Atmospheric pressure is 100 000 Pa. The gas pressure is',unit:'Pa',answer:G,
+        hints:[hi?'The gas pushes its side down, so the gas pressure is higher than atmospheric.':'The liquid is pushed up on the gas side, so the gas pressure is lower than atmospheric.','Find the pressure difference with p = hρg, then '+(hi?'add it to':'take it from')+' atmospheric pressure.'],
+        working:'h = '+h+' m<br>ρ = '+n(liq[1])+' kg/m³<br>g = 10 N/kg<br>atmospheric pressure = 100 000 Pa<br>gas pressure = ?||p = hρg<br>p = '+h+' × '+n(liq[1])+' × 10<br>p = '+n(P)+' Pa<br>gas pressure = 100 000 '+(hi?'+':'−')+' '+n(P)+'<br>gas pressure = '+n(G)+' Pa'};})()
+    :(()=>{const w=calcPick(rnd,[['sea water',1030],['water',1000],['oil',800]]),h=calcPick(rnd,[5,10,20,25,50]),rg=w[1]*10,P=h*rg;
+      return {q:'A diver measures a pressure difference of '+n(P/1000)+' kPa below the surface of '+w[0]+' (ρ = '+n(w[1])+' kg/m³). The depth of the diver is',unit:'m',answer:h,
+        hints:['Change '+n(P/1000)+' kPa into pascals: multiply by 1000.','Then rearrange p = hρg for h.'],
+        working:'p = '+n(P/1000)+' kPa = '+n(P)+' Pa<br>ρ = '+n(w[1])+' kg/m³<br>g = 10 N/kg<br>h = ?||p = hρg<br>'+n(P)+' = h × '+n(w[1])+' × 10<br>'+n(P)+' = '+n(rg)+'h<br>h = [['+n(P)+'|'+n(rg)+']]<br>h = '+h+' m'};})();};
   createCalc({
-    host:act('fluids','Calculate','Pressure difference in a liquid','Use p = h × ρ × g with g = 10 N/kg.'),
-    questions:[
-      {q:'In oil (ρ = 800 kg/m³) the pressure difference is 64 000 Pa. The depth is',unit:'m',answer:8,working:'ρ = 800 kg/m³<br>p = 64 000 Pa<br>g = 10 N/kg<br>h = ?||p = h × ρ × g<br>64 000 = h × 800 × 10<br>64 000 = h × 8000<br>h = [[64 000|8000]]<br>h = 8 m',
-       make:rnd=>{const w=calcPick(rnd,[['oil',800],['sea water',1030],['water',1000],['paraffin',800],['glycerol',1260]]);
-         const h=calcPick(rnd,w[1]===1030||w[1]===1260?[2,5,10,20]:[2,3,4,5,8,12,15]),rg=w[1]*10,P=h*rg;
-         return {q:'In '+w[0]+' (ρ = '+fl_n(w[1])+' kg/m³) the pressure difference is '+fl_n(P)+' Pa. The depth is',unit:'m',answer:h,
-           working:'ρ = '+fl_n(w[1])+' kg/m³<br>p = '+fl_n(P)+' Pa<br>g = 10 N/kg<br>h = ?||p = h × ρ × g<br>'+fl_n(P)+' = h × '+fl_n(w[1])+' × 10<br>'+fl_n(P)+' = h × '+fl_n(rg)+'<br>h = [['+fl_n(P)+'|'+fl_n(rg)+']]<br>h = '+h+' m'};}},
-      {q:'In a mercury manometer (ρ = 13 600 kg/m³) the level on the gas side is 0.25 m lower than on the open side. Atmospheric pressure is 100 000 Pa. The gas pressure is',unit:'Pa',answer:134000,hint:'The gas pushes its side down, so the gas pressure is higher than atmospheric. Add the pressure difference.',working:'h = 0.25 m<br>ρ = 13 600 kg/m³<br>g = 10 N/kg<br>atmospheric pressure = 100 000 Pa<br>gas pressure = ?||p = h × ρ × g<br>p = 0.25 × 13 600 × 10<br>p = 34 000 Pa<br>gas pressure = 100 000 + 34 000<br>gas pressure = 134 000 Pa',
-       make:rnd=>{const liq=calcPick(rnd,[['mercury',13600,[0.05,0.1,0.15,0.2,0.25,0.3]],['water',1000,[0.1,0.2,0.3,0.4,0.5]]]),h=calcPick(rnd,liq[2]),hi=rnd()<0.75,P=Math.round(h*liq[1]*10),G=hi?100000+P:100000-P;
-         return {q:'In a '+liq[0]+' manometer (ρ = '+fl_n(liq[1])+' kg/m³) the level on the gas side is '+h+' m '+(hi?'lower':'higher')+' than on the open side. Atmospheric pressure is 100 000 Pa. The gas pressure is',unit:'Pa',answer:G,
-           hint:hi?'The gas pushes its side down, so the gas pressure is higher than atmospheric. Add the pressure difference.':'The liquid is pushed up on the gas side, so the gas pressure is lower than atmospheric. Subtract the pressure difference.',
-           working:'h = '+h+' m<br>ρ = '+fl_n(liq[1])+' kg/m³<br>g = 10 N/kg<br>atmospheric pressure = 100 000 Pa<br>gas pressure = ?||p = h × ρ × g<br>p = '+h+' × '+fl_n(liq[1])+' × 10<br>p = '+fl_n(P)+' Pa<br>gas pressure = 100 000 '+(hi?'+':'−')+' '+fl_n(P)+'<br>gas pressure = '+fl_n(G)+' Pa'};}}
-    
-  ]
+    host:act('fluids','Calculate','Pressure difference in a liquid','Use p = hρg with g = 10 N/kg. 1 kPa = 1000 Pa. Press New problems for another pair.'),
+    questions:[calcFix(fl_q1,1),calcFix(fl_q2,2)]
   });
 }
 
@@ -1801,21 +1809,25 @@ const COL={a:'var(--accent)',s:'var(--solid)',l:'var(--liquid)',g:'var(--gas)'};
 /* ================= 8. SPECIFIC HEAT CAPACITY ================= */
 {
 
-  const sh_n=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'−':'')+q.join('.');};
+    // Two questions (11 Nov 2026): the first rearranges ΔQ = mcΔT for m, c or ΔT; the second has grams or kJ, or asks for the
+  // final temperature. New problems changes the numbers, the material and which quantity is asked for.
+  const sh_M=[['aluminium',900],['copper',390],['iron',450],['water',4200],['concrete',880],['oil',2000]];
+  const sh_q1=rnd=>{const n=calcNum,w=calcPick(rnd,sh_M),m=calcPick(rnd,[0.2,0.5,1,2,4]),dT=calcPick(rnd,[5,10,20,25,40,50]),Q=m*w[1]*dT;
+    return calcPick(rnd,[
+      {q:n(Q)+' J raises the temperature of some '+w[0]+' (c = '+n(w[1])+' J/kg °C) by '+dT+' °C. The mass of the '+w[0]+' is',unit:'kg',answer:m,working:'ΔQ = '+n(Q)+' J<br>c = '+n(w[1])+' J/kg °C<br>ΔT = '+dT+' °C<br>m = ?||ΔQ = mcΔT<br>'+n(Q)+' = m × '+n(w[1])+' × '+dT+'<br>'+n(Q)+' = '+n(w[1]*dT)+'m<br>m = [['+n(Q)+'|'+n(w[1]*dT)+']]<br>m = '+n(m)+' kg'},
+      {q:n(Q)+' J is given to '+n(m)+' kg of '+w[0]+' (c = '+n(w[1])+' J/kg °C). Its temperature rise is',unit:'°C',answer:dT,working:'ΔQ = '+n(Q)+' J<br>m = '+n(m)+' kg<br>c = '+n(w[1])+' J/kg °C<br>ΔT = ?||ΔQ = mcΔT<br>'+n(Q)+' = '+n(m)+' × '+n(w[1])+' × ΔT<br>'+n(Q)+' = '+n(m*w[1])+'ΔT<br>ΔT = [['+n(Q)+'|'+n(m*w[1])+']]<br>ΔT = '+dT+' °C'},
+      {q:'A '+n(m)+' kg block needs '+n(Q)+' J to warm it by '+dT+' °C. Its specific heat capacity is',unit:'J/kg °C',answer:w[1],working:'ΔQ = '+n(Q)+' J<br>m = '+n(m)+' kg<br>ΔT = '+dT+' °C<br>c = ?||ΔQ = mcΔT<br>'+n(Q)+' = '+n(m)+' × c × '+dT+'<br>'+n(Q)+' = '+n(m*dT)+'c<br>c = [['+n(Q)+'|'+n(m*dT)+']]<br>c = '+n(w[1])+' J/kg °C'}]);};
+  const sh_q2=rnd=>{const n=calcNum;return rnd()<0.5?(()=>{const w=calcPick(rnd,sh_M),g=calcPick(rnd,[200,250,400,500]),m=g/1000,a=calcPick(rnd,[15,18,20,22]),dT=calcPick(rnd,[10,20,25,30,40]),Q=m*w[1]*dT;
+      return {q:n(Q/1000)+' kJ is given to '+g+' g of '+w[0]+' (c = '+n(w[1])+' J/kg °C) at '+a+' °C. Its final temperature is',unit:'°C',answer:a+dT,
+        hints:['Change kJ into J and grams into kilograms.','Rearrange ΔQ = mcΔT for the temperature rise ΔT.','Final temperature = starting temperature + ΔT.'],
+        working:'ΔQ = '+n(Q/1000)+' kJ = '+n(Q)+' J<br>m = '+g+' g = '+n(m)+' kg<br>c = '+n(w[1])+' J/kg °C<br>start = '+a+' °C<br>final temperature = ?||ΔQ = mcΔT<br>'+n(Q)+' = '+n(m)+' × '+n(w[1])+' × ΔT<br>'+n(Q)+' = '+n(m*w[1])+'ΔT<br>ΔT = [['+n(Q)+'|'+n(m*w[1])+']]<br>ΔT = '+dT+' °C<br>final temperature = '+a+' + '+dT+'<br>final temperature = '+(a+dT)+' °C'};})()
+    :(()=>{const P=calcPick(rnd,[50,100,200]),t=calcPick(rnd,[300,420,600,900]),Q=P*t,w=calcPick(rnd,[['aluminium',900],['copper',390],['iron',450]]);let m,dT,k=0;do{m=calcPick(rnd,[0.5,1,2]);dT=Q/(m*w[1]);}while(Math.abs(dT*10-Math.round(dT*10))>1e-9&&++k<30);
+      return {q:'A '+P+' W heater warms a '+n(m)+' kg block of '+w[0]+' (c = '+n(w[1])+' J/kg °C) for '+t/60+' minutes. Ignore energy losses. The temperature rise is',unit:'°C',answer:+dT.toFixed(1),
+        hints:['The energy supplied is power × time, with the time in seconds.','Then rearrange ΔQ = mcΔT for ΔT.'],
+        working:'P = '+P+' W<br>t = '+t/60+' min = '+t+' s<br>m = '+n(m)+' kg<br>c = '+n(w[1])+' J/kg °C<br>ΔT = ?||ΔQ = Pt<br>ΔQ = '+P+' × '+t+'<br>ΔQ = '+n(Q)+' J<br>ΔQ = mcΔT<br>'+n(Q)+' = '+n(m)+' × '+n(w[1])+' × ΔT<br>'+n(Q)+' = '+n(m*w[1])+'ΔT<br>ΔT = [['+n(Q)+'|'+n(m*w[1])+']]<br>ΔT = '+n(+dT.toFixed(1))+' °C'};})();};
   createCalc({
-    host:act('shc','Calculate','Thermal energy, mass, c and temperature change','Use ΔQ = m × c × ΔT. Specific heat capacity of water is 4200 J/kg °C.'),
-    questions:[
-      {q:'0.5 kg of aluminium (c = 900 J/kg °C) is heated from 20 °C to 80 °C. The energy transferred is',unit:'J',answer:27000,working:'m = 0.5 kg<br>c = 900 J/kg °C<br>ΔT = 80 − 20 = 60 °C<br>ΔQ = ?||ΔQ = m × c × ΔT<br>ΔQ = 0.5 × 900 × 60<br>ΔQ = 27 000 J',
-       make:rnd=>{const w=calcPick(rnd,[['aluminium',900],['copper',390],['iron',450],['water',4200],['concrete',880]]);
-         const m=calcPick(rnd,[0.2,0.25,0.5,1,1.5,2]),a=calcPick(rnd,[10,15,20,25]),dT=calcPick(rnd,w[0]==='water'?[10,20,30,40,50]:[20,30,40,50,60,80]),b=a+dT,Q=Math.round(m*w[1]*dT);
-         return {q:sh_n(m)+' kg of '+w[0]+' (c = '+sh_n(w[1])+' J/kg °C) is heated from '+a+' °C to '+b+' °C. The energy transferred is',unit:'J',answer:Q,
-           working:'m = '+sh_n(m)+' kg<br>c = '+sh_n(w[1])+' J/kg °C<br>ΔT = '+b+' − '+a+' = '+dT+' °C<br>ΔQ = ?||ΔQ = m × c × ΔT<br>ΔQ = '+sh_n(m)+' × '+sh_n(w[1])+' × '+dT+'<br>ΔQ = '+sh_n(Q)+' J'};}},
-      {q:'84 000 J raises the temperature of some water by 10 °C. The mass of the water is',unit:'kg',answer:2,working:'ΔQ = 84 000 J<br>c = 4200 J/kg °C<br>ΔT = 10 °C<br>m = ?||ΔQ = m × c × ΔT<br>84 000 = m × 4200 × 10<br>84 000 = m × 42 000<br>m = [[84 000|42 000]]<br>m = 2 kg',
-       make:rnd=>{const w=calcPick(rnd,[['some water',[0.2,0.25,0.5,0.8,1,1.5,2]],['the water in a kettle',[0.5,0.8,1,1.5]],['the water in Elena’s bottle',[0.25,0.5,0.75]],['the water in a fish tank',[20,25,40,50]]]),what=w[0],m=calcPick(rnd,w[1]),dT=calcPick(rnd,what.includes('tank')?[2,3,4,5]:[5,10,15,20,25,40]),cd=4200*dT,Q=Math.round(m*cd);
-         return {q:sh_n(Q)+' J raises the temperature of '+what+' by '+dT+' °C. The mass of the water is',unit:'kg',answer:m,
-           working:'ΔQ = '+sh_n(Q)+' J<br>c = 4200 J/kg °C<br>ΔT = '+dT+' °C<br>m = ?||ΔQ = m × c × ΔT<br>'+sh_n(Q)+' = m × 4200 × '+dT+'<br>'+sh_n(Q)+' = m × '+sh_n(cd)+'<br>m = [['+sh_n(Q)+'|'+sh_n(cd)+']]<br>m = '+sh_n(m)+' kg'};}}
-    
-  ]
+    host:act('shc','Calculate','Thermal energy, mass, c and temperature change','Use ΔQ = mcΔT. 1 kJ = 1000 J and 1000 g = 1 kg. Press New problems for another pair.'),
+    questions:[calcFix(sh_q1,1),calcFix(sh_q2,2)]
   });
 }
 
