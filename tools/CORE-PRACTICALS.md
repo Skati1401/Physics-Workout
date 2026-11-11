@@ -59,8 +59,8 @@ The new chat should then:
 7. **Push the draft** to `main` and send Alex its link: `https://skati1401.github.io/Physics-Workout/<slug>-practical.html`.
 8. **Publish once Alex approves.**
    - Set `"draft": false` and rebuild.
-   - Add its card under "Core Practicals" in `igcse.html`, in spec order, with a TA tag if needed.
-   - Add the `.cp-banner` to its workout tab's heading line, copying the one in `falling-stopping-springs.html#hooke`. If that workout can't open a tab from `#tab`, add hash support as in the 1b page. Units 2, 3 and 7 have no workouts yet: skip the banner and note it below.
+   - Add its card to its unit's section in `igcse.html`, after the unit's workouts and in spec order (`<li id="cp-<slug>">`, a "Core practical" tag, a TA tag if needed), and a link to `#cp-<slug>` in the Core Practicals section's `.cp-list`.
+   - On the workout tab for its linked spec points, add only the one-line `.cp-banner` link (copy the one in `falling-stopping-springs.html#hooke`). Never frame the practical's animation in a workout or put its method Order or results work there (Alex, 7 Nov 2026).
    - Add a "Core practical x.xx" tag on the animation's card in `animations/igcse.html`.
    - Update the status in this table.
 
@@ -68,16 +68,16 @@ The new chat should then:
 
 The guide's PDF pages are those of the PDF Alex shared; in the Project doc, look for the "---- PDF page N ----" markers. The linked spec points are as the guide lists them (2017), so check the P suffixes against the current spec.
 
-| # | Spec | Practical | Guide PDF pages | Spec points it links to (guide) | TA | Animation | Workout tab | Batch | Status |
+| # | Spec | Practical | Guide PDF pages | Spec points it links to (guide) | TA | Animation | Workout tab (banner link only, since 11 Nov 2026) | Batch | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 1.5 | Motion of everyday objects (toy car, tennis ball) | 143–148 | 1.6, 1.7, 1.8, 1.10, 1.21 | | new `ramp-motion.html` | `motion.html#measuring` (Measure v tab) | A | **published** (21 Oct 2026; Alex to review) |
+| 1 | 1.5 | Motion of everyday objects (toy car, tennis ball) | 143–148 | 1.6, 1.7, 1.8, 1.10, 1.21 | | new `ramp-motion.html` | `motion.html` (1a; the Measure v tab was removed 11 Nov 2026) | A | **published** (21 Oct 2026; Alex to review) |
 | 2 | 1.22 | Extension of springs, wires, rubber bands | 149–152 | 1.18, 1.23, 1.24 | | `hookes-law.html` | `falling-stopping-springs.html#hooke` | done | **published** (the model) |
 | 3 | 2.23P | Charging insulators by friction | 153–155 | 2.22P, 2.24, 2.25, 2.26, 2.27, 2.28 | TA | new `electrostatic-charging.html` (Hanging rod, Paper bits, Water, Electroscope) | `electric-charge.html#charging` (framed, with the banner) | C | **published** (4 Nov 2026; Alex to review; mark scheme check done) |
 | 4 | 3.17 | Refraction: rectangular, semicircular blocks, prisms | 156–162 | 3.14, 3.15, 3.16, 3.18, 3.21, 3.22 | | new `refraction.html` (shared with 3.19) | `light-and-sound.html#refraction` (3b; framed, with the banner) | C | **published** (4 Nov 2026; Alex to review; mark scheme check done) |
 | 5 | 3.19 | Refractive index of glass | 163–166 | 3.14–3.18, 3.20, 3.21, 3.22 | | `refraction.html` (shared with 3.17) | `light-and-sound.html#refraction` (3b; second banner) | B | **published** (4 Nov 2026; Alex to review; mark scheme check done) |
 | 6 | 3.25P | Speed of sound in air | 167–169 | 1.4, 3.23 | TA | new `speed-of-sound.html` (Direct, Echo, Two microphones) | `sound.html#speed` (3c, TA; framed, with the banner) | B | **published** (4 Nov 2026; Alex to review; mark scheme check done) |
 | 7 | 3.27P | Frequency of sound with an oscilloscope | 170–173 | 3.24, 3.25, 3.26, 3.28, 3.29 | TA | new `oscilloscope.html` | `sound.html#pitch` (3c, TA; framed, with the banner) | C | **published** (4 Nov 2026; Alex to review; mark scheme check done) |
-| 8 | 4.9 | Thermal energy transfer (conduction, convection, radiation) | 174–178 | 4.6, 4.7, 4.8, 4.10, 5.3 | | new `heat-transfer.html` (Conduction, Convection, Radiation) | `heat-transfer-igcse.html#practical` | C | **published** (2 Nov 2026; Alex to review; mark scheme check done 2 Nov 2026) |
+| 8 | 4.9 | Thermal energy transfer (conduction, convection, radiation) | 174–178 | 4.6, 4.7, 4.8, 4.10, 5.3 | | new `heat-transfer.html` (Conduction, Convection, Radiation) | `heat-transfer-igcse.html` (4b; the Practicals tab was removed 11 Nov 2026) | C | **published** (2 Nov 2026; Alex to review; mark scheme check done 2 Nov 2026) |
 | 9 | 5.4 | Density from mass and volume | 179–183 | 1.2 | | new `density.html` (Regular block, Irregular object, Liquid) | `density-pressure-state.html#density` | B | **published** (2 Nov 2026; Alex to review; mark scheme check done 2 Nov 2026) |
 | 10 | 5.14P | Specific heat capacity | 184–187 | 5.12, 5.13 | TA | `specific-heat.html` (moved out of the Unit 5 Specific Heat tab, which now frames it) | `density-pressure-state.html#shc` | A | **published** (21 Oct 2026; Alex to review) |
 | 11 | 6.6 | Magnetic field of a bar magnet | 188–189 | 6.2, 6.3, 6.4, 6.5, 6.7 | | `magnetic-field-patterns.html` (Experiment mode added) | `magnetism-and-motor-effect.html#fields` | A | **published** (21 Oct 2026; Alex to review) |
@@ -89,6 +89,10 @@ The guide's PDF pages are those of the PDF Alex shared; in the Project doc, look
 - **A** (extend what exists): 1.5, 5.11P, 6.6, 5.14P.
 - **B** (measure and plot): 2.9, 3.19, 5.4, 3.25P.
 - **C** (observe and explain): 2.23P, 3.17, 3.27P, 4.9, 7.6. Do 3.17 before 3.19 if B and C overlap, so they share the light box.
+
+## Out of the workouts (11 Nov 2026, `TODO.md` 5a)
+
+Alex (7 Nov 2026): the practicals appear in lots of places and are large, so they left the workouts. Each workout tab lost the practical's animation frame and its method Order (1c Hooke's Law also lost "Use the results", the practical's own results), and the practical's spec point came off the tab's badges; the tab keeps a one-line `.cp-banner` link. The 1a Measure v and 4b Practicals tabs were only the practical, so they were removed: their old `#measuring` and `#practical` links forward to the practical pages, and the banner moved to 1a Speed and Acceleration and 4b Which Method?. Every changed workout's `STORE_KEY` was bumped, carrying the answers to the activities that stayed. On `igcse.html` the practical cards sit in their units and Core Practicals is a list of links. The notes below ("framed … with the banner") describe the old layout.
 
 ## Notes from Hooke's law (the model)
 
