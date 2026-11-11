@@ -84,6 +84,31 @@
   ],explain:'Voltage is the energy transferred per unit charge between two points, so the voltmeter is joined across the two ends of the component. Its very high resistance means hardly any current goes through it.'});
 }
 
+/* A graph with all four quadrants: the axes go through the origin, the scale numbers sit along the bottom and left edges.
+   (lineGraph in the engine puts its axes at xMin and yMin, so it cannot show reversed readings.)
+   sketch:true draws exam sketch axes: no grid or numbers, the labels at the ends of the axes. */
+const LAMP=[[0,0],[1,0.1],[2,0.16],[3,0.21],[4,0.25],[5,0.28],[6,0.3]];
+const LAMP4=LAMP.slice(1).reverse().map(p=>[-p[0],-p[1]]).concat(LAMP);   // reversed: the same curve rotated 180° about the origin
+function quadGraph(o){
+  const W=o.W||560,H=o.H||400,sk=!!o.sketch,pl=sk?14:58,pr=sk?14:18,pt=sk?14:16,pb=sk?14:50;
+  const gx=x=>pl+(x-o.xMin)/(o.xMax-o.xMin)*(W-pl-pr), gy=y=>H-pb-(y-o.yMin)/(o.yMax-o.yMin)*(H-pt-pb);
+  const n=t=>String(t).replace('-','−');
+  let s='<svg class="graph" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+(o.label||'Graph')+'">';
+  if(!sk){
+    o.yTicks.forEach(t=>{s+='<line class="g-grid" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+gy(t)+'" y2="'+gy(t)+'"/><text class="g-tick" x="'+(pl-8)+'" y="'+(gy(t)+5)+'" text-anchor="end">'+n(t)+'</text>';});
+    o.xTicks.forEach(t=>{s+='<line class="g-grid" y1="'+pt+'" y2="'+(H-pb)+'" x1="'+gx(t)+'" x2="'+gx(t)+'"/><text class="g-tick" x="'+gx(t)+'" y="'+(H-pb+20)+'" text-anchor="middle">'+n(t)+'</text>';});
+    s+='<text class="g-lab" x="'+(pl+(W-pl-pr)/2)+'" y="'+(H-8)+'" text-anchor="middle">'+o.xLabel+'</text>';
+    s+='<text class="g-lab" transform="translate(16 '+(pt+(H-pt-pb)/2)+') rotate(-90)" text-anchor="middle">'+o.yLabel+'</text>';
+  }else{
+    s+='<text class="g-lab" x="'+(W-pr)+'" y="'+(gy(0)+18)+'" text-anchor="end">'+o.xLabel+'</text>';
+    s+='<text class="g-lab" x="'+(gx(0)+8)+'" y="'+(pt+10)+'">'+o.yLabel+'</text>';
+    s+='<text class="g-lab" x="'+(gx(0)+7)+'" y="'+(gy(0)+17)+'">0</text>';
+  }
+  s+='<line class="g-axis g-axis0" x1="'+gx(0)+'" x2="'+gx(0)+'" y1="'+pt+'" y2="'+(H-pb)+'"/><line class="g-axis g-axis0" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+gy(0)+'" y2="'+gy(0)+'"/>';
+  o.segments.forEach(sg=>{s+='<polyline class="g-line '+(sg.cls||'')+'" points="'+sg.pts.map(p=>gx(p[0]).toFixed(1)+','+gy(p[1]).toFixed(1)).join(' ')+'"/>';});
+  return {svg:s+(o.extra?o.extra(gx,gy):'')+'</svg>',toString(){return this.svg;}};
+}
+
 /* ================= EXPERIMENT ================= */
 {
   act('experiment','Your turn','Take your own readings','Press Experiment, choose a component, then drag the potentiometer to each voltage and press Take reading. Take readings from 0 to 6 V, then reverse the battery and take them again, for the fixed resistor, the filament lamp and the diode. Which one has a constant resistance, which one’s resistance rises, and which one only conducts one way?');
@@ -120,7 +145,8 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
     {text:'To check that the voltmeter is reading correctly',why:'Reversing tests the component, not the meter.'},
     {text:'To let the component cool down between readings',why:'Switching off does that. Reversing shows how the component behaves the other way round.'},
     {text:'Negative values make the graph easier to draw',why:'They add a second part to the graph, which is what shows how a diode differs from a resistor or a lamp.'}
-  ],explain:'A resistor and a lamp behave the same both ways round, so their graphs have the same shape below the origin. A diode lets almost no current through in reverse, which only shows if you test it that way.'});
+  ],explain:'A resistor and a lamp behave the same both ways round. Reversed, the voltage and the current are both negative, so the lamp’s graph is the same curve rotated 180° about the origin, into the negative quadrant. A diode lets almost no current through in reverse, which only shows if you test it that way.',
+  reveal:'<div class="iv-sketch">'+quadGraph({label:'Sketch of current against voltage for a filament lamp: an S-shaped curve through the origin, the same shape in the negative quadrant as in the positive one',sketch:true,W:260,H:210,xMin:-6,xMax:6,yMin:-0.36,yMax:0.36,xLabel:'voltage',yLabel:'current',segments:[{pts:LAMP4,cls:'g-line-c'}]})+'</div>'});
 }
 
 /* ================= 4. RESULTS ================= */
@@ -185,18 +211,18 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
 }
 
 /* ================= 5. GRAPHS ================= */
-const GR={xMin:0,xMax:6,yMin:0,yMax:0.6,xTicks:[0,1,2,3,4,5,6],yTicks:[0,0.1,0.2,0.3,0.4,0.5,0.6],xLabel:'voltage (V)',yLabel:'current (A)',W:560,H:340};
+const GR={xMin:-6,xMax:6,yMin:-0.6,yMax:0.6,xTicks:[-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6],yTicks:[-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,0.6],xLabel:'voltage (V)',yLabel:'current (A)',W:560,H:420};
 function lab(g0,t,x,y){return '<circle cx="'+g0.gx(x)+'" cy="'+g0.gy(y)+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+g0.gx(x)+'" y="'+(g0.gy(y)+5)+'" text-anchor="middle" font-size="14" fill="var(--ink)">'+t+'</text>';}
 function ivGraph(label){
-  const A=[[0,0],[6,0.6]], B=[[0,0],[6,0.24]], C=[[0,0],[1,0.1],[2,0.16],[3,0.21],[4,0.25],[5,0.28],[6,0.3]];
-  const g0=lineGraph(Object.assign({points:[[0,0]]},GR));
-  return lineGraph(Object.assign({label:label,segments:[{pts:A},{pts:B,cls:'g-line-b'},{pts:C,cls:'g-line-c'}],
-    extra:lab(g0,'A',5.6,0.56)+lab(g0,'B',5.6,0.17)+lab(g0,'C',5.6,0.36)},GR)).svg;
+  // readings with the connections forwards (positive) and reversed (negative)
+  const A=[[-6,-0.6],[6,0.6]], B=[[-6,-0.24],[6,0.24]];
+  return quadGraph(Object.assign({label:label,segments:[{pts:A},{pts:B,cls:'g-line-b'},{pts:LAMP4,cls:'g-line-c'}],
+    extra:(gx,gy)=>{const g0={gx:gx,gy:gy};return lab(g0,'A',4.6,0.52)+lab(g0,'B',5.5,0.15)+lab(g0,'C',5.5,0.36);}},GR)).svg;
 }
 {
-  const body=act('graphs','Calculate','Read the graph','The graph shows current against voltage for two resistors and a filament lamp. Read values off the graph, then use V = I × R.');
+  const body=act('graphs','Calculate','Read the graph','The graph shows current against voltage for two resistors and a filament lamp, with the connections forwards (positive) and reversed (negative). Read values off the graph, then use V = I × R.');
   const split=mk('div','graph-split');body.appendChild(split);
-  split.appendChild(mk('div','graph-box',ivGraph('Current against voltage for lines A, B and C')));
+  split.appendChild(mk('div','graph-box',ivGraph('Current against voltage from −6 V to +6 V for lines A, B and C. A and B are straight lines through the origin. C is a curve through the origin, with the same shape in the negative quadrant as in the positive one')));
   const side=mk('div','graph-side');split.appendChild(side);
   createCalc({host:side,questions:[
     {q:'Resistor A: what is its resistance?',unit:'Ω',answer:10,working:'At 5.0 V, I = 0.50 A<br>V = I × R<br>5.0 = 0.50 × R<br>R = [[5.0|0.50]]<br>R = 10 Ω'},
@@ -212,7 +238,7 @@ function ivGraph(label){
     {text:'Line A: it carries the biggest current',why:'Line A is a straight line through the origin, so its resistance is constant: a fixed resistor.'},
     {text:'Line B: it carries the smallest current',why:'Line B is straight, so its resistance does not change. A lamp’s resistance rises as it heats.'},
     {text:'Any of them: all three go through the origin',why:'All three start at the origin, but only a lamp’s line curves over as it heats up.'}
-  ],explain:'A and B are straight lines through the origin: fixed resistors. C curves over because the lamp’s resistance rises as its filament heats up.'});
+  ],explain:'A and B are straight lines through the origin: fixed resistors. C curves over because the lamp’s resistance rises as its filament heats up. Reversed, it heats up just the same, so C is the same curve rotated 180° into the negative quadrant.'});
 }
 {
   const body=act('graphs','Predict','Which has more resistance?','');
