@@ -504,6 +504,11 @@ const calcWork=w=>{const t=FR(w),k=t.indexOf('||');return k<0?t:'<div class="cw-
 // seeded random numbers for New problems: calcRnd(seed) gives a function returning 0 to 1; calcPick(rnd,list) picks one
 const calcRnd=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
 const calcPick=(rnd,arr)=>arr[Math.floor(rnd()*arr.length)];
+// calcNum(x): a number for a question or its working: no float noise, a real minus sign, a space in numbers of 10 000 and over.
+// calcFix(gen,seed): a card's first (fixed) question made by its own New problems generator, so the first set follows the
+// same rules as every new set (11 Nov 2026: two questions per card, the first a rearrangement, the second harder).
+const calcNum=x=>{const v=+(+x).toPrecision(10),q=String(Math.abs(v)).split('.');if(q[0].length>4)q[0]=q[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (v<0?'\u2212':'')+q.join('.');};
+const calcFix=(gen,seed)=>Object.assign(gen(calcRnd(seed)),{make:gen,fresh:true});
 function createCalc(cfg){
   const host=cfg.host,qs=cfg.questions,id='calc'+(++calcN);
   function hintLabel(row,q,clear){
@@ -544,6 +549,10 @@ function createCalc(cfg){
   // set is always the fixed questions; the button makes a new set from a seed saved with the answers, so a reload
   // shows the same problems.
   const makers=cfg.makers||qs.map(q=>q.make),fixed=qs.map(q=>Object.assign({},q));let seed=0;
+  // Saved answers carry a signature of the card's questions and generators, so answers saved before a card was changed
+  // are not loaded into its new questions (no STORE_KEY bump needed for a Calculate change). A card built with calcFix
+  // ignores answers saved before signatures existed.
+  const sig=(()=>{const t=fixed.map((q,i)=>q.q+'|'+q.answer+'|'+(makers[i]||'')).join('#');let h=0;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return h;})();
   const apply=s=>{
     seed=s;const rnd=calcRnd(s||1);
     qs.forEach((q,i)=>{
@@ -579,8 +588,9 @@ function createCalc(cfg){
   }
   const inp=i=>document.getElementById(id+'-'+i);
   return track(host,{reset:reset,
-    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed}),
+    getState:()=>({v:qs.map((q,i)=>inp(i).value),ok:qs.map((q,i)=>inp(i).disabled),seed:seed,sig:sig}),
     setState:s=>{
+      if(!s||(s.sig===undefined?fixed.some(q=>q.fresh):s.sig!==sig))return;
       if(makers.some(Boolean))apply((s&&s.seed)||0);
       reset();
       qs.forEach((q,i)=>{
