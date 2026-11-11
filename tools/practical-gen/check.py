@@ -96,7 +96,7 @@ async () => {
       host.querySelector('.bar .btn.primary').click();
       res = host.querySelector('.bar .fb').textContent.slice(0, 60);
     } else if (kind === 'Plot') {
-      const o = c.graph, pl = 58, pr = 18, pt = 16, pb = 50;
+      const o = c.graph, pl = o.pl || 58, pr = 18, pt = 16, pb = 50;
       const gx = x => pl + (x - o.xMin) / (o.xMax - o.xMin) * (o.W - pl - pr), gy = y => o.H - pb - (y - o.yMin) / (o.yMax - o.yMin) * (o.H - pt - pb);
       for (const p of c.points) {
         const svg = host.querySelector('.plot-svg'); svg.scrollIntoView({block:'center'});

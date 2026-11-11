@@ -164,11 +164,12 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
   ]});
 }
 {
-  const body=act('results','Plot','Plot Ali’s results','Plot each reading from Ali’s table as a small cross: current up the side, voltage along the bottom. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
+  const body=act('results','Plot','Plot Ali’s results','Ali then reverses the connections to the lamp and takes six more readings. The voltage and the current are now both negative. Plot all twelve readings as small crosses: current up the side, voltage along the bottom. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
   createPlot({host:body,
-    points:[{x:1,y:0.10},{x:2,y:0.16},{x:3,y:0.21},{x:4,y:0.25},{x:5,y:0.28},{x:6,y:0.30}],
-    rowText:p=>fmt(p.x,1)+' V, '+fmt(p.y,2)+' A',
-    graph:{xMin:0,xMax:6,yMin:0,yMax:0.35,xTicks:[0,1,2,3,4,5,6],yTicks:[0,0.05,0.1,0.15,0.2,0.25,0.3,0.35],minor:[0.5,0.01],snap:[0.5,0.01],xLabel:'voltage (V)',yLabel:'current (A)',W:560,H:360}});
+    // forwards first, then reversed: saved answers go by position, so the six reversed readings are added at the end
+    points:LAMP.slice(1).concat(LAMP.slice(1).map(p=>[-p[0],-p[1]])).map(p=>({x:p[0],y:p[1]})),
+    rowText:p=>(p.x<0?'−':'')+fmt(Math.abs(p.x),1)+' V, '+(p.y<0?'−':'')+fmt(Math.abs(p.y),2)+' A',
+    graph:{xMin:-6,xMax:6,yMin:-0.32,yMax:0.32,xTicks:[-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6],yTicks:[-0.3,-0.25,-0.2,-0.15,-0.1,-0.05,0,0.05,0.1,0.15,0.2,0.25,0.3],minor:[0.5,0.01],snap:[0.5,0.01],xLabel:'voltage (V)',yLabel:'current (A)',W:574,H:580,pl:72}});
 }
 {
   const body=act('results','Predict','Reading the results','');
@@ -186,7 +187,7 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
     {text:'Short straight lines joining each point to the next',why:'Joining the dots follows every small error. A line of best fit shows the trend, so it is one smooth line.'},
     {text:'One straight line through the origin and the last point',why:'The points do not lie on a straight line: the gradient gets less as the voltage rises. A straight line hides that.'},
     {text:'A curve that does not go through the origin',why:'With no voltage there is no current, so the line must start at the origin.'}
-  ],explain:'With 0 V there is no current, so the line starts at the origin. The points curve over as the lamp heats up, so draw one smooth curve close to all of them.'});
+  ],explain:'With 0 V there is no current, so the line goes through the origin. The points curve over on both sides as the lamp heats up, so draw one smooth curve close to all of them. The negative part is the same curve rotated 180° about the origin.'});
 }
 {
   const body=act('results','Predict','An anomalous result','');
