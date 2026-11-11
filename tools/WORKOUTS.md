@@ -60,9 +60,11 @@ Stand-alone pages in `animations/` (teaching-animations skill), one copy framed 
 | 7 | 7a **40** · 7b 23 + 12 |
 | 8 | 8a 29 + 13 · 8b TA 20 |
 
-Over the 30-minute limit: 1b, 1d, 3a, 4b, 7a (4d at it). Mostly Calculate cards (3a and 7a have 4–5 cards) and 4b's Exam explain tab. Units and Terms tabs run 10–14 min, mainly from 12–14-clue crosswords.
+**After the repeats were cut (11 Nov 2026):** 1b 34 · 2a 23 · 2b 24 · 2d 19 · 3a 36 · 3b 19 + 12 · 4a 26 · 4b 30 · 4d 27 · 5b 20 + 10 · 6b 19 + 12 · 7a 37 · 7b 22 + 12 · 8a 24 + 13 · 8b 19; the rest unchanged. Still over 30: 1b, 1d, 3a, 7a (`TODO.md` 4b).
 
-**Repeated activities (scan of all 23 workouts, 11 Nov 2026).** Overviews and crosswords overlap the other tabs by design and are left out. Each line: the activities that test the same idea, then the suggested cut. Nothing has been cut yet (`TODO.md` 4c).
+Before the cuts, over the 30-minute limit: 1b, 1d, 3a, 4b, 7a (4d at it). Mostly Calculate cards (3a and 7a have 4–5 cards) and 4b's Exam explain tab. Units and Terms tabs run 10–14 min, mainly from 12–14-clue crosswords.
+
+**Repeated activities (scan of all 23 workouts, 11 Nov 2026).** Overviews and crosswords overlap the other tabs by design and are left out. Each line: the activities that test the same idea, then the suggested cut. **All 17 done, 11 Nov 2026** (Alex: keep a mix of matches and sorts, as matches are quick and common in the exam). Where the cut differs from the suggestion: 1 kept the Match at 4 pairs; 4d cut the drawback Match, as the Sort also holds the advantages; 5b moved the Squashing Order into the Gas Molecules tab in place of its Quick check; 7b kept Why so hot? and cut its card from the Sort; 8a kept the What is it? Match and cut the Order.
 
 1. **1b** Force and scene Match (forcedef) and Name each force labels (freebody) both name weight, upthrust, friction, air resistance. Keep the labels (a diagram task); cut the Match or keep only its 2 forces the labels lack (magnetic, electrostatic) in the Sort.
 2. **1b / 8a** W = m × g: 1b Weight Calculate and 8a Weight on other worlds. 8a's is 8.3 (g on other bodies), so keep both, but 8a could drop to 1 question.
