@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Seesaw Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Change two weights and their distances until the clockwise and anticlockwise moments balance.">
+<meta name="description" content="Interactive physics animation. Change two weights and their distances until the clockwise and anticlockwise moments balance, then predict which side goes down or where to sit to balance.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -161,6 +161,28 @@
   .embed body{background:transparent;}
   .embed .page{padding:0;max-width:none;}
   .embed .home-link,.embed .page-head{display:none;}
+  .view{max-height:max(240px,calc(100vh - 290px));touch-action:manipulation;}
+  .embed .view{max-height:400px;}
+  .view.tall,.embed .view.tall{max-height:none;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{border-radius:0;margin-left:-1px;font-weight:600;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .pick{cursor:pointer;}
+  .pick.off{cursor:default;}
+  .pick:focus{outline:none;}
+  .pick .ring{stroke:transparent;}
+  .pick:focus-visible .ring{stroke:var(--accent);}
+  .note.bad{background:var(--bad-soft);}
+  .note.good{background:var(--good-soft);}
+  .tro{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:4px 14px;align-items:center;}
+  .tro .lab{margin-bottom:0;}
+  .tro-name{font:600 12.5px var(--font-mono);color:#fff;padding:5px 8px;border-radius:6px;white-space:nowrap;text-align:center;}
+  .tro-name.t1{background:var(--p1);} .tro-name.t2{background:var(--p2);}
+  #ss-w1,#ss-d1{accent-color:var(--p1);} #ss-w2,#ss-d2{accent-color:var(--p2);}
+  :root{--p1:#6d3bce;--p2:#0c8a76;--grass:#cfe8b4;--grass-line:#b5d698;--steel:#66748c;--steel-hi:#c3ccda;--steel-sh:#3f4a5e;--wood-f:#c99e6a;--wood-t:#e3c08f;--wood-s:#9c7444;--skin:#e9bd95;--hair:#3b2a1f;--jeans:#3d4c70;--jeans-hi:#7384a8;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--p1:#8257e0;--p2:#17a08a;--grass:#22361a;--grass-line:#2c4522;--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--wood-f:#8a6a43;--wood-t:#a8855a;--wood-s:#644b2d;--skin:#d9a982;--hair:#7a563c;--jeans:#4a5b85;--jeans-hi:#8496bd;} }
+  :root[data-theme="dark"]{--p1:#8257e0;--p2:#17a08a;--grass:#22361a;--grass-line:#2c4522;--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--wood-f:#8a6a43;--wood-t:#a8855a;--wood-s:#644b2d;--skin:#d9a982;--hair:#7a563c;--jeans:#4a5b85;--jeans-hi:#8496bd;}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -267,22 +289,28 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="ss-svg" viewBox="0 16 560 210" role="img" aria-label="A seesaw with a person on each side"></svg>
+      <svg class="view" id="ss-svg" viewBox="0 0 860 350" role="img" aria-label="A seesaw with a person sitting on each side. Beside it, the force diagram: a beam on a pivot with each person's weight and distance from the pivot, and the anticlockwise and clockwise moments as bars."></svg>
       <div class="under">
-        <div class="sliders">
-          <div><label class="lab" for="ss-w1">Left weight <output id="ss-w1o"></output></label><input type="range" id="ss-w1" min="100" max="800" step="50" value="400"></div>
-          <div><label class="lab" for="ss-w2">Right weight <output id="ss-w2o"></output></label><input type="range" id="ss-w2" min="100" max="800" step="50" value="300"></div>
-          <div><label class="lab" for="ss-d1">Left distance <output id="ss-d1o"></output></label><input type="range" id="ss-d1" min="0.5" max="2.5" step="0.25" value="1.5"></div>
-          <div><label class="lab" for="ss-d2">Right distance <output id="ss-d2o"></output></label><input type="range" id="ss-d2" min="0.5" max="2.5" step="0.25" value="2.5"></div>
-        </div>
         <div class="btn-group">
+          <button class="btn btn-primary" id="ss-go" type="button" hidden>&#9654; Go</button>
+          <button class="btn" id="ss-new" type="button" hidden>&#8634; New question</button>
           <button class="btn" id="slow" type="button" aria-pressed="false">Slow motion</button>
         </div>
       </div>
     </div>
     <div class="side">
+      <div class="seg tabs" id="ss-mode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Predict</button></div>
+      <div class="tro" id="ss-sliders" role="group" aria-label="The two people">
+        <span class="tro-name t1">Left</span>
+        <div><label class="lab" for="ss-w1"><span>Weight</span> <output id="ss-w1o"></output></label><input type="range" id="ss-w1" min="100" max="800" step="50" value="400" aria-label="Left weight"></div>
+        <div><label class="lab" for="ss-d1"><span>Distance</span> <output id="ss-d1o"></output></label><input type="range" id="ss-d1" min="0.5" max="2.5" step="0.25" value="1.5" aria-label="Left distance from the pivot"></div>
+        <span class="tro-name t2">Right</span>
+        <div><label class="lab" for="ss-w2"><span>Weight</span> <output id="ss-w2o"></output></label><input type="range" id="ss-w2" min="100" max="800" step="50" value="300" aria-label="Right weight"></div>
+        <div><label class="lab" for="ss-d2"><span>Distance</span> <output id="ss-d2o"></output></label><input type="range" id="ss-d2" min="0.5" max="2.5" step="0.25" value="2.5" aria-label="Right distance from the pivot"></div>
+      </div>
       <p class="note" id="ss-note" aria-live="polite"></p>
-      <p class="hint">Drag a person along the seesaw to move them, or use the distance sliders.</p>
+      <p class="hint" id="ss-hint">Drag a person along the seesaw to move them, or use the distance sliders.</p>
+      <p class="hint" id="ss-score" hidden></p>
       <details class="working" id="working">
         <summary>Show working</summary>
         <div class="eq" id="ss-eq"></div>
@@ -331,54 +359,257 @@
   }
   function watchEquals(sel){ Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }); }
 
+    // ---- solid kit (the same block is in reaction-time.html, roller-coaster-energy.html, heat-transfer.html, density.html and liquid-pressure.html) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
+
+  /* The picture is 860 x 350: the seesaw with a person on each side (left purple, right green, larger when heavier), and beside it the force
+     diagram as an exam paper draws it, with the two moments as bars. Under 520px the same code uses a tall viewBox with the parts stacked.
+     Explore: change the weights and distances (sliders, or drag a person) and the seesaw tips at once.
+     Predict: a question is dealt with the seesaw held level on two blocks; the student clicks on the picture, then Go takes the blocks away. */
   function initSeesawSim(){
     var w1=bindRange('ss-w1',upd), d1=bindRange('ss-d1',upd), w2=bindRange('ss-w2',upd), d2=bindRange('ss-d2',upd);
-    var CX=280, CY=150, PXM=96, ang=0, target=0, raf=0;
-    function draw(){
-      var a=ang*Math.PI/180, c=Math.cos(a), sn=Math.sin(a), g='<defs>'+arrowHead('ss-h','var(--moments)')+'</defs>';
-      function pt(d){ return {x:CX+d*PXM*c, y:CY+d*PXM*sn}; }
-      var L=pt(-2.6), R=pt(2.6);
-      g+='<line x1="20" x2="540" y1="214" y2="214" stroke="var(--ink-soft)" stroke-width="3"/>';
-      g+='<polygon points="'+CX+','+(CY+4)+' '+(CX-26)+',214 '+(CX+26)+',214" fill="var(--panel-2,var(--panel))" stroke="var(--ink-soft)" stroke-width="2.5"/>';
-      g+='<line x1="'+L.x+'" y1="'+L.y+'" x2="'+R.x+'" y2="'+R.y+'" stroke="var(--ink)" stroke-width="8" stroke-linecap="round"/>';
-      for(var k=-2;k<=2;k++){ if(!k) continue; var m=pt(k); g+='<circle cx="'+m.x+'" cy="'+m.y+'" r="2" fill="var(--panel)"/>'; }
-      function person(d,W,lab,side){
-        var q=pt(d), h=16+W/40;
-        var s='<rect x="'+(q.x-14)+'" y="'+(q.y-4-h)+'" width="28" height="'+h+'" rx="6" fill="var(--moments-soft)" stroke="var(--moments)" stroke-width="2"/>';
-        s+='<line x1="'+q.x+'" x2="'+q.x+'" y1="'+(q.y-4-h-34)+'" y2="'+(q.y-4-h-6)+'" stroke="var(--moments)" stroke-width="3.5" marker-end="url(#ss-h)"/>';
-        s+='<text x="'+q.x+'" y="'+(q.y-4-h-40)+'" text-anchor="middle" font-size="12.5" fill="var(--moments)">'+W+' N</text>';
-        // distance label under the middle of its half of the beam, tilted with it
-        var m=pt(d/2), lx=m.x-18*sn, ly=m.y+18*c;
-        s+='<text x="'+lx+'" y="'+ly+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)" transform="rotate('+ang+' '+lx+' '+ly+')">'+Math.abs(d)+' m</text>';
-        // invisible grab area over the person and their weight arrow
-        s+='<rect class="grab" data-side="'+side+'" x="'+(q.x-26)+'" y="'+(q.y-4-h-52)+'" width="52" height="'+(h+80)+'" fill="transparent"/>';
-        return s;
-      }
-      g+=person(-(+d1.value),+w1.value,'L',-1)+person(+d2.value,+w2.value,'R',1);
-      $('#ss-svg').innerHTML=g;
+    var svgEl=$('#ss-svg'), goBtn=$('#ss-go'), newBtn=$('#ss-new'), mode='explore', ang=0, target=0, raf=0, q=null, nDealt=0, score=[0,0], L=null;
+    var C1='var(--moments)', C2='var(--elastic)', SPOTS=[0.5,1,1.5,2,2.5], LET='ABCDE';
+    function narrow(){ return window.innerWidth<=520; }
+    function lay(){ return narrow()
+      ? {tall:true, W:430, H:584, cx:215, cy:196, pxm:76, gy:262, pk:1, qx:8, qy:16, qn:54,
+         E:{cx:215,by:398,epx:72,tx:12,ty:330}, M:{x:16,y:502,w:398}}
+      : {tall:false, W:860, H:350, cx:262, cy:222, pxm:92, gy:292, pk:1.25, qx:8, qy:17, qn:62,
+         E:{cx:700,by:92,epx:54,tx:552,ty:18}, M:{x:552,y:236,w:296}}; }
+    // the weights and distances in the picture: the sliders in Explore, the dealt question in Predict (d2 is null until a seat is picked)
+    function V(){ if(mode==='predict' && q) return {W1:q.W1, d1:q.d1, W2:q.W2, d2:q.kind==='seat' ? (q.pick ? SPOTS[LET.indexOf(q.pick)] : null) : q.d2};
+      return {W1:+w1.value, d1:+d1.value, W2:+w2.value, d2:+d2.value}; }
+    function tilt(v){ var diff=v.W2*v.d2-v.W1*v.d1; return diff===0 ? 0 : Math.max(-11,Math.min(11, diff/40 + (diff>0?3:-3))); }   // degrees; positive: the right side goes down
+
+    // a seated person, facing the pivot: (x, y) is the seat on top of the beam. Heavier people are drawn larger.
+    function person(x, y, W, face, col){
+      var s=L.pk*(0.66+W/800*0.46), g='<g transform="translate('+f1(x)+' '+f1(y)+') scale('+f1(face*s)+' '+f1(s)+')">';
+      g+=ln(22,1,22,-20,'var(--steel)',3,' stroke-linecap="round"')+ln(18,-20,26,-20,'var(--steel-sh)',3.6,' stroke-linecap="round"');   // the handle
+      g+=tube(0,-6,17,-7,9.5,'var(--jeans)','var(--jeans-hi)')+tube(17,-7,19,16,7.5,'var(--jeans)','var(--jeans-hi)')+ell(22,19.5,7.5,3.8,'#23262c');
+      g+=rect(-8.5,-43,17.5,40,col,' rx="7.5"')+rect(-8.5,-43,6,40,'#000',' rx="3" opacity=".16"')+rect(3.5,-40,3,26,'#fff',' rx="1.5" opacity=".2"');
+      g+=rect(-1.5,-48,6,7,'var(--skin)')+'<circle cx="0.5" cy="-55" r="10" fill="var(--hair)"/><circle cx="3" cy="-52.5" r="8" fill="var(--skin)"/><circle cx="7" cy="-53.5" r="1" fill="#23262c"/>';
+      g+=tube(3,-34,20,-21,5.5,col,'var(--skin)')+'<circle cx="21.5" cy="-20.5" r="3.4" fill="var(--skin)"/>';
+      return g+'</g>';
     }
-    function animate(){
+    // a small curved arrow: the sense of a moment (cw: clockwise)
+    function turnIcon(x, y, r, cw, col){
+      var a0=cw?-140:-40, a1=cw?80:-260, p0=[x+r*Math.cos(a0*Math.PI/180),y+r*Math.sin(a0*Math.PI/180)], p1=[x+r*Math.cos(a1*Math.PI/180),y+r*Math.sin(a1*Math.PI/180)];
+      var tx=(cw?-1:1)*Math.sin(a1*Math.PI/180), ty=(cw?1:-1)*Math.cos(a1*Math.PI/180), nx=-ty, ny=tx, h=r*0.75;
+      return '<path d="M'+f1(p0[0])+','+f1(p0[1])+' A'+r+','+r+' 0 1 '+(cw?1:0)+' '+f1(p1[0])+','+f1(p1[1])+'" fill="none" stroke="'+col+'" stroke-width="2.2" stroke-linecap="round"/>'+
+        pg([[p1[0]+tx*h,p1[1]+ty*h],[p1[0]+nx*h*0.62,p1[1]+ny*h*0.62],[p1[0]-nx*h*0.62,p1[1]-ny*h*0.62]],col);
+    }
+    function pickG(id, x, y, label, inner, st, sel, ask){
+      var col=st==='good'?'var(--good)':(st==='bad'?'var(--bad)':(sel?'var(--accent)':'var(--ink-soft)')), fill=st==='good'?'var(--good-soft)':(st==='bad'?'var(--bad-soft)':(sel?'var(--accent-soft)':'var(--panel)'));
+      return '<g class="pick'+(ask?'':' off')+'" data-pick="'+id+'" tabindex="'+(ask?0:-1)+'" role="button" aria-label="'+label+'"'+(sel?' aria-pressed="true"':'')+'>'+
+        '<circle class="ring" cx="'+f1(x)+'" cy="'+f1(y)+'" r="17" fill="none" stroke-width="3"/><circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="13" fill="'+fill+'" stroke="'+col+'" stroke-width="2"'+(sel||st?'':' stroke-dasharray="4 3"')+'/>'+inner(col)+'</g>';
+    }
+
+    function sceneSVG(v){
+      var a=ang*Math.PI/180, c=Math.cos(a), sn=Math.sin(a), cx=L.cx, cy=L.cy, P=L.pxm, gy=L.gy, g='', k, pr=mode==='predict'&&q, ask=pr&&q.phase==='ask', done=pr&&q.phase==='done';
+      function pt(d, up){ up=up||0; return [cx+d*P*c+up*sn, cy+d*P*sn-up*c]; }   // a point d metres along the beam, "up" pixels above its centre line
+      // the ground, the stand and (while a question is being asked) the two blocks that hold the seesaw level
+      g+=rect(0,gy-3,L.tall?L.W:532,L.H,'var(--grass)')+ln(0,gy-3,L.tall?L.W:532,gy-3,'var(--grass-line)',2);
+      if(L.tall) g+=rect(0,gy+46,L.W,L.H,'var(--panel)');
+      g+=ell(cx,gy+3,60,5,'#000',' opacity=".16"');
+      g+=tube(cx-22,gy-3,cx+7,cy+3,6,'var(--steel-sh)','var(--steel)')+tube(cx+36,gy-3,cx+7,cy+3,6,'var(--steel-sh)','var(--steel)');
+      g+=tube(cx-30,gy,cx,cy+5,7,'var(--steel)','var(--steel-hi)')+tube(cx+30,gy,cx,cy+5,7,'var(--steel)','var(--steel-hi)')+tube(cx-38,gy+1,cx+38,gy+1,6,'var(--steel)','var(--steel-hi)');
+      if(ask) [-2.3,2.3].forEach(function(d){ g+=box(cx+d*P-10,cy+5,20,gy-cy-5,6,-4,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'}); });
+      // the beam: a plank marked every half metre
+      var TL=pt(-2.6,4.5), TR=pt(2.6,4.5), BL=pt(-2.6,-4.5), BR=pt(2.6,-4.5), o=[6,-4];
+      g+=pg([TL,TR,[TR[0]+o[0],TR[1]+o[1]],[TL[0]+o[0],TL[1]+o[1]]],'var(--wood-t)')+pg([TR,[TR[0]+o[0],TR[1]+o[1]],[BR[0]+o[0],BR[1]+o[1]],BR],'var(--wood-s)')+pg([TL,TR,BR,BL],'var(--wood-f)');
+      for(k=-5;k<=5;k++){ if(!k) continue; var m0=pt(k/2,4.5), m1=pt(k/2,k%2?0:-4.5); g+=ln(m0[0],m0[1],m1[0],m1[1],'#fff',1.4,' opacity=".75"'); }
+      g+='<circle cx="'+cx+'" cy="'+cy+'" r="4.5" fill="var(--steel-hi)" stroke="var(--steel-sh)" stroke-width="1.5"/>';
+      // seats to choose from (Predict, "where must they sit?"): a lettered ring on the grass under each seat, with a dotted line up to the beam
+      if(pr && q.kind==='seat') SPOTS.forEach(function(d,i){ var id=LET[i], s=pt(d,-4.5), x=cx+d*P, y=gy+24, sel=q.pick===id, st=done?(id===q.ans?'good':(sel?'bad':'')):'';
+        g+=ln(x,y-14,s[0],s[1]+1,'var(--ink-faint)',1.2,' stroke-dasharray="2 3"');
+        g+=pickG(id,x,y,id+': '+d+' m from the pivot',function(col){ return txt(x,y+4.5,id,{a:'middle',fs:13,c:col,w:700}); },st,sel,ask); });
+      function who(d, W, side, col){
+        var s=pt(d,4.5), hgt=62*L.pk*(0.66+W/800*0.46), top=s[1]-hgt-6, r=person(s[0],s[1],W,-side,col);
+        r+=arrow(s[0],top-30,s[0],top,col,3.5)+txt(s[0],top-36,W+' N',{a:'middle',fs:13,c:col,w:600,halo:1});
+        // invisible grab area over the person and their weight arrow (Explore only)
+        if(!pr) r+='<rect class="grab" data-side="'+side+'" x="'+f1(s[0]-26)+'" y="'+f1(top-50)+'" width="52" height="'+f1(hgt+80)+'" fill="transparent"/>';
+        return r;
+      }
+      g+=who(-v.d1,v.W1,-1,C1); if(v.d2!=null) g+=who(v.d2,v.W2,1,C2);
+      // which side goes down? (Predict): an arrow on the grass under each half of the beam, and = under the pivot
+      if(pr && q.kind==='side'){
+        [['L',-1.25,'the left side goes down'],['R',1.25,'the right side goes down']].forEach(function(p){ var x=cx+p[1]*P, y=gy+24, sel=q.pick===p[0], st=done?(p[0]===q.ans?'good':(sel?'bad':'')):'';
+          g+=pickG(p[0],x,y,p[2],function(col){ return arrow(x,y-8,x,y+8.5,col,2.6); },st,sel,ask); });
+        var ye=gy+24, se=q.pick==='E', ste=done?(q.ans==='E'?'good':(se?'bad':'')):'';
+        g+=pickG('E',cx,ye,'it stays balanced',function(col){ return ln(cx-6,ye-3,cx+6,ye-3,col,2.6,' stroke-linecap="round"')+ln(cx-6,ye+3,cx+6,ye+3,col,2.6,' stroke-linecap="round"'); },ste,se,ask);
+      }
+      // the question, then the verdict, in clear space above the picture
+      if(pr){ var lines=wrapLines(done ? (q.ok?'✓ Right: ':'✗ Not quite: ')+answerText() : askText(), L.qn), colq=done?(q.ok?'var(--good)':'var(--bad)'):'var(--ink)';
+        lines.forEach(function(s,i){ g+=txt(L.qx,L.qy+i*16,s,{fs:13,c:colq,w:600,halo:1}); }); }
+      return g;
+    }
+    // the force diagram as an exam paper draws it: a level beam on a pivot, the two weights and their distances from the pivot
+    function examSVG(v){
+      var E=L.E, x0=E.cx, by=E.by, e=E.epx, g=txt(E.tx,E.ty,'Force diagram',{fs:12.5,c:'var(--ink)',w:700});
+      g+=pg([[x0,by+7],[x0-12,by+25],[x0+12,by+25]],'var(--panel)',' stroke="var(--ink-soft)" stroke-width="2"')+ln(x0-22,by+25,x0+22,by+25,'var(--ink-soft)',2);
+      g+=rect(x0-2.6*e,by,5.2*e,7,'var(--ink)',' rx="1.5"');
+      function force(d, W, side, col, row){
+        var x=x0+side*d*e, len=16+W/16, yd=by-(row?38:15), r='';
+        r+=arrow(x,by+8,x,by+8+len,col,3)+txt(x,by+22+len,W+' N',{a:'middle',fs:12,c:col,w:600});
+        r+=ln(x0,yd,x,yd,'var(--ink-soft)',1.3)+ln(x0,yd-4,x0,yd+4,'var(--ink-soft)',1.3)+ln(x,yd-4,x,yd+4,'var(--ink-soft)',1.3)+ln(x,yd+4,x,by-1,'var(--ink-faint)',1,' stroke-dasharray="2 3"');
+        r+=txt((x0+x)/2,yd-6,d+' m',{a:'middle',fs:12,c:'var(--ink)'});
+        return r;
+      }
+      g+=force(v.d1,v.W1,-1,C1,0);
+      if(v.d2!=null) g+=force(v.d2,v.W2,1,C2,1);
+      else g+=txt(x0+1.4*e,by-21,'distance = ?',{a:'middle',fs:12,c:'var(--ink)'})+txt(x0+1.4*e,by+40,v.W2+' N',{a:'middle',fs:12,c:C2,w:600});
+      return g;
+    }
+    // the two moments as bars; in Predict they stay as "?" until the question has been run
+    function barsSVG(v){
+      var M=L.M, hide=mode==='predict' && q && q.phase!=='done', acw=v.W1*v.d1, cw=v.d2==null?0:v.W2*v.d2, mx=Math.max(acw,cw,1), g='';
+      [['anticlockwise moment',acw,C1,'var(--p1)',false],['clockwise moment',cw,C2,'var(--p2)',true]].forEach(function(r,i){ var y=M.y+i*50;
+        g+=turnIcon(M.x+8,y+6,6.5,r[4],r[2])+txt(M.x+24,y+10,r[0],{fs:12,c:r[2],w:600})+txt(M.x+M.w,y+10,hide?'? N m':num(r[1],1)+' N m',{a:'end',fs:12.5,c:'var(--ink)',w:600});
+        g+=rect(M.x,y+19,M.w-6,13,'var(--bg)',' rx="2"');
+        if(!hide && r[1]>0) g+=box(M.x,y+19,(M.w-6)*r[1]/mx,13,4,-3,r[3]); });
+      return g;
+    }
+    function draw(){
+      var v=V(); L=lay(); svgEl.setAttribute('viewBox','0 0 '+L.W+' '+L.H); svgEl.classList.toggle('tall', !!L.tall);
+      setKeepFocus(svgEl, sceneSVG(v)+examSVG(v)+barsSVG(v));
+    }
+    function animate(then){
       cancelAnimationFrame(raf);
-      if(REDUCED_MOTION){ ang=target; draw(); return; }
-      var a0=ang, t0=performance.now();
-      (function step(now){ var k=Math.min(1,(now-t0)*SPEED()/450), e=1-Math.pow(1-k,3); ang=a0+(target-a0)*e; draw(); if(k<1) raf=requestAnimationFrame(step); })(t0);
+      if(REDUCED_MOTION){ ang=target; draw(); if(then) then(); return; }
+      var a0=ang, t0=performance.now(), wob=then && target===0 && a0===0;   // a balanced seesaw let go: it rocks a little and settles level
+      (function step(now){ var k=Math.min(1,(now-t0)*SPEED()/(wob?1100:450)), e=1-Math.pow(1-k,3);
+        ang = wob ? 1.6*Math.sin(k*Math.PI*3)*(1-k) : a0+(target-a0)*e; draw();
+        if(k<1) raf=requestAnimationFrame(step); else if(then) then(); })(t0);
+    }
+    function workingOf(v){
+      var acw=v.W1*v.d1, cw=v.W2*v.d2, diff=cw-acw;
+      return 'anticlockwise moment = '+v.W1+' × '+v.d1+' = '+num(acw,1)+' N m<br>clockwise moment = '+v.W2+' × '+v.d2+' = '+num(cw,1)+' N m<br><b>'+(diff===0?'Balanced':(diff>0?'Clockwise is bigger: the right side goes down':'Anticlockwise is bigger: the left side goes down'))+'</b>';
     }
     function upd(){
-      var acw=+w1.value*+d1.value, cw=+w2.value*+d2.value, diff=cw-acw;
-      target = diff===0 ? 0 : Math.max(-11,Math.min(11, diff/40 + (diff>0?3:-3)));
+      var v={W1:+w1.value, d1:+d1.value, W2:+w2.value, d2:+d2.value}, acw=v.W1*v.d1, cw=v.W2*v.d2, diff=cw-acw;
       $('#ss-w1o').textContent=w1.value+' N'; $('#ss-d1o').textContent=(+d1.value)+' m'; $('#ss-w2o').textContent=w2.value+' N'; $('#ss-d2o').textContent=(+d2.value)+' m';
-      $('#ss-eq').innerHTML='anticlockwise moment = '+w1.value+' × '+(+d1.value)+' = '+num(acw,1)+' N m<br>clockwise moment = '+w2.value+' × '+(+d2.value)+' = '+num(cw,1)+' N m<br><b>'+(diff===0?'Balanced':(diff>0?'Clockwise is bigger: the right side goes down':'Anticlockwise is bigger: the left side goes down'))+'</b>';
-      var need=acw/+w2.value;
+      if(mode!=='explore') return;
+      target=tilt(v);
+      $('#ss-eq').innerHTML=workingOf(v);
+      var need=acw/v.W2;
       $('#ss-note').innerHTML = diff===0 ? 'The moments are equal, so the seesaw balances.' :
         FR('To balance with this right weight, it would need to sit at d = [['+num(acw,1)+'|'+w2.value+']] = '+num(need,2)+' m'+(need>2.5?', which is off the end of the seesaw.':'.'));
       animate();
     }
-    // drag a person along the beam: project the pointer onto the (tilted) beam, round to the slider's step
-    var svgEl=$('#ss-svg'), drag=null;
-    function svgPt(e){ var q=svgEl.createSVGPoint(); q.x=e.clientX; q.y=e.clientY; return q.matrixTransform(svgEl.getScreenCTM().inverse()); }
-    function along(q){ var a=ang*Math.PI/180; return ((q.x-CX)*Math.cos(a)+(q.y-CY)*Math.sin(a))/PXM; }
+
+    /* ---- Predict ---- */
+    function rnd(list){ return list[Math.floor(Math.random()*list.length)]; }
+    var WS=[100,150,200,250,300,350,400,450,500,550,600,650,700,750,800];
+    function deal(){
+      var k, W1, W2, a, b, kind=nDealt%2?'seat':'side', bal=Math.random()<0.3, tricky=Math.random()<0.65; nDealt++;
+      for(k=0;k<4000;k++){ W1=rnd(WS); W2=rnd(WS); a=rnd(SPOTS); b=rnd(SPOTS);
+        if(kind==='seat'){ if(W1!==W2 && SPOTS.indexOf(W1*a/W2)>=0) break; continue; }
+        if(W1===W2 || a===b) continue;
+        var diff=W2*b-W1*a;
+        if(bal ? diff===0 : (diff!==0 && (!tricky || (W2>W1)!==(diff>0)))) break; }
+      q={kind:kind, W1:W1, d1:a, W2:W2, d2:b, pick:null, phase:'ask', ok:false};
+      q.ans = kind==='seat' ? LET[SPOTS.indexOf(W1*a/W2)] : (W2*b===W1*a ? 'E' : (W2*b>W1*a ? 'R' : 'L'));
+      ang=0; target=0; cancelAnimationFrame(raf); show();
+    }
+    function askText(){ return q.kind==='side' ? 'Predict: the seesaw is held level. Which side goes down when the blocks are taken away? Click an arrow, or = if it stays balanced.'
+      : 'Predict: the seesaw is held level. Where must the '+q.W2+' N person sit so that it stays balanced? Click a letter.'; }
+    function sideWord(id){ return id==='E' ? 'it stays balanced' : (id==='L' ? 'the left side goes down' : 'the right side goes down'); }
+    function answerText(){
+      var acw=q.W1*q.d1;
+      if(q.kind==='side') return sideWord(q.ans)+'.';
+      var dn=acw/q.W2; return 'it balances at '+q.ans+', '+dn+' m from the pivot.';
+    }
+    function show(){
+      var pr=mode==='predict', v=V(), acw, n=$('#ss-note');
+      $('#ss-sliders').hidden=pr; goBtn.hidden=!pr; newBtn.hidden=!pr; $('#ss-hint').hidden=pr; $('#ss-score').hidden=!pr;
+      if(!pr){ upd(); return; }
+      goBtn.disabled = q.phase!=='ask' || !q.pick;
+      $('#ss-score').textContent='Score: '+score[0]+' of '+score[1];
+      if(q.phase!=='done'){
+        n.className='note';
+        n.innerHTML = q.kind==='side' ? '<b>Predict.</b> The seesaw is held level by two blocks. Which side goes down when they are taken away? Click an arrow on the picture, or = if it stays balanced'+(q.pick?' (you chose: '+sideWord(q.pick)+')':'')+', then press <b>Go</b>.'
+          : '<b>Predict.</b> The seesaw is held level by two blocks. Where must the '+q.W2+' N person sit so that it stays balanced? Click a letter on the picture'+(q.pick?' (you chose <b>'+q.pick+'</b>)':'')+', then press <b>Go</b>.';
+        $('#ss-eq').innerHTML='Press Go to see the working.';
+      } else {
+        acw=q.W1*q.d1; n.className='note '+(q.ok?'good':'bad');
+        if(q.kind==='side'){ var cw=q.W2*q.d2;
+          n.innerHTML=(q.ok?'<b>✓ Right.</b> ':'<b>✗ Not quite.</b> ')+'Anticlockwise moment = '+num(acw,1)+' N m, clockwise moment = '+num(cw,1)+' N m: '+(cw===acw?'they are equal, so it stays balanced.':(cw>acw?'clockwise is bigger, so the right side goes down.':'anticlockwise is bigger, so the left side goes down.'))+(q.ok||q.ans==='E'?'':' The heavier person does not always win: the distance from the pivot matters too.');
+          $('#ss-eq').innerHTML=workingOf(v);
+        } else { var dn=acw/q.W2, dp=SPOTS[LET.indexOf(q.pick)];
+          n.innerHTML=(q.ok?'<b>✓ Right.</b> ':'<b>✗ Not quite.</b> ')+'It balances at <b>'+q.ans+'</b>, '+dn+' m from the pivot: '+q.W2+' × '+dn+' = '+num(acw,1)+' N m, equal to the anticlockwise moment.'+(q.ok?'':' At '+q.pick+' ('+dp+' m) the clockwise moment is '+num(q.W2*dp,1)+' N m, so the '+(q.W2*dp>acw?'right':'left')+' side goes down.');
+          $('#ss-eq').innerHTML=FR('anticlockwise moment = clockwise moment<br>'+q.W1+' × '+q.d1+' = '+q.W2+'d<br>'+num(acw,1)+' = '+q.W2+'d<br>d = [['+num(acw,1)+'|'+q.W2+']]<br>d = <b>'+dn+' m</b>');
+        }
+      }
+      draw();
+    }
+    onPick(svgEl,function(id){ if(mode!=='predict' || !q || q.phase!=='ask') return; q.pick=id; show(); });
+    goBtn.addEventListener('click',function(){
+      if(mode!=='predict' || !q || q.phase!=='ask' || !q.pick) return;
+      q.phase='run'; goBtn.disabled=true; target=tilt(V());
+      animate(function(){ q.phase='done'; q.ok=q.pick===q.ans; score[1]++; if(q.ok) score[0]++; show(); });
+    });
+    newBtn.addEventListener('click',deal);
+    var modeEl=$('#ss-mode');
+    modeEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b || b.dataset.v===mode) return; mode=b.dataset.v;
+      Array.prototype.forEach.call(modeEl.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); });
+      cancelAnimationFrame(raf); $('#ss-note').className='note';
+      if(mode==='predict'){ if(!q || q.phase!=='ask') deal(); else { ang=0; show(); } } else { ang=0; show(); } });
+
+    // drag a person along the beam (Explore): project the pointer onto the (tilted) beam, round to the slider's step
+    var drag=null;
+    function svgPt(e){ var p=svgEl.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svgEl.getScreenCTM().inverse()); }
+    function along(p){ var a=ang*Math.PI/180; return ((p.x-L.cx)*Math.cos(a)+(p.y-L.cy)*Math.sin(a))/L.pxm; }
     svgEl.addEventListener('pointerdown',function(e){
-      var r=e.target.closest && e.target.closest('.grab'); if(!r) return;
+      var r=e.target.closest && e.target.closest('.grab'); if(!r || mode!=='explore') return;
       var side=+r.getAttribute('data-side'), el=side<0?d1:d2;
       drag={el:el, side:side, off:along(svgPt(e))-side*(+el.value)};
       svgEl.setPointerCapture(e.pointerId); svgEl.classList.add('dragging'); e.preventDefault();
@@ -391,7 +622,8 @@
     });
     function endDrag(){ if(!drag) return; drag=null; svgEl.classList.remove('dragging'); }
     svgEl.addEventListener('pointerup',endDrag); svgEl.addEventListener('pointercancel',endDrag);
-    upd();
+    var wasNarrow=narrow(); window.addEventListener('resize',function(){ if(narrow()!==wasNarrow){ wasNarrow=narrow(); draw(); } });
+    show();
   }
   watchEquals('.eq');
   initSeesawSim();

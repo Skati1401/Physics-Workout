@@ -158,11 +158,13 @@
   .embed .page{padding:0;max-width:none;}
   .embed .home-link,.embed .page-head{display:none;}
   .hint{font-size:13px;color:var(--ink-soft);}
-  .view{max-height:max(200px,calc(100vh - 400px));}
-  .view.road{max-height:110px;}
-  .embed .view{max-height:340px;}
-  .embed .view.road{max-height:110px;}
+  .view{max-height:max(240px,calc(100vh - 272px));}
+  .embed .view{max-height:400px;}
+  .view.tall,.embed .view.tall{max-height:none;}
   .embed .hint{display:none;}
+  :root{--grass:#cfe8b4;--steel:#66748c;--steel-hi:#c3ccda;--steel-sh:#3f4a5e;--case:#3f4a5e;--road:#6f7785;--road-s:#4c5361;--car:#2f6fe0;--car-ref:#8a93a3;--car-glass:#cfe6f7;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--grass:#22361a;--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--case:#56617a;--road:#5a6170;--road-s:#3b414c;--car:#5b8cf0;--car-ref:#9aa4b5;--car-glass:#9fc3df;} }
+  :root[data-theme="dark"]{--grass:#22361a;--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--case:#56617a;--road:#5a6170;--road-s:#3b414c;--car:#5b8cf0;--car-ref:#9aa4b5;--car-glass:#9fc3df;}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -269,8 +271,7 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="sd-graph" viewBox="0 0 520 270" role="img" aria-label="Velocity–time graphs of the reference car and your car stopping"></svg>
-      <svg class="view road" id="sd-road" viewBox="0 0 520 96" role="img" aria-label="The reference car and your car stopping on the road"></svg>
+      <svg class="view" id="sd-view" viewBox="0 0 860 376" role="img" aria-label="The reference car and your car stopping on their roads, with the velocity–time graphs of both cars and a table of the thinking, braking and stopping distances below."></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" data-action="sd-go" type="button">&#9654; Go</button>
@@ -333,8 +334,63 @@
   }
   function watchEquals(sel){ Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }); }
 
+    // ---- solid kit (the same block is in reaction-time.html, roller-coaster-energy.html, heat-transfer.html, density.html and liquid-pressure.html) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
+
+  /* The picture is 860 x 350: the two cars on their roads, with the velocity–time graph and the distances below.
+     Under 520px the same code uses a tall viewBox with the graph and the distances stacked.
+     The car and the road are drawn the same way as in reaction-time.html ("Stop the car"). */
   function initStoppingSim(){
-    var vIn=bindRange('sd-v',reset), dec=7, react=0.7;
+    var svg=$('#sd-view'), vIn=bindRange('sd-v',reset), dec=7, react=0.7;
     var REF_T=0.7, REF_A=7, ROADS=[['Dry',7],['Wet',5],['Icy',2]], DRIVERS=[['Alert',0.7],['Tired',1.2],['Distracted',1.5]];
     // one row of choice buttons; pick() gets the chosen value
     function choices(el, list, unit, cur, pick){
@@ -345,59 +401,108 @@
     choices($('#sd-driver-btns'), DRIVERS, 's', react, function(v){ react=v; });
     choices($('#sd-road-btns'), ROADS, 'm/s²', dec, function(v){ dec=v; });
     function nameOf(list, v){ return list.filter(function(x){ return x[1]===v; })[0][0].toLowerCase(); }
-    var W=520,H=270,PL=50,PR=16,PT=14,PB=42,VMAX=35, t=0, running=false, last=0, raf=0;
+    var VMAX=35, t=0, running=false, finished=false, last=0, raf=0, L=null;
     function car(tr,a){ var u=+vIn.value; return {u:u, tr:tr, a:a, tb:u/a, th:u*tr, br:u*u/(2*a), end:tr+u/a}; }
     function you(){ return car(react, dec); } function ref(){ return car(REF_T, REF_A); }
     function vAt(c,tt){ return tt<=c.tr ? c.u : Math.max(0, c.u-c.a*(tt-c.tr)); }
     function xAt(c,tt){ if(tt<=c.tr) return c.u*tt; var d=Math.min(tt,c.end)-c.tr; return c.th+c.u*d-0.5*c.a*d*d; }
     function tMax(){ var e=Math.max(you().end, ref().end), st=e<=6?1:(e<=12?2:(e<=25?5:10)); return {max:Math.ceil(e*1.05/st)*st, step:st}; }
     function dMax(){ var m=Math.max(you().th+you().br, ref().th+ref().br); return m<=60?Math.ceil(m/10)*10:(m<=200?Math.ceil(m/20)*20:Math.ceil(m/50)*50); }
-    function drawGraph(){
-      var Y=you(), R=ref(), T=tMax(), gx=function(x){ return PL+x/T.max*(W-PL-PR); }, gy=function(y){ return H-PB-y/VMAX*(H-PT-PB); };
-      var g='', i, tt=Math.min(t, T.max);
-      for(i=0;i<=VMAX;i+=5){ var yy=gy(i); g+='<line x1="'+PL+'" x2="'+(W-PR)+'" y1="'+yy+'" y2="'+yy+'" stroke="var(--panel-border)"/><text x="'+(PL-8)+'" y="'+(yy+4)+'" text-anchor="end" font-size="11" fill="var(--ink-faint)">'+i+'</text>'; }
-      for(i=0;i<=T.max+1e-9;i+=T.step){ var xx=gx(i); g+='<line x1="'+xx+'" x2="'+xx+'" y1="'+PT+'" y2="'+(H-PB)+'" stroke="var(--panel-border)"/><text x="'+xx+'" y="'+(H-PB+16)+'" text-anchor="middle" font-size="11" fill="var(--ink-faint)">'+i+'</text>'; }
+
+    function narrow(){ return window.innerWidth<=520; }
+    function lay(){ return narrow()
+      ? {tall:true, W:430, H:540, k:0.7, x0:64, x1:418, rh:20, fs:12, lanes:[{lab:13,ry:44},{lab:92,ry:122}], sy:151,
+         G:{x0:52,x1:416,y0:198,y1:330,fs:12}, SW:{x:10,y:392,k:1}, K:{x:10,y:462,fs:12}}
+      : {tall:false, W:860, H:376, k:0.8, x0:78, x1:836, rh:20, fs:12, lanes:[{lab:13,ry:44},{lab:92,ry:122}], sy:151,
+         G:{x0:56,x1:540,y0:198,y1:326,fs:11}, SW:{x:580,y:204,k:1}, K:{x:580,y:278,fs:11.5}}; }
+    // velocity–time axes: a grid line every 5 m/s, a number every 10
+    function axes(G){
+      var g='', i, n, X=function(x){ return G.x0+x/G.tMax*(G.x1-G.x0); }, Y=function(v){ return G.y1-v/VMAX*(G.y1-G.y0); };
+      for(i=0;i<=VMAX;i+=5){ g+=ln(G.x0,Y(i),G.x1,Y(i),'var(--panel-border)',1); if(i%10===0) g+=txt(G.x0-7,Y(i)+4,String(i),{a:'end',fs:G.fs,c:'var(--ink-faint)'}); }
+      for(i=0,n=Math.round(G.tMax/G.tStep);i<=n;i++){ var s=i*G.tStep; g+=ln(X(s),G.y0,X(s),G.y1,'var(--panel-border)',1)+txt(X(s),G.y1+15,String(s),{a:'middle',fs:G.fs,c:'var(--ink-faint)'}); }
+      g+=ln(G.x0,G.y0,G.x0,G.y1,'var(--ink-soft)',2)+ln(G.x0,G.y1,G.x1,G.y1,'var(--ink-soft)',2);
+      g+=txt((G.x0+G.x1)/2,G.y1+32,'Time (s)',{a:'middle',fs:G.fs+1});
+      g+='<text transform="translate('+f1(G.x0-33)+' '+f1((G.y0+G.y1)/2)+') rotate(-90)" text-anchor="middle" font-size="'+(G.fs+1)+'" fill="var(--ink-soft)">Velocity (m/s)</text>';
+      return {g:g, X:X, Y:Y};
+    }
+    function graphSVG(){
+      var Y=you(), R=ref(), T=tMax(), G=L.G, A, g='', tt=Math.min(t, T.max);
+      G.tMax=T.max; G.tStep=T.step; A=axes(G); g+=A.g;
       // your car: thinking rectangle and braking triangle, filled up to the current time
       var a1=Math.min(tt,Y.tr), a2=Math.min(tt,Y.end);
-      if(a1>0) g+='<polygon points="'+gx(0)+','+gy(0)+' '+gx(0)+','+gy(Y.u)+' '+gx(a1)+','+gy(Y.u)+' '+gx(a1)+','+gy(0)+'" fill="var(--motion-soft)"/>';
-      if(a2>Y.tr) g+='<polygon points="'+gx(Y.tr)+','+gy(0)+' '+gx(Y.tr)+','+gy(Y.u)+' '+gx(a2)+','+gy(vAt(Y,a2))+' '+gx(a2)+','+gy(0)+'" fill="var(--accent-soft)"/>';
-      function line(c, upTo, attrs){ var pts=[gx(0)+','+gy(c.u)]; if(upTo>0){ pts.push(gx(Math.min(upTo,c.tr))+','+gy(c.u)); if(upTo>c.tr) pts.push(gx(Math.min(upTo,c.end))+','+gy(vAt(c,upTo))); if(upTo>c.end) pts.push(gx(upTo)+','+gy(0)); } return '<polyline points="'+pts.join(' ')+'" fill="none" '+attrs+'/>'; }
+      if(a1>0) g+=pg([[A.X(0),A.Y(0)],[A.X(0),A.Y(Y.u)],[A.X(a1),A.Y(Y.u)],[A.X(a1),A.Y(0)]],'var(--motion-soft)');
+      if(a2>Y.tr) g+=pg([[A.X(Y.tr),A.Y(0)],[A.X(Y.tr),A.Y(Y.u)],[A.X(a2),A.Y(vAt(Y,a2))],[A.X(a2),A.Y(0)]],'var(--accent-soft)');
+      function line(c, upTo){ var p=[[A.X(0),A.Y(c.u)]]; if(upTo>0){ p.push([A.X(Math.min(upTo,c.tr)),A.Y(c.u)]); if(upTo>c.tr) p.push([A.X(Math.min(upTo,c.end)),A.Y(vAt(c,upTo))]); if(upTo>c.end) p.push([A.X(upTo),A.Y(0)]); } return p; }
       // the whole of each line shows faintly, so a slider change is seen at once; Go traces it in bold
-      g+=line(R, T.max, 'stroke="var(--ink-faint)" stroke-width="2" stroke-dasharray="6 4" opacity="0.45"');
-      g+=line(Y, T.max, 'stroke="var(--motion)" stroke-width="2" opacity="0.35"');
-      g+=line(R, tt, 'stroke="var(--ink-soft)" stroke-width="2.5" stroke-dasharray="6 4"');
-      g+=line(Y, tt, 'stroke="var(--motion)" stroke-width="3"');
-      if(running) g+='<line x1="'+gx(tt)+'" x2="'+gx(tt)+'" y1="'+PT+'" y2="'+(H-PB)+'" stroke="var(--ink)" stroke-dasharray="3 3"/>';
-      g+='<line x1="'+PL+'" x2="'+PL+'" y1="'+PT+'" y2="'+(H-PB)+'" stroke="var(--ink-soft)" stroke-width="2"/><line x1="'+PL+'" x2="'+(W-PR)+'" y1="'+(H-PB)+'" y2="'+(H-PB)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
-      g+='<text x="'+(PL+(W-PL-PR)/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="12" fill="var(--ink-soft)">Time (s)</text>';
-      g+='<text transform="translate(14 '+(PT+(H-PT-PB)/2)+') rotate(-90)" text-anchor="middle" font-size="12" fill="var(--ink-soft)">Velocity (m/s)</text>';
-      var LX=W-PR-178, LY=PT+6;
-      g+='<rect x="'+(LX-8)+'" y="'+(LY-4)+'" width="184" height="78" rx="6" fill="var(--panel)" opacity="0.92"/>';
-      g+='<line x1="'+LX+'" x2="'+(LX+22)+'" y1="'+(LY+7)+'" y2="'+(LY+7)+'" stroke="var(--motion)" stroke-width="3"/><text x="'+(LX+30)+'" y="'+(LY+11)+'" font-size="11.5" fill="var(--ink)">your car</text>';
-      g+='<line x1="'+LX+'" x2="'+(LX+22)+'" y1="'+(LY+25)+'" y2="'+(LY+25)+'" stroke="var(--ink-soft)" stroke-width="2.5" stroke-dasharray="6 4"/><text x="'+(LX+30)+'" y="'+(LY+29)+'" font-size="11.5" fill="var(--ink)">reference car</text>';
-      g+='<rect x="'+(LX+5)+'" y="'+(LY+37)+'" width="12" height="12" fill="var(--motion-soft)" stroke="var(--motion)"/><text x="'+(LX+30)+'" y="'+(LY+47)+'" font-size="11.5" fill="var(--ink)">thinking distance</text>';
-      g+='<rect x="'+(LX+5)+'" y="'+(LY+55)+'" width="12" height="12" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="'+(LX+30)+'" y="'+(LY+65)+'" font-size="11.5" fill="var(--ink)">braking distance</text>';
-      if(t>0) g+='<text x="'+(PL+8)+'" y="'+(H-PB-8)+'" font-size="12" fill="var(--ink)">t = '+tt.toFixed(1)+' s</text>';
-      $('#sd-graph').innerHTML=g;
+      g+=pl(line(R,T.max),'var(--ink-faint)',2,' stroke-dasharray="6 4" opacity="0.45"')+pl(line(Y,T.max),'var(--motion)',2,' opacity="0.35"');
+      if(tt>0) g+=pl(line(R,tt),'var(--ink-soft)',2.5,' stroke-dasharray="6 4"')+pl(line(Y,tt),'var(--motion)',3);
+      if(running) g+=ln(A.X(tt),G.y0,A.X(tt),G.y1,'var(--ink)',1,' stroke-dasharray="3 3"');
+      g+=ln(G.x0,G.y1,G.x1,G.y1,'var(--ink-soft)',2);
+      return g;
     }
-    function drawRoad(){
-      var Y=you(), R=ref(), D=dMax(), RX=54, sc=(W-RX-14)/D, r='';
-      function lane(c, y, label, body, think, brake){
-        var x=xAt(c,t), xt=Math.min(x,c.th);
-        r+='<line x1="8" x2="'+(W-8)+'" y1="'+(y+20)+'" y2="'+(y+20)+'" stroke="var(--ink-soft)" stroke-width="2"/>';
-        r+='<text x="'+RX+'" y="'+(y-6)+'" font-size="11" fill="var(--ink-faint)">'+label+'</text>';
-        if(xt>0) r+='<rect x="'+RX+'" y="'+(y+14)+'" width="'+(xt*sc)+'" height="6" fill="'+think+'"/>';
-        if(x>c.th) r+='<rect x="'+(RX+c.th*sc)+'" y="'+(y+14)+'" width="'+((x-c.th)*sc)+'" height="6" fill="'+brake+'"/>';
-        r+='<line x1="'+(RX+(c.th+c.br)*sc)+'" x2="'+(RX+(c.th+c.br)*sc)+'" y1="'+(y+2)+'" y2="'+(y+24)+'" stroke="'+body+'" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.6"/>';
-        var cx=RX+x*sc-40, braking=t>c.tr && x<c.th+c.br-1e-6 || (t>=c.end && t>0);
-        r+='<rect x="'+cx+'" y="'+(y+2)+'" width="40" height="12" rx="4" fill="'+body+'"/>';
-        r+='<rect x="'+(cx+1)+'" y="'+(y+4)+'" width="4" height="5" rx="1" fill="'+(braking?'var(--bad)':'var(--panel)')+'"/>';
-        r+='<circle cx="'+(cx+9)+'" cy="'+(y+15)+'" r="4" fill="var(--ink)"/><circle cx="'+(cx+31)+'" cy="'+(y+15)+'" r="4" fill="var(--ink)"/>';
-        if(t>=c.end && t>0) r+='<text x="'+(W-10)+'" y="'+(y-6)+'" text-anchor="end" font-size="11" fill="var(--ink)">stopped after '+num(c.th+c.br,1)+' m</text>';
+    // the stopwatch and the table of distances; the distances stay hidden until the run ends, so students can predict them first
+    function keySVG(){
+      var K=L.K, Y=you(), R=ref(), g='', fs=K.fs, c1=K.x+200, c2=K.x+272, y=K.y, T=tMax();
+      function m(v){ return finished ? v.toFixed(1)+' m' : '?'; }
+      g+=stopwatch(L.SW.x,L.SW.y,Math.min(t,T.max).toFixed(1)+' s',L.SW.k)+txt(L.SW.x+78*L.SW.k+10,L.SW.y+17*L.SW.k,'time since the',{fs:L.fs})+txt(L.SW.x+78*L.SW.k+10,L.SW.y+17*L.SW.k+15,'hazard was seen',{fs:L.fs});
+      g+=ln(c1-52,y-17,c1,y-17,'var(--motion)',3)+ln(c2-58,y-17,c2,y-17,'var(--ink-soft)',2.5,' stroke-dasharray="6 4"');
+      g+=txt(c1,y,'your car',{a:'end',fs:fs,c:'var(--ink)',w:600})+txt(c2,y,'reference',{a:'end',fs:fs,c:'var(--ink-soft)',w:600});
+      g+=rect(K.x,y+9.5,12,12,'var(--motion-soft)',' stroke="var(--motion)"')+txt(K.x+19,y+20,'thinking distance',{fs:fs,c:'var(--ink)'})+txt(c1,y+20,m(Y.th),{a:'end',fs:fs,c:'var(--ink)'})+txt(c2,y+20,m(R.th),{a:'end',fs:fs});
+      g+=rect(K.x,y+29.5,12,12,'var(--accent-soft)',' stroke="var(--accent)"')+txt(K.x+19,y+40,'braking distance',{fs:fs,c:'var(--ink)'})+txt(c1,y+40,m(Y.br),{a:'end',fs:fs,c:'var(--ink)'})+txt(c2,y+40,m(R.br),{a:'end',fs:fs});
+      g+=ln(K.x,y+47,c2,y+47,'var(--panel-border)',1);
+      g+=txt(K.x+19,y+62,'stopping distance',{fs:fs,c:'var(--ink)',w:600})+txt(c1,y+62,m(Y.th+Y.br),{a:'end',fs:fs,c:'var(--ink)',w:600})+txt(c2,y+62,m(R.th+R.br),{a:'end',fs:fs,w:600});
+      return g;
+    }
+    // one road, side on, with its surface: dry, wet (puddles) or icy (pale patches)
+    function roadSVG(ry, a){
+      var g='', x, W=L.W, rh=L.rh;
+      g+=rect(0,ry-12,W,12,'var(--grass)');
+      for(x=30;x<W;x+=140) g+=rect(x,ry-22,4,14,'#f4f4f0',' rx="1" stroke="var(--ink-faint)" stroke-width="0.6"')+rect(x,ry-19.5,4,3.5,'var(--bad)');   // marker posts on the far verge
+      g+=rect(0,ry,W,rh,'var(--road)')+rect(0,ry+rh,W,7,'var(--road-s)');
+      if(a===5){ g+=rect(0,ry,W,rh,'#0a1530',' opacity=".3"'); for(x=0;x<W+60;x+=230) g+=ell(x+70,ry+rh*0.3,46,2.6,'#b9dcff',' opacity=".4"')+ell(x+170,ry+rh*0.74,34,2.2,'#b9dcff',' opacity=".34"'); }
+      if(a===2){ g+=rect(0,ry,W,rh,'#e3f2ff',' opacity=".5"'); for(x=0;x<W+60;x+=230) g+=ell(x+60,ry+rh*0.34,52,2.8,'#fff',' opacity=".75"')+ell(x+175,ry+rh*0.76,40,2.4,'#fff',' opacity=".65"'); }
+      for(x=6;x<W;x+=70) g+=rect(x,ry+rh*0.4,32,2.2,'#fff',' opacity=".8"');
+      return g;
+    }
+    // the car, side on: x is its front bumper, y the road under its wheels
+    function carSVG(x, y, k, braking, turn, col){
+      var g='<g transform="translate('+f1(x)+' '+f1(y)+') scale('+k+')">'+ell(-42,1.5,47,4.6,'#000',' opacity=".22"');
+      g+='<path d="M-66,-27 L-57,-44 Q-55,-47 -51,-47 L-30,-47 Q-26,-47 -23,-44 L-11,-27 Z" fill="'+col+'"/>';
+      g+=pg([[-61.5,-28],[-54.5,-42.5],[-44,-42.5],[-44,-28]],'var(--car-glass)')+pg([[-40.5,-28],[-40.5,-42.5],[-30,-42.5],[-17.5,-28]],'var(--car-glass)');
+      g+=ell(-33.5,-34,3.3,3.8,'#1d2430',' opacity=".7"')+rect(-37.5,-30.5,8,3,'#1d2430',' rx="1.5" opacity=".7"');
+      g+=rect(-84,-28,84,20,col,' rx="7"')+rect(-80,-26.4,74,3.2,'#fff',' rx="1.6" opacity=".3"')+rect(-84,-14,84,6,'#000',' rx="3" opacity=".2"');
+      g+=ln(-42.4,-27,-42.4,-10,'#000',1,' opacity=".28"')+rect(-39,-22,6,1.8,'#fff',' rx=".9" opacity=".5"');
+      g+=rect(-4.5,-25,4.5,6.5,'#ffe9a8',' rx="1.6"');
+      if(braking) g+=ell(-85,-21,10,7.5,'#ff2d1f',' opacity=".38"');
+      g+=rect(-84.5,-25,4,7.5,braking?'#ff2d1f':'#8f2018',' rx="1.6"');
+      [-64,-19].forEach(function(cx){ var c=Math.cos(turn), s=Math.sin(turn);
+        g+='<circle cx="'+cx+'" cy="-8" r="11.6" fill="#000" opacity=".4"/><circle cx="'+cx+'" cy="-8" r="9.6" fill="#1d2430"/><circle cx="'+cx+'" cy="-8" r="5" fill="var(--steel-hi)"/>'+
+           ln(cx-c*4.4,-8-s*4.4,cx+c*4.4,-8+s*4.4,'var(--steel-sh)',1.6)+ln(cx+s*4.4,-8-c*4.4,cx-s*4.4,-8+c*4.4,'var(--steel-sh)',1.6); });
+      return g+'</g>';
+    }
+    function draw(){
+      var Y=you(), R=ref(), D, sc, g='', i, step;
+      L=lay(); svg.setAttribute('viewBox','0 0 '+L.W+' '+L.H); svg.classList.toggle('tall', !!L.tall);
+      D=dMax(); sc=(L.x1-L.x0)/D; step=D<=30?5:(D<=70?10:(D<=140?20:(D<=300?50:100)));
+      function lane(c, n, label, col, a, lc){
+        var ry=L.lanes[n].ry, x=xAt(c,t), xt=Math.min(x,c.th), xs=L.x0+(c.th+c.br)*sc, yb=ry+L.rh+0.5, braking=(t>c.tr && x<c.th+c.br-1e-6) || (t>=c.end && t>0);
+        g+=roadSVG(ry, a);
+        g+=txt(8,L.lanes[n].lab,label,{fs:L.fs,c:lc});
+        // where this car will stop: a line across the road
+        g+=ln(xs,ry+1.5,xs,ry+L.rh-1.5,'#fff',2,' stroke-dasharray="3 2" opacity=".85"');
+        // the distance gone so far, along the kerb: thinking, then braking (the colours of the areas under the graph)
+        if(xt>0) g+=rect(L.x0,yb,xt*sc,6,'var(--motion)');
+        if(x>c.th) g+=rect(L.x0+c.th*sc,yb,(x-c.th)*sc,6,'var(--accent)');
+        g+=carSVG(L.x0+x*sc, ry+L.rh*0.8, L.k, braking, x*sc/(9.6*L.k), col);
+        if(finished && !L.tall) g+=txt(L.W-8,L.lanes[n].lab,'stopped after '+num(c.th+c.br,1)+' m',{a:'end',fs:L.fs,c:'var(--ink)',w:600});
       }
-      lane(R, 18, 'Reference car: alert driver (0.7 s), dry road', 'var(--ink-faint)', 'var(--panel-border)', 'var(--ink-faint)');
-      lane(Y, 66, 'Your car: '+nameOf(DRIVERS,react)+' driver ('+Y.tr.toFixed(1)+' s), '+nameOf(ROADS,dec)+' road', 'var(--motion)', 'var(--motion)', 'var(--accent)');
-      $('#sd-road').innerHTML=r;
+      lane(R, 0, 'Reference car: alert driver (0.7 s), dry road', 'var(--car-ref)', REF_A, 'var(--ink-soft)');
+      lane(Y, 1, 'Your car: '+nameOf(DRIVERS,react)+' driver ('+Y.tr.toFixed(1)+' s), '+nameOf(ROADS,dec)+' road', 'var(--car)', dec, 'var(--ink)');
+      // one distance scale for both roads, measured from where the cars were when the hazard was seen
+      for(i=0;i<=D+1e-9;i+=step){ var tx=L.x0+i*sc;
+        g+=ln(tx,L.lanes[0].ry+L.rh+8,tx,L.lanes[0].ry+L.rh+13,'var(--ink-faint)',1.2)+ln(tx,L.sy,tx,L.sy+5,'var(--ink-faint)',1.2)+txt(tx,L.sy+17,i+(i===0||!L.tall?' m':''),{a:'middle',fs:L.fs-0.5,c:'var(--ink-soft)'}); }
+      g+=graphSVG()+keySVG();
+      svg.innerHTML=g;
     }
     // the distances stay hidden until the run ends, so students can predict them first
     function eq(done){
@@ -407,11 +512,10 @@
       if(!done){ $('#sd-eq').innerHTML='thinking distance = area of the rectangle<br>thinking distance = speed × reaction time = <b>? m</b><br>braking distance = area of the triangle<br>braking distance = ½ × base × height = <b>? m</b><br>stopping distance = thinking distance + braking distance = <b>? m</b>'; return; }
       $('#sd-eq').innerHTML=FR('<b>Your car</b>: brakes on at '+sec(Y.tr)+', stops at '+sec(Y.end)+'<br>thinking distance = area of the rectangle<br>thinking distance = '+Y.u+' × '+num(Y.tr,2)+' = '+num(Y.th,1)+' m<br>braking distance = area of the triangle<br>braking distance = ½ × base × height<br>braking distance = ½ × ('+num(Y.end,2)+' − '+num(Y.tr,2)+') × '+Y.u+' = '+num(Y.br,1)+' m<br>stopping distance = '+num(Y.th,1)+' + '+num(Y.br,1)+' = <b>'+num(Y.th+Y.br,1)+' m</b><br>reference car = '+num(R.th,1)+' + '+num(R.br,1)+' = '+num(R.th+R.br,1)+' m');
     }
-    function draw(){ drawGraph(); drawRoad(); }
     function stop(){ running=false; cancelAnimationFrame(raf); }
-    function reset(){ stop(); t=0; $('#sd-note').textContent='Press Go: both drivers see a hazard at time 0.'; eq(); draw(); }
+    function reset(){ stop(); t=0; finished=false; $('#sd-note').textContent='Press Go: both drivers see a hazard at time 0.'; eq(); draw(); }
     function finish(){
-      stop(); t=Math.max(you().end, ref().end); draw(); eq(true);
+      stop(); t=Math.max(you().end, ref().end); finished=true; draw(); eq(true);
       var Y=you(), R=ref(), d=(Y.th+Y.br)-(R.th+R.br), dt=Y.th-R.th, db=Y.br-R.br;
       function ch(x){ return Math.abs(x)<0.05 ? 'the same' : (x>0?num(x,1)+' m longer':num(-x,1)+' m shorter'); }
       $('#sd-note').textContent = Math.abs(d)<0.05
@@ -424,6 +528,7 @@
       if(t>=end){ finish(); return; } draw(); raf=requestAnimationFrame(frame); }
     onAction('sd-go',function(){ reset(); running=true; last=performance.now(); raf=requestAnimationFrame(frame); });
     onAction('sd-reset',reset);
+    var wasNarrow=narrow(); window.addEventListener('resize',function(){ if(narrow()!==wasNarrow){ wasNarrow=narrow(); draw(); } });
     reset();
   }
   watchEquals('.eq');

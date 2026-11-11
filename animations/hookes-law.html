@@ -171,6 +171,9 @@
   .embed body{background:transparent;}
   .embed .page{padding:0;max-width:none;}
   .embed .home-link,.embed .page-head{display:none;}
+  :root{--steel:#66748c;--steel-hi:#c3ccda;--steel-sh:#3f4a5e;--wood-f:#c99e6a;--wood-t:#e3c08f;--wood-s:#9c7444;--brass:#b98f2e;--rule:#f3dfae;--coil-sh:#086454;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--wood-f:#8a6a43;--wood-t:#a8855a;--wood-s:#644b2d;--brass:#c9a24a;--rule:#4a3d1c;--coil-sh:#2b8f7e;} }
+  :root[data-theme="dark"]{--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--wood-f:#8a6a43;--wood-t:#a8855a;--wood-s:#644b2d;--brass:#c9a24a;--rule:#4a3d1c;--coil-sh:#2b8f7e;}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -346,6 +349,58 @@
   }
   function watchEquals(sel){ Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }); }
 
+    // ---- solid kit (the same block is in reaction-time.html, roller-coaster-energy.html, heat-transfer.html, density.html and liquid-pressure.html) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
+
   function initHookeSim(){
     var fIn=$('#hk-f'), mat='spring', svg=$('#hk-svg'), scene=$('#hk-scene'), ghost=$('#hk-ghost');
     // Experiment mode: no theory line. Masses go on one at a time (50 g, 100 g or 200 g each: the student picks the interval)
@@ -469,8 +524,9 @@
     var GX=290, GY=24, GW=290, GH=226;
     function th(g){ return g*0.06; }   // slotted mass thickness: 100 g = 6 px
     function disc(cx, yb, g){
-      var t=th(g), c=g<100?'var(--ink-faint)':'var(--ink-soft)';
-      return '<rect x="'+(cx-DISC_W/2)+'" y="'+(yb-t)+'" width="'+DISC_W+'" height="'+t+'" rx="1.5" fill="'+c+'" stroke="var(--panel)" stroke-width="0.8"/>';
+      var t=th(g), c=g<100?'var(--steel)':'var(--brass)', x=cx-DISC_W/2;   // 50 g masses are steel, the others brass
+      return rect(x,yb-t,DISC_W,t,c,' rx="1.5"')+rect(x+DISC_W*0.68,yb-t,DISC_W*0.32,t,'#000',' rx="1.5" opacity=".2"')+rect(x+1,yb-t+0.6,DISC_W-2,Math.min(1.4,t*0.3),'#fff',' rx=".6" opacity=".45"')+
+        rect(cx-1.6,yb-t,3.2,t,'#000',' opacity=".38"')+rect(x,yb-t,DISC_W,t,'none',' rx="1.5" stroke="var(--panel)" stroke-width="0.8"');
     }
     function sampleEnd(x){ var M=MATS[mat], baseLen=mat==='wire'?60:M.orig*M.px; return TOP+14+baseLen+x*M.px; }
     var drag=null;   // {from:'pile'|'hanger', g, sx, sy, moved, q}
@@ -485,12 +541,12 @@
       g+='<line x1="'+(RXs+25)+'" x2="'+MG.x+'" y1="'+(py-half*M.px)+'" y2="'+MG.y+'" stroke="var(--ink-faint)" stroke-dasharray="3 2"/><line x1="'+(RXs+25)+'" x2="'+MG.x+'" y1="'+(py+half*M.px)+'" y2="'+(MG.y+MG.h)+'" stroke="var(--ink-faint)" stroke-dasharray="3 2"/>';
       g+='<defs><clipPath id="hk-mclip"><rect x="'+MG.x+'" y="'+MG.y+'" width="'+MG.w+'" height="'+MG.h+'" rx="10"/></clipPath></defs>';
       g+='<rect x="'+MG.x+'" y="'+MG.y+'" width="'+MG.w+'" height="'+MG.h+'" rx="10" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="1.5"/>';
-      g+='<g clip-path="url(#hk-mclip)"><rect x="'+RX+'" y="'+MG.y+'" width="70" height="'+MG.h+'" fill="var(--units-soft)" stroke="var(--units)"/>';
+      g+='<g clip-path="url(#hk-mclip)"><rect x="'+RX+'" y="'+MG.y+'" width="70" height="'+MG.h+'" fill="var(--rule)" stroke="var(--units)"/>'+rect(RX+62,MG.y,8,MG.h,'#000',' opacity=".12"');
       var m0=Math.floor((Lp-half)*10)-1, m1=Math.ceil((Lp+half)*10)+1;
       for(var mm=Math.max(0,m0); mm<=m1; mm++){
         var y=cy+(mm/10-Lp)*MG.z, w=mm%10===0?30:mm%5===0?20:11;
         g+='<line x1="'+RX+'" x2="'+(RX+w)+'" y1="'+y+'" y2="'+y+'" stroke="var(--units)" stroke-width="'+(mm%10===0?1.6:1)+'"/>';
-        if(mm%10===0) g+='<text x="'+(RX+36)+'" y="'+(y+5)+'" font-size="15" fill="var(--ink)">'+(mm/10)+'</text>';
+        if(mm%10===0 && y>MG.y+2 && y<MG.y+MG.h-2) g+='<text x="'+(RX+36)+'" y="'+(y+5)+'" font-size="15" fill="var(--ink)">'+(mm/10)+'</text>';
       }
       g+='<line x1="'+(MG.x+6)+'" x2="'+(RX+2)+'" y1="'+cy+'" y2="'+cy+'" stroke="var(--accent)" stroke-width="2.5"/><path d="M'+(RX+2)+','+cy+' l-9,-6 v12 z" fill="var(--accent)"/></g>';
       g+='<text x="'+(MG.x+MG.w/2)+'" y="'+(MG.y+MG.h+15)+'" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">ruler at the pointer, magnified (cm)</text>';
@@ -499,15 +555,20 @@
     function render(){
       var M=MATS[mat], F=Fd, x=dispX(), g='', top=TOP, i;
       var baseLen = mat==='wire'?60:M.orig*M.px, len=baseLen+x*M.px, y1=top+14+len;
-      g+='<rect x="'+(X0-36)+'" y="'+top+'" width="72" height="12" fill="var(--panel-border)" stroke="var(--ink-soft)"/>';
-      if(mat==='spring'){ var n=14, pth='M'+X0+','+(top+12); for(i=1;i<=n;i++){ pth+=' L'+(X0+(i%2?10:-10))+','+(top+12+len*i/(n+1)); } pth+=' L'+X0+','+y1; g+='<path d="'+pth+'" fill="none" stroke="var(--elastic)" stroke-width="2.5"/>'; }
-      else if(mat==='wire'){ g+='<line x1="'+X0+'" x2="'+X0+'" y1="'+(top+12)+'" y2="'+y1+'" stroke="var(--elastic)" stroke-width="2"/><text x="'+(X0+8)+'" y="'+(top+40)+'" font-size="10.5" fill="var(--ink-faint)">2 m wire</text><text x="'+(X0+8)+'" y="'+(top+54)+'" font-size="10.5" fill="var(--ink-faint)">(stretch magnified)</text>'; }
-      else { g+='<path d="M'+(X0-5)+','+(top+12)+' L'+(X0-5)+','+y1+' M'+(X0+5)+','+(top+12)+' L'+(X0+5)+','+y1+'" stroke="var(--elastic)" stroke-width="3" fill="none"/>'; }
-      g+='<line x1="'+(X0-30)+'" x2="'+(X0+30)+'" y1="'+(top+14+baseLen)+'" y2="'+(top+14+baseLen)+'" stroke="var(--ink-faint)" stroke-dasharray="4 3"/><text x="'+(X0-34)+'" y="'+(top+18+baseLen)+'" text-anchor="end" font-size="10" fill="var(--ink-faint)">start</text>';
+      // a clamp stand: base on the bench, an upright rod at the left and the clamp arm the sample hangs from
+      g+=box(0,PILE_Y,46,5,5,-3,'var(--steel-sh)')+tube(3,PILE_Y-1,3,top-8,4.5,'var(--steel)','var(--steel-hi)');
+      g+=tube(3,top+6,X0+22,top+6,6,'var(--steel)','var(--steel-hi)')+box(0,top-1,9,14,3,-2,'var(--steel-sh)')+box(X0-9,top,18,12,3,-2,'var(--steel-sh)');
+      if(mat==='spring'){ var n=14, pth='M'+X0+','+(top+12); var pv=[X0,top+12], back='', front='', pn;
+        // a coil spring: the turns at the back are thinner and darker, the turns at the front brighter with a streak of light
+        for(i=1;i<=n+1;i++){ pn=i>n?[X0,y1]:[X0+(i%2?10:-10),top+12+len*i/(n+1)]; if(i%2) back+='M'+f1(pv[0])+','+f1(pv[1])+' L'+f1(pn[0])+','+f1(pn[1])+' '; else front+='M'+f1(pv[0])+','+f1(pv[1])+' L'+f1(pn[0])+','+f1(pn[1])+' '; pv=pn; }
+        g+='<path d="'+back+'" fill="none" stroke="var(--coil-sh)" stroke-width="2.2" stroke-linecap="round"/><path d="'+front+'" fill="none" stroke="var(--elastic)" stroke-width="3.2" stroke-linecap="round"/><path d="'+front+'" fill="none" stroke="#fff" stroke-width="0.9" stroke-linecap="round" opacity=".45" transform="translate(0 -0.7)"/>'; }
+      else if(mat==='wire'){ g+=tube(X0,top+12,X0,y1,2.4,'var(--elastic)','var(--panel)')+'<text x="'+(X0+8)+'" y="'+(top+40)+'" font-size="10.5" fill="var(--ink-faint)">2 m wire</text><text x="'+(X0+8)+'" y="'+(top+54)+'" font-size="10.5" fill="var(--ink-faint)">(stretch magnified)</text>'; }
+      else { g+='<rect x="'+(X0-6.5)+'" y="'+(top+9)+'" width="13" height="'+f1(y1-top-6)+'" rx="6.5" fill="none" stroke="var(--elastic)" stroke-width="'+f1(Math.max(1.8,3.4-x*0.06))+'"/><line x1="'+(X0-7.3)+'" x2="'+(X0-7.3)+'" y1="'+(top+18)+'" y2="'+f1(y1-6)+'" stroke="#fff" stroke-width="0.8" opacity=".45"/>'; }   // a loop of rubber: it gets thinner as it stretches
+      g+='<line x1="'+(X0-30)+'" x2="'+(X0+30)+'" y1="'+(top+14+baseLen)+'" y2="'+(top+14+baseLen)+'" stroke="var(--ink-faint)" stroke-dasharray="4 3"/><text x="'+(X0-31)+'" y="'+(top+17.5+baseLen)+'" text-anchor="end" font-size="10" fill="var(--ink-faint)">start</text>';
       // mass hanger: hook on the end of the sample, stem, base; the slotted masses sit on the base
       var yb=y1+8+STEM, hs=onHanger().slice();
       if(drag && drag.from==='hanger' && drag.moved) hs.pop();
-      g+='<path d="M'+X0+','+y1+' v8" stroke="var(--ink)" stroke-width="2" fill="none"/><line x1="'+X0+'" x2="'+X0+'" y1="'+(y1+8)+'" y2="'+yb+'" stroke="var(--ink)" stroke-width="2.5"/><rect x="'+(X0-17)+'" y="'+yb+'" width="34" height="4" rx="1" fill="var(--ink)"/>';
+      g+='<path d="M'+X0+','+f1(y1-1)+' a3.4,3.4 0 1 1 -3.4,4.6" stroke="var(--steel-sh)" stroke-width="1.8" fill="none" stroke-linecap="round"/>'+tube(X0,y1+7,X0,yb,3,'var(--steel-sh)','var(--steel-hi)')+rect(X0-17,yb,34,4.5,'var(--steel-sh)',' rx="1.5"')+rect(X0-16,yb+0.5,32,1.2,'#fff',' rx=".6" opacity=".4"');
       var sy=yb; hs.forEach(function(m){ g+=disc(X0, sy, m); sy-=th(m); });
       if(drag && drag.from==='pile' && drag.moved && drag.over) g+='<rect x="'+(X0-22)+'" y="'+(y1+4)+'" width="44" height="'+(STEM+10)+'" rx="6" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>';
       g+='<text x="'+(X0-22)+'" y="'+(yb+3)+'" text-anchor="end" font-size="11" fill="var(--ink)">'+num(Fcur,1)+' N</text>';
@@ -519,22 +580,22 @@
       }
       if(EXP && mat!=='wire'){   // clamped vertical ruler with a pointer on the bottom of the sample
         var RX=X0+44;
-        g+='<rect x="'+RX+'" y="'+(top+14)+'" width="22" height="'+(250-top)+'" fill="var(--units-soft)" stroke="var(--units)" stroke-width="1"/>';
+        g+='<rect x="'+RX+'" y="'+(top+14)+'" width="22" height="'+(250-top)+'" fill="var(--rule)" stroke="var(--units)" stroke-width="1"/>'+rect(RX+19,top+14.5,2.5,249-top,'#000',' opacity=".14"')+rect(RX-3,top+4,28,9,'var(--steel-sh)',' rx="2"')+rect(RX-2,top+5,26,1.4,'#fff',' rx=".7" opacity=".35"');
         for(var cm=0; top+14+cm*M.px<=264; cm++){ var ty=top+14+cm*M.px; g+='<line x1="'+RX+'" x2="'+(RX+(cm%5?6:11))+'" y1="'+ty+'" y2="'+ty+'" stroke="var(--units)" stroke-width="1"/>'; if(cm%10===0) g+='<text x="'+(RX+13)+'" y="'+(ty+3.5)+'" font-size="8.5" fill="var(--ink-soft)">'+cm+'</text>'; }
         g+='<line x1="'+(X0+8)+'" x2="'+(RX-1)+'" y1="'+y1+'" y2="'+y1+'" stroke="var(--accent)" stroke-width="2"/><path d="M'+(RX-1)+','+y1+' l-6,-4 v8 z" fill="var(--accent)"/>';
         g+='<text x="'+(RX+11)+'" y="'+(top+14+(250-top)+13)+'" text-anchor="middle" font-size="9.5" fill="var(--ink-soft)">ruler (cm)</text>';
       }
       // the stock of slotted masses on the bench: drag one onto the hanger
       var P=piles(), xs=P.length===1?[PILE_X[0]]:PILES2, addOK=canAdd();
-      g+='<line x1="'+(xs[0]-24)+'" x2="'+(xs[xs.length-1]+24)+'" y1="'+PILE_Y+'" y2="'+PILE_Y+'" stroke="var(--ink-soft)" stroke-width="2"/>';
+      g+=box(xs[0]-26,PILE_Y,xs[xs.length-1]-xs[0]+52,4,5,-3,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'});
       P.forEach(function(p,k){
         var cx=xs[k], n=p.n-(drag && drag.from==='pile' && drag.moved && drag.g===p.g ? 1 : 0), yy=PILE_Y-1;
         for(var j=0;j<n;j++){ g+=disc(cx, yy, p.g); yy-=th(p.g); }
         if(!n) g+='<rect x="'+(cx-DISC_W/2)+'" y="'+(PILE_Y-7)+'" width="'+DISC_W+'" height="6" rx="1.5" fill="none" stroke="var(--ink-faint)" stroke-dasharray="3 2"/>';
-        g+='<text x="'+cx+'" y="'+(PILE_Y+13)+'" text-anchor="middle" font-size="10" fill="var(--ink-soft)">'+p.g+' g</text>';
+        g+='<text x="'+cx+'" y="'+(PILE_Y+15)+'" text-anchor="middle" font-size="10" fill="var(--ink-soft)">'+p.g+' g</text>';
         if(n && addOK) g+='<rect data-grab="pile" data-g="'+p.g+'" x="'+(cx-DISC_W/2-4)+'" y="'+Math.min(yy-6, PILE_Y-26)+'" width="'+(DISC_W+8)+'" height="'+(PILE_Y+4-Math.min(yy-6, PILE_Y-26))+'" fill="transparent"/>';
       });
-      g+='<text x="'+((xs[0]+xs[xs.length-1])/2)+'" y="'+(PILE_Y+26)+'" text-anchor="middle" font-size="9.5" fill="var(--accent)">'+(addOK||!EXP?'drag onto the hanger':Fcur>0&&!MEAS?'drag masses off the hanger':'')+'</text>';
+      g+='<text x="'+((xs[0]+xs[xs.length-1])/2)+'" y="'+(PILE_Y+27)+'" text-anchor="middle" font-size="9.5" fill="var(--accent)">'+(addOK||!EXP?'drag onto the hanger':Fcur>0&&!MEAS?'drag masses off the hanger':'')+'</text>';
       if(MEAS){ scene.innerHTML=g+magnifier(M, M.orig+x); ghost.innerHTML = drag && drag.moved ? disc(drag.q.x, drag.q.y+th(drag.g)/2, drag.g) : ''; return; }
 
       // force-extension graph: extension across, force up (same as Task 1)
