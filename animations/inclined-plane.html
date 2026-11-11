@@ -208,10 +208,11 @@
   // ?reviewer (once, on any page) turns on reviewer mode in this browser; ?reviewer=off turns it off.
   (function(){
     var on = false, embed = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var m = /[?&]reviewer(?:=([^&]*))?/.exec(location.search);
+    on = !!m && m[1] !== 'off';
     try {
-      var m = /[?&]reviewer(?:=([^&]*))?/.exec(location.search);
       if (m) { if (m[1] === 'off') localStorage.removeItem('pw-reviewer'); else localStorage.setItem('pw-reviewer', '1'); }
-      on = localStorage.getItem('pw-reviewer') === '1';
+      else on = localStorage.getItem('pw-reviewer') === '1';
     } catch (e) {}
     var CSS = '.pw-draft{display:inline-block;vertical-align:middle;margin-left:10px;font:600 11.5px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:0;color:var(--bad,#b42318);border:1px dashed currentColor;border-radius:5px;padding:1px 7px;white-space:nowrap}'
       + '.act-top .pw-draft{margin-left:auto;flex:none}.act-top .pw-draft~.cp-tag,.act-top .pw-draft~.ta-tag{margin-left:0}'
@@ -248,8 +249,21 @@
         var h2 = s.querySelector('h2'); if (h2) h2.parentNode.insertBefore(tag(), h2.nextSibling); else s.appendChild(tag());
       });
       if (on && !embed) {
+        // Carry ?reviewer in every link to another page of the site, so reviewer mode survives
+        // browsers that clear site storage (school Chromebooks) and pages cached from before.
+        var carry = function(a){
+          try {
+            var u = new URL(a.href, location.href);
+            if (u.origin !== location.origin || !/(\.html|\/)$/.test(u.pathname) || u.searchParams.has('reviewer')) return;
+            u.searchParams.set('reviewer', ''); a.href = u.href.replace('reviewer=', 'reviewer');
+          } catch (e) {}
+        };
+        document.querySelectorAll('a[href]').forEach(carry);
+        ['click', 'auxclick', 'contextmenu'].forEach(function(ev){
+          document.addEventListener(ev, function(e){ var a = e.target.closest && e.target.closest('a[href]'); if (a) carry(a); }, true);
+        });
         var r = document.createElement('div'); r.className = 'pw-reviewer';
-        r.innerHTML = 'Reviewer mode · <a href="?reviewer=off">turn off</a>';
+        r.innerHTML = 'Reviewer mode · <a href="' + location.pathname + '?reviewer=off">turn off</a>';
         document.body.appendChild(r);
       }
     }
