@@ -1,0 +1,50 @@
+# Alex's "✓ Checked" button (reviewer mode, tools/review/snippet.html) opens an issue titled
+# "Checked: <page>". When the repo owner opens one, this marks the page ✅ in tools/REVIEW.md,
+# removes its Draft tags (tools/review/drafts.py), commits and closes the issue.
+# Issues from anyone else are ignored.
+name: Mark page checked
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: build-sets
+  cancel-in-progress: false
+jobs:
+  check:
+    if: github.event.issue.user.login == github.repository_owner && startsWith(github.event.issue.title, 'Checked:')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE: ${{ github.event.issue.number }}
+      TITLE: ${{ github.event.issue.title }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Mark checked
+        id: mark
+        run: |
+          PAGE="${TITLE#Checked:}"
+          PAGE="$(echo "$PAGE" | xargs)"
+          echo "page=$PAGE" >> "$GITHUB_OUTPUT"
+          python3 tools/review/drafts.py check "$PAGE"
+      - name: Commit
+        env:
+          PAGE: ${{ steps.mark.outputs.page }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git add -A -- '*.html' tools/REVIEW.md
+          if git diff --cached --quiet; then echo "Already checked"; else
+            git commit -m "Checked by Alex: $PAGE (✓ button, issue #$ISSUE)"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+          gh issue close "$ISSUE" --repo "$GITHUB_REPOSITORY" --comment "Done: \`$PAGE\` is ✅ in tools/REVIEW.md and its Draft tags are gone. The live site updates in a minute or two."
+      - name: Report a failure
+        if: failure()
+        run: gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body "Couldn't mark this page checked (no matching row in tools/REVIEW.md, or the push failed). See the Actions log."

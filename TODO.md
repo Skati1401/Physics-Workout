@@ -10,6 +10,8 @@ The one list for everything still to do: the website, lesson decks, and anything
 
 The audit's fixes are done (see Done). What changed on each page is in `tools/REVIEW.md` (🔍 rows dated 3 Nov 2026). Still open:
 
+- [ ] The Calculations and Graphs sets build fails: `tools/sets/build.py` looks for a "WORK DONE" section in `work-and-power.html`, which is now "WORK DONE AND POWER" (and others may have moved), so the sets are no longer rebuilt on push. The workflow now carries on past it so the sitemap and Draft tags still update (found 11 Nov 2026).
+
 
 ## 2. Lesson decks (PPT reviews)
 
@@ -120,6 +122,8 @@ Each batch is one new chat. Alex calls a batch up by number, in any order: "Do a
 - [ ] Batch 13
 
 ## Done
+
+- [x] Draft tags on every page not ✅ in `tools/REVIEW.md` (workouts, practicals, animations, list cards), and reviewer mode: `?reviewer` once, then "✓ Checked" on a page clears its tag through a GitHub issue only Alex's account can action (Alex, 11 Nov 2026).
 
 - [x] Core route for the other 13 IGCSE practicals (only 1.22 has one): about 12 minutes each, chosen from the Question Index, set in `page.json`, checked with `check.py` (`tools/CORE-PRACTICALS.md`, "Core route + Extra practice"). Start from the recommended route for each page in the Project doc `claude/practicals-review-2026-11-04.md` (added 5 Nov 2026). Superseded 5 Nov 2026: practical pages no longer have a core route (see the rebuild to-do in section 5).
 - [x] Two-column Calculate working (givens left, steps right) and a New problems button on every workout Calculate: 21 IGCSE, Year 9 and IB pages, about 190 questions; questions on a fixed graph, table or diagram keep their numbers (Alex, 5 Nov 2026).

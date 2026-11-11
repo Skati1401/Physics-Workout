@@ -108,6 +108,9 @@ def build(slug):
            + engine + '\n' + content + '\n' + tail)
     leftover = re.findall(r'\{\{[A-Z_]+\}\}', out)
     assert not leftover, 'unfilled placeholders: %s' % leftover
+    sys.path.insert(0, os.path.join(REPO, 'tools', 'review'))
+    import drafts  # Draft tag and reviewer button, from tools/REVIEW.md
+    out = drafts.add_block(out, cfg['file'])
     path = os.path.join(REPO, cfg['file'])
     with open(path, 'w', encoding='utf-8') as f:
         f.write(out)

@@ -6,6 +6,8 @@ What Alex has checked, and what still needs checking. One row per published page
 
 **Rule for every chat:** when you build or change a page, set its row to 🔍 To review and say what to look at. Only Alex marks a page ✅. When he says a page is checked, set ✅ with the date and clear its "What to check".
 
+**Draft tags (11 Nov 2026):** every page whose row here is not ✅ shows "Draft" on the page and on its list cards (`tools/review/drafts.py sync`, run on every push). Alex marks a page checked from the page itself: open any page once with `?reviewer`, then press "✓ Checked" and submit the GitHub issue it opens; the row turns ✅ "✓ button" and the tag goes. A new page needs a row here, or it gets no Draft tag.
+
 ## Workouts
 
 | Page | Status | What to check |
