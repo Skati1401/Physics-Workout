@@ -180,11 +180,13 @@
   .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
   .rt-table.car th{font-size:10.5px;padding:2px 3px;}
   .rt-table.car td{padding:2px 3px;white-space:nowrap;}
+  .run-chip{display:inline-block;box-sizing:border-box;min-width:19px;height:19px;line-height:14px;border:2.5px solid var(--ink-faint);border-radius:10px;background:var(--panel);color:var(--ink);font-size:11px;font-weight:600;text-align:center;padding:0 2px;}
   :root{--grass:#cfe8b4;--grass-line:#b5d698;--hedge:#4f7d2f;--hedge-t:#73a548;--hedge-s:#3b6122;--soil:#9a7b55;--wool:#f7f6f1;--wool-s:#d9d6cb;--wool-o:#8f95a3;--sheep-face:#33302c;--dart:#e5392f;
     --steel:#66748c;--steel-hi:#c3ccda;--steel-sh:#3f4a5e;--wood-f:#c99e6a;--wood-t:#e3c08f;--wood-s:#9c7444;--case:#3f4a5e;
-    --road:#6f7785;--road-s:#4c5361;--car:#2f6fe0;--car-glass:#cfe6f7;}
-  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--grass:#22361a;--grass-line:#2c4522;--hedge:#5f9a3a;--hedge-t:#7cb651;--hedge-s:#3f6b26;--soil:#5b4631;--wool:#ecebe4;--wool-s:#bdbab0;--wool-o:#5d6472;--sheep-face:#1d1b19;--dart:#ff5a4d;--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--wood-f:#8a6a43;--wood-t:#a8855a;--wood-s:#644b2d;--case:#56617a;--road:#5a6170;--road-s:#3b414c;--car:#5b8cf0;--car-glass:#9fc3df;} }
-  :root[data-theme="dark"]{--grass:#22361a;--grass-line:#2c4522;--hedge:#5f9a3a;--hedge-t:#7cb651;--hedge-s:#3f6b26;--soil:#5b4631;--wool:#ecebe4;--wool-s:#bdbab0;--wool-o:#5d6472;--sheep-face:#1d1b19;--dart:#ff5a4d;--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--wood-f:#8a6a43;--wood-t:#a8855a;--wood-s:#644b2d;--case:#56617a;--road:#5a6170;--road-s:#3b414c;--car:#5b8cf0;--car-glass:#9fc3df;}
+    --road:#6f7785;--road-s:#4c5361;--car:#2f6fe0;--car-glass:#cfe6f7;
+    --run1:#6250d6;--run2:#008300;--run3:#e87ba4;--run4:#eda100;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--grass:#22361a;--grass-line:#2c4522;--hedge:#5f9a3a;--hedge-t:#7cb651;--hedge-s:#3f6b26;--soil:#5b4631;--wool:#ecebe4;--wool-s:#bdbab0;--wool-o:#5d6472;--sheep-face:#1d1b19;--dart:#ff5a4d;--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--wood-f:#8a6a43;--wood-t:#a8855a;--wood-s:#644b2d;--case:#56617a;--road:#5a6170;--road-s:#3b414c;--car:#5b8cf0;--car-glass:#9fc3df;--run1:#9085e9;--run2:#008300;--run3:#d55181;--run4:#c98500;} }
+  :root[data-theme="dark"]{--grass:#22361a;--grass-line:#2c4522;--hedge:#5f9a3a;--hedge-t:#7cb651;--hedge-s:#3f6b26;--soil:#5b4631;--wool:#ecebe4;--wool-s:#bdbab0;--wool-o:#5d6472;--sheep-face:#1d1b19;--dart:#ff5a4d;--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--wood-f:#8a6a43;--wood-t:#a8855a;--wood-s:#644b2d;--case:#56617a;--road:#5a6170;--road-s:#3b414c;--car:#5b8cf0;--car-glass:#9fc3df;--run1:#9085e9;--run2:#008300;--run3:#d55181;--run4:#c98500;}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -675,14 +677,19 @@
     // One car at a steady speed u. The light turns red at a random moment (time 0); the student presses Brake.
     // The car keeps its speed for the reaction time, then slows at the road's deceleration. Everything runs in real time.
     // The graph's time axis and the road's length are fixed (Alex, 11 Nov 2026), so every run is drawn to the same scale: a fast car crosses
-    // the picture faster than a slow one, and a longer stop is a longer line. 20 s and 300 m hold the longest run (30 m/s on ice, braking 1.5 s late: 16.5 s, 270 m).
-    var ROADS=[['Dry',7],['Wet',5],['Icy',2]], T_LIMIT=1.5, T_AXIS=20, T_STEP=2, ROAD_M=300, ROAD_STEP=50;
-    var speedIn=$('#rt-speed'), u=20, a=7, st='idle', raf=0, lastNow=0, tPlan=0, tRed=0, tB=0, scroll=0, runs=[], prev=null, lastDone=null, cur=null, L=null;
+    // the picture faster than a slow one, and a longer stop is a longer line. 12 s and 200 m hold the longest run (30 m/s on ice, braking 1.5 s late: 11.5 s, 195 m).
+    // Up to four finished runs stay on the graph, each in its own colour with its number, matching its row of the table, until Clear results.
+    // The colours (--run1 to --run4) are not the blue and orange used for the thinking and braking areas; a fifth run takes the place of the oldest.
+    var ROADS=[['Dry',7],['Wet',5],['Icy',3]], T_LIMIT=1.5, T_AXIS=12, T_STEP=1, ROAD_M=200, MAX_RUNS=4;
+    var speedIn=$('#rt-speed'), u=20, a=7, st='idle', raf=0, lastNow=0, tPlan=0, tRed=0, tB=0, scroll=0, runs=[], count=0, cur=null, L=null;
     function lay(){ return narrow()
-      ? {tall:true, W:430, H:532, k:0.85, x0:84, x1:416, ry:96, rh:26, fs:12.5, my:[34,52],
+      ? {tall:true, W:430, H:532, k:0.85, x0:84, x1:416, ry:96, rh:26, fs:12.5, my:[34,52], rstep:50,
          G:{x0:52,x1:416,y0:340,y1:482,fs:12}, SW:{x:10,y:176,k:1}, K:{x:10,y:[246,268,290,312],fs:12.5}, TL:{x:374,y:170,k:0.9,post:26}}
-      : {tall:false, W:860, H:350, k:1.25, x0:170, x1:822, ry:96, rh:30, fs:12, my:[36,54],
+      : {tall:false, W:860, H:350, k:1.25, x0:170, x1:822, ry:96, rh:30, fs:12, my:[36,54], rstep:25,
          G:{x0:56,x1:556,y0:176,y1:306,fs:11}, SW:{x:592,y:170,k:1.1}, K:{x:592,y:[242,264,286,310],fs:11.5}, TL:{x:804,y:166,k:1,post:50}}; }
+    // a new run takes the first colour that no run on the graph is using; with four on the graph, it takes over from the oldest
+    function freeSlot(){ for(var k=1;k<=MAX_RUNS;k++){ if(!runs.some(function(r){ return r.slot===k; })) return k; } return runs[0].slot; }
+    function shown(){ return cur && runs.indexOf(cur)<0 && runs.length>=MAX_RUNS ? runs.slice(1) : runs; }
     function roadName(){ return ROADS.filter(function(r){ return r[1]===a; })[0][0]; }
     function at(c,t){   // distance and speed t seconds after the light turned red
       if(c.rt==null || t<=c.rt) return {x:c.u*t, v:c.u};
@@ -733,14 +740,21 @@
         else { p.push([A.X(r.rt),A.Y(r.u)]); p.push([A.X(Math.min(e,r.end)),A.Y(at(r,e).v)]); if(e>r.end) p.push([A.X(e),A.Y(0)]); }
         return p; }
       g+=A.g;
-      if(prev) g+=pl(line(prev,prev.end),'var(--ink-faint)',2,' stroke-dasharray="6 4"');
       if(c && c.t>0){
         t=Math.min(c.t,G.tMax);
         var t1=c.rt==null?t:Math.min(t,c.rt);
         g+=rect(A.X(0),A.Y(c.u),A.X(t1)-A.X(0),A.Y(0)-A.Y(c.u),'var(--motion-soft)');
         if(c.rt!=null && t>c.rt){ var t2=Math.min(t,c.end); g+=pg([[A.X(c.rt),A.Y(0)],[A.X(c.rt),A.Y(c.u)],[A.X(t2),A.Y(at(c,t2).v)],[A.X(t2),A.Y(0)]],'var(--accent-soft)'); }
-        g+=pl(line(c,t),'var(--motion)',3);
       }
+      // every run still in the table, each in its own colour; the newest is drawn last and thicker
+      var list=shown().filter(function(r){ return r!==c; }), tags=[];
+      list.forEach(function(r){ g+=pl(line(r,r.end),'var(--run'+r.slot+')',2.2); });
+      if(c && c.t>0) g+=pl(line(c,Math.min(c.t,G.tMax)),'var(--run'+c.slot+')',3.2);
+      // each finished line carries its run number where it meets the time axis; numbers that would overlap are stacked
+      shown().forEach(function(r){ if(r.n==null) return; var x=A.X(r.end)+9, y=A.Y(0)-11;
+        while(tags.some(function(p){ return Math.abs(p[0]-x)<17 && Math.abs(p[1]-y)<15; })) y-=16;
+        tags.push([x,y]);
+        g+='<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="7.5" fill="var(--panel)" stroke="var(--run'+r.slot+')" stroke-width="2.4"/>'+txt(x,y+3.4,String(r.n),{a:'middle',fs:9.5,c:'var(--ink)',w:600}); });
       return g;
     }
     function keySVG(){
@@ -750,7 +764,7 @@
       g+=rect(K.x,K.y[0]-10.5,12,12,'var(--motion-soft)',' stroke="var(--motion)"')+txt(K.x+19,K.y[0],'thinking distance = '+(has?fix(c.th,1)+' m':'?'),{fs:fs,c:'var(--ink)'});
       g+=rect(K.x,K.y[1]-10.5,12,12,'var(--accent-soft)',' stroke="var(--accent)"')+txt(K.x+19,K.y[1],'braking distance = '+(done?fix(c.br,1)+' m':'?'),{fs:fs,c:'var(--ink)'});
       g+=txt(K.x+19,K.y[2],'stopping distance = '+(done?fix(c.stop,1)+' m':'?'),{fs:fs,c:'var(--ink)',w:600});
-      if(prev) g+=ln(K.x-1,K.y[3]-4,K.x+14,K.y[3]-4,'var(--ink-faint)',2,' stroke-dasharray="5 3"')+txt(K.x+19,K.y[3],'your last run',{fs:fs});
+      if(runs.length) g+='<circle cx="'+f1(K.x+6)+'" cy="'+f1(K.y[3]-4)+'" r="6.5" fill="var(--panel)" stroke="var(--ink-faint)" stroke-width="2"/>'+txt(K.x+19,K.y[3],'run number (see the table)',{fs:fs});
       return g;
     }
     function draw(){
@@ -759,7 +773,7 @@
       g+=roadSVG();
       if(anchored){
         // the road is measured from where the car was when the light turned red
-        step=ROAD_STEP;
+        step=L.rstep;
         for(i=0;i<=D+1e-9;i+=step){ var tx=L.x0+i*sc, edge=tx+20>L.W;   // the last label stays inside the picture on a phone
           g+=ln(tx,L.ry+L.rh+8,tx,L.ry+L.rh+14,'var(--ink-faint)',1.2)+txt(edge?L.W-2:tx,L.ry+L.rh+27,i+' m',{a:edge?'end':'middle',fs:L.fs-0.5,c:'var(--ink-soft)'}); }
         var xt=Math.min(pos, c.rt==null?pos:c.th);
@@ -778,10 +792,10 @@
     }
 
     function table(){
-      var rows='', list=runs.slice(-4), i;
-      for(i=0;i<4;i++){ var r=list[i];
-        rows+='<tr'+(r&&i===list.length-1?' class="now"':'')+'><td>'+(r?r.road+', '+r.u:'&nbsp;')+'</td><td>'+(r?fix(r.rt,2):'')+'</td><td>'+(r?fix(r.th,1):'')+'</td><td>'+(r?fix(r.br,1):'')+'</td><td>'+(r?fix(r.stop,1):'')+'</td></tr>'; }
-      $('#rt-head').innerHTML='<tr><th>Road, speed (m/s)</th><th>Reaction time (s)</th><th>Thinking distance (m)</th><th>Braking distance (m)</th><th>Stopping distance (m)</th></tr>';
+      var rows='', list=runs, i;
+      for(i=0;i<MAX_RUNS;i++){ var r=list[i];
+        rows+='<tr'+(r&&i===list.length-1?' class="now"':'')+'><td>'+(r?'<span class="run-chip" style="border-color:var(--run'+r.slot+')">'+r.n+'</span>':'&nbsp;')+'</td><td>'+(r?r.road+', '+r.u:'')+'</td><td>'+(r?fix(r.rt,2):'')+'</td><td>'+(r?fix(r.th,1):'')+'</td><td>'+(r?fix(r.br,1):'')+'</td><td>'+(r?fix(r.stop,1):'')+'</td></tr>'; }
+      $('#rt-head').innerHTML='<tr><th>Run</th><th>Road, speed (m/s)</th><th>Reaction time (s)</th><th>Thinking distance (m)</th><th>Braking distance (m)</th><th>Stopping distance (m)</th></tr>';
       $('#rt-rows').innerHTML=rows;
     }
     // the distances are read from the velocity–time graph, as areas
@@ -801,13 +815,13 @@
       $('#rt-speed-o').textContent=u+' m/s';
     }
     function idleNote(){ note('Press Start. The car drives at a steady '+u+' m/s. When the light turns red, press Brake (or the space bar) as fast as you can.'); }
-    function toIdle(msg, cls){ cancelAnimationFrame(raf); st='idle'; cur=null; scroll=0; if(lastDone){ prev=lastDone; lastDone=null; } if(msg) note(msg,cls); else idleNote(); buttons(); working(); draw(); }
+    function toIdle(msg, cls){ cancelAnimationFrame(raf); st='idle'; cur=null; scroll=0; if(msg) note(msg,cls); else idleNote(); buttons(); working(); draw(); }
 
     function loop(now){
       var dt=Math.min(0.05,(now-lastNow)/1000), c=cur, sc=(L.x1-L.x0)/ROAD_M; lastNow=now;
       if(st==='drive'){
         scroll+=u*sc*dt;
-        if(now>=tPlan){ st='react'; tRed=now; cur=c={u:u, a:a, road:roadName(), rt:null, t:0}; }   // timed from the frame in which the red light is first shown
+        if(now>=tPlan){ st='react'; tRed=now; cur=c={u:u, a:a, road:roadName(), rt:null, t:0, slot:freeSlot()}; }   // timed from the frame in which the red light is first shown
       } else if(st==='react'){
         c.t=(now-tRed)/1000;
         if(c.t>=T_LIMIT){ toIdle('No braking within '+T_LIMIT+' s of the red light, so this run does not count. Press Start to try again.','bad'); return; }
@@ -820,7 +834,7 @@
     }
     function start(){
       if(!(st==='idle'||st==='done')) return;
-      var now=performance.now(); st='drive'; cur=null; scroll=0; if(lastDone){ prev=lastDone; lastDone=null; } tPlan=now+1500+Math.random()*3000;
+      var now=performance.now(); st='drive'; cur=null; scroll=0; tPlan=now+1500+Math.random()*3000;
       note('The light is green. Watch it, and press Brake (or the space bar) as soon as it turns red.');
       buttons(); working(); lastNow=now; cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
       fireBtn.focus({preventScroll:true});
@@ -838,9 +852,10 @@
     }
     function finish(){
       var c=cur; cancelAnimationFrame(raf); st='done';
-      runs.push({road:c.road, u:c.u, rt:c.rt, th:c.th, br:c.br, stop:c.stop});
+      if(runs.length>=MAX_RUNS) runs.shift();
+      c.n=++count; runs.push(c);
       note('Stopped. Thinking distance '+fix(c.th,1)+' m (your reaction time, '+fix(c.rt,2)+' s) + braking distance '+fix(c.br,1)+' m ('+c.road.toLowerCase()+' road) = stopping distance '+fix(c.stop,1)+' m. Change the road or the speed and try again: which distance changes?');
-      table(); buttons(); working(); draw(); lastDone=c;
+      table(); buttons(); working(); draw();
       startBtn.focus({preventScroll:true});
     }
     function setup(){ u=+speedIn.value; toIdle(); }
@@ -848,7 +863,7 @@
     $('#rt-road').innerHTML=ROADS.map(function(r){ return '<button type="button" data-k="'+r[1]+'" aria-pressed="'+(r[1]===a)+'">'+r[0]+' ('+r[1]+' m/s²)</button>'; }).join('');
     $('#rt-road').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; a=+b.dataset.k;
       Array.prototype.forEach.call(this.children, function(x){ x.setAttribute('aria-pressed', String(x===b)); }); setup(); });
-    return {start:start, fire:fire, reset:function(){ runs=[]; prev=null; lastDone=null; table(); toIdle(); }, draw:draw, live:function(){ return st==='drive'||st==='react'; },
+    return {start:start, fire:fire, reset:function(){ runs=[]; count=0; table(); toIdle(); }, draw:draw, live:function(){ return st==='drive'||st==='react'; },
       stop:function(){ cancelAnimationFrame(raf); }, show:function(){ table(); toIdle(); }};
   }
 
