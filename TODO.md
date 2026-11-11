@@ -4,7 +4,8 @@ The one list for everything still to do: the website, lesson decks, and anything
 
 - **This repo is public.** No surnames, class lists, results, or anything that links a student to a class or a result. Common first names in questions are fine, as everywhere on the site.
 - **Detail lives elsewhere, the to-do lives here.** How to build a core practical is in `tools/CORE-PRACTICALS.md`; what Alex still has to look at on each page is in `tools/REVIEW.md`. This file holds the task and links there.
-- Format: `- [ ] task (where, added date)`. Tick with `[x]` and move it to **Done** with the date. Most urgent section first. Sections keep their numbers (other docs point to "section 8"); section 1, the 3 Nov site audit, is finished and was removed on 11 Nov 2026.
+- **Item IDs (Alex, 11 Nov 2026).** Every item has a fixed ID: its section number plus a letter (**5c**, **8a**). Alex refers to items by ID ("5c is done"). An ID never changes and is never reused: a ticked item keeps it in **Done**, and a new item takes the next letter not yet used in its section (check Done too). After z, go on with aa, ab.
+- Format: `- [ ] **5c** task (where, added date)`. Tick with `[x]` and move it to **Done** with the date. Most urgent section first. Sections keep their numbers (other docs point to "section 8"); section 1, the 3 Nov site audit, is finished and was removed on 11 Nov 2026.
 
 ## 2. Lesson decks (PPT reviews)
 
@@ -15,52 +16,52 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 ## 3. Alex to review
 
-- [ ] Check the 20-minute review of all 21 IGCSE workouts (4 Nov 2026): every page cut to about 20 minutes of content (477 → 300 activities), Quick check cards instead of single Predicts, memory games replaced by one crossword per unit. What changed on each page is in `tools/REVIEW.md` (rows starting "4 Nov 2026 20-minute review"). Calculate cards were then put back to 3 questions (Alex, 4 Nov 2026), so pages may run a little over 20 minutes, never 30.
+- [ ] **3a** Check the 20-minute review of all 21 IGCSE workouts (4 Nov 2026): every page cut to about 20 minutes of content (477 → 300 activities), Quick check cards instead of single Predicts, memory games replaced by one crossword per unit. What changed on each page is in `tools/REVIEW.md` (rows starting "4 Nov 2026 20-minute review"). Calculate cards were then put back to 3 questions (Alex, 4 Nov 2026), so pages may run a little over 20 minutes, never 30.
 
 101 pages are 🔍 To review and 1 is ❔ Not recorded in `tools/REVIEW.md` (11 Nov 2026). Go through that table; only Alex marks a page ✅.
 
-- [ ] Check Units 7 and 8 (7a `radioactivity.html`, 7b `fission-and-fusion.html`, 8a `universe-and-stars.html`, 8b `cosmology.html`; what to look at is in `tools/REVIEW.md`). Draft tags clear themselves once the page is ✅ in `tools/REVIEW.md` (reviewer mode) (added 4 Nov 2026).
-- [ ] Check Unit 3 (3a `waves.html`, 3b `light-and-sound.html`, 3c `sound.html`; what to look at is in `tools/REVIEW.md`). Draft tags clear themselves once the page is ✅ in `tools/REVIEW.md` (reviewer mode) (added 4 Nov 2026).
-- [ ] Look at the drafts `calculations.html` and `graphs.html`. If they're fine, add their cards to `igcse.html` below Core Practicals and remove `noindex` (in `tools/sets/build.py`).
+- [ ] **3b** Check Units 7 and 8 (7a `radioactivity.html`, 7b `fission-and-fusion.html`, 8a `universe-and-stars.html`, 8b `cosmology.html`; what to look at is in `tools/REVIEW.md`). Draft tags clear themselves once the page is ✅ in `tools/REVIEW.md` (reviewer mode) (added 4 Nov 2026).
+- [ ] **3c** Check Unit 3 (3a `waves.html`, 3b `light-and-sound.html`, 3c `sound.html`; what to look at is in `tools/REVIEW.md`). Draft tags clear themselves once the page is ✅ in `tools/REVIEW.md` (reviewer mode) (added 4 Nov 2026).
+- [ ] **3d** Look at the drafts `calculations.html` and `graphs.html`. If they're fine, add their cards to `igcse.html` below Core Practicals and remove `noindex` (in `tools/sets/build.py`).
 
 ## 4. Build: workouts (IGCSE, spec order)
 
 Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the cards to `igcse.html`, then add the unit's activities to the Calculations and Graphs sets.
 
-- [ ] Key-word crosswords for other units, if Alex wants them.
+- [ ] **4a** Key-word crosswords for other units, if Alex wants them.
 
 ## 5. Build: core practicals
 
 How to build one: `tools/CORE-PRACTICALS.md`.
 
-- [ ] Take the core practicals out of the workouts (Alex, 7 Nov 2026; not started). They appear in lots of places and are large. (1) Remove each practical's animation frame and practical activities from its workout tab, keeping at most a one-line link to the practical page; re-check each workout still has 5–8 tabs of 1–2 activities and 15–30 minutes. (2) On `igcse.html`, each unit's section lists its workouts, then that unit's practical pages as separate cards. (3) The final Core Practicals section (`#unit-cp`) only points to the practical cards in the units (links, no second copy of each card). (4) Then update CLAUDE.md ("Core practicals" and "How big a workout is"), `tools/CORE-PRACTICALS.md` and each practical's `page.json` workout link (rebuild with `gen.py`), bump the `STORE_KEY` of every workout changed, and set their rows in `tools/REVIEW.md` to 🔍. The interactive-revision-lab and teaching-animations skills already describe the new layout.
-- [ ] Fix the 4.9 thermal energy transfer practical page `heat-transfer-practical.html` (Alex, 6 Nov 2026: needs fixing; what to fix still to agree). The 4b Practicals tab stays as it is and Unit 4 stays Draft until then.
-- [ ] Rebuild the other 13 IGCSE practical pages to the 1.22 Hooke's law model: one row of tabs, no core route, Do/Show Experiment, Multiple choice, no Calculate tab; required tabs Method, Variables, Do Experiment, Show Experiment (`tools/CORE-PRACTICALS.md`, "The 1.22 model"; added 5 Nov 2026)
-- [ ] Review the six practicals published 4 Nov 2026: 3.17 `refraction-practical.html`, 3.19 `refractive-index-practical.html`, 3.25P `speed-of-sound-practical.html`, 2.23P `charging-practical.html`, 3.27P `sound-frequency-practical.html`, 7.6 `penetrating-power-practical.html` (what to check is in `tools/REVIEW.md`).
-- [ ] After Alex checks 1.22's new Experiment tab (students read the ruler, fill in their own table and plot it; the old run is the Show tab): use the same pattern on the other measure-and-plot practicals (5.4, 2.9, 5.14P, 3.19) (added 5 Nov 2026).
-- [ ] IAL CP7 resistivity and CP8 internal resistance practical pages, if Alex wants them (the animations are done).
-- [ ] IAL CP12–15: mark scheme wording check (no IAL question index yet).
+- [ ] **5a** Take the core practicals out of the workouts (Alex, 7 Nov 2026; not started). They appear in lots of places and are large. (1) Remove each practical's animation frame and practical activities from its workout tab, keeping at most a one-line link to the practical page; re-check each workout still has 5–8 tabs of 1–2 activities and 15–30 minutes. (2) On `igcse.html`, each unit's section lists its workouts, then that unit's practical pages as separate cards. (3) The final Core Practicals section (`#unit-cp`) only points to the practical cards in the units (links, no second copy of each card). (4) Then update CLAUDE.md ("Core practicals" and "How big a workout is"), `tools/CORE-PRACTICALS.md` and each practical's `page.json` workout link (rebuild with `gen.py`), bump the `STORE_KEY` of every workout changed, and set their rows in `tools/REVIEW.md` to 🔍. The interactive-revision-lab and teaching-animations skills already describe the new layout.
+- [ ] **5b** Fix the 4.9 thermal energy transfer practical page `heat-transfer-practical.html` (Alex, 6 Nov 2026: needs fixing; what to fix still to agree). The 4b Practicals tab stays as it is and Unit 4 stays Draft until then.
+- [ ] **5c** Rebuild the other 13 IGCSE practical pages to the 1.22 Hooke's law model: one row of tabs, no core route, Do/Show Experiment, Multiple choice, no Calculate tab; required tabs Method, Variables, Do Experiment, Show Experiment (`tools/CORE-PRACTICALS.md`, "The 1.22 model"; added 5 Nov 2026)
+- [ ] **5d** Review the six practicals published 4 Nov 2026: 3.17 `refraction-practical.html`, 3.19 `refractive-index-practical.html`, 3.25P `speed-of-sound-practical.html`, 2.23P `charging-practical.html`, 3.27P `sound-frequency-practical.html`, 7.6 `penetrating-power-practical.html` (what to check is in `tools/REVIEW.md`).
+- [ ] **5e** After Alex checks 1.22's new Experiment tab (students read the ruler, fill in their own table and plot it; the old run is the Show tab): use the same pattern on the other measure-and-plot practicals (5.4, 2.9, 5.14P, 3.19) (added 5 Nov 2026).
+- [ ] **5f** IAL CP7 resistivity and CP8 internal resistance practical pages, if Alex wants them (the animations are done).
+- [ ] **5g** IAL CP12–15: mark scheme wording check (no IAL question index yet).
 
 ## 6. Build: IAL and IB
 
-- [ ] IAL 132: the derivation of ½m⟨c²⟩ = 3/2 kT (an Order activity or a step-by-step reveal).
-- [ ] `ial.html` holds only Core Practicals so far; IAL workouts are still to plan.
+- [ ] **6a** IAL 132: the derivation of ½m⟨c²⟩ = 3/2 kT (an Order activity or a step-by-step reveal).
+- [ ] **6b** `ial.html` holds only Core Practicals so far; IAL workouts are still to plan.
 
 ## 7. Fable visuals (ideas, added 10 Nov 2026)
 
 Drawing and animation jobs worth running on Claude Fable, which draws SVG scenes better than the other models; keep page logic on the usual model, as Fable costs more. Fable can still draw convincing pictures with wrong physics, so drive every motion from the page's equations, not drawn keyframes, and check directions (field lines, current, rotation) before publishing. Build with the `teaching-animations` or `interactive-revision-lab` skill as usual.
 
-- [ ] Build: star life cycle and red shift animations for 8a/8b (no animation page yet; frame them in `universe-and-stars.html` and `cosmology.html`).
+- [ ] **7a** Build: star life cycle and red shift animations for 8a/8b (no animation page yet; frame them in `universe-and-stars.html` and `cosmology.html`).
 
 ## 8. Animation batches: review every animation against the motor and generator model (Alex, 10 Nov 2026)
 
 Each batch is one new chat. Alex calls a batch up by number, in any order: "Do animation batch 3 from `TODO.md` section 8, following `tools/ANIMATION-STYLE.md`." The chat reviews each page, rebuilds or restyles what falls short of the model (`animations/dc-motor.html`, `animations/ac-generator.html`) straight to `main`, and asks Alex only where there is a real choice. The model and effort level in brackets are the suggested ones: high where pictures are redrawn in 3D or a wrong direction would teach wrong physics, medium where it is mostly restyling flat pictures and graphs.
 
-- [ ] Batch 8 (Fable high): `refraction.html`, `speed-of-sound.html`, `oscilloscope.html`. Look for: glass blocks, ray box and oscilloscope as solid objects; predict which way the ray bends on the picture, then Go.
-- [ ] Batch 10 (Fable high): `heating-curve.html`, `specific-heat.html`, `gas-molecules.html`. Look for: three large pages (about 1 370 lines each); `gas-molecules.html` also needs its plain picture redrawn (the drawing pass). Do one page at a time.
-- [ ] Batch 11 (Fable medium): `film-badge.html`, `random-decay.html`, `radiation-in-fields.html`, `chain-reaction.html`, `penetrating-power.html`. Look for: `chain-reaction.html` also needs its plain picture redrawn (the drawing pass); predict which way α and β bend on the picture, then Go.
-- [ ] Batch 12 (Fable medium): `projectile-lab.html`, `shoot-the-monkey.html`, `free-body-diagrams.html`, `newtons-laws.html`, `inclined-plane.html` (IAL and IB). Look for: newer pages, likely a light pass: labels, sizes, solid objects.
-- [ ] Batch 13 (Fable medium): `thermistor.html`, `latent-heat.html`, `boyles-law.html`, `gamma-radiation.html` (IAL practicals). Look for: apparatus drawn solid; keep every `?show=` mode and the fixed readings the practical pages check against.
+- [ ] **8a** Batch 8 (Fable high): `refraction.html`, `speed-of-sound.html`, `oscilloscope.html`. Look for: glass blocks, ray box and oscilloscope as solid objects; predict which way the ray bends on the picture, then Go.
+- [ ] **8b** Batch 10 (Fable high): `heating-curve.html`, `specific-heat.html`, `gas-molecules.html`. Look for: three large pages (about 1 370 lines each); `gas-molecules.html` also needs its plain picture redrawn (the drawing pass). Do one page at a time.
+- [ ] **8c** Batch 11 (Fable medium): `film-badge.html`, `random-decay.html`, `radiation-in-fields.html`, `chain-reaction.html`, `penetrating-power.html`. Look for: `chain-reaction.html` also needs its plain picture redrawn (the drawing pass); predict which way α and β bend on the picture, then Go.
+- [ ] **8d** Batch 12 (Fable medium): `projectile-lab.html`, `shoot-the-monkey.html`, `free-body-diagrams.html`, `newtons-laws.html`, `inclined-plane.html` (IAL and IB). Look for: newer pages, likely a light pass: labels, sizes, solid objects.
+- [ ] **8e** Batch 13 (Fable medium): `thermistor.html`, `latent-heat.html`, `boyles-law.html`, `gamma-radiation.html` (IAL practicals). Look for: apparatus drawn solid; keep every `?show=` mode and the fixed readings the practical pages check against.
 
 Follow-ups:
 
