@@ -4029,12 +4029,17 @@ createSortGame({host:act('orbits','Sort','Moons, planets and comets','Sort each 
 const ob_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
 const ob_n=x=>String(+(+x).toFixed(2));
 const OB_WORLDS=[['the Moon',1.6],['Mars',3.7],['Mercury',3.7],['Venus',8.9],['Jupiter',25],['Saturn',10.4]];
-calcAct('orbits','Weight on other worlds','Use weight = mass × gravitational field strength, W = m × g.',[
-  {q:'A probe weighs 2500 N on Jupiter, where g = 25 N/kg. Its mass is',unit:'kg',answer:100,working:ob_w(['W = 2500 N','g = 25 N/kg','m = ?'],['W = m × g','2500 = m × 25','m = [[2500|25]]','m = 100 kg']),
-   make:rnd=>{const w=calcPick(rnd,OB_WORLDS),m=calcPick(rnd,[40,50,80,100,120,150,200,250,400,500]),W=+(m*w[1]).toFixed(2);
-     const what=calcPick(rnd,['A probe','A lander','A rover','A space probe']);
-     return {q:what+' weighs '+ob_n(W)+' N on '+w[0]+', where g = '+w[1]+' N/kg. Its mass is',unit:'kg',answer:m,working:ob_w(['W = '+ob_n(W)+' N','g = '+w[1]+' N/kg','m = ?'],['W = m × g',ob_n(W)+' = m × '+w[1],'m = [['+ob_n(W)+'|'+w[1]+']]','m = '+m+' kg'])};}}
-  ]);
+// Two questions (11 Nov 2026): the first rearranges W = mg for m or g; the second finds the mass from the weight on one world,
+// then the weight on another. New problems changes the numbers, the worlds and the unknown.
+const ow_q1=rnd=>{const w=calcPick(rnd,OB_WORLDS),m=calcPick(rnd,[40,50,80,100,120,150,200,250,400,500]),W=+(m*w[1]).toFixed(2),what=calcPick(rnd,['A probe','A lander','A rover','A space probe']);
+  return rnd()<0.6?{q:what+' weighs '+ob_n(W)+' N on '+w[0]+', where g = '+w[1]+' N/kg. Its mass is',unit:'kg',answer:m,working:ob_w(['W = '+ob_n(W)+' N','g = '+w[1]+' N/kg','m = ?'],['W = mg',ob_n(W)+' = '+w[1]+'m','m = [['+ob_n(W)+'|'+w[1]+']]','m = '+m+' kg'])}
+    :{q:'A '+m+' kg '+what.slice(2).toLowerCase()+' weighs '+ob_n(W)+' N on '+w[0]+'. The gravitational field strength on '+w[0]+' is',unit:'N/kg',answer:w[1],working:ob_w(['W = '+ob_n(W)+' N','m = '+m+' kg','g = ?'],['W = mg',ob_n(W)+' = '+m+'g','g = [['+ob_n(W)+'|'+m+']]','g = '+w[1]+' N/kg'])};};
+const ow_q2=rnd=>{let a,b,k=0;do{a=calcPick(rnd,OB_WORLDS.concat([['the Earth',10]]));b=calcPick(rnd,OB_WORLDS.concat([['the Earth',10]]));}while(a[0]===b[0]&&++k<20);
+  const who=calcPick(rnd,[['An astronaut',[60,70,80,90]],['A rover',[150,200,400,900]],['A lander',[200,500,1000]]]),m=calcPick(rnd,who[1]),Wa=+(m*a[1]).toFixed(2),Wb=+(m*b[1]).toFixed(2);
+  return {q:who[0]+' weighs '+ob_n(Wa)+' N on '+a[0]+' (g = '+a[1]+' N/kg). On '+b[0]+' (g = '+b[1]+' N/kg) the weight is',unit:'N',answer:Wb,
+    hints:['The mass is the same everywhere: find it first with W = mg on '+a[0]+'.','Then use W = mg with g for '+b[0]+'.'],
+    working:ob_w(['W₁ = '+ob_n(Wa)+' N','g₁ = '+a[1]+' N/kg','g₂ = '+b[1]+' N/kg','W₂ = ?'],['W = mg',ob_n(Wa)+' = '+a[1]+'m','m = [['+ob_n(Wa)+'|'+a[1]+']]','m = '+m+' kg','W₂ = '+m+' × '+b[1],'W₂ = '+ob_n(Wb)+' N'])};};
+calcAct('orbits','Weight on other worlds','Use weight = mass × gravitational field strength, W = mg. Press New problems for another pair.',[calcFix(ow_q1,1),calcFix(ow_q2,2)]);
 
 }
 keepKinds('8a-orbits',null,null);
@@ -4049,26 +4054,25 @@ const or_sup=n=>String(n).split('').map(d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[+d]).jo
 const or_sci=(m,e)=>m+' × 10'+or_sup(e);
 const or_n=x=>{const t=String(x).split('.'),i=Math.abs(x)>=10000?t[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '):t[0];return i+(t[1]?'.'+t[1]:'');};
 const or_sf=(x,n)=>+(+x).toPrecision(n);
-calcAct('orbital','v = [[2 × π × r|T]]','Use orbital speed = [[2 × π × orbital radius|time period]], with r in metres and T in seconds.',[
-  {q:'The Earth orbits the Sun at a radius of 1.5 × 10¹¹ m. One year is 3.15 × 10⁷ s. Its orbital speed is',unit:'km/s',answer:29.9,
-   working:or_w(['r = 1.5 × 10¹¹ m','T = 3.15 × 10⁷ s','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × 1.5 × 10¹¹|3.15 × 10⁷]]','v = 29 920 m/s','v = 29.9 km/s']),
-   make:rnd=>{const p=calcPick(rnd,[['Mercury',5.79,10,'One Mercury year is',7.60,6],['Venus',1.08,11,'One Venus year is',1.94,7],['The Earth',1.5,11,'One year is',3.15,7],['Mars',2.28,11,'One Mars year is',5.94,7],['Jupiter',7.78,11,'One Jupiter year is',3.74,8]]);
-     const v=2*Math.PI*p[1]*Math.pow(10,p[2])/(p[4]*Math.pow(10,p[5])),vm=Math.round(or_sf(v,4)),vk=or_sf(v/1000,3);
-     return {q:p[0]+' orbits the Sun at a radius of '+or_sci(p[1],p[2])+' m. '+p[3]+' '+or_sci(p[4],p[5])+' s. Its orbital speed is',unit:'km/s',answer:vk,
-       working:or_w(['r = '+or_sci(p[1],p[2])+' m','T = '+or_sci(p[4],p[5])+' s','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × '+or_sci(p[1],p[2])+'|'+or_sci(p[4],p[5])+']]','v = '+or_n(vm)+' m/s','v = '+(v/1000).toPrecision(3)+' km/s'])};}},
-  {q:'A geostationary satellite orbits once every 24 hours at a radius of 4.22 × 10⁷ m. Its orbital speed is',unit:'m/s',answer:3069,
-   working:or_w(['T = 24 h = 24 × 60 × 60 = 86 400 s','r = 4.22 × 10⁷ m','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × 4.22 × 10⁷|86 400]]','v = 3069 m/s']),
-   make:rnd=>{const c=calcPick(rnd,[['A geostationary satellite',24,4.22,7],['A GPS satellite',12,2.66,7],['A satellite',8,2.03,7],['A satellite',6,1.28,7],['A satellite',3,1.06,7],['A satellite',2,8.06,6]]);
-     const T=c[1]*3600,v=Math.round(2*Math.PI*c[2]*Math.pow(10,c[3])/T);
-     return {q:c[0]+' orbits once every '+c[1]+' hours at a radius of '+or_sci(c[2],c[3])+' m. Its orbital speed is',unit:'m/s',answer:v,
-       working:or_w(['T = '+c[1]+' h = '+c[1]+' × 60 × 60 = '+or_n(T)+' s','r = '+or_sci(c[2],c[3])+' m','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × '+or_sci(c[2],c[3])+'|'+or_n(T)+']]','v = '+or_n(v)+' m/s'])};}},
-  {q:'The International Space Station moves at 7700 m/s at an orbital radius of 6.77 × 10⁶ m. Its time period is',unit:'min',answer:92.1,
-   working:or_w(['v = 7700 m/s','r = 6.77 × 10⁶ m','T = ?'],['v = [[2 × π × r|T]]','7700 = [[2 × π × 6.77 × 10⁶|T]]','7700 × T = 2 × π × 6.77 × 10⁶','T = [[2 × π × 6.77 × 10⁶|7700]]','T = 5524 s','T = [[5524|60]] min','T = 92.1 min']),
-   make:rnd=>{const c=calcPick(rnd,[['The International Space Station',7700,6.77],['The Hubble Space Telescope',7590,6.92],['A weather satellite',7450,7.18],['An Earth-observation satellite',7500,7.08],['A small research satellite',7620,6.87]]);
-     const Ts=Math.round(2*Math.PI*c[2]*1e6/c[1]),Tm=or_sf(Ts/60,3);
-     return {q:c[0]+' moves at '+c[1]+' m/s at an orbital radius of '+or_sci(c[2],6)+' m. Its time period is',unit:'min',answer:Tm,
-       working:or_w(['v = '+c[1]+' m/s','r = '+or_sci(c[2],6)+' m','T = ?'],['v = [[2 × π × r|T]]',c[1]+' = [[2 × π × '+or_sci(c[2],6)+'|T]]',c[1]+' × T = 2 × π × '+or_sci(c[2],6),'T = [[2 × π × '+or_sci(c[2],6)+'|'+c[1]+']]','T = '+Ts+' s','T = [['+Ts+'|60]] min','T = '+Tm+' min'])};}}
-]);
+// Two questions (11 Nov 2026): the first rearranges v = 2πr/T for T or r (SI units); the second needs hours or days in
+// seconds, or km/s, as well. New problems changes the numbers, the orbiting body and the unknown.
+const ov_q1=rnd=>{const c=calcPick(rnd,[['The International Space Station',7700,6.77],['The Hubble Space Telescope',7590,6.92],['A weather satellite',7450,7.18],['An Earth-observation satellite',7500,7.08]]);
+  const r=c[2]*1e6,T=2*Math.PI*r/c[1],Ts=Math.round(T);
+  if(rnd()<0.5)return {q:c[0]+' moves at '+or_n(c[1])+' m/s at an orbital radius of '+or_sci(c[2],6)+' m. Its time period is',unit:'s',answer:Ts,
+    working:or_w(['v = '+or_n(c[1])+' m/s','r = '+or_sci(c[2],6)+' m','T = ?'],['v = [[2 × π × r|T]]',or_n(c[1])+' = [[2 × π × '+or_sci(c[2],6)+'|T]]',or_n(c[1])+'T = 2 × π × '+or_sci(c[2],6),'T = [[2 × π × '+or_sci(c[2],6)+'|'+or_n(c[1])+']]','T = '+or_n(Ts)+' s'])};
+  const T2=calcPick(rnd,[5400,5600,6000]),v=c[1],r2=v*T2/(2*Math.PI),rs=or_sf(r2/1e6,3);
+  return {q:c[0]+' moves at '+or_n(v)+' m/s and takes '+or_n(T2)+' s to go once round the Earth. Its orbital radius is',unit:'× 10⁶ m',answer:rs,
+    working:or_w(['v = '+or_n(v)+' m/s','T = '+or_n(T2)+' s','r = ?'],['v = [[2 × π × r|T]]',or_n(v)+' = [[2 × π × r|'+or_n(T2)+']]',or_n(v)+' × '+or_n(T2)+' = 2 × π × r','r = [['+or_n(v*T2)+'|2 × π]]','r = '+rs+' × 10⁶ m'])};};
+const ov_q2=rnd=>{if(rnd()<0.5){const c=calcPick(rnd,[['A geostationary satellite',24,4.22,7],['A GPS satellite',12,2.66,7],['A satellite',8,2.03,7],['A satellite',6,1.28,7]]);
+    const T=c[1]*3600,v=Math.round(2*Math.PI*c[2]*Math.pow(10,c[3])/T);
+    return {q:c[0]+' orbits once every '+c[1]+' hours at a radius of '+or_sci(c[2],c[3])+' m. Its orbital speed is',unit:'m/s',answer:v,
+      hints:['Change '+c[1]+' hours into seconds: × 60 × 60.','Then v = [[2 × π × r|T]].'],
+      working:or_w(['T = '+c[1]+' h = '+c[1]+' × 60 × 60 = '+or_n(T)+' s','r = '+or_sci(c[2],c[3])+' m','v = ?'],['v = [[2 × π × r|T]]','v = [[2 × π × '+or_sci(c[2],c[3])+'|'+or_n(T)+']]','v = '+or_n(v)+' m/s'])};}
+  const p=calcPick(rnd,[['The Moon',1.02,27.3],['Io, a moon of Jupiter,',17.3,1.77],['Titan, a moon of Saturn,',5.57,15.9],['Europa, a moon of Jupiter,',13.7,3.55]]),vk=p[1],Td=p[2],Ts=Td*86400,r=vk*1000*Ts/(2*Math.PI),rs=or_sf(r/1e8,3);
+  return {q:p[0]+' orbits at '+vk+' km/s and takes '+Td+' days to go round once. Its orbital radius is',unit:'× 10⁸ m',answer:rs,
+    hints:['Change km/s into m/s (× 1000) and days into seconds (× 24 × 60 × 60).','Rearrange v = [[2 × π × r|T]] for r.'],
+    working:or_w(['v = '+vk+' km/s = '+or_n(vk*1000)+' m/s','T = '+Td+' days = '+Td+' × 24 × 60 × 60 = '+or_n(Math.round(Ts))+' s','r = ?'],['v = [[2 × π × r|T]]',or_n(vk*1000)+' = [[2 × π × r|'+or_n(Math.round(Ts))+']]',or_n(vk*1000)+' × '+or_n(Math.round(Ts))+' = 2 × π × r','r = [['+or_n(vk*1000)+' × '+or_n(Math.round(Ts))+'|2 × π]]','r = '+rs+' × 10⁸ m'])};};
+calcAct('orbital','v = [[2 × π × r|T]]','Use orbital speed = [[2 × π × orbital radius|time period]], with r in metres and T in seconds. Press New problems for another pair.',[calcFix(ov_q1,1),calcFix(ov_q2,2)]);
 
 }
 keepKinds('8a-orbital',null,null);
@@ -4077,30 +4081,27 @@ SRC='8b';
 {
 
 
-// New problems helpers (equation tab). The third question's maker uses the line made by the second (rs_last).
+// New problems helpers (equation tab)
 const rs_w=(g,st)=>g.join('<br>')+'||'+st.join('<br>');
 const rs_n=(x,dp)=>String(+(+x).toFixed(dp));
 const RS_LINES=[393,410,434,486,589,656];
-let rs_last=null;
-calcAct('equation','[[Δλ|λ₀]] = [[v|c]]','Use [[change in wavelength|reference wavelength]] = [[velocity of galaxy|speed of light]], with c = 3.0 × 10⁸ m/s. Δλ = λ − λ₀.',[
-  {q:'A line at 656 nm in the lab is seen at 662.6 nm in a galaxy’s light. The galaxy’s velocity is',unit:'× 10⁶ m/s',answer:3.02,
-   working:rs_w(['λ₀ = 656 nm','λ = 662.6 nm','Δλ = 662.6 − 656 = 6.6 nm','c = 3.0 × 10⁸ m/s','v = ?'],['[[Δλ|λ₀]] = [[v|c]]','[[6.6|656]] = [[v|3.0 × 10⁸]]','v = [[6.6|656]] × 3.0 × 10⁸','v = 3.02 × 10⁶ m/s']),
-   make:rnd=>{let l0,d,v,k=0;do{l0=calcPick(rnd,RS_LINES);d=calcPick(rnd,[2.4,3.6,4.2,5.0,6.6,8.0,9.3,12.0,15.0]);v=+(d/l0*300).toPrecision(3);}while((v<1||v>9.99)&&++k<60);
-     const l=rs_n(l0+d,1),gal=calcPick(rnd,['a galaxy’s light','the light from a distant galaxy','the spectrum of a galaxy']);
-     return {q:'A line at '+l0+' nm in the lab is seen at '+l+' nm in '+gal+'. The galaxy’s velocity is',unit:'× 10⁶ m/s',answer:v,
-       working:rs_w(['λ₀ = '+l0+' nm','λ = '+l+' nm','Δλ = '+l+' − '+l0+' = '+rs_n(d,1)+' nm','c = 3.0 × 10⁸ m/s','v = ?'],['[[Δλ|λ₀]] = [[v|c]]','[['+rs_n(d,1)+'|'+l0+']] = [[v|3.0 × 10⁸]]','v = [['+rs_n(d,1)+'|'+l0+']] × 3.0 × 10⁸','v = '+v+' × 10⁶ m/s'])};}},
-  {q:'A galaxy moves away at 1.5 × 10⁷ m/s. A line at 500 nm in the lab is shifted by',unit:'nm',answer:25,
-   working:rs_w(['v = 1.5 × 10⁷ m/s','λ₀ = 500 nm','c = 3.0 × 10⁸ m/s','Δλ = ?'],['[[Δλ|λ₀]] = [[v|c]]','[[Δλ|500]] = [[1.5 × 10⁷|3.0 × 10⁸]]','[[Δλ|500]] = 0.05','Δλ = 0.05 × 500','Δλ = 25 nm']),
-   make:rnd=>{const c=calcPick(rnd,[['3.0 × 10⁶',0.01],['6.0 × 10⁶',0.02],['9.0 × 10⁶',0.03],['1.2 × 10⁷',0.04],['1.5 × 10⁷',0.05],['2.4 × 10⁷',0.08],['3.0 × 10⁷',0.1]]),l0=calcPick(rnd,RS_LINES.concat([500,600])),d=rs_n(c[1]*l0,2);
-     rs_last={l0:l0,d:d};
-     return {q:'A galaxy moves away at '+c[0]+' m/s. A line at '+l0+' nm in the lab is shifted by',unit:'nm',answer:+d,
-       working:rs_w(['v = '+c[0]+' m/s','λ₀ = '+l0+' nm','c = 3.0 × 10⁸ m/s','Δλ = ?'],['[[Δλ|λ₀]] = [[v|c]]','[[Δλ|'+l0+']] = [['+c[0]+'|3.0 × 10⁸]]','[[Δλ|'+l0+']] = '+c[1],'Δλ = '+c[1]+' × '+l0,'Δλ = '+d+' nm'])};}},
-  {q:'For that galaxy, the observed wavelength of the 500 nm line is',unit:'nm',answer:525,
-   working:rs_w(['λ₀ = 500 nm','Δλ = 25 nm','λ = ?'],['Δλ = λ − λ₀','25 = λ − 500','λ = 25 + 500','λ = 525 nm']),
-   make:rnd=>{const r=rs_last||{l0:500,d:'25'},l=rs_n(r.l0+(+r.d),2);
-     return {q:'For that galaxy, the observed wavelength of the '+r.l0+' nm line is',unit:'nm',answer:+l,
-       working:rs_w(['λ₀ = '+r.l0+' nm','Δλ = '+r.d+' nm','λ = ?'],['Δλ = λ − λ₀',r.d+' = λ − '+r.l0,'λ = '+r.d+' + '+r.l0,'λ = '+l+' nm'])};}}
-]);
+// Two questions (11 Nov 2026): the first rearranges Δλ/λ₀ = v/c for v or Δλ; the second needs the observed wavelength (two
+// steps) or the reference wavelength. New problems changes the numbers, the spectral line and which quantity is asked for.
+const RS_V=[['3.0 × 10⁶',0.01],['6.0 × 10⁶',0.02],['9.0 × 10⁶',0.03],['1.2 × 10⁷',0.04],['1.5 × 10⁷',0.05],['2.4 × 10⁷',0.08],['3.0 × 10⁷',0.1]];
+const rs_q1=rnd=>{if(rnd()<0.5){let l0,d,v,k=0;do{l0=calcPick(rnd,RS_LINES);d=calcPick(rnd,[2.4,3.6,4.2,5.0,6.6,8.0,9.3,12.0,15.0]);v=+(d/l0*300).toPrecision(3);}while((v<1||v>9.99)&&++k<60);
+    return {q:'A line at '+l0+' nm in the lab is shifted by '+rs_n(d,1)+' nm in '+calcPick(rnd,['a galaxy’s light','the light from a distant galaxy','the spectrum of a galaxy'])+'. The galaxy’s velocity is',unit:'× 10⁶ m/s',answer:v,
+      working:rs_w(['λ₀ = '+l0+' nm','Δλ = '+rs_n(d,1)+' nm','c = 3.0 × 10⁸ m/s','v = ?'],['[[Δλ|λ₀]] = [[v|c]]','[['+rs_n(d,1)+'|'+l0+']] = [[v|3.0 × 10⁸]]','v = [['+rs_n(d,1)+'|'+l0+']] × 3.0 × 10⁸','v = '+v+' × 10⁶ m/s'])};}
+  const c=calcPick(rnd,RS_V),l0=calcPick(rnd,RS_LINES.concat([500,600])),d=rs_n(c[1]*l0,2);
+  return {q:'A galaxy moves away at '+c[0]+' m/s. A line at '+l0+' nm in the lab is shifted by',unit:'nm',answer:+d,
+    working:rs_w(['v = '+c[0]+' m/s','λ₀ = '+l0+' nm','c = 3.0 × 10⁸ m/s','Δλ = ?'],['[[Δλ|λ₀]] = [[v|c]]','[[Δλ|'+l0+']] = [['+c[0]+'|3.0 × 10⁸]]','[[Δλ|'+l0+']] = '+c[1],'Δλ = '+c[1]+' × '+l0,'Δλ = '+d+' nm'])};};
+const rs_q2=rnd=>{const c=calcPick(rnd,RS_V),l0=calcPick(rnd,RS_LINES.concat([500,600])),d=+rs_n(c[1]*l0,2),l=+rs_n(l0+d,2);
+  return rnd()<0.5?{q:'A galaxy moves away at '+c[0]+' m/s. A line at '+l0+' nm in the lab is seen in its light at a wavelength of',unit:'nm',answer:l,
+      hints:['Find the shift Δλ first: [[Δλ|λ₀]] = [[v|c]].','The galaxy moves away, so the line is red-shifted: λ = λ₀ + Δλ.'],
+      working:rs_w(['v = '+c[0]+' m/s','λ₀ = '+l0+' nm','c = 3.0 × 10⁸ m/s','λ = ?'],['[[Δλ|λ₀]] = [[v|c]]','[[Δλ|'+l0+']] = [['+c[0]+'|3.0 × 10⁸]]','Δλ = '+c[1]+' × '+l0,'Δλ = '+d+' nm','λ = λ₀ + Δλ','λ = '+l0+' + '+d,'λ = '+l+' nm'])}
+    :{q:'A galaxy moves away at '+c[0]+' m/s. A line in its light is shifted by '+d+' nm. The wavelength of this line in the lab is',unit:'nm',answer:l0,
+      hints:['Substitute into [[Δλ|λ₀]] = [[v|c]]: λ₀ is the unknown, on the bottom.','Work out [[v|c]] first, then rearrange for λ₀.'],
+      working:rs_w(['v = '+c[0]+' m/s','Δλ = '+d+' nm','c = 3.0 × 10⁸ m/s','λ₀ = ?'],['[[Δλ|λ₀]] = [[v|c]]','[['+d+'|λ₀]] = [['+c[0]+'|3.0 × 10⁸]]','[['+d+'|λ₀]] = '+c[1],c[1]+'λ₀ = '+d,'λ₀ = [['+d+'|'+c[1]+']]','λ₀ = '+l0+' nm'])};};
+calcAct('equation','[[Δλ|λ₀]] = [[v|c]]','Use [[change in wavelength|reference wavelength]] = [[velocity of galaxy|speed of light]], with c = 3.0 × 10⁸ m/s. Δλ = λ − λ₀. Press New problems for another pair.',[calcFix(rs_q1,1),calcFix(rs_q2,2)]);
 
 }
 keepKinds('8b-equation',null,null);
