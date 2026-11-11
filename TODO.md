@@ -12,7 +12,6 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 **Animation ideas from the reviews.** "Link" lines: the page exists, so put its link (Copperplate hyperlink, `?level=` for the course) on the slide. "Build" lines: build the page with the `teaching-animations` skill, add its card to the course list, then link it on the slide and tick the line. Each PPT review checks these lines before suggesting new ideas.
 
-- [ ] 4 Energy, Lessons 9–10 GPE → KE slides (190–222): link `animations/roller-coaster-energy.html?level=igcse` (review row W04, added 3 Nov 2026).
 
 ## 3. Alex to review
 
@@ -83,12 +82,13 @@ Follow-ups:
 - [x] Drawing pass on the Year 9 half-pipe and bungee Predicts (plain pictures; not in any animation batch). The other plain pages are in their batches: `gas-molecules.html` in batch 10, `chain-reaction.html` in batch 11. Done (Alex, 11 Nov 2026). The Year 9 page lost both on 26 Oct 2026, so the half-pipe was redrawn on 4a `energy-stores-efficiency.html`, Conservation (solid ramp and skater; motion and numbers unchanged). The bungee is an Order with no picture and was left as it is (Alex). 4a is back to 🔍 in `tools/REVIEW.md`.
 
 - [x] Move the open to-dos from the PPT-review project docs into this section (Alex, 3 Nov 2026). Done (Alex, 11 Nov 2026).
-- [x] 4 Energy, Lesson 2 Sankey slides (24–49): link the 4a workout Sankey tab's "Sankey diagrams to scale" explore (`energy-stores-efficiency.html#sankey`) on a Sankey teaching slide; the L2 To Do slide (47) already links the tab (review row E26, added 3 Nov 2026). Done (Alex, 11 Nov 2026).
-- [x] 4 Energy, Lesson 3 conduction slides (50–66): link `animations/heat-transfer.html?level=igcse` (conduction and free electrons) (review row H26, added 3 Nov 2026). Done (Alex, 11 Nov 2026).
-- [x] 4 Energy, Lesson 4 convection slides (67–88): link `animations/heat-transfer.html?level=igcse` (convection) (review row H25, added 3 Nov 2026). Done (Alex, 11 Nov 2026).
-- [x] 5.2 Nuclear Decay (IAL), slide 42: link `animations/chain-reaction.html?level=ial` (built 4 Nov 2026; review row S8). Done (Alex, 11 Nov 2026).
-- [x] 6 Magnetism (IGCSE), slides 29–30: link `animations/electromagnets.html?level=igcse` (built 4 Nov 2026; review row M18). Done (Alex, 11 Nov 2026).
-- [x] E2 Quantum (IB), slides 55–70: link `animations/electron-diffraction.html?level=ib` (built 4 Nov 2026; review row Q28). Done (Alex, 11 Nov 2026).
+- [x] 4 Energy, Lessons 9–10 GPE → KE slides: link `animations/roller-coaster-energy.html` (review row W04, added 3 Nov 2026). Done 7 Nov 2026 (checked 11 Nov): on slide 150, Law of Conservation of Energy.
+- [x] 4 Energy, Lesson 2 Sankey slides (24–49): link the 4a workout Sankey tab's "Sankey diagrams to scale" explore (`energy-stores-efficiency.html#sankey`) on a Sankey teaching slide; the L2 To Do slide (47) already links the tab (review row E26, added 3 Nov 2026). Done 11 Nov 2026: "Explore: Sankey Diagrams to Scale" on slide 23, Sankey Diagram – Running Man.
+- [x] 4 Energy, Lesson 3 conduction slides (50–66): link `animations/heat-transfer.html?level=igcse` (conduction and free electrons) (review row H26, added 3 Nov 2026). Done 11 Nov 2026: "Animation: Conduction" (`&show=cond`) on slide 37, Comparing Conductors.
+- [x] 4 Energy, Lesson 4 convection slides (67–88): link `animations/heat-transfer.html?level=igcse` (convection) (review row H25, added 3 Nov 2026). Done 11 Nov 2026: "Animation: Convection" (`&show=conv`) on slide 47, Demo: Convection Loop.
+- [x] 5.2 Nuclear Decay (IAL), slide 42: link `animations/chain-reaction.html?level=ial` (built 4 Nov 2026; review row S8). Done 11 Nov 2026: "Animation" line on slide 44, Chain Reaction.
+- [x] 6 Magnetism (IGCSE), slides 29–30: link `animations/electromagnets.html?level=igcse` (built 4 Nov 2026; review row M18). Done 11 Nov 2026: "Animation: Electromagnets" in the demo box on slide 29 (the page also has the circuit breaker, slide 30).
+- [x] E2 Quantum (IB), slides 55–70: link `animations/electron-diffraction.html?level=ib` (built 4 Nov 2026; review row Q28). Done 11 Nov 2026: new slide 56, Electron Diffraction: Animation, after slide 55.
 
 - [x] Forces animations at IAL and IB (Alex, 11 Nov 2026): `momentum-collision.html` (plus an Explosion choice at every level), `hookes-law.html` and `seesaw-moments.html` each have an IGCSE | IAL | IB switch and cards on the IAL and IB lists. To review in `tools/REVIEW.md`. `motion-graphs.html` and `skydiver.html` got theirs in batch 4 (11 Nov 2026).
 - [x] Model pages: `dc-motor.html` and `ac-generator.html` redrawn (10 Nov 2026). Alex to check them (`tools/REVIEW.md`), especially the cell's + on the left brush for "Normal".
