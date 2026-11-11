@@ -29,6 +29,8 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the cards to `igcse.html`, then add the unit's activities to the Calculations and Graphs sets.
 
 - [ ] **4a** Key-word crosswords for other units, if Alex wants them.
+- [ ] **4b** Bring the five long IGCSE workouts under 30 minutes: 1b (35), 1d (37), 3a (40), 4b (37), 7a (40); 4d is at 30. Estimates per workout and the method are in `tools/WORKOUTS.md`, section 5. Re-measure after cutting (added 11 Nov 2026).
+- [ ] **4c** Cut the repeated activities found in the 11 Nov 2026 scan (17 items, `tools/WORKOUTS.md` section 5). Items 3, 7, 10 and 14 also do most of 4b. Set each changed page to 🔍 in `tools/REVIEW.md` and bump `STORE_KEY` where saved answers would land on a different activity (added 11 Nov 2026).
 
 ## 5. Build: core practicals
 

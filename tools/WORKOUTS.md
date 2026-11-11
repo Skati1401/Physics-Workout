@@ -44,3 +44,40 @@ Stand-alone pages in `animations/` (teaching-animations skill), one copy framed 
 - [x] **One crossword per unit (4 Nov 2026, 20-minute review):** the memory games and most key-term matches were replaced by one crossword on each unit's Units and Terms tab, TA words marked "(TA)" in the clue: Unit 1 (10 words, `falling-stopping-springs.html#terms`), Unit 2 (14, `circuits.html#terms`), Unit 3 (13, `light-and-sound.html#terms`), Unit 4 (14, `work-and-power.html#units`: CONSERVATION, EFFICIENCY, DISSIPATE, SANKEY, CONDUCTION, CONVECTION, INFRARED, INSULATION, EMITTER, KINETIC, GRAVITATIONAL, POWER, TURBINE, RENEWABLE; it replaces the 4a + 4b one below), Unit 6 (14, `electromagnetic-induction.html#terms`), Unit 7 (12, `fission-and-fusion.html#terms`), Unit 8 (13, `universe-and-stars.html#terms`). Unit 5 keeps its key-terms match (no memory game).
 - [x] **4a + 4b (2 Nov 2026):** one crossword on 4b's Key Terms tab, moved on 3 Nov 2026 to Unit 4's Units and Terms tab (`work-and-power.html#units`), 15 words from the Energy deck slides 6 and 7. Reserves if a word is changed: KINETIC, THERMAL, NUCLEAR, ELASTIC, VACUUM, METALS, ABSORBER.
 
+
+## 5. Workout size check (11 Nov 2026)
+
+**Time estimates.** From a Playwright count of every activity and its items, at about 1.5 min per Calculate question, 0.3 min per sort/order/match card or gap, 0.75 min per multiple-choice question, 3 min per framed animation or Exam explain, 0.6 min per crossword clue, plus 0.3 min per tab: an average student's first try, reading the feedback. Content tabs + Units and Terms tabs, in minutes:
+
+| Unit | Workouts |
+|---|---|
+| 1 | 1a 24 · 1b **35** · 1c 29 + 13 · 1d TA **37** |
+| 2 | 2a 29 · 2b 24 · 2c 21 + 13 · 2d TA 20 |
+| 3 | 3a **40** · 3b 19 + ~11 (Equations in words cut, 11 Nov 2026) · 3c TA 20 |
+| 4 | 4a 28 · 4b **37** · 4c 27 + 13 · 4d TA **30** |
+| 5 | 5a 27 · 5b 23 + 10 |
+| 6 | 6a 29 · 6b 19 + 12 |
+| 7 | 7a **40** · 7b 23 + 12 |
+| 8 | 8a 29 + 13 · 8b TA 20 |
+
+Over the 30-minute limit: 1b, 1d, 3a, 4b, 7a (4d at it). Mostly Calculate cards (3a and 7a have 4–5 cards) and 4b's Exam explain tab. Units and Terms tabs run 10–14 min, mainly from 12–14-clue crosswords.
+
+**Repeated activities (scan of all 23 workouts, 11 Nov 2026).** Overviews and crosswords overlap the other tabs by design and are left out. Each line: the activities that test the same idea, then the suggested cut. Nothing has been cut yet (`TODO.md` 4c).
+
+1. **1b** Force and scene Match (forcedef) and Name each force labels (freebody) both name weight, upthrust, friction, air resistance. Keep the labels (a diagram task); cut the Match or keep only its 2 forces the labels lack (magnetic, electrostatic) in the Sort.
+2. **1b / 8a** W = m × g: 1b Weight Calculate and 8a Weight on other worlds. 8a's is 8.3 (g on other bodies), so keep both, but 8a could drop to 1 question.
+3. **2a** Safety tab: Match safety features, Sort fuse or circuit breaker, Quick check insulation and fuses, Order earth wire and fuse: the fuse is in all four, double insulation in two. Cut the Quick check (its two answers are in the Match) and the Sort, or move the Order to its own tab.
+4. **2a / 4a** Useful or wasted? Sorts on both pages (2a heating effect, 4a efficiency). Keep 4a's; 2a's Order already covers why a current heats a resistor.
+5. **2b** Quick check "second lamp in series" and Predict "more resistance" ask the same thing (more resistance, less current). Cut one.
+6. **2d** Predict "balloon on the wall" and Order "picking up paper with a comb" are both induced charge, then attraction. Keep the Order (the chain is the exam answer).
+7. **3a** v = f × λ is worked in four Calculate cards (Read the wave, the equation card, Read the period off the graph, Electromagnetic waves). Merge into two: one graph-reading card (amplitude, λ, T, f) and one v = f × λ card that includes c = 3 × 10⁸ m/s.
+8. **3a / 3c** Transverse or longitudinal? Sort (3a) and Light or sound? Sort (3c) share most cards. Cut the transverse/longitudinal cards from 3c's sort.
+9. **4a** efficiency is calculated in the Efficiency card and again in Reading Sankey diagrams. Fold the Efficiency card's questions into the Sankey card.
+10. **4b** The Exam tab repeats the other tabs: Through a brick wall = conduction Order, Heating a pan of soup = convection Order, Black and shiny cans = radiation Sort and the silver teapot Predict, Keeping a drink hot = insulation tab. Either cut the matching Order/Predict on each tab or cut the Exam tab to 2 cards (cans, flask). This alone takes 4b to about 30 min.
+11. **4d** Advantage or disadvantage? Sort and The biggest drawback Match (pros tab) repeat each other (nuclear waste, coal CO₂, solar at night, wind unreliable). Cut the Match. A solar cell Predict repeats the first card of the Solar cell or solar heating? Sort; cut the Predict.
+12. **5b** Absolute zero is tested 4 times (Kelvin True or false Sort, Absolute zero Quick check, Convert and compare Calculate, Key terms Match). Gas pressure from collisions is tested 4 times (Gas molecules Quick check, Cause and explanation Match, both Orders). Cut the Absolute zero Quick check and the Gas molecules Quick check (the Orders and the Boyle's law Calculate cover them).
+13. **6b** Why such a high voltage? Predict and From power station to home Order: the Order already says step-up lowers the current. Cut the Predict, or keep it and cut the Order (the 6b grid animation also covers it).
+14. **7a** What happens to the nucleus? Match and Balance the equations Calculate test the same changes in A and Z. Keep the Calculate. Two half-life Calculate cards: keep both (graph and numbers are both exam skills) but drop each to 2 questions.
+15. **7b** Control rods appear three times on the reactor tab (Chain reaction Order, Parts of a reactor Match, Lowering the control rods Predict) beside the chain reaction animation. Cut the Match or the Predict. Why so hot? Predict repeats a card of the Fission, fusion or both? Sort; cut the Predict or the card.
+16. **8a** From small to large Order and What is it? Match on the same tab use the same four things (solar system, Milky Way, galaxy, universe). Cut the Match. Star colours Order and Betelgeuse and Rigel Predict are both colour → temperature; cut the Predict.
+17. **8b** Red-shift Quick check question 1 and the Red-shift or blue-shift? Sort test the same idea; cut that question. Evidence for the Big Bang? Sort and From red-shift to an expanding universe Order overlap on distant galaxies' bigger red-shift; keep both (one is evidence, one is the argument), but trim the Sort's red-shift cards.
