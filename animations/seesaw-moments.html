@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Seesaw Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Change two weights and their distances until the clockwise and anticlockwise moments balance, then predict which side goes down or where to sit to balance.">
+<meta name="description" content="Interactive physics animation for Edexcel IGCSE, IAL and IB. Change two weights and their distances until the clockwise and anticlockwise moments balance, then predict which side goes down or where to sit to balance. IAL and IB add the plank’s own weight, a pivot off centre and the force from the pivot.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -175,6 +175,12 @@
   .pick:focus-visible .ring{stroke:var(--accent);}
   .note.bad{background:var(--bad-soft);}
   .note.good{background:var(--good-soft);}
+  /* level switch on the title line (IGCSE | IAL | IB): IAL and IB add the plank's own weight, a pivot away from its centre and the force from the pivot */
+  .head-line{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;}
+  #ss-level button{font-weight:400;font-size:12.5px;padding:8px 10px;white-space:nowrap;}
+  #ss-level button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .tro-name.t3{background:var(--wood-s);} #ss-wp,#ss-s{accent-color:var(--wood-s);}
+  .eq .why{display:inline-block;font-family:var(--font-body);font-size:11.5px;line-height:1.4;color:var(--ink-faint);}
   .tro{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:4px 14px;align-items:center;}
   .tro .lab{margin-bottom:0;}
   .tro-name{font:600 12.5px var(--font-mono);color:#fff;padding:5px 8px;border-radius:6px;white-space:nowrap;text-align:center;}
@@ -277,13 +283,17 @@
   })();
 </script>
 <!-- /pw-review -->
+<meta name="pw-draft" content="animations/seesaw-moments.html">
 </head>
 <body>
 <div class="page" id="page">
   <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
   <header class="page-head">
     <div class="eyebrow">Animations &middot; forces</div>
-    <h1>Moments on a Seesaw</h1>
+    <div class="head-line">
+      <h1>Moments on a Seesaw</h1>
+      <div class="seg tabs" id="ss-level" role="group" aria-label="Level"><button type="button" data-v="ks4" aria-pressed="true">IGCSE</button><button type="button" data-v="ial" aria-pressed="false">IAL</button><button type="button" data-v="ib" aria-pressed="false">IB</button></div>
+    </div>
   </header>
 
   <section class="card stage">
@@ -306,6 +316,9 @@
         <span class="tro-name t2">Right</span>
         <div><label class="lab" for="ss-w2"><span>Weight</span> <output id="ss-w2o"></output></label><input type="range" id="ss-w2" min="100" max="800" step="50" value="300" aria-label="Right weight"></div>
         <div><label class="lab" for="ss-d2"><span>Distance</span> <output id="ss-d2o"></output></label><input type="range" id="ss-d2" min="0.5" max="2.5" step="0.25" value="2.5" aria-label="Right distance from the pivot"></div>
+        <span class="tro-name t3" id="ss-pl-name" hidden>Plank</span>
+        <div id="ss-wp-cell" hidden><label class="lab" for="ss-wp"><span>Weight</span> <output id="ss-wpo"></output></label><input type="range" id="ss-wp" min="0" max="300" step="50" value="200" aria-label="Weight of the plank"></div>
+        <div id="ss-s-cell" hidden><label class="lab" for="ss-s"><span>Pivot offset</span> <output id="ss-so"></output></label><input type="range" id="ss-s" min="0" max="0.75" step="0.25" value="0.5" aria-label="How far the pivot is to the right of the plank's centre"></div>
       </div>
       <p class="note" id="ss-note" aria-live="polite"></p>
       <p class="hint" id="ss-hint">Drag a person along the seesaw to move them, or use the distance sliders.</p>
@@ -318,6 +331,12 @@
   </section>
 </div>
 <script>
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[PW_LEVEL];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
 (function(){
   // This page is the one copy of this animation. On its own it is the lesson version;
   // with ?embed it drops its heading so a workout tab can show it in a frame, and it tells that page its height.
@@ -424,10 +443,24 @@
          E:{cx:215,by:398,epx:72,tx:12,ty:330}, M:{x:16,y:502,w:398}}
       : {tall:false, W:860, H:350, cx:262, cy:186, pxm:92, gy:292, pk:1.25, qx:8, qy:17, qn:62,
          E:{cx:700,by:92,epx:54,tx:552,ty:18}, M:{x:552,y:236,w:296}}; }
-    // the weights and distances in the picture: the sliders in Explore, the dealt question in Predict (d2 is null until a seat is picked)
-    function V(){ if(mode==='predict' && q) return {W1:q.W1, d1:q.d1, W2:q.W2, d2:q.kind==='seat' ? (q.pick ? SPOTS[LET.indexOf(q.pick)] : null) : q.d2};
-      return {W1:+w1.value, d1:+d1.value, W2:+w2.value, d2:+d2.value}; }
-    function tilt(v){ var diff=v.W2*v.d2-v.W1*v.d1; return diff===0 ? 0 : Math.max(-11,Math.min(11, diff/40 + (diff>0?3:-3))); }   // degrees; positive: the right side goes down
+    // ---- level (Alex, 11 Nov 2026): IGCSE is the default and is unchanged. IAL and IB (Explore only) add the plank's own weight,
+    // acting at its centre of gravity, a pivot that can be moved to the right of the plank's centre, and the force from the pivot.
+    // IAL (15, 16): moment of force = Fx, an extended body in equilibrium. IB (A.4, HL): torque, rotational equilibrium, counter-clockwise.
+    var level='ks4', levelEl=$('#ss-level'), wp=bindRange('ss-wp',upd), sIn=bindRange('ss-s',function(){ fitRight(); upd(); });
+    function ks5(){ return level!=='ks4'; }
+    function kp(){ return ks5() && mode==='explore'; }
+    // IB words: torque for moment, counter-clockwise for anticlockwise
+    function tw(t){ return level!=='ib' ? t : String(t).replace(/anticlockwise/g,'counter-clockwise').replace(/Anticlockwise/g,'Counter-clockwise').replace(/moments/g,'torques').replace(/Moments/g,'Torques').replace(/moment/g,'torque').replace(/Moment/g,'Torque'); }
+    function WHY(t){ return '<span class="why">'+t+'</span>'; }
+    // the plank is 5.2 m long: with the pivot s to the right of its centre, the right-hand person has 2.5 − s to sit on
+    function fitRight(){ var mx=2.5-(kp()?+sIn.value:0); d2.max=mx; if(+d2.value>mx) d2.value=mx; }
+    function setLevel(v){ level=v; Array.prototype.forEach.call(levelEl.children,function(x){ x.setAttribute('aria-pressed',String(x.dataset.v===v)); }); cancelAnimationFrame(raf); show(); }
+    levelEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b && b.dataset.v!==level) setLevel(b.dataset.v); });
+    // the weights and distances in the picture: the sliders in Explore, the dealt question in Predict (d2 is null until a seat is picked).
+    // Wp and s: the plank's weight and how far its centre of gravity is to the left of the pivot (both 0 at IGCSE and in Predict)
+    function V(){ if(mode==='predict' && q) return {W1:q.W1, d1:q.d1, W2:q.W2, d2:q.kind==='seat' ? (q.pick ? SPOTS[LET.indexOf(q.pick)] : null) : q.d2, Wp:0, s:0};
+      return {W1:+w1.value, d1:+d1.value, W2:+w2.value, d2:+d2.value, Wp:kp()?+wp.value:0, s:kp()?+sIn.value:0}; }
+    function tilt(v){ var diff=v.W2*v.d2-v.W1*v.d1-v.Wp*v.s; return diff===0 ? 0 : Math.max(-11,Math.min(11, diff/40 + (diff>0?3:-3))); }   // degrees; positive: the right side goes down
 
     // a seated person, facing the pivot: (x, y) is the seat on top of the beam. Heavier people are drawn larger.
     function person(x, y, W, face, col, girl){
@@ -468,9 +501,9 @@
       g+=tube(cx-22,gy-3,cx+7,cy+3,6,'var(--steel-sh)','var(--steel)')+tube(cx+36,gy-3,cx+7,cy+3,6,'var(--steel-sh)','var(--steel)');
       g+=tube(cx-30,gy,cx,cy+5,7,'var(--steel)','var(--steel-hi)')+tube(cx+30,gy,cx,cy+5,7,'var(--steel)','var(--steel-hi)')+tube(cx-38,gy+1,cx+38,gy+1,6,'var(--steel)','var(--steel-hi)');
       // the beam: a plank marked every half metre
-      var TL=pt(-2.6,4.5), TR=pt(2.6,4.5), BL=pt(-2.6,-4.5), BR=pt(2.6,-4.5), o=[6,-4];
+      var e0=-2.6-v.s, e1=2.6-v.s, TL=pt(e0,4.5), TR=pt(e1,4.5), BL=pt(e0,-4.5), BR=pt(e1,-4.5), o=[6,-4];   // the plank's ends, measured from the pivot
       g+=pg([TL,TR,[TR[0]+o[0],TR[1]+o[1]],[TL[0]+o[0],TL[1]+o[1]]],'var(--wood-t)')+pg([TR,[TR[0]+o[0],TR[1]+o[1]],[BR[0]+o[0],BR[1]+o[1]],BR],'var(--wood-s)')+pg([TL,TR,BR,BL],'var(--wood-f)');
-      for(k=-5;k<=5;k++){ if(!k) continue; var m0=pt(k/2,4.5), m1=pt(k/2,k%2?0:-4.5); g+=ln(m0[0],m0[1],m1[0],m1[1],'#fff',1.4,' opacity=".75"'); }
+      for(k=-6;k<=5;k++){ if(!k || k/2<e0 || k/2>e1) continue; var m0=pt(k/2,4.5), m1=pt(k/2,k%2?0:-4.5); g+=ln(m0[0],m0[1],m1[0],m1[1],'#fff',1.4,' opacity=".75"'); }
       g+='<circle cx="'+cx+'" cy="'+cy+'" r="4.5" fill="var(--steel-hi)" stroke="var(--steel-sh)" stroke-width="1.5"/>';
       // while a question is asked the pivot is locked, so the seesaw stays level until Go
       if(ask) g+='<circle cx="'+cx+'" cy="'+cy+'" r="8" fill="none" stroke="var(--bad)" stroke-width="2.5"/>'+ln(cx-5.5,cy-5.5,cx+5.5,cy+5.5,'var(--bad)',2.5)+txt(cx,cy-15,'locked',{a:'middle',fs:12,c:'var(--bad)',w:600,halo:1});
@@ -481,11 +514,16 @@
       function who(d, W, side, col, girl){
         var s=pt(d,4.5), u=pt(d,-4.5), hgt=62*L.pk*(0.66+W/800*0.46), len=14+W/50, r=person(s[0],s[1],W,-side,col,girl);
         // the weight acts downwards, so its arrow hangs under the beam, with its value under the tip
-        r+=arrow(u[0],u[1]+2,u[0],u[1]+2+len,col,3.5)+txt(u[0],u[1]+len+15,W+' N',{a:'middle',fs:13,c:col,w:600,halo:1});
+        // (beside the arrow when this person sits over the plank's centre of gravity, where the plank's own arrow hangs)
+        var clash=side<0 && v.Wp>0 && v.s>0 && Math.abs(-d-v.s)<0.3;
+        r+=arrow(u[0],u[1]+2,u[0],u[1]+2+len,col,3.5)+(clash ? txt(u[0]-9,u[1]+len/2+8,W+' N',{a:'end',fs:13,c:col,w:600,halo:1}) : txt(u[0],u[1]+len+15,W+' N',{a:'middle',fs:13,c:col,w:600,halo:1}));
         // invisible grab area over the person and their weight arrow (Explore only)
         if(!pr) r+='<rect class="grab" data-side="'+side+'" x="'+f1(s[0]-26)+'" y="'+f1(s[1]-hgt-8)+'" width="52" height="'+f1(hgt+len+36)+'" fill="transparent"/>';
         return r;
       }
+      // IAL and IB: the plank's own weight, acting at its centre of gravity (its middle). With the pivot under the middle it acts
+      // through the pivot, so only the force diagram says so.
+      if(v.Wp>0 && v.s>0){ var pc=pt(-v.s,-4.5), pl2=L.tall?40:50; g+=arrow(pc[0],pc[1]+2,pc[0],pc[1]+2+pl2,'var(--wood-s)',3.5)+txt(pc[0],pc[1]+pl2+16,v.Wp+' N',{a:'middle',fs:13,c:'var(--ink)',w:600,halo:1})+txt(pc[0],pc[1]+pl2+29,'plank',{a:'middle',fs:11.5,c:'var(--ink-soft)',halo:1}); }
       g+=who(-v.d1,v.W1,-1,C1,true); if(v.d2!=null) g+=who(v.d2,v.W2,1,C2,false);
       // which side goes down? (Predict): an arrow on the grass under each half of the beam, and = under the pivot
       if(pr && q.kind==='side'){
@@ -501,12 +539,21 @@
     }
     // the force diagram as an exam paper draws it: a level beam on a pivot, the two weights and their distances from the pivot
     function examSVG(v){
-      var E=L.E, x0=E.cx, by=E.by, e=E.epx, g=txt(E.tx,E.ty,'Force diagram',{fs:12.5,c:'var(--ink)',w:700});
+      var E=L.E, x0=E.cx+v.s*E.epx, by=E.by, e=E.epx, g=txt(E.tx,E.ty,'Force diagram',{fs:12.5,c:'var(--ink)',w:700});
       g+=pg([[x0,by+7],[x0-12,by+25],[x0+12,by+25]],'var(--panel)',' stroke="var(--ink-soft)" stroke-width="2"')+ln(x0-22,by+25,x0+22,by+25,'var(--ink-soft)',2);
-      g+=rect(x0-2.6*e,by,5.2*e,7,'var(--ink)',' rx="1.5"');
+      g+=rect(E.cx-2.6*e,by,5.2*e,7,'var(--ink)',' rx="1.5"');
+      // IAL and IB: the plank's weight at its centre of gravity, and the force from the pivot (it has no moment about the pivot)
+      // (the pivot's force is only named: it equals the total weight only when the seesaw is balanced, and the note gives it then)
+      if(kp()){ var pl3=L.tall?66:84, up=level==='ib'?'F<tspan dy="3" font-size="9">N</tspan>':'R';
+        if(v.Wp>0 && v.s>0) g+=arrow(E.cx,by+8,E.cx,by+8+pl3,'var(--wood-s)',3)+(L.tall ? txt(E.cx,by+23+pl3,'plank '+v.Wp+' N, '+v.s+' m from the pivot',{a:'middle',fs:11.5,c:'var(--ink)',w:600,halo:1})
+          : txt(E.cx,by+22+pl3,'plank '+v.Wp+' N',{a:'middle',fs:12,c:'var(--ink)',w:600,halo:1})+txt(E.cx,by+35+pl3,v.s+' m from the pivot',{a:'middle',fs:11,c:'var(--ink-soft)',halo:1}));
+        else if(v.Wp>0) g+=txt(E.cx,by+22+pl3,'plank '+v.Wp+' N: acts through the pivot',{a:'middle',fs:11,c:'var(--ink-soft)',halo:1});
+        g+=arrow(x0,by+62,x0,by+27,'var(--accent)',3)+txt(x0+6,by+64,up,{fs:12,c:'var(--accent)',w:700,halo:1}); }
       function force(d, W, side, col, row){
         var x=x0+side*d*e, len=16+W/16, yd=by-(row?38:15), r='';
-        r+=arrow(x,by+8,x,by+8+len,col,3)+txt(x,by+22+len,W+' N',{a:'middle',fs:12,c:col,w:600});
+        // at IAL and IB a label that would sit on the plank's arrow or the pivot's force goes beside its own arrow, on the outside
+        var near=kp() && (Math.abs(x-x0)<34 || (v.Wp>0 && v.s>0 && Math.abs(x-E.cx)<26));
+        r+=arrow(x,by+8,x,by+8+len,col,3)+(near ? txt(x+side*8,by+8+len/2+4,W+' N',{a:side<0?'end':'start',fs:12,c:col,w:600,halo:1}) : txt(x,by+22+len,W+' N',{a:'middle',fs:12,c:col,w:600}));
         r+=ln(x0,yd,x,yd,'var(--ink-soft)',1.3)+ln(x0,yd-4,x0,yd+4,'var(--ink-soft)',1.3)+ln(x,yd-4,x,yd+4,'var(--ink-soft)',1.3)+ln(x,yd+4,x,by-1,'var(--ink-faint)',1,' stroke-dasharray="2 3"');
         r+=txt((x0+x)/2,yd-6,d+' m',{a:'middle',fs:12,c:'var(--ink)'});
         return r;
@@ -518,15 +565,15 @@
     }
     // the two moments as bars; in Predict they stay as "?" until the question has been run
     function barsSVG(v){
-      var M=L.M, hide=mode==='predict' && q && q.phase!=='done', acw=v.W1*v.d1, cw=v.d2==null?0:v.W2*v.d2, mx=Math.max(acw,cw,1), g='';
-      [['anticlockwise moment',acw,C1,'var(--p1)',false],['clockwise moment',cw,C2,'var(--p2)',true]].forEach(function(r,i){ var y=M.y+i*50;
-        g+=turnIcon(M.x+8,y+6,6.5,r[4],r[2])+txt(M.x+24,y+10,r[0],{fs:12,c:r[2],w:600})+txt(M.x+M.w,y+10,hide?'? N m':num(r[1],1)+' N m',{a:'end',fs:12.5,c:'var(--ink)',w:600});
+      var M=L.M, hide=mode==='predict' && q && q.phase!=='done', acw=v.W1*v.d1+v.Wp*v.s, cw=v.d2==null?0:v.W2*v.d2, mx=Math.max(acw,cw,1), g='';
+      [[kp()?'anticlockwise moments':'anticlockwise moment',acw,C1,'var(--p1)',false],[kp()?'clockwise moments':'clockwise moment',cw,C2,'var(--p2)',true]].forEach(function(r,i){ var y=M.y+i*50;
+        g+=turnIcon(M.x+8,y+6,6.5,r[4],r[2])+txt(M.x+24,y+10,tw(r[0]),{fs:12,c:r[2],w:600})+txt(M.x+M.w,y+10,hide?'? N m':num(r[1],1)+' N m',{a:'end',fs:12.5,c:'var(--ink)',w:600});
         g+=rect(M.x,y+19,M.w-6,13,'var(--bg)',' rx="2"');
         if(!hide && r[1]>0) g+=box(M.x,y+19,(M.w-6)*r[1]/mx,13,4,-3,r[3]); });
       return g;
     }
     function draw(){
-      var v=V(); L=lay(); svgEl.setAttribute('viewBox','0 0 '+L.W+' '+L.H); svgEl.classList.toggle('tall', !!L.tall);
+      var v=V(); L=lay(); L.cx+=v.s*L.pxm; svgEl.setAttribute('viewBox','0 0 '+L.W+' '+L.H); svgEl.classList.toggle('tall', !!L.tall);
       setKeepFocus(svgEl, sceneSVG(v)+examSVG(v)+barsSVG(v));
     }
     function animate(then){
@@ -537,19 +584,32 @@
         ang = wob ? 1.6*Math.sin(k*Math.PI*3)*(1-k) : a0+(target-a0)*e; draw();
         if(k<1) raf=requestAnimationFrame(step); else if(then) then(); })(t0);
     }
+    // IAL and IB (Explore): the sum of the moments each way, with the plank's own weight, then the force from the pivot
+    function workingKS5(v){
+      var a1=v.W1*v.d1, ap=v.Wp*v.s, acw=a1+ap, cw=v.W2*v.d2, diff=cw-acw, tot=v.W1+v.W2+v.Wp, up=level==='ib'?'F<sub>N</sub>':'R', h;
+      h=(level==='ib' ? 'τ = Fr sin θ<br>'+WHY('Each weight is at 90° to the plank, so sin θ is 1 and τ is Fr.') : 'moment of force = Fx')+'<br>';
+      h+=v.Wp>0 ? WHY('The plank’s weight acts at its centre of gravity, '+(v.s>0 ? v.s+' m to the left of the pivot.' : 'which is at the pivot, so it has no moment about the pivot.'))+'<br>' : '';
+      h+='sum of anticlockwise moments = '+v.W1+' × '+v.d1+(ap>0?' + '+v.Wp+' × '+v.s:'')+'<br> = '+num(acw,1)+' N m<br>sum of clockwise moments = '+v.W2+' × '+v.d2+'<br> = '+num(cw,1)+' N m<br>';
+      h+='<b>'+(diff===0 ? (level==='ib'?'Resultant torque is zero: rotational equilibrium':'The moments balance: equilibrium') : (diff>0?'Clockwise is bigger: the right side goes down':'Anticlockwise is bigger: the left side goes down'))+'</b><br>';
+      h+=diff===0 ? WHY('In equilibrium the resultant force is zero too, so the pivot pushes up with the total weight:')+'<br>'+up+' = '+v.W1+' + '+v.W2+(v.Wp>0?' + '+v.Wp:'')+'<br>'+up+' = <b>'+tot+' N</b><br>'+WHY('This force acts through the pivot, so it has no moment about the pivot.')
+        : WHY('The force from the pivot ('+up+') acts through the pivot, so it has no moment about it. That is why moments are taken about the pivot.');
+      return h.replace(/ × /g,'\u00a0×\u00a0');
+    }
     function workingOf(v){
+      if(kp()) return workingKS5(v);
       var acw=v.W1*v.d1, cw=v.W2*v.d2, diff=cw-acw;
       return 'anticlockwise moment = '+v.W1+' × '+v.d1+' = '+num(acw,1)+' N m<br>clockwise moment = '+v.W2+' × '+v.d2+' = '+num(cw,1)+' N m<br><b>'+(diff===0?'Balanced':(diff>0?'Clockwise is bigger: the right side goes down':'Anticlockwise is bigger: the left side goes down'))+'</b>';
     }
     function upd(){
-      var v={W1:+w1.value, d1:+d1.value, W2:+w2.value, d2:+d2.value}, acw=v.W1*v.d1, cw=v.W2*v.d2, diff=cw-acw;
+      var v=V(), acw=v.W1*v.d1+v.Wp*v.s, cw=v.W2*v.d2, diff=cw-acw;
+      $('#ss-wpo').textContent=wp.value+' N'; $('#ss-so').textContent=(+sIn.value)+' m';
       $('#ss-w1o').textContent=w1.value+' N'; $('#ss-d1o').textContent=(+d1.value)+' m'; $('#ss-w2o').textContent=w2.value+' N'; $('#ss-d2o').textContent=(+d2.value)+' m';
       if(mode!=='explore') return;
       target=tilt(v);
-      $('#ss-eq').innerHTML=workingOf(v);
+      $('#ss-eq').innerHTML=tw(workingOf(v));
       var need=acw/v.W2;
-      $('#ss-note').innerHTML = diff===0 ? 'The moments are equal, so the seesaw balances.' :
-        FR('To balance with this right weight, it would need to sit at d = [['+num(acw,1)+'|'+w2.value+']] = '+num(need,2)+' m'+(need>2.5?', which is off the end of the seesaw.':'.'));
+      $('#ss-note').innerHTML = tw(diff===0 ? (kp() ? 'The clockwise and anticlockwise moments are equal, so the seesaw is in equilibrium. The pivot pushes up with '+(level==='ib'?'F<sub>N</sub>':'R')+' = '+(v.W1+v.W2+v.Wp)+' N, the total weight.' : 'The moments are equal, so the seesaw balances.') :
+        FR('To balance with this right weight, it would need to sit at d = [['+num(acw,1)+'|'+w2.value+']] = '+num(need,2)+' m'+(need>2.5-v.s?', which is off the end of the seesaw.':'.')));
       animate();
     }
 
@@ -578,6 +638,7 @@
     function show(){
       var pr=mode==='predict', v=V(), acw, n=$('#ss-note');
       $('#ss-sliders').hidden=pr; goBtn.hidden=!pr; newBtn.hidden=!pr; $('#ss-hint').hidden=pr; $('#ss-score').hidden=!pr;
+      ['#ss-pl-name','#ss-wp-cell','#ss-s-cell'].forEach(function(id){ $(id).hidden=!ks5(); }); fitRight();
       if(!pr){ upd(); return; }
       goBtn.disabled = q.phase!=='ask' || !q.pick;
       $('#ss-score').textContent='Score: '+score[0]+' of '+score[1];
@@ -590,10 +651,10 @@
         acw=q.W1*q.d1; n.className='note '+(q.ok?'good':'bad');
         if(q.kind==='side'){ var cw=q.W2*q.d2;
           n.innerHTML=(q.ok?'<b>✓ Right.</b> ':'<b>✗ Not quite.</b> ')+'Anticlockwise moment = '+num(acw,1)+' N m, clockwise moment = '+num(cw,1)+' N m: '+(cw===acw?'they are equal, so it stays balanced.':(cw>acw?'clockwise is bigger, so the right side goes down.':'anticlockwise is bigger, so the left side goes down.'))+(q.ok||q.ans==='E'?'':' The heavier person does not always win: the distance from the pivot matters too.');
-          $('#ss-eq').innerHTML=workingOf(v);
+          n.innerHTML=tw(n.innerHTML); $('#ss-eq').innerHTML=tw(workingOf(v));
         } else { var dn=acw/q.W2, dp=SPOTS[LET.indexOf(q.pick)];
           n.innerHTML=(q.ok?'<b>✓ Right.</b> ':'<b>✗ Not quite.</b> ')+'It balances at <b>'+q.ans+'</b>, '+dn+' m from the pivot: '+q.W2+' × '+dn+' = '+num(acw,1)+' N m, equal to the anticlockwise moment.'+(q.ok?'':' At '+q.pick+' ('+dp+' m) the clockwise moment is '+num(q.W2*dp,1)+' N m, so the '+(q.W2*dp>acw?'right':'left')+' side goes down.');
-          $('#ss-eq').innerHTML=FR('anticlockwise moment = clockwise moment<br>'+q.W1+' × '+q.d1+' = '+q.W2+'d<br>'+num(acw,1)+' = '+q.W2+'d<br>d = [['+num(acw,1)+'|'+q.W2+']]<br>d = <b>'+dn+' m</b>');
+          n.innerHTML=tw(n.innerHTML); $('#ss-eq').innerHTML=tw(FR('anticlockwise moment = clockwise moment<br>'+q.W1+' × '+q.d1+' = '+q.W2+'d<br>'+num(acw,1)+' = '+q.W2+'d<br>d = [['+num(acw,1)+'|'+q.W2+']]<br>d = <b>'+dn+' m</b>'));
         }
       }
       draw();
@@ -630,6 +691,9 @@
     function endDrag(){ if(!drag) return; drag=null; svgEl.classList.remove('dragging'); }
     svgEl.addEventListener('pointerup',endDrag); svgEl.addEventListener('pointercancel',endDrag);
     var wasNarrow=narrow(); window.addEventListener('resize',function(){ if(narrow()!==wasNarrow){ wasNarrow=narrow(); draw(); } });
+    // no level switch in an IGCSE workout's frame, or when opened from the IGCSE list with ?level=igcse
+    if(PW_LEVEL==='igcse' || (EMBED && !PW_LEVEL)) levelEl.hidden=true;
+    if(PW_LEVEL==='ial' || PW_LEVEL==='ib'){ level=PW_LEVEL; Array.prototype.forEach.call(levelEl.children,function(x){ x.setAttribute('aria-pressed',String(x.dataset.v===PW_LEVEL)); }); }
     show();
   }
   watchEquals('.eq');

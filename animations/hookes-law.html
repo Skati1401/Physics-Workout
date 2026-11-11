@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hooke’s Law Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Load a spring, a metal wire or a rubber band and watch the force–extension graph, past the limit of proportionality.">
+<meta name="description" content="Interactive physics animation for Edexcel IGCSE, IAL and IB. Load a spring, a metal wire or a rubber band and watch the force–extension graph, past the limit of proportionality. IAL and IB add the stiffness k from the gradient and the energy stored as the area under the graph.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -137,6 +137,14 @@
   .seg{display:flex;flex-wrap:wrap;gap:6px;}
   .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
   .seg button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:var(--panel);}
+  /* level switch on the title line (IGCSE | IAL | IB): IAL and IB add the stiffness k and the energy stored (the area under the graph) */
+  .head-line{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{font-size:12.5px;padding:8px 10px;white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .seg.tabs button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .eq .why{display:inline-block;font-family:var(--font-body);font-size:11.5px;line-height:1.4;color:var(--ink-faint);}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
   .stat strong{white-space:nowrap;}
   .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;}
@@ -268,13 +276,17 @@
   })();
 </script>
 <!-- /pw-review -->
+<meta name="pw-draft" content="animations/hookes-law.html">
 </head>
 <body>
 <div class="page" id="page">
   <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
   <header class="page-head">
     <div class="eyebrow">Animations &middot; forces</div>
-    <h1>Hooke’s Law</h1>
+    <div class="head-line">
+      <h1>Hooke’s Law</h1>
+      <div class="seg tabs" id="hk-level" role="group" aria-label="Level"><button type="button" data-v="ks4" aria-pressed="true">IGCSE</button><button type="button" data-v="ial" aria-pressed="false">IAL</button><button type="button" data-v="ib" aria-pressed="false">IB</button></div>
+    </div>
   </header>
 
   <section class="card stage">
@@ -299,6 +311,10 @@
         <div class="row" id="hk-msize-wrap" hidden><div class="lab">Each mass</div><div class="seg" id="hk-msize"></div></div>
       </div>
       <p class="note" id="hk-note" aria-live="polite"></p>
+      <div class="stats" id="hk-stats" hidden>
+        <div class="stat"><small id="hk-kl">Stiffness k</small><strong id="hk-k"></strong></div>
+        <div class="stat"><small id="hk-el">Energy stored</small><strong id="hk-e"></strong></div>
+      </div>
       <div id="hk-results" hidden><div class="lab">Results</div><div class="rtable-wrap" id="hk-table"></div></div>
       <details class="working" id="working">
         <summary>Show working</summary>
@@ -308,6 +324,12 @@
   </section>
 </div>
 <script>
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[PW_LEVEL];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
 (function(){
   // This page is the one copy of this animation. On its own it is the lesson version;
   // with ?embed it drops its heading so a workout tab can show it in a frame, and it tells that page its height.
@@ -518,6 +540,46 @@
       Array.prototype.forEach.call(segEl.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); });
       if(EXP) clearRun(); else { phase='load'; Fpeak=Fcur; Fd=Fcur; anim=null; draw(); } });
 
+    // ---- level (Alex, 11 Nov 2026): IGCSE is the default and is unchanged. IAL and IB add the stiffness k (the gradient of the
+    // straight-line region) and the energy stored (the area under the force–extension graph), shaded on the graph.
+    // IAL (27, 32): ΔF = kΔx, stiffness, elastic strain energy ΔE_el = ½FΔx. IB (A.2, A.3): F_H = −kx, spring constant, E_H = ½k(Δx)².
+    var level='ks4', levelEl=$('#hk-level');
+    function ks5(){ return level!=='ks4' && !MEAS; }
+    function ib(){ return level==='ib'; }
+    function toM(M){ return M.unit==='cm' ? 0.01 : 0.001; }                 // the page's extension unit in metres
+    function sg(v,n){ return Math.abs(v)<1e-12 ? '0' : String(+(+v).toPrecision(n||3)); }
+    // area under a force–extension curve x(f) between two loads, in joules (trapezium strips of 0.02 N)
+    function areaJ(fn, f0, f1, M){ var A=0, f, d=0.02; for(f=f0; f<f1-1e-9; f+=d){ var g2=Math.min(f1,f+d); A+=(f+g2)/2*(fn(g2)-fn(f)); } return A*toM(M); }
+    function kOf(M){ return 1/(M.k0*toM(M)); }                                // N m⁻¹, from the straight-line region
+    function WHY(t){ return '<span class="why">'+t+'</span>'; }
+    function Esym(){ return ib() ? 'E<sub>H</sub>' : 'ΔE<sub>el</sub>'; }
+    // the extra working at IAL and IB for a load F on the loading line (x: extension in the page's unit)
+    function ks5Lines(M, F, x){
+      var m=toM(M), xm=x*m, out='', kname=ib()?'spring constant':'stiffness', ename=ib()?'elastic potential energy':'elastic strain energy';
+      if(mat==='rubber') return '<br>'+WHY('A rubber band has no single '+kname+': its graph is a curve.')+(F>0?'<br>work done stretching it = area under the loading curve<br> = <b>'+sg(areaJ(M.ext,0,F,M))+' J</b>':'');
+      if(F<=0) return '<br>'+WHY('Add a load to find the '+kname+' k and the '+ename+'.');
+      var Fk=Math.min(F,M.lop), xk=M.ext(Fk)*m;
+      out+='<br>'+WHY((F>M.lop?'The '+kname+' k comes from the straight-line region only, here up to '+M.lop+' N':'The '+kname+' k is the gradient of the straight-line region')+' (extension in metres: '+num(M.ext(Fk),2)+' '+M.unit+'\u00a0=\u00a0'+sg(xk,4)+' m)');
+      out+=(ib() ? '<br>F<sub>H</sub> = −kx'+'<br>'+WHY('The minus sign: the spring pulls back, opposite to the extension. For sizes:') : '')+'<br>'+(ib()?'F = kx':'ΔF = kΔx')+'<br>'+num(Fk,1)+' = '+sg(xk,4)+'k<br>k = [['+num(Fk,1)+'|'+sg(xk,4)+']]<br>k = <b>'+sg(kOf(M))+' N m⁻¹</b>';
+      if(F<=M.lop) out+='<br>'+WHY('The '+ename+' is the area under the graph: a triangle')+'<br>'+(ib()
+        ? 'E<sub>H</sub> = ½k(Δx)²<br>E<sub>H</sub> = ½ × '+sg(kOf(M),4)+' × '+sg(xm,4)+'²'
+        : 'ΔE<sub>el</sub> = ½FΔx<br>ΔE<sub>el</sub> = ½ × '+num(F,1)+' × '+sg(xm,4))+'<br>'+Esym()+' = <b>'+sg(0.5*F*xm)+' J</b>';
+      else out+='<br>'+WHY('Past the limit of proportionality the graph curves, so '+(ib()?'½k(Δx)²':'½FΔx')+' no longer works. Estimate the area under the graph (count squares):')+'<br>work done = area under the graph<br> = <b>'+sg(areaJ(M.ext,0,F,M))+' J</b>';
+      return out;
+    }
+    function setStats(M, F, x){
+      $('#hk-stats').hidden=!ks5() || EXP;
+      if(!ks5()) return;
+      $('#hk-kl').textContent=ib()?'Spring constant k':'Stiffness k';
+      $('#hk-el').textContent = mat==='rubber' || F>(M.lop||0) ? 'Work done (area)' : (ib()?'Elastic potential energy':'Elastic strain energy');
+      $('#hk-k').textContent = mat==='rubber' ? 'none (curve)' : sg(kOf(M))+' N m⁻¹';
+      $('#hk-e').textContent = (mat!=='rubber' && F<=M.lop ? sg(0.5*F*x*toM(M)) : sg(areaJ(M.ext,0,Math.max(F, mat==='rubber'&&phase==='unload'?Fpeak:F),M)))+' J';
+    }
+    function setLevel(v){ level=v; Array.prototype.forEach.call(levelEl.children,function(x){ x.setAttribute('aria-pressed',String(x.dataset.v===v)); }); draw(); }
+    levelEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setLevel(b.dataset.v); });
+    // no level switch in a workout or practical frame (IGCSE pages), or when opened from the IGCSE list with ?level=igcse
+    if(MEAS || PW_LEVEL==='igcse' || (EMBED && !PW_LEVEL)) levelEl.hidden=true;
+
     // ---- picture geometry ----
     var TOP=24, X0=70, STEM=64, PILE_Y=270, PILE_X={0:222}, PILES2=[204,244], DISC_W=30;
     var GX=290, GY=24, GW=290, GH=226;
@@ -607,6 +669,15 @@
       function curve(fn, f0, f1, col, dash){ var tr=[], f; for(f=f0; f<=f1+1e-9; f+=0.1) tr.push(gx(fn(f))+','+gy(f)); if(f-0.1<f1-1e-6) tr.push(gx(fn(f1))+','+gy(f1));
         return tr.length>1?'<polyline points="'+tr.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="2.5"'+(dash?' stroke-dasharray="7 5" opacity=".8"':'')+'/>':''; }
       var rubberDownNow = !EXP && mat==='rubber' && phase==='unload';
+      // IAL and IB: the area under the line is the work done (the energy stored while the line is straight); for a rubber band
+      // being unloaded, the loop between the two curves is the energy that heats the band
+      function areaPoly(fn, f0, f1, back){ var a=[], f; for(f=f0; f<f1-1e-9; f+=0.1) a.push(gx(fn(f))+','+gy(f)); a.push(gx(fn(f1))+','+gy(f1)); if(back){ for(f=f1; f>f0+1e-9; f-=0.1) a.push(gx(back(f))+','+gy(f)); a.push(gx(back(f0))+','+gy(f0)); } else a.push(gx(fn(f1))+','+gy(0), gx(fn(f0))+','+gy(0)); return a.join(' '); }
+      if(ks5() && !EXP && F>0 && !rubberDownNow){
+        g+='<polygon points="'+areaPoly(M.ext,0,F)+'" fill="var(--elastic)" opacity=".2"/>';
+        var ax=gx(M.ext(F)*0.62), ay=gy(F*0.2);
+        if(gx(M.ext(F))-GX>70 && F>=2) g+='<text x="'+ax+'" y="'+ay+'" text-anchor="middle" font-size="10.5" fill="var(--ink)" paint-order="stroke" stroke="var(--panel)" stroke-width="3" stroke-linejoin="round">area = '+(mat==='rubber'||F>M.lop?'work done':'energy stored')+'</text>';
+      }
+      if(ks5() && rubberDownNow && Fpeak>0) g+='<polygon points="'+areaPoly(M.ext,0,Fpeak,function(f){ return rubberDown(f,Fpeak); })+'" fill="var(--accent)" opacity=".2"/>';
       if(!EXP && !rubberDownNow) g+=curve(M.ext,0,F,'var(--elastic)',false);
       if(rubberDownNow){   // loading line up to the peak, then the unloading line down to where the load is now
         g+=curve(M.ext,0,Fpeak,'var(--elastic)',false)+curve(function(f){ return rubberDown(f,Fpeak); },F,Fpeak,'var(--accent)',false);
@@ -662,6 +733,7 @@
       render();
       var dp=mat==='wire'?2:1, newL=M.orig+x;
       $('#hk-fo').textContent=F+' N';
+      setStats(M, F, x);
       if(MEAS){
         var nm=Math.round(F);
         $('#hk-note').textContent = nm===0 ? 'Start with no masses on the hanger. Read the length of the spring at the pointer in the magnified ruler, with your eye level with the pointer, and write it in your table below. Then drag a 100 g mass onto the hanger (or press Add a mass).'
@@ -685,6 +757,13 @@
         if(last && !wire) $('#hk-eq').innerHTML='extension = new length − original length<br>extension = '+(M.orig+last.x).toFixed(1)+' − '+num(M.orig)+' = <b>'+last.x.toFixed(1)+' '+M.unit+'</b>';
         else if(last) $('#hk-eq').innerHTML='Read the vernier scale at the marker on the wire.<br>extension = <b>'+last.x.toFixed(2)+' mm</b>';
         else $('#hk-eq').innerHTML='Original length = '+num(M.orig)+' '+M.unit+(wire?' (2 m)':'');
+        if(ks5() && loadDone && mat!=='rubber'){   // IAL and IB: k and the energy from the largest reading still on the straight line
+          var rs=loadR.filter(function(r){ return r.F<=M.lop+1e-9; }), rk=rs[rs.length-1];
+          if(rk){ var xm=rk.x*toM(M), kk=rk.F/xm;
+            $('#hk-eq').innerHTML+=FR('<br>'+WHY('From your graph: the gradient of the straight-line region, using the origin and your reading at '+rk.F+' N ('+fx(rk.x)+' '+M.unit+'\u00a0=\u00a0'+sg(xm,4)+' m)')+
+              '<br>k = [[ΔF|Δx]]<br>k = [['+rk.F+'|'+sg(xm,4)+']]<br>k = <b>'+sg(kk)+' N m⁻¹</b><br>'+WHY('Energy stored at '+rk.F+' N: the area under the straight line')+'<br>'+
+              (ib() ? 'E<sub>H</sub> = ½k(Δx)²<br>E<sub>H</sub> = ½ × '+sg(kk,4)+' × '+sg(xm,4)+'²' : 'ΔE<sub>el</sub> = ½FΔx<br>ΔE<sub>el</sub> = ½ × '+rk.F+' × '+sg(xm,4))+'<br>'+Esym()+' = <b>'+sg(0.5*rk.F*xm)+' J</b>'); }
+        }
         var nt, mg=Math.round(step*100)+' g', sample=mat==='spring'?'spring':mat==='wire'?'wire':'band';
         if(!last) nt='Experiment: choose a mass size (each 100 g adds 1 N), then drag the masses onto the hanger one at a time (or press Add a mass). Read the '+(wire?'vernier scale at the marker on the wire':'ruler at the pointer, with your eye level with it')+'.';
         else if(phase==='load' && !loadDone) nt='Reading: load '+last.F+' N, extension '+fx(last.x)+' '+M.unit+'. Add another '+mg+' mass, or take one off to start unloading.';
@@ -697,6 +776,11 @@
         return;
       }
       $('#hk-eq').innerHTML='extension = new length − original length<br>extension = '+num(newL,dp)+' − '+num(M.orig)+' = <b>'+num(x,dp)+' '+M.unit+'</b>';
+      if(ks5()){
+        if(mat==='rubber' && phase==='unload'){ var Wl=areaJ(M.ext,0,Fpeak,M), Wu=areaJ(function(f){ return rubberDown(f,Fpeak); },0,Fpeak,M);
+          $('#hk-eq').innerHTML+='<br>'+WHY('Each area under a curve is an energy.')+'<br>work done stretching = area under the loading curve<br> = <b>'+sg(Wl)+' J</b><br>energy given back = area under the unloading curve<br> = <b>'+sg(Wu)+' J</b><br>difference = '+sg(Wl)+' − '+sg(Wu)+'<br> = <b>'+sg(Wl-Wu)+' J</b><br>'+WHY('The shaded loop between the curves: this energy heats the band.'); }
+        else $('#hk-eq').innerHTML+=FR(ks5Lines(M, F, x));
+      }
       var note;
       if(mat==='rubber' && phase==='unload' && F>0) note='Unloading: at each load the band is longer than it was on the way up, so the unloading line is a different curve from the loading line.';
       else if(mat==='rubber' && phase==='unload') note=(x>=0.05?'Back at 0 N the band is only '+num(x,1)+' cm longer than at the start, and it creeps back within a minute or so: it':'Back at 0 N the band is at its original length: it')+' is elastic, but it came back on a different curve.';
@@ -704,8 +788,17 @@
       else if(F===0) note='Drag masses onto the hanger (or use the slider). In the straight-line region, doubling the force doubles the extension.';
       else if(F<=M.lop) note='Straight-line region: extension is directly proportional to force, so it obeys Hooke’s law.';
       else note='Past the limit of proportionality: the line curves, so extension is no longer proportional to force.';
+      if(ks5()){   // IAL and IB notes: the same physics, with k and the area
+        var kn=ib()?'spring constant':'stiffness', en=ib()?'elastic potential energy':'elastic strain energy';
+        if(mat==='rubber' && phase==='unload') note='Unloading: the band comes back on a different curve. The area under the unloading curve (energy given back) is smaller than the area under the loading curve (work done stretching it); the shaded loop is the energy that heats the band.';
+        else if(mat==='rubber') note='A rubber band does not obey Hooke’s law: its graph is a curve, so it has no single '+kn+'. The shaded area is the work done stretching it. Take masses off to see the unloading curve.';
+        else if(F===0) note='Drag masses onto the hanger (or use the slider). The gradient of the straight-line region is the '+kn+' k, and the area under the line is the '+en+'.';
+        else if(F<=M.lop) note='Straight-line region: force is directly proportional to extension (Hooke’s law). The gradient is the '+kn+' k, and the shaded triangle is the '+en+' stored.';
+        else note='Past the limit of proportionality the line curves. The shaded area is still the work done, but '+(ib()?'½k(Δx)²':'½FΔx')+' no longer gives it.'+(ib()?'':' Loaded beyond its elastic limit the '+(mat==='wire'?'wire':'spring')+' deforms plastically: it does not go back to its original length.');
+      }
       $('#hk-note').textContent=note;
     }
+    if(PW_LEVEL==='ial' || PW_LEVEL==='ib') level=PW_LEVEL, Array.prototype.forEach.call(levelEl.children,function(x){ x.setAttribute('aria-pressed',String(x.dataset.v===PW_LEVEL)); });
     if(MEAS) clearRun(); else draw();
   }
   watchEquals('.eq');
