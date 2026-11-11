@@ -102,7 +102,7 @@
 frameAct('experiment','animations/magnetic-field-patterns.html','','Magnetic field patterns animation: iron filings, field lines and a plotting compass','magnetic field patterns',false);
 {
   const body=act('experiment','Predict','Next to the south pole','');
-  createPredict({host:body,q:'A bar magnet lies with its N pole on the left. Poppy puts a compass just to the right of the S pole. Which way does the north end of its needle point?',options:[
+  createPredict({host:body,q:'A bar magnet lies with its N pole on the left. Fatimah puts a compass just to the right of the S pole. Which way does the north end of its needle point?',options:[
     {text:'Left, towards the south pole',correct:true},
     {text:'Right, away from the south pole',why:'Field lines go into a south pole. The north end of a needle points along the field, so it points into the S pole.'},
     {text:'Up the page, along the magnet',why:'Right next to a pole, the field points straight into (or out of) the pole, not along the magnet.'},
@@ -111,7 +111,7 @@ frameAct('experiment','animations/magnetic-field-patterns.html','','Magnetic fie
 }
 {
   const body=act('experiment','Predict','Lines that never cross','');
-  createPredict({host:body,q:'Nabil notices that his field lines never cross each other. Why not?',options:[
+  createPredict({host:body,q:'Lucas notices that his field lines never cross each other. Why not?',options:[
     {text:'At each point the field has only one direction',correct:true},
     {text:'Field lines repel, so they push each other apart',why:'Field lines are a picture of the field; they do not push on each other.'},
     {text:'Where two lines meet, their fields cancel out',why:'If two lines crossed, a compass there would have to point two ways at once, which is impossible.'},
@@ -121,11 +121,11 @@ frameAct('experiment','animations/magnetic-field-patterns.html','','Magnetic fie
 
 /* ================= 5. RESULTS: reading a field pattern ================= */
 // A bar magnet's field lines, traced from two point poles (N on the left), with labelled points.
-function barFieldSVG(marks){
+function barFieldSVG(marks,pick){
   const W=520,H=290,cx=260,cy=145,NX=cx-74,SX=cx+74;
   const B=(x,y)=>{let bx=0,by=0;[[NX,1],[SX,-1]].forEach(([px,q])=>{const dx=x-px,dy=y-cy,r3=Math.pow(dx*dx+dy*dy+1,1.5);bx+=q*dx/r3;by+=q*dy/r3;});return [bx,by];};
   const inMag=(x,y)=>x>cx-92&&x<cx+92&&y>cy-18&&y<cy+18;
-  let s='<svg class="graph" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Field lines round a bar magnet, with points P, Q and R"><defs><marker id="bf-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>';
+  let s='<svg class="graph" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Field lines round a bar magnet, with lettered points"><defs><marker id="bf-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>';
   s+='<rect x="1" y="1" width="'+(W-2)+'" height="'+(H-2)+'" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';
   // lines traced along the field from the N pole, and (for the outer ones) backwards from the S pole, so both ends show
   const starts=[];[28,42,58,76,98,125,155,180].forEach(d=>starts.push([NX,d,1]));[125,155,180].forEach(d=>starts.push([SX,180-d,-1]));
@@ -142,25 +142,57 @@ function barFieldSVG(marks){
   });
   s+='<rect x="'+(cx-92)+'" y="'+(cy-18)+'" width="92" height="36" fill="var(--c2-soft)" stroke="var(--c2)" stroke-width="2"/><text x="'+(cx-46)+'" y="'+(cy+6)+'" text-anchor="middle" font-size="16" fill="var(--c2)">N</text>';
   s+='<rect x="'+cx+'" y="'+(cy-18)+'" width="92" height="36" fill="var(--c1-soft)" stroke="var(--c1)" stroke-width="2"/><text x="'+(cx+46)+'" y="'+(cy+6)+'" text-anchor="middle" font-size="16" fill="var(--c1)">S</text>';
-  (marks||[]).forEach(m=>{s+='<circle cx="'+m[1]+'" cy="'+m[2]+'" r="12" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+m[1]+'" y="'+(m[2]+5)+'" text-anchor="middle" font-size="13" fill="var(--ink)">'+m[0]+'</text>';});
+  (marks||[]).forEach(m=>{if(pick)s+='<g class="pick" role="button" tabindex="0" data-pick="'+m[0]+'" aria-label="Point '+m[0]+'">';s+='<circle cx="'+m[1]+'" cy="'+m[2]+'" r="12" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+m[1]+'" y="'+(m[2]+5)+'" text-anchor="middle" font-size="13" fill="var(--ink)">'+m[0]+'</text>';if(pick)s+='</g>';});
   return s+'</svg>';
 }
-{
-  const body=act('results','Look','Poppy’s field pattern','Poppy plotted these field lines round a bar magnet. Use them to answer the questions below.');
-  const box=mk('div','graph-box',barFieldSVG([['P',148,112],['Q',260,30],['R',260,108]]));box.style.maxWidth='560px';
-  body.appendChild(box);
+// Put two activities side by side (laptops), stacking on phones.
+function pairActs(a,b){const A=a.closest('.act'),B=b.closest('.act'),pr=mk('div','act-pair');A.parentNode.insertBefore(pr,A);pr.appendChild(A);pr.appendChild(B);}
+// Click a lettered point on a picture (or focus it and press Enter). A first wrong pick says why and lets the student
+// try again; the answer is shown once they find it, or after a second wrong pick.
+function createPointPick(cfg){
+  const host=cfg.host,box=mk('div','graph-box',cfg.svg);if(cfg.maxWidth)box.style.maxWidth=cfg.maxWidth;host.appendChild(box);
+  const fb=mk('p','pick-fb');fb.setAttribute('aria-live','polite');host.appendChild(fb);
+  const b=bar(host,[{label:'Try again',fn:reset}]);b.el.hidden=true;
+  const picks=$$('.pick',box);let tries=0,chosen=[],final=false;
+  picks.forEach(g=>{
+    g.addEventListener('click',()=>choose(g.dataset.pick));
+    g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(g.dataset.pick);}});
+  });
+  const el=id=>picks.find(g=>g.dataset.pick===id);
+  function choose(id){
+    if(final)return;const g=el(id);if(!g||g.classList.contains('is-off'))return;
+    chosen.push(id);
+    if(id!==cfg.answer&&tries===0){
+      tries++;g.classList.add('is-wrong','is-off');g.setAttribute('aria-disabled','true');
+      fb.innerHTML='<strong>Not quite.</strong> '+FR(cfg.why[id])+' Click another point.';return;
+    }
+    final=true;
+    picks.forEach(x=>{x.classList.add('is-off');x.setAttribute('tabindex','-1');x.setAttribute('aria-disabled','true');});
+    el(cfg.answer).classList.add('is-right');if(id!==cfg.answer)g.classList.add('is-wrong');
+    fb.innerHTML='<strong>'+(id===cfg.answer?'That is right.':'Not quite.')+'</strong> '+FR((id===cfg.answer?'':cfg.why[id]+' ')+cfg.explain);
+    b.el.hidden=false;
+  }
+  function reset(){tries=0;chosen=[];final=false;b.el.hidden=true;fb.innerHTML=cfg.prompt;
+    picks.forEach(x=>{x.classList.remove('is-right','is-wrong','is-off');x.setAttribute('tabindex','0');x.removeAttribute('aria-disabled');});}
+  reset();
+  return track(host,{reset:reset,getState:()=>({p:chosen}),setState:s=>{reset();(s.p||[]).forEach(choose);},isDone:()=>final});
 }
+let lookBody;
 {
-  const body=act('results','Predict','Where is the field strongest?','');
-  createPredict({host:body,q:'Look at Poppy’s pattern. At which point is the magnetic field strongest?',options:[
-    {text:'P: the lines are closest together there',correct:true},
-    {text:'Q: the lines there are the longest ones',why:'Long lines far from the magnet are spread out, so the field there is weak.'},
-    {text:'R: it is closest to the middle of the magnet',why:'Beside the middle of the magnet the lines are more spread out than near the poles.'},
-    {text:'It is the same strength at all three points',why:'The lines are much closer together near the poles, so the field is stronger there.'}
-  ],explain:'The closer together the field lines, the stronger the field. They crowd together near the poles, so the field is strongest at P.'});
+  lookBody=act('results','Look','Poppy’s field pattern','Poppy plotted these field lines round a bar magnet. Click the point where the magnetic field is strongest.');
+  createPointPick({host:lookBody,maxWidth:'560px',answer:'P',
+    svg:barFieldSVG([['P',148,112],['Q',260,30],['R',260,108],['T',60,250]],true),
+    prompt:'Click P, Q, R or T (or tab to a point and press Enter).',
+    why:{
+      Q:'Q is far from the magnet, where the lines are spread out, so the field there is weak.',
+      R:'Beside the middle of the magnet the lines are more spread out than near the poles.',
+      T:'T is far from the magnet, where the lines are spread out, so the field there is weak.'
+    },
+    explain:'The closer together the field lines, the stronger the field. They crowd together near the poles, so the field is strongest at P.'});
 }
 {
   const body=act('results','Predict','A compass at R','');
+  pairActs(lookBody,body);
   createPredict({host:body,q:'Poppy puts a plotting compass at R. Which way does the north end of its needle point?',options:[
     {text:'To the right, towards the S end',correct:true},
     {text:'To the left, towards the N end',why:'Field lines go from N to S, so above the magnet they point from left to right.'},
@@ -255,8 +287,9 @@ function twoNorthSVG(wrong){
 }
 
 /* ================= 6. TWO MAGNETS ================= */
+let sortBody;
 {
-  const body=act('twomag','Sort','Attract, repel or no force?','Sort each pair, then press Check.');
+  const body=sortBody=act('twomag','Sort','Attract, repel or no force?','Sort each pair, then press Check.');
   createSortGame({host:body,cats:[
     {id:'a',label:'Attract',hint:'',color:'--c3',soft:'--c3-soft'},
     {id:'r',label:'Repel',hint:'',color:'--c2',soft:'--c2-soft'},
@@ -272,16 +305,8 @@ function twoNorthSVG(wrong){
   ]});
 }
 {
-  const body=act('twomag','Predict','Two north poles','');
-  createPredict({host:body,q:'Julia plots the field between two north poles facing each other. What does she find halfway between them?',options:[
-    {text:'A neutral point, where the field is zero',correct:true},
-    {text:'The strongest field, as both poles add up',why:'The two fields point in opposite directions halfway between, so they cancel rather than add.'},
-    {text:'Lines going straight across from one pole',why:'Field lines go from N to S. Lines from the two N poles push away from each other and never join.'},
-    {text:'A south pole, made by the two north poles',why:'Magnets cannot make a new pole in the air between them. The fields cancel there.'}
-  ],explain:'The field lines from each N pole curve away from each other, with arrows pointing away from both N poles. Halfway between, the two fields are equal and opposite, so they cancel: the field is zero, and a compass there will not settle. This is a neutral point.'});
-}
-{
   const body=act('twomag','Predict','A uniform field','');
+  pairActs(sortBody,body);
   createPredict({host:body,q:'Which pattern of field lines shows a uniform magnetic field?',options:[
     {text:'Straight, parallel lines, evenly spaced',correct:true},
     {text:'Curved lines that spread out from a pole',why:'Spreading lines show a field that gets weaker, and curving lines show a change of direction.'},
@@ -309,38 +334,7 @@ function twoNorthSVG(wrong){
   body.appendChild(d);
 }
 
-/* ================= 7. MAGNETIC MATERIALS ================= */
-{
-  const body=act('materials','Match','Magnets and magnetic materials','Pair each term with its meaning. Drag one card onto the other, or tap one card and then the other.');
-  createMatchGame({host:body,leftTitle:'Term',rightTitle:'Meaning',pairs:[
-    {id:'m',l:'Magnetic material',r:'Attracted to a magnet: iron, steel, nickel or cobalt'},
-    {id:'i',l:'Induced magnet',r:'Becomes a magnet only while it is in a magnetic field'},
-    {id:'h',l:'Magnetically hard',r:'Hard to magnetise, but keeps its magnetism'},
-    {id:'s',l:'Magnetically soft',r:'Easy to magnetise, but loses its magnetism easily'},
-    {id:'p',l:'Permanent magnet',r:'Made of a hard material such as steel, so it stays magnetic'},
-    {id:'c',l:'Electromagnet core',r:'Made of soft iron, so its magnetism can be switched off'}
-  ]});
-}
-{
-  const body=act('materials','Predict','A chain of nails','');
-  createPredict({host:body,q:'An iron nail hangs from the N pole of a magnet. A second nail hangs from the bottom of the first one. Why does the second nail stay on?',options:[
-    {text:'The first nail is now an induced magnet',correct:true},
-    {text:'Any two iron nails always attract each other',why:'Two ordinary iron nails do not attract each other. The first one is magnetic only while it is in the magnet’s field.'},
-    {text:'The magnet’s pull passes straight through it',why:'The magnet’s field does reach the second nail, but the first nail is magnetised by it and adds its own pull.'},
-    {text:'Friction between the two nails holds it up',why:'Friction cannot hold a nail up against its weight. A magnetic force does.'}
-  ],explain:'In the magnet’s field the first nail becomes an induced magnet: a south pole is induced at the end nearest the magnet’s N pole, and opposite poles attract. Its other end becomes a north pole, which attracts the second nail in the same way. Take the magnet away and both nails fall.'});
-}
-{
-  const body=act('materials','Predict','Iron or steel?','');
-  createPredict({host:body,q:'Nabil repeats this with steel paper clips instead of iron nails, then pulls the magnet away. The iron nails fall apart, but the steel clips stay stuck for a while. Why?',options:[
-    {text:'Steel is magnetically hard, so it keeps some magnetism',correct:true},
-    {text:'Steel is not a magnetic material, so it is not affected',why:'Steel is a magnetic material: it is attracted to a magnet, and the clips were held by it.'},
-    {text:'Iron is magnetically hard, so it lets go more quickly',why:'Iron is magnetically soft: it loses its induced magnetism as soon as the field is gone.'},
-    {text:'Paper clips are lighter, so they fall more slowly',why:'Being light does not stop them falling. They stay stuck because they are still slightly magnetised.'}
-  ],explain:'Iron is magnetically soft: it loses its magnetism once the field is gone, so the nails fall apart. Steel is magnetically hard: it retains some of its induced magnetism, so the clips stay stuck together.'});
-}
-
-/* ================= 8. ACCURACY AND SAFETY ================= */
+/* ================= 7. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
@@ -357,30 +351,12 @@ function twoNorthSVG(wrong){
     {id:'8',text:'Do not drop the magnets: it can weaken them',cat:'s'}
   ]});
 }
-{
-  const body=act('accuracy','Predict','A smaller compass','');
-  createPredict({host:body,q:'Why does a smaller plotting compass give a more accurate field line?',options:[
-    {text:'The dots are closer, so the line follows each curve',correct:true},
-    {text:'A small compass has a stronger needle than a big one',why:'Size does not make the needle stronger. It sets how far apart the dots are.'},
-    {text:'A small compass changes the field of the magnet less',why:'Any compass is a tiny magnet, but the main gain is the shorter needle: the dots are closer together.'},
-    {text:'The needle of a small compass turns more slowly',why:'Turning speed does not matter: you wait for it to settle before marking a dot.'}
-  ],explain:'Each dot is one needle length from the last. With a shorter needle the dots are closer together, so the joined-up line follows the curve of the field more closely.'});
-}
-{
-  const body=act('accuracy','Predict','Far from the magnet','');
-  createPredict({host:body,q:'Far from the magnet, Poppy’s field lines curve off and all point the same way across the page. Why?',options:[
-    {text:'The Earth’s field is stronger than the magnet’s',correct:true},
-    {text:'The magnet’s own field changes direction far away',why:'The magnet’s lines keep looping round to its S pole. Far away its field is weak, so another field takes over.'},
-    {text:'Her compass has lost all of its magnetism by then',why:'A compass does not lose its magnetism while you use it. It is lining up with a different field.'},
-    {text:'Field lines can only be plotted close to a magnet',why:'Field lines go on far from the magnet, but its field gets weaker with distance.'}
-  ],explain:'A compass lines up with the strongest field where it is. Far from the magnet its field is very weak, so the needle lines up with the Earth’s magnetic field instead. Steel objects nearby can bend the lines too.'});
-}
 
 /* ================= EXAM PRACTICE ================= */
 {
   const body=act('exam','Exam style','The field of a bar magnet','Write each answer, then check it against the model answer.');
   body.appendChild(mk('p','sub','(a) 4 marks'));
-  body.appendChild(mk('p','','Describe how Poppy can use a plotting compass to show the shape and direction of the magnetic field round a bar magnet.'));
+  body.appendChild(mk('p','','Describe how Camila can use a plotting compass to show the shape and direction of the magnetic field round a bar magnet.'));
   const d1=mk('details','');
   d1.innerHTML='<summary>Check your answer</summary><div><ul><li>Put the magnet on a sheet of paper and draw round it.</li><li>Place a plotting compass next to the N pole and mark a dot where the north end of the needle points.</li><li>Move the compass on so the tail of the needle is at the dot, mark the next dot, and repeat until the S pole (or the edge of the paper).</li><li>Join the dots to form a field line, with an arrow from N to S to show the direction.</li><li>Draw several lines from other starting points (use many compasses, or move one compass repeatedly).</li></ul></div>';
   body.appendChild(d1);
@@ -390,7 +366,7 @@ function twoNorthSVG(wrong){
   d2.innerHTML='<summary>Check your answer</summary><div><ul><li>At the poles (the ends of the magnet).</li><li>The field lines are closest together there (further apart means a weaker field).</li></ul></div>';
   body.appendChild(d2);
   body.appendChild(mk('p','sub','(c) 2 marks'));
-  body.appendChild(mk('p','','Poppy places two bar magnets end to end with their north poles 6 cm apart. Describe the field pattern between them.'));
+  body.appendChild(mk('p','','Ruby places two bar magnets end to end with their north poles 6 cm apart. Describe the field pattern between them.'));
   const d3=mk('details','');
   d3.innerHTML='<summary>Check your answer</summary><div><ul><li>The lines from each N pole curve away from each other and do not cross or join, with arrows pointing away from both N poles.</li><li>Halfway between the poles there is a neutral point, where the field is zero (no line passes through it).</li></ul></div>';
   body.appendChild(d3);
@@ -405,7 +381,7 @@ function twoNorthSVG(wrong){
   d5.innerHTML='<summary>Check your answer</summary><div><ul><li>The clip became an induced magnet while it was in the magnet’s field.</li><li>Steel is magnetically hard, so it retains its induced magnetism.</li><li>Iron is magnetically soft, so it loses its magnetism once the field is gone.</li></ul></div>';
   body.appendChild(d5);
   body.appendChild(mk('p','sub','(f) 3 marks'));
-  body.appendChild(mk('p','','Nabil uses iron filings instead of a compass. Describe how he can show the shape of the field, and explain why he still needs a plotting compass.'));
+  body.appendChild(mk('p','','Ali uses iron filings instead of a compass. Describe how he can show the shape of the field, and explain why he still needs a plotting compass.'));
   const d6=mk('details','');
   d6.innerHTML='<summary>Check your answer</summary><div><ul><li>Place a sheet of card over the magnet and sprinkle iron filings thinly onto it.</li><li>Tap the card gently, so the filings line up to show the shape of the field.</li><li>Filings show only the shape: a plotting compass is needed to show the direction of the field.</li></ul></div>';
   body.appendChild(d6);
