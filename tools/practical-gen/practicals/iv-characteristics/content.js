@@ -54,28 +54,35 @@
   act('method','Your turn','Build the circuit','The animation deals a task. Put the ammeter and the voltmeter into the circuit diagram, then press Go to see whether it works. In the exam: correct symbols, the ammeter in series, the voltmeter in parallel with the component, and a variable resistor (or a variable supply) to change the current.');
 }
 frameAct('method','animations/iv-characteristics.html','build','Build the I–V circuit: put the meters into the circuit diagram','current–voltage characteristics',false);
-function faultyCircuitSVG(){
-  const ln=(x1,y1,x2,y2,w)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="var(--ink)" stroke-width="'+(w||2)+'"/>';
-  const meter=(x,y,t)=>'<circle cx="'+x+'" cy="'+y+'" r="14" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+x+'" y="'+(y+5)+'" text-anchor="middle" font-size="15" fill="var(--ink)">'+t+'</text>';
-  let s='<svg class="graph" viewBox="0 0 400 230" role="img" aria-label="Ali’s circuit diagram: two cells, a switch, a variable resistor, a voltmeter, a filament lamp and an ammeter">';
-  s+='<rect x="1" y="1" width="398" height="228" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';
-  // top: two cells, the second turned round (long plate = positive)
-  s+=ln(40,40,146,40)+ln(146,26,146,54)+ln(154,33,154,47,5)+ln(154,40,186,40)+ln(186,33,186,47,5)+ln(194,26,194,54)+ln(194,40,300,40);
-  // right: the lamp, with the ammeter across it
-  s+=ln(300,40,300,96)+'<circle cx="300" cy="110" r="14" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+ln(290,100,310,120)+ln(310,100,290,120)+ln(300,124,300,190);
-  s+=ln(300,75,360,75)+ln(360,75,360,96)+meter(360,110,'A')+ln(360,124,360,145)+ln(360,145,300,145);
-  s+='<circle cx="300" cy="75" r="3.5" fill="var(--ink)"/><circle cx="300" cy="145" r="3.5" fill="var(--ink)"/>';
-  // bottom: the voltmeter and the variable resistor in the main loop
-  s+=ln(300,190,234,190)+meter(220,190,'V')+ln(206,190,140,190)+'<rect x="100" y="181" width="40" height="18" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+ln(100,190,40,190);
-  s+='<path d="M94,206 L144,172" stroke="var(--ink)" stroke-width="2"/><path d="M144,172 L134,173 L139,181 z" fill="var(--ink)"/>';
+// Ali's circuit as an exam circuit diagram. fixed=false: his drawing (second cell turned round, ammeter across the lamp, voltmeter in the
+// main loop). fixed=true: the same circuit put right, with the three changes in green.
+function iv29CircuitSVG(fixed){
+  const INK='var(--ink)',OK='var(--good)',col=c=>fixed&&c?OK:INK;
+  const ln=(x1,y1,x2,y2,c,w)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col(c)+'" stroke-width="'+(w||2.4)+'" stroke-linecap="round"/>';
+  const dot=(x,y,c)=>'<circle cx="'+x+'" cy="'+y+'" r="4" fill="'+col(c)+'"/>';
+  const meter=(x,y,t,c)=>'<circle cx="'+x+'" cy="'+y+'" r="17" fill="var(--panel)" stroke="'+col(c)+'" stroke-width="2.4"/><text x="'+x+'" y="'+(y+6)+'" text-anchor="middle" font-size="18" font-weight="600" fill="'+col(c)+'">'+t+'</text>';
+  // a cell: the long thin plate is positive, the short thick plate negative; pos says which side the long plate is on
+  const cell=(x,y,pos,c)=>{const xl=pos==='l'?x-5:x+5,xs=pos==='l'?x+5:x-5;return ln(xl,y-17,xl,y+17,c,2.4)+ln(xs,y-9,xs,y+9,c,5.5);};
+  const L=60,R=330,T=48,B=222,X2=412;
+  let s='<svg class="graph" viewBox="0 0 460 270" role="img" aria-label="'+(fixed?'Ali’s circuit put right: both cells the same way round, the ammeter in series and the voltmeter across the lamp':'Ali’s circuit diagram: two cells, a switch, a variable resistor, a voltmeter, a filament lamp and an ammeter')+'">';
+  s+='<rect x="1" y="1" width="458" height="268" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';
+  // top: two cells joined by a short wire
+  s+=ln(L,T,165,T)+cell(170,T,'l')+ln(175,T,215,T)+cell(220,T,fixed?'l':'r',true)+ln(225,T,R,T);
+  // right: the filament lamp, with a meter connected across it
+  s+=ln(R,T,R,118)+'<circle cx="'+R+'" cy="135" r="17" fill="var(--panel)" stroke="'+INK+'" stroke-width="2.4"/>'+ln(R-12,123,R+12,147)+ln(R+12,123,R-12,147)+ln(R,152,R,B);
+  s+=ln(R,88,X2,88,true)+ln(X2,88,X2,118,true)+meter(X2,135,fixed?'V':'A',true)+ln(X2,152,X2,182,true)+ln(X2,182,R,182,true)+dot(R,88,true)+dot(R,182,true);
+  // bottom: a meter and the variable resistor in the main loop
+  s+=ln(R,B,267,B)+meter(250,B,fixed?'A':'V',true)+ln(233,B,176,B)+'<rect x="124" y="211" width="52" height="22" fill="var(--panel)" stroke="'+INK+'" stroke-width="2.4"/>'+ln(124,B,L,B);
+  s+='<path d="M116,243 L182,203" stroke="'+INK+'" stroke-width="2.4" stroke-linecap="round"/><path d="M187,200 L175,201 L181,211 z" fill="'+INK+'" stroke="'+INK+'" stroke-width="1.5" stroke-linejoin="round"/>';
   // left: an open switch
-  s+=ln(40,190,40,124)+'<circle cx="40" cy="120" r="3.5" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+ln(40,120,56,94)+'<circle cx="40" cy="88" r="3.5" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+ln(40,84,40,40);
+  s+=ln(L,B,L,158)+ln(L,154,L+22,118)+ln(L,112,L,T)+'<circle cx="'+L+'" cy="154" r="4.5" fill="var(--panel)" stroke="'+INK+'" stroke-width="2.4"/><circle cx="'+L+'" cy="112" r="4.5" fill="var(--panel)" stroke="'+INK+'" stroke-width="2.4"/>';
   return s+'</svg>';
 }
 {
   const body=act('method','Sort','Find the errors in Ali’s circuit','Ali draws the circuit he will use to find the I–V characteristic of a filament lamp. Look at where each part is connected, then sort it and press Check.');
-  const box=mk('div','graph-box',faultyCircuitSVG());box.style.maxWidth='460px';box.style.marginBottom='14px';body.appendChild(box);
-  createSortGame({host:body,cats:[
+  const split=mk('div','graph-split'),box=mk('div','graph-box',iv29CircuitSVG(false)),side=mk('div','act-body');
+  split.appendChild(box);split.appendChild(side);body.appendChild(split);
+  createSortGame({host:side,cats:[
     {id:'ok',label:'Connected correctly',hint:'Leave it as it is',color:'--c1',soft:'--c1-soft'},
     {id:'no',label:'Connected wrongly',hint:'Ali must change it',color:'--c2',soft:'--c2-soft'}
   ],items:[
@@ -87,7 +94,7 @@ function faultyCircuitSVG(){
     {id:'6',text:'The filament lamp',cat:'ok'}
   ]});
   const d=mk('details','');
-  d.innerHTML='<summary>Why</summary><div><ul><li>The ammeter is in parallel with the lamp: it must be in series, so the same current flows through it.</li><li>The voltmeter is in series: it must be in parallel across the lamp.</li><li>The second cell faces the wrong way, so the two cells cancel: each cell’s long plate must join the next cell’s short plate.</li><li>The variable resistor and the switch are in series, as they should be.</li></ul></div>';
+  d.innerHTML='<summary>Why</summary><div><ul><li>The ammeter is in parallel with the lamp: it must be in series, so the same current flows through it.</li><li>The voltmeter is in series: it must be in parallel across the lamp.</li><li>The second cell faces the wrong way, so the two cells cancel: each cell’s long plate must join the next cell’s short plate.</li><li>The variable resistor and the switch are in series, as they should be.</li></ul><p class="act-intro">Ali’s circuit put right (his three changes are in green):</p><div class="graph-box">'+iv29CircuitSVG(true)+'</div></div>';
   body.appendChild(d);
 }
 

@@ -169,31 +169,81 @@ function barFieldSVG(marks){
   ],explain:'A compass needle lines up along the field line, with its north end pointing the way of the arrow: from N to S. Above the middle of the magnet that is to the right.'});
 }
 
-/* Find the mistake in a field drawing (May 2021 P1 2(b), May 2023 P1R 4(b), Jan 2021 P1R 8(a)): lines start and end on the magnet,
-   never cross, and carry arrows from N to S. Each drawing has one mistake. */
+/* Field drawings for the two "find the mistake" activities. Every line is traced along the real field of point poles, so the
+   right lines are right; each mistake is then put in on purpose. Magnets are solid (N red, S blue, white letters).
+   One magnet: May 2021 P1 2(b), May 2023 P1R 4(b), Jan 2021 P1R 8(a) (lines from pole to pole, never crossing, arrows N to S).
+   Two north poles: May 2026 P1R 2(a)(i) (the central line should not be drawn; the arrows should point away from the north poles). */
+const FD={
+  B(poles,x,y){let bx=0,by=0;poles.forEach(([px,py,q])=>{const dx=x-px,dy=y-py,r3=Math.pow(dx*dx+dy*dy+0.5,1.5);bx+=q*dx/r3;by+=q*dy/r3;});return [bx,by];},
+  // follow the field from (x,y), forwards (dir 1) or backwards (dir -1), until stop(x,y) is true
+  trace(poles,x,y,dir,stop){const pts=[[x,y]];for(let i=0;i<4000;i++){const b=FD.B(poles,x,y),l=Math.hypot(b[0],b[1])||1;x+=dir*b[0]/l*1.5;y+=dir*b[1]/l*1.5;pts.push([x,y]);if(stop(x,y))break;}return pts;},
+  path(pts,w){return '<polyline points="'+pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="'+(w||2)+'" stroke-linecap="round" stroke-linejoin="round"/>';},
+  // an arrowhead on a line, a fraction f of the way along it; rev turns it round
+  head(pts,f,rev){const k=Math.max(1,Math.min(pts.length-2,Math.round(f*(pts.length-1)))),p=pts[k],a=pts[k-1],b=pts[k+1];let ang=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;if(rev)ang+=180;
+    return '<path d="M-6,-5.5 L6,0 L-6,5.5 L-3,0 z" fill="var(--accent)" transform="translate('+p[0].toFixed(1)+' '+p[1].toFixed(1)+') rotate('+ang.toFixed(1)+')"/>';},
+  // a solid bar magnet: x is its left end, n says which end is north ('l' or 'r')
+  magnet(x,cy,len,h,n){const half=len/2,cN='#d23b3b',cS='#2f62d6',lx=n==='l'?[cN,'N',cS,'S']:[cS,'S',cN,'N'];
+    let s='<rect x="'+(x+2)+'" y="'+(cy-h/2+3)+'" width="'+len+'" height="'+h+'" rx="2" fill="#000" opacity=".16"/>';
+    s+='<rect x="'+x+'" y="'+(cy-h/2)+'" width="'+half+'" height="'+h+'" fill="'+lx[0]+'"/><rect x="'+(x+half)+'" y="'+(cy-h/2)+'" width="'+half+'" height="'+h+'" fill="'+lx[2]+'"/>';
+    s+='<rect x="'+x+'" y="'+(cy-h/2)+'" width="'+len+'" height="'+(h*0.3).toFixed(1)+'" fill="#fff" opacity=".22"/><rect x="'+x+'" y="'+(cy+h*0.25).toFixed(1)+'" width="'+len+'" height="'+(h*0.25).toFixed(1)+'" fill="#000" opacity=".14"/>';
+    s+='<rect x="'+x+'" y="'+(cy-h/2)+'" width="'+len+'" height="'+h+'" fill="none" stroke="#1b2333" stroke-opacity=".55" stroke-width="1.2"/>';
+    const fs=Math.round(h*0.68);
+    s+='<text x="'+(x+half/2)+'" y="'+(cy+fs*0.36)+'" text-anchor="middle" font-size="'+fs+'" font-weight="700" fill="#fff">'+lx[1]+'</text><text x="'+(x+half*1.5)+'" y="'+(cy+fs*0.36)+'" text-anchor="middle" font-size="'+fs+'" font-weight="700" fill="#fff">'+lx[3]+'</text>';
+    return s;},
+  tag(t){return '<circle cx="22" cy="22" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="22" y="27" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">'+t+'</text>';},
+  frame(W,H,label){return '<svg class="graph" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+label+'"><rect x="1" y="1" width="'+(W-2)+'" height="'+(H-2)+'" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';}
+};
+// One bar magnet (N on the left) with three loops above and three below; kind puts in one mistake.
 function mistakeFieldSVG(tag,kind){
-  const ah=(x,y,d)=>'<path d="M'+(x-5*d)+','+(y-5)+' L'+(x+5*d)+','+y+' L'+(x-5*d)+','+(y+5)+' z" fill="var(--accent)"/>';
-  const L=d=>'<path d="'+d+'" fill="none" stroke="var(--accent)" stroke-width="2"/>';
-  const lines={
-    ti:'M84,66 C70,30 170,30 156,66', to:'M80,70 C30,0 210,0 160,70',
-    bi:'M84,84 C70,120 170,120 156,84', bo:'M80,80 C30,150 210,150 160,80'};
-  if(kind==='gap')lines.bi='M84,84 C70,120 162,122 146,100';
-  if(kind==='cross')lines.ti='M84,66 C40,-15 150,60 156,66';   // starts inside the outer line, swings out past it on the left, then back in
-  let s='<svg class="graph" viewBox="0 0 240 150" role="img" aria-label="Drawing '+tag+': field lines round a bar magnet">';
-  s+='<rect x="1" y="1" width="238" height="148" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';
-  Object.values(lines).forEach(d=>{s+=L(d);});
-  s+=L('M80,75 L18,75')+L('M222,75 L160,75');
-  if(kind!=='none'){
-    s+=(kind==='cross'?'<path d="M-5,-5 L5,0 L-5,5 z" fill="var(--accent)" transform="translate(101.3 33.4) rotate(22.4)"/>':ah(120,39,1))+ah(120,17.5,kind==='rev'?-1:1)+ah(120,111,1)+ah(120,132.5,1)+ah(40,75,-1)+ah(196,75,-1);
+  const W=220,H=215,cx=110,cy=110,a=33,poles=[[cx-a,cy,1],[cx+a,cy,-1]];
+  const near=(px)=>(x,y)=>Math.hypot(x-px,y-cy)<3;
+  // each loop leaves the N pole at an angle to the magnet and is followed along the field until it reaches the S pole
+  const loop=(deg,side)=>{const t=deg*Math.PI/180;return FD.trace(poles,cx-a+4*Math.cos(t),cy+side*4*Math.sin(t),1,near(cx+a));};
+  const hs=[46,78,102];
+  const names=[];[-1,1].forEach(side=>hs.forEach((h,i)=>names.push({side,i,pts:loop(h,side)})));
+  let s=FD.frame(W,H,'Drawing '+tag+': a student’s field lines round a bar magnet');
+  names.forEach(L=>{
+    let pts=L.pts,arrow=kind!=='none',rev=false;
+    if(kind==='rev'&&L.side===-1&&L.i===2)rev=true;
+    if(kind==='gap'&&L.side===1&&L.i===1){pts=pts.slice(0,Math.round(pts.length*0.62));}
+    if(kind==='cross'&&L.side===-1&&L.i===0){   // leaves N as the inner line but arrives at S as the outer one, so it cuts across the middle line
+      const o=names[2].pts,n=160,at=(P,f)=>{const x=f*(P.length-1),k=Math.min(P.length-2,Math.floor(x)),u=x-k;return [P[k][0]+(P[k+1][0]-P[k][0])*u,P[k][1]+(P[k+1][1]-P[k][1])*u];};
+      const q=[];for(let j=0;j<=n;j++){const f=j/n,t=Math.min(1,Math.max(0,(f-0.2)/0.45)),m=t*t*(3-2*t),p1=at(pts,f),p2=at(o,f);q.push([p1[0]+(p2[0]-p1[0])*m,p1[1]+(p2[1]-p1[1])*m]);}
+      pts=q;
+    }
+    if(kind==='cross'&&L.side===-1&&L.i===2)return;   // the outer line's place is taken by the crossing one
+    s+=FD.path(pts);
+    if(arrow)s+=FD.head(pts,kind==='cross'&&L.side===-1&&L.i===0?0.82:0.5,rev);
+  });
+  s+=FD.magnet(cx-42,cy,84,22,'l')+FD.tag(tag);
+  return s+'</svg>';
+}
+// Two bar magnets with their north poles facing. wrong: the student's drawing (a line straight across, arrows towards the north poles).
+function twoNorthSVG(wrong){
+  const W=520,H=300,cy=150,g=64,len=150,xl=W/2-g,xr=W/2+g;   // inner (north) ends at xl and xr
+  const poles=[[xl-10,cy,1],[xl-len+10,cy,-1],[xr+10,cy,1],[xr+len-10,cy,-1]];
+  const out=(x,y)=>x<8||x>W-8||y<8||y>H-8||poles.some(p=>p[2]<0&&Math.hypot(x-p[0],y-p[1])<4);
+  let s=FD.frame(W,H,wrong?'A student’s drawing of the field between two north poles':'The field between two north poles, drawn correctly');
+  [[xl-10,1],[xr+10,-1]].forEach(([px,sg])=>{
+    [22,44,68,96].forEach(deg=>[-1,1].forEach(side=>{
+      const t=deg*Math.PI/180,pts=FD.trace(poles,px+sg*4*Math.cos(t),cy+side*4*Math.sin(t),1,out);
+      const vis=pts.filter(p=>!(p[0]>xl-len&&p[0]<xl&&Math.abs(p[1]-cy)<24)&&!(p[0]>xr&&p[0]<xr+len&&Math.abs(p[1]-cy)<24));
+      s+=FD.path(pts);
+      if(vis.length>12)s+=FD.head(vis,0.55,wrong);
+    }));
+  });
+  if(wrong){
+    const mid=[];for(let x=xl;x<=xr;x+=2)mid.push([x,cy]);
+    s+=FD.path(mid)+FD.head(mid,0.3,true)+FD.head(mid,0.7,false);
+  }else{
+    s+='<path d="M'+(W/2-6)+','+(cy-6)+' L'+(W/2+6)+','+(cy+6)+' M'+(W/2-6)+','+(cy+6)+' L'+(W/2+6)+','+(cy-6)+'" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>';
   }
-  s+='<rect x="80" y="66" width="40" height="18" fill="var(--c2-soft)" stroke="var(--c2)" stroke-width="2"/><text x="100" y="80" text-anchor="middle" font-size="12" fill="var(--c2)">N</text>';
-  s+='<rect x="120" y="66" width="40" height="18" fill="var(--c1-soft)" stroke="var(--c1)" stroke-width="2"/><text x="140" y="80" text-anchor="middle" font-size="12" fill="var(--c1)">S</text>';
-  s+='<circle cx="22" cy="20" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="22" y="25" text-anchor="middle" font-size="14" fill="var(--ink)">'+tag+'</text>';
+  s+=FD.magnet(xl-len,cy,len,44,'r')+FD.magnet(xr,cy,len,44,'l');
   return s+'</svg>';
 }
 {
   const body=act('results','Match','Find the mistake in each drawing','Four students drew the field round a bar magnet. Each drawing has one mistake. Pair each drawing with its mistake. A field drawing scores when its lines go from pole to pole, never cross, and have arrows from N to S.');
-  const grid=mk('div','');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px;margin-bottom:14px';
+  const grid=mk('div','');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px;margin-bottom:14px';
   [['A','rev'],['B','gap'],['C','cross'],['D','none']].forEach(([t,k])=>{const b=mk('div','graph-box',mistakeFieldSVG(t,k));grid.appendChild(b);});
   body.appendChild(grid);
   createMatchGame({host:body,leftTitle:'Drawing',rightTitle:'Its mistake',pairs:[
@@ -238,6 +288,25 @@ function mistakeFieldSVG(tag,kind){
     {text:'Straight lines that get closer together',why:'Lines getting closer show the field getting stronger, so it is not the same everywhere.'},
     {text:'Lines that meet at a point in the middle',why:'Field lines never meet. Lines meeting would not show the same field everywhere.'}
   ],explain:'A uniform field has the same strength and direction everywhere, so its lines are straight (same direction), parallel and evenly spaced (same strength). Opposite poles facing each other, close together but not touching, give one in the gap between them.'});
+}
+
+{
+  const body=act('twomag','Sort','Two north poles: find the two mistakes','Henry draws the field between two bar magnets with their north poles facing each other. His drawing has two mistakes. Sort each statement about his drawing, then press Check.');
+  const split=mk('div','graph-split'),box=mk('div','graph-box',twoNorthSVG(true)),side=mk('div','act-body');
+  split.appendChild(box);split.appendChild(side);body.appendChild(split);
+  createSortGame({host:side,cats:[
+    {id:'no',label:'A mistake',hint:'Henry must change it',color:'--c2',soft:'--c2-soft'},
+    {id:'ok',label:'Drawn correctly',hint:'Leave it as it is',color:'--c3',soft:'--c3-soft'}
+  ],items:[
+    {id:'1',text:'A straight line joins the two north poles',cat:'no'},
+    {id:'2',text:'The arrows point towards the north poles',cat:'no'},
+    {id:'3',text:'The lines from the two magnets curve away from each other',cat:'ok'},
+    {id:'4',text:'None of the curved lines cross',cat:'ok'},
+    {id:'5',text:'The lines are closest together next to the poles',cat:'ok'}
+  ]});
+  const d=mk('details','');
+  d.innerHTML='<summary>Why</summary><div><ul><li>The central line should not be drawn. A field line goes from a north pole to a south pole, so no line can join two north poles. Halfway between them the two fields cancel: a neutral point (the cross in the drawing below).</li><li>The arrows point the wrong way. They should point away from the north poles.</li><li>The rest is right: like poles repel, so the lines from the two magnets curve away from each other and never cross.</li></ul><p class="act-intro">Henry’s drawing put right:</p><div class="graph-box">'+twoNorthSVG(false)+'</div></div>';
+  body.appendChild(d);
 }
 
 /* ================= 7. MAGNETIC MATERIALS ================= */
