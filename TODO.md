@@ -18,7 +18,7 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 - [ ] Check the 20-minute review of all 21 IGCSE workouts (4 Nov 2026): every page cut to about 20 minutes of content (477 → 300 activities), Quick check cards instead of single Predicts, memory games replaced by one crossword per unit. What changed on each page is in `tools/REVIEW.md` (rows starting "4 Nov 2026 20-minute review"). Calculate cards were then put back to 3 questions (Alex, 4 Nov 2026), so pages may run a little over 20 minutes, never 30.
 
-100 pages are 🔍 To review and 1 is ❔ Not recorded in `tools/REVIEW.md` (11 Nov 2026). Go through that table; only Alex marks a page ✅.
+101 pages are 🔍 To review and 1 is ❔ Not recorded in `tools/REVIEW.md` (11 Nov 2026). Go through that table; only Alex marks a page ✅.
 
 - [ ] Check Units 7 and 8 (7a `radioactivity.html`, 7b `fission-and-fusion.html`, 8a `universe-and-stars.html`, 8b `cosmology.html`; what to look at is in `tools/REVIEW.md`). Draft tags clear themselves once the page is ✅ in `tools/REVIEW.md` (reviewer mode) (added 4 Nov 2026).
 - [ ] Check Unit 3 (3a `waves.html`, 3b `light-and-sound.html`, 3c `sound.html`; what to look at is in `tools/REVIEW.md`). Draft tags clear themselves once the page is ✅ in `tools/REVIEW.md` (reviewer mode) (added 4 Nov 2026).
@@ -80,7 +80,7 @@ Follow-ups:
   - Duplicate exam numbers to change: 2.9 Exam (b), 3.25P Exam (b), 3.17 Exam (d), 3.19 Exam (d), CP12 Exam (a).
   - Missing activities worth adding: sketch the heating curve (5.11P); circuit diagram (2.9): build it or find the errors (ammeter in parallel, voltmeter in series, cells the wrong way round); field-drawing mistakes (6.6): find the mistake in field diagrams (reversed arrow, line not reaching the magnet, lines crossing, no central line between N poles). Draw the 2.9 and 6.6 pictures on Claude Fable (section 7).
 - [x] 2.9 I–V practical page `iv-characteristics-practical.html`: its graphs should show the lamp curve continuing into the negative quadrant, as the animation now does (batch 6, 11 Nov 2026). Done (Alex, 11 Nov 2026).
-- [x] Drawing pass on the Year 9 half-pipe and bungee Predicts (plain pictures; not in any animation batch). The other plain pages are in their batches: `gas-molecules.html` in batch 10, `chain-reaction.html` in batch 11. Done (Alex, 11 Nov 2026).
+- [x] Drawing pass on the Year 9 half-pipe and bungee Predicts (plain pictures; not in any animation batch). The other plain pages are in their batches: `gas-molecules.html` in batch 10, `chain-reaction.html` in batch 11. Done (Alex, 11 Nov 2026). The Year 9 page lost both on 26 Oct 2026, so the half-pipe was redrawn on 4a `energy-stores-efficiency.html`, Conservation (solid ramp and skater; motion and numbers unchanged). The bungee is an Order with no picture and was left as it is (Alex). 4a is back to 🔍 in `tools/REVIEW.md`.
 
 - [x] Move the open to-dos from the PPT-review project docs into this section (Alex, 3 Nov 2026). Done (Alex, 11 Nov 2026).
 - [x] 4 Energy, Lesson 2 Sankey slides (24–49): link the 4a workout Sankey tab's "Sankey diagrams to scale" explore (`energy-stores-efficiency.html#sankey`) on a Sankey teaching slide; the L2 To Do slide (47) already links the tab (review row E26, added 3 Nov 2026). Done (Alex, 11 Nov 2026).
