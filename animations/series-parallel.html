@@ -744,7 +744,7 @@ function expKey(x, y, upLabel, downLabel){
   // Play runs the current dots for at most 30 s, then pauses (nothing loops forever)
   var RUN_MAX=30, runFor=0;
   // ================= end of circuit helpers =================
-  // ---- circuit board kit (the same block is in series-parallel.html, iv-characteristics.html and potential-divider.html) ----
+  // ---- circuit board kit (the same block is in series-parallel.html, iv-characteristics.html, potential-divider.html, resistivity.html and internal-resistance.html) ----
   // One circuit drawn twice from the same data: built on the bench (seen from in front and above) and as the exam's circuit diagram.
   // It needs the solid kit, the instrument kit and the circuit helpers.
   // A circuit P = {cell:{x,y,h,kind}, nodes:{name:[x,y]}, edges:[…], vslots:[…], dots:[…]} in its own units (about 400 × 280).
@@ -882,7 +882,8 @@ function expKey(x, y, upLabel, downLabel){
     if(k==='therm') return kThermB(c[0],c[1],h,{L:L, bare:st.bareTherm});
     return kRes(c[0],c[1],h,{L:L}); }
   // current arrows along one edge or lead: forwards for a positive current
-  function kFlow(pts, I, d, gap, size){ if(!(Math.abs(I)>1e-7) || pts.length<2) return ''; return flowMarks(I<0?pts.slice().reverse():pts, Math.abs(d||0), gap, size); }
+  function kFlow(pts, I, d, gap, size){ if(!(Math.abs(I)>2e-5) || pts.length<2) return '';   // under 0.02 mA (a voltmeter in series, a by-passed part): no arrows
+    return flowMarks(I<0?pts.slice().reverse():pts, Math.abs(d||0), gap, size); }
   function kText(st,id){ var t=(st.text||{})[id]; return t==null ? '– – –' : t; }
 
   // ---- the circuit built on the bench
@@ -925,10 +926,10 @@ function expKey(x, y, upLabel, downLabel){
       else g+= h ? resH(c[0],c[1],L,16) : resV(c[0],c[1],16,L);
       if(st.name && e.at){ var nm=st.name(e); if(nm){ var lines=[].concat(nm), off=e.lab||(h?[0,-15,'middle']:[-15,4,'end']);
         lines.forEach(function(t,i){ g+=txt(c[0]+off[0], c[1]+(off[3]!=null?off[1]*T.sy+off[3]:off[1])+(h?-(lines.length-1-i)*14:(i-(lines.length-1)/2)*14), t, {a:off[2], fs:11.5, c:'var(--ink)'}); }); } } });
-    // the cell (or a battery of two): the long thin plate is +
+    // the cell (cell.n = 1, or a kind other than 'batt') or a battery of two: the long thin plate is +
     var rev=!!st.rev;
-    if(C.h){ if(C.kind==='batt') g+=rect(cc[0]-11,cc[1]-3,22,6,'var(--panel)')+cellH(cc[0]-8,cc[1],!rev)+wire([[cc[0]-4,cc[1]],[cc[0]+4,cc[1]]])+cellH(cc[0]+8,cc[1],!rev); else g+=cellH(cc[0],cc[1],!rev); }
-    else g+='<g'+(rev?' transform="rotate(180 '+f1(cc[0])+' '+f1(cc[1])+')"':'')+'>'+(C.kind==='batt' ? rect(cc[0]-3,cc[1]-11,6,22,'var(--panel)')+cellV(cc[0],cc[1]-8)+wire([[cc[0],cc[1]-4],[cc[0],cc[1]+4]])+cellV(cc[0],cc[1]+8) : cellV(cc[0],cc[1]))+'</g>';
+    if(C.h){ if(C.kind==='batt' && C.n!==1) g+=rect(cc[0]-11,cc[1]-3,22,6,'var(--panel)')+cellH(cc[0]-8,cc[1],!rev)+wire([[cc[0]-4,cc[1]],[cc[0]+4,cc[1]]])+cellH(cc[0]+8,cc[1],!rev); else g+=cellH(cc[0],cc[1],!rev); }
+    else g+='<g'+(rev?' transform="rotate(180 '+f1(cc[0])+' '+f1(cc[1])+')"':'')+'>'+(C.kind==='batt' && C.n!==1 ? rect(cc[0]-3,cc[1]-11,6,22,'var(--panel)')+cellV(cc[0],cc[1]-8)+wire([[cc[0],cc[1]-4],[cc[0],cc[1]+4]])+cellV(cc[0],cc[1]+8) : cellV(cc[0],cc[1]))+'</g>';
     (P.dots||[]).forEach(function(n){ var q=kMap(T,P.nodes[n]); g+=jdot(q[0],q[1]); });
     // the slots: a dashed ring where a meter could go, the meter's symbol where one is
     function slot(id, at, across){ var q=kMap(T,at), m=placed[id], what=across?'across '+(st.slotName?st.slotName(id):'a component'):'in series with '+(st.slotName?st.slotName(id):'the circuit');
@@ -970,7 +971,7 @@ function expKey(x, y, upLabel, downLabel){
     var ids=Object.keys(placed), aAcross=ids.filter(function(id){ return placed[id]==='A' && kVslot(P,id); }), vGap=ids.filter(function(id){ return placed[id]==='V' && kEdge(P,id); });
     if(S.short) return {ok:false, kind:'short', bad:[S.short], html:'<b>Short circuit.</b> The ammeter is connected straight across the supply. An ammeter has almost no resistance, so a very large current ('+fmt.A(kReading(P,S.short,S,'A'))+') takes this easy path and almost none flows through the rest of the circuit. The wires get hot: switch off. An ammeter always goes <b>in series</b>.'};
     var also = aAcross.length ? ' The ammeter is wrong too: it is in parallel with '+what(aAcross[0])+', and an ammeter goes <b>in series</b>.' : '';
-    if(vGap.length) return {ok:false, kind:'Vseries', bad:vGap.concat(aAcross), html:'The voltmeter is <b>in series</b>. A voltmeter has a very high resistance, so almost no current can flow'+(note.off||'')+'. It reads '+fmt.V(kReading(P,vGap[0],S,'V'))+': '+(note.vs||'nearly all of the supply’s '+(note.pd||'p.d.')+'.')+' A voltmeter goes <b>in parallel</b> with (across) the part it measures.'+also};
+    if(vGap.length) return {ok:false, kind:'Vseries', bad:vGap.concat(aAcross), html:'The voltmeter is <b>in series</b>. A voltmeter has a very high resistance, so almost no current can flow'+(note.off||'')+'. It reads '+fmt.V(kReading(P,vGap[0],S,'V'))+': '+(note.vs||'nearly all of the supply’s '+(note.pd||'p.d.').replace(/\.$/,'')+'.')+' A voltmeter goes <b>in parallel</b> with (across) the part it measures.'+also};
     if(aAcross.length) return {ok:false, kind:'Aacross', bad:aAcross, html:'The ammeter is <b>in parallel</b> with '+what(aAcross[0])+'. An ammeter has almost no resistance, so the current goes through the ammeter instead: '+what(aAcross[0])+' is by-passed (short-circuited)'+((note.lamp&&note.lamp(aAcross[0]))||'')+'. An ammeter goes <b>in series</b> with the part it measures.'};
     return null;
   }
