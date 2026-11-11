@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Charging by Friction Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Rub a polythene, acetate or metal rod with a cloth, then bring it near a hanging charged rod, small pieces of paper, a stream of water or a gold-leaf electroscope. Experiment mode: record what happens for every pair of rods and find the two types of charge.">
+<meta name="description" content="Interactive physics animation. Rub a polythene, acetate or metal rod with a cloth, then bring it near a hanging charged rod, small pieces of paper, a stream of water or a gold-leaf electroscope. Predict what happens on the picture, then try it. Experiment mode: record what happens for every pair of rods and find the two types of charge.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
     --metal:#8a939e; --metal-soft:#e3e7ec;
     --cloth:#e0b52e; --cloth-soft:#f8e7a8;
     --skin:#e9bd96; --water:#3b82f6; --water-soft:#dbeafe;
-    --glass:#94a3b8; --glass-soft:#eef2f7; --leaf:#c8a12a;
+    --glass:#94a3b8; --glass-soft:#eef2f7; --leaf:#c8a12a; --bench-t:#e3c08f; --bench-f:#c99e6a;
     --font-display:'Big Shoulders',system-ui,sans-serif;
     --font-body:'IBM Plex Sans',system-ui,sans-serif;
     --font-mono:'IBM Plex Mono',ui-monospace,monospace;
@@ -46,7 +46,7 @@
       --metal:#a3acb7; --metal-soft:#2c333d;
       --cloth:#e8c547; --cloth-soft:#4a3c12;
       --skin:#c99a74; --water:#60a5fa; --water-soft:#172a45;
-      --glass:#7d8aa0; --glass-soft:#1f2633; --leaf:#e8c547;
+      --glass:#7d8aa0; --glass-soft:#1f2633; --leaf:#e8c547; --bench-t:#a8855a; --bench-f:#8a6a43;
       color-scheme:dark;
     }
   }
@@ -65,7 +65,7 @@
     --metal:#a3acb7; --metal-soft:#2c333d;
     --cloth:#e8c547; --cloth-soft:#4a3c12;
     --skin:#c99a74; --water:#60a5fa; --water-soft:#172a45;
-    --glass:#7d8aa0; --glass-soft:#1f2633; --leaf:#e8c547;
+    --glass:#7d8aa0; --glass-soft:#1f2633; --leaf:#e8c547; --bench-t:#a8855a; --bench-f:#8a6a43;
     color-scheme:dark;
   }
 
@@ -113,6 +113,7 @@
   .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
   @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
   .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 300px));}
+  .view.tall,.embed .view.tall{max-height:none;}
   .view text{font-family:var(--font-mono);}
   .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
   .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
@@ -186,6 +187,13 @@
   .why li+li{margin-top:4px;}
   .done-list{font:12px var(--font-mono);color:var(--ink-soft);}
   .done-list b{color:var(--good);}
+  /* Predict: the arrows and the ring to click on the picture */
+  .pick{cursor:pointer;}
+  .pick:focus{outline:none;}
+  .pick .ring{stroke:transparent;}
+  .pick:focus-visible .ring{stroke:var(--accent);}
+  #ch-tab{align-self:flex-start;}
+  .choices[hidden]{display:none;}
   .rtable td:first-child,.rtable th:first-child,.rtable td:nth-child(2),.rtable th:nth-child(2){text-align:left;}
   .rtable td:last-child,.rtable th:last-child{text-align:left;}
 </style>
@@ -297,10 +305,11 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="ch-svg" viewBox="0 0 600 300" role="img" aria-label="Charging a rod by friction"></svg>
+      <svg class="view" id="ch-svg" viewBox="0 0 860 350" role="img" aria-label="Charging a rod by friction"></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="ch-play" type="button">&#9654; Rub and bring near</button>
+          <button class="btn" id="ch-next" type="button" hidden>Next question</button>
           <button class="btn" id="ch-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="ch-slow" type="button" aria-pressed="false">Slow motion</button>
           <button class="btn" id="ch-show" type="button" aria-pressed="true">Show charges</button>
@@ -310,7 +319,8 @@
       </div>
     </div>
     <div class="side">
-      <div class="choices">
+      <div class="seg tabs" id="ch-tab" role="group" aria-label="Explore or predict"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Predict</button></div>
+      <div class="choices" id="ch-choices">
         <div><span class="rowlab">Test with</span>
         <div class="seg four" id="ch-test"><button type="button" data-v="hang" aria-pressed="true">Hanging rod</button><button type="button" data-v="paper" aria-pressed="false">Paper bits</button><button type="button" data-v="water" aria-pressed="false">Water</button><button type="button" data-v="scope" aria-pressed="false">Electroscope</button></div></div>
         <div><span class="rowlab">In your hand</span>
@@ -500,6 +510,13 @@ function expKey(x, y, upLabel, downLabel){
   var hangSeg=segGroup($('#ch-hang'), function(){ reset(); });
   var scopeSeg=segGroup($('#ch-scope'), function(){ reset(); });
   var showBtn=$('#ch-show');
+  var tabSeg=segGroup($('#ch-tab'), function(){ setTab(); });
+  function onPick(el, fn){
+    el.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    el.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
   var showQ=location.search.match(/[?&]show=(hang|paper|water|scope)\b/);
   if(showQ) testSeg.pick(showQ[1]);
   function test(){ return testSeg.value(); }
@@ -507,7 +524,7 @@ function expKey(x, y, upLabel, downLabel){
   function hang(){ return hangSeg.value(); }
   function scope(){ return scopeSeg.value(); }
   function exp(){ return pressed(expBtn); }
-  function charges(){ return pressed(showBtn); }
+  function charges(){ return pressed(showBtn) && !hidden(); }
   function slowOn(){ return pressed(slowBtn); }
 
   var NAME={poly:'polythene', acet:'acetate', metal:'metal', none:'polythene (not rubbed)'};
@@ -554,7 +571,7 @@ function expKey(x, y, upLabel, downLabel){
   }
   function loop(){ stop(); last=performance.now(); raf=requestAnimationFrame(frame); }
   function start(){ run={t: rod()==='none' ? T_RUB+T_DOWN : 0, test:test(), rod:rod()}; loop(); draw(); }
-  function finish(){ run.over=true; if(exp()) record(); }
+  function finish(){ run.over=true; if(exp()) record(); if(predict()){ Q.ok = Q.pick===pickOf(outcome(run.test, run.rod), run.test); Q.tried++; if(Q.ok) Q.right++; } }
   function reset(){ stop(); run=null; draw(); }
   function setup(){
     var t=test();
@@ -575,42 +592,67 @@ function expKey(x, y, upLabel, downLabel){
     };
   }
 
-  // ---- drawing
-  var L=190, BENCH=286;
+  // ---- drawing. The scene keeps its own units (600 × 300); layout() places it in the wide picture (with the charge diagram
+  // beside it) or the tall one (with the charge diagram under it), and FS keeps its labels a readable size in both.
+  var L=190, BENCH=286, SC=1.16, TALL=false, FS=1;
   var START={x:260, y:226};
   var TARGET={hang:{x:394,y:236}, paper:{x:500,y:232}, water:{x:424,y:166}, scope:{x:440,y:70}};
-  function sign(x, y, q, extra){
+  svg.innerHTML='<g id="ch-live"></g><g id="ch-picks"></g>';
+  var live=$('#ch-live'), picksG=$('#ch-picks'), picksHtml=null;
+  function layout(){
+    var w=svg.getBoundingClientRect().width; TALL=w>0 && w<520;
+    var vb=TALL?'0 0 430 372':'0 0 860 350';
+    if(svg.getAttribute('viewBox')!==vb){ svg.setAttribute('viewBox',vb); svg.classList.toggle('tall',TALL); }
+    SC=TALL?430/600:1.16; FS=TALL?1.4:1;
+  }
+  function f1(n){ return (+n).toFixed(1); }
+  function lab(x,y,s,o){ o=o||{}; o.fs=(o.fs||11.5)*FS; return txt(x,y,s,o); }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(w)+'" height="'+f1(h)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a round rod: a darker edge, its own colour and a streak of light along it. c = [colour, edge]
+  function bar(x1,y1,x2,y2,w,c){
+    var d=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/d, ny=(x2-x1)/d; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,c[1],w,' stroke-linecap="round"')+ln(x1,y1,x2,y2,c[0],w-3.6,' stroke-linecap="round"')+
+      ln(x1+nx*w*0.2,y1+ny*w*0.2,x2+nx*w*0.2,y2+ny*w*0.2,'#fff',w*0.16,' stroke-linecap="round" opacity=".5"');
+  }
+  function sign(x, y, q){
     if(!q) return '';
     return txt(x, y+4.5, q<0 ? '−' : '+', {a:'middle', fs:15, w:600, c: q<0 ? 'var(--neg)' : 'var(--pos)'});
   }
   function rodColour(r){ return r==='acet' ? ['var(--acet-soft)','var(--acet)'] : r==='metal' ? ['var(--metal-soft)','var(--metal)'] : ['var(--poly-soft)','var(--poly)']; }
   function heldRod(tx, ty, r, nq){
-    var c=rodColour(r), g='';
-    g+='<rect x="'+(tx-L).toFixed(1)+'" y="'+(ty-6).toFixed(1)+'" width="'+L+'" height="12" rx="6" fill="'+c[0]+'" stroke="'+c[1]+'" stroke-width="2"/>';
-    // the hand round the far end
-    g+='<rect x="'+(tx-L-12).toFixed(1)+'" y="'+(ty-13).toFixed(1)+'" width="34" height="26" rx="11" fill="var(--skin)" stroke="var(--ink-soft)" stroke-width="1.2"/>';
-    g+=ln(tx-L-2, ty-6, tx-L+16, ty-6, 'var(--ink-soft)', 1)+ln(tx-L-2, ty, tx-L+16, ty, 'var(--ink-soft)', 1)+ln(tx-L-2, ty+6, tx-L+16, ty+6, 'var(--ink-soft)', 1);
-    if(charges() && nq){ var q=nq<0?-1:1; for(var i=0;i<Math.abs(nq);i++) g+=sign(tx-12-i*15, ty, q); }
+    var c=rodColour(r), g='', hx=tx-L-12;
+    g+=bar(tx-L+8, ty, tx-7, ty, 14, c);
+    // the hand that grips its far end: sleeve, cuff, fist, fingers and thumb
+    g+=rect(hx-40,ty-13,36,26,'var(--poly)',' rx="5"')+rect(hx-40,ty-11,36,5,'#fff',' rx="2.5" opacity=".18"')+rect(hx-9,ty-14,8,28,'var(--panel)',' rx="3" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=rect(hx-2,ty-15,38,30,'var(--skin)',' rx="12" stroke="var(--ink-soft)" stroke-width="1.1"')+rect(hx,ty+4,34,9,'#000',' rx="5" opacity=".1"');
+    [0,1,2].forEach(function(i){ g+='<path d="M'+f1(hx+9+i*8)+','+f1(ty-14)+' q3,9 0,17" fill="none" stroke="var(--ink-soft)" stroke-width="1" opacity=".7"/>'; });
+    g+=ell(hx+15,ty+8,11,5,'var(--skin)',' stroke="var(--ink-soft)" stroke-width="1"')+ell(hx+11,ty-9,8,2.4,'#fff',' opacity=".3"');
+    if(charges() && nq){ var q=nq<0?-1:1; for(var i=0;i<Math.abs(nq);i++) g+=sign(tx-14-i*15, ty, q); }
     return g;
   }
   function cloth(cx, cy, w, h, nq){
-    var g='<rect x="'+(cx-w/2).toFixed(1)+'" y="'+(cy-h/2).toFixed(1)+'" width="'+w+'" height="'+h+'" rx="6" fill="var(--cloth-soft)" stroke="var(--cloth)" stroke-width="2"/>';
-    g+='<path d="M'+(cx-w/2+6).toFixed(1)+','+(cy+h/2-4).toFixed(1)+' l6,-5 l6,5 l6,-5 l6,5" fill="none" stroke="var(--cloth)" stroke-width="1"/>';
+    var x=cx-w/2, y=cy-h/2, g='';
+    g+=ell(cx+3,y+h+1.5,w/2,3,'#000',' opacity=".1"');
+    g+='<path d="M'+f1(x)+','+f1(y+3)+' q'+f1(w/4)+',-6 '+f1(w/2)+',-2 t'+f1(w/2)+',1 l2,'+f1(h-5)+' q'+f1(-w/4)+',5 '+f1(-w/2-1)+',1 t'+f1(-w/2-1)+',1 z" fill="var(--cloth-soft)" stroke="var(--cloth)" stroke-width="1.6" stroke-linejoin="round"/>';
+    g+='<path d="M'+f1(x+w*0.3)+','+f1(y+1)+' q5,'+f1(h/2)+' -2,'+f1(h-3)+' M'+f1(x+w*0.68)+','+f1(y+1)+' q-4,'+f1(h/2)+' 3,'+f1(h-3)+'" fill="none" stroke="var(--cloth)" stroke-width="1" opacity=".55"/>';
     if(charges() && nq){ var q=nq<0?-1:1, n=Math.abs(nq), cols=Math.min(n,4); for(var i=0;i<n;i++){ var row=Math.floor(i/cols), col=i%cols; g+=sign(cx-(cols-1)*7+col*14, cy-6+row*12+(n>cols?0:6), q); } }
     return g;
   }
 
-  function drawHang(p, near){
+  function drawHang(p){
     var px=440, py=148, half=96, o=run && run.test==='hang' ? outcome('hang', run.rod) : 0;
     var a = o*16*p.resp*Math.PI/180;   // turns about the thread
     var dx=Math.sin(a)*half, dy=Math.cos(a)*half, c=rodColour(hang()), g='';
-    g+=txt(px, 30, 'hanging rod, seen from above', {a:'middle', fs:12, c:'var(--ink-faint)'});
-    g+='<line x1="'+(px+dx).toFixed(1)+'" y1="'+(py-dy).toFixed(1)+'" x2="'+(px-dx).toFixed(1)+'" y2="'+(py+dy).toFixed(1)+'" stroke="'+c[1]+'" stroke-width="15" stroke-linecap="round"/>';
-    g+='<line x1="'+(px+dx).toFixed(1)+'" y1="'+(py-dy).toFixed(1)+'" x2="'+(px-dx).toFixed(1)+'" y2="'+(py+dy).toFixed(1)+'" stroke="'+c[0]+'" stroke-width="11" stroke-linecap="round"/>';
-    // paper stirrup and thread (from above, the thread is a dot)
+    g+=lab(300, 30, 'hanging rod, seen from above', {c:'var(--ink-faint)'});
+    // the clamp stand it hangs from: its base, and the arm that reaches over the rod (the thread hangs from the end of the arm)
+    g+=ell(px+122,py+22,24,4,'#000',' opacity=".1"')+rect(px+100,py-20,40,40,'var(--metal)',' rx="4"')+rect(px+102,py-18,36,8,'#fff',' rx="3" opacity=".25"')+'<circle cx="'+(px+120)+'" cy="'+py+'" r="6" fill="var(--metal-soft)" stroke="var(--ink-soft)" stroke-width="1"/>';
+    // the rod's shadow on the bench below it, then the rod in its paper stirrup
+    g+=ln(px+dx+7,py-dy+9,px-dx+7,py+dy+9,'#000',15,' stroke-linecap="round" opacity=".08"');
+    g+=bar(px+dx,py-dy,px-dx,py+dy,15,c);
     g+='<rect x="'+(px-11)+'" y="'+(py-7)+'" width="22" height="14" rx="2" fill="var(--panel)" stroke="var(--ink-faint)" stroke-width="1.2" transform="rotate('+(-a*180/Math.PI).toFixed(1)+' '+px+' '+py+')"/>';
-    g+='<circle cx="'+px+'" cy="'+py+'" r="3" fill="var(--ink)"/>';
-    g+=txt(px+16, py-12, 'thread', {fs:11, c:'var(--ink-faint)'});
+    g+=bar(px+3,py,px+116,py,5,['var(--metal-soft)','var(--metal)'])+'<circle cx="'+px+'" cy="'+py+'" r="3" fill="var(--ink)"/>';
+    g+=lab(px+18, py-10, 'thread', {c:'var(--ink-faint)'})+lab(px+120, py+40, 'stand', {a:'middle', c:'var(--ink-faint)'});
     if(charges()){
       var q=qHang();
       for(var i=-3;i<=3;i++){ if(i===0) continue; var f=i/3.6; g+=sign(px-dx*f, py+dy*f, q); }
@@ -625,51 +667,100 @@ function expKey(x, y, upLabel, downLabel){
       var y0=BENCH-4, y1=tip.y+8+(i%3)*2;
       var y=y0+(y1-y0)*lift, rot=(i*37)%30-15;
       if(x>tip.x-2) { y=y0; }
+      g+=ell(x+1,BENCH-0.5,5,1.4,'#000',' opacity="'+(0.14*(1-lift*0.6)).toFixed(2)+'"');
       g+='<rect x="'+(x-4)+'" y="'+(y-2.5).toFixed(1)+'" width="8" height="5" fill="var(--panel)" stroke="var(--ink-soft)" stroke-width="1" transform="rotate('+rot+' '+x+' '+y.toFixed(1)+')"/>';
     });
-    g+=txt(430, BENCH+12, 'small pieces of paper', {a:'middle', fs:11.5, c:'var(--ink-faint)'});
+    g+=lab(430, 30, 'small pieces of paper on the bench', {a:'middle', c:'var(--ink-faint)'});
     return g;
   }
   function drawWater(p){
-    var g='', o=run && run.test==='water' ? outcome('water', run.rod) : 0, X=456;
-    // tap and beaker
-    g+='<rect x="'+(X-34)+'" y="14" width="44" height="12" rx="3" fill="var(--metal-soft)" stroke="var(--metal)" stroke-width="1.5"/>';
-    g+='<rect x="'+(X-5)+'" y="22" width="10" height="20" rx="2" fill="var(--metal-soft)" stroke="var(--metal)" stroke-width="1.5"/>';
-    g+='<path d="M'+(X-36)+','+(BENCH-46)+' V'+BENCH+' H'+(X+36)+' V'+(BENCH-46)+'" fill="var(--water-soft)" stroke="var(--glass)" stroke-width="1.5"/>';
+    var g='', o=run && run.test==='water' ? outcome('water', run.rod) : 0, X=456, M=['var(--metal-soft)','var(--metal)'];
+    // the tap, and a beaker on the bench to catch the water
+    g+=bar(X-40,20,X+2,20,13,M)+bar(X,22,X,38,11,M)+rect(X-22,8,10,6,'var(--metal)',' rx="2"')+rect(X-30,4,26,5,'var(--metal)',' rx="2.5"');
+    g+=ell(X+3,BENCH+1,40,3.5,'#000',' opacity=".1"');
+    g+='<path d="M'+(X-33)+','+(BENCH-30)+' V'+(BENCH-3)+' q0,3 3,3 H'+(X+30)+' q3,0 3,-3 V'+(BENCH-30)+' z" fill="var(--water)" opacity=".3"/>';
+    g+='<path d="M'+(X-36)+','+(BENCH-50)+' V'+(BENCH-3)+' q0,3 3,3 H'+(X+33)+' q3,0 3,-3 V'+(BENCH-50)+'" fill="none" stroke="var(--glass)" stroke-width="2.2" stroke-linejoin="round"/>'+ln(X-30,BENCH-44,X-30,BENCH-10,'#fff',2.2,' stroke-linecap="round" opacity=".6"');
     var B=18*o*p.resp, pts=[];
     for(var y=42;y<=BENCH-30;y+=4){ var s=ease((y-110)/90); pts.push((X-B*s).toFixed(1)+','+y); }
-    g+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--water)" stroke-width="4" stroke-linecap="round" opacity="0.85"/>';
-    g+=txt(X+44, 80, 'thin stream of water', {fs:11.5, c:'var(--ink-faint)'});
+    g+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--water)" stroke-width="4.4" stroke-linecap="round" opacity="0.85"/><polyline points="'+pts.join(' ')+'" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity="0.55" transform="translate(-0.8,0)"/>';
+    g+=lab(596, 96, 'thin stream', {a:'end', c:'var(--ink-faint)'})+lab(596, 96+14*FS, 'of water', {a:'end', c:'var(--ink-faint)'});
     if(charges() && o && p.app>0.95){ var q=-qRod(run.rod); [140,158,176].forEach(function(y){ g+=sign(X-B*ease((y-110)/90)-10, y, q); }); }
     return g;
   }
   function drawScope(p){
-    var g='', o=run && run.test==='scope' ? outcome('scope', run.rod) : 0, cx=450, base=scope()==='neg';
+    var g='', o=run && run.test==='scope' ? outcome('scope', run.rod) : 0, cx=450, base=scope()==='neg', M=['var(--metal-soft)','var(--metal)'];
     var a0 = base ? 28 : 0, a1 = o===2 ? 52 : o===-2 ? 6 : o ? 36 : a0, a=(a0+(a1-a0)*p.resp)*Math.PI/180;
-    // glass case on the bench, metal stem, cap and leaf
-    g+='<rect x="'+(cx-52)+'" y="152" width="104" height="'+(BENCH-152)+'" rx="10" fill="var(--glass-soft)" stroke="var(--glass)" stroke-width="2"/>';
-    g+='<rect x="'+(cx-10)+'" y="144" width="20" height="12" rx="2" fill="var(--ink-faint)"/>';
-    g+=ln(cx, 110, cx, 236, 'var(--metal)', 4);
-    g+='<ellipse cx="'+cx+'" cy="108" rx="26" ry="5" fill="var(--metal-soft)" stroke="var(--metal)" stroke-width="2"/>';
+    // the case with its glass front, standing on the bench; an insulating collar; the metal stem, cap, plate and gold leaf
+    g+=ell(cx+4,BENCH+1,60,4,'#000',' opacity=".1"')+rect(cx-56,150,112,BENCH-150,'var(--metal)',' rx="9"')+rect(cx-54,152,108,7,'#fff',' rx="3.5" opacity=".22"');
+    g+=rect(cx-46,160,92,BENCH-170,'var(--glass-soft)',' rx="5" stroke="var(--glass)" stroke-width="1.4"')+'<path d="M'+(cx-38)+','+(BENCH-22)+' L'+(cx-14)+',168 M'+(cx-28)+','+(BENCH-18)+' L'+(cx-8)+',176" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".5"/>';
+    g+=rect(cx-11,142,22,16,'var(--ink-soft)',' rx="3"')+rect(cx-9,144,18,4,'#fff',' rx="2" opacity=".2"');
+    g+=bar(cx,112,cx,236,5.5,M);
+    g+=ell(cx,111,27,5.5,'var(--metal)')+rect(cx-27,106,54,5,'var(--metal)')+ell(cx,106,27,5.5,'var(--metal-soft)',' stroke="var(--metal)" stroke-width="1.6"');
     var hx=cx+2, hy=196, lx=hx+Math.sin(a)*44, ly=hy+Math.cos(a)*44;
-    g+='<line x1="'+hx+'" y1="'+hy+'" x2="'+lx.toFixed(1)+'" y2="'+ly.toFixed(1)+'" stroke="var(--leaf)" stroke-width="3.5" stroke-linecap="round"/>';
-    g+=txt(cx+60, 214, 'gold leaf', {fs:11.5, c:'var(--ink-faint)'});
-    g+=txt(cx+30, 104, 'cap', {fs:11.5, c:'var(--ink-faint)'});
+    g+='<line x1="'+hx+'" y1="'+hy+'" x2="'+lx.toFixed(1)+'" y2="'+ly.toFixed(1)+'" stroke="var(--leaf)" stroke-width="3.6" stroke-linecap="round"/><line x1="'+hx+'" y1="'+hy+'" x2="'+lx.toFixed(1)+'" y2="'+ly.toFixed(1)+'" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity=".5"/>';
+    g+=lab(cx+62, 214, 'gold leaf', {c:'var(--ink-faint)'})+ln(cx+60,210,lx+5,ly-6,'var(--ink-faint)',1);
+    g+=lab(cx+34, 102, 'cap', {c:'var(--ink-faint)'});
     if(charges()){
       var near = run && run.test==='scope' && p.app>0.95 ? qRod(run.rod) : 0;
       var stemQ = base ? -1 : 0;
       // induced charge: the cap gets the opposite charge to the rod, the stem and leaf the same as the rod
       var capQ = near ? -near : stemQ, lowQ = near ? (base ? (near<0 ? -1 : 0) : near) : stemQ;
-      if(capQ) g+=sign(cx-12, 100, capQ)+sign(cx+12, 100, capQ);
-      if(lowQ){ g+=sign(cx-11, 226, lowQ); g+=sign((hx+lx)/2+9, (hy+ly)/2+2, lowQ); }
+      if(capQ) g+=sign(cx-12, 96, capQ)+sign(cx+12, 96, capQ);
+      if(lowQ){ g+=sign(cx-13, 226, lowQ); g+=sign((hx+lx)/2+10, (hy+ly)/2+2, lowQ); }
     }
+    return g;
+  }
+  // ---- the charge diagram, as an exam draws it: the rod and the cloth, flat, with their charges and the way the electrons moved
+  function chargeDiagram(r, rodQ, clothQ){
+    var x=TALL?12:712, y=TALL?232:24, g='', c=rodColour(r), show=charges(), i, n;
+    g+=txt(x, y, 'Charge diagram', {fs:12, c:'var(--ink-soft)'});
+    g+=rect(x,y+12,136,22,c[0],' rx="11" stroke="'+c[1]+'" stroke-width="1.6"')+txt(x+68,y+49,r==='none'?'polythene rod':NAME[r]+' rod',{a:'middle',fs:11.5,c:'var(--ink-soft)'});
+    var cx=TALL?x+190:x+28, cy=TALL?y+8:y+84;
+    g+=rect(cx,cy,80,40,'var(--cloth-soft)',' rx="6" stroke="var(--cloth)" stroke-width="1.6"')+txt(cx+40,cy+55,'cloth',{a:'middle',fs:11.5,c:'var(--ink-soft)'});
+    if(hidden()){ g+=txt(x+68,y+28,'?',{a:'middle',fs:14,w:600,c:'var(--ink-faint)'})+txt(cx+40,cy+25,'?',{a:'middle',fs:14,w:600,c:'var(--ink-faint)'}); return g; }
+    if(show){
+      n=Math.abs(rodQ); for(i=0;i<n;i++) g+=sign(x+68+(i-(n-1)/2)*20, y+23, rodQ<0?-1:1);
+      n=Math.abs(clothQ); for(i=0;i<n;i++) g+=sign(cx+18+(i%3)*22, cy+13+Math.floor(i/3)*16, clothQ<0?-1:1);
+    }
+    // which way the electrons went
+    var movedAny=Math.abs(rodQ)+Math.abs(clothQ)>0, note = r==='none' ? 'not rubbed: no charge' : !movedAny ? '' : r==='poly' ? 'electrons: cloth → rod' : r==='acet' ? 'electrons: rod → cloth' : 'electrons: cloth → rod → earth';
+    if(note && show) wrapWords(note, TALL?16:20).forEach(function(t,k){ g+=txt(TALL?x+290:x+68, (TALL?y+26:cy+74)+k*14, t, {a:TALL?'start':'middle', fs:11.5, c:'var(--neg)'}); });
+    return g;
+  }
+  function wrapWords(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+
+  // ---- Predict: the things to click on the picture (dashed arrows and a ring), in the scene's own units
+  var PICKS={
+    hang:[{v:1, a:[430,264,396,264], say:'turns towards the rod in your hand'}, {v:-1, a:[452,256,488,256], say:'turns away from the rod in your hand'}, {v:0, ring:[440,244,15], say:'does not move'}],
+    paper:[{v:1, a:[430,270,430,240], say:'the paper jumps up to the rod'}, {v:-1, a:[366,276,332,276], say:'the paper is pushed away'}, {v:0, ring:[462,277,13], say:'the paper does not move'}],
+    water:[{v:1, a:[446,200,414,200], say:'the stream bends towards the rod'}, {v:-1, a:[466,200,498,200], say:'the stream bends away from the rod'}, {v:0, ring:[456,232,13], say:'the stream falls straight down'}],
+    scope:[{v:1, a:[478,232,496,206], say:'the leaf rises'}, {v:-1, a:[476,248,458,254], say:'the leaf falls'}, {v:0, ring:[424,222,13], say:'the leaf does not move'}]
+  };
+  function pickOf(o, t){ return t==='scope' ? (o>0 ? 1 : o<0 ? -1 : 0) : o; }   // the pick that matches an outcome
+  function picksHtmlFor(){
+    if(!predict()) return '';
+    var t=test(), over=run && run.over, right=pickOf(outcome(t, rod()), t), g='';
+    PICKS[t].forEach(function(k){
+      if(t==='scope' && scope()!=='neg' && k.v===-1) return;   // an uncharged leaf cannot fall
+      var sel=Q.pick===k.v, col = over ? (k.v===right ? 'var(--good)' : sel ? 'var(--bad)' : 'var(--ink-faint)') : sel ? 'var(--topic)' : 'var(--ink-soft)';
+      var solid=sel || (over && k.v===right), w=solid?3.2:2.2, dash=solid?'':' stroke-dasharray="5 4"', mx, my;
+      g+='<g class="pick" data-pick="'+k.v+'" tabindex="0" role="button" aria-pressed="'+sel+'" aria-label="Predict: '+k.say+'">';
+      if(k.a){ var a=k.a, ang=Math.atan2(a[3]-a[1],a[2]-a[0]), s=7, bx=a[2]-Math.cos(ang)*s*1.4, by=a[3]-Math.sin(ang)*s*1.4; mx=(a[0]+a[2])/2; my=(a[1]+a[3])/2;
+        g+='<circle class="ring" cx="'+f1(mx)+'" cy="'+f1(my)+'" r="24" fill="transparent" stroke-width="2.5"/>'+ln(a[0],a[1],bx,by,col,w,dash+' stroke-linecap="round"')+
+          '<path d="M'+f1(a[2])+','+f1(a[3])+' L'+f1(bx-Math.sin(ang)*s)+','+f1(by+Math.cos(ang)*s)+' L'+f1(bx+Math.sin(ang)*s)+','+f1(by-Math.cos(ang)*s)+' z" fill="'+col+'"/>'; }
+      else { mx=k.ring[0]; my=k.ring[1]; g+='<circle class="ring" cx="'+mx+'" cy="'+my+'" r="'+(k.ring[2]+7)+'" fill="transparent" stroke-width="2.5"/><circle cx="'+mx+'" cy="'+my+'" r="'+k.ring[2]+'" fill="none" stroke="'+col+'" stroke-width="'+w+'"'+dash+'/>'; }
+      if(over && (k.v===right || sel)) g+=txt(mx+(k.a?0:k.ring[2]+10), my-(k.a?12:-5), k.v===right?'✓':'✗', {a:'middle', fs:17, w:700, c:k.v===right?'var(--good)':'var(--bad)'});
+      g+='</g>';
+    });
     return g;
   }
 
   function draw(){
+    layout();
     var p=phase(), t=test(), r=run ? run.rod : rod(), g='';
-    // bench (the hanging rod is seen from above, the other tests from the side)
-    g+='<rect x="0" y="'+BENCH+'" width="600" height="14" fill="var(--bg)"/>'+ln(0, BENCH, 600, BENCH, 'var(--ink-faint)', 2);
+    // the bench (the hanging rod is seen from above, so there the bench is the surface under it; the other tests are seen from the side)
+    if(t==='hang') g+=rect(0,BENCH,600,14,'var(--bg)')+ln(0, BENCH, 600, BENCH, 'var(--ink-faint)', 2);
+    else g+=rect(0,BENCH,600,5,'var(--bench-t)')+rect(0,BENCH+5,600,9,'var(--bench-f)');
     g+= t==='hang' ? drawHang(p) : t==='paper' ? drawPaper(p) : t==='water' ? drawWater(p) : drawScope(p);
     // how much charge has moved so far (6 electrons in the picture)
     var moved = r==='none' ? 0 : Math.round(6*p.rub);
@@ -678,11 +769,11 @@ function expKey(x, y, upLabel, downLabel){
     // the cloth: wrapped round the rubbed end while rubbing, then put down on the bench
     var tp=TARGET[t], tx=START.x+(tp.x-START.x)*p.app, ty=START.y+(tp.y-START.y)*p.app;
     g+=heldRod(tx, ty, r, rodQ);
-    if(r==='metal' && run && p.rub>0 && p.down<1){
+    if(r==='metal' && run && p.rub>0 && p.down<1 && !hidden()){
       // electrons that reach the metal flow on through it, the hand and the body to earth
       var k=(run.t*2.2)%1;
       for(var j=0;j<3;j++){ var f=(k+j/3)%1; g+='<circle cx="'+(tx-40-f*(L-40)).toFixed(1)+'" cy="'+ty+'" r="3.2" fill="var(--neg)"/>'; }
-      g+=txt(START.x-L-14, START.y+30, 'electrons flow through your hand to earth', {fs:11.5, c:'var(--neg)'});
+      g+=lab(START.x-L-14, START.y+32, 'electrons flow through your hand to earth', {c:'var(--neg)'});
     }
     var cw=62, ch=34;
     var cx0=START.x-44+(p.rubbing ? 26*Math.sin(run.t/T_RUB*4*2*Math.PI) : 0), cy0=START.y;
@@ -693,11 +784,41 @@ function expKey(x, y, upLabel, downLabel){
       else if(run) g+=cloth(cx0, cy0, cw, ch, clothQ);
       else g+=cloth(cx1, cy1, cw+10, ch-12, 0);
     }
-    g+=txt(cx1, BENCH+12, 'dry cloth', {a:'middle', fs:11.5, c:'var(--ink-faint)'});
-    if(run && !run.over && slowOn()) g+=txt(596, 16, 'slow motion', {a:'end', fs:12, c:'var(--accent)'});
-    svg.innerHTML=g;
+    g+=lab(cx1+50, BENCH-7, 'dry cloth', {c:'var(--ink-faint)'});
+    if(run && !run.over && slowOn()) g+=lab(8, 16, 'slow motion', {fs:12, c:'var(--accent)'});
+    var out='<g transform="scale('+SC.toFixed(4)+')">'+g+'</g>'+chargeDiagram(r, rodQ, clothQ);
+    // Predict: the question and the verdict, written beside the picture
+    if(predict()){ var qx=TALL?12:712, qy=TALL?320:216, lines=wrapWords('Question '+Q.n+'. '+qShort(), TALL?56:20);
+      lines.forEach(function(s,i){ out+=txt(qx, qy+i*14, s, {fs:12, c:'var(--ink)'}); });
+      if(run && run.over) out+=txt(qx, qy+lines.length*14+4, Q.ok ? '✓ Correct' : '✗ Not this time', {fs:12.5, w:600, c:Q.ok?'var(--good)':'var(--bad)'}); }
+    live.innerHTML=out;
+    var ph=picksHtmlFor(); picksG.setAttribute('transform','scale('+SC.toFixed(4)+')');
+    if(ph!==picksHtml){ setKeepFocus(picksG, ph); picksHtml=ph; }
     readings();
   }
+
+  // ---- Predict: a question is dealt, the student clicks an arrow or the ring on the picture, then presses Rub and bring near
+  var QS=[{t:'hang',r:'poly',h:'poly'}, {t:'hang',r:'acet',h:'poly'}, {t:'paper',r:'poly'}, {t:'scope',r:'acet',s:'neg'}, {t:'hang',r:'metal',h:'acet'},
+          {t:'water',r:'acet'}, {t:'scope',r:'poly',s:'neutral'}, {t:'hang',r:'acet',h:'acet'}, {t:'scope',r:'poly',s:'neg'}, {t:'hang',r:'none',h:'poly'}, {t:'paper',r:'metal'}];
+  var Q={i:-1, n:0, pick:null, ok:null, tried:0, right:0};
+  function predict(){ return tabSeg.value()==='predict'; }
+  function hidden(){ return predict() && !(run && run.over); }   // nothing gives the answer away before the run is over
+  function rodWords(){ var r=rod(); return r==='none' ? 'A polythene rod that has not been rubbed' : r==='metal' ? 'A metal rod, held in the hand and rubbed with a dry cloth,' : 'A'+(r==='acet'?'n ':' ')+NAME[r]+' rod, rubbed with a dry cloth,'; }
+  function nearWords(){ var t=test(); return t==='hang' ? 'a hanging '+NAME[hang()]+' rod that has been rubbed' : t==='paper' ? 'small pieces of paper' : t==='water' ? 'a thin stream of water' : scope()==='neg' ? 'the cap of an electroscope that has a negative charge' : 'the cap of an uncharged electroscope'; }
+  function askWords(){ var t=test(); return t==='hang' ? 'Which way does the hanging rod turn?' : t==='paper' ? 'What do the pieces of paper do?' : t==='water' ? 'What does the stream do?' : 'What does the gold leaf do?'; }
+  function qShort(){ var r=rod(), t=test(); return (r==='none' ? 'Unrubbed polythene' : 'Rubbed '+NAME[r])+' near '+(t==='hang' ? 'a rubbed '+NAME[hang()]+' rod' : t==='paper' ? 'paper' : t==='water' ? 'water' : scope()==='neg' ? 'a negative electroscope' : 'an uncharged electroscope')+'. '+askWords(); }
+  function deal(){
+    Q.i=(Q.i+1)%QS.length; Q.n++; var q=QS[Q.i]; Q.pick=null; Q.ok=null;
+    testSeg.pick(q.t); rodSeg.pick(q.r); if(q.h) hangSeg.pick(q.h); if(q.s) scopeSeg.pick(q.s);
+    setup();
+  }
+  function setTab(){
+    var P=predict();
+    if(P && exp()){ expBtn.setAttribute('aria-pressed','false'); $('#ch-expbox').hidden=true; $('#ch-clear').hidden=true; showBtn.setAttribute('aria-pressed','true'); }
+    $('#ch-choices').hidden=P; expBtn.hidden=P; $('#ch-next').hidden=!P; $('#ch-stats').hidden=P || exp();
+    if(P){ Q.i=-1; Q.n=0; Q.tried=0; Q.right=0; deal(); } else { picksHtml=null; reset(); }
+  }
+  onPick(svg, function(v){ if(!predict() || run) return; Q.pick=+v; draw(); });
 
   // ---- Experiment mode: every pair recorded once (the latest observation replaces an earlier one)
   var recs=[], newest=null;
@@ -733,7 +854,16 @@ function expKey(x, y, upLabel, downLabel){
     else if(t==='paper' || t==='water') why.push(o ? 'The charged rod attracts the opposite charge to the near side of the '+(t==='paper'?'paper':'water')+' (an induced charge). Unlike charges attract, so the '+(t==='paper'?'pieces jump up':'stream bends towards the rod')+'. This works for either type of charge, so it shows the rod is charged, but not which type.' : 'No charge on the rod, so nothing is attracted.');
     else why.push(scope()==='neg' ? 'The electroscope already has a negative charge, so its leaf and stem repel. A negative rod pushes more electrons down to the leaf: it rises further. A positive rod pulls electrons up to the cap: the leaf falls. So this shows which type of charge the rod has.' : (o ? 'The rod pushes or pulls electrons in the metal, so the leaf and stem get the same charge as each other. Like charges repel, so the leaf rises, whichever type of charge the rod has.' : 'No charge on the rod, so the leaf does not move.'));
 
-    if(!E){
+    var PR=predict();
+    if(PR){
+      if(busy) note = p.rubbing ? 'Rubbing the rod with the dry cloth.' : p.app<1 ? 'Bringing the rod close, without touching.' : 'Watch what happens.';
+      else if(doneNow) note=(Q.ok?'✓ <b>Correct.</b> ':'✗ <b>Not this time.</b> ')+'The '+(t==='hang' ? 'hanging rod '+seen(t, run.rod) : t==='paper' ? 'pieces of paper '+(o?'jump up to the rod':'do not move') : t==='water' ? 'stream '+seen(t, run.rod) : seen(t, run.rod).replace(/^leaf/,'gold leaf').replace(/^no change/,'gold leaf does not move'))+'. '+why[why.length-1]+' ('+Q.right+' of '+Q.tried+' right so far.) Press <b>Next question</b>.';
+      else note='<b>Question '+Q.n+'.</b> '+rodWords()+' is brought near '+nearWords()+'. '+askWords()+' Click an arrow on the picture (or the ring, for no movement), then press <b>'+(r==='none'?'Bring near':'Rub and bring near')+'</b>.';
+      $('#ch-explain').hidden=!doneNow; $('#ch-stats').hidden=!doneNow;
+      $('#ch-s1').textContent = doneNow ? qTxt(qRod(run.rod)) : '–';
+      $('#ch-s2').textContent = doneNow && run.rod!=='none' ? qTxt(qCloth(run.rod)) : '–';
+      $('#ch-s3').textContent = doneNow ? forceTxt(o) : '–';
+    } else if(!E){
       if(busy){
         if(p.rubbing) note = r==='metal' ? 'Rubbing the metal rod with the cloth. Electrons move onto it, but flow away through your hand.' : 'Rubbing the '+NAME[r]+' rod with the dry cloth: electrons move '+(r==='poly' ? 'from the cloth onto the rod.' : 'from the rod onto the cloth.');
         else if(p.app<1) note='Bring the rod close to the '+(t==='hang' ? 'end of the hanging rod' : t==='paper' ? 'pieces of paper' : t==='water' ? 'stream of water' : 'cap of the electroscope')+', without touching it.';
@@ -767,7 +897,7 @@ function expKey(x, y, upLabel, downLabel){
     $('#ch-note').innerHTML=note;
     $('#ch-why').innerHTML=why.map(function(w){ return '<li>'+w+'</li>'; }).join('');
     playBtn.innerHTML = busy && !E ? (run.paused ? '&#9654; Carry on' : '&#10074;&#10074; Pause') : '&#9654; '+(rod()==='none' ? 'Bring near' : 'Rub and bring near');
-    playBtn.disabled = !!busy && E;
+    playBtn.disabled = (!!busy && E) || (PR && !busy && (Q.pick===null || !!doneNow));
     $('#ch-clear').disabled=!!busy;
     [$('#ch-test'),$('#ch-rod'),$('#ch-hang'),$('#ch-scope')].forEach(function(el){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(b){ b.disabled=!!busy; }); });
     svg.setAttribute('aria-label', 'A '+NAME[rod()]+' rod held in a hand'+(rod()==='none'?'':', rubbed with a dry cloth')+', brought near '+(t==='hang' ? 'a hanging rubbed '+NAME[hang()]+' rod' : t==='paper' ? 'small pieces of paper' : t==='water' ? 'a thin stream of water' : 'the cap of a gold-leaf electroscope')+(doneNow ? '. Result: '+seen(t, run.rod)+'.' : '.'));
@@ -782,7 +912,10 @@ function expKey(x, y, upLabel, downLabel){
   showBtn.addEventListener('click', function(){ showBtn.setAttribute('aria-pressed', String(!charges())); draw(); });
   $('#ch-reset').addEventListener('click', reset);
   $('#ch-clear').addEventListener('click', clearReadings);
-  setup();
+  $('#ch-next').addEventListener('click', deal);
+  if(/[?&]show=predict\b/.test(location.search)){ tabSeg.pick('predict'); setTab(); } else setup();
+  // redraw when the picture changes between its wide and its tall shape
+  if(window.ResizeObserver) new ResizeObserver(function(){ var w=svg.getBoundingClientRect().width; if((w>0 && w<520)!==TALL) draw(); }).observe(svg);
 })();
 </script>
 <footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
