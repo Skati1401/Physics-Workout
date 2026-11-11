@@ -1,17 +1,35 @@
 /* ================= 1. OVERVIEW ================= */
 {
-  const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'Put a bar magnet in the middle of a sheet of paper and draw round it. Place a small ',['b1','plotting compass'],' next to the north pole. Mark a dot where the ',['b2','north'],
-    ' end of the needle points, then move the compass on so the tail of the needle is at that dot. Repeat until you reach the ',['b3','south'],' pole or the edge of the paper, then join the dots to form a ',
-    ['b4','field line'],'. Add an arrow from N to S, and draw several more lines from other starting points (or use many compasses at once). Field lines never cross. The lines are closest together at the ',['b5','poles'],', where the field is ',['b6','strongest'],
-    '. Between two north poles facing each other the lines curve away from each other, and halfway there is a ',['b7','neutral point'],', where the field is zero. Opposite poles facing each other, close together but not touching, give a ',['b8','uniform'],
-    ' field: straight, parallel, evenly spaced lines. Iron filings sprinkled on a card over the magnet show the shape of the field when the card is tapped, but only a plotting compass shows its ',['b9','direction'],'.'
+  const body=act('overview','Fill in the blanks','The method and what you find','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
+  // Bullet points, one step each, as students write the method (Alex, 11 Nov 2026).
+  const lists=[
+    ['Method',[
+      ['Put a bar magnet in the middle of a sheet of paper and draw round it.'],
+      ['Place a small ',['b1','plotting compass'],' next to the north pole.'],
+      ['Mark a dot where the ',['b2','north'],' end of the needle points.'],
+      ['Move the compass so the tail of the needle is on that dot, then mark the next dot.'],
+      ['Repeat until you reach the ',['b3','south'],' pole or the edge of the paper.'],
+      ['Join the dots to form a ',['b4','field line'],' and add an arrow from N to S.'],
+      ['Draw more lines from other starting points (or use many compasses at once).']
+    ]],
+    ['What you find',[
+      ['Field lines never cross. They are closest together at the ',['b5','poles'],', where the field is ',['b6','strongest'],'.'],
+      ['Between two north poles facing each other there is a ',['b7','neutral point'],', where the field is zero.'],
+      ['Opposite poles facing, close together but not touching, give a ',['b8','uniform'],' field: straight, parallel, evenly spaced lines.'],
+      ['Iron filings show the shape of the field, but only a plotting compass shows its ',['b9','direction'],'.']
+    ]]
   ];
   const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
+  lists.forEach(([head,items])=>{
+    cloze.appendChild(mk('p','sub',head));
+    const ul=mk('ul','');cloze.appendChild(ul);
+    items.forEach(parts=>{
+      const li=mk('li','');ul.appendChild(li);
+      parts.forEach(p=>{
+        if(typeof p==='string')li.appendChild(document.createTextNode(p));
+        else{const s=mk('span','blank');li.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
+      });
+    });
   });
   ['weakest','middle','random','east'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
   body.appendChild(cloze);
