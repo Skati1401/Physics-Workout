@@ -60,7 +60,7 @@ The new chat should then:
 8. **Publish once Alex approves.**
    - Set `"draft": false` and rebuild.
    - Add its card to its unit's section in `igcse.html`, after the unit's workouts and in spec order (`<li id="cp-<slug>">`, a "Core practical" tag, a TA tag if needed), and a link to `#cp-<slug>` in the Core Practicals section's `.cp-list`.
-   - On the workout tab for its linked spec points, add only the one-line `.cp-banner` link (copy the one in `falling-stopping-springs.html#hooke`). Never frame the practical's animation in a workout or put its method Order or results work there (Alex, 7 Nov 2026).
+   - In the workout's tab row, add the link to the practical straight after the tab for its linked spec points (`<a class="tab-btn tab-cp">`, copy the one in `falling-stopping-springs.html`; see CLAUDE.md, "Core practicals"). Never frame the practical's animation in a workout or put its method Order or results work there (Alex, 7 Nov 2026).
    - Add a "Core practical x.xx" tag on the animation's card in `animations/igcse.html`.
    - Update the status in this table.
 
@@ -92,7 +92,7 @@ The guide's PDF pages are those of the PDF Alex shared; in the Project doc, look
 
 ## Out of the workouts (11 Nov 2026, `TODO.md` 5a)
 
-Alex (7 Nov 2026): the practicals appear in lots of places and are large, so they left the workouts. Each workout tab lost the practical's animation frame and its method Order (1c Hooke's Law also lost "Use the results", the practical's own results), and the practical's spec point came off the tab's badges; the tab keeps a one-line `.cp-banner` link. The 1a Measure v and 4b Practicals tabs were only the practical, so they were removed: their old `#measuring` and `#practical` links forward to the practical pages, and the banner moved to 1a Speed and Acceleration and 4b Which Method?. Every changed workout's `STORE_KEY` was bumped, carrying the answers to the activities that stayed. On `igcse.html` the practical cards sit in their units and Core Practicals is a list of links. The notes below ("framed … with the banner") describe the old layout.
+Alex (7 Nov 2026): the practicals appear in lots of places and are large, so they left the workouts. Each workout tab lost the practical's animation frame and its method Order (1c Hooke's Law also lost "Use the results", the practical's own results), and the practical's spec point came off the tab's badges; the workout links to the practical from its tab row ("1.22 Practical →", after the tab), not from a banner. The 1a Measure v and 4b Practicals tabs were only the practical, so they were removed: their old `#measuring` and `#practical` links forward to the practical pages, and the tab-row link sits after 1a Calculate and 4b Insulation. Every changed workout's `STORE_KEY` was bumped, carrying the answers to the activities that stayed. On `igcse.html` the practical cards sit in their units and Core Practicals is a list of links. The notes below ("framed … with the banner") describe the old layout.
 
 ## Notes from Hooke's law (the model)
 
