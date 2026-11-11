@@ -572,7 +572,7 @@ const raf=f=>requestAnimationFrame(f);
 
 // Units merge (3 Nov 2026): this unit's Units and Key Terms tabs are now one tab, so old links go there.
 try{const to={terms:'falling-stopping-springs.html#terms',units:'falling-stopping-springs.html#units'}[location.hash.slice(1)];if(to){if(to[0]==='#')history.replaceState(null,'',to);else{location.replace(to);return;}}}catch(e){}
-const STORE_KEY='unit1d-v4',OLD_STORE_KEY='unit1d-v3',OLDER_STORE_KEY='unit1d-v2';
+const STORE_KEY='unit1d-v5',V4_STORE_KEY='unit1d-v4',OLD_STORE_KEY='unit1d-v3',OLDER_STORE_KEY='unit1d-v2';
 const TAB_IDS=['overview','momentum','safety','third','moments','cog','beams'];
 let activeTab='overview';
 const reflowers=[];
@@ -1787,15 +1787,16 @@ const mom_q2=rnd=>{const n=calcNum,cf=k=>k===1?'':n(k);return calcPick(rnd,[
 calcAct('momentum','Momentum','Momentum p = mv, in kg m/s. If no external forces act, total momentum before = total momentum after. Check the units before you substitute. Press New problems for another pair.',[calcFix(mom_q1,4),calcFix(mom_q2,1)]);
 
 /* ================= 3. SAFETY ================= */
-predictAct('safety','Airbags','Force = [[change in momentum|time taken]]. Choose an answer to see the explanation.',{
-  q:'An airbag reduces injuries in a crash. Why?',
-  options:[
-    {text:'It makes the stop take longer, so the force is smaller',correct:true},
-    {text:'It reduces the passenger’s change in momentum in the crash',why:'The passenger goes from the same speed to rest whatever happens, so the change in momentum is the same.'},
-    {text:'It absorbs the passenger’s momentum, so the momentum disappears',why:'Momentum is never destroyed. The airbag only changes how long the stop takes.'},
-    {text:'It brings the passenger to a stop in a shorter time',why:'Stopping more quickly would mean a shorter time and therefore a bigger force. An airbag does the opposite.'}
-  ],
-  explain:'The change in momentum is the same, but spreading it over a longer time means a smaller rate of change of momentum, so a smaller force.'});
+// Fixed explanation (Alex, 12 Nov 2026): crumple zones, airbags and padding, in mark-scheme order (replaced the Airbags Predict)
+createReorder({host:act('safety','Order','Explain a crumple zone','Crumple zones, airbags, seat belts and crash mats all work the same way. Put the explanation in order. Drag a row or use the arrows.'),
+  steps:[
+    {id:'a',text:'Whatever happens, the passenger goes from the same speed to rest.'},
+    {id:'b',text:'So the change in momentum is the same.'},
+    {id:'c',text:'The crumple zone makes the collision last for a longer time.'},
+    {id:'d',text:'The same change in momentum over a longer time is a smaller rate of change of momentum.'},
+    {id:'e',text:'Force equals the rate of change of momentum, so the force on the passenger is smaller.'}
+  ],constraints:[['a','b'],['b','d'],['c','d'],['d','e']],
+  why:'Same change in momentum, longer time, so a smaller rate of change of momentum and a smaller force (force = change in momentum over time taken).'});
 // numbers for the working: no float noise, real minus sign, a space in numbers of 10 000 and over
 const safety_n=x=>{const v=+(+x).toFixed(4),a=Math.abs(v),t=a>=10000?String(a).replace(/\B(?=(\d{3})+(?!\d))/g,' '):String(a);return (v<0?'−':'')+t;};
 const safety_ok=(x,dp)=>Math.abs(x*Math.pow(10,dp)-Math.round(x*Math.pow(10,dp)))<1e-9;
@@ -2071,8 +2072,15 @@ byId('tab-overview').parentNode.addEventListener('keydown',e=>{
 const CARRY={"overview-0":"overview-0","momentum-0":"momentum-0","safety-0":"safety-0","third-0":"third-0","moments-0":"moments-0","moments-1":"moments-1","moments-2":"moments-2","beams-1":"beams-0"};
 // 5 Nov 2026: centre of gravity moved from Moments to its own tab, so those saved keys move with it.
 const COG_MOVE={"moments-0":"cog-0","moments-1":"moments-0","moments-2":"moments-1"};
+// 12 Nov 2026: the Airbags Predict became the crumple-zone Order; answers saved under v4 (or older, converted to v4 first) carry over for the activities that did not change.
+const V5_CARRY={"overview-0":"overview-0","momentum-0":"momentum-0","safety-1":"safety-1","third-0":"third-0","third-1":"third-1","cog-0":"cog-0","cog-1":"cog-1","moments-0":"moments-0","moments-1":"moments-1","beams-0":"beams-0"};
 function readSaved(){
   try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
+  const o=readSavedV4();if(!o||!o.v)return {};
+  const n={};Object.keys(V5_CARRY).forEach(k=>{if(o.v[k])n[V5_CARRY[k]]=o.v[k];});return {tab:o.tab,v:n};
+}
+function readSavedV4(){
+  try{const s=JSON.parse(localStorage.getItem(V4_STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
   try{const s=JSON.parse(localStorage.getItem(OLD_STORE_KEY)||'null');
     if(s&&typeof s==='object'){const v=s.v||{},n={};Object.keys(v).forEach(k=>{n[COG_MOVE[k]||k]=v[k];});return {tab:s.tab,v:n};}
   }catch(e){}
