@@ -1528,7 +1528,6 @@ function sankeySVG(o){
 /* ================= 7. POWER ================= */
 {
   // numbers for the Calculate working: no float noise, a space in numbers of 10 000 and over (as in 36 000)
-  const pw_n=x=>{const v=+(+x).toFixed(2);return Math.abs(v)>=10000&&Number.isInteger(v)?String(v).replace(/\B(?=(\d{3})+$)/g,' '):String(v);};
   createPredict({
     host:act('power','Predict','Two kettles','Two kettles boil the same amount of water from the same starting temperature. Kettle A takes 2 minutes. Kettle B takes 4 minutes.'),
     q:'Which kettle has the greater power?',
@@ -1553,16 +1552,23 @@ function sankeySVG(o){
     explain:'Both transfer the same energy. Power = [[energy transferred|time]], so Abigail, taking half the time, has twice the power.',
     reveal:barsHTML([{l:'Energy, Abigail',v:1,t:'1500 J',c:COL.k},{l:'Energy, Damien',v:1,t:'1500 J',c:COL.k},{l:'Power, Abigail',v:1,t:'300 W',c:COL.e},{l:'Power, Damien',v:.5,t:'150 W',c:COL.e}])
   });
+    // Two questions (11 Nov 2026): the first rearranges power = energy/time for the energy or the time; the second has the time
+  // in minutes, the power in kW or the energy in kJ. New problems changes the numbers, the device and the unknown.
+  const y9pw_D=[['A hair dryer',[1000,1200,1500,2000]],['Aisha’s hair dryer',[1000,1200,1500]],['A kettle',[2000,2500,3000]],['Isaac’s toaster',[800,1000,1200]],['A microwave',[600,800,1000]],['A lamp',[40,60,100]],['Olly’s games console',[100,150,200]]];
+  const y9pw_q1=rnd=>{const n=calcNum,d=calcPick(rnd,y9pw_D),P=calcPick(rnd,d[1]),t=calcPick(rnd,[5,10,20,30,40,60]),E=P*t;
+    return rnd()<0.5?{q:d[0]+' has a power of '+n(P)+' W. The energy it transfers in '+t+' s is',unit:'J',answer:E,working:'power = '+n(P)+' W<br>time = '+t+' s<br>energy transferred = ?||power = [[energy transferred|time]]<br>'+n(P)+' = [[energy transferred|'+t+']]<br>energy transferred = '+n(P)+' × '+t+'<br>energy transferred = '+n(E)+' J'}
+      :{q:d[0]+' has a power of '+n(P)+' W. The time it takes to transfer '+n(E)+' J is',unit:'s',answer:t,working:'power = '+n(P)+' W<br>energy transferred = '+n(E)+' J<br>time = ?||power = [[energy transferred|time]]<br>'+n(P)+' = [['+n(E)+'|time]]<br>'+n(P)+' × time = '+n(E)+'<br>time = [['+n(E)+'|'+n(P)+']]<br>time = '+t+' s'};};
+  const y9pw_q2=rnd=>{const n=calcNum;return calcPick(rnd,[
+    ()=>{const d=calcPick(rnd,y9pw_D),P=calcPick(rnd,d[1]),m=calcPick(rnd,[2,3,5,10]),E=P*m*60;
+      return {q:d[0]+' has a power of '+n(P)+' W and is on for '+m+' minutes. The energy it transfers is',unit:'J',answer:E,hints:['Change '+m+' minutes into seconds: multiply by 60.','Then rearrange power = [[energy transferred|time]].'],
+        working:'power = '+n(P)+' W<br>time = '+m+' min = '+m*60+' s<br>energy transferred = ?||power = [[energy transferred|time]]<br>'+n(P)+' = [[energy transferred|'+m*60+']]<br>energy transferred = '+n(P)+' × '+m*60+'<br>energy transferred = '+n(E)+' J'};},
+    ()=>{const P=calcPick(rnd,[1.5,2,2.5,3]),t=calcPick(rnd,[30,40,60,90,120]),E=P*1000*t,w=calcPick(rnd,['kettle','heater','oven']);
+      return {q:'A '+n(P)+' kW '+w+' transfers '+n(E/1000)+' kJ of energy. The time it is on for is',unit:'s',answer:t,hints:['Change kW into W and kJ into J: multiply each by 1000.','Then rearrange power = [[energy transferred|time]] for the time.'],
+        working:'power = '+n(P)+' kW = '+n(P*1000)+' W<br>energy transferred = '+n(E/1000)+' kJ = '+n(E)+' J<br>time = ?||power = [[energy transferred|time]]<br>'+n(P*1000)+' = [['+n(E)+'|time]]<br>'+n(P*1000)+' × time = '+n(E)+'<br>time = [['+n(E)+'|'+n(P*1000)+']]<br>time = '+t+' s'};}
+  ])();};
   createCalc({
-    host:act('power','Calculate','Power','Use power = [[energy transferred|time]]. Power is in watts (W), energy in joules (J) and time in seconds (s). 1 W = 1 J/s.'),
-    questions:[
-      {q:'A hair dryer transfers 36 000 J of energy in 30 s. Its power is',unit:'W',answer:1200,working:'energy transferred = 36 000 J<br>time = 30 s<br>power = ?||power = [[energy transferred|time]]<br>power = [[36 000|30]]<br>power = 1200 W',
-       make:rnd=>{const d=calcPick(rnd,[['A hair dryer',[1000,1200,1500,2000]],['Aisha’s hair dryer',[1000,1200,1500,2000]],['A kettle',[2000,2500,3000]],['Isaac’s toaster',[800,1000,1200]],['A microwave',[600,800,1000]]]),P=calcPick(rnd,d[1]),t=calcPick(rnd,[10,20,30,40,60]),E=P*t;
-         return {q:d[0]+' transfers '+pw_n(E)+' J of energy in '+t+' s. Its power is',unit:'W',answer:P,working:'energy transferred = '+pw_n(E)+' J<br>time = '+t+' s<br>power = ?||power = [[energy transferred|time]]<br>power = [['+pw_n(E)+'|'+t+']]<br>power = '+pw_n(P)+' W'};}},
-      {q:'A 60 W lamp is switched on for 5 minutes. The energy it transfers is',unit:'J',answer:18000,hint:'Change the minutes to seconds first, then put the numbers into the equation.',working:'power = 60 W<br>time = 5 min = 300 s<br>energy transferred = ?||power = [[energy transferred|time]]<br>60 = [[energy transferred|300]]<br>energy transferred = 60 × 300<br>energy transferred = 18 000 J',
-       make:rnd=>{const d=calcPick(rnd,[['A',[40,60,100],'lamp is switched on'],['Jayden’s',[5,10,20],'phone charger is used'],['A',[50,100,150],'television is on'],['Betsy’s',[30,40,60],'fan is on']]),P=calcPick(rnd,d[1]),m=calcPick(rnd,[2,5,10,15,20,30]),t=m*60,E=P*t;
-         return {q:d[0]+' '+P+' W '+d[2]+' for '+m+' minutes. The energy it transfers is',unit:'J',answer:E,hint:'Change the minutes to seconds first, then put the numbers into the equation.',working:'power = '+P+' W<br>time = '+m+' min = '+t+' s<br>energy transferred = ?||power = [[energy transferred|time]]<br>'+P+' = [[energy transferred|'+t+']]<br>energy transferred = '+P+' × '+t+'<br>energy transferred = '+pw_n(E)+' J'};}}
-    ]
+    host:act('power','Calculate','Power','Use power = [[energy transferred|time]]. Power is in watts (W), energy in joules (J) and time in seconds (s). Press New problems for another pair.'),
+    questions:[calcFix(y9pw_q1,2),calcFix(y9pw_q2,1)]
   });
   const sp=act('power','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
   createSpot({host:sp,scenario:'A 2000 W heater transfers 120 000 J of energy. Find how long it is on for.',lines:[
@@ -1584,8 +1590,6 @@ function sankeySVG(o){
 
 /* ================= 8. EFFICIENCY ================= */
 {
-  // numbers for the Calculate working: no float noise, a space in numbers of 10 000 and over
-  const ef_n=x=>{const v=+(+x).toFixed(2);return Math.abs(v)>=10000&&Number.isInteger(v)?String(v).replace(/\B(?=(\d{3})+$)/g,' '):String(v);};
   createPredict({
     host:act('efficiency','Predict','The 110% heater','An advert says a new electric heater is 110% efficient.'),
     q:'Could this claim be true?',
@@ -1610,28 +1614,20 @@ function sankeySVG(o){
     explain:'Motor A: efficiency = [[600|800]] × 100% = 75%. Motor B: efficiency = [[600|1000]] × 100% = 60%. The same useful output from a smaller input means A is more efficient.',
     reveal:barsHTML([{l:'Motor A, total in',v:.8,t:'800 J',c:COL.e},{l:'Motor A, useful',v:.6,t:'600 J (75%)',c:COL.r},{l:'Motor B, total in',v:1,t:'1000 J',c:COL.e},{l:'Motor B, useful',v:.6,t:'600 J (60%)',c:COL.r}])
   });
-  // New problems for the last two: power, efficiency and a time in hours or minutes; useful energy = efficiency × P × t
-  const ef_make=(rnd,u)=>{
-    const d=calcPick(rnd,[['lamp',[20,40,60,100],[10,20,25],'gives out as light'],['motor',[200,500,1000,1500],[40,50,60,75,80],'transfers usefully'],['fan',[40,50,100],[50,60,75,80],'transfers to the kinetic store of the air'],['speaker',[20,40,50],[10,20,25],'gives out as sound']]);
-    const P=calcPick(rnd,d[1]),e=calcPick(rnd,d[2]),n=u==='h'?calcPick(rnd,[1,2,3,4]):calcPick(rnd,[5,10,20,30]),t=u==='h'?n*3600:n*60,E=P*t,U=E*e/100,k=ef_n(e/100);
-    const tl=u==='h'?'time = '+n+' h = '+n+' × 60 × 60 = '+ef_n(t)+' s':'time = '+n+' min = '+n+' × 60 = '+ef_n(t)+' s';
-    return {q:'A '+P+' W '+d[0]+' is '+e+'% efficient. It is switched on for '+n+' '+(u==='h'?(n===1?'hour':'hours'):'minutes')+'. The energy it '+d[3]+' is',unit:'J',answer:U,
-      hint:'Change the '+(u==='h'?'hours':'minutes')+' to seconds, find the total energy input with energy = power × time, then take '+e+'% of it.',
-      working:'power = '+P+' W<br>'+tl+'<br>efficiency = '+e+'%<br>useful energy output = ?||energy input = power × time<br>energy input = '+P+' × '+ef_n(t)+'<br>energy input = '+ef_n(E)+' J<br>efficiency = [[useful energy output|total energy input]] × 100%<br>'+e+' = [[useful energy output|'+ef_n(E)+']] × 100<br>'+k+' = [[useful energy output|'+ef_n(E)+']]<br>useful energy output = '+k+' × '+ef_n(E)+'<br>useful energy output = '+ef_n(U)+' J'};};
+  // Two questions (11 Nov 2026): the first rearranges the efficiency equation for the useful or the total energy; the second
+  // finds the energy from power × time first (time in minutes or hours). New problems changes the numbers and the device.
+  const y9ef_q1=rnd=>{const n=calcNum,d=calcPick(rnd,[['A kettle','the thermal store of the water'],['A motor','its kinetic store'],['An LED lamp','light'],['A loudspeaker','sound'],['Betsy’s phone charger','the battery’s chemical store']]),pc=calcPick(rnd,[20,25,40,50,60,75,80,90]),T=calcPick(rnd,[200,400,500,1000,2000,5000]),U=T*pc/100;
+    return rnd()<0.5?{q:d[0]+' is '+pc+'% efficient. It is supplied with '+n(T)+' J. The useful energy it gives to '+d[1]+' is',unit:'J',answer:U,
+        working:'efficiency = '+pc+'% = '+n(pc/100)+'<br>total energy input = '+n(T)+' J<br>useful energy output = ?||efficiency = [[useful energy output|total energy input]]<br>'+n(pc/100)+' = [[useful energy output|'+n(T)+']]<br>useful energy output = '+n(pc/100)+' × '+n(T)+'<br>useful energy output = '+n(U)+' J'}
+      :{q:d[0]+' is '+pc+'% efficient. It gives '+n(U)+' J of useful energy to '+d[1]+'. The total energy supplied to it is',unit:'J',answer:T,
+        working:'efficiency = '+pc+'% = '+n(pc/100)+'<br>useful energy output = '+n(U)+' J<br>total energy input = ?||efficiency = [[useful energy output|total energy input]]<br>'+n(pc/100)+' = [['+n(U)+'|total energy input]]<br>'+n(pc/100)+' × total energy input = '+n(U)+'<br>total energy input = [['+n(U)+'|'+n(pc/100)+']]<br>total energy input = '+n(T)+' J'};};
+  const y9ef_q2=rnd=>{const n=calcNum,c=calcPick(rnd,[['lamp',[40,60,100],[10,20,25],'as light'],['motor',[500,1000,1500],[50,60,75,80],'as kinetic energy'],['heater',[1000,2000],[90,95],'to the room']]),P=calcPick(rnd,c[1]),pc=calcPick(rnd,c[2]),m=calcPick(rnd,[1,2,5,10]),T=P*m*60,U=T*pc/100;
+    return {q:'A '+n(P)+' W '+c[0]+' is '+pc+'% efficient. It is switched on for '+m+(m===1?' minute':' minutes')+'. The useful energy it gives out '+c[3]+' is',unit:'J',answer:U,
+      hints:['Change '+m+(m===1?' minute':' minutes')+' into seconds.','Find the total energy input: energy = power × time.','Then use the efficiency equation to find the useful energy.'],
+      working:'power = '+n(P)+' W<br>time = '+m+' min = '+m*60+' s<br>efficiency = '+pc+'% = '+n(pc/100)+'<br>useful energy output = ?||total energy input = power × time<br>total energy input = '+n(P)+' × '+m*60+'<br>total energy input = '+n(T)+' J<br>efficiency = [[useful energy output|total energy input]]<br>'+n(pc/100)+' = [[useful energy output|'+n(T)+']]<br>useful energy output = '+n(pc/100)+' × '+n(T)+'<br>useful energy output = '+n(U)+' J'};};
   createCalc({
-    host:act('efficiency','Calculate','Efficiency','Use efficiency = [[useful energy output|total energy input]] × 100%. In the last two, find the total energy input first with energy = power × time, with the time in seconds.'),
-    questions:[
-      {q:'A kettle is supplied with 200 000 J. 180 000 J goes into the thermal store of the water. Its efficiency is',unit:'%',answer:90,working:'useful energy output = 180 000 J<br>total energy input = 200 000 J<br>efficiency = ?||efficiency = [[useful energy output|total energy input]] × 100%<br>efficiency = [[180 000|200 000]] × 100%<br>efficiency = 0.9 × 100%<br>efficiency = 90%',
-       make:rnd=>{const d=calcPick(rnd,[['A kettle','goes into the thermal store of the water'],['Abigail’s kettle','goes into the thermal store of the water'],['An electric motor','goes into the kinetic store of the motor'],['A crane','goes into the gravitational store of the load'],['Tristan’s toy car','goes into the kinetic store of the car']]),e=calcPick(rnd,[20,25,40,50,60,75,80,90]),T=calcPick(rnd,[400,800,1000,2000,4000,10000,20000,200000]),U=T*e/100;
-         return {q:d[0]+' is supplied with '+ef_n(T)+' J. '+ef_n(U)+' J '+d[1]+'. Its efficiency is',unit:'%',answer:e,working:'useful energy output = '+ef_n(U)+' J<br>total energy input = '+ef_n(T)+' J<br>efficiency = ?||efficiency = [[useful energy output|total energy input]] × 100%<br>efficiency = [['+ef_n(U)+'|'+ef_n(T)+']] × 100%<br>efficiency = '+ef_n(e/100)+' × 100%<br>efficiency = '+e+'%'};}},
-      {q:'A television is supplied with 500 J. 150 J of this is wasted. Its efficiency is',unit:'%',answer:70,hint:'Work out the useful energy first: it is what is left after the wasted energy is taken away.',working:'total energy input = 500 J<br>wasted energy = 150 J<br>efficiency = ?||useful = total − wasted<br>useful = 500 − 150<br>useful = 350 J<br>efficiency = [[useful energy output|total energy input]] × 100%<br>efficiency = [[350|500]] × 100%<br>efficiency = 70%',
-       make:rnd=>{const d=calcPick(rnd,['A television','A laptop','Olly’s games console','A hair dryer','Aisha’s speaker']),e=calcPick(rnd,[20,25,40,60,70,75,80,90]),T=calcPick(rnd,[200,400,500,800,1000]),U=T*e/100,W=T-U;
-         return {q:d+' is supplied with '+ef_n(T)+' J. '+ef_n(W)+' J of this is wasted. Its efficiency is',unit:'%',answer:e,hint:'Work out the useful energy first: it is what is left after the wasted energy is taken away.',working:'total energy input = '+ef_n(T)+' J<br>wasted energy = '+ef_n(W)+' J<br>efficiency = ?||useful = total − wasted<br>useful = '+ef_n(T)+' − '+ef_n(W)+'<br>useful = '+ef_n(U)+' J<br>efficiency = [[useful energy output|total energy input]] × 100%<br>efficiency = [['+ef_n(U)+'|'+ef_n(T)+']] × 100%<br>efficiency = '+e+'%'};}},
-      {q:'A 40 W lamp is 10% efficient. It is switched on for 2 hours. The energy it gives out as light is',unit:'J',answer:28800,hint:'Change the hours to seconds, find the total energy input with energy = power × time, then take 10% of it.',working:'power = 40 W<br>time = 2 h = 2 × 60 × 60 = 7200 s<br>efficiency = 10%<br>useful energy output = ?||energy input = power × time<br>energy input = 40 × 7200<br>energy input = 288 000 J<br>efficiency = [[useful energy output|total energy input]] × 100%<br>10 = [[useful energy output|288 000]] × 100<br>0.10 = [[useful energy output|288 000]]<br>useful energy output = 0.10 × 288 000<br>useful energy output = 28 800 J',
-       make:rnd=>ef_make(rnd,'h')},
-      {q:'A 1500 W motor is 60% efficient. It runs for 10 minutes. The useful energy it transfers is',unit:'J',answer:540000,hint:'Change the minutes to seconds, find the total energy input with energy = power × time, then take 60% of it.',working:'power = 1500 W<br>time = 10 min = 10 × 60 = 600 s<br>efficiency = 60%<br>useful energy output = ?||energy input = power × time<br>energy input = 1500 × 600<br>energy input = 900 000 J<br>efficiency = [[useful energy output|total energy input]] × 100%<br>60 = [[useful energy output|900 000]] × 100<br>0.60 = [[useful energy output|900 000]]<br>useful energy output = 0.60 × 900 000<br>useful energy output = 540 000 J',
-       make:rnd=>ef_make(rnd,'min')}
-    ]
+    host:act('efficiency','Calculate','Efficiency','Use efficiency = [[useful energy output|total energy input]] × 100%. Write the percentage as a decimal (60% = 0.6). Press New problems for another pair.'),
+    questions:[calcFix(y9ef_q1,1),calcFix(y9ef_q2,2)]
   });
   const sp=act('efficiency','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
   createSpot({host:sp,scenario:'A filament lamp is 20% efficient. It gives out 12 J of light each second. Find the total energy input each second.',lines:[
@@ -1658,7 +1654,6 @@ function sankeySVG(o){
 
 /* ================= 9. SANKEY DIAGRAMS ================= */
 {
-  const sk_n=x=>{const v=+(+x).toFixed(2);return Math.abs(v)>=10000&&Number.isInteger(v)?String(v).replace(/\B(?=(\d{3})+$)/g,' '):String(v);};
   const DEV={
     fil:{n:'Filament lamp',f:[{id:'u',l:'Light',v:10,c:COL.r},{id:'h',l:'Heating the surroundings',v:90,c:COL.t}]},
     led:{n:'LED lamp',f:[{id:'u',l:'Light',v:40,c:COL.r},{id:'h',l:'Heating the surroundings',v:60,c:COL.t}]},
@@ -1731,22 +1726,23 @@ function sankeySVG(o){
   const lsc=mk('span','score');lb.el.insertBefore(lsc,lb.msg);
   gm=createBlankGame({fill:true,slots:slots,pool:pool,chips:chips,msg:lb,score:lsc,isCorrect:(c,s)=>c.text===s.answer,slotText:c=>c.short,placedClass:'drop-caption'});
 
+    // Two questions (11 Nov 2026): the first finds a missing output from energy in = the sum of the outputs; the second turns
+  // arrow widths into joules with the scale, then finds the efficiency. New problems changes the numbers and the device.
+  const y9sk_q1=rnd=>{const n=calcNum,d=calcPick(rnd,[['motor','kinetic energy'],['drill','kinetic energy'],['food mixer','kinetic energy'],['crane motor','gravitational potential energy']]),T=calcPick(rnd,[100,200,400,500,1000]),U=T*calcPick(rnd,[0.4,0.5,0.6,0.7]),S=T*calcPick(rnd,[0.05,0.1,0.15]),H=T-U-S;
+    return {q:'A '+d[0]+'’s Sankey diagram shows '+n(T)+' J going in and '+n(U)+' J of useful '+d[1]+' coming out. The rest is wasted by heating and by sound. If '+n(S)+' J is wasted as sound, the energy wasted by heating is',unit:'J',answer:H,
+      working:'energy in = '+n(T)+' J<br>useful = '+n(U)+' J<br>sound = '+n(S)+' J<br>heating = ?||energy in = useful + heating + sound<br>'+n(T)+' = '+n(U)+' + heating + '+n(S)+'<br>'+n(T)+' = '+n(U+S)+' + heating<br>heating = '+n(T)+' − '+n(U+S)+'<br>heating = '+n(H)+' J'};};
+  const y9sk_q2=rnd=>{const sc=calcPick(rnd,[2,5,10,20]),wi=calcPick(rnd,[20,25,40,50]),fr=calcPick(rnd,[0.2,0.4,0.6,0.8]),wu=wi*fr,I=wi*sc,U=wu*sc,pc=fr*100;
+    return {q:'On a Sankey diagram, 1 mm of width stands for '+sc+' J. The input arrow is '+wi+' mm wide and the useful arrow is '+wu+' mm wide. The efficiency is',unit:'%',answer:pc,
+      hints:['Turn each width into joules with the scale.','Then efficiency = [[useful energy output|total energy input]] × 100%.'],
+      working:'scale: 1 mm = '+sc+' J<br>input width = '+wi+' mm<br>useful width = '+wu+' mm<br>efficiency = ?||total energy input = '+wi+' × '+sc+'<br>total energy input = '+I+' J<br>useful energy output = '+wu+' × '+sc+'<br>useful energy output = '+U+' J<br>efficiency = [[useful energy output|total energy input]] × 100%<br>efficiency = [['+U+'|'+I+']] × 100%<br>efficiency = '+pc+'%'};};
   createCalc({
-    host:act('sankey','Calculate','Reading Sankey diagrams','Use the drill’s diagram above for the first question.'),
-    questions:[
-      {q:'The drill’s efficiency is',unit:'%',answer:60,working:'useful energy output = 300 J<br>total energy input = 500 J<br>efficiency = ?||efficiency = [[useful energy output|total energy input]] × 100%<br>efficiency = [[300|500]] × 100%<br>efficiency = 0.6 × 100%<br>efficiency = 60%'},
-      {q:'A motor’s Sankey diagram shows 100 J going in and 60 J of useful kinetic energy coming out. The rest is wasted by heating and by sound. If 10 J is wasted as sound, the energy wasted by heating is',unit:'J',answer:30,hint:'The outputs always add up to the input.',working:'energy in = 100 J<br>useful = 60 J<br>sound = 10 J<br>heating = ?||energy in = useful + heating + sound<br>100 = 60 + heating + 10<br>100 = 70 + heating<br>heating = 100 − 70<br>heating = 30 J',
-       make:rnd=>{const d=calcPick(rnd,[['motor','kinetic energy'],['drill','kinetic energy'],['food mixer','kinetic energy'],['crane motor','gravitational potential energy']]),T=calcPick(rnd,[100,200,400,500,1000]),U=T*calcPick(rnd,[0.4,0.5,0.6,0.7]),S=T*calcPick(rnd,[0.05,0.1,0.15,0.2]),H=T-U-S;
-         return {q:'A '+d[0]+'’s Sankey diagram shows '+sk_n(T)+' J going in and '+sk_n(U)+' J of useful '+d[1]+' coming out. The rest is wasted by heating and by sound. If '+sk_n(S)+' J is wasted as sound, the energy wasted by heating is',unit:'J',answer:H,hint:'The outputs always add up to the input.',
-           working:'energy in = '+sk_n(T)+' J<br>useful = '+sk_n(U)+' J<br>sound = '+sk_n(S)+' J<br>heating = ?||energy in = useful + heating + sound<br>'+sk_n(T)+' = '+sk_n(U)+' + heating + '+sk_n(S)+'<br>'+sk_n(T)+' = '+sk_n(U+S)+' + heating<br>heating = '+sk_n(T)+' − '+sk_n(U+S)+'<br>heating = '+sk_n(H)+' J'};}}
-    ]
+    host:act('sankey','Calculate','Reading Sankey diagrams','The energy going in = the total of all the energy coming out. Press New problems for another pair.'),
+    questions:[calcFix(y9sk_q1,1),calcFix(y9sk_q2,2)]
   });
 }
 
 /* ================= 10. PAYING FOR ENERGY ================= */
 {
-  // numbers for the Calculate working: no float noise, a space in numbers of 10 000 and over
-  const pay_n=x=>{const v=+(+x).toFixed(2);return Math.abs(v)>=10000&&Number.isInteger(v)?String(v).replace(/\B(?=(\d{3})+$)/g,' '):String(v);};
   createPredict({
     host:act('paying','Predict','Heater or lamp?','A 2 kW heater is on for 1 hour. A 100 W lamp is on for 10 hours.'),
     q:'Which one uses more energy?',
@@ -1771,23 +1767,18 @@ function sankeySVG(o){
     explain:'A kilowatt-hour is the energy a 1 kW device transfers in 1 hour. That is 1000 J every second for 3600 seconds, which is 3 600 000 J.',
     reveal:barsHTML([{l:'1 kW for 1 hour',v:1,t:'1 kWh',c:COL.e},{l:'In joules',v:1,t:'3 600 000 J',c:COL.e}])
   });
+    // Two questions (11 Nov 2026): the first rearranges energy = power × time for the time or the power; the second changes W to
+  // kW and minutes to hours, then finds the cost. New problems changes the numbers, the device and the unknown.
+  const y9pay_q1=rnd=>{const n=calcNum,d=calcPick(rnd,[['A','fan heater',[1,2,3]],['Isaac’s','electric heater',[1.5,2,3]],['A','tumble dryer',[2,2.5,3]],['Betsy’s','oven',[2,3,4]]]),P=calcPick(rnd,d[2]),t=calcPick(rnd,[2,3,4,5,6]),E=P*t;
+    return rnd()<0.5?{q:d[0]+' '+n(P)+' kW '+d[1]+' uses '+n(E)+' kWh of energy. The time it is on for is',unit:'h',answer:t,working:'power = '+n(P)+' kW<br>energy = '+n(E)+' kWh<br>time = ?||energy = power × time<br>'+n(E)+' = '+n(P)+' × time<br>time = [['+n(E)+'|'+n(P)+']]<br>time = '+t+' h'}
+      :{q:d[0]+' '+d[1]+' is on for '+t+' hours and uses '+n(E)+' kWh of energy. Its power is',unit:'kW',answer:P,working:'time = '+t+' h<br>energy = '+n(E)+' kWh<br>power = ?||energy = power × time<br>'+n(E)+' = power × '+t+'<br>power = [['+n(E)+'|'+t+']]<br>power = '+n(P)+' kW'};};
+  const y9pay_q2=rnd=>{const n=calcNum,d=calcPick(rnd,[['A','television',[100,200,500]],['Damien’s','games console',[200,250,500]],['A','hair dryer',[1500,2000]],['Abigail’s','heater',[1500,2000,3000]]]),W=calcPick(rnd,d[2]),m=calcPick(rnd,[30,90,120,180]),c=calcPick(rnd,[20,24,30,40]),E=W/1000*m/60,C=E*c;
+    return {q:'Electricity costs '+c+'p per kWh. '+d[0]+' '+n(W)+' W '+d[1]+' is on for '+m+' minutes. The cost is',unit:'p',answer:C,
+      hints:['Change '+n(W)+' W into kW (divide by 1000) and '+m+' minutes into hours (divide by 60).','energy (kWh) = power (kW) × time (h).','cost = energy × price per kWh.'],
+      working:'power = '+n(W)+' W = '+n(W/1000)+' kW<br>time = '+m+' min = '+n(m/60)+' h<br>price per kWh = '+c+'p<br>cost = ?||energy = power × time<br>energy = '+n(W/1000)+' × '+n(m/60)+'<br>energy = '+n(E)+' kWh<br>cost = energy × price per kWh<br>cost = '+n(E)+' × '+c+'<br>cost = '+n(C)+'p'};};
   createCalc({
-    host:act('paying','Calculate','Energy and cost','Use energy (kWh) = power (kW) × time (h), then total cost = energy used (kWh) × price per kWh. Change watts to kilowatts and minutes to hours first.'),
-    questions:[
-      {q:'A 2 kW fan heater is on for 3 hours. The energy it uses is',unit:'kWh',answer:6,working:'power = 2 kW<br>time = 3 h<br>energy = ?||energy = power × time<br>energy = 2 × 3<br>energy = 6 kWh',
-       make:rnd=>{const d=calcPick(rnd,[['A','fan heater',[1,2,3]],['Isaac’s','electric heater',[1.5,2,3]],['A','tumble dryer',[2,2.5,3]],['Betsy’s','oven',[2,3,4]]]),P=calcPick(rnd,d[2]),t=calcPick(rnd,[2,3,4,5,6]),E=P*t;
-         return {q:d[0]+' '+P+' kW '+d[1]+' is on for '+t+' hours. The energy it uses is',unit:'kWh',answer:E,working:'power = '+P+' kW<br>time = '+t+' h<br>energy = ?||energy = power × time<br>energy = '+P+' × '+t+'<br>energy = '+pay_n(E)+' kWh'};}},
-      {q:'A 500 W television is on for 4 hours. The energy it uses is',unit:'kWh',answer:2,hint:'Change 500 W to kilowatts first: 1000 W = 1 kW.',working:'power = 500 W = 0.5 kW<br>time = 4 h<br>energy = ?||energy = power × time<br>energy = 0.5 × 4<br>energy = 2 kWh',
-       make:rnd=>{const d=calcPick(rnd,[['A','television',[100,200,250,500]],['Damien’s','games console',[100,200,250]],['A','lamp',[50,100,200]],['Aisha’s','fridge',[100,200,250]]]),W=calcPick(rnd,d[2]),kW=W/1000,t=calcPick(rnd,[2,4,5,6,8,10]),E=+(kW*t).toFixed(2);
-         return {q:d[0]+' '+W+' W '+d[1]+' is on for '+t+' hours. The energy it uses is',unit:'kWh',answer:E,hint:'Change '+W+' W to kilowatts first: 1000 W = 1 kW.',working:'power = '+W+' W = '+pay_n(kW)+' kW<br>time = '+t+' h<br>energy = ?||energy = power × time<br>energy = '+pay_n(kW)+' × '+t+'<br>energy = '+pay_n(E)+' kWh'};}},
-      {q:'Electricity costs 30p per kWh. A 3 kW oven is on for 2 hours. The cost is',unit:'p',answer:180,working:'power = 3 kW<br>time = 2 h<br>price per kWh = 30p<br>cost = ?||energy = power × time<br>energy = 3 × 2<br>energy = 6 kWh<br>cost = energy used × price per kWh<br>cost = 6 × 30<br>cost = 180p',
-       make:rnd=>{const d=calcPick(rnd,[['A','oven',[2,3,4]],['Jayden’s','electric heater',[1,2,3]],['A','tumble dryer',[2,3]],['Abigail’s','immersion heater',[2,3]]]),P=calcPick(rnd,d[2]),t=calcPick(rnd,[1,2,3,4]),c=calcPick(rnd,[20,25,30,35,40]),E=P*t,C=E*c;
-         return {q:'Electricity costs '+c+'p per kWh. '+d[0]+' '+P+' kW '+d[1]+' is on for '+t+(t===1?' hour':' hours')+'. The cost is',unit:'p',answer:C,working:'power = '+P+' kW<br>time = '+t+' h<br>price per kWh = '+c+'p<br>cost = ?||energy = power × time<br>energy = '+P+' × '+t+'<br>energy = '+E+' kWh<br>cost = energy used × price per kWh<br>cost = '+E+' × '+c+'<br>cost = '+pay_n(C)+'p'};}},
-      {q:'A meter reads 4520 kWh at the start of a month and 4870 kWh at the end. Electricity costs 30p per kWh. The bill for the month is',unit:'£',answer:105,hint:'Take the first reading from the second, then find the cost. Change pence to pounds at the end: 100p = £1.',working:'start reading = 4520 kWh<br>end reading = 4870 kWh<br>price per kWh = 30p<br>cost = ?||energy used = 4870 − 4520<br>energy used = 350 kWh<br>cost = energy used × price per kWh<br>cost = 350 × 30<br>cost = 10 500p<br>cost = £105',
-       make:rnd=>{const a=calcPick(rnd,[1250,2380,3615,4520,5740,6105]),u=calcPick(rnd,[200,250,300,350,400,450]),b=a+u,c=calcPick(rnd,[20,25,30,40]),p=u*c,L=p/100,Ls=Number.isInteger(L)?String(L):L.toFixed(2);
-         return {q:'A meter reads '+a+' kWh at the start of a month and '+b+' kWh at the end. Electricity costs '+c+'p per kWh. The bill for the month is',unit:'£',answer:L,hint:'Take the first reading from the second, then find the cost. Change pence to pounds at the end: 100p = £1.',
-           working:'start reading = '+a+' kWh<br>end reading = '+b+' kWh<br>price per kWh = '+c+'p<br>cost = ?||energy used = '+b+' − '+a+'<br>energy used = '+u+' kWh<br>cost = energy used × price per kWh<br>cost = '+u+' × '+c+'<br>cost = '+pay_n(p)+'p<br>cost = £'+Ls};}}
-    ]
+    host:act('paying','Calculate','Energy and cost','Use energy (kWh) = power (kW) × time (h), then cost = energy used (kWh) × price per kWh. Change watts to kilowatts and minutes to hours first. Press New problems for another pair.'),
+    questions:[calcFix(y9pay_q1,1),calcFix(y9pay_q2,2)]
   });
   const sp=act('paying','Spot the error','Find the mistake','Each worked example has one wrong step, made while rearranging the equation. The first line is always right, and every line after the mistake is worked correctly from it. Click the wrong line.');
   createSpot({host:sp,scenario:'A 1.5 kW heater uses 6 kWh of energy. Find how many hours it is on for.',lines:[
