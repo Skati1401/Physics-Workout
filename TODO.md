@@ -4,13 +4,7 @@ The one list for everything still to do: the website, lesson decks, and anything
 
 - **This repo is public.** No surnames, class lists, results, or anything that links a student to a class or a result. Common first names in questions are fine, as everywhere on the site.
 - **Detail lives elsewhere, the to-do lives here.** How to build a core practical is in `tools/CORE-PRACTICALS.md`; what Alex still has to look at on each page is in `tools/REVIEW.md`. This file holds the task and links there.
-- Format: `- [ ] task (where, added date)`. Tick with `[x]` and move it to **Done** with the date. Most urgent section first.
-
-## 1. Fix now (site audit, 3 Nov 2026)
-
-The audit's fixes are done (see Done). What changed on each page is in `tools/REVIEW.md` (🔍 rows dated 3 Nov 2026). Nothing is open here.
-
-
+- Format: `- [ ] task (where, added date)`. Tick with `[x]` and move it to **Done** with the date. Most urgent section first. Sections keep their numbers (other docs point to "section 8"); section 1, the 3 Nov site audit, is finished and was removed on 11 Nov 2026.
 
 ## 2. Lesson decks (PPT reviews)
 
@@ -32,12 +26,11 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 - [ ] Check the 20-minute review of all 21 IGCSE workouts (4 Nov 2026): every page cut to about 20 minutes of content (477 → 300 activities), Quick check cards instead of single Predicts, memory games replaced by one crossword per unit. What changed on each page is in `tools/REVIEW.md` (rows starting "4 Nov 2026 20-minute review"). Calculate cards were then put back to 3 questions (Alex, 4 Nov 2026), so pages may run a little over 20 minutes, never 30.
 
-51 pages are 🔍 To review and 17 are ❔ Not recorded in `tools/REVIEW.md`. Go through that table; only Alex marks a page ✅.
+100 pages are 🔍 To review and 1 is ❔ Not recorded in `tools/REVIEW.md` (11 Nov 2026). Go through that table; only Alex marks a page ✅.
 
-- [ ] Check Units 7 and 8 (7a `radioactivity.html`, 7b `fission-and-fusion.html`, 8a `universe-and-stars.html`, 8b `cosmology.html`; what to look at is in `tools/REVIEW.md`). When each is checked, remove its Draft labels (added 4 Nov 2026).
-- [ ] Check Unit 3 (3a `waves.html`, 3b `light-and-sound.html`, 3c `sound.html`; what to look at is in `tools/REVIEW.md`). When it is checked, remove its Draft labels (CLAUDE.md, "Draft units") (added 4 Nov 2026).
+- [ ] Check Units 7 and 8 (7a `radioactivity.html`, 7b `fission-and-fusion.html`, 8a `universe-and-stars.html`, 8b `cosmology.html`; what to look at is in `tools/REVIEW.md`). Draft tags clear themselves once the page is ✅ in `tools/REVIEW.md` (reviewer mode) (added 4 Nov 2026).
+- [ ] Check Unit 3 (3a `waves.html`, 3b `light-and-sound.html`, 3c `sound.html`; what to look at is in `tools/REVIEW.md`). Draft tags clear themselves once the page is ✅ in `tools/REVIEW.md` (reviewer mode) (added 4 Nov 2026).
 - [ ] Look at the drafts `calculations.html` and `graphs.html`. If they're fine, add their cards to `igcse.html` below Core Practicals and remove `noindex` (in `tools/sets/build.py`).
-- [x] `iv-characteristics.html`: reversible 6 V battery instead of the two-cell −6 V to +6 V potentiometer (3 Nov 2026).
 
 ## 4. Build: workouts (IGCSE, spec order)
 
@@ -64,7 +57,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
   - 7.6: the absorber thickness is a control, yet paper, 5 mm Al and 2 cm lead are compared ("The best absorber").
   - 2.23P Exam (f): add "electrons". CP12: line 93 says the calibration carries to the Divider tab (it doesn't). CP13: the "steam condensed back" distractor would really make L_v high.
   - Duplicate exam numbers to change: 2.9 Exam (b), 3.25P Exam (b), 3.17 Exam (d), 3.19 Exam (d), CP12 Exam (a).
-  - Missing activities worth adding: circuit diagram (2.9), field-drawing mistakes (6.6), sketch the heating curve (5.11P).
+  - Missing activities worth adding: sketch the heating curve (5.11P); circuit diagram (2.9): build it or find the errors (ammeter in parallel, voltmeter in series, cells the wrong way round); field-drawing mistakes (6.6): find the mistake in field diagrams (reversed arrow, line not reaching the magnet, lines crossing, no central line between N poles). Draw the 2.9 and 6.6 pictures on Claude Fable (section 7).
 - [ ] IAL CP7 resistivity and CP8 internal resistance practical pages, if Alex wants them (the animations are done).
 - [ ] IAL CP12–15: mark scheme wording check (no IAL question index yet).
 
@@ -77,11 +70,8 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 Drawing and animation jobs worth running on Claude Fable, which draws SVG scenes better than the other models; keep page logic on the usual model, as Fable costs more. Fable can still draw convincing pictures with wrong physics, so drive every motion from the page's equations, not drawn keyframes, and check directions (field lines, current, rotation) before publishing. Build with the `teaching-animations` or `interactive-revision-lab` skill as usual.
 
-- [ ] 6.6 magnetic field practical: draw field diagrams for a "find the mistake" activity (reversed arrow, line not reaching the magnet, lines crossing, no central line between N poles). Same job as the field-drawing item in section 5; do them together.
-- [ ] 2.9 I–V practical: a circuit-diagram activity, build it or find the errors (ammeter in parallel, voltmeter in series, cells the wrong way round). Same job as the circuit-diagram item in section 5.
-- [ ] 2.9 I–V: show the lamp curve continuing into the negative quadrant (sweep from −V to +V) in `animations/iv-characteristics.html` and the practical's graphs. The animation is done (11 Nov 2026, batch 6: Play sweeps from −6 V to +6 V); the practical page's graphs are still to do.
-- [x] Practical runs that feel passive (the 4 Nov review): richer apparatus scenes, e.g. compass needles swinging and filings settling when the card is tapped (`magnetic-field-patterns.html`), a Leslie cube with a readable thermometer (`heat-transfer.html`; done 10 Nov 2026, batch 9, so only the compass and filings were left; done 10 Nov 2026, batch 1).
-- [ ] Drawing pass on existing animations where the picture is plain: `gas-molecules.html` (5b), `heat-transfer.html` convection, `chain-reaction.html` (7b), `roller-coaster-energy.html` and the Year 9 half-pipe and bungee Predicts. The motor and generator pages were redrawn on 10 Nov 2026, so leave those. These pages are also in the animation batches (section 8: batches 9, 10 and 11); tick this when those are done. Batch 9 (10 Nov 2026) did `heat-transfer.html` and `roller-coaster-energy.html`; `gas-molecules.html`, `chain-reaction.html` and the Year 9 Predicts are left.
+- [ ] 2.9 I–V practical page `iv-characteristics-practical.html`: its graphs should show the lamp curve continuing into the negative quadrant, as the animation now does (batch 6, 11 Nov 2026).
+- [ ] Drawing pass on the Year 9 half-pipe and bungee Predicts (plain pictures; not in any animation batch). The other plain pages are in their batches: `gas-molecules.html` in batch 10, `chain-reaction.html` in batch 11.
 - [ ] Build: star life cycle and red shift animations for 8a/8b (no animation page yet; frame them in `universe-and-stars.html` and `cosmology.html`).
 
 ## 8. Animation batches: review every animation against the motor and generator model (Alex, 10 Nov 2026)
@@ -89,19 +79,21 @@ Drawing and animation jobs worth running on Claude Fable, which draws SVG scenes
 Each batch is one new chat. Alex calls a batch up by number, in any order: "Do animation batch 3 from `TODO.md` section 8, following `tools/ANIMATION-STYLE.md`." The chat reviews each page, rebuilds or restyles what falls short of the model (`animations/dc-motor.html`, `animations/ac-generator.html`) straight to `main`, and asks Alex only where there is a real choice. The model and effort level in brackets are the suggested ones: high where pictures are redrawn in 3D or a wrong direction would teach wrong physics, medium where it is mostly restyling flat pictures and graphs.
 
 - [ ] Batch 8 (Fable high): `refraction.html`, `speed-of-sound.html`, `oscilloscope.html`. Look for: glass blocks, ray box and oscilloscope as solid objects; predict which way the ray bends on the picture, then Go.
-- [ ] Batch 10 (Fable high): `heating-curve.html`, `specific-heat.html`, `gas-molecules.html`. Look for: three large pages (about 1 370 lines each): `gas-molecules.html` is named in section 7. Do one page at a time.
-- [ ] Batch 11 (Fable medium): `film-badge.html`, `random-decay.html`, `radiation-in-fields.html`, `chain-reaction.html`, `penetrating-power.html`. Look for: `chain-reaction.html` is named in section 7; predict which way α and β bend on the picture, then Go.
+- [ ] Batch 10 (Fable high): `heating-curve.html`, `specific-heat.html`, `gas-molecules.html`. Look for: three large pages (about 1 370 lines each); `gas-molecules.html` also needs its plain picture redrawn (the drawing pass). Do one page at a time.
+- [ ] Batch 11 (Fable medium): `film-badge.html`, `random-decay.html`, `radiation-in-fields.html`, `chain-reaction.html`, `penetrating-power.html`. Look for: `chain-reaction.html` also needs its plain picture redrawn (the drawing pass); predict which way α and β bend on the picture, then Go.
 - [ ] Batch 12 (Fable medium): `projectile-lab.html`, `shoot-the-monkey.html`, `free-body-diagrams.html`, `newtons-laws.html`, `inclined-plane.html` (IAL and IB). Look for: newer pages, likely a light pass: labels, sizes, solid objects.
 - [ ] Batch 13 (Fable medium): `thermistor.html`, `latent-heat.html`, `boyles-law.html`, `gamma-radiation.html` (IAL practicals). Look for: apparatus drawn solid; keep every `?show=` mode and the fixed readings the practical pages check against.
 
 Follow-ups:
 
-- [x] Model pages: `dc-motor.html` and `ac-generator.html` redrawn (10 Nov 2026). Alex to check them (`tools/REVIEW.md`), especially the cell's + on the left brush for "Normal".
-- [x] Forces animations at IAL and IB (Alex, 11 Nov 2026): `momentum-collision.html` (plus an Explosion choice at every level), `hookes-law.html` and `seesaw-moments.html` each have an IGCSE | IAL | IB switch and cards on the IAL and IB lists. To review in `tools/REVIEW.md`. `motion-graphs.html` and `skydiver.html` got theirs in batch 4 (11 Nov 2026).
 - [ ] Check batch 4 against the exam papers (Alex, 11 Nov 2026; batches 5 and 6 were checked on 11 Nov 2026, see Done): no past papers or Question Index were available when it was built. The Predict questions on `skydiver.html` (the air resistance arrow at a point on the graph) and the IAL and IB levels of `skydiver.html` and `motion-graphs.html`. Compare each page's question kinds, diagrams and wording with how the past papers ask them (IGCSE Question Index; the IAL and IB papers for those levels), and fix what doesn't match. The indexes are on Alex's PC (IGCSE, IAL and IB Spec Analysis folders); the chat needs those folders connected.
 
 ## Done
 
+- [x] Forces animations at IAL and IB (Alex, 11 Nov 2026): `momentum-collision.html` (plus an Explosion choice at every level), `hookes-law.html` and `seesaw-moments.html` each have an IGCSE | IAL | IB switch and cards on the IAL and IB lists. To review in `tools/REVIEW.md`. `motion-graphs.html` and `skydiver.html` got theirs in batch 4 (11 Nov 2026).
+- [x] Model pages: `dc-motor.html` and `ac-generator.html` redrawn (10 Nov 2026). Alex to check them (`tools/REVIEW.md`), especially the cell's + on the left brush for "Normal".
+- [x] Practical runs that feel passive (the 4 Nov review): compass needles swinging and filings settling when the card is tapped (`magnetic-field-patterns.html`, batch 1, 10 Nov 2026) and a Leslie cube with a readable thermometer (`heat-transfer.html`, batch 9, 10 Nov 2026).
+- [x] `iv-characteristics.html`: reversible 6 V battery instead of the two-cell −6 V to +6 V potentiometer (3 Nov 2026).
 - [x] Falling-ball viscosity page (11 Nov 2026): `animations/viscosity.html`, on the IAL list (Unit 1, core practical 2) and the IB list (Theme A). Alex chose the animation only (no CP2 practical page yet) and student-pressed timing. Explore (forces to scale, velocity–time graph), Predict (the free-body diagram of a falling ball or a rising bead) and Experiment (time the ball between rubber bands, v against r², viscosity from the gradient). To review in `tools/REVIEW.md`.
 - [x] Build the circuit on `resistivity.html` and `internal-resistance.html` (11 Nov 2026): both have an Explore | Build switch (`?show=build`) with five tasks each, modelled on the IAL questions (WPH12 Jan 2021 Q19(a), Oct 2022 Q12(a), Jan 2024 Q14(b), Jun 2022 Q15(b)(ii)). They carry the circuit board kit and a new shared block, Build tab (`tools/ANIMATION-STYLE.md`). To review in `tools/REVIEW.md`.
 - [x] Batches 5 and 6 checked against the exam papers (11 Nov 2026), using the IGCSE Question Index and the IAL and IB indexes. Changed: `stopping-distance.html` (your speed and mass as choices; the twice-the-speed comparison), `momentum-collision.html` (Predict deals v₁ after a bounce; u₁ at IAL and IB only), `series-parallel.html` (tasks in the papers’ kinds; “voltage” at IGCSE), `iv-characteristics.html` (p.d. at IAL and IB), `potential-divider.html` (IGCSE explanation through the current), `electrostatic-charging.html` (two questions replaced). Matched and left alone: `reaction-time.html`, `hookes-law.html`, `seesaw-moments.html` (its Predict asks which side goes down and where to sit; the commonest exam question, the force that balances, is a Calculate in the 1d workout). What changed on each page is in `tools/REVIEW.md`.
