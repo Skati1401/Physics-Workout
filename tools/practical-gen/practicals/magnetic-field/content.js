@@ -146,7 +146,7 @@ function barFieldSVG(marks,pick){
   return s+'</svg>';
 }
 // Put two activities side by side (laptops), stacking on phones.
-function pairActs(a,b){const A=a.closest('.act'),B=b.closest('.act'),pr=mk('div','act-pair');A.parentNode.insertBefore(pr,A);pr.appendChild(A);pr.appendChild(B);}
+function pairActs(a,b,cls){const A=a.closest('.act'),B=b.closest('.act'),pr=mk('div','act-pair'+(cls?' '+cls:''));A.parentNode.insertBefore(pr,A);pr.appendChild(A);pr.appendChild(B);}
 // Click a lettered point on a picture (or focus it and press Enter). A first wrong pick says why and lets the student
 // try again; the answer is shown once they find it, or after a second wrong pick.
 function createPointPick(cfg){
@@ -306,7 +306,7 @@ let sortBody;
 }
 {
   const body=act('twomag','Predict','A uniform field','');
-  pairActs(sortBody,body);
+  pairActs(sortBody,body,'wide-first');   // the sort wider, so its cards fit three to a row (Alex, 11 Nov 2026)
   createPredict({host:body,q:'Which pattern of field lines shows a uniform magnetic field?',options:[
     {text:'Straight, parallel lines, evenly spaced',correct:true},
     {text:'Curved lines that spread out from a pole',why:'Spreading lines show a field that gets weaker, and curving lines show a change of direction.'},
