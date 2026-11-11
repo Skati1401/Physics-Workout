@@ -39,17 +39,6 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 - [ ] Rebuild the other 13 IGCSE practical pages to the 1.22 Hooke's law model: one row of tabs, no core route, Do/Show Experiment, Multiple choice, no Calculate tab; required tabs Method, Variables, Do Experiment, Show Experiment (`tools/CORE-PRACTICALS.md`, "The 1.22 model"; added 5 Nov 2026)
 - [ ] Review the six practicals published 4 Nov 2026: 3.17 `refraction-practical.html`, 3.19 `refractive-index-practical.html`, 3.25P `speed-of-sound-practical.html`, 2.23P `charging-practical.html`, 3.27P `sound-frequency-practical.html`, 7.6 `penetrating-power-practical.html` (what to check is in `tools/REVIEW.md`).
 - [ ] After Alex checks 1.22's new Experiment tab (students read the ruler, fill in their own table and plot it; the old run is the Show tab): use the same pattern on the other measure-and-plot practicals (5.4, 2.9, 5.14P, 3.19) (added 5 Nov 2026).
-- [ ] Fix the errors the 4 Nov practicals review found, still live on 5 Nov 2026 (full list per page in `claude/practicals-review-2026-11-04.md`). The main ones:
-  - 5.4 density: `setMethod` runs before the Method activities exist, so all four Orders show on load; make Irregular object the default.
-  - 1.5 motion: the "Three ramps" graph lines end at different distances and speeds; fix the end points.
-  - 3.27P: Trace A Q1 asks for "complete" cycles with the answer 2.5; identical repeats possible without moving the cursors.
-  - 3.25P: delete "Much over 200 m, the sound gets hard to hear"; "Why miss the origin?" contradicts the animation; Exam (f) uses past-paper data.
-  - 5.14P: the "more mass than measured" distractor in "Why is the value too high?" would really give a high c.
-  - 6.6: "Tapping the card" marks a creditworthy answer wrong.
-  - 7.6: the absorber thickness is a control, yet paper, 5 mm Al and 2 cm lead are compared ("The best absorber").
-  - 2.23P Exam (f): add "electrons". CP12: line 93 says the calibration carries to the Divider tab (it doesn't). CP13: the "steam condensed back" distractor would really make L_v high.
-  - Duplicate exam numbers to change: 2.9 Exam (b), 3.25P Exam (b), 3.17 Exam (d), 3.19 Exam (d), CP12 Exam (a).
-  - Missing activities worth adding: sketch the heating curve (5.11P); circuit diagram (2.9): build it or find the errors (ammeter in parallel, voltmeter in series, cells the wrong way round); field-drawing mistakes (6.6): find the mistake in field diagrams (reversed arrow, line not reaching the magnet, lines crossing, no central line between N poles). Draw the 2.9 and 6.6 pictures on Claude Fable (section 7).
 - [ ] IAL CP7 resistivity and CP8 internal resistance practical pages, if Alex wants them (the animations are done).
 - [ ] IAL CP12–15: mark scheme wording check (no IAL question index yet).
 
@@ -62,8 +51,6 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 Drawing and animation jobs worth running on Claude Fable, which draws SVG scenes better than the other models; keep page logic on the usual model, as Fable costs more. Fable can still draw convincing pictures with wrong physics, so drive every motion from the page's equations, not drawn keyframes, and check directions (field lines, current, rotation) before publishing. Build with the `teaching-animations` or `interactive-revision-lab` skill as usual.
 
-- [ ] 2.9 I–V practical page `iv-characteristics-practical.html`: its graphs should show the lamp curve continuing into the negative quadrant, as the animation now does (batch 6, 11 Nov 2026).
-- [ ] Drawing pass on the Year 9 half-pipe and bungee Predicts (plain pictures; not in any animation batch). The other plain pages are in their batches: `gas-molecules.html` in batch 10, `chain-reaction.html` in batch 11.
 - [ ] Build: star life cycle and red shift animations for 8a/8b (no animation page yet; frame them in `universe-and-stars.html` and `cosmology.html`).
 
 ## 8. Animation batches: review every animation against the motor and generator model (Alex, 10 Nov 2026)
@@ -80,6 +67,20 @@ Follow-ups:
 
 
 ## Done
+
+- [x] Fix the errors the 4 Nov practicals review found, still live on 5 Nov 2026 (full list per page in `claude/practicals-review-2026-11-04.md`). The main ones: Done (Alex, 11 Nov 2026).
+  - 5.4 density: `setMethod` runs before the Method activities exist, so all four Orders show on load; make Irregular object the default.
+  - 1.5 motion: the "Three ramps" graph lines end at different distances and speeds; fix the end points.
+  - 3.27P: Trace A Q1 asks for "complete" cycles with the answer 2.5; identical repeats possible without moving the cursors.
+  - 3.25P: delete "Much over 200 m, the sound gets hard to hear"; "Why miss the origin?" contradicts the animation; Exam (f) uses past-paper data.
+  - 5.14P: the "more mass than measured" distractor in "Why is the value too high?" would really give a high c.
+  - 6.6: "Tapping the card" marks a creditworthy answer wrong.
+  - 7.6: the absorber thickness is a control, yet paper, 5 mm Al and 2 cm lead are compared ("The best absorber").
+  - 2.23P Exam (f): add "electrons". CP12: line 93 says the calibration carries to the Divider tab (it doesn't). CP13: the "steam condensed back" distractor would really make L_v high.
+  - Duplicate exam numbers to change: 2.9 Exam (b), 3.25P Exam (b), 3.17 Exam (d), 3.19 Exam (d), CP12 Exam (a).
+  - Missing activities worth adding: sketch the heating curve (5.11P); circuit diagram (2.9): build it or find the errors (ammeter in parallel, voltmeter in series, cells the wrong way round); field-drawing mistakes (6.6): find the mistake in field diagrams (reversed arrow, line not reaching the magnet, lines crossing, no central line between N poles). Draw the 2.9 and 6.6 pictures on Claude Fable (section 7).
+- [x] 2.9 I–V practical page `iv-characteristics-practical.html`: its graphs should show the lamp curve continuing into the negative quadrant, as the animation now does (batch 6, 11 Nov 2026). Done (Alex, 11 Nov 2026).
+- [x] Drawing pass on the Year 9 half-pipe and bungee Predicts (plain pictures; not in any animation batch). The other plain pages are in their batches: `gas-molecules.html` in batch 10, `chain-reaction.html` in batch 11. Done (Alex, 11 Nov 2026).
 
 - [x] Move the open to-dos from the PPT-review project docs into this section (Alex, 3 Nov 2026). Done (Alex, 11 Nov 2026).
 - [x] 4 Energy, Lesson 2 Sankey slides (24–49): link the 4a workout Sankey tab's "Sankey diagrams to scale" explore (`energy-stores-efficiency.html#sankey`) on a Sankey teaching slide; the L2 To Do slide (47) already links the tab (review row E26, added 3 Nov 2026). Done (Alex, 11 Nov 2026).
