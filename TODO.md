@@ -8,9 +8,8 @@ The one list for everything still to do: the website, lesson decks, and anything
 
 ## 1. Fix now (site audit, 3 Nov 2026)
 
-The audit's fixes are done (see Done). What changed on each page is in `tools/REVIEW.md` (🔍 rows dated 3 Nov 2026). Still open:
+The audit's fixes are done (see Done). What changed on each page is in `tools/REVIEW.md` (🔍 rows dated 3 Nov 2026). Nothing is open here.
 
-- [ ] The Calculations and Graphs sets build fails: `tools/sets/build.py` looks for a "WORK DONE" section in `work-and-power.html`, which is now "WORK DONE AND POWER" (and others may have moved), so the sets are no longer rebuilt on push. The workflow now carries on past it so the sitemap and Draft tags still update (found 11 Nov 2026).
 
 
 ## 2. Lesson decks (PPT reviews)
@@ -125,6 +124,8 @@ Each batch is one new chat. Alex calls a batch up by number, in any order: "Do a
 - [ ] Batch 13
 
 ## Done
+
+- [x] The Calculations and Graphs sets build again: `tools/sets/build.py` now takes 4c's "WORK DONE AND POWER" (tab `work`) and "CONSERVATION AND POWER" (tab `cpower`, was `power`) sections, and 4a's Conservation tab is out of the Calculations set, as that tab no longer has a Calculate (44 tabs). Every other section and tab was checked and none are empty. The workflow still carries on past a failed sets build (found and fixed 11 Nov 2026).
 
 - [x] Draft tags on every page not ✅ in `tools/REVIEW.md` (workouts, practicals, animations, list cards), and reviewer mode: `?reviewer` once, then "✓ Checked" on a page clears its tag through a GitHub issue only Alex's account can action (Alex, 11 Nov 2026).
 
