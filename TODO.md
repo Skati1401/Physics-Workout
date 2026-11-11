@@ -10,17 +10,9 @@ The one list for everything still to do: the website, lesson decks, and anything
 
 Items from the claude.ai PPT-review projects go here, one line each: deck, slide, change.
 
-- [ ] Move the open to-dos from the PPT-review project docs into this section (Alex, 3 Nov 2026).
-
 **Animation ideas from the reviews.** "Link" lines: the page exists, so put its link (Copperplate hyperlink, `?level=` for the course) on the slide. "Build" lines: build the page with the `teaching-animations` skill, add its card to the course list, then link it on the slide and tick the line. Each PPT review checks these lines before suggesting new ideas.
 
-- [ ] 4 Energy, Lesson 2 Sankey slides (24–49): link the 4a workout Sankey tab's "Sankey diagrams to scale" explore (`energy-stores-efficiency.html#sankey`) on a Sankey teaching slide; the L2 To Do slide (47) already links the tab (review row E26, added 3 Nov 2026).
-- [ ] 4 Energy, Lesson 3 conduction slides (50–66): link `animations/heat-transfer.html?level=igcse` (conduction and free electrons) (review row H26, added 3 Nov 2026).
-- [ ] 4 Energy, Lesson 4 convection slides (67–88): link `animations/heat-transfer.html?level=igcse` (convection) (review row H25, added 3 Nov 2026).
 - [ ] 4 Energy, Lessons 9–10 GPE → KE slides (190–222): link `animations/roller-coaster-energy.html?level=igcse` (review row W04, added 3 Nov 2026).
-- [ ] 5.2 Nuclear Decay (IAL), slide 42: link `animations/chain-reaction.html?level=ial` (built 4 Nov 2026; review row S8).
-- [ ] 6 Magnetism (IGCSE), slides 29–30: link `animations/electromagnets.html?level=igcse` (built 4 Nov 2026; review row M18).
-- [ ] E2 Quantum (IB), slides 55–70: link `animations/electron-diffraction.html?level=ib` (built 4 Nov 2026; review row Q28).
 
 ## 3. Alex to review
 
@@ -89,6 +81,14 @@ Follow-ups:
 - [ ] Check batch 4 against the exam papers (Alex, 11 Nov 2026; batches 5 and 6 were checked on 11 Nov 2026, see Done): no past papers or Question Index were available when it was built. The Predict questions on `skydiver.html` (the air resistance arrow at a point on the graph) and the IAL and IB levels of `skydiver.html` and `motion-graphs.html`. Compare each page's question kinds, diagrams and wording with how the past papers ask them (IGCSE Question Index; the IAL and IB papers for those levels), and fix what doesn't match. The indexes are on Alex's PC (IGCSE, IAL and IB Spec Analysis folders); the chat needs those folders connected.
 
 ## Done
+
+- [x] Move the open to-dos from the PPT-review project docs into this section (Alex, 3 Nov 2026). Done (Alex, 11 Nov 2026).
+- [x] 4 Energy, Lesson 2 Sankey slides (24–49): link the 4a workout Sankey tab's "Sankey diagrams to scale" explore (`energy-stores-efficiency.html#sankey`) on a Sankey teaching slide; the L2 To Do slide (47) already links the tab (review row E26, added 3 Nov 2026). Done (Alex, 11 Nov 2026).
+- [x] 4 Energy, Lesson 3 conduction slides (50–66): link `animations/heat-transfer.html?level=igcse` (conduction and free electrons) (review row H26, added 3 Nov 2026). Done (Alex, 11 Nov 2026).
+- [x] 4 Energy, Lesson 4 convection slides (67–88): link `animations/heat-transfer.html?level=igcse` (convection) (review row H25, added 3 Nov 2026). Done (Alex, 11 Nov 2026).
+- [x] 5.2 Nuclear Decay (IAL), slide 42: link `animations/chain-reaction.html?level=ial` (built 4 Nov 2026; review row S8). Done (Alex, 11 Nov 2026).
+- [x] 6 Magnetism (IGCSE), slides 29–30: link `animations/electromagnets.html?level=igcse` (built 4 Nov 2026; review row M18). Done (Alex, 11 Nov 2026).
+- [x] E2 Quantum (IB), slides 55–70: link `animations/electron-diffraction.html?level=ib` (built 4 Nov 2026; review row Q28). Done (Alex, 11 Nov 2026).
 
 - [x] Forces animations at IAL and IB (Alex, 11 Nov 2026): `momentum-collision.html` (plus an Explosion choice at every level), `hookes-law.html` and `seesaw-moments.html` each have an IGCSE | IAL | IB switch and cards on the IAL and IB lists. To review in `tools/REVIEW.md`. `motion-graphs.html` and `skydiver.html` got theirs in batch 4 (11 Nov 2026).
 - [x] Model pages: `dc-motor.html` and `ac-generator.html` redrawn (10 Nov 2026). Alex to check them (`tools/REVIEW.md`), especially the cell's + on the left brush for "Normal".
