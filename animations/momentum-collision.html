@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Momentum: Collisions and Explosions Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation for Edexcel IGCSE, IAL and IB. Two trolleys stick together, bounce apart or are pushed apart by a spring (an explosion); total momentum before equals total momentum after. IAL and IB add kinetic energy (elastic or inelastic) and impulse.">
+<meta name="description" content="Interactive physics animation for Edexcel IGCSE, IAL and IB. Two trolleys stick together, bounce apart or are pushed apart by a spring (an explosion); total momentum before equals total momentum after. A Predict tab deals a question with one unknown (a velocity or a mass) to calculate before the run. IAL and IB add kinetic energy (elastic or inelastic) and impulse.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -181,6 +181,13 @@
   .seg.g2{display:grid;grid-template-columns:1fr 1fr;}
   .tro .rest{font:12.5px var(--font-mono);color:var(--ink-soft);}
   .eq .why{display:inline-block;line-height:1.4;}
+  /* Explore | Predict, and the answer box in Predict */
+  #mo-setup,#mo-pred{display:flex;flex-direction:column;gap:12px;}
+  .ans{display:flex;align-items:center;gap:8px;font:600 15px var(--font-mono);color:var(--ink);}
+  .ans input{font:600 16px var(--font-mono);color:var(--ink);background:var(--panel);border:2px solid var(--c);border-radius:8px;padding:8px 10px;min-height:44px;width:7.5em;}
+  .ans input:disabled{opacity:.7;border-color:var(--panel-border);}
+  .ans.ok input{border-color:var(--good);background:var(--good-soft);opacity:1;}
+  .ans.no input{border-color:var(--bad);background:var(--bad-soft);opacity:1;}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -290,16 +297,19 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="mo-svg" viewBox="0 0 860 356" role="img" aria-label="Two trolleys on a runway: colliding, or pushed apart by a spring. Below, the exam diagram of the trolleys before and after, and a bar chart of the momentum of each trolley and the total."></svg>
+      <svg class="view" id="mo-svg" viewBox="0 0 860 356" role="img" aria-label="Two trolleys on a runway: colliding, or pushed apart by a spring. Below, the exam diagram of the trolleys before and after, and the total momentum before and after."></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="mo-go" data-action="mo-go" type="button">&#9654; Go</button>
-          <button class="btn" data-action="mo-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="mo-reset" data-action="mo-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="mo-new" data-action="mo-new" type="button" hidden>New question</button>
           <button class="btn" id="slow" type="button" aria-pressed="false">Slow motion</button>
         </div>
       </div>
     </div>
     <div class="side">
+      <div class="seg tabs" id="mo-tab" role="group" aria-label="Explore or predict"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Predict</button></div>
+      <div id="mo-setup">
       <div><div class="lab" id="mo-mode-lab">Collision or explosion</div><div class="seg" id="mo-mode" role="group" aria-label="Collision or explosion"></div></div>
       <div class="tro" role="group" aria-label="The two trolleys">
         <span class="tro-name t1">Trolley 1</span>
@@ -310,6 +320,11 @@
         <div><label class="lab" for="mo-mb"><span>m<sub>2</sub></span> <output id="mo-mbo"></output></label><input type="range" id="mo-mb" min="1" max="5" step="0.5" value="1" aria-label="Mass of trolley 2"></div>
         <div id="mo-u2-cell"><label class="lab" for="mo-u2"><span>u<sub>2</sub></span> <output id="mo-u2o"></output></label><input type="range" id="mo-u2" min="-6" max="6" step="0.5" value="0" aria-label="Velocity of trolley 2"></div>
         <div class="rest" id="mo-rest-cell" hidden></div>
+      </div>
+      </div>
+      <div id="mo-pred" hidden>
+        <div><div class="lab">Find</div><div class="seg" id="mo-find" role="group" aria-label="Which quantity to find"><button type="button" data-k="mix" aria-pressed="true">Mixed</button><button type="button" data-k="v" aria-pressed="false" aria-label="The velocity after they stick together">v</button><button type="button" data-k="v2" aria-pressed="false" aria-label="The velocity of trolley 2 afterwards">v<sub>2</sub></button><button type="button" data-k="m2" aria-pressed="false" aria-label="The mass of trolley 2">m<sub>2</sub></button><button type="button" data-k="u1" aria-pressed="false" aria-label="The velocity of trolley 1 before">u<sub>1</sub></button></div></div>
+        <label class="ans" id="mo-ans-row"><span id="mo-ans-lab">v =</span><input type="text" id="mo-ans" inputmode="text" autocomplete="off" aria-label="Your answer"><span id="mo-ans-unit">m/s</span></label>
       </div>
       <p class="note" id="mo-note" aria-live="polite"></p>
       <div class="stats" id="mo-stats" hidden>
@@ -428,6 +443,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
 
   function initMomentumSim(){
     var maIn=bindRange('mo-ma',reset), uIn=bindRange('mo-u',reset), mbIn=bindRange('mo-mb',reset), u2In=bindRange('mo-u2',reset), v1In=bindRange('mo-v1',reset), mode='stick';
+    // Predict: a dealt question with one unknown (Q.unk: v, v2, m2 or u1). It is typed in, locked when Go is pressed and marked when the run ends.
+    var PRED=false, Q=null, locked=false, marked=false, find='mix', saved=null, lastSig='', ansIn=$('#mo-ans'), tabEl=$('#mo-tab'), findEl=$('#mo-find');
+    function hid(k){ return PRED && !marked && !!Q && Q.unk===k; }   // still hidden from the picture, the diagram and the working
     var svg=$('#mo-svg'), L=null, PXM=52, X0=20, GAP=3, OFF=0, LEFT=20, RIGHT=840, t=0, running=false, finishedRun=false, last=0, raf=0, modeEl=$('#mo-mode'), levelEl=$('#mo-level');
     var HOLD=0.6, SPRING_PX=20;   // an explosion: the trolleys are held for 0.6 s with a compressed spring (20 px long) between them
     // ---- level: IGCSE (the default), IAL or IB. IAL and IB add kinetic energy (elastic or inelastic), impulse, a bounce that loses energy and units as kg m s⁻¹ ----
@@ -447,19 +465,21 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     function showControls(){
       var ex=mode==='explode';
       $('#mo-u-cell').hidden=ex; $('#mo-u2-cell').hidden=ex; $('#mo-v1-cell').hidden=!ex; $('#mo-rest-cell').hidden=!ex;
-      $('#mo-stats').hidden=!ks5(); $('#mo-hint').hidden=ks5(); $('#mo-mode-lab').hidden=ks5();   // IAL and IB have more in the column: no label over the four choices
+      $('#mo-setup').hidden=PRED; $('#mo-pred').hidden=!PRED; $('#mo-reset').hidden=PRED; $('#mo-new').hidden=!PRED;
+      $('#working').hidden=PRED && !marked;   // nothing gives the answer away before the run is marked
+      $('#mo-stats').hidden=!ks5() || (PRED && !marked); $('#mo-hint').hidden=PRED ? (!!Q && Q.unk==='m2') : ks5(); $('#mo-mode-lab').hidden=ks5();   // IAL and IB have more in the column: no label over the four choices
       $('#mo-eyebrow').innerHTML = ks5() ? 'Animations &middot; mechanics' : 'Animations &middot; forces &middot; TA = Triple Award only';
       $('#mo-go').innerHTML = ex ? '&#9654; Release' : '&#9654; Go';
     }
     modeEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; mode=b.dataset.k;
       Array.prototype.forEach.call(modeEl.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); showControls(); reset(); });
-    function setLevel(v){ level=v; Array.prototype.forEach.call(levelEl.children,function(x){ x.setAttribute('aria-pressed',String(x.dataset.v===v)); }); buildModes(); showControls(); reset(); }
+    function setLevel(v){ level=v; Array.prototype.forEach.call(levelEl.children,function(x){ x.setAttribute('aria-pressed',String(x.dataset.v===v)); }); buildModes(); showControls(); if(PRED) newQ(); else reset(); }
     levelEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setLevel(b.dataset.v); });
     function ma(){return +maIn.value;} function mb(){return +mbIn.value;}
     function u(){ return mode==='explode' ? 0 : +uIn.value; } function u2(){ return mode==='explode' ? 0 : +u2In.value; }   // an explosion starts with both at rest
     function meets(){ return mode==='explode' || u()>u2(); }   // the gap closes only if trolley 1 moves right faster than trolley 2 does
     // v1 is given, as in an exam question, and the student finds v2: in an explosion at every level, and in a bounce at IAL and IB
-    function given(){ return mode==='explode' || (ks5() && (mode==='bounce' || mode==='inel')); }
+    function given(){ return mode==='explode' || (ks5() && (mode==='bounce' || mode==='inel')) || (PRED && !!Q && Q.unk==='v2'); }
     function after(){   // velocities just after the collision or explosion (right is positive)
       var M=ma()+mb(), P=ma()*u()+mb()*u2();
       // explosion: the spring pushes trolley 1 to the left at the chosen speed; trolley 2 gets equal and opposite momentum
@@ -508,19 +528,19 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       return lim;
     }
     /* The picture is 860 x 356: the two trolleys on a runway (trolley 1 pink, trolley 2 blue, each 1 kg with 0.5 kg slabs stacked on it),
-       then the exam diagram (before and after) and a bar chart of the momentum. Under 520px the same code uses a tall viewBox with the parts stacked.
+       then the exam diagram (before and after) and the total momentum before and after (in Predict, the question and its mark). Under 520px the same code uses a tall viewBox with the parts stacked.
        C1 and C2 are the two trolleys' colours everywhere they appear. */
     var C1='var(--momentum)', C2='var(--motion)', B1='var(--tr1)', B2='var(--tr2)';
     function narrow(){ return window.innerWidth<=520; }
     function lay(){ return narrow()
-      ? {tall:true, W:430, H:604, left:10, right:420, pxm:26, ty:125, T:{w:72,bh:22,wr:7,sh:4.5,fs:11}, V:{l1:11,a1:21,l2:41,a2:52,w:3.5,k:8}, cap:150, capN:56,
-         P:[{x:105,y:176},{x:105,y:300}], C:{x0:64,x1:416,y0:448,y1:560}, fs:12}
-      : {tall:false, W:860, H:356, left:20, right:840, pxm:52, ty:152, T:{w:116,bh:32,wr:10,sh:6,fs:13.5}, V:{l1:11,a1:22,l2:43,a2:54,w:4,k:18}, cap:186, capN:120,
-         P:[{x:12,y:204},{x:262,y:204}], C:{x0:570,x1:848,y0:214,y1:316}, fs:12}; }
+      ? {tall:true, W:430, H:540, left:10, right:420, pxm:26, ty:125, T:{w:72,bh:22,wr:7,sh:4.5,fs:11}, V:{l1:11,a1:21,l2:41,a2:52,w:3.5,k:8}, cap:150, capN:56,
+         P:[{x:105,y:176},{x:105,y:300}], M:{x:14,y:432}, fs:12}
+      : {tall:false, W:860, H:332, left:20, right:840, pxm:52, ty:152, T:{w:116,bh:32,wr:10,sh:6,fs:13.5}, V:{l1:11,a1:22,l2:43,a2:54,w:4,k:18}, cap:186, capN:120,
+         P:[{x:12,y:204},{x:262,y:204}], M:{x:540,y:204}, fs:12}; }
     function sub(sym, n){ return sym+(n?'<tspan dy="3" font-size="9">'+n+'</tspan><tspan dy="-3">':'<tspan>'); }   // u1, v2 … with a real subscript
     // one trolley, side on: x0 is its left edge. It has a buffer on the end that faces the other trolley. gapPx: the space between the two trolleys now.
     function trolley(x0, n, m, col, dist, gapPx){
-      var S=L.T, w=S.w, yb=L.ty-S.wr*0.9, yt=yb-S.bh, face=n===1?1:-1, bx=n===1?x0:x0+7, bw=w-7, g='', i, slabs=Math.round((m-1)/0.5), turn=dist/S.wr;
+      var S=L.T, w=S.w, yb=L.ty-S.wr*0.9, yt=yb-S.bh, face=n===1?1:-1, bx=n===1?x0:x0+7, bw=w-7, g='', i, slabs=m==null?0:Math.round((m-1)/0.5), turn=dist/S.wr;   // m null: the mass is the unknown, so no slabs and "? kg"
       g+=ell(x0+w/2,L.ty+1,w*0.56,3.6,'#000',' opacity=".2"');
       // the buffer: Velcro pads to stick, sprung plates to bounce, foam pads for a bounce that loses energy, and for an explosion a spring fixed to trolley 1
       var ex=n===1?x0+w:x0, ey=yt+S.bh*0.5;
@@ -540,14 +560,15 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       for(i=0;i<slabs;i++) g+=box(bx+12,yt-(i+1)*S.sh-1,bw-26,S.sh-1,5,-3.5,'var(--steel)');
       g+=rect(bx+3,yt+2.5,bw-6,2.4,'#fff',' rx="1.2" opacity=".28"');
       g+='<circle cx="'+f1(bx+S.fs*0.95)+'" cy="'+f1(yt+S.bh*0.44)+'" r="'+f1(S.fs*0.62)+'" fill="#fff"/>'+txt(bx+S.fs*0.95,yt+S.bh*0.44+S.fs*0.34,String(n),{a:'middle',fs:S.fs,c:col,w:700});
-      g+=txt(bx+S.fs*1.7+(bw-S.fs*1.7)/2,yt+S.bh*0.44+S.fs*0.34,m+' kg',{a:'middle',fs:S.fs,c:'#fff',w:600});
+      g+=txt(bx+S.fs*1.7+(bw-S.fs*1.7)/2,yt+S.bh*0.44+S.fs*0.34,(m==null?'?':m)+' kg',{a:'middle',fs:S.fs,c:'#fff',w:600});
       [bx+S.wr+5, bx+bw-S.wr-5].forEach(function(cx){ var cy=L.ty-S.wr, c=Math.cos(turn)*S.wr*0.42, s=Math.sin(turn)*S.wr*0.42;
         g+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+S.wr+'" fill="#1d2430"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+f1(S.wr*0.5)+'" fill="var(--steel-hi)"/>'+ln(cx-c,cy-s,cx+c,cy+s,'var(--steel-sh)',1.4)+ln(cx+s,cy-c,cx-s,cy+c,'var(--steel-sh)',1.4); });
       return g;
     }
     // a velocity arrow with its value, in its own row above the trolleys (row 1 for trolley 1, row 2 for trolley 2), so the two never overlap
-    function vel(x, v, row, col){
-      var V=L.V, ya=row===1?V.a1:V.a2, yl=row===1?V.l1:V.l2, s=num(Math.abs(v),2)+' '+ms(), hw=s.length*L.fs*0.31+2;
+    function vel(x, v, row, col, hide){   // hide: this velocity is the unknown, so "?" and an arrow of a fixed length
+      var V=L.V, ya=row===1?V.a1:V.a2, yl=row===1?V.l1:V.l2, s=(hide?'?':num(Math.abs(v),2))+' '+ms(), hw=s.length*L.fs*0.31+2;
+      if(hide && Math.abs(v)>=0.005) v=v<0?-2.5:2.5;
       if(Math.abs(v)<0.005){ x=Math.min(Math.max(x,L.left+hw),L.right-hw); return txt(x,ya+4,'0 '+ms(),{a:'middle',fs:L.fs,c:col,w:600}); }
       var len=(10+Math.min(Math.abs(v),9)*V.k)*(v<0?-1:1), x1=x-len/2;
       x1=Math.min(Math.max(x1,L.left+4-Math.min(0,len)),L.right-4-Math.max(0,len));
@@ -571,48 +592,47 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       return g;
     }
     function panelsSVG(st, done){
-      var v=after(), g='', A=L.P[1];
-      g+=panel(L.P[0],'Before',[{m:ma(),v:u(),sym:'u',sub:'1'},{m:mb(),v:u2(),sym:'u',sub:'2'}], mode==='explode' ? {sym:'u',sub:'',v:0} : false);
+      var v=after(), g='', A=L.P[1], m2=hid('m2')?'?':mb();
+      g+=panel(L.P[0],'Before',[{m:ma(),v:hid('u1')?null:u(),sym:'u',sub:'1'},{m:m2,v:u2(),sym:'u',sub:'2'}], mode==='explode' ? {sym:'u',sub:'',v:0} : false);
       if(!L.tall) g+=pl([[L.P[0].x+226,L.P[0].y+62],[L.P[0].x+238,L.P[0].y+72],[L.P[0].x+226,L.P[0].y+82]],'var(--ink-faint)',2.5);
       if(!meets()) return g+txt(A.x,A.y+12,'After',{fs:13,c:'var(--ink)',w:700})+txt(A.x+110,A.y+72,'no collision',{a:'middle',fs:12.5,c:'var(--ink-soft)'});
       // the velocities after the collision stay as "?" until the run ends, so students can predict them first (a given v1 shows from the start)
-      g+=panel(A,'After',[{m:ma(),v:done||given()?v.va:null,sym:'v',sub:'1'},{m:mb(),v:done?v.vb:null,sym:'v',sub:'2'}],mode==='stick');
+      // in Predict the given values show from the start and only the unknown is "?"
+      var showV=done || given() || (PRED && !hid('v'));
+      g+=panel(A,'After',[{m:ma(),v:showV?v.va:null,sym:'v',sub:'1'},{m:m2,v:done?v.vb:null,sym:'v',sub:'2'}],mode==='stick');
       return g;
     }
-    // bar chart of the momentum now: trolley 1, trolley 2 and the total. After the collision a dashed outline keeps each trolley's momentum before it.
-    function chartSVG(st){
-      var C=L.C, g='', pb=[ma()*u(), mb()*u2()], tot=pb[0]+pb[1], v=after(), now=[ma()*st.va, mb()*st.vb, tot], vals=pb.concat([tot]), i;
-      if(meets()) vals.push(ma()*v.va, mb()*v.vb);
-      var mx=Math.max.apply(null, vals.map(Math.abs)), S=[2,5,10,20,30,40,60,80,100,150].filter(function(s){ return s>=mx-1e-9; })[0]||200;
-      var neg=vals.some(function(p){ return p<-1e-9; }), h=C.y1-C.y0, Y=function(p){ return neg ? (C.y0+C.y1)/2-p/S*(h/2-14) : C.y1-p/S*(h-14); };   // 14 px of room at the ends for the numbers on the bars
-      (neg?[-S,-S/2,0,S/2,S]:[0,S/2,S]).forEach(function(p){ g+=ln(C.x0,Y(p),C.x1,Y(p),'var(--panel-border)',1)+txt(C.x0-7,Y(p)+4,sn(p),{a:'end',fs:11,c:'var(--ink-faint)'}); });
-      g+=ln(C.x0,C.y0,C.x0,C.y1,'var(--ink-soft)',2);
-      g+='<text transform="translate('+f1(C.x0-38)+' '+f1((C.y0+C.y1)/2)+') rotate(-90)" text-anchor="middle" font-size="12" fill="var(--ink-soft)">Momentum ('+pu()+')</text>';
-      var bw=46, step=(C.x1-C.x0)/3, cols=[B1,B2,'var(--bar-tot)'], names=['trolley 1','trolley 2','total'], dash=st.hit && mode!=='explode';
-      for(i=0;i<3;i++){ var cx=C.x0+step*(i+0.5), p=now[i], y0=Y(0), yp=Y(p);
-        if(Math.abs(yp-y0)>0.5) g+=box(cx-bw/2,Math.min(y0,yp),bw,Math.abs(yp-y0),5,-4,cols[i]);
-        if(dash && i<2 && Math.abs(pb[i]-p)>1e-6) g+=rect(cx-bw/2,Math.min(y0,Y(pb[i])),bw,Math.abs(Y(pb[i])-y0),'none',' stroke="'+(i?C2:C1)+'" stroke-width="1.6" stroke-dasharray="5 3"');
-        var ye=p<0?Math.max(yp,dash&&i<2?Y(Math.min(pb[i],0)):yp)+14:Math.min(yp,dash&&i<2?Y(Math.max(pb[i],0)):yp)-9;
-        g+=txt(cx,ye,sn(p),{a:'middle',fs:12,c:'var(--ink)',w:600,halo:1});
-        g+=txt(cx,C.y1+(neg?18:17),names[i],{a:'middle',fs:11.5,c:i===0?C1:(i===1?C2:'var(--ink-soft)'),w:600}); }
-      g+=ln(C.x0,Y(0),C.x1,Y(0),'var(--ink-soft)',2);
-      if(dash) g+=ln(C.x1-164,C.y0-17,C.x1-140,C.y0-17,'var(--ink-soft)',1.6,' stroke-dasharray="5 3"')+txt(C.x1,C.y0-13,'before the collision',{a:'end',fs:11,c:'var(--ink-soft)'});
-      return g;
+    // beside the exam diagram: the total momentum before and after (after stays "?" until the run ends). In Predict: what to find, then the mark.
+    function totalsSVG(done){
+      var M=L.M, g='', v=after(), pb=ma()*u()+mb()*u2(), o={fs:11.5,c:'var(--ink)'}, B=function(x){ return '<tspan font-weight="700">'+x+'</tspan>'; };
+      if(PRED && Q){
+        var nm={v:sub('v',''),v2:sub('v','2'),m2:sub('m','2'),u1:sub('u','1')}[Q.unk]+'</tspan>', un=Q.unk==='m2'?'kg':ms();
+        g+=txt(M.x,M.y+12,'Predict',{fs:13,c:'var(--ink)',w:700});
+        if(!marked) return g+txt(M.x,M.y+40,'Calculate '+nm+', then press '+(mode==='explode'?'Release':'Go'),{fs:12.5,c:'var(--ink)'});
+        g+=txt(M.x,M.y+44,(Q.ok?'✓ ':'✗ ')+nm+' = '+sn(Q.ans)+' '+un,{fs:16,c:Q.ok?'var(--good)':'var(--bad)',w:700});
+        return g+(Q.ok?'':txt(M.x,M.y+66,'You typed '+sn(Q.val),{fs:12,c:'var(--ink-soft)'}));
+      }
+      g+=txt(M.x,M.y+12,'Total momentum',{fs:13,c:'var(--ink)',w:700});
+      if(!meets()) return g+txt(M.x,M.y+38,'no collision',{fs:12.5,c:'var(--ink-soft)'});
+      g+=txt(M.x,M.y+36,'before',{fs:11.5,c:'var(--ink-soft)'})+txt(M.x,M.y+53,ma()+' × '+sv(u())+' + '+mb()+' × '+sv(u2())+' = '+B(sn(pb)+' '+pu()),o);
+      g+=txt(M.x,M.y+79,'after',{fs:11.5,c:'var(--ink-soft)'});
+      if(!done) return g+txt(M.x,M.y+96,B('? '+pu()),o);
+      return g+txt(M.x,M.y+96,(mode==='stick' ? '('+ma()+' + '+mb()+') × '+sv(v.va) : ma()+' × '+sv(v.va)+' + '+mb()+' × '+sv(v.vb))+' = '+B(sn(ma()*v.va+mb()*v.vb)+' '+pu()),o);
     }
     function draw(){
-      var st=state(t), w=L.T.w, p=px(st), g='', done=finishedRun, gapPx=p.xb-p.xa;
+      var st=state(t), w=L.T.w, p=px(st), g='', done=finishedRun || (PRED && marked), gapPx=p.xb-p.xa;
       svg.setAttribute('viewBox','0 0 '+L.W+' '+L.H); svg.classList.toggle('tall', !!L.tall);
       // the runway
       g+=ell(L.W/2,L.ty+16,L.W*0.47,4,'#000',' opacity=".12"')+box(L.left-8,L.ty+3,L.right-L.left+8,9,9,-7,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'});
-      g+=trolley(p.xa-w,1,ma(),B1,st.a*L.pxm,gapPx)+trolley(p.xb,2,mb(),B2,st.b*L.pxm,gapPx);
-      if(st.hit && mode==='stick') g+=vel((p.xa-w+p.xb+w)/2, st.va, 1, 'var(--ink)');
-      else g+=vel(p.xa-w/2, st.va, 1, C1)+vel(p.xb+w/2, st.vb, 2, C2);
-      function how(n,v){ return v===0 ? 'trolley '+n+' is at rest' : 'trolley '+n+' moves '+(v<0?'left':'right')+' at '+num(Math.abs(v),2)+' '+ms(); }
-      var before = 'Before: '+how(1,u())+', '+how(2,u2());
+      g+=trolley(p.xa-w,1,ma(),B1,st.a*L.pxm,gapPx)+trolley(p.xb,2,hid('m2')?null:mb(),B2,st.b*L.pxm,gapPx);
+      if(st.hit && mode==='stick') g+=vel((p.xa-w+p.xb+w)/2, st.va, 1, 'var(--ink)', hid('v'));
+      else g+=vel(p.xa-w/2, st.va, 1, C1, !st.hit && hid('u1'))+vel(p.xb+w/2, st.vb, 2, C2, st.hit && hid('v2'));
+      function how(n,v,hide){ return v===0 ? 'trolley '+n+' is at rest' : 'trolley '+n+' moves '+(v<0?'left':'right')+(hide?'':' at '+num(Math.abs(v),2)+' '+ms()); }
+      var before = 'Before: '+how(1,u(),hid('u1'))+', '+how(2,u2());
       var lab = mode==='explode' ? (st.hit ? 'After: the spring has pushed the trolleys apart' : 'Before: both trolleys are at rest, held together with a squashed spring between them')
         : (!meets() ? 'The gap between the trolleys never closes, so they never meet' : (!st.hit ? before : (mode==='stick' ? 'After: they move off together' : 'After: they bounce apart')));
       wrapLines(lab,L.capN).forEach(function(s,i){ g+=txt(L.left-6,L.cap+i*15,s,{fs:L.fs,c:'var(--ink-soft)'}); });
-      g+=panelsSVG(st, done)+chartSVG(st);
+      g+=panelsSVG(st, done)+totalsSVG(done);
       svg.innerHTML=g;
     }
     function dirTxt(v){ return sn(v)+' '+ms()+(v<0?' (left)':(v>0?' (right)':'')); }
@@ -650,6 +670,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     }
     // v after the collision stays hidden until the run ends, so students can predict it first
     function eq(done){
+      done=done || (PRED && marked);
       $('#mo-mao').textContent=ma()+' kg'; $('#mo-uo').textContent=dirTxt(+uIn.value); $('#mo-mbo').textContent=mb()+' kg';
       $('#mo-u2o').textContent=dirTxt(+u2In.value); $('#mo-v1o').textContent=dirTxt(+v1In.value);
       $('#mo-rest-cell').innerHTML='u<sub>1</sub> = u<sub>2</sub> = 0 (at rest)';
@@ -659,7 +680,14 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       if(!meets()){ $('#mo-eq').innerHTML='The trolleys never meet, so there is no collision.'; return; }
       var p=ma()*u()+mb()*u2(), M=ma()+mb(), h;
       var lhs=ma()+' × '+sv(u())+' + '+mb()+' × '+sv(u2()), head='total momentum before = total momentum after<br>';
-      if(mode==='stick')
+      var U1='u<sub>1</sub>', M2='m<sub>2</sub>', STICK='m<sub>1</sub>u<sub>1</sub> + m<sub>2</sub>u<sub>2</sub> = (m<sub>1</sub> + m<sub>2</sub>)v<br>';
+      if(PRED && Q && Q.unk==='u1')        // Predict, find u1 (they stick, trolley 2 at rest): substitute, then rearrange
+        h=head+STICK+co(ma(),U1)+' + '+mb()+' × 0 = ('+ma()+' + '+mb()+') × '+sv(v.va)+'<br>'+co(ma(),U1)+' = '+sn(M*v.va)+
+          (ma()===1 ? '' : '<br>'+U1+' = [['+sn(M*v.va)+'|'+ma()+']]')+'<br>'+U1+' = <b>'+sn(u())+' '+ms()+'</b>';
+      else if(PRED && Q && Q.unk==='m2')   // Predict, find m2 (they stick, trolley 2 at rest)
+        h=head+STICK+ma()+' × '+sv(u())+' + 0 = '+sn(v.va)+'('+ma()+' + '+M2+')<br>'+sn(p)+' = '+sn(v.va)+'('+ma()+' + '+M2+')<br>[['+sn(p)+'|'+sn(v.va)+']] = '+ma()+' + '+M2+
+          '<br>'+num(M,2)+' = '+ma()+' + '+M2+'<br>'+M2+' = '+num(M,2)+' − '+ma()+'<br>'+M2+' = <b>'+mb()+' kg</b>';
+      else if(mode==='stick')
         h=head+'m<sub>1</sub>u<sub>1</sub> + m<sub>2</sub>u<sub>2</sub> = (m<sub>1</sub> + m<sub>2</sub>)v<br>'+lhs+' = ('+ma()+' + '+mb()+')v<br>'+sn(p)+' = '+num(M,2)+'v<br>v = [['+sn(p)+'|'+num(M,2)+']]<br>v = <b>'+(done?sn(v.va):'?')+' '+ms()+'</b>';
       else if(given()){
         // v1 is given: substitute, then rearrange for v2
@@ -676,15 +704,79 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     }
     function stop(){ running=false; cancelAnimationFrame(raf); setGo(); }
     function setGo(){ $('#mo-go').innerHTML = running ? '&#10074;&#10074; Pause' : (t>0 && t<endT() ? '&#9654; Play' : (mode==='explode' ? '&#9654; Release' : '&#9654; Go')); }
+    // ---- Predict: dealing a question, its words and its mark ----
+    function rv(lo,hi){ return lo+0.5*Math.floor(Math.random()*(Math.round((hi-lo)/0.5)+1)); }   // a value on the sliders' 0.5 steps
+    function half(x){ return Math.abs(x*2-Math.round(x*2))<1e-9; }
+    function setS(m1,m2,a,b,v1){ maIn.value=m1; mbIn.value=m2; uIn.value=a; u2In.value=b; if(v1!=null) v1In.value=v1; }
+    function makeQ(k){ var v=after(); return {unk:k, ans:{v:v.va, v2:v.vb, m2:mb(), u1:u()}[k], sig:[k,mode,ma(),mb(),u(),u2(),v.va].join()}; }
+    // choose masses and velocities at random until every value in the question and its answer is a multiple of 0.5 and the run fits the runway
+    function gen(k){
+      for(var n=0;n<400;n++){ var m1=rv(1,5), m2=rv(1,5), a, b, v;
+        if(k==='v2' && Math.random()<0.35){ mode='explode'; setS(m1,m2,0,0,-rv(0.5,6)); v=after(); if(!half(v.vb) || Math.abs(v.vb)>8) continue; }
+        else { mode = k==='v2' ? (ks5() && Math.random()<0.5 ? 'inel' : 'bounce') : 'stick';
+          a=rv(1,6); b=(k==='m2' || k==='u1' || Math.random()<0.6) ? 0 : rv(-4,Math.min(4,a-1)); if(a-b<1) continue;
+          setS(m1,m2,a,b); v=after(); if(!half(v.va) || !half(v.vb)) continue;
+          if(mode==='stick' && Math.abs(v.va)<0.4) continue;
+          if(k==='v2' && Math.abs(v.vb)<0.4) continue;
+          if(k==='m2' && m1===m2) continue; }
+        layout(); if(!(meets() && endT()>=tHit()+0.4)) continue;
+        return makeQ(k);
+      }
+      mode = k==='v2' ? 'bounce' : 'stick'; setS(2,1,3,0); return makeQ(k);
+    }
+    function newQ(){
+      stop(); marked=false; locked=false; var kinds=['v','v2','m2','u1'], q, i;
+      for(i=0;i<20;i++){ q=gen(find==='mix' ? kinds[Math.floor(Math.random()*4)] : find); if(q.sig!==lastSig) break; }
+      Q=q; lastSig=q.sig; ansIn.value=''; ansIn.disabled=false; $('#mo-ans-row').classList.remove('ok','no');
+      $('#mo-ans-lab').innerHTML={v:'v',v2:'v<sub>2</sub>',m2:'m<sub>2</sub>',u1:'u<sub>1</sub>'}[q.unk]+' ='; $('#mo-ans-unit').textContent=q.unk==='m2' ? 'kg' : ms();
+      reset();
+    }
+    function qName(){ return {v:'v',v2:'v₂',m2:'m₂',u1:'u₁'}[Q.unk]; }
+    function mv(x){ return Math.abs(x)<0.005 ? 'is at rest' : 'moves '+(x<0?'left':'right')+' at '+num(Math.abs(x),2)+' '+ms(); }
+    function qText(){
+      var v=after();
+      if(mode==='explode') return 'Both trolleys are at rest, held together with a squashed spring between them. When the spring is let go, trolley 1 ('+ma()+' kg) '+mv(v.va)+'. Calculate the velocity of trolley 2 ('+mb()+' kg), then press Release.';
+      var s='Trolley 1 ('+ma()+' kg) moves right'+(Q.unk==='u1' ? '' : ' at '+num(u(),2)+' '+ms())+' and hits trolley 2 ('+(Q.unk==='m2' ? 'mass unknown' : mb()+' kg')+'), which '+(u2()===0 ? 'is at rest' : 'is moving '+(u2()<0?'left':'right')+' at '+num(Math.abs(u2()),2)+' '+ms())+'. ';
+      if(Q.unk==='v') s+='They stick together. Calculate their velocity after the collision';
+      else if(Q.unk==='m2') s+='They stick together and move '+(v.va<0?'left':'right')+' at '+num(Math.abs(v.va),2)+' '+ms()+'. Calculate the mass of trolley 2';
+      else if(Q.unk==='u1') s+='They stick together and move '+(v.va<0?'left':'right')+' at '+num(Math.abs(v.va),2)+' '+ms()+'. Calculate the velocity of trolley 1 before the collision';
+      else s+='They bounce apart, and afterwards trolley 1 '+mv(v.va)+'. Calculate the velocity of trolley 2 after the collision';
+      return s+', then press Go.';
+    }
+    function close(a,b){ return Math.abs(a-b)<=Math.max(0.05,Math.abs(b)*0.02); }
+    function markText(){
+      var un=Q.unk==='m2' ? 'kg' : ms(), ans=qName()+' = '+sn(Q.ans)+' '+un;
+      if(Q.ok) return '✓ Correct: '+ans+'. Show working has each step.';
+      if(Q.unk!=='m2' && close(-Q.val,Q.ans)) return '✗ Right size, wrong direction: it moves '+(Q.ans<0?'left':'right')+', so '+ans+'. Right is positive.';
+      return '✗ Not quite: '+ans+' (you typed '+sn(Q.val)+'). Show working has each step.';
+    }
+    function readAns(){ var s=ansIn.value.trim().replace(/[−–]/g,'-').replace(',','.'); return s==='' || isNaN(+s) ? null : +s; }
+    function setTab(v){
+      var p=v==='predict'; if(p===PRED) return;
+      Array.prototype.forEach.call(tabEl.children,function(x){ x.setAttribute('aria-pressed',String(x.dataset.v===v)); });
+      if(p){ saved={mode:mode, s:[maIn.value,mbIn.value,uIn.value,u2In.value,v1In.value]}; PRED=true; showControls(); newQ(); }
+      else { PRED=false; Q=null; marked=false; locked=false; mode=saved.mode; setS.apply(null,saved.s); buildModes(); showControls(); reset(); }   // Explore comes back as it was left
+    }
+    // on the page itself the Explore | Predict switch sits on the title line, so the card still fits one laptop screen; in a frame (no title) it stays at the top of the right-hand column
+    if(!EMBED) $('.head-line').insertBefore(tabEl, levelEl);
+    tabEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setTab(b.dataset.v); });
+    findEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; find=b.dataset.k;
+      Array.prototype.forEach.call(findEl.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); newQ(); });
+    ansIn.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); $('#mo-go').click(); } });
+    onAction('mo-new',function(){ newQ(); ansIn.focus(); });
     function startNote(){
+      if(PRED && Q) return qText();
       if(mode==='explode') return 'Both trolleys are at rest, so the total momentum is 0. The spring will push trolley 1 away at '+num(Math.abs(+v1In.value),2)+' '+ms()+' to the left. Work out v₂, then press Release.';
       if(!meets()) return 'The gap between the trolleys never closes, so they never meet. Make u₁ bigger or u₂ smaller (more to the left).';
       if(given()){ var va=after().va; return 'After the collision trolley 1 '+(Math.abs(va)<0.005 ? 'is at rest' : 'moves '+(va<0?'left':'right')+' at '+num(Math.abs(va),2)+' '+ms())+'. Work out v₂, then press Go.'; }
       return 'Press Go to start the collision.';
     }
-    function reset(){ stop(); t=0; finishedRun=false; layout(); $('#mo-note').textContent=startNote(); eq(); draw(); setGo(); }
-    function finish(){ running=false; cancelAnimationFrame(raf); t=endT(); finishedRun=meets() && endT()>=tHit(); draw(); setGo(); eq(finishedRun); var v=after();
+    function reset(){ stop(); t=0; finishedRun=false; layout(); showControls(); $('#mo-note').textContent=marked ? markText() : startNote(); eq(); draw(); setGo(); }
+    function finish(){ running=false; cancelAnimationFrame(raf); t=endT(); finishedRun=meets() && endT()>=tHit();
+      if(PRED && Q && finishedRun && !marked){ marked=true; Q.ok=close(Q.val,Q.ans); $('#mo-ans-row').classList.add(Q.ok?'ok':'no'); showControls(); }   // mark the typed answer
+      draw(); setGo(); eq(finishedRun); var v=after();
       if(!meets()) return;
+      if(PRED && Q && marked){ $('#mo-note').textContent=markText(); return; }
       var pa=sn(ma()*v.va+mb()*v.vb), n;
       if(mode==='stick') n='Total momentum after = ('+ma()+' + '+mb()+') × '+sv(v.va)+' = '+sn(ma()*u()+mb()*u2())+' '+pu()+', the same as before.';
       else if(mode==='explode') n='Total momentum after = '+ma()+' × '+sv(v.va)+' + '+mb()+' × '+sv(v.vb)+' = '+pa+' '+pu()+', the same as before'+(ks5() ? '.' : ': the two trolleys have equal and opposite momentum.');
@@ -695,13 +787,18 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       if(endT()<tHit()) $('#mo-note').textContent='A trolley reached the end of the track before they met. Make the difference between u₁ and u₂ bigger.'; }
     function frame(now){ if(!running) return; t+=Math.min(0.05,(now-last)/1000)*SPEED(); last=now;
       if(t>=endT()){ finish(); return; } draw(); raf=requestAnimationFrame(frame); }
-    onAction('mo-go',function(){ if(running){ stop(); return; } if(t===0 || t>=endT()){ t=0; finishedRun=false; eq(); if(meets()) $('#mo-note').textContent = mode==='explode' ? 'Watch the velocity arrows when the spring is let go.' : 'Watch the velocity arrows before and after the collision.'; } running=true; last=performance.now(); setGo(); raf=requestAnimationFrame(frame); });
+    onAction('mo-go',function(){ if(running){ stop(); return; }
+      if(PRED && !locked){   // the answer is locked in before anything moves
+        var val=readAns(); if(val===null){ $('#mo-note').textContent='Type your answer in the box first, then press '+(mode==='explode'?'Release':'Go')+'. '+qText(); ansIn.focus(); return; }
+        Q.val=val; locked=true; ansIn.disabled=true; }
+      if(t===0 || t>=endT()){ t=0; finishedRun=false; eq(); if(meets()) $('#mo-note').textContent = mode==='explode' ? 'Watch the velocity arrows when the spring is let go.' : 'Watch the velocity arrows before and after the collision.'; } running=true; last=performance.now(); setGo(); raf=requestAnimationFrame(frame); });
     onAction('mo-reset',reset);
     var wasNarrow=narrow(); window.addEventListener('resize',function(){ if(narrow()!==wasNarrow){ wasNarrow=narrow(); reset(); } });
     // opened from the IAL or IB list (?level=): start on that level. In an IGCSE workout's frame there is no level switch.
     if(PW_LEVEL==='igcse' || (EMBED && !PW_LEVEL)) levelEl.hidden=true;
     buildModes(); showControls();
     if(PW_LEVEL==='ial' || PW_LEVEL==='ib') setLevel(PW_LEVEL); else reset();
+    if(/[?&]show=predict\b/.test(location.search)) setTab('predict');
   }
 
   watchEquals('.eq');
