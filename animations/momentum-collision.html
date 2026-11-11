@@ -323,7 +323,7 @@
       </div>
       </div>
       <div id="mo-pred" hidden>
-        <div><div class="lab">Find</div><div class="seg" id="mo-find" role="group" aria-label="Which quantity to find"><button type="button" data-k="mix" aria-pressed="true">Mixed</button><button type="button" data-k="v" aria-pressed="false" aria-label="The velocity after they stick together">v</button><button type="button" data-k="v2" aria-pressed="false" aria-label="The velocity of trolley 2 afterwards">v<sub>2</sub></button><button type="button" data-k="m2" aria-pressed="false" aria-label="The mass of trolley 2">m<sub>2</sub></button><button type="button" data-k="u1" aria-pressed="false" aria-label="The velocity of trolley 1 before">u<sub>1</sub></button></div></div>
+        <div><div class="lab">Find</div><div class="seg" id="mo-find" role="group" aria-label="Which quantity to find"><button type="button" data-k="mix" aria-pressed="true">Mixed</button><button type="button" data-k="v" aria-pressed="false" aria-label="The velocity after they stick together">v</button><button type="button" data-k="v2" aria-pressed="false" aria-label="The velocity of trolley 2 afterwards">v<sub>2</sub></button><button type="button" data-k="v1" aria-pressed="false" aria-label="The velocity of trolley 1 afterwards">v<sub>1</sub></button><button type="button" data-k="m2" aria-pressed="false" aria-label="The mass of trolley 2">m<sub>2</sub></button><button type="button" data-k="u1" aria-pressed="false" aria-label="The velocity of trolley 1 before">u<sub>1</sub></button></div></div>
         <label class="ans" id="mo-ans-row"><span id="mo-ans-lab">v =</span><input type="text" id="mo-ans" inputmode="text" autocomplete="off" aria-label="Your answer"><span id="mo-ans-unit">m/s</span></label>
       </div>
       <p class="note" id="mo-note" aria-live="polite"></p>
@@ -443,7 +443,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
 
   function initMomentumSim(){
     var maIn=bindRange('mo-ma',reset), uIn=bindRange('mo-u',reset), mbIn=bindRange('mo-mb',reset), u2In=bindRange('mo-u2',reset), v1In=bindRange('mo-v1',reset), mode='stick';
-    // Predict: a dealt question with one unknown (Q.unk: v, v2, m2 or u1). It is typed in, locked when Go is pressed and marked when the run ends.
+    // Predict: a dealt question with one unknown (Q.unk: v, v2, v1, m2 or, at IAL and IB only, u1). The kinds are the ones the past papers ask
+    // (checked against the IGCSE Question Index and the IAL index, 11 Nov 2026): the velocity after sticking, the other object's velocity after a bounce
+    // or an explosion, given the first one's (either way round), and the mass of the second object. No 4PH1 question asks for a velocity before the collision; IAL does. It is typed in, locked when Go is pressed and marked when the run ends.
     var PRED=false, Q=null, locked=false, marked=false, find='mix', saved=null, lastSig='', ansIn=$('#mo-ans'), tabEl=$('#mo-tab'), findEl=$('#mo-find');
     function hid(k){ return PRED && !marked && !!Q && Q.unk===k; }   // still hidden from the picture, the diagram and the working
     var svg=$('#mo-svg'), L=null, PXM=52, X0=20, GAP=3, OFF=0, LEFT=20, RIGHT=840, t=0, running=false, finishedRun=false, last=0, raf=0, modeEl=$('#mo-mode'), levelEl=$('#mo-level');
@@ -465,6 +467,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     function showControls(){
       var ex=mode==='explode';
       $('#mo-u-cell').hidden=ex; $('#mo-u2-cell').hidden=ex; $('#mo-v1-cell').hidden=!ex; $('#mo-rest-cell').hidden=!ex;
+      findEl.querySelector('[data-k="u1"]').hidden=!ks5();   // a velocity before the collision is asked at IAL and IB only
       $('#mo-setup').hidden=PRED; $('#mo-pred').hidden=!PRED; $('#mo-reset').hidden=PRED; $('#mo-new').hidden=!PRED;
       $('#working').hidden=PRED && !marked;   // nothing gives the answer away before the run is marked
       $('#mo-stats').hidden=!ks5() || (PRED && !marked); $('#mo-hint').hidden=PRED ? (!!Q && Q.unk==='m2') : ks5(); $('#mo-mode-lab').hidden=ks5();   // IAL and IB have more in the column: no label over the four choices
@@ -479,7 +482,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     function u(){ return mode==='explode' ? 0 : +uIn.value; } function u2(){ return mode==='explode' ? 0 : +u2In.value; }   // an explosion starts with both at rest
     function meets(){ return mode==='explode' || u()>u2(); }   // the gap closes only if trolley 1 moves right faster than trolley 2 does
     // v1 is given, as in an exam question, and the student finds v2: in an explosion at every level, and in a bounce at IAL and IB
-    function given(){ return mode==='explode' || (ks5() && (mode==='bounce' || mode==='inel')) || (PRED && !!Q && Q.unk==='v2'); }
+    function given2(){ return PRED && !!Q && Q.unk==='v1'; }   // Predict, find v1: v2 after is the given one
+    function given(){ if(given2()) return false; return mode==='explode' || (ks5() && (mode==='bounce' || mode==='inel')) || (PRED && !!Q && Q.unk==='v2'); }
     function after(){   // velocities just after the collision or explosion (right is positive)
       var M=ma()+mb(), P=ma()*u()+mb()*u2();
       // explosion: the spring pushes trolley 1 to the left at the chosen speed; trolley 2 gets equal and opposite momentum
@@ -599,14 +603,14 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       // the velocities after the collision stay as "?" until the run ends, so students can predict them first (a given v1 shows from the start)
       // in Predict the given values show from the start and only the unknown is "?"
       var showV=done || given() || (PRED && !hid('v'));
-      g+=panel(A,'After',[{m:ma(),v:showV?v.va:null,sym:'v',sub:'1'},{m:m2,v:done?v.vb:null,sym:'v',sub:'2'}],mode==='stick');
+      g+=panel(A,'After',[{m:ma(),v:showV && !hid('v1')?v.va:null,sym:'v',sub:'1'},{m:m2,v:done || given2()?v.vb:null,sym:'v',sub:'2'}],mode==='stick');
       return g;
     }
     // beside the exam diagram: the total momentum before and after (after stays "?" until the run ends). In Predict: what to find, then the mark.
     function totalsSVG(done){
       var M=L.M, g='', v=after(), pb=ma()*u()+mb()*u2(), o={fs:11.5,c:'var(--ink)'}, B=function(x){ return '<tspan font-weight="700">'+x+'</tspan>'; };
       if(PRED && Q){
-        var nm={v:sub('v',''),v2:sub('v','2'),m2:sub('m','2'),u1:sub('u','1')}[Q.unk]+'</tspan>', un=Q.unk==='m2'?'kg':ms();
+        var nm={v:sub('v',''),v2:sub('v','2'),v1:sub('v','1'),m2:sub('m','2'),u1:sub('u','1')}[Q.unk]+'</tspan>', un=Q.unk==='m2'?'kg':ms();
         g+=txt(M.x,M.y+12,'Predict',{fs:13,c:'var(--ink)',w:700});
         if(!marked) return g+txt(M.x,M.y+40,'Calculate '+nm+', then press '+(mode==='explode'?'Release':'Go'),{fs:12.5,c:'var(--ink)'});
         g+=txt(M.x,M.y+44,(Q.ok?'✓ ':'✗ ')+nm+' = '+sn(Q.ans)+' '+un,{fs:16,c:Q.ok?'var(--good)':'var(--bad)',w:700});
@@ -626,7 +630,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       g+=ell(L.W/2,L.ty+16,L.W*0.47,4,'#000',' opacity=".12"')+box(L.left-8,L.ty+3,L.right-L.left+8,9,9,-7,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'});
       g+=trolley(p.xa-w,1,ma(),B1,st.a*L.pxm,gapPx)+trolley(p.xb,2,hid('m2')?null:mb(),B2,st.b*L.pxm,gapPx);
       if(st.hit && mode==='stick') g+=vel((p.xa-w+p.xb+w)/2, st.va, 1, 'var(--ink)', hid('v'));
-      else g+=vel(p.xa-w/2, st.va, 1, C1, !st.hit && hid('u1'))+vel(p.xb+w/2, st.vb, 2, C2, st.hit && hid('v2'));
+      else g+=vel(p.xa-w/2, st.va, 1, C1, (!st.hit && hid('u1')) || (st.hit && hid('v1')))+vel(p.xb+w/2, st.vb, 2, C2, st.hit && hid('v2'));
       function how(n,v,hide){ return v===0 ? 'trolley '+n+' is at rest' : 'trolley '+n+' moves '+(v<0?'left':'right')+(hide?'':' at '+num(Math.abs(v),2)+' '+ms()); }
       var before = 'Before: '+how(1,u(),hid('u1'))+', '+how(2,u2());
       var lab = mode==='explode' ? (st.hit ? 'After: the spring has pushed the trolleys apart' : 'Before: both trolleys are at rest, held together with a squashed spring between them')
@@ -687,6 +691,11 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       else if(PRED && Q && Q.unk==='m2')   // Predict, find m2 (they stick, trolley 2 at rest)
         h=head+STICK+ma()+' × '+sv(u())+' + 0 = '+sn(v.va)+'('+ma()+' + '+M2+')<br>'+sn(p)+' = '+sn(v.va)+'('+ma()+' + '+M2+')<br>[['+sn(p)+'|'+sn(v.va)+']] = '+ma()+' + '+M2+
           '<br>'+num(M,2)+' = '+ma()+' + '+M2+'<br>'+M2+' = '+num(M,2)+' − '+ma()+'<br>'+M2+' = <b>'+mb()+' kg</b>';
+      else if(PRED && Q && Q.unk==='v1'){   // Predict, find v1 (they bounce apart and v2 is given): substitute, then rearrange
+        var B2=mb()*v.vb;
+        h=head+'m<sub>1</sub>u<sub>1</sub> + m<sub>2</sub>u<sub>2</sub> = m<sub>1</sub>'+V1+' + m<sub>2</sub>'+V2+'<br>'+lhs+' = '+co(ma(),V1)+' + '+mb()+' × '+b4(v.vb)+'<br>'+s4(p)+' = '+co(ma(),V1)+' + '+b4(B2)+'<br>'+co(ma(),V1)+' = '+s4(p)+' − '+b4(B2)+
+          (ma()===1 ? '' : '<br>'+co(ma(),V1)+' = '+s4(p-B2)+'<br>'+V1+' = [['+s4(p-B2)+'|'+ma()+']]')+'<br>'+V1+' = <b>'+sn(v.va)+' '+ms()+'</b>';
+      }
       else if(mode==='stick')
         h=head+'m<sub>1</sub>u<sub>1</sub> + m<sub>2</sub>u<sub>2</sub> = (m<sub>1</sub> + m<sub>2</sub>)v<br>'+lhs+' = ('+ma()+' + '+mb()+')v<br>'+sn(p)+' = '+num(M,2)+'v<br>v = [['+sn(p)+'|'+num(M,2)+']]<br>v = <b>'+(done?sn(v.va):'?')+' '+ms()+'</b>';
       else if(given()){
@@ -708,30 +717,31 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     function rv(lo,hi){ return lo+0.5*Math.floor(Math.random()*(Math.round((hi-lo)/0.5)+1)); }   // a value on the sliders' 0.5 steps
     function half(x){ return Math.abs(x*2-Math.round(x*2))<1e-9; }
     function setS(m1,m2,a,b,v1){ maIn.value=m1; mbIn.value=m2; uIn.value=a; u2In.value=b; if(v1!=null) v1In.value=v1; }
-    function makeQ(k){ var v=after(); return {unk:k, ans:{v:v.va, v2:v.vb, m2:mb(), u1:u()}[k], sig:[k,mode,ma(),mb(),u(),u2(),v.va].join()}; }
+    function makeQ(k){ var v=after(); return {unk:k, ans:{v:v.va, v2:v.vb, v1:v.va, m2:mb(), u1:u()}[k], sig:[k,mode,ma(),mb(),u(),u2(),v.va].join()}; }
     // choose masses and velocities at random until every value in the question and its answer is a multiple of 0.5 and the run fits the runway
     function gen(k){
       for(var n=0;n<400;n++){ var m1=rv(1,5), m2=rv(1,5), a, b, v;
         if(k==='v2' && Math.random()<0.35){ mode='explode'; setS(m1,m2,0,0,-rv(0.5,6)); v=after(); if(!half(v.vb) || Math.abs(v.vb)>8) continue; }
-        else { mode = k==='v2' ? (ks5() && Math.random()<0.5 ? 'inel' : 'bounce') : 'stick';
+        else { mode = (k==='v2' || k==='v1') ? (ks5() && Math.random()<0.5 ? 'inel' : 'bounce') : 'stick';
           a=rv(1,6); b=(k==='m2' || k==='u1' || Math.random()<0.6) ? 0 : rv(-4,Math.min(4,a-1)); if(a-b<1) continue;
           setS(m1,m2,a,b); v=after(); if(!half(v.va) || !half(v.vb)) continue;
           if(mode==='stick' && Math.abs(v.va)<0.4) continue;
-          if(k==='v2' && Math.abs(v.vb)<0.4) continue;
+          if((k==='v2' || k==='v1') && Math.abs(v.vb)<0.4) continue;
           if(k==='m2' && m1===m2) continue; }
         layout(); if(!(meets() && endT()>=tHit()+0.4)) continue;
         return makeQ(k);
       }
-      mode = k==='v2' ? 'bounce' : 'stick'; setS(2,1,3,0); return makeQ(k);
+      mode = (k==='v2' || k==='v1') ? 'bounce' : 'stick'; setS(2,1,3,0); return makeQ(k);
     }
     function newQ(){
-      stop(); marked=false; locked=false; var kinds=['v','v2','m2','u1'], q, i;
-      for(i=0;i<20;i++){ q=gen(find==='mix' ? kinds[Math.floor(Math.random()*4)] : find); if(q.sig!==lastSig) break; }
+      stop(); marked=false; locked=false; var kinds=ks5() ? ['v','v2','v1','m2','u1'] : ['v','v2','v1','m2'], q, i;
+      if(find==='u1' && !ks5()){ find='mix'; Array.prototype.forEach.call(findEl.children,function(x){ x.setAttribute('aria-pressed',String(x.dataset.k==='mix')); }); }
+      for(i=0;i<20;i++){ q=gen(find==='mix' ? kinds[Math.floor(Math.random()*kinds.length)] : find); if(q.sig!==lastSig) break; }
       Q=q; lastSig=q.sig; ansIn.value=''; ansIn.disabled=false; $('#mo-ans-row').classList.remove('ok','no');
-      $('#mo-ans-lab').innerHTML={v:'v',v2:'v<sub>2</sub>',m2:'m<sub>2</sub>',u1:'u<sub>1</sub>'}[q.unk]+' ='; $('#mo-ans-unit').textContent=q.unk==='m2' ? 'kg' : ms();
+      $('#mo-ans-lab').innerHTML={v:'v',v2:'v<sub>2</sub>',v1:'v<sub>1</sub>',m2:'m<sub>2</sub>',u1:'u<sub>1</sub>'}[q.unk]+' ='; $('#mo-ans-unit').textContent=q.unk==='m2' ? 'kg' : ms();
       reset();
     }
-    function qName(){ return {v:'v',v2:'v₂',m2:'m₂',u1:'u₁'}[Q.unk]; }
+    function qName(){ return {v:'v',v2:'v₂',v1:'v₁',m2:'m₂',u1:'u₁'}[Q.unk]; }
     function mv(x){ return Math.abs(x)<0.005 ? 'is at rest' : 'moves '+(x<0?'left':'right')+' at '+num(Math.abs(x),2)+' '+ms(); }
     function qText(){
       var v=after();
@@ -740,6 +750,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       if(Q.unk==='v') s+='They stick together. Calculate their velocity after the collision';
       else if(Q.unk==='m2') s+='They stick together and move '+(v.va<0?'left':'right')+' at '+num(Math.abs(v.va),2)+' '+ms()+'. Calculate the mass of trolley 2';
       else if(Q.unk==='u1') s+='They stick together and move '+(v.va<0?'left':'right')+' at '+num(Math.abs(v.va),2)+' '+ms()+'. Calculate the velocity of trolley 1 before the collision';
+      else if(Q.unk==='v1') s+='They bounce apart, and afterwards trolley 2 '+mv(v.vb)+'. Calculate the velocity of trolley 1 after the collision';
       else s+='They bounce apart, and afterwards trolley 1 '+mv(v.va)+'. Calculate the velocity of trolley 2 after the collision';
       return s+', then press Go.';
     }

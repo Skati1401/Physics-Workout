@@ -1051,12 +1051,17 @@ function expKey(x, y, upLabel, downLabel){
   };
   // Build: tasks modelled on the Edexcel questions that ask for a circuit to be completed (ammeter in series, voltmeter in parallel with
   // the component) or for the mistakes in one to be found. In Build R1 is drawn as a lamp, so a wrong meter is seen as well as read.
+  // The task kinds and their wording come from the past papers (checked against the IGCSE Question Index and the IAL index, 11 Nov 2026).
+  // Most 4PH1 questions ask for one meter ("Add a voltmeter to measure the voltage across resistor R": Nov 2025 P1 Q7(a), May 2026 P1 Q10(a)(ii);
+  // "add a meter to measure the current in the 13 kΩ resistor": Nov 2023 P1 Q10(b)(i); the current in the cell: Jan 2022 P1R Q9(b)(i)); some ask
+  // for both (May 2021 P1 Q5(a)), and one asks for the mistakes (Jan 2015 P1 Q10(a)). The tasks say "p.d."; pdw() makes it "voltage" at IGCSE, as 4PH1 does.
   var TASKS=[
-    {pre:'series', text:'Add meters to measure the current in the lamp and the p.d. across the lamp.', A:['w1','w2','w3'], V:['vR1'], aOf:'the lamp', vOf:'the lamp', okNote:'In a series circuit the current is the same all the way round, so the ammeter can go anywhere in the loop.'},
-    {pre:'parallel', text:'Add meters to measure the current in the lamp only and the p.d. across the lamp.', A:['w2'], V:['vR1','vR2','vC'], aOf:'the lamp', vOf:'the lamp', okNote:'In parallel, the lamp, the resistor and the supply all have the same p.d. across them.'},
+    {pre:'series', text:'Add a voltmeter to measure the p.d. across the resistor R.', V:['vR2'], vOf:'the resistor R', okNote:'The p.d. across the lamp and the p.d. across R add up to the supply p.d.'},
+    {pre:'parallel', text:'Add an ammeter to measure the current in the lamp only.', A:['w2'], aOf:'the lamp', okNote:'Only the lamp’s current passes through an ammeter in the lamp’s own branch.'},
     {pre:'series', text:'These two meters should measure the current in the lamp and the p.d. across it, but both are in the wrong place. Press Go to see what happens, then put them right.', init:{vR1:'A', w2:'V'}, A:['w1','w2','w3'], V:['vR1'], aOf:'the lamp', vOf:'the lamp'},
-    {pre:'parallel', text:'Add meters to measure the total current from the supply and the p.d. across the resistor R.', A:['w1','w6'], V:['vR1','vR2','vC'], aOf:'the supply', vOf:'the resistor R', okNote:'The currents in the two branches add up to this total.'},
-    {pre:'series', text:'Add meters to measure the current in the circuit and the p.d. across the resistor R.', A:['w1','w2','w3'], V:['vR2'], aOf:'the circuit', vOf:'the resistor R', okNote:'The p.d. across the lamp and the p.d. across R add up to the supply p.d.'},
+    {pre:'parallel', text:'Add an ammeter to measure the current in the supply.', A:['w1','w6'], aOf:'the supply', okNote:'The currents in the two branches add up to this total.'},
+    {pre:'series', text:'Add an ammeter and a voltmeter to measure the current in the lamp and the p.d. across the lamp.', A:['w1','w2','w3'], V:['vR1'], aOf:'the lamp', vOf:'the lamp', okNote:'In a series circuit the current is the same all the way round, so the ammeter can go anywhere in the loop.'},
+    {pre:'parallel', text:'Add a voltmeter to measure the p.d. across the lamp.', V:['vR1','vR2','vC'], vOf:'the lamp', okNote:'In parallel, the lamp, the resistor and the supply all have the same p.d. across them.'},
     {pre:'parallel', text:'Add meters to measure the current in the resistor R only and the p.d. of the supply.', A:['w4'], V:['vR1','vR2','vC'], aOf:'the resistor R', vOf:'the supply', okNote:'Each branch has the full supply p.d. across it.'},
     {pre:'combined', ks5:true, text:'Add meters to measure the current in R₂ only and the p.d. across the lamp.', A:['w5'], V:['vR1'], aOf:'R₂', vOf:'the lamp'},
     {pre:'combined', ks5:true, text:'Add meters to measure the current in the lamp and the p.d. across R₁.', A:['w1','w2','w7'], V:['vR2','vR3'], aOf:'the lamp', vOf:'R₁', okNote:'R₁ and R₂ are in parallel, so they have the same p.d.'}
@@ -1074,6 +1079,8 @@ function expKey(x, y, upLabel, downLabel){
   var idealSeg=segGroup($('#sp-ideal'), function(){ jumpSeg.pick(null); setRows(); draw(); });
   var jumpEl=$('#sp-jump'), jumpSeg=segGroup(jumpEl, function(v){ jumpTo(v); });
   function ks5(){ return levelSeg.value()!=='igcse'; }
+  // 4PH1 says "voltage" (and so does the 2b workout that frames this page); IAL and IB say p.d.
+  function pdw(t){ return ks5() ? t : String(t).replace(/p\.d\.(?=$|\s+[A-Z✓✗<(])/g,'voltage.').replace(/p\.d\./g,'voltage'); }   // "p.d." at the end of a sentence keeps its full stop
   function build(){ return tabSeg.value()==='build'; }
   function pre(){ return PRESETS[preSeg.value()]; }
   function real(){ return !build() && ks5() && idealSeg.value()==='real'; }
@@ -1100,7 +1107,7 @@ function expKey(x, y, upLabel, downLabel){
   }
   function what(id){ var s=kVslot(pre(),id); return nameOf(s ? s.of : kEdge(pre(),id).car); }
   function label(e){ var R=rVal(e.r); if(!build()) return 'R'+SUB[e.id.slice(1)]+' '+R+' Ω'; return e.id==='R1' ? 'lamp' : (e.id==='R2' ? (three() ? 'R₁' : 'R') : 'R₂')+' '+R+' Ω'; }
-  function notes(){ return {lamp:function(id){ var s=kVslot(pre(),id); return build() && s && s.of==='R1' ? ', so the lamp goes out' : ''; }, off: build() ? ': the lamp is off' : ''}; }
+  function notes(){ return {lamp:function(id){ var s=kVslot(pre(),id); return build() && s && s.of==='R1' ? ', so the lamp goes out' : ''; }, off: build() ? ': the lamp is off' : '', pd: ks5() ? 'p.d.' : 'voltage'}; }
 
   // ---- the picture: the circuit on the bench, its circuit diagram, and bars (Explore) or the task (Build)
   function bars(S, tall){
@@ -1110,12 +1117,12 @@ function expKey(x, y, upLabel, downLabel){
         g+=txt(x+lw-6,y+10.5,r[0],{a:'end',fs:11,c:'var(--ink-soft)'})+rect(x+lw,y,Math.max(1,len),12,r[0]==='supply'?'var(--ink-faint)':col,' rx="3" opacity="0.85"')+txt(x+lw+len+4,y+10.5,fmt(r[1]),{fs:11,c:'var(--ink-soft)'}); y+=15.5; }); }
     var pd=[['supply',V]].concat(comps.map(function(e){ return ['R'+SUB[e.id.slice(1)], Math.abs(S.pot[e.a]-S.pot[e.b])]; }));
     var cr=[['supply',Math.abs(S.I)]].concat(comps.map(function(e){ return ['R'+SUB[e.id.slice(1)], Math.abs(S.cur[e.id])]; }));
-    group(x0, 'p.d. across each', pd, V, 'var(--topic)', fmtV);
+    group(x0, pdw('p.d. across each'), pd, V, 'var(--topic)', fmtV);
     group(x0+gw+14, 'current through each', cr, Math.max.apply(null, cr.map(function(r){ return r[1]; })), 'var(--cur)', fmtA);
     return g;
   }
   function taskPic(tall){
-    var x=tall?14:496, y=tall?614:274, g='', lines=wrapLines('Task '+B.n+'. '+B.task.text, tall?54:48);
+    var x=tall?14:496, y=tall?614:274, g='', lines=wrapLines('Task '+B.n+'. '+pdw(B.task.text), tall?54:48);
     lines.forEach(function(t,i){ g+=txt(x,y+i*15,t,{fs:12,c:'var(--ink)'}); });
     var yy=y+lines.length*15+3;
     if(B.res) g+=txt(x,yy,(B.res.ok?'✓ ':'✗ ')+VERD[B.res.kind],{fs:12.5,w:600,c:B.res.ok?'var(--good)':'var(--bad)'});
@@ -1177,7 +1184,7 @@ function expKey(x, y, upLabel, downLabel){
         w2='[[1|R′]] = [[1|R'+SUB[k]+']] + [[1|R<sub>V</sub>]]<br>[[1|R′]] = [[1|'+Rk+']] + [[1|'+sig(RV(),3)+']]<br>R′ = '+sig(Rp,4)+' Ω<br>V'+SUB[k]+' = [[R′|R′ + '+(k==='1'?'R₂':'R₁')+']] × V<br>V'+SUB[k]+' = [['+sig(Rp,4)+'|'+sig(Rp,4)+' + '+Ro+']] × '+V.toFixed(1)+'<br>V'+SUB[k]+' = <b>'+sig(V*Rp/(Rp+Ro),3)+' V</b>';
       }
     }
-    $('#sp-eq1').innerHTML=FR(w1); $('#sp-eq1').hidden=!w1; $('#sp-eq2').innerHTML=FR(w2); $('#sp-eq3').innerHTML=FR(w3);
+    $('#sp-eq1').innerHTML=FR(pdw(w1)); $('#sp-eq1').hidden=!w1; $('#sp-eq2').innerHTML=FR(pdw(w2)); $('#sp-eq3').innerHTML=FR(pdw(w3));
 
     var note=msg;
     if(bd){
@@ -1191,7 +1198,7 @@ function expKey(x, y, upLabel, downLabel){
       else note='R₁ carries all the current, which then splits between R₂ and R₃. R₂ and R₃ have the same p.d. across them.';
       if(!F && real() && Object.keys(placed).length) note='Real meters change what they measure: the voltmeter (R<sub>V</sub> = '+sig(RV(),2)+' Ω) takes some current, the ammeter (0.5 Ω) takes some p.d. The working compares them with ideal meters.';
     }
-    if(note!==lastNote){ $('#sp-note').innerHTML=FR(note); lastNote=note; }
+    note=pdw(note); if(note!==lastNote){ $('#sp-note').innerHTML=FR(note); lastNote=note; }
     playBtn.innerHTML = bd && !B.on ? '&#9654; Go' : running ? '&#10074;&#10074; Pause' : '&#9654; Play';
   }
 

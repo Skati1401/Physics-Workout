@@ -1012,6 +1012,8 @@ function expKey(x, y, upLabel, downLabel){
   var gradSeg=segGroup($('#iv-grad'), function(){ draw(); });
   var jumpEl=$('#iv-jump'), jumpSeg=segGroup(jumpEl, function(v){ jumpTo(+v); });
   function ks5(){ return levelSeg.value()!=='igcse'; }
+  // 4PH1 says "voltage"; the IAL and IB papers say p.d. ("the current-p.d. characteristic of an LED", WPH12 Oct 2024 Q14(a))
+  function vw(t){ return ks5() ? String(t).replace(/voltage/g,'p.d.') : t; }
   function build(){ return tabSeg.value()==='build'; }
   function comp(){ return compSeg.value(); }
   function exp(){ return pressed(expBtn); }
@@ -1085,6 +1087,9 @@ function expKey(x, y, upLabel, downLabel){
     ]};
   // Tasks modelled on the Edexcel 2.9 questions: complete the circuit (ammeter in series, voltmeter in parallel with the component), or find the mistakes
   var ANY=['w1','w2','w3'];
+  // Checked against the past papers (IGCSE Question Index and IAL index, 11 Nov 2026): the circuit to investigate a lamp or a diode is asked for in full
+  // (4 marks: symbols, ammeter in series, voltmeter in parallel with the component, variable resistor or supply: May 2023 P1 Q2(a), Nov 2024 P1 Q9(a)),
+  // or completed with its meters (Nov 2020 P1 Q5(a), May 2021 P1 Q5(a)); one question asks for the mistakes (Jan 2015 P1 Q10(a)).
   var TASKS=[
     {c:'lamp', who:'Sophie', text:'Sophie wants to find how the current in a lamp changes with the voltage across it. Add the two meters she needs.', A:ANY, V:['vC']},
     {c:'res', who:'Yassin', text:'Yassin is finding the resistance of a resistor. Add meters to measure the current in the resistor and the voltage across it.', A:ANY, V:['vC']},
@@ -1101,7 +1106,7 @@ function expKey(x, y, upLabel, downLabel){
   function fmtV(x){ return x<5e-4 ? '0.00 V' : s3(x)+' V'; }
   var FMT={A:fmtA, V:fmtV};
   function bWhat(id){ var s=kVslot(BUILD,id); return !s ? 'the whole circuit' : s.of==='C' ? CNAME[B.task.c] : s.of==='VR' ? 'the variable resistor' : 'the battery'; }
-  function bNotes(){ return {pd:'voltage', lamp:function(id){ return B.task.c==='lamp' && kVslot(BUILD,id).of==='C' ? ', so the lamp goes out' : ''; }, off: B.task.c==='lamp' ? ': the lamp is off' : ''}; }
+  function bNotes(){ return {pd:ks5() ? 'p.d.' : 'voltage', lamp:function(id){ return B.task.c==='lamp' && kVslot(BUILD,id).of==='C' ? ', so the lamp goes out' : ''; }, off: B.task.c==='lamp' ? ': the lamp is off' : ''}; }
 
   // ---- layout: the bench, the circuit diagram and the graph side by side (one under the other on a phone)
   var G;
@@ -1171,7 +1176,7 @@ function expKey(x, y, upLabel, downLabel){
     var D=kDiagram(P,st,TD), cc=kMap(TD,[40,150]), vr=kMap(TD,[170,40]);
     var g=arrowDefs()+kBench(P,st,TB)+D.g+txt(cc[0]-20,cc[1]+4,'6 V',{a:'end',fs:11.5,c:'var(--ink)'})+txt(vr[0]+34,vr[1]-15,'variable resistor',{fs:11.5,c:'var(--ink)'});
     g+=txt(TB.x,12,'Built on the bench',{fs:12})+txt(TD.x-(tall?6:0),TD.y+(tall?12:5),'Circuit diagram',{fs:12});
-    var x=tall?14:496, y=tall?614:274, lines=wrapLines('Task '+B.n+'. '+B.task.text, tall?54:48);
+    var x=tall?14:496, y=tall?614:274, lines=wrapLines('Task '+B.n+'. '+vw(B.task.text), tall?54:48);
     lines.forEach(function(t,i){ g+=txt(x,y+i*14.5,t,{fs:12,c:'var(--ink)'}); });
     if(B.res) g+=txt(x,y+lines.length*14.5+2,(B.res.ok?'✓ ':'✗ ')+VERD[B.res.kind],{fs:12.5,w:600,c:B.res.ok?'var(--good)':'var(--bad)'});
     if(running && slowOn()) g+=txt(tall?426:472, 12, 'slow motion', {a:'end', fs:12, c:'var(--accent)'});
@@ -1209,7 +1214,7 @@ function expKey(x, y, upLabel, downLabel){
     if(bd){
       var note=msg;
       if(B.res) note=(B.res.ok?'✓ ':'✗ ')+B.res.html+(B.res.ok ? ' Press <b>New task</b>.' : B.res.kind==='missing' ? '' : ' Move the meter, then press <b>Go</b> again.');
-      else if(!note) note='<b>Task '+B.n+'.</b> '+B.task.text+' Pick a meter (or drag it) and press a dashed circle on the circuit diagram; press a meter to take it out. Then press <b>Go</b>.';
+      else if(!note) note='<b>Task '+B.n+'.</b> '+vw(B.task.text)+' Pick a meter (or drag it) and press a dashed circle on the circuit diagram; press a meter to take it out. Then press <b>Go</b>.';
       if(note!==lastNote){ $('#iv-note').innerHTML=FR(note); lastNote=note; }
       playBtn.innerHTML = !B.on ? '&#9654; Go' : running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false;
       return;

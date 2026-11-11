@@ -1251,6 +1251,9 @@ function expKey(x, y, upLabel, downLabel){
   function stop(){ running=false; cancelAnimationFrame(raf); }
   function play(){ running=true; runFor=0; last=performance.now(); cancelAnimationFrame(raf); raf=requestAnimationFrame(frame); }
 
+  // Checked against the past papers (IGCSE Question Index and IAL index, 11 Nov 2026). 4PH1 asks where to connect the lamp so that its voltage rises as the
+  // light falls ("in parallel with the LDR", Nov 2020 P1R Q9(d)) and explains every change through the current: resistance, then current, then V = IR across
+  // the fixed resistor (May 2025 P1 Q3(b)(i), Jan 2022 P1 Q7(b)(ii), Jan 2021 P1R Q12(b)). IAL explains it by the share of the p.d. (WPH12 Jun 2024 Q16(a)).
   // ---- Build: design a circuit that switches a lamp or an alarm. The student decides which part goes at the top, then Go changes the light or the temperature.
   var TASKS=[
     {m:'ldr', out:'lamp', want:'bot', from:3, to:0, text:'Build a night light: the lamp must come on when it gets dark.', when:'As it gets dark', does:'rises', why:'the LDR’s resistance rises, so the LDR takes a bigger share of the supply voltage'},
@@ -1265,13 +1268,15 @@ function expKey(x, y, upLabel, downLabel){
     reask(); setRows(); draw();
   }
   function buildNote(p){
-    var t=B.task, sens=t.m==='ldr'?'LDR':'thermistor', sw=swapSeg.value(), dev=t.out, note;
+    var t=B.task, sens=t.m==='ldr'?'LDR':'thermistor', sw=swapSeg.value(), dev=t.out, note, up=t.does==='rises';
+    // IGCSE: the chain the 4PH1 mark schemes give, through the current
+    var why = ks5() ? t.why : 'the '+sens+'’s resistance '+(up?'rises':'falls')+', so the current '+(up?'falls':'rises')+'. The voltage across the fixed resistor (V = I × R) '+(up?'falls':'rises')+', so the voltage across the '+sens+' '+(up?'rises':'falls')+', as the two add up to the supply voltage';
     $('#pd-stats').innerHTML=stat('Task', String(B.n))+stat('Right first time', B.right+' of '+B.tried, true);
-    if(B.phase==='ask') note='<b>Task '+B.n+'.</b> '+t.text+' The '+dev+' switches on when V<sub>out</sub> is above 3.0 V. Choose where the '+sens+' goes (press a part on the circuit diagram to swap them), then press <b>Go</b>.';
+    if(B.phase==='ask') note='<b>Task '+B.n+'.</b> '+t.text+' The '+dev+' is connected across the bottom part (V<sub>out</sub>) and switches on when V<sub>out</sub> is above 3.0 V. Should it be across the '+sens+' or across the fixed resistor? Press a part on the circuit diagram to swap them, then press <b>Go</b>.';
     else if(B.phase==='run') note=(t.m==='ldr' ? 'The light level is changing' : 'The temperature is changing')+': watch V<sub>out</sub> on the voltmeter and the graph.';
     else {
       var across = sw==='bot' ? 'the '+sens : 'the fixed resistor', vdoes = (sw==='bot') === (t.does==='rises') ? 'rises' : 'falls';
-      note=(B.ok?'✓ <b>It works.</b> ':'✗ <b>The wrong way round.</b> ')+t.when+', '+t.why+'. V<sub>out</sub> is across '+across+', so V<sub>out</sub> <b>'+vdoes+'</b>'+(B.ok ? ' above 3.0 V and the '+dev+' comes on. Press <b>New task</b>.' : ': the '+dev+' goes off when it should come on. Swap the two parts and press <b>Go</b> again.');
+      note=(B.ok?'✓ <b>It works.</b> ':'✗ <b>The wrong way round.</b> ')+t.when+', '+why+'. V<sub>out</sub> is across '+across+', so V<sub>out</sub> <b>'+vdoes+'</b>'+(B.ok ? ' above 3.0 V and the '+dev+' comes on. Press <b>New task</b>.' : ': the '+dev+' goes off when it should come on. Swap the two parts and press <b>Go</b> again.');
     }
     if(note!==lastNote){ $('#pd-note').innerHTML=FR(note); lastNote=note; }
     playBtn.innerHTML = B.phase==='run' && running ? '&#10074;&#10074; Pause' : '&#9654; Go'; playBtn.disabled=false;
