@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>F = ma Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Push a trolley with a resultant force and see how force and mass change its acceleration.">
+<meta name="description" content="Interactive physics animation. Push a trolley loaded with masses with a resultant force and see how force and mass change its acceleration, with its velocity–time graph.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -166,6 +166,32 @@
   .hint{font-size:13px;color:var(--ink-soft);}
   .embed .hint{display:none;}
   .embed .view{max-height:none;}
+  /* batch 4 */
+  :root{--grass:#cfe8b4;--steel:#66748c;--steel-hi:#c3ccda;--steel-sh:#3f4a5e;--case:#3f4a5e;--road:#6f7785;--road-s:#4c5361;--car:#2f6fe0;--car-ref:#8a93a3;--car-glass:#cfe6f7;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--grass:#22361a;--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--case:#56617a;--road:#5a6170;--road-s:#3b414c;--car:#5b8cf0;--car-ref:#9aa4b5;--car-glass:#9fc3df;} }
+  :root[data-theme="dark"]{--grass:#22361a;--steel:#8f9db3;--steel-hi:#dfe5ee;--steel-sh:#566179;--case:#56617a;--road:#5a6170;--road-s:#3b414c;--car:#5b8cf0;--car-ref:#9aa4b5;--car-glass:#9fc3df;}
+
+  :root{--wood-f:#c99e6a;--wood-t:#e3c08f;--wood-s:#9c7444;--trol:#3d3aa8;--skin:#c99a6c;--hair:#3b2a1f;--sky:#d9ecfb;--cloud:#ffffff;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--wood-f:#8a6a43;--wood-t:#a8855a;--wood-s:#644b2d;--trol:#5a57c9;--skin:#c29364;--hair:#7a563c;--sky:#1d3147;--cloud:#3c536d;} }
+  :root[data-theme="dark"]{--wood-f:#8a6a43;--wood-t:#a8855a;--wood-s:#644b2d;--trol:#5a57c9;--skin:#c29364;--hair:#7a563c;--sky:#1d3147;--cloud:#3c536d;}
+  .view{max-height:max(240px,calc(100vh - 272px));}
+  .embed .view{max-height:400px;}
+  .view.tall,.embed .view.tall{max-height:none;}
+  .view text{font-family:var(--font-mono);}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{font-size:12.5px;padding:8px 10px;white-space:nowrap;border-radius:0;margin-left:-1px;font-weight:600;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .seg.tabs button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .head-line{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;}
+  .pick{cursor:pointer;}
+  .pick.off{cursor:default;}
+  .pick:focus{outline:none;}
+  .pick .ring{stroke:transparent;}
+  .pick:focus-visible .ring{stroke:var(--accent);}
+  .under .sliders{flex:1 1 340px;grid-template-columns:repeat(2,minmax(0,1fr));}
+  @media (max-width:560px){ .under .sliders{grid-template-columns:minmax(0,1fr);} }
+  /* end batch 4 */
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -272,20 +298,7 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="fma-svg" viewBox="20 58 545 106" role="img" aria-label="A trolley on a track pushed by a resultant force">
-        <defs><marker id="fma-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--force)"/></marker></defs>
-        <line x1="24" x2="540" y1="132" y2="132" stroke="var(--ink-soft)" stroke-width="3"/><rect x="540" y="104" width="7" height="30" rx="2" fill="var(--ink-soft)"/>
-        <g id="fma-ticks"></g>
-        <g id="fma-trail"></g>
-        <g id="fma-trolley">
-          <line id="fma-arrow" y1="-54" y2="-54" stroke="var(--force)" stroke-width="5" marker-end="url(#fma-head)"/>
-          <text id="fma-flabel" y="-63" text-anchor="middle" font-family="var(--font-mono)" font-size="13" fill="var(--force)"></text>
-          <rect id="fma-body" y="-44" height="34" rx="5" fill="var(--newton-soft)" stroke="var(--newton)" stroke-width="2.5"/>
-          <text id="fma-mlabel" y="-22" text-anchor="middle" font-family="var(--font-mono)" font-size="13" fill="var(--ink)"></text>
-          <circle id="fma-w1" cy="-5" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>
-          <circle id="fma-w2" cy="-5" r="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>
-        </g>
-      </svg>
+      <svg class="view" id="fma-svg" viewBox="0 0 860 330" role="img" aria-label="A trolley loaded with masses on a runway, pushed by a resultant force. Below, its velocity–time graph, a stopwatch and the force diagram."></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" data-action="fma-go" type="button">&#9654; Go</button>
@@ -300,7 +313,7 @@
     </div>
     <div class="side">
       <p class="note" id="fma-note" aria-live="polite"></p>
-      <p class="hint">The trolley starts from rest and runs 10 m to the end stop. The faint dots mark where it was every 0.5 s, so you can see it speeding up.</p>
+      <p class="hint">The trolley starts from rest and runs 10 m to the end stop. The dots on the runway mark where its front was every 0.5 s, so you can see it speeding up. Each steel slab on the trolley is 1 kg.</p>
       <div class="stats">
         <div class="stat"><small>Time</small><strong id="fma-t">0.0 s</strong></div>
         <div class="stat"><small>Speed</small><strong id="fma-v">0.0 m/s</strong></div>
@@ -327,9 +340,7 @@
     window.addEventListener('load', sendHeight);
   }
   function $(sel){ return document.querySelector(sel); }
-  function bindRange(id, fn){ var el=$('#'+id); el.addEventListener('input', fn); return el; }
   function onAction(name, fn){ var b=$('[data-action="'+name+'"]'); if(b) b.addEventListener('click', fn); }
-  var REDUCED_MOTION=false;   // runs start only when pressed and always end, so they play even with reduced motion on
   // Slow motion: every run multiplies its time step by SPEED()
   function SPEED(){ var b=document.getElementById('slow'); return b && b.getAttribute('aria-pressed')==='true' ? 0.3 : 1; }
   (function(){ var b=document.getElementById('slow'); if(b) b.addEventListener('click',function(){ b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed')!=='true')); }); })();
@@ -339,10 +350,10 @@
     return t;
   }
   function FR(t){
-    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1 ')
+    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1 ')
       .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
   }
-  function arrowHead(id, col){ return '<marker id="'+id+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+col+'"/></marker>'; }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
   function alignEquals(el){
     if(el.querySelector('.eqg')) return;
     var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
@@ -354,58 +365,159 @@
   }
   function watchEquals(sel){ Array.prototype.forEach.call(document.querySelectorAll(sel), function(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }); }
 
+    // ---- solid kit (the same block is in reaction-time.html, roller-coaster-energy.html, heat-transfer.html, density.html and liquid-pressure.html) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
+
+  /* The picture is 860 x 330: the trolley on its runway, and below it the velocity–time graph, the stopwatch and the
+     force diagram as an exam draws it. Under 520px the same code uses a tall viewBox with the parts stacked.
+     The trolley is drawn the same way as in momentum-collision.html. */
   function initFmaSim(){
-    var X0=118, PXM=42.2, TRACK=10, TMAX=20, REDUCED=false;   // 0 m at x=118, the end stop at 10 m (x=540)
-      // student-started and always ends, so it plays even with reduced motion
-    var fIn=$('#fma-f'), mIn=$('#fma-m'), t=0, running=false, last=0, raf=0, dots=[];
-    var ticks='';
-    for(var i=0;i<=TRACK;i+=2){ var x=X0+i*PXM; ticks+='<line x1="'+x+'" x2="'+x+'" y1="132" y2="140" stroke="var(--ink-faint)" stroke-width="1.5"/><text x="'+x+'" y="156" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink-faint)">'+i+' m</text>'; }
-    $('#fma-ticks').innerHTML=ticks;
+    var TRACK=10, TMAX=20;
+    var svg=$('#fma-svg'), fIn=$('#fma-f'), mIn=$('#fma-m'), t=0, running=false, finished=false, last=0, raf=0, L=null;
     function F(){ return +fIn.value; } function M(){ return +mIn.value; } function A(){ return F()/M(); }
+    function tEnd(){ return A()>0 ? Math.sqrt(2*TRACK/A()) : 0; }
+    function vEnd(){ return Math.sqrt(2*A()*TRACK); }
     function sAt(tt){ return Math.min(TRACK, 0.5*A()*tt*tt); }
     function fmt1(n){ return (Math.round(n*10)/10).toFixed(1); }
     function fmtA(n){ return String(Math.round(n*100)/100); }
+    function narrow(){ return window.innerWidth<=520; }
+    function lay(){ return narrow()
+      ? {tall:true, W:430, H:524, x0:76, x1:410, ty:136, fs:12, T:{w:60,bh:17,sh:7,wr:6,fs:11}, fk:2,
+         G:{x0:50,x1:412,y0:200,y1:330,fs:12}, SW:{x:14,y:392}, D:{x:30,y:470,w:74,h:36,k:3}}
+      : {tall:false, W:860, H:330, x0:128, x1:822, ty:134, fs:12, T:{w:96,bh:22,sh:8,wr:8,fs:13}, fk:3.2,
+         G:{x0:58,x1:430,y0:186,y1:288,fs:11.5}, SW:{x:486,y:178}, D:{x:500,y:262,w:92,h:42,k:4.6}}; }
+    function px(s){ return L.x0+s*(L.x1-L.x0)/TRACK; }
+    // the trolley: its front is at xf; one steel slab for each kilogram above the first, and a thin one for half a kilogram
+    function trolley(xf, m, dist){
+      var S=L.T, w=S.w, x0=xf-w, ty=L.ty-2, yb=ty-S.wr*0.9, yt=yb-S.bh, g='', full=Math.floor(m-1+1e-9), half=(m-1-full)>0.25, i, y=yt, turn=dist/S.wr;
+      g+=ell(x0+w/2,ty+1,w*0.56,3.4,'#000',' opacity=".2"');
+      g+=box(x0,yt,w,S.bh,7,-5,'var(--trol)');
+      for(i=0;i<full;i++){ y-=S.sh; g+=box(x0+10,y,w-24,S.sh-1,5,-3.5,'var(--steel)'); }
+      if(half){ y-=S.sh/2; g+=box(x0+10,y,w-24,S.sh/2-1,5,-3.5,'var(--steel)'); }
+      g+=rect(x0+3,yt+2.5,w-6,2.4,'#fff',' rx="1.2" opacity=".28"');
+      g+=txt(x0+w/2,yt+S.bh*0.5+S.fs*0.36,m+' kg',{a:'middle',fs:S.fs,c:'#fff',w:600});
+      [x0+S.wr+6, x0+w-S.wr-6].forEach(function(cx){ var cy=ty-S.wr, c=Math.cos(turn)*S.wr*0.42, s=Math.sin(turn)*S.wr*0.42;
+        g+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+S.wr+'" fill="#1d2430"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+f1(S.wr*0.5)+'" fill="var(--steel-hi)"/>'+ln(cx-c,cy-s,cx+c,cy+s,'var(--steel-sh)',1.4)+ln(cx+s,cy-c,cx-s,cy+c,'var(--steel-sh)',1.4); });
+      return {g:g, top:y-6, x0:x0};
+    }
+    function tAxis(){ var e=tEnd()||4, st=e<=5?1:(e<=10?2:5); return {max:Math.ceil(e*1.02/st)*st, step:st}; }
+    function vAxis(){ var e=vEnd()||4, st=e<=5?1:(e<=10?2:5); return {max:Math.max(st,Math.ceil(e*1.02/st)*st), step:st}; }
+    function graphSVG(){
+      var G=L.G, T=tAxis(), V=vAxis(), g='', i, n, X=function(x){ return G.x0+x/T.max*(G.x1-G.x0); }, Y=function(v){ return G.y1-v/V.max*(G.y1-G.y0); };
+      for(i=0,n=Math.round(V.max/V.step);i<=n;i++){ var vv=i*V.step; g+=ln(G.x0,Y(vv),G.x1,Y(vv),'var(--panel-border)',1)+txt(G.x0-7,Y(vv)+4,String(vv),{a:'end',fs:G.fs,c:'var(--ink-faint)'}); }
+      for(i=0,n=Math.round(T.max/T.step);i<=n;i++){ var s=i*T.step; g+=ln(X(s),G.y0,X(s),G.y1,'var(--panel-border)',1)+txt(X(s),G.y1+15,String(s),{a:'middle',fs:G.fs,c:'var(--ink-faint)'}); }
+      g+=ln(G.x0,G.y0,G.x0,G.y1,'var(--ink-soft)',2)+ln(G.x0,G.y1,G.x1,G.y1,'var(--ink-soft)',2);
+      g+=txt((G.x0+G.x1)/2,G.y1+32,'Time (s)',{a:'middle',fs:G.fs+0.5});
+      g+='<text transform="translate('+f1(G.x0-34)+' '+f1((G.y0+G.y1)/2)+') rotate(-90)" text-anchor="middle" font-size="'+(G.fs+0.5)+'" fill="var(--ink-soft)">Velocity (m/s)</text>';
+      var tt=Math.min(t, tEnd());
+      if(tt>0){ g+=pl([[X(0),Y(0)],[X(tt),Y(A()*tt)]],'var(--trol)',3)+'<circle cx="'+f1(X(tt))+'" cy="'+f1(Y(A()*tt))+'" r="4.5" fill="var(--trol)" stroke="var(--panel)" stroke-width="2"/>'; }
+      else if(finished && F()===0) g+=pl([[X(0),Y(0)],[X(T.max),Y(0)]],'var(--trol)',3);
+      return g;
+    }
+    // the stopwatch, and the force diagram as an exam draws it; the acceleration shows "?" until the run ends
+    function sideSVG(){
+      var D=L.D, g='', f=F(), ax=D.x+D.w, ay=D.y+D.h/2, len=f*D.k;
+      g+=stopwatch(L.SW.x,L.SW.y,fmt1(t)+' s',1)+txt(L.SW.x+88,L.SW.y+25,'time since the push began',{fs:L.fs});
+      g+=txt(D.x,D.y-12,'Force diagram',{fs:L.fs,c:'var(--ink)',w:600});
+      g+=rect(D.x,D.y,D.w,D.h,'var(--panel)',' rx="3" stroke="var(--ink)" stroke-width="2"')+txt(D.x+D.w/2,ay+4.5,M()+' kg',{a:'middle',fs:13,c:'var(--ink)',w:600});
+      if(f>0) g+=arrow(ax+2,ay,ax+2+Math.max(len,16),ay,'var(--force)',4)+txt(ax+8,ay-11,'resultant force '+f+' N',{fs:L.fs,c:'var(--force)',w:600});
+      else g+=txt(ax+8,ay+4,'no resultant force',{fs:L.fs,c:'var(--force)',w:600});
+      g+=txt(ax+8,ay+23,'acceleration = '+(finished?fmtA(A())+' m/s²':'?'),{fs:L.fs,c:'var(--ink)',w:600});
+      return g;
+    }
     function draw(){
-      var s=sAt(t), v=A()*t, bw=34+M()*7, x=X0+s*PXM, f=F();
-      if(s>=TRACK) v=Math.sqrt(2*A()*TRACK);
-      $('#fma-trolley').setAttribute('transform','translate('+x+' 132)');
-      var b=$('#fma-body'); b.setAttribute('x',-bw); b.setAttribute('width',bw);
-      $('#fma-mlabel').setAttribute('x',-bw/2); $('#fma-mlabel').textContent=M()+' kg';
-      $('#fma-w1').setAttribute('cx',-bw+9); $('#fma-w2').setAttribute('cx',-9);
-      var ar=$('#fma-arrow'), len=f*3.2;   // the force arrow sits above the trolley, starting at its back
-      ar.setAttribute('x1',-bw); ar.setAttribute('x2',-bw+len); ar.style.display=f?'':'none';
-      $('#fma-flabel').setAttribute('x',-bw+len/2); $('#fma-flabel').textContent=f?f+' N':'';
-      $('#fma-trail').innerHTML=dots.map(function(d){ return '<circle cx="'+(X0+d*PXM)+'" cy="118" r="3.5" fill="var(--newton)" opacity=".35"/>'; }).join('');
+      var s=sAt(t), v=A()*Math.min(t,tEnd()||t), f=F(), g='', i, k, T;
+      L=lay(); svg.setAttribute('viewBox','0 0 '+L.W+' '+L.H); svg.classList.toggle('tall', !!L.tall);
+      // the runway, its end stop and the distance scale along its front edge
+      g+=ell(L.W/2,L.ty+12,L.W*0.47,5,'#000',' opacity=".12"');
+      g+=box(12,L.ty,L.W-34,9,8,-6,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'});
+      for(i=0;i<=TRACK;i+=2){ var x=px(i); g+=ln(x,L.ty+9,x,L.ty+15,'var(--ink-faint)',1.5)+txt(x,L.ty+29,i+(L.tall&&i>0&&i<TRACK?'':' m'),{a:'middle',fs:L.fs,c:'var(--ink-soft)'}); }
+      // where the front of the trolley was every 0.5 s
+      for(k=0.5;k<=t+1e-9;k+=0.5){ var d=sAt(k); g+='<circle cx="'+f1(px(d))+'" cy="'+f1(L.ty+4.5)+'" r="3" fill="var(--trol)" stroke="#fff" stroke-width="1"/>'; if(d>=TRACK) break; }
+      g+=box(px(TRACK)+1,L.ty-30,7,28,5,-3.5,'var(--steel)');
+      T=trolley(px(s), M(), s*(L.x1-L.x0)/TRACK); g+=T.g;
+      // the force arrow sits above the trolley, starting at its back
+      if(f>0) g+=arrow(T.x0,T.top,T.x0+Math.max(14,f*L.fk),T.top,'var(--force)',4.5)+txt(T.x0+Math.max(14,f*L.fk)/2,T.top-11,f+' N',{a:'middle',fs:13,c:'var(--force)',w:600,halo:1});
+      g+=graphSVG()+sideSVG();
+      svg.innerHTML=g;
       $('#fma-t').textContent=fmt1(t)+' s'; $('#fma-v').textContent=fmt1(v)+' m/s'; $('#fma-s').textContent=fmt1(s)+' m';
     }
     // the answer stays hidden until the run ends, so students can predict it first
     function eq(done){
       $('#fma-fo').textContent=F()+' N'; $('#fma-mo').textContent=M()+' kg';
-      $('#fma-eq').innerHTML=FR('F = m × a<br>a = [[F|m]]<br>a = [['+F()+'|'+M()+']]<br>a = <b>'+(done?fmtA(A())+' m/s²':'? m/s²')+'</b>');
+      $('#fma-eq').innerHTML=FR('F = ma<br>'+F()+' = '+M()+'a<br>a = [['+F()+'|'+M()+']]<br>a = <b>'+(done?fmtA(A())+' m/s²':'? m/s²')+'</b>');
     }
     function stop(){ running=false; cancelAnimationFrame(raf); }
-    function reset(){ stop(); t=0; dots=[]; $('#fma-note').textContent='Press Go to push the trolley from rest.'; eq(); draw(); }
-    function addDots(){ dots=[]; for(var k=0.5;k<=t+1e-9;k+=0.5){ var d=sAt(k); dots.push(d); if(d>=TRACK) break; } }
+    function reset(){ stop(); t=0; finished=false; $('#fma-note').textContent='Press Go to push the trolley from rest.'; eq(); draw(); }
     function finish(){
-      stop(); addDots(); draw(); eq(true);
+      stop(); finished=true; draw(); eq(true);
       $('#fma-note').textContent = F()===0 ? 'No resultant force, so no acceleration: the trolley stays at rest.'
-        : 'It reached the end of the track (10 m) in '+fmt1(t)+' s. Try doubling the force, or doubling the mass.';
+        : 'It reached the end of the runway (10 m) in '+fmt1(t)+' s. The velocity–time graph is a straight line: a steady acceleration. Try doubling the force, or doubling the mass.';
     }
     function frame(now){
       if(!running) return;
       t+=Math.min(0.05,(now-last)/1000)*SPEED(); last=now;
-      addDots();
-      if(sAt(t)>=TRACK || t>=TMAX){ if(sAt(t)>=TRACK) t=Math.sqrt(2*TRACK/A()); finish(); return; }
+      if(sAt(t)>=TRACK || t>=TMAX){ if(sAt(t)>=TRACK) t=tEnd(); finish(); return; }
       draw(); raf=requestAnimationFrame(frame);
     }
     function go(){
       reset();
       if(F()===0){ t=0; finish(); return; }
-      if(REDUCED){ t=Math.min(TMAX, Math.sqrt(2*TRACK/A())); finish(); return; }
       running=true; last=performance.now(); raf=requestAnimationFrame(frame);
+      $('#fma-note').textContent='The resultant force makes the trolley accelerate: the dots get further apart.';
     }
     fIn.addEventListener('input',reset); mIn.addEventListener('input',reset);
     onAction('fma-go',go); onAction('fma-reset',reset);
+    var wasNarrow=narrow(); window.addEventListener('resize',function(){ if(narrow()!==wasNarrow){ wasNarrow=narrow(); draw(); } });
     reset();
   }
   watchEquals('.eq');

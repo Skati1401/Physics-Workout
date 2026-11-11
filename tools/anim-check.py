@@ -44,7 +44,7 @@ def main():
                         if btn.is_enabled(timeout=500): btn.click(timeout=800)
                     except Exception: pass
                     pg.wait_for_timeout(120); bad |= set(pg.evaluate(JS))
-                m = pg.evaluate("()=>({bottom:Math.round(document.querySelector('.stage').getBoundingClientRect().bottom),sw:document.documentElement.scrollWidth})")
+                m = pg.evaluate("()=>({bottom:Math.round((document.querySelector('.stage')||{getBoundingClientRect:function(){return {bottom:0};}}).getBoundingClientRect().bottom),sw:document.documentElement.scrollWidth})")
                 notes = []
                 if errs: notes.append('errors: ' + '; '.join(errs))
                 if w > 600 and m['bottom'] > h: notes.append('card ends at %d, window is %d' % (m['bottom'], h))

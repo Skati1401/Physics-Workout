@@ -201,6 +201,22 @@
   .s-tickt{font:500 14px var(--font-mono);fill:var(--ink-faint);}
   .s-ground{fill:var(--floor-soft);stroke:var(--floor);stroke-width:2;}
   .s-solid{fill:var(--block-soft);stroke:var(--block);stroke-width:2.5;}
+  /* batch 4 (11 Nov 2026): the block and the floor are solid objects, with a lit top and a darker side */
+  :root{--block-f:#f1c08d;--block-t:#f9dcba;--block-s:#c98a4c;--block-ink:#43210a;--floor-f:#c3cad6;--floor-t:#dde2ea;--floor-s:#8f99aa;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--block-f:#8a4f22;--block-t:#a96a38;--block-s:#5f3414;--block-ink:#fff3e6;--floor-f:#3a4254;--floor-t:#4c566b;--floor-s:#262c39;} }
+  :root[data-theme="dark"]{--block-f:#8a4f22;--block-t:#a96a38;--block-s:#5f3414;--block-ink:#fff3e6;--floor-f:#3a4254;--floor-t:#4c566b;--floor-s:#262c39;}
+  .s-floor{fill:var(--floor-f);stroke:var(--floor-s);}
+  .s-block{fill:var(--block-f);stroke:var(--block-s);}
+  .s-label.block{fill:var(--block-ink);}
+  .s-lite{fill:#fff;opacity:.3;pointer-events:none;}
+  .s-shade{fill:#000;opacity:.13;pointer-events:none;}
+  .s-thumb-block{fill:var(--block-f);stroke:none;} .s-thumb-block-t{fill:var(--block-t);} .s-thumb-block-s{fill:var(--block-s);}
+  .s-thumb-floor{fill:var(--floor-f);stroke:none;} .s-thumb-floor-t{fill:var(--floor-t);} .s-thumb-floor-s{fill:var(--floor-s);}
+  .s-ground{fill:var(--floor-f);stroke:none;} .s-ground-t{fill:var(--floor-t);}
+  .s-solid{fill:var(--block-f);stroke:none;} .s-solid-t{fill:var(--block-t);} .s-solid-s{fill:var(--block-s);}
+  .s-tickm{stroke:var(--ink-soft);} .s-tickt{fill:var(--ink);}
+  .s-flabel{paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round;}
+  #view-dry .s-flabel.fric,#view-oil .s-flabel.fric{stroke:var(--block-f);}
 </style>
 <script>
   // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
@@ -310,8 +326,12 @@
 
   <div class="card controls">
     <svg class="zoom-pic" viewBox="0 0 130 80" aria-hidden="true">
-      <rect class="s-thumb-floor" x="4" y="52" width="122" height="22" rx="3"/>
-      <rect class="s-thumb-block" x="22" y="24" width="52" height="28" rx="3"/>
+      <polygon class="s-thumb-floor-t" points="4,54 118,54 127,47 13,47"/>
+      <rect class="s-thumb-floor" x="4" y="54" width="114" height="18"/>
+      <polygon class="s-thumb-floor-s" points="118,54 127,47 127,65 118,72"/>
+      <polygon class="s-thumb-block-t" points="22,27 70,27 77,21 29,21"/>
+      <rect class="s-thumb-block" x="22" y="27" width="48" height="24"/>
+      <polygon class="s-thumb-block-s" points="70,27 77,21 77,45 70,51"/>
       <circle class="s-thumb-lens" cx="76" cy="52" r="15"/>
       <line class="s-thumb-lens" x1="87" y1="63" x2="104" y2="76"/>
     </svg>
@@ -492,6 +512,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       el('path',{'class':'s-oil',d:d+' Z'},svg);
     }
     el('path',{'class':'s-floor',d:floorPath()},svg);
+    el('rect',{'class':'s-shade',x:-20,y:292,width:1040,height:8},svg);   // the floor gets darker lower down, so it reads as a solid slab
     if(oiled){
       var r=rng(99);
       for(var m=0;m<46;m++){
@@ -502,6 +523,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     }
     c.block=el('g',{},svg);
     el('path',{'class':'s-block',d:blockPath()},c.block);
+    el('rect',{'class':'s-lite',x:1,y:-BLOCK_H+1,width:BLOCK_W-2,height:9},c.block);                // a lit top edge and a darker right-hand side
+    el('rect',{'class':'s-shade',x:BLOCK_W-18,y:-BLOCK_H+1,width:17,height:BLOCK_H-1},c.block);
     var bl=el('text',{'class':'s-label block',x:BLOCK_W/2,y:-BLOCK_H+26,'text-anchor':'middle'},c.block);
     bl.textContent='Block';
     c.touchG=el('g',{},svg);
@@ -667,6 +690,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
 
   // ---- scene ----
   var scene=$('mu-scene');
+  el('rect',{'class':'s-ground-t',x:-10,y:GROUND-12,width:1020,height:12},scene);   // the bench: a lit top face and its front
   el('rect',{'class':'s-ground',x:-10,y:GROUND,width:1020,height:60},scene);
   for(var m=0;m<=7;m++){
     var tx=X0+m*PX_PER_M; if(tx>990) break;
@@ -674,7 +698,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var tt=el('text',{'class':'s-tickt',x:tx,y:GROUND+28,'text-anchor':'middle'},scene); tt.textContent=m+' m';
   }
   var blockG=el('g',{},scene);
-  el('rect',{'class':'s-solid',x:0,y:-BH,width:BW,height:BH,rx:4},blockG);
+  el('polygon',{'class':'s-solid-t',points:'0,'+(-BH)+' '+BW+','+(-BH)+' '+(BW+12)+','+(-BH-9)+' 12,'+(-BH-9)},blockG);   // a solid block: lit top, darker side
+  el('polygon',{'class':'s-solid-s',points:BW+','+(-BH)+' '+(BW+12)+','+(-BH-9)+' '+(BW+12)+',-9 '+BW+',0'},blockG);
+  el('rect',{'class':'s-solid',x:0,y:-BH,width:BW,height:BH},blockG);
   var mLbl=el('text',{'class':'s-label block',x:BW/2,y:-BH/2+6,'text-anchor':'middle'},blockG);
   function mkArrow(cls, label){
     var g=el('g',{},scene), line=el('line',{'class':'s-arrow '+cls},g), head=el('path',{'class':'s-head '+cls},g);
