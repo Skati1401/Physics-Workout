@@ -419,7 +419,7 @@
       var v=after(), dt=tt-th, x=u()*th; return {a:x+v.va*dt, b:x+v.vb*dt, va:v.va, vb:v.vb, hit:true};
     }
     function px(st){ var wa=wOf(ma()); return {xa:X0+OFF+wa+st.a*PXM, xb:X0+OFF+wa+st.b*PXM}; }
-    // place the trolleys so the run up to just after the collision fits the track: shrink the gap if it is too long, then centre it
+    // place the trolleys: shrink the gap if the run up to just after the collision is too long for the track, then choose the start by which way they move
     function layout(){
       L=lay(); PXM=L.pxm; LEFT=L.left; RIGHT=L.right; X0=L.left;
       var wa=wOf(ma()), wb=wOf(mb()), room=RIGHT-LEFT-8;
@@ -428,8 +428,12 @@
         return {lo:lo, hi:hi}; }
       GAP=3; OFF=0; var sp=span();
       while(sp.hi-sp.lo>room && GAP>0.75){ GAP-=0.25; sp=span(); }
-      OFF = LEFT+4+(room-(sp.hi-sp.lo))/2 - sp.lo - X0 - wa;
-      if(sp.hi-sp.lo>room) OFF = sp.lo<0 ? RIGHT-4-(GAP*PXM+wb)-X0-wa : LEFT+4-X0;   // still too long: keep the start on the track, on the side it drifts away from
+      // where they start (Alex, 11 Nov 2026): heading towards each other, around the middle; both (or the only one moving) going right,
+      // at the left-hand end; going left, at the right-hand end
+      var start=wa+GAP*PXM+wb, a=u(), c=u2();
+      if(a>=0 && c>=0 && (a>0 || c>0)) OFF = LEFT+4-X0;
+      else if(a<=0 && c<=0 && (a<0 || c<0)) OFF = RIGHT-4-start-X0;
+      else OFF = (LEFT+RIGHT)/2-start/2-X0;
     }
     function offScreen(st){ var p=px(st); return p.xa-wOf(ma())<LEFT || p.xb+wOf(mb())>RIGHT || p.xa>RIGHT || p.xb<LEFT; }
     function endT(){   // stop when a trolley reaches the edge, or 2.5 s after the collision
