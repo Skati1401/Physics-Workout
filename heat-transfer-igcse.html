@@ -338,8 +338,6 @@ svg.sankey{background:var(--panel)}
 .house-row.house-head{background:none;border:0;padding:0 8px;font:500 11px var(--f-mono);color:var(--ink-soft)}
 .house-row .house-blank{width:100%;min-width:0;min-height:44px;margin:0;white-space:normal;text-align:center;font-size:13.5px}
 @media (max-width:620px){.house-row{grid-template-columns:minmax(0,1fr)}.house-row.house-head{display:none}}
-.ex-answer{display:block;width:100%;min-height:110px;margin:0 0 10px;padding:8px 10px;font:14px/1.5 var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;resize:vertical}
-.ex-answer:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .model details>div{font:14px/1.5 var(--f-body)}
 .model details ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
 .flask-split{grid-template-columns:minmax(0,340px) minmax(0,1fr)}
@@ -1469,12 +1467,6 @@ const CATS3=[{id:'c',label:'Conduction',hint:'through a material',color:'--cond'
              {id:'v',label:'Convection',hint:'a fluid moves',color:'--conv',soft:'--conv-soft'},
              {id:'r',label:'Radiation',hint:'infrared waves',color:'--therm',soft:'--therm-soft'}];
 // An exam "explain" question: a small diagram, the question, a box to write an answer, then the marking points.
-function examQ(title,svg,q,bullets){
-  const body=act('exam','Exam explain',title,'');
-  body.classList.add('model');
-  const id='ex-'+title.toLowerCase().replace(/[^a-z]+/g,'-');
-  body.innerHTML='<div class="model-row">'+svg+'<div><p class="practice-q">'+q+'</p><label class="sr-only" for="'+id+'">Your answer</label><textarea id="'+id+'" class="ex-answer" placeholder="Write your answer, then check it against the marking points."></textarea><details><summary>Show the marking points</summary><div><ul>'+bullets.map(b=>'<li>'+b+'</li>').join('')+'</ul></div></details></div></div>';
-}
 
 /* ================= 1. OVERVIEW ================= */
 {
@@ -1655,20 +1647,38 @@ window.addEventListener('message',e=>{
 }
 
 /* ================= 8. EXAM EXPLAINS ================= */
+// 11 Nov 2026 (Alex): the written Exam explain cards became an Order and a Match, built from the mark-scheme points.
+// examCard puts the exam question and its picture beside the activity; it returns the box to build the activity in.
+// below:true puts the activity under the question and picture, using the card's full width (for a Match).
+function examCard(kind,title,svg,q,below){
+  const body=act('exam',kind,title,'');
+  body.classList.add('model');
+  body.innerHTML='<div class="model-row">'+svg+'<div class="ex-side"><p class="practice-q">'+q+'</p></div></div>';
+  return below?body:$('.ex-side',body);
+}
 {
-  examQ('Black and shiny cans',
-    '<svg class="pd" viewBox="0 0 200 110" fill="none" role="img" aria-label="Two identical cans of hot water, one matt black and one shiny silver"><rect x="40" y="30" width="44" height="66" rx="4" fill="#1d1d1f" stroke="var(--ink-soft)" stroke-width="2"/><rect x="116" y="30" width="44" height="66" rx="4" class="src-body"/><path d="M124,38 V88 M131,38 V88" stroke="var(--panel-border)" stroke-width="3"/><path d="M50,24 q4,-6 0,-12 M62,24 q4,-6 0,-12 M74,24 q4,-6 0,-12" class="src-wave"/><path d="M126,24 q4,-6 0,-12 M138,24 q4,-6 0,-12 M150,24 q4,-6 0,-12" class="src-wave"/><text x="36" y="108" class="pd-label">Matt black</text><text x="112" y="108" class="pd-label">Shiny silver</text></svg>',
-    'Two identical cans are filled with the same volume of water at 80 °C. One can is painted matt black and the other is shiny silver. Explain which can cools faster. (3 marks)',
-    ['The matt black can cools faster.',
-     'Matt black surfaces are good emitters of infrared radiation; shiny surfaces are poor emitters.',
-     'So the black can transfers energy to the surroundings by radiation at a higher rate.']);
-  examQ('Keeping a drink hot',
-    '<svg class="pd" viewBox="0 0 200 130" fill="none" role="img" aria-label="Cross-section of a vacuum flask"><rect x="62" y="16" width="76" height="108" rx="12" class="src-body"/><rect x="72" y="26" width="56" height="90" rx="8" fill="none" stroke="var(--grav)" stroke-width="2.5"/><rect x="86" y="34" width="28" height="76" rx="5" fill="var(--therm-soft)" stroke="var(--grav)" stroke-width="2.5"/><rect x="84" y="10" width="32" height="26" rx="4" fill="var(--cond-soft)" stroke="var(--cond)" stroke-width="2"/><text x="142" y="22" class="pd-label">Stopper</text><text x="142" y="70" class="pd-label">Vacuum</text><path d="M140,67 H80" class="src-line"/><text x="4" y="96" class="pd-label">Silvered</text><text x="4" y="107" class="pd-label">walls</text><path d="M48,98 H86" class="src-line"/></svg>',
-    'A vacuum flask keeps a drink hot for many hours. Explain how its design reduces energy transfer by conduction, convection and radiation. (4 marks)',
-    ['The vacuum between the walls has no particles, so energy cannot be transferred across it by conduction or convection.',
-     'The silvered surfaces are poor emitters and reflect infrared radiation back towards the drink, so less energy is transferred by radiation.',
-     'The plastic stopper is a poor conductor, so little energy is conducted out through the top.',
-     'The stopper also stops warm air rising out of the flask, so less energy is lost by convection.']);
+  createReorder({
+    host:examCard('Order','Black and shiny cans',`<svg class="pd" viewBox="0 0 200 110" fill="none" role="img" aria-label="Two identical cans of hot water, one matt black and one shiny silver"><rect x="40" y="30" width="44" height="66" rx="4" fill="#1d1d1f" stroke="var(--ink-soft)" stroke-width="2"/><rect x="116" y="30" width="44" height="66" rx="4" class="src-body"/><path d="M124,38 V88 M131,38 V88" stroke="var(--panel-border)" stroke-width="3"/><path d="M50,24 q4,-6 0,-12 M62,24 q4,-6 0,-12 M74,24 q4,-6 0,-12" class="src-wave"/><path d="M126,24 q4,-6 0,-12 M138,24 q4,-6 0,-12 M150,24 q4,-6 0,-12" class="src-wave"/><text x="36" y="108" class="pd-label">Matt black</text><text x="112" y="108" class="pd-label">Shiny silver</text></svg>`,
+      'Two identical cans are filled with the same volume of water at 80 °C. One can is painted matt black and the other is shiny silver. Explain which can cools faster. (3 marks) Put the steps of the answer in order.'),
+    steps:[
+      {id:'a',text:'Both cans start hotter than the surroundings, so both lose energy.'},
+      {id:'b',text:'Both cans emit infrared radiation to the surroundings.'},
+      {id:'c',text:'Matt black is a good emitter of infrared; shiny silver is a poor emitter.'},
+      {id:'d',text:'So the black can transfers energy to the surroundings at a higher rate.'},
+      {id:'e',text:'So the matt black can cools faster.'}
+    ],
+    constraints:[['a','b'],['b','d'],['c','d'],['d','e']],
+    why:'The marks are for the answer (the black can), the reason (a better emitter of infrared) and the link (energy is transferred by radiation at a higher rate).'
+  });
+  const mgF=createMatchGame({host:examCard('Match','Keeping a drink hot',`<svg class="pd" viewBox="0 0 200 130" fill="none" role="img" aria-label="Cross-section of a vacuum flask"><rect x="62" y="16" width="76" height="108" rx="12" class="src-body"/><rect x="72" y="26" width="56" height="90" rx="8" fill="none" stroke="var(--grav)" stroke-width="2.5"/><rect x="86" y="34" width="28" height="76" rx="5" fill="var(--therm-soft)" stroke="var(--grav)" stroke-width="2.5"/><rect x="84" y="10" width="32" height="26" rx="4" fill="var(--cond-soft)" stroke="var(--cond)" stroke-width="2"/><text x="142" y="22" class="pd-label">Stopper</text><text x="142" y="70" class="pd-label">Vacuum</text><path d="M140,67 H80" class="src-line"/><text x="4" y="96" class="pd-label">Silvered</text><text x="4" y="107" class="pd-label">walls</text><path d="M48,98 H86" class="src-line"/></svg>`,
+      'A vacuum flask keeps a drink hot for many hours. Explain how its design reduces energy transfer by conduction, convection and radiation. (4 marks) Match each feature to how it reduces energy transfer.',true),
+    leftTitle:'Feature',rightTitle:'How it reduces energy transfer',narrowLeft:true,pairs:[
+    {id:'v',l:'The vacuum between the walls',r:'It has no particles, so no energy is conducted or convected across the gap'},
+    {id:'s',l:'The silvered walls',r:'They reflect infrared back towards the drink and are poor emitters, so less energy leaves by radiation'},
+    {id:'t',l:'The stopper in the neck',r:'It stops warm air rising out of the top, so no convection current carries energy out'},
+    {id:'p',l:'The stopper is made of plastic',r:'It is a poor conductor, so little energy is conducted out through the top'}
+  ]});
+  reflowers.push(tab=>{if(tab==='exam')raf(mgF.reflow);});
 }
 
 /* ================= tabs, startup ================= */
