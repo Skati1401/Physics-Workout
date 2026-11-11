@@ -2747,17 +2747,24 @@ predictAct('power','Choose the fuse','Fuses come in 3 A, 5 A and 13 A.',{
   ],
   explain:'P = I × V, so 2300 = I × 230 and I = 10 A. Choose the fuse with the smallest rating that is above the normal current: 13 A.'});
 const amps=I=>Number.isInteger(I)?I.toFixed(1):String(I);
-calcAct('power','P = I × V','Use P = I × V. Give each answer in the unit shown. Press New problems for another set.',[
-  {q:'A 1150 W microwave runs on the 230 V mains. The current is',unit:'A',answer:5,working:'P = 1150 W<br>V = 230 V<br>I = ?||P = I × V<br>1150 = I × 230<br>I = [[1150|230]]<br>I = 5 A',
-   make:rnd=>{const I=calcPick(rnd,[3,4,5,6,7,8]),P=I*230,what=calcPick(rnd,['microwave','kettle','toaster','hair dryer']);
-     return {q:'A '+P+' W '+what+' runs on the 230 V mains. The current is',unit:'A',answer:I,working:'P = '+P+' W<br>V = 230 V<br>I = ?||P = I × V<br>'+P+' = I × 230<br>I = [['+P+'|230]]<br>I = '+I+' A'};}},
-  {q:'An electric drill has a power of 460 W and takes a current of 2.0 A. The voltage is',unit:'V',answer:230,working:'P = 460 W<br>I = 2.0 A<br>V = ?||P = I × V<br>460 = 2.0 × V<br>V = [[460|2.0]]<br>V = 230 V',
-   make:rnd=>{const c=calcPick(rnd,[[18,10],[18,12.5],[18,20],[110,2],[110,3],[110,4.5],[230,1.5],[230,2],[230,3]]),V=c[0],I=c[1],P=V*I,what=calcPick(rnd,['An electric drill','A hedge trimmer','A floor sander']);
-     return {q:what+' has a power of '+P+' W and takes a current of '+amps(I)+' A. The voltage is',unit:'V',answer:V,working:'P = '+P+' W<br>I = '+amps(I)+' A<br>V = ?||P = I × V<br>'+P+' = '+amps(I)+' × V<br>V = [['+P+'|'+amps(I)+']]<br>V = '+V+' V'};}},
-  {q:'A 2.3 kW heater runs on the 230 V mains. The current is',unit:'A',answer:10,working:'P = 2.3 kW = 2300 W<br>V = 230 V<br>I = ?||P = I × V<br>2300 = I × 230<br>I = [[2300|230]]<br>I = 10 A',
-   make:rnd=>{const kW=calcPick(rnd,[1.15,1.38,1.84,2.3,2.76,3.45]),W=Math.round(kW*1000),I=+(W/230).toFixed(2),what=calcPick(rnd,['heater','kettle','oven']);
-     return {q:'A '+kW+' kW '+what+' runs on the 230 V mains. The current is',unit:'A',answer:I,working:'P = '+kW+' kW = '+W+' W<br>V = 230 V<br>I = ?||P = I × V<br>'+W+' = I × 230<br>I = [['+W+'|230]]<br>I = '+I+' A'};}}
-]);
+// Two questions (11 Nov 2026): the first rearranges P = IV for I or V; the second also changes kW to W or gives the current
+// in mA. New problems changes the numbers, the appliance and which quantity is asked for.
+const pw_q1=rnd=>{const n=calcNum;return rnd()<0.55?(()=>{const I=calcPick(rnd,[2,3,4,5,6,7,8]),P=I*230,w=calcPick(rnd,['microwave','kettle','toaster','hair dryer','iron','vacuum cleaner']);
+    return {q:'A '+P+' W '+w+' runs on the 230 V mains. The current is',unit:'A',answer:I,working:'P = '+P+' W<br>V = 230 V<br>I = ?||P = IV<br>'+P+' = 230I<br>I = [['+P+'|230]]<br>I = '+I+' A'};})()
+  :(()=>{const c=calcPick(rnd,[['A car headlamp',12,[4,5]],['A camping fan',12,[2,1.5]],['A cordless drill',18,[10,12.5]],['A cordless hedge trimmer',18,[8,10]],['A site floor sander',110,[2,3,4.5]],['An electric drill',230,[1.5,2,3]]]),V=c[1],I=calcPick(rnd,c[2]),P=V*I,w=c[0];
+    return {q:w+' has a power of '+n(P)+' W and takes a current of '+n(I)+' A. The voltage is',unit:'V',answer:V,working:'P = '+n(P)+' W<br>I = '+n(I)+' A<br>V = ?||P = IV<br>'+n(P)+' = '+n(I)+'V<br>V = [['+n(P)+'|'+n(I)+']]<br>V = '+V+' V'};})();};
+const pw_q2=rnd=>{const n=calcNum;return calcPick(rnd,[
+  ()=>{const I=calcPick(rnd,[5,6,8,10,12]),P=I*230,w=calcPick(rnd,['kettle','heater','oven','tumble dryer']);
+    return {q:'A '+n(P/1000)+' kW '+w+' runs on the 230 V mains. The current is',unit:'A',answer:I,hints:['Change '+n(P/1000)+' kW into watts: multiply by 1000.','Then rearrange P = IV for I.'],
+      working:'P = '+n(P/1000)+' kW = '+n(P)+' W<br>V = 230 V<br>I = ?||P = IV<br>'+n(P)+' = 230I<br>I = [['+n(P)+'|230]]<br>I = '+I+' A'};},
+  ()=>{const c=calcPick(rnd,[['An LED lamp',[20,25,40,50]],['A clock radio',[10,20,25]],['A television on standby',[5,10]],['A phone charger',[40,50,100]],['A laptop charger',[200,250,300]]]),mA=calcPick(rnd,c[1]),P=230*mA/1000,w=c[0];
+    return {q:w+' has a power of '+n(P)+' W on the 230 V mains. The current, in mA, is',unit:'mA',answer:mA,hints:['Rearrange P = IV to find I in amps.','Then change amps into milliamps: multiply by 1000.'],
+      working:'P = '+n(P)+' W<br>V = 230 V<br>I = ?||P = IV<br>'+n(P)+' = 230I<br>I = [['+n(P)+'|230]]<br>I = '+n(mA/1000)+' A<br>I = '+mA+' mA'};},
+  ()=>{const c=calcPick(rnd,[[12,2.4,200],[6,1.5,250],[9,2.7,300],[12,6,500],[5,2,400]]),V=c[0],P=c[1],mA=c[2];
+    return {q:'A '+n(P)+' W toy motor takes a current of '+mA+' mA. The voltage across it is',unit:'V',answer:V,hints:['Change '+mA+' mA into amps: divide by 1000.','Then rearrange P = IV for V.'],
+      working:'P = '+n(P)+' W<br>I = '+mA+' mA = '+n(mA/1000)+' A<br>V = ?||P = IV<br>'+n(P)+' = '+n(mA/1000)+'V<br>V = [['+n(P)+'|'+n(mA/1000)+']]<br>V = '+V+' V'};}
+])();};
+calcAct('power','P = I × V','Use P = IV. Give each answer in the unit shown. Press New problems for another pair.',[calcFix(pw_q1,2),calcFix(pw_q2,1)]);
 
 }
 keepKinds('2a-power',null,null);
@@ -2780,22 +2787,28 @@ createSortGame({host:act('energy','Sort','a.c. or d.c.?','Sort each card, then p
 // number formatting for the energy makers: no float noise, spaces in numbers of 10 000 and over, 1 d.p. on small whole values
 const energy_fmt=x=>{const v=+(+x).toFixed(4),t=String(v),k=t.indexOf('.'),i=k<0?t:t.slice(0,k);return (Math.abs(v)>=10000?i.replace(/\B(?=(\d{3})+(?!\d))/g,' '):i)+(k<0?'':t.slice(k));};
 const energy_d1=x=>Number.isInteger(x)&&x<10?x.toFixed(1):energy_fmt(x);
-calcAct('energy','E = I × V × t','Use E = I × V × t, with time in seconds. Press New problems for another set.',[
-  {q:'A 12 V battery gives a current of 2.5 A for 10 minutes. The energy transferred is',unit:'J',answer:18000,working:'I = 2.5 A<br>V = 12 V<br>t = 10 min = 600 s<br>E = ?||E = I × V × t<br>E = 2.5 × 12 × 600<br>E = 18 000 J',
-   make:rnd=>{const c=calcPick(rnd,[['A {V} V battery gives',[6,9,12],[0.5,1.5,2,2.5,3]],['A {V} V car headlamp takes',[12],[4,5]],['Charlie’s {V} V electric bike motor takes',[24,36],[5,8,10]],['A {V} V motor takes',[6,12,24],[1.5,2,2.5,3,4]]]),
-       V=calcPick(rnd,c[1]),I=calcPick(rnd,c[2]),m=calcPick(rnd,[2,5,10,15,20]),t=m*60,E=I*V*t;
-     return {q:c[0].replace('{V}',energy_d1(V))+' a current of '+energy_d1(I)+' A for '+m+' minutes. The energy transferred is',unit:'J',answer:E,
-       working:'I = '+energy_d1(I)+' A<br>V = '+energy_d1(V)+' V<br>t = '+m+' min = '+t+' s<br>E = ?||E = I × V × t<br>E = '+energy_d1(I)+' × '+energy_d1(V)+' × '+t+'<br>E = '+energy_fmt(E)+' J'};}},
-  {q:'Poppy’s kettle takes 10 A from the 230 V mains and transfers 690 000 J. The time it is on for is',unit:'s',answer:300,working:'I = 10 A<br>V = 230 V<br>E = 690 000 J<br>t = ?||E = I × V × t<br>690 000 = 10 × 230 × t<br>690 000 = 2300 × t<br>t = [[690 000|2300]]<br>t = 300 s',
-   make:rnd=>{const c=calcPick(rnd,[['Poppy’s kettle',[10,12,13]],['A toaster',[4,5]],['Henry’s hair dryer',[5,6,8]],['An electric heater',[8,10]],['Fatimah’s iron',[4,5,6]]]),
-       I=calcPick(rnd,c[1]),t=calcPick(rnd,[60,90,120,180,240,300]),P=I*230,E=P*t;
-     return {q:c[0]+' takes '+I+' A from the 230 V mains and transfers '+energy_fmt(E)+' J. The time it is on for is',unit:'s',answer:t,
-       working:'I = '+I+' A<br>V = 230 V<br>E = '+energy_fmt(E)+' J<br>t = ?||E = I × V × t<br>'+energy_fmt(E)+' = '+I+' × 230 × t<br>'+energy_fmt(E)+' = '+energy_fmt(P)+' × t<br>t = [['+energy_fmt(E)+'|'+energy_fmt(P)+']]<br>t = '+t+' s'};}},
-  {q:'A 6.0 V motor transfers 900 J in 50 s. The current is',unit:'A',answer:3,working:'V = 6.0 V<br>E = 900 J<br>t = 50 s<br>I = ?||E = I × V × t<br>900 = I × 6.0 × 50<br>900 = I × 300<br>I = [[900|300]]<br>I = 3 A',
-   make:rnd=>{const what=calcPick(rnd,['motor','lamp','fan','heating element']),V=calcPick(rnd,[3,6,9,12]),t=calcPick(rnd,[20,30,40,50,60,100]),I=calcPick(rnd,[0.5,1.5,2,2.5,3,4]),Vt=V*t,E=I*Vt;
-     return {q:'A '+energy_d1(V)+' V '+what+' transfers '+energy_fmt(E)+' J in '+t+' s. The current is',unit:'A',answer:I,
-       working:'V = '+energy_d1(V)+' V<br>E = '+energy_fmt(E)+' J<br>t = '+t+' s<br>I = ?||E = I × V × t<br>'+energy_fmt(E)+' = I × '+energy_d1(V)+' × '+t+'<br>'+energy_fmt(E)+' = I × '+energy_fmt(Vt)+'<br>I = [['+energy_fmt(E)+'|'+energy_fmt(Vt)+']]<br>I = '+energy_fmt(I)+' A'};}}
-  ]);
+// Two questions (11 Nov 2026): the first rearranges E = IVt for t, I or V (time in seconds); the second has the time in
+// minutes or the energy in kJ. New problems changes the numbers, the appliance and which quantity is asked for.
+const en_P=['Poppy','Ruby','Elena','Henry','Ali','Lucas','Hana','David'];
+const en_q1=rnd=>{const n=calcNum,c=calcPick(rnd,[['a 12 V battery','motor',12,[0.5,2,2.5,4]],['the 230 V mains','lamp',230,[0.2,0.5,1,2]],['a 6 V supply','heater',6,[1.5,2,3,4]],['a 9 V battery','buzzer',9,[0.1,0.2,0.5]]]),V=c[2],I=calcPick(rnd,c[3]),t=calcPick(rnd,[20,30,40,50,60,100,120]),E=I*V*t;
+  return calcPick(rnd,[
+    {q:'A '+c[1]+' on '+c[0]+' takes a current of '+n(I)+' A and transfers '+n(E)+' J. The time it is on for is',unit:'s',answer:t,
+      working:'I = '+n(I)+' A<br>V = '+V+' V<br>E = '+n(E)+' J<br>t = ?||E = IVt<br>'+n(E)+' = '+n(I)+' × '+V+' × t<br>'+n(E)+' = '+n(I*V)+'t<br>t = [['+n(E)+'|'+n(I*V)+']]<br>t = '+t+' s'},
+    {q:'A '+c[1]+' on '+c[0]+' transfers '+n(E)+' J in '+t+' s. The current is',unit:'A',answer:I,
+      working:'V = '+V+' V<br>E = '+n(E)+' J<br>t = '+t+' s<br>I = ?||E = IVt<br>'+n(E)+' = I × '+V+' × '+t+'<br>'+n(E)+' = '+n(V*t)+'I<br>I = [['+n(E)+'|'+n(V*t)+']]<br>I = '+n(I)+' A'},
+    {q:'A '+c[1]+' takes a current of '+n(I)+' A for '+t+' s and transfers '+n(E)+' J. The voltage across it is',unit:'V',answer:V,
+      working:'I = '+n(I)+' A<br>t = '+t+' s<br>E = '+n(E)+' J<br>V = ?||E = IVt<br>'+n(E)+' = '+n(I)+' × V × '+t+'<br>'+n(E)+' = '+n(I*t)+'V<br>V = [['+n(E)+'|'+n(I*t)+']]<br>V = '+V+' V'}]);};
+const en_q2=rnd=>{const n=calcNum,who=calcPick(rnd,en_P);return calcPick(rnd,[
+  ()=>{const I=calcPick(rnd,[5,8,10,12]),m=calcPick(rnd,[2,3,4,5]),E=I*230*m*60,w=calcPick(rnd,['kettle','hair dryer','heater','iron']);
+    return {q:who+'’s '+w+' takes '+I+' A from the 230 V mains and transfers '+n(E)+' J. The time it is on for, in minutes, is',unit:'min',answer:m,
+      hints:['Rearrange E = IVt to find t in seconds.','Divide the seconds by 60.'],
+      working:'I = '+I+' A<br>V = 230 V<br>E = '+n(E)+' J<br>t = ?||E = IVt<br>'+n(E)+' = '+I+' × 230 × t<br>'+n(E)+' = '+n(I*230)+'t<br>t = [['+n(E)+'|'+n(I*230)+']]<br>t = '+n(m*60)+' s<br>t = '+m+' min'};},
+  ()=>{const V=calcPick(rnd,[6,9,12,24]),I=calcPick(rnd,[0.5,1.5,2,2.5,4]),m=calcPick(rnd,[2,5,10,15]),E=I*V*m*60;
+    return {q:'A '+V+' V motor transfers '+n(E/1000)+' kJ in '+m+' minutes. The current in the motor is',unit:'A',answer:I,
+      hints:['Change kJ into J and minutes into seconds first.','Then rearrange E = IVt for I.'],
+      working:'V = '+V+' V<br>E = '+n(E/1000)+' kJ = '+n(E)+' J<br>t = '+m+' min = '+m*60+' s<br>I = ?||E = IVt<br>'+n(E)+' = I × '+V+' × '+m*60+'<br>'+n(E)+' = '+n(V*m*60)+'I<br>I = [['+n(E)+'|'+n(V*m*60)+']]<br>I = '+n(I)+' A'};}
+])();};
+calcAct('energy','E = I × V × t','Use E = IVt, with time in seconds. Press New problems for another pair.',[calcFix(en_q1,2),calcFix(en_q2,3)]);
 
 }
 keepKinds('2a-energy',null,null);
@@ -2836,21 +2849,17 @@ quickCheck('charge','Charge and voltage',[
 // number formatting for the charge makers (no float noise; 1 d.p. on small whole currents)
 const charge_fmt=x=>String(+(+x).toFixed(4));
 const charge_d1=x=>Number.isInteger(x)&&x<10?x.toFixed(1):charge_fmt(x);
-calcAct('charge','Q = I × t and E = Q × V','Use Q = I × t and E = Q × V, with time in seconds. Press New problems for another set.',[
-  {q:'A lamp takes a current of 0.5 A for 2 minutes. The charge that flows is',unit:'C',answer:60,working:'I = 0.5 A<br>t = 2 min = 120 s<br>Q = ?||Q = I × t<br>Q = 0.5 × 120<br>Q = 60 C',
-   make:rnd=>{const what=calcPick(rnd,['A lamp','A heater','A motor','Ruby’s phone charger','A fan']),I=calcPick(rnd,[0.2,0.4,0.5,1.5,2,2.5,3]),m=calcPick(rnd,[2,3,4,5,10]),t=m*60,Q=+(I*t).toFixed(2);
-     return {q:what+' takes a current of '+charge_d1(I)+' A for '+m+' minutes. The charge that flows is',unit:'C',answer:Q,
-       working:'I = '+charge_d1(I)+' A<br>t = '+m+' min = '+t+' s<br>Q = ?||Q = I × t<br>Q = '+charge_d1(I)+' × '+t+'<br>Q = '+charge_fmt(Q)+' C'};}},
-  {q:'360 C of charge flows through a motor in 3 minutes. The current is',unit:'A',answer:2,working:'Q = 360 C<br>t = 3 min = 180 s<br>I = ?||Q = I × t<br>360 = I × 180<br>I = [[360|180]]<br>I = 2 A',
-   make:rnd=>{const c=calcPick(rnd,[['a motor',[0.5,1.5,2,2.5,3]],['a lamp',[0.5,1.5,2]],['a resistor',[0.5,1.5,2,2.5]],['Lucas’s hair dryer',[4,5]],['an electric heater',[4,5]]]),what=c[0],I=calcPick(rnd,c[1]),m=calcPick(rnd,[2,3,4,5,10]),t=m*60,Q=+(I*t).toFixed(2);
-     return {q:charge_fmt(Q)+' C of charge flows through '+what+' in '+m+' minutes. The current is',unit:'A',answer:I,
-       working:'Q = '+charge_fmt(Q)+' C<br>t = '+m+' min = '+t+' s<br>I = ?||Q = I × t<br>'+charge_fmt(Q)+' = I × '+t+'<br>I = [['+charge_fmt(Q)+'|'+t+']]<br>I = '+charge_fmt(I)+' A'};}},
-  {q:'Nabil’s 12 V lamp takes 2.0 A for 50 s. The energy it transfers is',unit:'J',answer:1200,working:'V = 12 V<br>I = 2.0 A<br>t = 50 s<br>E = ?||Q = I × t<br>Q = 2.0 × 50<br>Q = 100 C<br>E = Q × V<br>E = 100 × 12<br>E = 1200 J',
-   make:rnd=>{const c=calcPick(rnd,[['Nabil’s','lamp'],['Elena’s','motor'],['A','heater'],['Julia’s','fan'],['A','heater']]),V=calcPick(rnd,[3,6,9,12,24]),I=calcPick(rnd,[0.5,1.5,2,2.5,3,4]),t=calcPick(rnd,[10,20,30,40,50,60]),Q=+(I*t).toFixed(2),E=+(Q*V).toFixed(2);
-     return {q:c[0]+' '+charge_d1(V)+' V '+c[1]+' takes '+charge_d1(I)+' A for '+t+' s. The energy it transfers is',unit:'J',answer:E,
-       working:'V = '+charge_d1(V)+' V<br>I = '+charge_d1(I)+' A<br>t = '+t+' s<br>E = ?||Q = I × t<br>Q = '+charge_d1(I)+' × '+t+'<br>Q = '+charge_fmt(Q)+' C<br>E = Q × V<br>E = '+charge_fmt(Q)+' × '+charge_d1(V)+'<br>E = '+charge_fmt(E)+' J'};}}
-
-  ]);
+// Two questions (11 Nov 2026): the first rearranges Q = It for I or t; the second uses Q = It and E = QV together, with the
+// time in minutes. New problems changes the numbers, the component and which quantity is asked for.
+const ch_q1=rnd=>{const n=calcNum,w=calcPick(rnd,['a lamp','a motor','a heater','a buzzer','a resistor']),I=calcPick(rnd,[0.2,0.25,0.5,1.5,2,4]),t=calcPick(rnd,[20,40,50,60,80,120]),Q=I*t;
+  return rnd()<0.5?{q:n(Q)+' C of charge flows through '+w+' in '+t+' s. The current is',unit:'A',answer:I,working:'Q = '+n(Q)+' C<br>t = '+t+' s<br>I = ?||Q = It<br>'+n(Q)+' = '+t+'I<br>I = [['+n(Q)+'|'+t+']]<br>I = '+n(I)+' A'}
+    :{q:'A current of '+n(I)+' A flows through '+w+'. The time it takes '+n(Q)+' C of charge to flow is',unit:'s',answer:t,working:'Q = '+n(Q)+' C<br>I = '+n(I)+' A<br>t = ?||Q = It<br>'+n(Q)+' = '+n(I)+'t<br>t = [['+n(Q)+'|'+n(I)+']]<br>t = '+t+' s'};};
+const ch_q2=rnd=>{const n=calcNum,who=calcPick(rnd,['Nabil','Sophie','Charlie','Fatimah','Edward','Julia']),V=calcPick(rnd,[6,9,12,24]),I=calcPick(rnd,[0.5,1.5,2,2.5,3]),m=calcPick(rnd,[2,4,5,10]),Q=I*m*60,E=Q*V;
+  return rnd()<0.5?{q:who+'’s '+V+' V lamp takes a current of '+n(I)+' A for '+m+' minutes. The energy it transfers is',unit:'J',answer:E,hints:['Change '+m+' minutes into seconds.','Find the charge with Q = It.','Then use E = QV.'],
+      working:'V = '+V+' V<br>I = '+n(I)+' A<br>t = '+m+' min = '+m*60+' s<br>E = ?||Q = It<br>Q = '+n(I)+' × '+m*60+'<br>Q = '+n(Q)+' C<br>E = QV<br>E = '+n(Q)+' × '+V+'<br>E = '+n(E)+' J'}
+    :{q:'A motor takes a current of '+n(I)+' A for '+m+' minutes and transfers '+n(E)+' J. The voltage across the motor is',unit:'V',answer:V,hints:['Change '+m+' minutes into seconds.','Find the charge with Q = It.','Then rearrange E = QV for V.'],
+      working:'I = '+n(I)+' A<br>t = '+m+' min = '+m*60+' s<br>E = '+n(E)+' J<br>V = ?||Q = It<br>Q = '+n(I)+' × '+m*60+'<br>Q = '+n(Q)+' C<br>E = QV<br>'+n(E)+' = '+n(Q)+'V<br>V = [['+n(E)+'|'+n(Q)+']]<br>V = '+V+' V'};};
+calcAct('charge','Q = I × t and E = Q × V','Use Q = It and E = QV, with time in seconds. Press New problems for another pair.',[calcFix(ch_q1,1),calcFix(ch_q2,2)]);
 
 
 }
@@ -2894,21 +2903,23 @@ quickCheck('series','Series and parallel',[
 // currents and voltages makers: values in tenths or hundredths, worked in integers so no float noise
 const series_f2=x=>(Math.round(x*100)/100).toFixed(2);
 const series_f1=x=>x>=10&&Number.isInteger(x)?String(x):(Math.round(x*10)/10).toFixed(1);
-calcAct('series','Currents and voltages','Use the rules for junctions and for parallel branches. Press New problems for another set.',[
-  {q:'A current of 0.60 A flows into a junction. One branch leaving it carries 0.25 A. The current in the other branch is',unit:'A',answer:0.35,working:'current in = 0.60 A<br>current out of one branch = 0.25 A<br>I = ?||current in = current out<br>0.60 = 0.25 + I<br>I = 0.60 − 0.25<br>I = 0.35 A',
-   make:rnd=>{const a=calcPick(rnd,[40,50,60,75,80,90,120,150]),b=calcPick(rnd,[10,15,20,25,30,35].filter(x=>x<a)),A=series_f2(a/100),B=series_f2(b/100),C=series_f2((a-b)/100);
-     return {q:'A current of '+A+' A flows into a junction. One branch leaving it carries '+B+' A. The current in the other branch is',unit:'A',answer:(a-b)/100,
-       working:'current in = '+A+' A<br>current out of one branch = '+B+' A<br>I = ?||current in = current out<br>'+A+' = '+B+' + I<br>I = '+A+' − '+B+'<br>I = '+C+' A'};}},
-  {q:'Three lamps in parallel take 0.20 A, 0.30 A and 0.50 A. The current from the supply is',unit:'A',answer:1,working:'I₁ = 0.20 A<br>I₂ = 0.30 A<br>I₃ = 0.50 A<br>I = ?||supply current = sum of the branch currents<br>I = 0.20 + 0.30 + 0.50<br>I = 1.0 A',
-   make:rnd=>{const what=calcPick(rnd,['Three lamps','Three resistors','Three heaters','Three motors']),c=[0,0,0].map(()=>calcPick(rnd,[10,15,20,25,30,40,50,60])),t=c[0]+c[1]+c[2],F=c.map(x=>series_f2(x/100));
-     return {q:what+' in parallel take '+F[0]+' A, '+F[1]+' A and '+F[2]+' A. The current from the supply is',unit:'A',answer:t/100,
-       working:'I₁ = '+F[0]+' A<br>I₂ = '+F[1]+' A<br>I₃ = '+F[2]+' A<br>I = ?||supply current = sum of the branch currents<br>I = '+F.join(' + ')+'<br>I = '+series_f2(t/100)+' A'};}},
-  {q:'Two lamps in series with a 9.0 V battery. One has 5.5 V across it. The voltage across the other is',unit:'V',answer:3.5,working:'supply voltage = 9.0 V<br>V₁ = 5.5 V<br>V₂ = ?||supply voltage = sum of the voltages<br>9.0 = 5.5 + V₂<br>V₂ = 9.0 − 5.5<br>V₂ = 3.5 V',
-   make:rnd=>{const what=calcPick(rnd,['Two lamps','Two resistors','A lamp and a resistor','A motor and a lamp']),s=calcPick(rnd,[45,60,90,120,240]),v=Math.round(s*calcPick(rnd,[0.2,0.3,0.4,0.6,0.7,0.8])/5)*5||5,S=series_f1(s/10),A=series_f1(v/10),B=series_f1((s-v)/10);
-     return {q:what+' in series with a '+S+' V battery. One has '+A+' V across it. The voltage across the other is',unit:'V',answer:(s-v)/10,
-       working:'supply voltage = '+S+' V<br>V₁ = '+A+' V<br>V₂ = ?||supply voltage = sum of the voltages<br>'+S+' = '+A+' + V₂<br>V₂ = '+S+' − '+A+'<br>V₂ = '+B+' V'};}}
-
-  ]);
+// Two questions (11 Nov 2026): the first finds a missing current or voltage from a sum; the second has currents in mA or
+// two identical lamps sharing what is left. New problems changes the numbers and the circuit.
+const cv_q1=rnd=>{const n=calcNum;return rnd()<0.5?(()=>{const I=calcPick(rnd,[0.6,0.8,1,1.2,1.5]),a=calcPick(rnd,[0.2,0.25,0.3,0.4,0.5]),b=+(I-a).toFixed(2);
+    return {q:'A current of '+n(I)+' A flows into a junction. One branch leaving it carries '+n(a)+' A. The current in the other branch is',unit:'A',answer:b,
+      working:'current in = '+n(I)+' A<br>I₁ = '+n(a)+' A<br>I₂ = ?||current in = current out<br>'+n(I)+' = '+n(a)+' + I₂<br>I₂ = '+n(I)+' − '+n(a)+'<br>I₂ = '+n(b)+' A'};})()
+  :(()=>{const V=calcPick(rnd,[6,9,12]),a=calcPick(rnd,[1.5,2.5,3.5,4,5.5]),b=+(V-a).toFixed(2);
+    return {q:'Two lamps are in series with a '+V+' V battery. One has '+n(a)+' V across it. The voltage across the other is',unit:'V',answer:b,
+      working:'supply voltage = '+V+' V<br>V₁ = '+n(a)+' V<br>V₂ = ?||supply voltage = V₁ + V₂<br>'+V+' = '+n(a)+' + V₂<br>V₂ = '+V+' − '+n(a)+'<br>V₂ = '+n(b)+' V'};})();};
+const cv_q2=rnd=>{const n=calcNum;return rnd()<0.5?(()=>{const a=calcPick(rnd,[120,150,200,250]),b=calcPick(rnd,[80,100,150,300]),I=calcPick(rnd,[0.6,0.8,1,1.2]),c=Math.round(I*1000-a-b);
+    return {q:'Three lamps are in parallel. The supply current is '+n(I)+' A. Two lamps take '+a+' mA and '+b+' mA. The current in the third lamp, in mA, is',unit:'mA',answer:c,
+      hints:['Change '+n(I)+' A into milliamps: multiply by 1000.','The supply current = the sum of the branch currents.'],
+      working:'supply current = '+n(I)+' A = '+n(I*1000)+' mA<br>I₁ = '+a+' mA<br>I₂ = '+b+' mA<br>I₃ = ?||supply current = I₁ + I₂ + I₃<br>'+n(I*1000)+' = '+a+' + '+b+' + I₃<br>'+n(I*1000)+' = '+(a+b)+' + I₃<br>I₃ = '+n(I*1000)+' − '+(a+b)+'<br>I₃ = '+c+' mA'};})()
+  :(()=>{const V=calcPick(rnd,[9,12,24]),r=calcPick(rnd,[1,2,3,4,6]),L=(V-r)/2;
+    return {q:'A '+V+' V battery is in series with a resistor and two identical lamps. The resistor has '+r+' V across it. The voltage across each lamp is',unit:'V',answer:L,
+      hints:['The supply voltage is shared: '+V+' V = voltage across the resistor + the two lamps.','The two lamps are identical, so they share what is left equally.'],
+      working:'supply voltage = '+V+' V<br>V<sub>R</sub> = '+r+' V<br>V<sub>lamp</sub> = ?||supply voltage = V<sub>R</sub> + 2V<sub>lamp</sub><br>'+V+' = '+r+' + 2V<sub>lamp</sub><br>2V<sub>lamp</sub> = '+V+' − '+r+'<br>2V<sub>lamp</sub> = '+(V-r)+'<br>V<sub>lamp</sub> = [['+(V-r)+'|2]]<br>V<sub>lamp</sub> = '+n(L)+' V'};})();};
+calcAct('series','Currents and voltages','Use the rules for junctions, parallel branches and series circuits. Press New problems for another pair.',[calcFix(cv_q1,1),calcFix(cv_q2,4)]);
 
 
 }
@@ -2921,21 +2932,22 @@ SRC='2b';
 // V = I × R makers: (V, I, R) sets chosen so every answer is tidy
 const res_fmt=x=>String(+(+x).toFixed(4));
 const res_d1=x=>Number.isInteger(x)&&x<10?x.toFixed(1):res_fmt(x);
-calcAct('resistance','V = I × R','Use V = I × R. Give each answer in the unit shown. Press New problems for another set.',[
-  {q:'A 9.0 V battery is connected across an 18 Ω resistor. The current is',unit:'A',answer:0.5,working:'V = 9.0 V<br>R = 18 Ω<br>I = ?||V = I × R<br>9.0 = I × 18<br>I = [[9.0|18]]<br>I = 0.5 A',
-   make:rnd=>{const c=calcPick(rnd,[[9,18],[9,30],[9,45],[6,12],[6,20],[6,24],[12,24],[12,40],[12,60],[4.5,15],[3,6],[3,12]]),V=c[0],R=c[1],I=+(V/R).toFixed(4),what=calcPick(rnd,['resistor','lamp','heating element']);
-     return {q:'A '+res_d1(V)+' V battery is connected across '+(R===18?'an ':'a ')+R+' Ω '+what+'. The current is',unit:'A',answer:I,
-       working:'V = '+res_d1(V)+' V<br>R = '+R+' Ω<br>I = ?||V = I × R<br>'+res_d1(V)+' = I × '+R+'<br>I = [['+res_d1(V)+'|'+R+']]<br>I = '+res_fmt(I)+' A'};}},
-  {q:'A lamp on the 230 V mains takes a current of 0.25 A. Its resistance is',unit:'Ω',answer:920,working:'V = 230 V<br>I = 0.25 A<br>R = ?||V = I × R<br>230 = 0.25 × R<br>R = [[230|0.25]]<br>R = 920 Ω',
-   make:rnd=>{const c=calcPick(rnd,[['A lamp',[0.1,0.2,0.25,0.4,0.5]],['A heater',[4,5,10]],['Yassin’s kettle',[10,11.5]],['A fan heater',[5,10]],['A television',[0.5,1]]]),I=calcPick(rnd,c[1]),R=+(230/I).toFixed(2);
-     return {q:c[0]+' on the 230 V mains takes a current of '+res_fmt(I)+' A. Its resistance is',unit:'Ω',answer:R,
-       working:'V = 230 V<br>I = '+res_fmt(I)+' A<br>R = ?||V = I × R<br>230 = '+res_fmt(I)+' × R<br>R = [[230|'+res_fmt(I)+']]<br>R = '+res_fmt(R)+' Ω'};}},
-  {q:'A current of 150 mA flows through a 40 Ω resistor. The voltage across it is',unit:'V',answer:6,working:'I = 150 mA = 0.15 A<br>R = 40 Ω<br>V = ?||V = I × R<br>V = 0.15 × 40<br>V = 6 V',
-   make:rnd=>{let mA,R,k=0;do{mA=calcPick(rnd,[20,50,100,120,150,200,250,300,400]);R=calcPick(rnd,[10,20,40,50,60,100]);}while((mA*R>12000||mA*R<1000)&&++k<60);const I=mA/1000,V=+(I*R).toFixed(3);
-     return {q:'A current of '+mA+' mA flows through a '+R+' Ω resistor. The voltage across it is',unit:'V',answer:V,
-       working:'I = '+mA+' mA = '+res_fmt(I)+' A<br>R = '+R+' Ω<br>V = ?||V = I × R<br>V = '+res_fmt(I)+' × '+R+'<br>V = '+res_fmt(V)+' V'};}}
-
-  ]);
+// Two questions (11 Nov 2026): the first rearranges V = IR for I or R; the second has the current in mA or the resistance in
+// kΩ. New problems changes the numbers, the component and which quantity is asked for.
+const vir_q1=rnd=>{const n=calcNum,c=calcPick(rnd,[[9,[3,4.5,6,18,36]],[12,[4,6,8,24,48]],[6,[2,3,4,12,20]],[230,[46,115,460,920]]]),V=c[0],R=calcPick(rnd,c[1]),I=V/R,w=calcPick(rnd,['resistor','lamp','heater']);
+  return rnd()<0.5?{q:'A '+(V===230?'230 V mains '+w:V+' V battery is connected across a '+n(R)+' Ω '+w)+(V===230?' has a resistance of '+n(R)+' Ω':'')+'. The current is',unit:'A',answer:I,
+      working:'V = '+V+' V<br>R = '+n(R)+' Ω<br>I = ?||V = IR<br>'+V+' = '+n(R)+'I<br>I = [['+V+'|'+n(R)+']]<br>I = '+n(I)+' A'}
+    :{q:'A '+w+' on '+(V===230?'the 230 V mains':'a '+V+' V supply')+' takes a current of '+n(I)+' A. Its resistance is',unit:'Ω',answer:R,
+      working:'V = '+V+' V<br>I = '+n(I)+' A<br>R = ?||V = IR<br>'+V+' = '+n(I)+'R<br>R = [['+V+'|'+n(I)+']]<br>R = '+n(R)+' Ω'};};
+const vir_q2=rnd=>{const n=calcNum;return calcPick(rnd,[
+  ()=>{const V=calcPick(rnd,[3,4.5,6,9,12]),mA=calcPick(rnd,[20,30,50,60,150,300]),R=V/(mA/1000);
+    return {q:'A current of '+mA+' mA flows through a resistor with '+n(V)+' V across it. The resistance is',unit:'Ω',answer:R,hints:['Change '+mA+' mA into amps: divide by 1000.','Then rearrange V = IR for R.'],
+      working:'V = '+n(V)+' V<br>I = '+mA+' mA = '+n(mA/1000)+' A<br>R = ?||V = IR<br>'+n(V)+' = '+n(mA/1000)+'R<br>R = [['+n(V)+'|'+n(mA/1000)+']]<br>R = '+n(R)+' Ω'};},
+  ()=>{const k=calcPick(rnd,[1.5,2,2.5,3,4,6]),V=calcPick(rnd,[3,6,9,12]),mA=V/k;
+    return {q:'A '+n(V)+' V supply is connected across a '+n(k)+' kΩ resistor. The current, in mA, is',unit:'mA',answer:mA,hints:['Change '+n(k)+' kΩ into ohms: multiply by 1000.','Rearrange V = IR for I, then change amps into milliamps.'],
+      working:'V = '+n(V)+' V<br>R = '+n(k)+' kΩ = '+n(k*1000)+' Ω<br>I = ?||V = IR<br>'+n(V)+' = '+n(k*1000)+'I<br>I = [['+n(V)+'|'+n(k*1000)+']]<br>I = '+n(mA/1000)+' A<br>I = '+n(mA)+' mA'};}
+])();};
+calcAct('resistance','V = I × R','Use V = IR. Give each answer in the unit shown. Press New problems for another pair.',[calcFix(vir_q1,1),calcFix(vir_q2,2)]);
 
 }
 keepKinds('2b-resistance',null,null);
@@ -2961,18 +2973,24 @@ SRC='2c';
     ],
     explain:'The same current flows through both. V = I × R, so the bigger resistor gets the bigger share: 4 V across the 8 Ω and 2 V across the 4 Ω.',
     pre:circ('6 V','4 Ω','8 Ω')});
-  // the third question's maker: battery, one known resistor and the current; find the second resistor (tidy values only)
-  const sc_d2=x=>(Math.round(x*100)/100).toFixed(2);
-  calcAct('seriescalc','Two resistors in series','A 4.0 Ω and an 8.0 Ω resistor are in series with a 6.0 V battery (questions 1 and 2). Press New problems for a new question 3.',[
-    {q:'The total resistance is',unit:'Ω',answer:12,working:'R₁ = 4.0 Ω<br>R₂ = 8.0 Ω<br>R = ?||R = R₁ + R₂<br>R = 4.0 + 8.0<br>R = 12 Ω'},
-    {q:'The current in the circuit is',unit:'A',answer:0.5,working:'V = 6.0 V<br>R = 12 Ω (from question 1)<br>I = ?||V = I × R<br>6.0 = I × 12<br>I = [[6.0|12]]<br>I = 0.5 A'},
-    {q:'Aidan’s circuit: a 12 V battery, a 15 Ω resistor and a second resistor in series. The current is 0.30 A. The second resistor is',unit:'Ω',answer:25,
-     working:'V = 12 V<br>R₁ = 15 Ω<br>I = 0.30 A<br>R₂ = ?||V = I × R<br>12 = 0.30 × R<br>R = [[12|0.30]]<br>R = 40 Ω<br>R = R₁ + R₂<br>40 = 15 + R₂<br>R₂ = 40 − 15<br>R₂ = 25 Ω',
-     make:rnd=>{const c=calcPick(rnd,[[12,0.3],[12,0.2],[12,0.4],[6,0.2],[6,0.3],[9,0.3],[9,0.15],[24,0.4],[24,0.6]]),V=c[0],I=c[1],R=Math.round(V/I),R1=calcPick(rnd,[5,10,15,20].filter(x=>x<R-4)),R2=R-R1,
-         who=calcPick(rnd,['Aidan’s circuit','Charlotte’s circuit','Ali’s circuit','A circuit','Elizabeth’s circuit']);
-       return {q:who+': a '+V+' V battery, a '+R1+' Ω resistor and a second resistor in series. The current is '+sc_d2(I)+' A. The second resistor is',unit:'Ω',answer:R2,
-         working:'V = '+V+' V<br>R₁ = '+R1+' Ω<br>I = '+sc_d2(I)+' A<br>R₂ = ?||V = I × R<br>'+V+' = '+sc_d2(I)+' × R<br>R = [['+V+'|'+sc_d2(I)+']]<br>R = '+R+' Ω<br>R = R₁ + R₂<br>'+R+' = '+R1+' + R₂<br>R₂ = '+R+' − '+R1+'<br>R₂ = '+R2+' Ω'};}}
-  ],circ('6.0 V','4.0 Ω','8.0 Ω'));
+    // Two questions (11 Nov 2026), each with its own circuit diagram: the first finds the current from two resistors in
+  // series; the second finds a missing resistor, or the voltage across one resistor (three steps).
+  const sr_an=s=>/^(8|11(?!\d)|18(?!\d))/.test(s)?'an ':'a ';
+  const sr_q1=rnd=>{const n=calcNum;let R1,R2,V,I,k=0;do{R1=calcPick(rnd,[2,3,4,5,6,10]);R2=calcPick(rnd,[4,6,8,10,12,20]);V=calcPick(rnd,[3,4.5,6,9,12]);I=V/(R1+R2);}while((R1===R2||Math.abs(I*100-Math.round(I*100))>1e-9)&&++k<120);
+    const R=R1+R2;
+    return {q:circ(n(V)+' V',n(R1)+' Ω',n(R2)+' Ω')+sr_an(n(R1)).replace('a','A')+n(R1)+' Ω and '+sr_an(n(R2))+n(R2)+' Ω resistor are in series with '+sr_an(n(V))+n(V)+' V battery. The current in the circuit is',unit:'A',answer:I,
+      working:'V = '+n(V)+' V<br>R₁ = '+n(R1)+' Ω<br>R₂ = '+n(R2)+' Ω<br>I = ?||R = R₁ + R₂<br>R = '+n(R1)+' + '+n(R2)+'<br>R = '+n(R)+' Ω<br>V = IR<br>'+n(V)+' = '+n(R)+'I<br>I = [['+n(V)+'|'+n(R)+']]<br>I = '+n(I)+' A'};};
+  const sr_q2=rnd=>{const n=calcNum,who=calcPick(rnd,['Aidan’s','Charlotte’s','Ali’s','Elizabeth’s','Yassin’s']);
+    if(rnd()<0.5){const c=calcPick(rnd,[[12,0.3],[12,0.2],[12,0.4],[6,0.2],[6,0.3],[9,0.3],[9,0.15],[24,0.4],[24,0.6]]),V=c[0],I=c[1],R=Math.round(V/I),R1=calcPick(rnd,[5,10,15,20].filter(x=>x<R-4)),R2=R-R1;
+      return {q:circ(V+' V',R1+' Ω','R₂ = ?')+who+' circuit: a '+V+' V battery, a '+R1+' Ω resistor and a second resistor in series. The current is '+n(I)+' A. The second resistor is',unit:'Ω',answer:R2,
+        hints:['Rearrange V = IR to find the total resistance.','Total resistance = R₁ + R₂.'],
+        working:'V = '+V+' V<br>R₁ = '+R1+' Ω<br>I = '+n(I)+' A<br>R₂ = ?||V = IR<br>'+V+' = '+n(I)+'R<br>R = [['+V+'|'+n(I)+']]<br>R = '+R+' Ω<br>R = R₁ + R₂<br>'+R+' = '+R1+' + R₂<br>R₂ = '+R+' − '+R1+'<br>R₂ = '+R2+' Ω'};}
+    let R1,R2,V,I,k=0;do{R1=calcPick(rnd,[2,3,4,5,10,15]);R2=calcPick(rnd,[5,6,10,20,30]);V=calcPick(rnd,[6,9,12,24]);I=V/(R1+R2);}while((R1===R2||Math.abs(I*100-Math.round(I*100))>1e-9)&&++k<160);
+    const R=R1+R2,V2=I*R2;
+    return {q:circ(V+' V',R1+' Ω',R2+' Ω')+who+' circuit: '+sr_an(''+V)+V+' V battery with '+sr_an(''+R1)+R1+' Ω and '+sr_an(''+R2)+R2+' Ω resistor in series. The voltage across the '+R2+' Ω resistor is',unit:'V',answer:V2,
+      hints:['Find the total resistance, then the current with V = IR.','The same current flows through both resistors: use V = IR for the '+R2+' Ω resistor alone.'],
+      working:'V = '+V+' V<br>R₁ = '+R1+' Ω<br>R₂ = '+R2+' Ω<br>V₂ = ?||R = '+R1+' + '+R2+'<br>R = '+R+' Ω<br>V = IR<br>'+V+' = '+R+'I<br>I = [['+V+'|'+R+']]<br>I = '+n(I)+' A<br>V₂ = IR₂<br>V₂ = '+n(I)+' × '+R2+'<br>V₂ = '+n(V2)+' V'};};
+  calcAct('seriescalc','Two resistors in series','In series the current is the same everywhere and R = R₁ + R₂. Press New problems for another pair.',[calcFix(sr_q1,1),calcFix(sr_q2,2)]);
 }
 
 }
@@ -2987,30 +3005,31 @@ const em_sci=(m,e)=>m+' × 10'+String(e).replace(/-/g,'⁻').replace(/\d/g,d=>'�
 // New problems helpers for this tab: eq_fmt prints a number with no float noise; eq_ok is true for at most 2 decimal places
 const eq_fmt=x=>String(+(+x).toFixed(4));
 const eq_ok=x=>Math.abs(x*100-Math.round(x*100))<1e-6;
-calcAct('equation','v = f × λ and f = [[1|T]]','Use wave speed = frequency × wavelength and frequency = [[1|time period]]. All electromagnetic waves travel at 3.0 × 10⁸ m/s in free space. Press New problems for another set.',[
-  {q:'A sound wave travels at 340 m/s with a frequency of 680 Hz. Its wavelength is',unit:'m',answer:0.5,working:'v = 340 m/s<br>f = 680 Hz<br>λ = ?||v = f × λ<br>340 = 680 × λ<br>λ = [[340|680]]<br>λ = 0.5 m',
-   make:rnd=>{const c=calcPick(rnd,[
-       {t:'A sound wave travels through air at V m/s with a frequency of F Hz.',v:[340],f:[170,200,340,425,680,850,1700]},
-       {t:'A sound wave travels through sea water at V m/s with a frequency of F Hz.',v:[1500],f:[300,500,750,1000,1500,3000]},
-       {t:'Henry shakes the end of a long rope. The wave travels along it at V m/s with a frequency of F Hz.',v:[2,3,4,6],f:[1,2,4,5]},
-       {t:'A water wave in a ripple tank travels at V m/s with a frequency of F Hz.',v:[0.12,0.15,0.18,0.2,0.24],f:[4,5,6,8,10]}]);
-     let v,f,l,k=0;do{v=calcPick(rnd,c.v);f=calcPick(rnd,c.f);l=v/f;}while(!eq_ok(l)&&++k<60);
-     const V=eq_fmt(v),F=eq_fmt(f),L=eq_fmt(l);
-     return {q:c.t.replace('V',V).replace('F',F)+' Its wavelength is',unit:'m',answer:+L,working:'v = '+V+' m/s<br>f = '+F+' Hz<br>λ = ?||v = f × λ<br>'+V+' = '+F+' × λ<br>λ = [['+V+'|'+F+']]<br>λ = '+L+' m'};}},
-  {q:'A microwave has a wavelength of 0.12 m. Its frequency is',unit:'× 10⁹ Hz',answer:2.5,working:'v = 3.0 × 10⁸ m/s<br>λ = 0.12 m<br>f = ?||v = f × λ<br>3.0 × 10⁸ = f × 0.12<br>f = [[3.0 × 10⁸|0.12]]<br>f = 2.5 × 10⁹ Hz',
-   make:rnd=>{const c=calcPick(rnd,[['A microwave oven uses microwaves with a wavelength of',[0.12]],['A mobile phone signal has a wavelength of',[0.15,0.2,0.3]],['A Wi-Fi router sends microwaves with a wavelength of',[0.06,0.12]],['A satellite TV signal has a wavelength of',[0.025,0.03]],['A speed camera’s radar uses microwaves with a wavelength of',[0.012,0.015]]]),
-       l=calcPick(rnd,c[1]),f=+(0.3/l).toFixed(2);
-     return {q:c[0]+' '+l+' m. Its frequency is',unit:'× 10⁹ Hz',answer:f,working:'v = 3.0 × 10⁸ m/s<br>λ = '+l+' m<br>f = ?||v = f × λ<br>3.0 × 10⁸ = f × '+l+'<br>f = [[3.0 × 10⁸|'+l+']]<br>f = '+em_sci(f,9)+' Hz'};}},
-  {q:'A wave has a time period of 0.25 s and a wavelength of 2.0 m. Its speed is',unit:'m/s',answer:8,working:'T = 0.25 s<br>λ = 2.0 m<br>v = ?||f = [[1|T]]<br>f = [[1|0.25]]<br>f = 4 Hz<br>v = f × λ<br>v = 4 × 2.0<br>v = 8 m/s',
-   make:rnd=>{const c=calcPick(rnd,[
-       {t:'A wave on a rope',T:[0.2,0.25,0.4,0.5],l:[0.5,1,1.5,2,2.5,3]},
-       {t:'A wave on the sea',T:[2,4,5,10],l:[10,20,25,40,50,80]},
-       {t:'A water wave in a ripple tank',T:[0.1,0.125,0.2,0.25],l:[0.01,0.02,0.025,0.03,0.04]}]);
-     let T,l,f,v,k=0;do{T=calcPick(rnd,c.T);l=calcPick(rnd,c.l);f=1/T;v=f*l;}while((!eq_ok(f)||!eq_ok(v))&&++k<60);
-     const Ts=eq_fmt(T),Ls=eq_fmt(l),Fs=eq_fmt(f),Vs=eq_fmt(v);
-     return {q:c.t+' has a time period of '+Ts+' s and a wavelength of '+Ls+' m. Its speed is',unit:'m/s',answer:+Vs,working:'T = '+Ts+' s<br>λ = '+Ls+' m<br>v = ?||f = [[1|T]]<br>f = [[1|'+Ts+']]<br>f = '+Fs+' Hz<br>v = f × λ<br>v = '+Fs+' × '+Ls+'<br>v = '+Vs+' m/s'};}}
-
-  ]);
+// Two questions (11 Nov 2026): the first rearranges v = fλ for f or λ; the second needs a prefix (kHz, MHz, GHz, cm) or the
+// time period first. New problems changes the numbers, the wave and which quantity is asked for.
+const wv_q1=rnd=>{const n=calcNum,c=calcPick(rnd,[
+    {t:'A sound wave travels through air at V m/s',v:[340],f:[170,200,340,425,680,850,1700]},
+    {t:'A sound wave travels through sea water at V m/s',v:[1500],f:[300,500,750,1000,1500,3000]},
+    {t:'Henry shakes the end of a long rope. The wave travels along it at V m/s',v:[2,3,4,6],f:[1,2,4,5]},
+    {t:'A water wave in a ripple tank travels at V m/s',v:[0.12,0.15,0.18,0.2,0.24],f:[4,5,6,8,10]}]);
+  const v=calcPick(rnd,c.v),f=calcPick(rnd,c.f),L=v/f,s=c.t.replace('V',n(v));
+  return rnd()<0.5?{q:s+' with a frequency of '+n(f)+' Hz. Its wavelength is',unit:'m',answer:L,working:'v = '+n(v)+' m/s<br>f = '+n(f)+' Hz<br>λ = ?||v = fλ<br>'+n(v)+' = '+n(f)+'λ<br>λ = [['+n(v)+'|'+n(f)+']]<br>λ = '+n(L)+' m'}
+    :{q:s+' with a wavelength of '+n(L)+' m. Its frequency is',unit:'Hz',answer:f,working:'v = '+n(v)+' m/s<br>λ = '+n(L)+' m<br>f = ?||v = fλ<br>'+n(v)+' = '+n(L)+'f<br>f = [['+n(v)+'|'+n(L)+']]<br>f = '+n(f)+' Hz'};};
+const wv_q2=rnd=>{const n=calcNum;return calcPick(rnd,[
+  ()=>{const c=calcPick(rnd,[['A radio station broadcasts on','MHz',1e6,[75,100,120,150,200,300]],['A Wi-Fi router sends microwaves at','GHz',1e9,[2.5,5,6]],['A mobile phone mast sends microwaves at','GHz',1e9,[0.75,1.5,2,3]]]),fp=calcPick(rnd,c[3]),f=fp*c[2],L=3e8/f;
+    return {q:c[0]+' '+n(fp)+' '+c[1]+'. Electromagnetic waves travel at 3.0 × 10⁸ m/s. The wavelength is',unit:L<1?'cm':'m',answer:L<1?L*100:L,
+      hints:['Change '+n(fp)+' '+c[1]+' into hertz: 1 '+c[1]+' = '+(c[2]===1e6?'1 000 000':'1 000 000 000')+' Hz.','Rearrange v = fλ for λ.'].concat(L<1?['Change metres into centimetres.']:[]),
+      working:'v = 3.0 × 10⁸ m/s<br>f = '+n(fp)+' '+c[1]+' = '+n(fp)+' × 10'+(c[2]===1e6?'⁶':'⁹')+' Hz<br>λ = ?||v = fλ<br>3.0 × 10⁸ = '+n(fp)+' × 10'+(c[2]===1e6?'⁶':'⁹')+' × λ<br>λ = [[3.0 × 10⁸|'+n(fp)+' × 10'+(c[2]===1e6?'⁶':'⁹')+']]<br>λ = '+n(L)+' m'+(L<1?'<br>λ = '+n(L*100)+' cm':'')};},
+  ()=>{const c=calcPick(rnd,[['A sound wave in air','340',[1.7,3.4,6.8,8.5,17]],['An ultrasound wave in water','1500',[1.5,3,5,7.5]]]),v=+c[1],Lcm=calcPick(rnd,c[2]),f=v/(Lcm/100);
+    return {q:c[0]+' travels at '+c[1]+' m/s and has a wavelength of '+n(Lcm)+' cm. Its frequency, in kHz, is',unit:'kHz',answer:f/1000,
+      hints:['Change '+n(Lcm)+' cm into metres: divide by 100.','Rearrange v = fλ for f, then change Hz into kHz.'],
+      working:'v = '+c[1]+' m/s<br>λ = '+n(Lcm)+' cm = '+n(Lcm/100)+' m<br>f = ?||v = fλ<br>'+c[1]+' = '+n(Lcm/100)+'f<br>f = [['+c[1]+'|'+n(Lcm/100)+']]<br>f = '+n(f)+' Hz<br>f = '+n(f/1000)+' kHz'};},
+  ()=>{const T=calcPick(rnd,[0.1,0.2,0.25,0.4,0.5,2]),L=calcPick(rnd,[0.5,1.2,2,3,4,6]),f=1/T,v=f*L,w=calcPick(rnd,['A water wave','A wave on a rope','A wave on a slinky spring']);
+    return {q:w+' has a time period of '+n(T)+' s and travels at '+n(v)+' m/s. Its wavelength is',unit:'m',answer:L,
+      hints:['Find the frequency first with f = [[1|T]].','Then rearrange v = fλ for λ.'],
+      working:'T = '+n(T)+' s<br>v = '+n(v)+' m/s<br>λ = ?||f = [[1|T]]<br>f = [[1|'+n(T)+']]<br>f = '+n(f)+' Hz<br>v = fλ<br>'+n(v)+' = '+n(f)+'λ<br>λ = [['+n(v)+'|'+n(f)+']]<br>λ = '+n(L)+' m'};}
+])();};
+calcAct('equation','v = f × λ and f = [[1|T]]','Use wave speed = frequency × wavelength (v = fλ) and f = [[1|T]]. All electromagnetic waves travel at 3.0 × 10⁸ m/s in free space. Press New problems for another pair.',[calcFix(wv_q1,1),calcFix(wv_q2,2)]);
 calcAct('equation','Read the period off the graph','The graph shows how one point on a sound wave moves as the wave passes. Read the time period off the graph first.',[
   {q:'The time period of the wave is',unit:'s',answer:0.004,working:'time for 2.5 waves = 10 ms<br>T = ?||T = [[time|number of waves]]<br>T = [[10 ms|2.5]]<br>T = 4 ms<br>T = 0.004 s'},
   {q:'The frequency of the wave is',unit:'Hz',answer:250,working:'T = 0.004 s<br>f = ?||f = [[1|T]]<br>f = [[1|0.004]]<br>f = 250 Hz'}
@@ -3058,23 +3077,28 @@ calcAct('refraction','The law of reflection','The angle of incidence equals the 
      return {q:who+' '+t+'°. The angle of incidence is',unit:'°',answer:i,working:'i + r = '+t+'°<br>i = ?||r = i<br>i + i = '+t+'°<br>2 × i = '+t+'°<br>i = [['+t+'°|2]]<br>i = '+i+'°'};}}
 
   ]);
-calcAct('refraction','n = [[sin i|sin r]]','Use refractive index n = [[sin i|sin r]]. Give angles in degrees. Press New problems for another set.',[
-  {q:'Light enters glass with i = 40° and r = 25°. The refractive index is',unit:'',answer:1.52,working:'i = 40°<br>r = 25°<br>n = ?||n = [[sin i|sin r]]<br>n = [[sin 40°|sin 25°]]<br>n = [[0.6428|0.4226]]<br>n = 1.52',
-   make:rnd=>{const m=calcPick(rnd,[['glass',1.5],['water',1.33],['Perspex',1.49],['diamond',2.42]]);
-     let i,r,k=0;do{i=calcPick(rnd,[20,25,30,35,40,45,50,55,60,65,70]);r=Math.round(Math.asin(Math.sin(i*Math.PI/180)/m[1])*180/Math.PI);}while((r<5||r>=i)&&++k<60);
-     const si=rf_sin(i),sr=rf_sin(r),n=+(si/sr).toFixed(2),who=calcPick(rnd,['Light enters '+m[0],'A ray of light passes from air into '+m[0],'In Julia’s experiment, light enters '+m[0]]);
-     return {q:who+' with i = '+i+'° and r = '+r+'°. The refractive index is',unit:'',answer:n,working:'i = '+i+'°<br>r = '+r+'°<br>n = ?||n = [[sin i|sin r]]<br>n = [[sin '+i+'°|sin '+r+'°]]<br>n = [['+rf_f4(si)+'|'+rf_f4(sr)+']]<br>n = '+n.toFixed(2)};}},
-  {q:'Light enters glass (n = 1.5) with i = 50°. The angle of refraction is',unit:'°',answer:30.7,working:'n = 1.5<br>i = 50°<br>r = ?||n = [[sin i|sin r]]<br>1.5 = [[sin 50°|sin r]]<br>1.5 × sin r = sin 50°<br>sin r = [[sin 50°|1.5]]<br>sin r = [[0.7660|1.5]]<br>sin r = 0.5107<br>r = 30.7°',
-   make:rnd=>{const m=calcPick(rnd,[['glass','1.5'],['water','1.33'],['Perspex','1.49'],['diamond','2.42']]),i=calcPick(rnd,[20,25,30,35,40,45,50,55,60,65,70]),
-       si=rf_sin(i),sr=+(si/+m[1]).toFixed(4),r=rf_asin(sr);
-     return {q:'Light enters '+m[0]+' (n = '+m[1]+') with i = '+i+'°. The angle of refraction is',unit:'°',answer:r,working:'n = '+m[1]+'<br>i = '+i+'°<br>r = ?||n = [[sin i|sin r]]<br>'+m[1]+' = [[sin '+i+'°|sin r]]<br>'+m[1]+' × sin r = sin '+i+'°<br>sin r = [[sin '+i+'°|'+m[1]+']]<br>sin r = [['+rf_f4(si)+'|'+m[1]+']]<br>sin r = '+rf_f4(sr)+'<br>r = '+r.toFixed(1)+'°'};}},
-  {q:'Light enters water (n = 1.33). The angle of refraction is 22°. The angle of incidence is',unit:'°',answer:29.9,working:'n = 1.33<br>r = 22°<br>i = ?||n = [[sin i|sin r]]<br>1.33 = [[sin i|sin 22°]]<br>sin i = 1.33 × sin 22°<br>sin i = 1.33 × 0.3746<br>sin i = 0.4982<br>i = 29.9°',
-   make:rnd=>{const m=calcPick(rnd,[['glass','1.5'],['water','1.33'],['Perspex','1.49'],['diamond','2.42']]);
-     let r,sr,si,k=0;do{r=calcPick(rnd,[10,12,15,18,20,22,25,28,30,32,35,40]);sr=rf_sin(r);si=+(+m[1]*sr).toFixed(4);}while(si>=0.98&&++k<60);
-     const i=rf_asin(si);
-     return {q:'Light enters '+m[0]+' (n = '+m[1]+'). The angle of refraction is '+r+'°. The angle of incidence is',unit:'°',answer:i,working:'n = '+m[1]+'<br>r = '+r+'°<br>i = ?||n = [[sin i|sin r]]<br>'+m[1]+' = [[sin i|sin '+r+'°]]<br>sin i = '+m[1]+' × sin '+r+'°<br>sin i = '+m[1]+' × '+rf_f4(sr)+'<br>sin i = '+rf_f4(si)+'<br>i = '+i.toFixed(1)+'°'};}}
-
-  ]);
+// Two questions (11 Nov 2026): the first rearranges n = sin i / sin r for r or i; the second gives the angle to the surface,
+// which must be turned into the angle to the normal first. New problems changes the numbers, the material and the unknown.
+const rf_M=[['glass','1.5'],['water','1.33'],['Perspex','1.49'],['diamond','2.42'],['crown glass','1.52']];
+const rf_q1=rnd=>{const m=calcPick(rnd,rf_M);
+  if(rnd()<0.5){const i=calcPick(rnd,[20,25,30,35,40,45,50,55,60,65,70]),si=rf_sin(i),sr=+(si/+m[1]).toFixed(4),r=rf_asin(sr);
+    return {q:'Light enters '+m[0]+' (n = '+m[1]+') with i = '+i+'°. The angle of refraction is',unit:'°',answer:r,
+      working:'n = '+m[1]+'<br>i = '+i+'°<br>r = ?||n = [[sin i|sin r]]<br>'+m[1]+' = [[sin '+i+'°|sin r]]<br>'+m[1]+' sin r = sin '+i+'°<br>sin r = [['+rf_f4(si)+'|'+m[1]+']]<br>sin r = '+rf_f4(sr)+'<br>r = '+r+'°'};}
+  let r,sr,si,k=0;do{r=calcPick(rnd,[10,12,15,18,20,22,25,28,30,32,35,40]);sr=rf_sin(r);si=+(+m[1]*sr).toFixed(4);}while(si>=0.98&&++k<60);
+  const i=rf_asin(si);
+  return {q:'Light enters '+m[0]+' (n = '+m[1]+'). The angle of refraction is '+r+'°. The angle of incidence is',unit:'°',answer:i,
+    working:'n = '+m[1]+'<br>r = '+r+'°<br>i = ?||n = [[sin i|sin r]]<br>'+m[1]+' = [[sin i|sin '+r+'°]]<br>sin i = '+m[1]+' × sin '+r+'°<br>sin i = '+m[1]+' × '+rf_f4(sr)+'<br>sin i = '+rf_f4(si)+'<br>i = '+i+'°'};};
+const rf_q2=rnd=>{const m=calcPick(rnd,rf_M),who=calcPick(rnd,['Julia','Aidan','Hana','Nabil']);
+  if(rnd()<0.5){const a=calcPick(rnd,[20,25,30,35,40,45,50,55,60]),i=90-a,si=rf_sin(i),sr=+(si/+m[1]).toFixed(4),r=rf_asin(sr);
+    return {q:'A ray of light hits a '+m[0]+' surface at '+a+'° to the surface (n = '+m[1]+'). The angle of refraction is',unit:'°',answer:r,
+      hints:['Angles are measured from the normal, which is at 90° to the surface: i = 90° − '+a+'°.','Then rearrange n = [[sin i|sin r]] for sin r, and use sin⁻¹.'],
+      working:'angle to the surface = '+a+'°<br>n = '+m[1]+'<br>r = ?||i = 90° − '+a+'°<br>i = '+i+'°<br>n = [[sin i|sin r]]<br>'+m[1]+' = [[sin '+i+'°|sin r]]<br>'+m[1]+' sin r = sin '+i+'°<br>sin r = [['+rf_f4(si)+'|'+m[1]+']]<br>sin r = '+rf_f4(sr)+'<br>r = '+r+'°'};}
+  let i,r,k=0;do{i=calcPick(rnd,[30,35,40,45,50,55,60,65,70]);r=Math.round(Math.asin(Math.sin(i*Math.PI/180)/+m[1])*180/Math.PI);}while((r<5||r>=i)&&++k<60);
+  const si=rf_sin(i),sr=rf_sin(r),nn=+(si/sr).toFixed(2);
+  return {q:'In '+who+'’s experiment, the ray in the air makes '+(90-i)+'° with the surface of a block, and the ray inside the block makes '+(90-r)+'° with the surface. The refractive index of the block is',unit:'',answer:nn,
+    hints:['Turn both angles into angles from the normal: subtract each from 90°.','Then n = [[sin i|sin r]].'],
+    working:'angle to the surface in air = '+(90-i)+'°<br>angle to the surface in the block = '+(90-r)+'°<br>n = ?||i = 90° − '+(90-i)+'° = '+i+'°<br>r = 90° − '+(90-r)+'° = '+r+'°<br>n = [[sin i|sin r]]<br>n = [[sin '+i+'°|sin '+r+'°]]<br>n = [['+rf_f4(si)+'|'+rf_f4(sr)+']]<br>n = '+nn};};
+calcAct('refraction','n = [[sin i|sin r]]','Use refractive index n = [[sin i|sin r]], with both angles measured from the normal. Give angles in degrees. Press New problems for another pair.',[calcFix(rf_q1,1),calcFix(rf_q2,2)]);
 
 }
 keepKinds('3b-refraction',null,null);
@@ -3106,17 +3130,16 @@ const tir_f4=x=>(+x).toFixed(4);
 // find n from c: material, critical angle (n = 1/sin c, to 2 d.p.)
 const tir_nFromC=(rnd,list)=>{const m=calcPick(rnd,list),sc=tir_sin(m[1]),n=+(1/sc).toFixed(2);
   return {q:m[0]+' has a critical angle of '+m[1]+'°. Its refractive index is',unit:'',answer:n,working:'c = '+m[1]+'°<br>n = ?||sin c = [[1|n]]<br>sin '+m[1]+'° = [[1|n]]<br>'+tir_f4(sc)+' = [[1|n]]<br>'+tir_f4(sc)+' × n = 1<br>n = [[1|'+tir_f4(sc)+']]<br>n = '+n.toFixed(2)};};
-calcAct('tir','sin c = [[1|n]]','Use sin c = [[1|n]], where c is the critical angle. Press New problems for another set.',[
-  {q:'Glass has a refractive index of 1.5. Its critical angle is',unit:'°',answer:41.8,working:'n = 1.5<br>c = ?||sin c = [[1|n]]<br>sin c = [[1|1.5]]<br>sin c = 0.6667<br>c = 41.8°',
-   make:rnd=>{const m=calcPick(rnd,[['Glass','1.5'],['Water','1.33'],['Perspex','1.49'],['Diamond','2.42'],['Crown glass','1.52'],['Flint glass','1.62'],['Ice','1.31']]),
-       sc=+(1/+m[1]).toFixed(4),c=+(Math.asin(sc)*180/Math.PI).toFixed(1);
-     return {q:m[0]+' has a refractive index of '+m[1]+'. Its critical angle is',unit:'°',answer:c,working:'n = '+m[1]+'<br>c = ?||sin c = [[1|n]]<br>sin c = [[1|'+m[1]+']]<br>sin c = '+tir_f4(sc)+'<br>c = '+c.toFixed(1)+'°'};}},
-  {q:'Diamond has a critical angle of 24.4°. Its refractive index is',unit:'',answer:2.42,working:'c = 24.4°<br>n = ?||sin c = [[1|n]]<br>sin 24.4° = [[1|n]]<br>0.4131 = [[1|n]]<br>0.4131 × n = 1<br>n = [[1|0.4131]]<br>n = 2.42',
-   make:rnd=>tir_nFromC(rnd,[['Diamond',24.4],['Water',48.8],['Crown glass',41.1],['Flint glass',38.1],['Ice',49.8],['A glass fibre',42.5]])},
-  {q:'A plastic has a critical angle of 42°. Its refractive index is',unit:'',answer:1.49,working:'c = 42°<br>n = ?||sin c = [[1|n]]<br>sin 42° = [[1|n]]<br>0.6691 = [[1|n]]<br>0.6691 × n = 1<br>n = [[1|0.6691]]<br>n = 1.49',
-   make:rnd=>tir_nFromC(rnd,[['A plastic',42],['A plastic',40],['A glass',41],['A glass',37],['A crystal',35],['A liquid',45],['A liquid',47]])}
-
-  ]);
+// Two questions (11 Nov 2026): the first rearranges sin c = 1/n for n; the second finds n from a refraction measurement,
+// then the critical angle. New problems changes the numbers and the material.
+const tir_q1=rnd=>tir_nFromC(rnd,[['Diamond',24.4],['Water',48.8],['Crown glass',41.1],['Flint glass',38.1],['Ice',49.8],['A glass fibre',42.5],['A plastic',42],['A crystal',35],['A liquid',45]]);
+const tir_q2=rnd=>{const m=calcPick(rnd,[['a glass block',1.5],['a Perspex block',1.49],['a crystal',1.8],['a plastic block',1.6]]),who=calcPick(rnd,['Elizabeth','Charlie','Ananya','Ali']);
+  let i,r,k=0;do{i=calcPick(rnd,[30,40,45,50,60,70]);r=Math.round(Math.asin(Math.sin(i*Math.PI/180)/m[1])*180/Math.PI);}while(r>=i&&++k<60);
+  const si=tir_sin(i),sr=tir_sin(r),nn=+(si/sr).toFixed(4),sc=+(1/nn).toFixed(4),c=+(Math.asin(sc)*180/Math.PI).toFixed(1);
+  return {q:who+' shines a ray into '+m[0]+' with i = '+i+'° and measures r = '+r+'°. The critical angle of the material is',unit:'°',answer:c,
+    hints:['Find the refractive index first with n = [[sin i|sin r]].','Then sin c = [[1|n]], and use sin⁻¹.'],
+    working:'i = '+i+'°<br>r = '+r+'°<br>c = ?||n = [[sin i|sin r]]<br>n = [[sin '+i+'°|sin '+r+'°]]<br>n = '+(+nn.toFixed(3))+'<br>sin c = [[1|n]]<br>sin c = [[1|'+(+nn.toFixed(3))+']]<br>sin c = '+tir_f4(sc)+'<br>c = '+c+'°'};};
+calcAct('tir','sin c = [[1|n]]','Use sin c = [[1|n]], where c is the critical angle. Press New problems for another pair.',[calcFix(tir_q1,1),calcFix(tir_q2,2)]);
 
 }
 keepKinds('3b-tir',null,null);
@@ -3150,25 +3173,26 @@ createSortGame({host:act('speed','Sort','Can a person hear it?','The range of hu
   ]});
 // New problems helper for this tab: sp_fmt prints a number with no float noise
 const sp_fmt=x=>String(+(+x).toFixed(4));
-calcAct('speed','speed = [[distance|time]]','Use speed = [[distance|time]]. For an echo, the sound travels there and back. Press New problems for another set.',[
-  {q:'Ali claps 85 m from a wall and hears the echo 0.50 s later. The speed of sound is',unit:'m/s',answer:340,working:'distance = 2 × 85 m = 170 m<br>time = 0.50 s<br>speed = ?||speed = [[distance|time]]<br>speed = [[170|0.50]]<br>speed = 340 m/s',
-   make:rnd=>{let v,t,d,k=0;do{v=calcPick(rnd,[330,336,340,344,350]);t=calcPick(rnd,[0.2,0.25,0.3,0.4,0.5,0.6,0.8,1.0,1.2]);d=v*t/2;}while(!Number.isInteger(+d.toFixed(6))&&++k<60);
-     const who=calcPick(rnd,[['Ali claps','his'],['Charlotte claps','her'],['Yassin bangs two blocks together','his'],['Fatimah shouts','her']]),D=sp_fmt(d),T=t.toFixed(t<1?2:1),D2=sp_fmt(2*d),wall=calcPick(rnd,['a wall','a cliff','a large building']);
-     return {q:who[0]+' '+D+' m from '+wall+' and hears the echo '+T+' s later. The speed of sound is',unit:'m/s',answer:v,working:'distance = 2 × '+D+' m = '+D2+' m<br>time = '+T+' s<br>speed = ?||speed = [[distance|time]]<br>speed = [['+D2+'|'+T+']]<br>speed = '+v+' m/s'};}},
-  {q:'A ship’s sonar pulse returns from the sea bed after 0.40 s. Sound travels at 1500 m/s in sea water. The depth of the sea is',unit:'m',answer:300,working:'speed = 1500 m/s<br>time = 0.40 s (there and back)<br>depth = ?||speed = [[distance|time]]<br>1500 = [[distance|0.40]]<br>distance = 1500 × 0.40<br>distance = 600 m<br>depth = [[600|2]]<br>depth = 300 m',
-   make:rnd=>{const c=calcPick(rnd,[
-       ['A ship’s sonar pulse returns from the sea bed after T s. Sound travels at 1500 m/s in sea water. The depth of the sea is','depth',1500,[0.04,0.08,0.1,0.2,0.3,0.4,0.6,0.8,1.0,1.2]],
-       ['A fishing boat’s sonar pulse reflects off a shoal of fish and returns after T s. Sound travels at 1500 m/s in sea water. The depth of the fish is','depth',1500,[0.02,0.04,0.05,0.06,0.08,0.1]],
-       ['A bat’s squeak reflects off a moth and returns after T s. Sound travels at 340 m/s in air. The distance to the moth is','distance to the moth',340,[0.005,0.01,0.02,0.025,0.05]],
-       ['Lucas shouts towards a cliff and hears the echo T s later. Sound travels at 340 m/s in air. The distance to the cliff is','distance to the cliff',340,[0.5,1.0,1.5,2.0,2.5]]]);
-     const t=calcPick(rnd,c[3]),T=t>=1?t.toFixed(1):t>=0.1?t.toFixed(2):sp_fmt(t),d=+(c[2]*t).toFixed(4),h=+(d/2).toFixed(4),nm=c[1];
-     return {q:c[0].replace('T s',T+' s'),unit:'m',answer:h,working:'speed = '+c[2]+' m/s<br>time = '+T+' s (there and back)<br>'+nm+' = ?||speed = [[distance|time]]<br>'+c[2]+' = [[distance|'+T+']]<br>distance = '+c[2]+' × '+T+'<br>distance = '+sp_fmt(d)+' m<br>'+nm+' = [['+sp_fmt(d)+'|2]]<br>'+nm+' = '+sp_fmt(h)+' m'};}},
-  {q:'Two microphones are 1.0 m apart. An oscilloscope shows the sound reaching the second 2.9 ms after the first. The speed of sound is',unit:'m/s',answer:345,working:'distance = 1.0 m<br>time = 2.9 ms = 0.0029 s<br>speed = ?||speed = [[distance|time]]<br>speed = [[1.0|0.0029]]<br>speed = 345 m/s',
-   make:rnd=>{const d=calcPick(rnd,[0.5,1.0,1.5,2.0]),vt=calcPick(rnd,[330,335,340,345,350]),tm=+(d/vt*1000).toFixed(1),t=+(tm/1000).toFixed(5),v=Math.round(d/t),
-       what=calcPick(rnd,['Two microphones are','Elena sets up two microphones','In Henry’s experiment, two microphones are']),D=d.toFixed(1);
-     return {q:what+' '+D+' m apart. An oscilloscope shows the sound reaching the second '+tm.toFixed(1)+' ms after the first. The speed of sound is',unit:'m/s',answer:v,working:'distance = '+D+' m<br>time = '+tm.toFixed(1)+' ms = '+sp_fmt(t)+' s<br>speed = ?||speed = [[distance|time]]<br>speed = [['+D+'|'+sp_fmt(t)+']]<br>speed = '+v+' m/s'};}}
-
-  ]);
+// Two questions (11 Nov 2026): the first rearranges speed = distance/time for distance or time; the second is an echo
+// (there and back) or a time in milliseconds. New problems changes the numbers, the context and the unknown.
+const sp_q1=rnd=>{const n=calcNum,c=calcPick(rnd,[['in air',[330,340,343]],['in water',[1450,1500]],['in steel',[5000,6000]]]),v=calcPick(rnd,c[1]),t=calcPick(rnd,[0.2,0.4,0.5,1.5,2,3]),d=v*t;
+  return rnd()<0.5?{q:'Sound travels at '+n(v)+' m/s '+c[0]+'. The distance it travels in '+n(t)+' s is',unit:'m',answer:d,working:'speed = '+n(v)+' m/s<br>time = '+n(t)+' s<br>distance = ?||speed = [[distance|time]]<br>'+n(v)+' = [[distance|'+n(t)+']]<br>distance = '+n(v)+' × '+n(t)+'<br>distance = '+n(d)+' m'}
+    :{q:'Sound travels at '+n(v)+' m/s '+c[0]+'. The time it takes to travel '+n(d)+' m is',unit:'s',answer:t,working:'speed = '+n(v)+' m/s<br>distance = '+n(d)+' m<br>time = ?||speed = [[distance|time]]<br>'+n(v)+' = [['+n(d)+'|time]]<br>'+n(v)+' × time = '+n(d)+'<br>time = [['+n(d)+'|'+n(v)+']]<br>time = '+n(t)+' s'};};
+const sp_q2=rnd=>{const n=calcNum;return calcPick(rnd,[
+  ()=>{const t=calcPick(rnd,[0.2,0.4,0.6,0.8,1.2,2]),d=1500*t/2;
+    return {q:'A ship’s sonar pulse returns from the sea bed after '+n(t)+' s. Sound travels at 1500 m/s in sea water. The depth of the sea is',unit:'m',answer:d,
+      hints:['The pulse goes down and back up, so it travels twice the depth.','Find the total distance, then halve it.'],
+      working:'speed = 1500 m/s<br>time = '+n(t)+' s (there and back)<br>depth = ?||speed = [[distance|time]]<br>1500 = [[distance|'+n(t)+']]<br>distance = 1500 × '+n(t)+'<br>distance = '+n(1500*t)+' m<br>depth = [['+n(1500*t)+'|2]]<br>depth = '+n(d)+' m'};},
+  ()=>{const who=calcPick(rnd,[['Ali claps','his'],['Charlotte claps','her'],['Yassin bangs two blocks together','his'],['Fatimah shouts','her']]),d=calcPick(rnd,[51,68,85,102,170]),v=340,t=2*d/v;
+    return {q:who[0]+' '+d+' m from a cliff. Sound travels at 340 m/s. The time before '+(who[1]==='his'?'he':'she')+' hears the echo is',unit:'s',answer:t,
+      hints:['The sound goes to the cliff and back: distance = 2 × '+d+' m.','Rearrange speed = [[distance|time]] for the time.'],
+      working:'speed = 340 m/s<br>distance = 2 × '+d+' m = '+2*d+' m<br>time = ?||speed = [[distance|time]]<br>340 = [['+2*d+'|time]]<br>340 × time = '+2*d+'<br>time = [['+2*d+'|340]]<br>time = '+n(t)+' s'};},
+  ()=>{const c=calcPick(rnd,[[1.7,5],[0.68,2],[1.65,5],[1.36,4],[1.02,3],[0.99,3]]),d=c[0],ms=c[1];
+    return {q:'Two microphones are '+n(d)+' m apart. An oscilloscope shows the sound reaching the second '+n(ms)+' ms after the first. The speed of sound is',unit:'m/s',answer:d/(ms/1000),
+      hints:['Change '+n(ms)+' ms into seconds: divide by 1000.','Then speed = [[distance|time]].'],
+      working:'distance = '+n(d)+' m<br>time = '+n(ms)+' ms = '+n(ms/1000)+' s<br>speed = ?||speed = [[distance|time]]<br>speed = [['+n(d)+'|'+n(ms/1000)+']]<br>speed = '+n(d/(ms/1000))+' m/s'};}
+])();};
+calcAct('speed','speed = [[distance|time]]','Use speed = [[distance|time]]. For an echo, the sound travels there and back. Press New problems for another pair.',[calcFix(sp_q1,1),calcFix(sp_q2,2)]);
 
 }
 keepKinds('3c-speed',null,null);
