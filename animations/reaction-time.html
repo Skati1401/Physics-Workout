@@ -294,7 +294,7 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="rt-field" viewBox="0 0 860 350" role="img" aria-label="Five sheep grazing at the left of a field, a hedge on the right and a dart gun on a tripod in front. Beside the field, a velocity–time graph of the sheep that is running."></svg>
+      <svg class="view" id="rt-field" viewBox="0 0 860 350" role="img" aria-label="Five sheep grazing at the left of a field, a hedge on the right, and a dart gun on a tripod with a stopwatch beside the field."></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" data-action="rt-start" type="button">&#9654; Start</button>
@@ -415,7 +415,7 @@
   /* One page, two reaction tests that share the picture, the buttons and the right-hand column:
      "Stop the sheep" (five timed runs and a mean) and "Stop the car" (one car, a red light, a road surface and a speed to choose).
      ?show=sheep or ?show=car opens one of them; with ?embed as well, only that one is offered.
-     The picture is 860 x 350; under 520px the same code uses a tall viewBox with the graph underneath. */
+     The picture is 860 x 350. Under 520px the same code uses a narrower viewBox: the sheep's is just the field, the car's is tall with its graph underneath. */
   var svg=$('#rt-field'), fireBtn=$('#rt-fire'), startBtn=$('[data-action="rt-start"]'), resetBtn=$('[data-action="rt-reset"]');
   function narrow(){ return window.innerWidth<=520; }
   function setView(L){ svg.setAttribute('viewBox','0 0 '+L.W+' '+L.H); svg.classList.toggle('tall', !!L.tall); }
@@ -438,12 +438,13 @@
     // A sheep that gets there before the dart is recorded with the time it took (0.75 s), not as lost.
     var SPEED_MS=8, FIELD_M=6, T_MAX=FIELD_M/SPEED_MS, CAR_V=20, WANDER_M=0.15, DART_S=0.09, RELOAD_MS=1800;
     var sheep, results, state='idle', raf=0, lastNow=0, gunAng=0, dart=null, phase=0, reloadUntil=0, shot=0, gRun=null, L=null;
-    // the gun stands in a column on the left, beside the start end of the field, with the stopwatch under it; the graph is on the right (or underneath)
+    // the gun stands in a column on the left, beside the start end of the field, with the stopwatch under it; the field fills the rest.
+    // No velocity–time graph here (Alex, 11 Nov 2026): the car test has the graph.
     function lay(){ return narrow()
-      ? {tall:true, W:430, H:468, X0:114, PX:44.6, fx0:74, fx1:424, fy0:26, fy1:222, lanes:[50,88,126,164,202], k:0.8, gun:{x:38,y:112}, gk:0.7, gt:0.6, fs:13, lfs:11.5, GL:[38,62],
-         G:{x0:58,x1:410,y0:290,y1:416,fs:12}, T:{x:12,y:250}, SW:{x:4,y:160,k:0.8}}
-      : {tall:false, W:860, H:350, X0:180, PX:59.6, fx0:114, fx1:594, fy0:28, fy1:330, lanes:[64,121,178,235,292], k:1.15, gun:{x:58,y:190}, gk:1.1, gt:1, fs:12, lfs:12, GL:[56,112],
-         G:{x0:652,x1:848,y0:52,y1:292,fs:11}, T:{x:612,y:16}, SW:{x:12,y:262,k:1.1}}; }
+      ? {tall:true, W:430, H:250, X0:114, PX:44.6, fx0:74, fx1:424, fy0:26, fy1:222, lanes:[50,88,126,164,202], k:0.8, gun:{x:38,y:112}, gk:0.7, gt:0.6, fs:13, lfs:11.5, GL:[38,62],
+         SW:{x:4,y:160,k:0.8}}
+      : {tall:false, W:860, H:350, X0:180, PX:101.4, fx0:114, fx1:850, fy0:28, fy1:330, lanes:[64,121,178,235,292], k:1.15, gun:{x:58,y:190}, gk:1.1, gt:1, fs:12, lfs:12, GL:[56,112],
+         SW:{x:12,y:262,k:1.1}}; }
     function px(m){ return L.X0+m*L.PX; }
     function newFlock(){
       sheep=[0,1,2,3,4].map(function(i){ return {n:i+1, i:i, m:0, ms:0, dir:1, st:'graze', ph:Math.random()*6.28, w:0.7+Math.random()*0.6}; });
@@ -524,17 +525,9 @@
       if(reloadUntil) g+=txt(L.GL[0],L.GL[1]-17,'reloading…',{a:'middle',fs:L.lfs,c:'var(--bad)',w:600});
       return g;
     }
-    function graphSVG(){
-      var G=L.G, A, g='', r=gRun;
-      G.tMax=0.8; G.tStep=0.2; G.vMax=10; G.vStep=2; A=axes(G);
-      g+=txt(L.T.x,L.T.y,'Velocity–time graph'+(r?', sheep '+r.n:''),{fs:L.fs+1,c:'var(--ink)',w:600});
-      g+=txt(L.T.x,L.T.y+18, r&&r.done ? 'area = '+SPEED_MS+' × '+fix(r.t,2)+' = '+fix(SPEED_MS*r.t,1)+' m ran' : 'area under the line = distance ran',{fs:L.fs,c:r&&r.done?'var(--motion)':'var(--ink-soft)'});
-      g+=A.g;
-      if(r && r.t>0){
-        g+=rect(A.X(0),A.Y(SPEED_MS),A.X(r.t)-A.X(0),A.Y(0)-A.Y(SPEED_MS),'var(--motion-soft)');
-        g+=pl(r.done?[[A.X(0),A.Y(SPEED_MS)],[A.X(r.t),A.Y(SPEED_MS)],[A.X(r.t),A.Y(0)]]:[[A.X(0),A.Y(SPEED_MS)],[A.X(r.t),A.Y(SPEED_MS)]],'var(--motion)',3);
-      }
-      g+=stopwatch(L.SW.x,L.SW.y,fix(r?r.t:0,2)+' s',L.SW.k);
+    // the stopwatch under the gun: the time since the running sheep set off
+    function clockSVG(){
+      var r=gRun, g=stopwatch(L.SW.x,L.SW.y,fix(r?r.t:0,2)+' s',L.SW.k);
       g+=txt(L.SW.x+1,L.SW.y+40*L.SW.k+16,'time since',{fs:L.lfs})+txt(L.SW.x+1,L.SW.y+40*L.SW.k+16+L.lfs+2,'it set off',{fs:L.lfs});
       return g;
     }
@@ -552,7 +545,7 @@
         var f=Math.min(1,dart.f), dx=dart.x0+(dart.x1-dart.x0)*f, dy=dart.y0+(dart.y1-dart.y0)*f, a=Math.atan2(dart.y1-dart.y0,dart.x1-dart.x0), c=Math.cos(a), sn=Math.sin(a);
         g+=ln(dx-c*15,dy-sn*15,dx,dy,'var(--steel-sh)',2.6,' stroke-linecap="round"')+ln(dx-c*20,dy-sn*20,dx-c*14,dy-sn*14,'var(--dart)',5.5,' stroke-linecap="round"');
       }
-      g+=graphSVG();
+      g+=clockSVG();
       svg.innerHTML=g;
     }
     function aimAt(s){ return Math.atan2(L.lanes[s.i]-L.gun.y, px(s.m)-L.gun.x)*180/Math.PI; }
@@ -575,8 +568,8 @@
     }
     function working(){
       var e=$('#rt-eq'), H=results, last=H[H.length-1];
-      if(!last){ e.innerHTML='reaction time = time you fired − time the sheep started<br>distance ran = area under the velocity–time graph<br>distance ran = speed × reaction time<br>mean = <b>?</b>'; return; }
-      var h='distance ran = area under the velocity–time graph<br>distance ran = speed × reaction time<br>distance ran = '+SPEED_MS+' × '+fix(last.rt,2)+'<br>distance ran = '+fix(last.d,1)+' m';
+      if(!last){ e.innerHTML='reaction time = time you fired − time the sheep started<br>distance ran = speed × reaction time<br>mean = <b>?</b>'; return; }
+      var h='distance ran = speed × reaction time<br>distance ran = '+SPEED_MS+' × '+fix(last.rt,2)+'<br>distance ran = '+fix(last.d,1)+' m';
       if(results.length===5){
         var tot=sum(), m=tot/H.length;
         h+='<br><br>total = '+H.map(function(r){ return fix(r.rt,2); }).join(' + ')
@@ -681,7 +674,9 @@
   function makeCar(){
     // One car at a steady speed u. The light turns red at a random moment (time 0); the student presses Brake.
     // The car keeps its speed for the reaction time, then slows at the road's deceleration. Everything runs in real time.
-    var ROADS=[['Dry',7],['Wet',5],['Icy',2]], T_LIMIT=1.5;
+    // The graph's time axis and the road's length are fixed (Alex, 11 Nov 2026), so every run is drawn to the same scale: a fast car crosses
+    // the picture faster than a slow one, and a longer stop is a longer line. 20 s and 300 m hold the longest run (30 m/s on ice, braking 1.5 s late: 16.5 s, 270 m).
+    var ROADS=[['Dry',7],['Wet',5],['Icy',2]], T_LIMIT=1.5, T_AXIS=20, T_STEP=2, ROAD_M=300, ROAD_STEP=50;
     var speedIn=$('#rt-speed'), u=20, a=7, st='idle', raf=0, lastNow=0, tPlan=0, tRed=0, tB=0, scroll=0, runs=[], prev=null, lastDone=null, cur=null, L=null;
     function lay(){ return narrow()
       ? {tall:true, W:430, H:532, k:0.85, x0:84, x1:416, ry:96, rh:26, fs:12.5, my:[34,52],
@@ -689,9 +684,6 @@
       : {tall:false, W:860, H:350, k:1.25, x0:170, x1:822, ry:96, rh:30, fs:12, my:[36,54],
          G:{x0:56,x1:556,y0:176,y1:306,fs:11}, SW:{x:592,y:170,k:1.1}, K:{x:592,y:[242,264,286,310],fs:11.5}, TL:{x:804,y:166,k:1,post:50}}; }
     function roadName(){ return ROADS.filter(function(r){ return r[1]===a; })[0][0]; }
-    // the road in the picture is long enough for the slowest reaction allowed
-    function roadLen(){ var m=u*T_LIMIT+u*u/(2*a); return m<=60?Math.ceil(m/10)*10:(m<=200?Math.ceil(m/20)*20:Math.ceil(m/50)*50); }
-    function tAxis(){ var e=T_LIMIT+u/a, s=e<=3?0.5:(e<=6?1:(e<=12?2:5)); return {max:Math.ceil(e*1.02/s)*s, step:s}; }
     function at(c,t){   // distance and speed t seconds after the light turned red
       if(c.rt==null || t<=c.rt) return {x:c.u*t, v:c.u};
       var d=Math.min(t,c.end)-c.rt; return {x:c.th+c.u*d-0.5*c.a*d*d, v:Math.max(0,c.u-c.a*d)};
@@ -734,8 +726,8 @@
       return g;
     }
     function graphSVG(){
-      var G=L.G, T=tAxis(), A, g='', c=cur, t;
-      G.tMax=T.max; G.tStep=T.step; G.vMax=30; G.vStep=5; A=axes(G);
+      var G=L.G, A, g='', c=cur, t;
+      G.tMax=T_AXIS; G.tStep=T_STEP; G.vMax=30; G.vStep=5; A=axes(G);
       function line(r, upTo){ var p=[[A.X(0),A.Y(r.u)]], e=Math.min(upTo,G.tMax);
         if(r.rt==null || e<=r.rt) p.push([A.X(e),A.Y(r.u)]);
         else { p.push([A.X(r.rt),A.Y(r.u)]); p.push([A.X(Math.min(e,r.end)),A.Y(at(r,e).v)]); if(e>r.end) p.push([A.X(e),A.Y(0)]); }
@@ -762,13 +754,14 @@
       return g;
     }
     function draw(){
-      var g='', c=cur, D=roadLen(), sc, y, i, step, pos, anchored=c&&(st==='react'||st==='brake'||st==='done');
+      var g='', c=cur, D=ROAD_M, sc, y, i, step, pos, anchored=c&&(st==='react'||st==='brake'||st==='done');
       L=lay(); setView(L); sc=(L.x1-L.x0)/D; y=L.ry+L.rh*0.82; pos=anchored?at(c,c.t).x:0;
       g+=roadSVG();
       if(anchored){
         // the road is measured from where the car was when the light turned red
-        step=D<=30?5:(D<=70?10:(D<=140?20:50));
-        for(i=0;i<=D+1e-9;i+=step){ var tx=L.x0+i*sc; g+=ln(tx,L.ry+L.rh+8,tx,L.ry+L.rh+14,'var(--ink-faint)',1.2)+txt(tx,L.ry+L.rh+27,i+' m',{a:'middle',fs:L.fs-0.5,c:'var(--ink-soft)'}); }
+        step=ROAD_STEP;
+        for(i=0;i<=D+1e-9;i+=step){ var tx=L.x0+i*sc, edge=tx+20>L.W;   // the last label stays inside the picture on a phone
+          g+=ln(tx,L.ry+L.rh+8,tx,L.ry+L.rh+14,'var(--ink-faint)',1.2)+txt(edge?L.W-2:tx,L.ry+L.rh+27,i+' m',{a:edge?'end':'middle',fs:L.fs-0.5,c:'var(--ink-soft)'}); }
         var xt=Math.min(pos, c.rt==null?pos:c.th);
         if(xt>0) g+=rect(L.x0,L.ry+L.rh+1,xt*sc,6,'var(--motion)');
         if(c.rt!=null && pos>c.th) g+=rect(L.x0+c.th*sc,L.ry+L.rh+1,(pos-c.th)*sc,6,'var(--accent)');
@@ -811,7 +804,7 @@
     function toIdle(msg, cls){ cancelAnimationFrame(raf); st='idle'; cur=null; scroll=0; if(lastDone){ prev=lastDone; lastDone=null; } if(msg) note(msg,cls); else idleNote(); buttons(); working(); draw(); }
 
     function loop(now){
-      var dt=Math.min(0.05,(now-lastNow)/1000), c=cur, sc=(L.x1-L.x0)/roadLen(); lastNow=now;
+      var dt=Math.min(0.05,(now-lastNow)/1000), c=cur, sc=(L.x1-L.x0)/ROAD_M; lastNow=now;
       if(st==='drive'){
         scroll+=u*sc*dt;
         if(now>=tPlan){ st='react'; tRed=now; cur=c={u:u, a:a, road:roadName(), rt:null, t:0}; }   // timed from the frame in which the red light is first shown
@@ -872,7 +865,7 @@
       resetBtn.innerHTML=car?'&#8634; Clear results':'&#8634; New flock';
       svg.setAttribute('aria-label', car
         ? 'A car on a road, with a scale of distance under the road. Below it, the velocity–time graph of the car, a stopwatch, the thinking, braking and stopping distances, and the traffic light the driver is watching.'
-        : 'Five sheep grazing at the left of a field, a hedge on the right and a dart gun on a tripod in front. Beside the field, a velocity–time graph of the sheep that is running.');
+        : 'Five sheep grazing at the left of a field, a hedge on the right, and a dart gun on a tripod with a stopwatch beside the field.');
       if(car) carSim.show(); else sheepSim.reset();
     }
     partEl.addEventListener('click', function(e){ var b=e.target.closest('button'); if(b && b.dataset.v!==part) setPart(b.dataset.v); });
