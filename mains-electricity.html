@@ -1681,17 +1681,24 @@ predictAct('power','Choose the fuse','Fuses come in 3 A, 5 A and 13 A.',{
   ],
   explain:'P = I × V, so 2300 = I × 230 and I = 10 A. Choose the fuse with the smallest rating that is above the normal current: 13 A.'});
 const amps=I=>Number.isInteger(I)?I.toFixed(1):String(I);
-calcAct('power','P = I × V','Use P = I × V. Give each answer in the unit shown. Press New problems for another set.',[
-  {q:'A 1150 W microwave runs on the 230 V mains. The current is',unit:'A',answer:5,working:'P = 1150 W<br>V = 230 V<br>I = ?||P = I × V<br>1150 = I × 230<br>I = [[1150|230]]<br>I = 5 A',
-   make:rnd=>{const I=calcPick(rnd,[3,4,5,6,7,8]),P=I*230,what=calcPick(rnd,['microwave','kettle','toaster','hair dryer']);
-     return {q:'A '+P+' W '+what+' runs on the 230 V mains. The current is',unit:'A',answer:I,working:'P = '+P+' W<br>V = 230 V<br>I = ?||P = I × V<br>'+P+' = I × 230<br>I = [['+P+'|230]]<br>I = '+I+' A'};}},
-  {q:'An electric drill has a power of 460 W and takes a current of 2.0 A. The voltage is',unit:'V',answer:230,working:'P = 460 W<br>I = 2.0 A<br>V = ?||P = I × V<br>460 = 2.0 × V<br>V = [[460|2.0]]<br>V = 230 V',
-   make:rnd=>{const c=calcPick(rnd,[[18,10],[18,12.5],[18,20],[110,2],[110,3],[110,4.5],[230,1.5],[230,2],[230,3]]),V=c[0],I=c[1],P=V*I,what=calcPick(rnd,['An electric drill','A hedge trimmer','A floor sander']);
-     return {q:what+' has a power of '+P+' W and takes a current of '+amps(I)+' A. The voltage is',unit:'V',answer:V,working:'P = '+P+' W<br>I = '+amps(I)+' A<br>V = ?||P = I × V<br>'+P+' = '+amps(I)+' × V<br>V = [['+P+'|'+amps(I)+']]<br>V = '+V+' V'};}},
-  {q:'A 2.3 kW heater runs on the 230 V mains. The current is',unit:'A',answer:10,working:'P = 2.3 kW = 2300 W<br>V = 230 V<br>I = ?||P = I × V<br>2300 = I × 230<br>I = [[2300|230]]<br>I = 10 A',
-   make:rnd=>{const kW=calcPick(rnd,[1.15,1.38,1.84,2.3,2.76,3.45]),W=Math.round(kW*1000),I=+(W/230).toFixed(2),what=calcPick(rnd,['heater','kettle','oven']);
-     return {q:'A '+kW+' kW '+what+' runs on the 230 V mains. The current is',unit:'A',answer:I,working:'P = '+kW+' kW = '+W+' W<br>V = 230 V<br>I = ?||P = I × V<br>'+W+' = I × 230<br>I = [['+W+'|230]]<br>I = '+I+' A'};}}
-]);
+// Two questions (11 Nov 2026): the first rearranges P = IV for I or V; the second also changes kW to W or gives the current
+// in mA. New problems changes the numbers, the appliance and which quantity is asked for.
+const pw_q1=rnd=>{const n=calcNum;return rnd()<0.55?(()=>{const I=calcPick(rnd,[2,3,4,5,6,7,8]),P=I*230,w=calcPick(rnd,['microwave','kettle','toaster','hair dryer','iron','vacuum cleaner']);
+    return {q:'A '+P+' W '+w+' runs on the 230 V mains. The current is',unit:'A',answer:I,working:'P = '+P+' W<br>V = 230 V<br>I = ?||P = IV<br>'+P+' = 230I<br>I = [['+P+'|230]]<br>I = '+I+' A'};})()
+  :(()=>{const c=calcPick(rnd,[['A car headlamp',12,[4,5]],['A camping fan',12,[2,1.5]],['A cordless drill',18,[10,12.5]],['A cordless hedge trimmer',18,[8,10]],['A site floor sander',110,[2,3,4.5]],['An electric drill',230,[1.5,2,3]]]),V=c[1],I=calcPick(rnd,c[2]),P=V*I,w=c[0];
+    return {q:w+' has a power of '+n(P)+' W and takes a current of '+n(I)+' A. The voltage is',unit:'V',answer:V,working:'P = '+n(P)+' W<br>I = '+n(I)+' A<br>V = ?||P = IV<br>'+n(P)+' = '+n(I)+'V<br>V = [['+n(P)+'|'+n(I)+']]<br>V = '+V+' V'};})();};
+const pw_q2=rnd=>{const n=calcNum;return calcPick(rnd,[
+  ()=>{const I=calcPick(rnd,[5,6,8,10,12]),P=I*230,w=calcPick(rnd,['kettle','heater','oven','tumble dryer']);
+    return {q:'A '+n(P/1000)+' kW '+w+' runs on the 230 V mains. The current is',unit:'A',answer:I,hints:['Change '+n(P/1000)+' kW into watts: multiply by 1000.','Then rearrange P = IV for I.'],
+      working:'P = '+n(P/1000)+' kW = '+n(P)+' W<br>V = 230 V<br>I = ?||P = IV<br>'+n(P)+' = 230I<br>I = [['+n(P)+'|230]]<br>I = '+I+' A'};},
+  ()=>{const c=calcPick(rnd,[['An LED lamp',[20,25,40,50]],['A clock radio',[10,20,25]],['A television on standby',[5,10]],['A phone charger',[40,50,100]],['A laptop charger',[200,250,300]]]),mA=calcPick(rnd,c[1]),P=230*mA/1000,w=c[0];
+    return {q:w+' has a power of '+n(P)+' W on the 230 V mains. The current, in mA, is',unit:'mA',answer:mA,hints:['Rearrange P = IV to find I in amps.','Then change amps into milliamps: multiply by 1000.'],
+      working:'P = '+n(P)+' W<br>V = 230 V<br>I = ?||P = IV<br>'+n(P)+' = 230I<br>I = [['+n(P)+'|230]]<br>I = '+n(mA/1000)+' A<br>I = '+mA+' mA'};},
+  ()=>{const c=calcPick(rnd,[[12,2.4,200],[6,1.5,250],[9,2.7,300],[12,6,500],[5,2,400]]),V=c[0],P=c[1],mA=c[2];
+    return {q:'A '+n(P)+' W toy motor takes a current of '+mA+' mA. The voltage across it is',unit:'V',answer:V,hints:['Change '+mA+' mA into amps: divide by 1000.','Then rearrange P = IV for V.'],
+      working:'P = '+n(P)+' W<br>I = '+mA+' mA = '+n(mA/1000)+' A<br>V = ?||P = IV<br>'+n(P)+' = '+n(mA/1000)+'V<br>V = [['+n(P)+'|'+n(mA/1000)+']]<br>V = '+V+' V'};}
+])();};
+calcAct('power','P = I × V','Use P = IV. Give each answer in the unit shown. Press New problems for another pair.',[calcFix(pw_q1,2),calcFix(pw_q2,1)]);
 
 /* ================= 6. ENERGY, a.c. AND d.c. ================= */
 createSortGame({host:act('energy','Sort','a.c. or d.c.?','Sort each card, then press Check.'),
@@ -1708,22 +1715,28 @@ createSortGame({host:act('energy','Sort','a.c. or d.c.?','Sort each card, then p
 // number formatting for the energy makers: no float noise, spaces in numbers of 10 000 and over, 1 d.p. on small whole values
 const energy_fmt=x=>{const v=+(+x).toFixed(4),t=String(v),k=t.indexOf('.'),i=k<0?t:t.slice(0,k);return (Math.abs(v)>=10000?i.replace(/\B(?=(\d{3})+(?!\d))/g,' '):i)+(k<0?'':t.slice(k));};
 const energy_d1=x=>Number.isInteger(x)&&x<10?x.toFixed(1):energy_fmt(x);
-calcAct('energy','E = I × V × t','Use E = I × V × t, with time in seconds. Press New problems for another set.',[
-  {q:'A 12 V battery gives a current of 2.5 A for 10 minutes. The energy transferred is',unit:'J',answer:18000,working:'I = 2.5 A<br>V = 12 V<br>t = 10 min = 600 s<br>E = ?||E = I × V × t<br>E = 2.5 × 12 × 600<br>E = 18 000 J',
-   make:rnd=>{const c=calcPick(rnd,[['A {V} V battery gives',[6,9,12],[0.5,1.5,2,2.5,3]],['A {V} V car headlamp takes',[12],[4,5]],['Charlie’s {V} V electric bike motor takes',[24,36],[5,8,10]],['A {V} V motor takes',[6,12,24],[1.5,2,2.5,3,4]]]),
-       V=calcPick(rnd,c[1]),I=calcPick(rnd,c[2]),m=calcPick(rnd,[2,5,10,15,20]),t=m*60,E=I*V*t;
-     return {q:c[0].replace('{V}',energy_d1(V))+' a current of '+energy_d1(I)+' A for '+m+' minutes. The energy transferred is',unit:'J',answer:E,
-       working:'I = '+energy_d1(I)+' A<br>V = '+energy_d1(V)+' V<br>t = '+m+' min = '+t+' s<br>E = ?||E = I × V × t<br>E = '+energy_d1(I)+' × '+energy_d1(V)+' × '+t+'<br>E = '+energy_fmt(E)+' J'};}},
-  {q:'Poppy’s kettle takes 10 A from the 230 V mains and transfers 690 000 J. The time it is on for is',unit:'s',answer:300,working:'I = 10 A<br>V = 230 V<br>E = 690 000 J<br>t = ?||E = I × V × t<br>690 000 = 10 × 230 × t<br>690 000 = 2300 × t<br>t = [[690 000|2300]]<br>t = 300 s',
-   make:rnd=>{const c=calcPick(rnd,[['Poppy’s kettle',[10,12,13]],['A toaster',[4,5]],['Henry’s hair dryer',[5,6,8]],['An electric heater',[8,10]],['Fatimah’s iron',[4,5,6]]]),
-       I=calcPick(rnd,c[1]),t=calcPick(rnd,[60,90,120,180,240,300]),P=I*230,E=P*t;
-     return {q:c[0]+' takes '+I+' A from the 230 V mains and transfers '+energy_fmt(E)+' J. The time it is on for is',unit:'s',answer:t,
-       working:'I = '+I+' A<br>V = 230 V<br>E = '+energy_fmt(E)+' J<br>t = ?||E = I × V × t<br>'+energy_fmt(E)+' = '+I+' × 230 × t<br>'+energy_fmt(E)+' = '+energy_fmt(P)+' × t<br>t = [['+energy_fmt(E)+'|'+energy_fmt(P)+']]<br>t = '+t+' s'};}},
-  {q:'A 6.0 V motor transfers 900 J in 50 s. The current is',unit:'A',answer:3,working:'V = 6.0 V<br>E = 900 J<br>t = 50 s<br>I = ?||E = I × V × t<br>900 = I × 6.0 × 50<br>900 = I × 300<br>I = [[900|300]]<br>I = 3 A',
-   make:rnd=>{const what=calcPick(rnd,['motor','lamp','fan','heating element']),V=calcPick(rnd,[3,6,9,12]),t=calcPick(rnd,[20,30,40,50,60,100]),I=calcPick(rnd,[0.5,1.5,2,2.5,3,4]),Vt=V*t,E=I*Vt;
-     return {q:'A '+energy_d1(V)+' V '+what+' transfers '+energy_fmt(E)+' J in '+t+' s. The current is',unit:'A',answer:I,
-       working:'V = '+energy_d1(V)+' V<br>E = '+energy_fmt(E)+' J<br>t = '+t+' s<br>I = ?||E = I × V × t<br>'+energy_fmt(E)+' = I × '+energy_d1(V)+' × '+t+'<br>'+energy_fmt(E)+' = I × '+energy_fmt(Vt)+'<br>I = [['+energy_fmt(E)+'|'+energy_fmt(Vt)+']]<br>I = '+energy_fmt(I)+' A'};}}
-  ]);
+// Two questions (11 Nov 2026): the first rearranges E = IVt for t, I or V (time in seconds); the second has the time in
+// minutes or the energy in kJ. New problems changes the numbers, the appliance and which quantity is asked for.
+const en_P=['Poppy','Ruby','Elena','Henry','Ali','Lucas','Hana','David'];
+const en_q1=rnd=>{const n=calcNum,c=calcPick(rnd,[['a 12 V battery','motor',12,[0.5,2,2.5,4]],['the 230 V mains','lamp',230,[0.2,0.5,1,2]],['a 6 V supply','heater',6,[1.5,2,3,4]],['a 9 V battery','buzzer',9,[0.1,0.2,0.5]]]),V=c[2],I=calcPick(rnd,c[3]),t=calcPick(rnd,[20,30,40,50,60,100,120]),E=I*V*t;
+  return calcPick(rnd,[
+    {q:'A '+c[1]+' on '+c[0]+' takes a current of '+n(I)+' A and transfers '+n(E)+' J. The time it is on for is',unit:'s',answer:t,
+      working:'I = '+n(I)+' A<br>V = '+V+' V<br>E = '+n(E)+' J<br>t = ?||E = IVt<br>'+n(E)+' = '+n(I)+' × '+V+' × t<br>'+n(E)+' = '+n(I*V)+'t<br>t = [['+n(E)+'|'+n(I*V)+']]<br>t = '+t+' s'},
+    {q:'A '+c[1]+' on '+c[0]+' transfers '+n(E)+' J in '+t+' s. The current is',unit:'A',answer:I,
+      working:'V = '+V+' V<br>E = '+n(E)+' J<br>t = '+t+' s<br>I = ?||E = IVt<br>'+n(E)+' = I × '+V+' × '+t+'<br>'+n(E)+' = '+n(V*t)+'I<br>I = [['+n(E)+'|'+n(V*t)+']]<br>I = '+n(I)+' A'},
+    {q:'A '+c[1]+' takes a current of '+n(I)+' A for '+t+' s and transfers '+n(E)+' J. The voltage across it is',unit:'V',answer:V,
+      working:'I = '+n(I)+' A<br>t = '+t+' s<br>E = '+n(E)+' J<br>V = ?||E = IVt<br>'+n(E)+' = '+n(I)+' × V × '+t+'<br>'+n(E)+' = '+n(I*t)+'V<br>V = [['+n(E)+'|'+n(I*t)+']]<br>V = '+V+' V'}]);};
+const en_q2=rnd=>{const n=calcNum,who=calcPick(rnd,en_P);return calcPick(rnd,[
+  ()=>{const I=calcPick(rnd,[5,8,10,12]),m=calcPick(rnd,[2,3,4,5]),E=I*230*m*60,w=calcPick(rnd,['kettle','hair dryer','heater','iron']);
+    return {q:who+'’s '+w+' takes '+I+' A from the 230 V mains and transfers '+n(E)+' J. The time it is on for, in minutes, is',unit:'min',answer:m,
+      hints:['Rearrange E = IVt to find t in seconds.','Divide the seconds by 60.'],
+      working:'I = '+I+' A<br>V = 230 V<br>E = '+n(E)+' J<br>t = ?||E = IVt<br>'+n(E)+' = '+I+' × 230 × t<br>'+n(E)+' = '+n(I*230)+'t<br>t = [['+n(E)+'|'+n(I*230)+']]<br>t = '+n(m*60)+' s<br>t = '+m+' min'};},
+  ()=>{const V=calcPick(rnd,[6,9,12,24]),I=calcPick(rnd,[0.5,1.5,2,2.5,4]),m=calcPick(rnd,[2,5,10,15]),E=I*V*m*60;
+    return {q:'A '+V+' V motor transfers '+n(E/1000)+' kJ in '+m+' minutes. The current in the motor is',unit:'A',answer:I,
+      hints:['Change kJ into J and minutes into seconds first.','Then rearrange E = IVt for I.'],
+      working:'V = '+V+' V<br>E = '+n(E/1000)+' kJ = '+n(E)+' J<br>t = '+m+' min = '+m*60+' s<br>I = ?||E = IVt<br>'+n(E)+' = I × '+V+' × '+m*60+'<br>'+n(E)+' = '+n(V*m*60)+'I<br>I = [['+n(E)+'|'+n(V*m*60)+']]<br>I = '+n(I)+' A'};}
+])();};
+calcAct('energy','E = I × V × t','Use E = IVt, with time in seconds. Press New problems for another pair.',[calcFix(en_q1,2),calcFix(en_q2,3)]);
 
 /* ================= tabs, startup ================= */
 // Two Predict activities in a row sit side by side (they stack again on narrow screens).
