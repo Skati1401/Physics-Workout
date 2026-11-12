@@ -1,34 +1,8 @@
 /* ================= helpers for this page ================= */
-function clozeAct(tab,title,parts,distractors){
-  const body=act(tab,'Fill in the blanks',title,'Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  distractors.forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
 function answerBox(body,html){const d=mk('details','');d.innerHTML='<summary>Check your answer</summary><div>'+FR(html)+'</div>';body.appendChild(d);}
 function tableHTML(head,rows){return '<div class="table-scroll"><table class="units res-tbl"><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
 
-/* ================= 1. OVERVIEW ================= */
-clozeAct('overview','The practical in one passage',[
-  'Draw round a rectangular glass block on a sheet of paper. Shine a narrow ray from a ray box into the block, at an angle to the ',['b1','normal'],
-  '. Mark the rays with crosses, remove the block, and measure the angle of incidence, i, and the angle of refraction, r, with a ',['b2','protractor'],
-  '. Repeat for a ',['b3','range'],
-  ' of angles of incidence, from about 10° to 80°. Work out sin i and sin r, and plot sin i up the side against sin r along the bottom. The points lie on a straight line through the origin, and its ',['b4','gradient'],
-  ' is the refractive index, n. For glass, n is about ',['b5','1.5'],
-  '. A refractive index has no unit, because it is a ',['b6','ratio'],' of two sines.'
-],['area','intercept','0.67','ruler']);
-
-/* ================= 2. METHOD ================= */
+/* ================= 1. METHOD ================= */
 {
   const body=act('method','Order','Measure i and r for a range of angles','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
   createReorder({host:body,steps:[
@@ -54,7 +28,7 @@ clozeAct('overview','The practical in one passage',[
   ]});
 }
 
-/* ================= 3. VARIABLES ================= */
+/* ================= 2. VARIABLES ================= */
 {
   const body=act('variables','Sort','Which kind of variable is it?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
@@ -89,7 +63,7 @@ clozeAct('overview','The practical in one passage',[
   ],explain:'Each colour has a slightly different refractive index, so in white light the refracted ray spreads out a little and is hard to measure. One colour gives one sharp ray and one value of n.'});
 }
 
-/* ================= 4. EXPERIMENT ================= */
+/* ================= 3. EXPERIMENT ================= */
 {
   act('experiment','Your turn','Take your own readings','Press Experiment. With the rectangular block, take readings for angles of incidence from 10° to 80°, and watch the graph of sin i against sin r build up. Then repeat with the flat side of the semicircular block. What is the gradient each time? Does r go up by the same amount for each 10°?');
 }
@@ -113,7 +87,7 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
   ],explain:'The gradient of sin i against sin r is n. A glass with a bigger refractive index bends the light more (smaller r for the same i), so the line is steeper. It still goes through the origin.'});
 }
 
-/* ================= 5. RESULTS ================= */
+/* ================= 4. RESULTS ================= */
 {
   const body=act('results','Calculate','Complete the results table','Aidan measured these angles for a glass block. Work out the missing values, to 3 decimal places.');
   const tbl=mk('div','');
@@ -153,7 +127,7 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
   ],explain:'r should increase at a decreasing rate: 13°, 19°, about 25°, 31°, 35°. 30° at i = 40° is too big, perhaps a cross marked in the wrong place. Repeat it, and leave it out of the line of best fit.'});
 }
 
-/* ================= 6. GRAPHS ================= */
+/* ================= 5. GRAPHS ================= */
 function lab(g0,t,x,y){return '<circle cx="'+g0.gx(x)+'" cy="'+g0.gy(y)+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+g0.gx(x)+'" y="'+(g0.gy(y)+5)+'" text-anchor="middle" font-size="14" fill="var(--ink)">'+t+'</text>';}
 const GA={xMin:0,xMax:0.8,yMin:0,yMax:1,xTicks:[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],yTicks:[0,0.2,0.4,0.6,0.8,1],xLabel:'sin r',yLabel:'sin i',W:560,H:340};
 {
@@ -207,7 +181,7 @@ const GB={xMin:0,xMax:1,yMin:0,yMax:0.8,xTicks:[0,0.2,0.4,0.6,0.8,1],yTicks:[0,0
   ],explain:'n = [[sin i|sin r]], so sin i = n × sin r: a straight line through the origin with gradient n. i against r curves, so it has no single gradient to read.'});
 }
 
-/* ================= 7. CALCULATE ================= */
+/* ================= 6. CALCULATE ================= */
 {
   const body=act('calculate','Calculate','Using n = [[sin i|sin r]] and sin c = [[1|n]]','Give each answer to 3 significant figures, in the unit shown.');
   createCalc({host:body,questions:[
@@ -218,7 +192,7 @@ const GB={xMin:0,xMax:1,yMin:0,yMax:0.8,xTicks:[0,0.2,0.4,0.6,0.8,1],yTicks:[0,0
   ]});
 }
 
-/* ================= 8. ACCURACY AND RELIABILITY ================= */
+/* ================= 7. ACCURACY AND RELIABILITY ================= */
 {
   const body=act('accuracy','Sort','Better value of n, or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
@@ -253,7 +227,7 @@ const GB={xMin:0,xMax:1,yMin:0,yMax:0.8,xTicks:[0,0.2,0.4,0.6,0.8,1],yTicks:[0,0
   ],explain:'A protractor reads to the nearest degree. An error of 1° in 3° is over 30%, but in 35° it is under 3%. So use larger angles, over a wide range.'});
 }
 
-/* ================= 9. EXAM PRACTICE ================= */
+/* ================= 8. EXAM PRACTICE ================= */
 {
   const body=act('exam','Exam style','The refractive index of glass','Yassin measures the angle of refraction for five angles of incidence. One reading is missing.');
   body.appendChild(mk('div','',tableHTML(['i (°)','15','30','45','60','75'],[['r (°)','10','20','<b>?</b>','35','40']])));

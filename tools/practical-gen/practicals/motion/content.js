@@ -1,8 +1,8 @@
 /* ================= METHOD TYPE: stopwatch, light gates or video camera =================
    The January 2014 4PH0 mark scheme (toy car down a slope, speed at the bottom) accepts a light gate with an
    interrupter card and a data logger, or a video camera with a scale behind the ramp played back frame by frame,
-   as well as timing with a stopwatch. The Overview and Method tabs each have a "Method type" switch; the choice is
-   shared by both tabs and remembered in this browser. */
+   as well as timing with a stopwatch. The Method tab has a "Method type" switch; the choice is remembered in this
+   browser. The Overview tab was removed on 12 Nov 2026 (Alex). */
 const METHODS=[{k:'sw',label:'Stopwatch'},{k:'lg',label:'Light gates'},{k:'vc',label:'Video camera'}];
 const MKEY='cp-motion-method';
 let method='sw';try{const v=localStorage.getItem(MKEY);if(METHODS.some(m=>m.k===v))method=v;}catch(e){}
@@ -22,46 +22,10 @@ function setMethod(k){
   raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow()));
 }
 reflowers.push(()=>raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow())));
-function clozeAct(panel,k,title,parts,distractors){
-  const body=act(panel,'Fill in the blanks',title,'Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  forMethod(body,k);
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string'){const t=document.createElement('template');t.innerHTML=FR(p);cloze.appendChild(t.content);}
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  distractors.forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
 const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.';
 const MATCH_INTRO='Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.';
 
-/* ================= 1. OVERVIEW ================= */
-methodPicker('overview');
-clozeAct('overview','sw','The practical with a stopwatch',[
-  'Raise one end of a ramp on a block, and measure its height with a ruler held ',['b8','vertically'],' (check with a set square). Mark distances down the ramp every 20 cm with a metre rule. Release a toy car from ',['b1','rest'],' at the start line, and time how long it takes to reach each mark with a ',
-  ['b2','stopwatch'],'. You should ',['b3','repeat'],' each distance three times and find the mean. The distance is the independent variable, the time is the dependent variable, and the height of the ramp is a control variable. Your ',['b4','reaction time'],' is the biggest source of error. Plot distance against time: the graph curves upwards, because the car is ',
-  ['b5','accelerating'],'. Average speed = [[distance|time]], so the distance divided by the total time gives the ',['b6','average'],' speed, not the speed at the bottom. The car speeds up steadily from rest, so its speed at the bottom is ',['b7','twice'],' the average speed for the whole ramp.'
-],['slowing down','half','a push','instantaneous','horizontally']);
-clozeAct('overview','lg','The practical with light gates',[
-  'Fix a card to the top of the car and measure its ',['b1','length'],'. Clamp a light gate at the bottom of the ramp and connect it to a ',['b2','data logger'],
-  '. Release the car from rest at the start line. As it passes, the card blocks the beam, and the data logger records how long it is ',['b3','blocked'],
-  '. Speed = length of the card divided by that time: the speed at one ',['b4','point'],'. A light gate has no ',['b5','reaction time'],', so the times are far more ',
-  ['b6','precise'],'. With a light gate at each mark, plot a velocity–time graph: its ',['b7','gradient'],' is the acceleration.'
-],['area','half','average','stopwatch']);
-clozeAct('overview','vc','The practical with a video camera',[
-  'Fix a metre rule along the ramp, so every frame of the video has a ',['b1','scale'],'. Set the camera on a ',['b2','tripod'],' side-on to the ramp, then start filming and release the car from rest. Play the video back ',
-  ['b3','frame by frame'],'. At 50 frames per second, each frame is ',['b4','0.02 s'],' after the last, so the frame number gives the ',['b5','time'],
-  '. Read the position of the front of the car in each frame, and plot distance against time. The speed at the bottom is the distance moved between two frames, divided by the ',['b6','time between'],' them.'
-],['50 s','reaction time','at double speed','mass']);
-
-/* ================= 2. METHOD ================= */
+/* ================= 1. METHOD ================= */
 methodPicker('method');
 {
   const body=act('method','Order','Time the car with a stopwatch',ORDER_INTRO);forMethod(body,'sw');
@@ -149,7 +113,7 @@ methodPicker('method');
 }
 setMethod(method);
 
-/* ================= 3. VARIABLES ================= */
+/* ================= 2. VARIABLES ================= */
 {
   const body=act('variables','Sort','Which kind of variable is it?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
@@ -184,7 +148,7 @@ setMethod(method);
   ],explain:'The car must be released from rest: its initial speed must be zero every run. A push gives the car a starting speed that is different each time, so the times would not be repeatable.'});
 }
 
-/* ================= 4. EXPERIMENT ================= */
+/* ================= 3. EXPERIMENT ================= */
 {
   act('experiment','Your turn','Take your own readings','Press Experiment. Time the car to every mark with the stopwatch, then with light gates, on the 20 cm ramp. Then try 10 cm and 30 cm. Which timing method gives repeatable times, what shape is the distance–time graph, and how does the height of the ramp change the acceleration?');
 }
@@ -208,7 +172,7 @@ frameAct('experiment','animations/ramp-motion.html','','Toy car on a ramp animat
   ],explain:'A reaction-time error of about 0.1 s is a big part of 0.7 s, but a small part of several seconds. Light gates start and stop the timer electronically, with no reaction time.'});
 }
 
-/* ================= 5. RESULTS ================= */
+/* ================= 4. RESULTS ================= */
 const RM=[[0.20,[0.74,0.70,0.75],'0.73'],[0.40,[1.05,0.99,1.02],'?'],[0.60,[1.25,1.27,1.20],'1.24'],[0.80,[1.44,1.41,1.47],'1.44'],[1.00,[1.60,1.63,1.57],'1.60'],[1.20,[1.78,1.73,1.77],'?']];
 function rmTable(){
   const t=mk('div','table-scroll');
@@ -264,7 +228,7 @@ function rmTable(){
   ],explain:'Runs 1 and 2 agree to within 0.02 s, but run 3 is 0.35 s longer: perhaps the car rubbed the side of the ramp, or she stopped the stopwatch late. Time it again, and leave it out of the mean.'});
 }
 
-/* ================= 6. GRAPHS ================= */
+/* ================= 5. GRAPHS ================= */
 function lab(g0,t,x,y){return '<circle cx="'+g0.gx(x)+'" cy="'+g0.gy(y)+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+g0.gx(x)+'" y="'+(g0.gy(y)+5)+'" text-anchor="middle" font-size="14" fill="var(--ink)">'+t+'</text>';}
 const GV={xMin:0,xMax:3.0,yMin:0,yMax:2.4,xTicks:[0,0.5,1,1.5,2,2.5,3],yTicks:[0,0.4,0.8,1.2,1.6,2.0,2.4],xLabel:'time (s)',yLabel:'velocity (m/s)',W:560,H:340};
 function rampGraph(){
@@ -337,7 +301,7 @@ function ballGraph(){
   ],explain:'Air resistance grows with speed. After falling only 1 m the ball is moving at about 4.5 m/s, far below its terminal velocity, so air resistance is small compared with its weight.'});
 }
 
-/* ================= 7. CALCULATE ================= */
+/* ================= 6. CALCULATE ================= */
 {
   const body=act('calculate','Calculate','Speed, acceleration and distance','Give each answer in the unit shown.');
   createCalc({host:body,questions:[
@@ -348,7 +312,7 @@ function ballGraph(){
   ]});
 }
 
-/* ================= 8. ACCURACY AND SAFETY ================= */
+/* ================= 7. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[

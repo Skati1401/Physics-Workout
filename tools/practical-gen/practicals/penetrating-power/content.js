@@ -15,31 +15,7 @@ function resTable(head,rows){
   return t;
 }
 
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'First, with the source taken away, measure the ',['b1','background'],' count three times and find the mean. Then place the source a few centimetres from a ',['b2','Geiger–Müller tube'],
-    ' connected to a counter, and count for one minute with no absorber. Repeat with a sheet of paper, a few millimetres of aluminium and a few centimetres of lead between them, keeping the ',['b3','distance'],
-    ' the same. Take the mean background away from every count to get the ',['b4','corrected'],' count. Alpha particles are stopped by paper (or a few cm of air). Beta particles pass through paper but are stopped by ',['b5','aluminium'],
-    '. Gamma rays pass through both and are only reduced by thick lead. Alpha is the most ',['b6','ionising'],' and the least penetrating. Use ',['b7','tongs'],' to handle the source, and keep it pointing away from people.'
-  ];
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  ['lead only','gloves only','half-life','penetrating'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
-
-/* ================= 2. METHOD ================= */
+/* ================= 1. METHOD ================= */
 {
   const body=act('method','Order','Find what a source emits','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
   createReorder({host:body,steps:[
@@ -65,7 +41,7 @@ function resTable(head,rows){
   ]});
 }
 
-/* ================= 3. VARIABLES ================= */
+/* ================= 2. VARIABLES ================= */
 {
   const body=act('variables','Sort','Which variable is it?','Ananya compares how well different materials absorb the radiation from one source, using a 1 cm thick sheet of each. Sort each variable, then press Check.');
   createSortGame({host:body,cats:[
@@ -100,7 +76,7 @@ function resTable(head,rows){
   ],explain:'The independent variable (paper, aluminium, lead) is categoric, so the results go on a bar chart. A line graph is for a continuous variable, such as the thickness of lead.'});
 }
 
-/* ================= 4. EXPERIMENT ================= */
+/* ================= 3. EXPERIMENT ================= */
 {
   act('experiment','Your turn','Take your own readings','Press Experiment. First measure the background three times, with no source. Then, for each source, count for one minute with no absorber, paper, aluminium and lead, at the same distance. Use your corrected counts to work out what Source X and Source Y emit. Then drag the GM tube further away from the alpha source: where does the count fall to background?');
 }
@@ -124,7 +100,7 @@ frameAct('experiment','animations/penetrating-power.html','','Penetrating power 
   ],explain:'Each nucleus decays at random, so the number detected in each minute varies. That is why counts are repeated, or taken over a longer time, and a mean is found.'});
 }
 
-/* ================= 5. RESULTS ================= */
+/* ================= 4. RESULTS ================= */
 {
   const body=act('results','Calculate','Complete the results for source P','The mean background count is 30 counts per minute. Two corrected counts are missing.');
   body.appendChild(resTable(['Absorber','Count in 1 min','Corrected count'],[['None','1250','1220'],['Paper','1238',null],['Aluminium, 5 mm','85',null],['Lead, 2 cm','31','1']]));
@@ -176,7 +152,7 @@ frameAct('experiment','animations/penetrating-power.html','','Penetrating power 
   ],explain:'A better absorber lets less radiation through, so it gives a lower count. With the same thickness of each, lead gives the lowest corrected count (280 per minute), so lead is the best absorber. The paper, 5 mm aluminium and 2 cm lead in the other tables are for finding what a source emits, not for comparing materials: they are different thicknesses, so they would not be a fair test of which material absorbs best.'});
 }
 
-/* ================= 6. ALPHA, BETA, GAMMA ================= */
+/* ================= 5. ALPHA, BETA, GAMMA ================= */
 {
   const body=act('radiation','Match','Alpha, beta and gamma','Pair each term with its description. Drag one card onto the other, or tap one card and then the other.');
   createMatchGame({host:body,leftTitle:'Term',rightTitle:'Description',pairs:[
@@ -222,7 +198,7 @@ frameAct('experiment','animations/penetrating-power.html','','Penetrating power 
   ],explain:'Outside the body, alpha is stopped by the dead outer layer of skin. Inside the body, all its energy goes into ionising the nearby cells, which can damage them or cause mutations and cancer.'});
 }
 
-/* ================= 7. BACKGROUND ================= */
+/* ================= 6. BACKGROUND ================= */
 {
   const body=act('background','Sort','Background radiation or not?','Sort each card, then press Check.');
   createSortGame({host:body,cats:[
@@ -247,7 +223,7 @@ frameAct('experiment','animations/penetrating-power.html','','Penetrating power 
   ]});
 }
 
-/* ================= 8. SAFETY AND ACCURACY ================= */
+/* ================= 7. SAFETY AND ACCURACY ================= */
 {
   const body=act('accuracy','Sort','Safer or better results?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[

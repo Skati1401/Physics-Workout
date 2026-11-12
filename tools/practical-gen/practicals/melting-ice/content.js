@@ -1,28 +1,4 @@
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'Put crushed ice and a thermometer in a beaker, and heat it gently in a ',['b1','water bath'],'. ',['b2','Stir'],' the ice all the time, so the temperature is the same throughout, and read the thermometer every ',['b3','minute'],
-    ', timed with a stopwatch. Plot temperature against ',['b4','time'],'. The graph rises, then has a horizontal (flat) section: while the ice melts, the temperature stays ',['b5','constant'],' at ',['b6','0 °C'],
-    '. The energy supplied weakens and breaks the ',['b7','bonds between the particles'],', so their kinetic energy stays the same. Once all the ice has melted, the temperature ',['b8','rises'],
-    ' again. In the solid the particles are in a regular arrangement and ',['b9','vibrate'],' about fixed positions; in the liquid they are irregular and ',['b10','slide past each other'],'. Stearic acid can be used instead: as it cools, its temperature stays constant while it ',['b11','freezes'],'.'
-  ];
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  ['100 °C','falls','expand','mass of the particles'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
-
-/* ================= 2. METHOD ================= */
+/* ================= 1. METHOD ================= */
 {
   const body=act('method','Order','Carry out the practical','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
   createReorder({host:body,steps:[
@@ -48,7 +24,7 @@
   ]});
 }
 
-/* ================= 3. VARIABLES ================= */
+/* ================= 2. VARIABLES ================= */
 {
   const body=act('variables','Sort','Which kind of variable is it?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
@@ -84,7 +60,7 @@
   ],explain:'With large cubes the thermometer sits in gaps of meltwater, which can be warmer than the ice. Crushed ice packs round the bulb and melts evenly, so the reading is the temperature of the melting ice.'});
 }
 
-/* ================= 4. EXPERIMENT ================= */
+/* ================= 3. EXPERIMENT ================= */
 {
   act('experiment','Your turn','Take your own readings','Press Experiment. Heat the crushed ice with a reading every minute, then try 30 s and 2 minutes. Then cool the stearic acid. For each one, what is the melting or freezing point, how long does the temperature stay constant, and which interval shows the flat part best?');
 }
@@ -123,7 +99,7 @@ frameAct('experiment','animations/heating-curve.html','','Heating curve animatio
   ],explain:'Evaporation happens at any temperature, but boiling happens only at the boiling point. Evaporation happens only at the surface (the fastest particles escape), but boiling happens throughout the liquid.'});
 }
 
-/* ================= 5. RESULTS ================= */
+/* ================= 4. RESULTS ================= */
 const ICE=[[0,-8],[1,-4],[2,0],[3,0],[4,0],[5,0],[6,0],[7,3],[8,6],[9,9]];
 function iceTable(){
   const t=mk('div','table-scroll');
@@ -177,7 +153,7 @@ function iceTable(){
   ],explain:'While there is still ice, the temperature should stay at 0 °C. The 3 °C reading sits between two 0 °C readings, so it is anomalous: probably the bulb touched the warm bottom of the beaker, or the ice was not stirred, so the temperature was not the same throughout. Repeat it if you can, and leave it out of the line.'});
 }
 
-/* ================= 6. GRAPHS ================= */
+/* ================= 5. GRAPHS ================= */
 const GW={xMin:0,xMax:20,yMin:20,yMax:100,xTicks:[0,4,8,12,16,20],yTicks:[20,40,60,80,100],xLabel:'time (min)',yLabel:'temperature (°C)',W:560,H:340};
 function lab(g0,t,x,y){return '<circle cx="'+g0.gx(x)+'" cy="'+g0.gy(y)+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+g0.gx(x)+'" y="'+(g0.gy(y)+5)+'" text-anchor="middle" font-size="14" fill="var(--ink)">'+t+'</text>';}
 function waxGraph(){
@@ -259,7 +235,7 @@ function coolGraph(){
   ],explain:'The melting point and the freezing point of a pure substance are the same temperature. Heating, the flat part is melting; cooling, the flat part is freezing.'});
 }
 
-/* ================= 7. CALCULATE ================= */
+/* ================= 6. CALCULATE ================= */
 {
   const body=act('calculate','Calculate','Rates, times and readings','Give each answer in the unit shown. The rate of temperature rise is the temperature rise each minute.');
   createCalc({host:body,questions:[
@@ -270,7 +246,7 @@ function coolGraph(){
   ]});
 }
 
-/* ================= 8. ACCURACY AND SAFETY ================= */
+/* ================= 7. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[

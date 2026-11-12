@@ -23,31 +23,7 @@ function scopeSVG(o){
   return s+'</svg>';
 }
 
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'Connect a ',['b1','microphone'],' to the input of an oscilloscope, and play a steady note from a signal generator and loudspeaker or a tuning fork. Adjust the oscilloscope until the trace is ',['b2','steady'],
-    '. Set the ',['b3','time base'],' so that several complete cycles fit across the screen, and the Y-gain so the trace is as tall as possible without going off the screen. Count the divisions across a number of complete cycles, divide by the number of cycles, and multiply by the time base to find the ',['b4','period'],
-    ', T. The frequency is f = [[1|T]], in ',['b5','hertz'],'. A sound with a higher pitch has a higher ',['b6','frequency'],', so more cycles fit on the screen. A louder sound has a larger ',['b7','amplitude'],
-    ', so the trace is taller. Humans can hear frequencies from 20 Hz to ',['b8','20 000 Hz'],'.'
-  ];
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string')cloze.appendChild(mk('span','',FR(p)));
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  ['wavelength','speed','2000 Hz','Y-gain'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
-
-/* ================= 2. METHOD ================= */
+/* ================= 1. METHOD ================= */
 {
   const body=act('method','Order','Measure the frequency of a sound','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
   createReorder({host:body,steps:[
@@ -73,7 +49,7 @@ function scopeSVG(o){
   ]});
 }
 
-/* ================= 3. EXPERIMENT ================= */
+/* ================= 2. EXPERIMENT ================= */
 {
   act('experiment','Your turn','Take your own readings','Press Experiment. For Fork A, Fork B, Fork C and the hidden tone: press Play, turn the trigger on, choose a time base that shows several complete cycles and a Y-gain that fills the screen. Then drag the two cursors to the same point on two waves, set the number of cycles between them, and record three readings. Make each reading a new measurement: across a different number of cycles, or with a different time base. How close is your mean to the stamped value?');
 }
@@ -97,7 +73,7 @@ frameAct('experiment','animations/oscilloscope.html','','Frequency of a sound wa
   ],explain:'Louder means a larger amplitude, so the trace is taller. The frequency, and so the number of cycles on the screen, stays the same.'});
 }
 
-/* ================= 4. READING TRACES ================= */
+/* ================= 3. READING TRACES ================= */
 {
   const body=act('traces','Calculate','Trace A','The time base is 0.5 ms per division. Each square is one division.');
   const split=mk('div','graph-split');body.appendChild(split);
@@ -139,7 +115,7 @@ frameAct('experiment','animations/oscilloscope.html','','Frequency of a sound wa
   ],explain:'You can only read the trace to about 0.1 or 0.2 of a division. Spread over several cycles, that error is a smaller fraction of the time measured, so T is more accurate. (A bare “repeat and average” scores nothing in mark schemes: say what you repeat.)'});
 }
 
-/* ================= 5. PITCH AND LOUDNESS ================= */
+/* ================= 4. PITCH AND LOUDNESS ================= */
 {
   const body=act('pitch','Look','Four sounds, same settings','The oscilloscope settings are the same for all four traces.');
   const row=mk('div','');row.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:14px';body.appendChild(row);
@@ -188,7 +164,7 @@ frameAct('experiment','animations/oscilloscope.html','','Frequency of a sound wa
   ]});
 }
 
-/* ================= 6. HEARING ================= */
+/* ================= 5. HEARING ================= */
 {
   const body=act('hearing','Sort','Can a human hear it?','Sort each frequency, then press Check.');
   createSortGame({host:body,cats:[
@@ -230,7 +206,7 @@ frameAct('experiment','animations/oscilloscope.html','','Frequency of a sound wa
   ],explain:'20–20 000 Hz is the range for a young person. As people get older, the highest frequency they can hear usually falls, so many adults cannot hear 17 000 Hz.'});
 }
 
-/* ================= 7. CALCULATE ================= */
+/* ================= 6. CALCULATE ================= */
 {
   const body=act('calculate','Calculate','Period and frequency','Give each answer in the unit shown.');
   createCalc({host:body,questions:[
@@ -241,7 +217,7 @@ frameAct('experiment','animations/oscilloscope.html','','Frequency of a sound wa
   ]});
 }
 
-/* ================= 8. ACCURACY AND SAFETY ================= */
+/* ================= 7. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[

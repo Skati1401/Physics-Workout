@@ -1,8 +1,8 @@
 /* ================= METHOD TYPE: direct, echo or two microphones =================
    4PH1 mark schemes for 3.25P accept timing a sound over a measured distance (start on seeing, stop on hearing),
    an echo from a wall (the distance is there and back), or two microphones a measured distance apart with an
-   oscilloscope. The Overview and Method tabs each have a "Method type" switch; the choice is shared by both tabs
-   and remembered in this browser. */
+   oscilloscope. The Method tab has a "Method type" switch; the choice is remembered in this browser. The Overview
+   tab was removed on 12 Nov 2026 (Alex). */
 const METHODS=[{k:'dir',label:'Direct'},{k:'echo',label:'Echo'},{k:'mic',label:'Two microphones'}];
 const MKEY='cp-speed-of-sound-method';
 let method='dir';try{const v=localStorage.getItem(MKEY);if(METHODS.some(m=>m.k===v))method=v;}catch(e){}
@@ -22,65 +22,10 @@ function setMethod(k){
   raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow()));
 }
 reflowers.push(()=>raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow())));
-function clozeAct(panel,k,title,parts,distractors){
-  const body=act(panel,'Fill in the blanks',title,'Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  forMethod(body,k);
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string'){const t=document.createElement('template');t.innerHTML=FR(p);cloze.appendChild(t.content);}
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  distractors.forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
 const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.';
 const MATCH_INTRO='Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.';
 
-/* ================= 1. OVERVIEW ================= */
-methodPicker('overview');
-clozeAct('overview','dir','The practical: timing a sound over a measured distance',[
-  'Ali and Sophie stand at least ',['b1','100 m'],' apart on a large, flat field, and measure the distance between them with a ',['b2','trundle wheel'],
-  ' or a long tape measure. Ali bangs two wooden blocks together above his head, so the sound can be seen being made. Sophie ',['b3','starts'],
-  ' her stopwatch when she sees the blocks hit, and stops it when she ',['b4','hears'],' the sound. Light travels so fast that it arrives almost ',['b5','instantly'],
-  ', so the stopwatch measures the time the sound took. Repeat the timing several times and find the ',['b6','mean'],' of the times. Then the speed of sound = [[distance|mean time]], which is about ',
-  ['b7','340 m/s'],'. The biggest source of error is Sophie’s ',['b8','reaction time'],', so a large distance is used: then that error is only a small fraction of the time.'
-],['10 m','3 × 10⁸ m/s','stops','echo']);
-clozeAct('overview','echo','The practical with an echo',[
-  'Ali stands at least ',['e1','50 m'],' from a large, flat ',['e2','wall'],' and measures the distance to it with a trundle wheel. When he claps, the sound is ',['e3','reflected'],
-  ' by the wall and he hears an echo. The sound goes to the wall and back, so it travels ',['e4','twice'],' the distance to the wall. One echo takes less than a second, which is too short to time well by hand. So Ali claps in a steady rhythm, so that each clap is at the same moment as the ',
-  ['e5','echo'],' of the one before. Sophie times ',['e6','20'],' intervals, from the 1st clap to the 21st, and divides the time by 20 to find the time for one echo. Speed of sound = [[2 × distance to the wall|time for one echo]].'
-],['5 m','half','refracted','light']);
-clozeAct('overview','mic','The practical with two microphones',[
-  'Two ',['m1','microphones'],' are placed in a straight line with a sound source, about 1 m apart, and the distance between them is measured with a ',['m2','metre rule'],
-  '. Each one is connected to a dual-trace ',['m3','oscilloscope'],'. A sharp sound, such as a hammer hitting a metal plate, reaches the nearer microphone first. Read the time between the two pulses from the screen: count the divisions between them and multiply by the ',
-  ['m4','time base'],'. No one has to start or stop a timer, so there is no error from a person’s ',['m5','reaction time'],'. Speed of sound = [[distance between the microphones|time between the pulses]].'
-],['loudspeakers','amplitude','protractor','frequency']);
-{
-  const body=act('overview','Predict','What an echo shows','');
-  createPredict({host:body,q:'Ali claps near a large wall and hears an echo. What does the echo show about sound waves?',options:[
-    {text:'Sound waves can be reflected',correct:true},
-    {text:'Sound waves are transverse waves',why:'An echo does not show which way the air vibrates. Sound is a longitudinal wave.'},
-    {text:'Sound speeds up when it bounces',why:'The echo travels through the same air, so it has the same speed there and back.'},
-    {text:'Sound waves can be refracted',why:'Refraction is a change of direction when a wave changes speed. An echo is a wave bouncing back: reflection.'}
-  ],explain:'An echo is sound reflected by a hard, flat surface. Sound waves can be reflected and refracted, like light, but they are longitudinal waves.'});
-}
-{
-  const body=act('overview','Predict','A longitudinal wave','');
-  createPredict({host:body,q:'Sound waves are longitudinal. What does that mean?',options:[
-    {text:'The air vibrates along the direction the wave travels',correct:true},
-    {text:'The air vibrates at right angles to the direction of travel',why:'That is a transverse wave, such as light or a wave on a rope.'},
-    {text:'The air itself flows from the source to your ear',why:'A wave transfers energy, not matter: each bit of air vibrates back and forth about one place.'},
-    {text:'The wave has a long wavelength compared with light',why:'Sound does have a much longer wavelength than light, but that is not what longitudinal means.'}
-  ],explain:'In a longitudinal wave the particles vibrate parallel to the direction the wave travels, making compressions and rarefactions.'});
-}
-
-/* ================= 2. METHOD ================= */
+/* ================= 1. METHOD ================= */
 methodPicker('method');
 {
   const body=act('method','Order','Time a sound over a measured distance',ORDER_INTRO);forMethod(body,'dir');
@@ -168,7 +113,7 @@ methodPicker('method');
 }
 setMethod(method);
 
-/* ================= 3. VARIABLES ================= */
+/* ================= 2. VARIABLES ================= */
 {
   const body=act('variables','Sort','Which kind of variable is it?','Charlie times a sound over several distances and plots a distance–time graph. Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
@@ -246,7 +191,7 @@ frameAct('experiment','animations/speed-of-sound.html','','Speed of sound animat
   ],explain:'Sound crosses 1.0 m in about 0.003 s (3 ms), much shorter than a reaction time. The oscilloscope shows both pulses on the same time scale, so the time between them can be read from the screen.'});
 }
 
-/* ================= 4. RESULTS ================= */
+/* ================= 3. RESULTS ================= */
 {
   const body=act('results','Calculate','Complete the results table','Charlie times a bang three times at each distance. Work out the missing means and speeds. Give each mean to 2 decimal places.');
   const tbl=mk('div','table-scroll');
@@ -306,7 +251,7 @@ frameAct('experiment','animations/speed-of-sound.html','','Speed of sound animat
   ],explain:'Each timer makes a different small error. Taking the mean of several timings of the same bang, or repeating the bang, gives a more reliable time.'});
 }
 
-/* ================= 5. GRAPHS ================= */
+/* ================= 4. GRAPHS ================= */
 const GR={xMin:0,xMax:1.4,yMin:0,yMax:400,xTicks:[0,0.2,0.4,0.6,0.8,1.0,1.2,1.4],yTicks:[0,100,200,300,400],xLabel:'time (s)',yLabel:'distance (m)',W:560,H:340};
 function xmark(g0,x,y){const cx=g0.gx(x),cy=g0.gy(y);return '<path d="M'+(cx-6)+','+(cy-6)+' L'+(cx+6)+','+(cy+6)+' M'+(cx+6)+','+(cy-6)+' L'+(cx-6)+','+(cy+6)+'" stroke="var(--ink)" stroke-width="2"/>';}
 function henryGraph(label){
@@ -377,7 +322,7 @@ function micGraph(label){
   ],explain:'The oscilloscope measures the time between the pulses directly, so there is no systematic error from starting or stopping a stopwatch. Zero distance gives zero time.'});
 }
 
-/* ================= 6. CALCULATE ================= */
+/* ================= 5. CALCULATE ================= */
 {
   const body=act('calculate','Calculate','Using speed = [[distance|time]]','Give each answer in the unit shown. Take the speed of sound as 340 m/s where you need it.');
   createCalc({host:body,questions:[
@@ -388,7 +333,7 @@ function micGraph(label){
   ]});
 }
 
-/* ================= 7. ACCURACY AND SAFETY ================= */
+/* ================= 6. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[

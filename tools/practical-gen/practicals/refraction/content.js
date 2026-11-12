@@ -1,34 +1,7 @@
 /* ================= helpers for this page ================= */
-// a fill-in-the-blank passage: strings are text, [id, answer] pairs are gaps
-function clozeAct(tab,title,parts,distractors){
-  const body=act(tab,'Fill in the blanks',title,'Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  distractors.forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
 function answerBox(body,html){const d=mk('details','');d.innerHTML='<summary>Check your answer</summary><div>'+FR(html)+'</div>';body.appendChild(d);}
 
-/* ================= 1. OVERVIEW ================= */
-clozeAct('overview','The practical in one passage',[
-  'Put a glass block on a sheet of plain paper and draw round it. Shine a narrow ray of light from a ray box at the block. Mark the ray going in and the ray coming out with two pencil crosses each, far apart. Remove the block, join the crosses, and draw the ray through the block. Draw the ',['b1','normal'],
-  ' at 90° to the surface where the ray goes in, and measure the angles from it with a ',['b2','protractor'],
-  '. Going into the glass the light slows down and bends ',['b3','towards'],
-  ' the normal. A ray through a rectangular block comes out ',['b4','parallel'],
-  ' to the ray going in. With a semicircular block, aim the ray along a radius at the centre of the flat face: if the angle of incidence in the glass is bigger than the ',['b5','critical angle'],
-  ', all the light is reflected back inside (total internal reflection). A triangular prism spreads white light into a spectrum, because each colour is refracted by a different amount: ',['b6','violet'],' is refracted the most.'
-],['away from','red','perpendicular','surface']);
-
-/* ================= 2. METHOD ================= */
+/* ================= 1. METHOD ================= */
 {
   const body=act('method','Order','Trace a ray through a rectangular block','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
   createReorder({host:body,steps:[
@@ -56,7 +29,7 @@ clozeAct('overview','The practical in one passage',[
   ]});
 }
 
-/* ================= 3. EXPERIMENT ================= */
+/* ================= 2. EXPERIMENT ================= */
 {
   act('experiment','Your turn','Trace the rays yourself','Press Experiment. Choose the semicircular block (ray in through the curved side) and find the critical angle to within 2°. Then trace the ray through the 60° prism, with one colour and with white light, and through both sides of the 45° prism. What happens at the second face each time, and which colour is refracted most?');
 }
@@ -95,7 +68,7 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
   ],explain:'A smaller i at the first face makes the angle at the second face bigger (it is 60° − r). Once that is more than the critical angle (41.8°), the ray is totally internally reflected.'});
 }
 
-/* ================= 4. RECTANGULAR BLOCK ================= */
+/* ================= 3. RECTANGULAR BLOCK ================= */
 {
   const body=act('rect','Match','The words for a ray diagram','Pair each word with its meaning. Drag one card onto the other, or tap one card and then the other.');
   createMatchGame({host:body,leftTitle:'Word',rightTitle:'Meaning',pairs:[
@@ -135,7 +108,7 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
   ],explain:'The law of reflection: the angle of incidence equals the angle of reflection, both measured from the normal. So it is 40°.'});
 }
 
-/* ================= 5. SEMICIRCULAR BLOCK ================= */
+/* ================= 4. SEMICIRCULAR BLOCK ================= */
 {
   const body=act('semi','Predict','Aim at the centre','');
   createPredict({host:body,q:'Why must the ray be aimed through the curved side at the centre of the flat face?',options:[
@@ -178,7 +151,7 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
   ],explain:'Total internal reflection needs light going from a material with a higher refractive index to a lower one (glass to air), with an angle of incidence bigger than the critical angle.'});
 }
 
-/* ================= 6. PRISMS ================= */
+/* ================= 5. PRISMS ================= */
 {
   const body=act('prisms','Predict','A 45° prism','');
   createPredict({host:body,q:'A ray goes into a short side of a 45° prism along the normal. What happens when it meets the long side?',options:[
@@ -226,7 +199,7 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
   ],explain:'The fibre core has a higher refractive index than its surroundings, and the light meets the side at more than the critical angle. So it is totally internally reflected every time it hits the side.'});
 }
 
-/* ================= 7. CALCULATE ================= */
+/* ================= 6. CALCULATE ================= */
 {
   const body=act('calculate','Calculate','Using n = [[sin i|sin r]] and sin c = [[1|n]]','Give each answer to 3 significant figures, in the unit shown.');
   createCalc({host:body,questions:[
@@ -237,7 +210,7 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
   ]});
 }
 
-/* ================= 8. ACCURACY AND SAFETY ================= */
+/* ================= 7. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
@@ -272,7 +245,7 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
   ],explain:'The normal is at 90° to the surface, so i = 90° − 50° = 40°.'});
 }
 
-/* ================= 9. EXAM PRACTICE ================= */
+/* ================= 8. EXAM PRACTICE ================= */
 {
   const body=act('exam','Exam style','A semicircular block','Charlie shines a ray through the curved side of a semicircular glass block, towards the centre of the flat face. He measures the angle in the glass and the angle in the air. One reading is missing.');
   const tbl=mk('div','table-scroll');

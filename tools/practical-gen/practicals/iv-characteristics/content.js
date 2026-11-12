@@ -1,28 +1,4 @@
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'Connect the component in series with an ',['b1','ammeter'],' and a variable resistor, and connect a ',['b2','voltmeter'],' in parallel across the component. Change the variable resistor in steps, recording the voltage and the current each time and repeating to find a mean, then reverse the connections to take readings with ',['b3','negative'],
-    ' voltages. Plot current against voltage. For a fixed resistor, or a wire at constant temperature, the graph is a straight line through the origin: the current is ',['b4','directly proportional'],
-    ' to the voltage, so the resistance stays the same. For a filament lamp the current increases at a decreasing rate, so the line curves, because the filament gets hotter and its resistance ',['b5','increases'],
-    '. A diode lets current flow in one direction only: in reverse there is almost no current. At any point, the resistance is found from V = I × ',['b6','R'],'.'
-  ];
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  ['inversely proportional','decreases','t','in series'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
-
-/* ================= 2. METHOD ================= */
+/* ================= 1. METHOD ================= */
 {
   const body=act('method','Order','Carry out the practical','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
   createReorder({host:body,steps:[
@@ -98,7 +74,7 @@ function iv29CircuitSVG(fixed){
   body.appendChild(d);
 }
 
-/* ================= 3. VARIABLES ================= */
+/* ================= 2. VARIABLES ================= */
 {
   const body=act('variables','Sort','Which kind of variable is it?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
@@ -199,7 +175,7 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
   reveal:'<div class="iv-sketch">'+quadGraph({label:'Sketch of current against voltage for a filament lamp: an S-shaped curve through the origin, the same shape in the negative quadrant as in the positive one',sketch:true,W:260,H:210,xMin:-6,xMax:6,yMin:-0.36,yMax:0.36,xLabel:'voltage',yLabel:'current',segments:[{pts:LAMP4,cls:'g-line-c'}]})+'</div>'});
 }
 
-/* ================= 4. RESULTS ================= */
+/* ================= 3. RESULTS ================= */
 {
   const body=act('results','Calculate','Complete the results table','Ali tests a filament lamp. Work out its resistance at each voltage, using V = I × R.');
   const tbl=mk('div','table-scroll');
@@ -261,7 +237,7 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
   ],explain:'For a fixed resistor at constant temperature, the current is directly proportional to the voltage, so R = [[V|I]] is the same at every voltage: a horizontal line.'});
 }
 
-/* ================= 5. GRAPHS ================= */
+/* ================= 4. GRAPHS ================= */
 const GR={xMin:-6,xMax:6,yMin:-0.6,yMax:0.6,xTicks:[-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6],yTicks:[-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,0.6],xLabel:'voltage (V)',yLabel:'current (A)',W:560,H:420};
 function lab(g0,t,x,y){return '<circle cx="'+g0.gx(x)+'" cy="'+g0.gy(y)+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+g0.gx(x)+'" y="'+(g0.gy(y)+5)+'" text-anchor="middle" font-size="14" fill="var(--ink)">'+t+'</text>';}
 function ivGraph(label){
@@ -328,7 +304,7 @@ function swapGraph(label){
   ],explain:'Always check the axes. Current up the side: steeper means less resistance. Voltage up the side: steeper means more resistance.'});
 }
 
-/* ================= 6. CALCULATE ================= */
+/* ================= 5. CALCULATE ================= */
 {
   const body=act('calculate','Calculate','Using V = I × R','Give each answer in the unit shown.');
   createCalc({host:body,questions:[
@@ -339,7 +315,7 @@ function swapGraph(label){
   ]});
 }
 
-/* ================= 7. ACCURACY AND SAFETY ================= */
+/* ================= 6. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[

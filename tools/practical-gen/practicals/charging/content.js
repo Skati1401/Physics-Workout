@@ -9,33 +9,7 @@ function examPart(body,head,q,bullets){
   body.appendChild(d);
 }
 
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'Rub a polythene rod with a dry cloth. Friction transfers ',['b1','electrons'],' from the cloth to the rod, so the rod becomes ',['b2','negatively'],
-    ' charged and the cloth is left positive. An acetate rod rubbed the same way ',['b3','loses'],' electrons, so it becomes positively charged. Both rods are ',['b4','insulators'],
-    ', so the charge stays where it is. To show a rod is charged, hold it near small pieces of paper or a thin stream of water: they are ',['b5','attracted'],
-    ' to it. To show there are two types of charge, hang one charged rod in a paper stirrup so it can ',['b6','turn freely'],
-    ', then bring a second charged rod close to one end without touching. Two polythene rods ',['b7','repel'],
-    ', but polythene and acetate attract: like charges repel and ',['b8','unlike'],' charges attract. A metal rod held in your hand does not stay charged, because charge flows through it to ',['b9','earth'],'.'
-  ];
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  ['protons','conductors','gains','magnetised'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
-
-/* ================= 2. METHOD ================= */
+/* ================= 1. METHOD ================= */
 {
   const body=act('method','Order','Show that there are two types of charge','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
   createReorder({host:body,steps:[
@@ -61,7 +35,7 @@ function examPart(body,head,q,bullets){
   ]});
 }
 
-/* ================= 3. EXPERIMENT ================= */
+/* ================= 2. EXPERIMENT ================= */
 {
   act('experiment','Your turn','Take your own readings','Press Experiment. With the hanging rod, try all four pairs: polythene or acetate hanging, and polythene or acetate in your hand. Then try a metal rod and a rod that has not been rubbed, and the paper, water and electroscope tests. Which pairs attract, which repel, and what does that tell you about the types of charge?');
 }
@@ -85,7 +59,7 @@ frameAct('experiment','animations/electrostatic-charging.html','','Charging by f
   ],explain:'Metal is a conductor. Any electrons moved onto it flow through the rod, Lucas’s hand and his body to earth, so it is left uncharged. Held on an insulating handle, a metal rod can be charged.'});
 }
 
-/* ================= 4. IS IT CHARGED? ================= */
+/* ================= 3. IS IT CHARGED? ================= */
 {
   const body=act('charged','Sort','Does it show the rod is charged?','A rubbed rod is held near each thing. Sort each card by what it shows, then press Check.');
   createSortGame({host:body,cats:[
@@ -121,7 +95,7 @@ frameAct('experiment','animations/electrostatic-charging.html','','Charging by f
   ],explain:'Either type of charge induces the opposite charge on the near side of the water, so the stream always bends towards a charged rod. It shows the rod is charged, but not which type of charge it has.'});
 }
 
-/* ================= 5. ELECTRONS ================= */
+/* ================= 4. ELECTRONS ================= */
 {
   const body=act('electrons','Sort','Gains or loses electrons?','Each object has just been rubbed. Sort it by what happened to its electrons, then press Check.');
   createSortGame({host:body,cats:[
@@ -155,7 +129,7 @@ frameAct('experiment','animations/electrostatic-charging.html','','Charging by f
   ],explain:'Charge is not made by rubbing, only moved. The cloth lost exactly the electrons the rod gained, so the cloth’s positive charge is the same size as the rod’s negative charge.'});
 }
 
-/* ================= 6. CONDUCTORS ================= */
+/* ================= 5. CONDUCTORS ================= */
 {
   const body=act('conductors','Sort','Conductor or insulator?','Sort each material, then press Check.');
   createSortGame({host:body,cats:[
@@ -185,7 +159,7 @@ frameAct('experiment','animations/electrostatic-charging.html','','Charging by f
   ],explain:'The sphere and Poppy are both conductors. Electrons flow between the sphere and the Earth through her body until the sphere is neutral: it is earthed.'});
 }
 
-/* ================= 7. DANGERS AND USES ================= */
+/* ================= 6. DANGERS AND USES ================= */
 {
   const body=act('uses','Order','Why a fuel tanker is earthed','Put the explanation in order. Drag the ≡ handle, or use the ▲▼ buttons.');
   createReorder({host:body,steps:[
@@ -231,7 +205,7 @@ frameAct('experiment','animations/electrostatic-charging.html','','Charging by f
   ],explain:'Opposite charges attract and like charges repel, so a negative drop is pushed away from the negative plate and towards the positive plate. Changing the charge on the plates steers each drop to the right place on the paper.'});
 }
 
-/* ================= 8. ACCURACY AND SAFETY ================= */
+/* ================= 7. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[

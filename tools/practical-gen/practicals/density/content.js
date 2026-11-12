@@ -1,6 +1,6 @@
 /* ================= METHOD TYPE: regular block, irregular object or liquid =================
-   Each way of measuring the volume has its own Overview passage and its own Order; the switch is shared by
-   the Overview and Method tabs and remembered in this browser (copied from the 5.14P page). */
+   Each way of measuring the volume has its own Order; the switch is on the Method tab and remembered in this
+   browser (copied from the 5.14P page). The Overview tab was removed on 12 Nov 2026 (Alex). */
 const METHODS=[{k:'irr',label:'Irregular object'},{k:'reg',label:'Regular block'},{k:'liq',label:'Liquid'}];
 const MKEY='cp-density-method';
 let method='irr';try{const v=localStorage.getItem(MKEY);if(METHODS.some(m=>m.k===v))method=v;}catch(e){}
@@ -20,47 +20,10 @@ function setMethod(k){
   raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow()));
 }
 reflowers.push(()=>raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow())));
-function clozeAct(panel,k,title,parts,distractors){
-  const body=act(panel,'Fill in the blanks',title,'Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  forMethod(body,k);
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  distractors.forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
 const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.';
 const MATCH_INTRO='Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.';
 
-/* ================= 1. OVERVIEW ================= */
-methodPicker('overview');
-clozeAct('overview','reg','The practical with a regular block',[
-  'Density is the mass of each unit of ',['r1','volume'],'. Measure the mass of a rectangular block on a ',['r2','balance'],', and its length, width and height with a ',['r3','ruler'],
-  '. Its volume is length × width × height, in ',['r4','cm³'],'. Density is the mass divided by the volume, so a mass in grams and a volume in cm³ give a density in ',['r5','g/cm³'],
-  '. To change this to kg/m³, ',['r6','multiply'],' by 1000. For a better result, measure several blocks of different sizes, all made of the same ',['r7','material'],
-  '. A graph of mass against volume is a straight line through the ',['r8','origin'],', and its ',['r9','gradient'],' is the density.'
-],['divide','cm²','weight','intercept']);
-clozeAct('overview','irr','The practical with an irregular object',[
-  'An irregular object, such as a stone, has no simple shape, so its volume is found by ',['i1','displacement'],'. Measure its mass on a balance first, while it is still ',['i2','dry'],
-  '. Pour enough water to cover the stone into a measuring cylinder and read the level, V₁, with your eye level with the bottom of the ',['i3','meniscus'],'. Lower the stone gently on a ',['i4','thread'],
-  ' until it is fully under the water, then read the new level, V₂. The volume of the stone is V₂ ',['i5','−'],' V₁. Or fill a ',['i6','eureka can'],
-  ' until water runs out of its spout, then catch the water the stone pushes out in a measuring cylinder: it has the same ',['i7','volume'],' as the stone. Then density is the mass divided by the volume.'
-],['+','wet','top','mass']);
-clozeAct('overview','liq','The practical with a liquid',[
-  'Measure the mass of an empty ',['l1','measuring cylinder'],'. Pour in some of the liquid and read its ',['l2','volume'],' with your eye level with the bottom of the meniscus. Measure the mass again: the mass of the liquid = total mass − mass of the cylinder when it was ',
-  ['l3','empty'],'. (Or put the empty cylinder on the balance and press tare, so the balance shows the mass of the liquid alone.) Density is the mass of the liquid divided by its volume. Add more liquid and repeat. A graph of total mass against volume is a straight line that does not go through the ',['l4','origin'],
-  ': it crosses the mass axis at the mass of the empty cylinder, and its ',['l5','gradient'],' is the density. Water has a density of 1.0 g/cm³, which is ',['l6','1000'],' kg/m³.'
-],['1','100','full','area']);
-
-/* ================= 2. METHOD ================= */
+/* ================= 1. METHOD ================= */
 methodPicker('method');
 {
   const body=act('method','Order','Density of a regular block',ORDER_INTRO);forMethod(body,'reg');
@@ -126,7 +89,7 @@ methodPicker('method');
 /* The switch is set once both pickers and every method's activities exist, so only the chosen method shows on load. */
 setMethod(method);
 
-/* ================= 3. VARIABLES ================= */
+/* ================= 2. VARIABLES ================= */
 {
   const body=act('variables','Sort','Which kind of variable is it?','Charlie measures five blocks of the same metal, all of different sizes, and plots mass against volume. Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
@@ -161,7 +124,7 @@ setMethod(method);
   ],explain:'If the empty balance read 0.4 g, every mass would be 0.4 g too big: a zero error. Zeroing it first means each reading is the mass of the block alone.'});
 }
 
-/* ================= 4. EXPERIMENT ================= */
+/* ================= 3. EXPERIMENT ================= */
 {
   act('experiment','Your turn','Take your own readings','Press Experiment. For the regular block, measure all five blocks of one material and look at the graph. For the irregular object, weigh it, read the water level, drag it down into the water, then read the level again; try the eureka can too. For the liquid, weigh the empty cylinder, then add the liquid a little at a time. Which graph goes through the origin, and why does the other one not?');
 }
@@ -201,7 +164,7 @@ frameAct('experiment','animations/density.html','','Measuring density animation:
   ],explain:'Every reading includes the mass of the empty cylinder, so the line crosses the mass axis at that mass. The gradient is still the density of the liquid.'});
 }
 
-/* ================= 5. RESULTS ================= */
+/* ================= 4. RESULTS ================= */
 // Zahra's five blocks of PVC plastic (density 1.40 g/cm³), measured with a ruler and a balance.
 const RB=[['A',2.0,2.0,2.0,8.0,11.0],['B',4.0,2.0,2.0,16.0,22.5],['C',4.0,3.0,2.0,null,33.5],['D',4.0,4.0,2.0,32.0,45.0],['E',5.0,4.0,2.0,40.0,56.0]];
 {
@@ -254,7 +217,7 @@ const RB=[['A',2.0,2.0,2.0,8.0,11.0],['B',4.0,2.0,2.0,16.0,22.5],['C',4.0,3.0,2.
   ],explain:'The others all have about 1.2 g for each 1 cm³, so C should be about 28.8 g. Perhaps it has a hole inside, or a side was misread. Measure it again if you can, and leave it out of the line of best fit.'});
 }
 
-/* ================= 6. GRAPHS ================= */
+/* ================= 5. GRAPHS ================= */
 function lab(g0,t,x,y){return '<circle cx="'+g0.gx(x)+'" cy="'+g0.gy(y)+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+g0.gx(x)+'" y="'+(g0.gy(y)+5)+'" text-anchor="middle" font-size="14" fill="var(--ink)">'+t+'</text>';}
 const GM={xMin:0,xMax:40,yMin:0,yMax:160,xTicks:[0,5,10,15,20,25,30,35,40],yTicks:[0,20,40,60,80,100,120,140,160],xLabel:'volume (cm³)',yLabel:'mass (g)',W:560,H:340};
 function massGraph(){
@@ -319,7 +282,7 @@ function volGraph(){
   ],explain:'Always check the axes. Mass up the side: steeper means denser. Volume up the side: steeper means less dense. R is 1.50 g/cm³ and S is 3.00 g/cm³.'});
 }
 
-/* ================= 7. CALCULATE ================= */
+/* ================= 6. CALCULATE ================= */
 {
   const body=act('calculate','Calculate','Using ρ = [[m|V]]','Give each answer in the unit shown. 1 g/cm³ = 1000 kg/m³.');
   createCalc({host:body,questions:[
@@ -330,7 +293,7 @@ function volGraph(){
   ]});
 }
 
-/* ================= 8. ACCURACY AND SAFETY ================= */
+/* ================= 7. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[

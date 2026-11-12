@@ -1,8 +1,8 @@
 /* ================= METHOD TYPE: metal block or water =================
    The 4PH1 mark schemes accept a solid block or water (or another liquid), and the energy from a joulemeter,
-   from voltmeter reading × ammeter reading × time, or from P × t for a heater of known power. The Overview and
-   Method tabs each have a "Method type" switch (copied from the 1.5 page); the choice is shared by both tabs and
-   remembered in this browser. The water activities come after the block ones, so saved answers keep their places. */
+   from voltmeter reading × ammeter reading × time, or from P × t for a heater of known power. The Method tab has
+   a "Method type" switch (copied from the 1.5 page); the choice is remembered in this browser. The Overview tab was
+   removed on 12 Nov 2026 (Alex). The water activities come after the block ones, so saved answers keep their places. */
 const METHODS=[{k:'bl',label:'Metal block'},{k:'wa',label:'Water'}];
 const MKEY='cp-specific-heat-method';
 let method='bl';try{const v=localStorage.getItem(MKEY);if(METHODS.some(m=>m.k===v))method=v;}catch(e){}
@@ -22,36 +22,10 @@ function setMethod(k){
   raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow()));
 }
 reflowers.push(()=>raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow())));
-function clozeAct(panel,k,title,parts,distractors){
-  const body=act(panel,'Fill in the blanks',title,'Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  forMethod(body,k);
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  parts.forEach(p=>{
-    if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
-    else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-  });
-  distractors.forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
 const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.';
 const MATCH_INTRO='Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.';
 
-/* ================= 1. OVERVIEW ================= */
-methodPicker('overview');
-clozeAct('overview','bl','The practical with a metal block',[
-  'Measure the mass of an aluminium block on a ',['b1','balance'],'. Put an immersion heater and a thermometer into the holes in the block, and wrap it in ',['b2','lagging'],
-  '. A ',['b3','joulemeter'],' measures the energy supplied by the heater. Record the starting temperature, switch on for 10 minutes, then keep reading the thermometer after switching off to find the ',['b4','maximum'],
-  ' temperature. The specific heat capacity, c, is the energy needed to change the temperature of ',['b5','1 kg'],' of a substance by ',['b6','1 °C'],'. Work it out from ΔQ = m × c × ',['b7','ΔT'],
-  ', in ',['b8','J/kg °C'],', where ΔT = final temperature − starting temperature. Water has a much ',['b9','higher'],' specific heat capacity than metals. Most results come out too high, because some of the energy also heats the thermometer and the ',['b10','surroundings'],'.'
-],['1 g','lower','stopwatch','N/kg']);
-
-/* ================= 2. METHOD ================= */
+/* ================= 1. METHOD ================= */
 methodPicker('method');
 {
   const body=act('method','Order','Heat a metal block',ORDER_INTRO);forMethod(body,'bl');
@@ -106,15 +80,9 @@ methodPicker('method');
     {id:'t',l:'Thermometer',r:'Measures the temperature of the water'}
   ]}));
 }
-clozeAct('overview','wa','The practical with water',[
-  'Measure the mass of an empty polystyrene cup on a ',['w1','balance'],', then add water and measure again: the mass of water = mass of cup and water − ',['w2','mass of cup'],
-  '. Put in an immersion heater and a thermometer. Connect a ',['w3','voltmeter'],' across the heater and an ',['w4','ammeter'],' in series with it. Read the starting temperature, then switch on and start a ',
-  ['w5','stopwatch'],'. ',['w6','Stir'],' the water all the time, so it is all at the same temperature. The energy supplied = voltmeter reading × ammeter reading × ',['w7','time'],
-  '. After switching off, keep reading the thermometer to find the ',['w8','maximum'],' temperature. Use ΔQ = m × c × ΔT to find c, then ',['w9','repeat'],' the experiment and find the mean.'
-],['mass of water','minimum','current','ruler']);
 setMethod(method);
 
-/* ================= 3. VARIABLES ================= */
+/* ================= 2. VARIABLES ================= */
 {
   const body=act('variables','Sort','Which kind of variable is it?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
@@ -150,7 +118,7 @@ setMethod(method);
   ],explain:'Air is a poor conductor. With air round the bulb, the thermometer lags behind the block’s temperature. A little water fills the gap, so the thermometer reads the temperature of the block.'});
 }
 
-/* ================= 4. EXPERIMENT ================= */
+/* ================= 3. EXPERIMENT ================= */
 {
   act('experiment','Your turn','Take your own readings','Press Experiment. Heat the aluminium block, lagged, with a reading every minute. Then do it again with no lagging, and try water and copper. For each one, how close is your value of c to the accepted value, and why is it usually too high?');
 }
@@ -174,7 +142,7 @@ frameAct('experiment','animations/specific-heat.html','','Specific heat capacity
   ],explain:'ΔT = [[ΔQ|m × c]]. With the same energy and mass, the material with the smaller c has the bigger rise. Copper’s rise is about 11 times water’s.'});
 }
 
-/* ================= 5. RESULTS ================= */
+/* ================= 4. RESULTS ================= */
 const SH=[[0,0,20.0],[2,5760,24.5],[4,11520,30.5],[6,17280,36.5],[8,23040,42.5],[10,28800,48.0],[12,28800,49.0]];
 function shTable(){
   const t=mk('div','table-scroll');
@@ -237,7 +205,7 @@ function shTable(){
   ],explain:'The water warms by about 1.5 °C each minute, so at 3 minutes it should be about 24.5 °C, not 26.5 °C. Perhaps the water was not stirred, or the bulb touched the heater. Repeat the reading if you can, and leave it out of the line of best fit.'});
 }
 
-/* ================= 6. GRAPHS ================= */
+/* ================= 5. GRAPHS ================= */
 function lab(g0,t,x,y){return '<circle cx="'+g0.gx(x)+'" cy="'+g0.gy(y)+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+g0.gx(x)+'" y="'+(g0.gy(y)+5)+'" text-anchor="middle" font-size="14" fill="var(--ink)">'+t+'</text>';}
 const GT={xMin:0,xMax:48,yMin:0,yMax:40,xTicks:[0,6,12,18,24,30,36,42,48],yTicks:[0,5,10,15,20,25,30,35,40],xLabel:'energy supplied (kJ)',yLabel:'rise in temperature (°C)',W:560,H:340};
 function riseGraph(){
@@ -311,7 +279,7 @@ function energyGraph(){
   ],explain:'Always check the axes. Energy up the side: steeper means a bigger c. Rise in temperature up the side: steeper means a smaller c (for samples of the same mass).'});
 }
 
-/* ================= 7. CALCULATE ================= */
+/* ================= 6. CALCULATE ================= */
 {
   const body=act('calculate','Calculate','Using ΔQ = m × c × ΔT','Give each answer in the unit shown. Specific heat capacities: water 4200 J/kg °C, copper 390 J/kg °C.');
   createCalc({host:body,questions:[
@@ -322,7 +290,7 @@ function energyGraph(){
   ]});
 }
 
-/* ================= 8. ACCURACY AND SAFETY ================= */
+/* ================= 7. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
