@@ -32,7 +32,6 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the cards to `igcse.html`, then add the unit's activities to the Calculations and Graphs sets.
 
-- [ ] **4a** Key-word crosswords for other units, if Alex wants them.
 - [ ] **4b** Bring the long IGCSE workouts under 30 minutes. After the 4c cuts (11 Nov 2026): 1b (34), 1d (37), 3a (36), 7a (37); 4b is now 30. Mostly Calculate cards. Estimates and method in `tools/WORKOUTS.md`, section 5 (added 11 Nov 2026).
 
 ## 5. Build: core practicals
@@ -72,6 +71,7 @@ Follow-ups:
 
 ## Done
 
+- [x] **4a** Key-word crosswords for other units (Alex, 12 Nov 2026: done).
 - [x] Warm Up and Sum Up on every IGCSE and Year 9 workout, and Units and Key Terms moved to one page per unit, `unit-n-units-and-terms.html` (Alex, 12 Nov 2026; rules in CLAUDE.md).
 - [x] **4c** Cut the repeated activities found in the 11 Nov 2026 scan: all 17, on 15 workouts, keeping a mix of matches and sorts (done 11 Nov 2026; `tools/WORKOUTS.md` section 5, `tools/REVIEW.md`).
 - [x] **5a** Take the core practicals out of the workouts (Alex, 7 Nov 2026; done 11 Nov 2026). Every workout tab lost its practical's animation frame and method Order (1c also "Use the results"); the workout links to it from its tab row ("1.22 Practical →" after the tab), and the practical's spec point left its badges. The 1a Measure v and 4b Practicals tabs (only the practical) were removed, with `#measuring` and `#practical` forwarding to the practical pages. `igcse.html`: practical cards sit in their units after the workouts; Core Practicals (`#unit-cp`) is a list of links. CLAUDE.md, `tools/CORE-PRACTICALS.md`, the 1.5 and 4.9 `page.json` links, `STORE_KEY`s (answers carried over) and `tools/REVIEW.md` updated. Exception (Alex, 11 Nov 2026): 6a Magnetic Field Patterns keeps the 6.6 animation and the plotting-compass Order. Still short of the size rule: 1a now has 4 tabs (2d has 4 and 3c has 3, as before); 5a's Density, Heating Curve and Specific Heat tabs hold one activity each.
