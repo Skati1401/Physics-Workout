@@ -141,6 +141,7 @@ table.units td.given b.ta{font:500 11px var(--f-mono);color:var(--accent);border
   })();
 </script>
 <!-- /pw-review -->
+<meta name="pw-draft" content="electromagnetic-induction.html">
 </head><body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -208,6 +209,12 @@ h1{font:800 clamp(34px,8vw,58px)/.92 var(--f-head);letter-spacing:0;margin:0 0 1
 .key i{width:10px;height:10px;border-radius:50%;display:inline-block}
 .key .k-n i{background:var(--north)} .key .k-sp i{background:var(--solid)}
 .viz.lhr{max-width:250px}
+/* Overview hook + goals, Sum It Up word boxes (12 Nov 2026) */
+.goals{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:9px;line-height:1.5}
+.goals .sp{font:500 12px var(--f-mono,'IBM Plex Mono',monospace);color:var(--ink-faint);margin-left:6px;white-space:nowrap}
+.goals b.ta,.act-title b.ta{font:500 11px var(--f-mono,'IBM Plex Mono',monospace);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px;white-space:nowrap;vertical-align:2px}
+.viz.hook{max-width:290px}
+.viz .fade{opacity:0;transition:opacity .6s ease-out}.go .viz .fade{opacity:1}
 .key .sep{opacity:.4}
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 18px}
 .tab-btn[data-ta]::after{content:"TA";font:600 9.5px var(--f-mono);letter-spacing:.5px;margin-left:5px;padding:1px 4px;border-radius:4px;border:1px solid currentColor;opacity:.75;vertical-align:1px}
@@ -472,6 +479,7 @@ svg text{font-family:var(--f-mono)}
 <button class="tab-btn" role="tab" id="tab-generators" data-tab="generators" data-grp="d" aria-selected="false" aria-controls="panel-generators">Generators</button>
 <button class="tab-btn" role="tab" id="tab-transformers" data-tab="transformers" data-ta data-grp="d" aria-selected="false" aria-controls="panel-transformers">Transformers</button>
 <button class="tab-btn" role="tab" id="tab-grid" data-tab="grid" data-ta data-grp="d" aria-selected="false" aria-controls="panel-grid">National Grid</button>
+<button class="tab-btn" role="tab" id="tab-sumup" data-tab="sumup" data-grp="" aria-selected="false" aria-controls="panel-sumup">Sum Up</button>
 <button class="tab-btn" role="tab" id="tab-units" data-tab="units" data-grp="" aria-selected="false" aria-controls="panel-units">Units</button>
 <button class="tab-btn" role="tab" id="tab-terms" data-tab="terms" data-grp="" aria-selected="false" aria-controls="panel-terms">Key Terms</button>
 </nav>
@@ -503,6 +511,10 @@ svg text{font-family:var(--f-mono)}
 <div class="panel-head"><h2>The National Grid</h2><div class="spec"><b class="ta" title="Triple Award only">TA</b><b>6.18P</b><b>6.20P</b></div></div>
 <div class="acts"></div>
 </section>
+<section id="panel-sumup" class="panel" role="tabpanel" aria-labelledby="tab-sumup" hidden>
+<div class="panel-head"><h2>Sum It Up</h2><div class="spec"><b>All of 6b</b></div></div>
+<div class="acts"></div>
+</section>
 </div>
 
 <script>
@@ -522,8 +534,8 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='unit6b-v8',OLD_STORE_KEY='unit6b-v7';
-const TAB_IDS=['overview','induction','generators','transformers','grid','units','terms'];
+const STORE_KEY='unit6b-v9',OLD_STORE_KEY='unit6b-v8';
+const TAB_IDS=['overview','induction','generators','transformers','grid','sumup','units','terms'];
 let activeTab='overview';
 const reflowers=[];
 const tickers=[];
@@ -1490,27 +1502,79 @@ const LHR_OPTS=up=>[
   {text:'Towards the S pole',why:'The force is at right angles to both the field and the current, so it can never point along the field towards a pole.'}
 ];
 
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','Unit 6b in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'Pushing a magnet into a coil induces a ',['b1','voltage'],' across the coil, and pushing it in faster makes this ',['b2','bigger'],
-    '. Pulling the magnet out again induces a voltage in the ',['b3','opposite'],' direction. An a.c. generator turns a coil in a magnetic field, and the induced voltage reverses every ',['b4','half'],
-    ' turn. A transformer only works with ',['b5','alternating'],' current. A step-up transformer has more turns on its ',['b6','secondary'],
-    ' coil. Electricity is transmitted at a high voltage so that the ',['b7','current'],' in the cables is small and less energy is wasted heating them.'
-  ];
+
+/* ================= Overview hook and Sum It Up (Alex, 12 Nov 2026) =================
+   The Overview no longer opens with a fill-in passage on a topic not yet learned: it is one real prediction (the hook)
+   beside a short list of what the workout covers. The fill-in moved to Sum It Up, the last content tab, as short
+   exam-style word boxes ("Use words from the box…"), done once the content is known. */
+function goalsAct(panel,items){
+  const body=act(panel,'In this workout','By the end you can','');
+  body.appendChild(mk('ul','goals',items.map(g=>'<li>'+(g.ta?'<b class="ta" title="Triple Award only">TA</b> ':'')+g.t+'<span class="sp">'+g.sp+'</span></li>').join('')));
+}
+function pairFirstTwo(panel){
+  const L=$('#panel-'+panel+' .acts'),as=$$(':scope > .act',L);
+  if(as.length<2)return;const pr=mk('div','act-pair');L.insertBefore(pr,as[0]);pr.appendChild(as[0]);pr.appendChild(as[1]);
+}
+// parts: text strings and [slot id, answer]; extras: words in the box that fit no gap
+function wordBox(panel,title,parts,extras){
+  const body=act(panel,'Word box',title,'Use words from the box to complete the sentences. Some words are not needed.');
   const cloze=mk('div','cloze'),slots=[],chips=[];
   parts.forEach(p=>{
     if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
     else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
   });
-  ['smaller','same','primary','direct'].forEach((t,i)=>chips.push({id:'x'+i,text:t}));
-  body.appendChild(cloze);body.appendChild(mk('div','pool-label','Word bank'));
+  extras.forEach((t,i)=>chips.push({id:'x-'+slots[0].id+i,text:t}));
+  body.appendChild(cloze);body.appendChild(mk('div','pool-label','Box'));
   const pool=mk('div','chip-pool');body.appendChild(pool);
   let g;
   const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
   const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
   g=createBlankGame({fill:true,slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
+}
+// Overview hook: coil A with a battery and a switch, coil B beside it with a centre-zero meter; the reveal is the meter trace.
+function twoCoilsSVG(){
+  const coil=x0=>{let t='';for(let i=0;i<6;i++)t+='<ellipse cx="'+(x0+i*15)+'" cy="70" rx="7" ry="22" fill="none" stroke="var(--copper,var(--ink))" stroke-width="2.4"/>';return t;};
+  let s='<svg class="viz hook" viewBox="0 26 300 126" role="img" aria-label="Coil A, joined to a battery and an open switch, sits beside coil B, which is joined to a centre-zero meter. The coils do not touch.">';
+  s+='<g font-size="13" fill="var(--ink-soft)" text-anchor="middle"><text x="85" y="38">coil A</text><text x="215" y="38">coil B</text><text x="108" y="144">switch</text><text x="215" y="148">meter</text></g>';
+  s+=coil(48)+coil(178);
+  s+='<g fill="none" stroke="var(--ink)" stroke-width="2"><path d="M48,92 V118 H74 M88,118 H100 M118,118 H123 V92"/><path d="M178,92 V118 H203 M227,118 H253 V92"/><line x1="100" y1="118" x2="115" y2="106"/></g>';
+  s+='<g stroke="var(--ink)"><line x1="76" y1="106" x2="76" y2="130" stroke-width="2"/><line x1="84" y1="111" x2="84" y2="125" stroke-width="4"/></g>';
+  s+='<circle cx="100" cy="118" r="2.6" fill="var(--ink)"/><circle cx="118" cy="118" r="2.6" fill="var(--ink)"/>';
+  s+='<circle cx="215" cy="118" r="12" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><line x1="215" y1="125" x2="215" y2="110" stroke="var(--accent)" stroke-width="2"/><circle cx="215" cy="125" r="2" fill="var(--ink)"/>';
+  return s+'</svg>';
+}
+function coilTraceSVG(){
+  let s='<svg class="viz hook" viewBox="0 0 300 150" role="img" aria-label="Meter reading against time: zero, a short flick one way when the switch is closed, zero while it stays closed, then a short flick the other way when it is opened.">';
+  s+='<g stroke="var(--ink-faint)" stroke-width="1.4" stroke-dasharray="4 4"><line x1="80" y1="22" x2="80" y2="132"/><line x1="220" y1="22" x2="220" y2="132"/></g>';
+  s+='<g font-size="12" fill="var(--ink-soft)" text-anchor="middle"><text x="80" y="16">switch closed</text><text x="220" y="16">switch opened</text><text x="165" y="146">time</text></g>';
+  s+='<text font-size="12" fill="var(--ink-soft)" text-anchor="middle" transform="translate(14 78) rotate(-90)">meter reading</text>';
+  s+='<g stroke="var(--ink)" stroke-width="1.6"><line x1="28" y1="26" x2="28" y2="132"/><line x1="28" y1="78" x2="290" y2="78"/></g>';
+  s+='<polyline class="fade" points="28,78 80,78 84,34 92,78 220,78 224,122 232,78 288,78" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round"/>';
+  return s+'</svg>';
+}
+
+/* ================= 1. OVERVIEW: hook + what the workout covers ================= */
+{
+  createPredict({
+    host:act('overview','Predict','Two coils','Coil A is joined to a battery and a switch. Coil B sits beside it, not touching, joined to a centre-zero meter.'),
+    q:'The switch is closed, then left closed. What does the meter do?',
+    pre:twoCoilsSVG(),
+    options:[
+      {text:'Flicks one way, then goes back to zero',correct:true},
+      {text:'Shows a steady reading while it is closed',why:'A steady current makes a steady field. Only a changing field induces a voltage, so the reading falls back to zero.'},
+      {text:'Stays at zero, as the coils are not joined',why:'No wire joins them, but the magnetic field of coil A passes through coil B. When that field changes, a voltage is induced in coil B.'},
+      {text:'Reading keeps rising while it stays closed',why:'Once the current is steady, nothing keeps changing, so nothing keeps inducing a voltage.'}
+    ],
+    explain:'Closing the switch makes the field of coil A grow from nothing. That changing field passes through coil B and induces a voltage, so the needle flicks. Once the current is steady the field stops changing, and the reading falls to zero. Opening the switch flicks it the other way. This is electromagnetic induction, the idea behind generators and transformers.',
+    reveal:coilTraceSVG()
+  });
+  goalsAct('overview',[
+    {t:'Say what induces a voltage, and what makes it bigger or reverses it',sp:'6.15'},
+    {t:'Explain how a generator or a bicycle dynamo makes electricity',sp:'6.16'},
+    {ta:1,t:'Explain how a transformer works, and use the turns ratio',sp:'6.17P, 6.19P'},
+    {ta:1,t:'Explain why the National Grid steps the voltage up and down, and use V<sub>p</sub>I<sub>p</sub> = V<sub>s</sub>I<sub>s</sub>',sp:'6.18P, 6.20P'}
+  ]);
+  pairFirstTwo('overview');
 }
 /* ================= 6. UNITS AND KEY TERMS (ALL OF UNIT 6) ================= */
 // The Units and Key Terms tabs for the whole unit (split 5 Nov 2026) (3 Nov 2026). Activities from other workouts are named after them.
@@ -1682,6 +1746,20 @@ const LHR_OPTS=up=>[
    if(o&&c)L.insertBefore(c,o);}
 }
 
+/* ================= 12. SUM IT UP: two exam-style word boxes ================= */
+{
+  wordBox('sumup','Induction and generators',[
+    'Pushing a magnet into a coil induces a ',['g1','voltage'],' across the coil. Moving the magnet ',['g2','faster'],
+    ' makes this voltage bigger. Holding the magnet still inside the coil induces ',['g3','no'],
+    ' voltage. In an a.c. generator a coil turns in a magnetic field, and the induced voltage reverses every ',['g4','half'],' turn.'
+  ],['slower','a steady','whole']);
+  wordBox('sumup','Transformers and the grid <b class="ta" title="Triple Award only">TA</b>',[
+    'A transformer only works with ',['t1','alternating'],' current. A step-up transformer has more turns on its ',['t2','secondary'],
+    ' coil. The National Grid sends electricity at a high voltage, so the ',['t3','current'],' in the cables is small and less energy is ',['t4','wasted'],' heating them.'
+  ],['direct','primary','resistance']);
+  pairFirstTwo('sumup');
+}
+
 /* ================= tabs, startup ================= */
 // Two Predict activities in a row sit side by side (they stack again on narrow screens).
 function pairPredicts(){
@@ -1783,15 +1861,15 @@ byId('tab-overview').parentNode.addEventListener('keydown',e=>{
 // Saved answers carry over by key; null = drop. 10 Nov 2026: the Generators and Transformers Predicts were cut
 // (the framed animations now answer them), so the activities after them move up one place.
 // 11 Nov 2026: repeated activities cut (tools/WORKOUTS.md section 5); answers to the activities that did not change carry over.
-const CARRY={"overview-0":"overview-0","units-0":"units-0","terms-0":"terms-0","induction-0":"induction-0","transformers-0":"transformers-0","transformers-1":"transformers-1","grid-1":"grid-1"};
+// 12 Nov 2026: the Overview's fill-in passage became a Predict (the passage moved to Sum It Up, rewritten as word boxes).
+// Answers saved under the old key carry over once, except the Overview's (old overview-0 was the passage).
 function readSaved(){
   try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
   try{const s=JSON.parse(localStorage.getItem(OLD_STORE_KEY)||'null');
-    if(s&&typeof s==='object'){const v=s.v||{},n={};Object.keys(v).forEach(k=>{const to=k in CARRY?CARRY[k]:k;if(to)n[to]=v[k];});return {tab:s.tab,v:n};}
+    if(s&&typeof s==='object'){const v=s.v||{},n={};Object.keys(v).forEach(k=>{if(k.indexOf('overview-')!==0)n[k]=v[k];});return {tab:s.tab,v:n};}
   }catch(e){}
   return {};
-}
-function start(data){
+}function start(data){
   const v=(data&&data.v)||{};
   games.forEach(g=>{if(v[g.key]&&typeof v[g.key]==='object'){try{g.setState(v[g.key]);}catch(e){console.error(e);}}});
   saveReady=true;showProgress(false);

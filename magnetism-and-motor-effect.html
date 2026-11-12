@@ -144,6 +144,7 @@
   })();
 </script>
 <!-- /pw-review -->
+<meta name="pw-draft" content="magnetism-and-motor-effect.html">
 </head><body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -211,6 +212,11 @@ h1{font:800 clamp(34px,8vw,58px)/.92 var(--f-head);letter-spacing:0;margin:0 0 1
 .key i{width:10px;height:10px;border-radius:50%;display:inline-block}
 .key .k-n i{background:var(--north)} .key .k-sp i{background:var(--solid)}
 .viz.lhr{max-width:250px}
+/* Overview hook + goals, Sum It Up word boxes (12 Nov 2026) */
+.goals{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:9px;line-height:1.5}
+.goals .sp{font:500 12px var(--f-mono,'IBM Plex Mono',monospace);color:var(--ink-faint);margin-left:6px;white-space:nowrap}
+.goals b.ta,.act-title b.ta{font:500 11px var(--f-mono,'IBM Plex Mono',monospace);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px;white-space:nowrap;vertical-align:2px}
+.viz .fade{opacity:0;transition:opacity .6s ease-out}.go .viz .fade{opacity:1}
 .key .sep{opacity:.4}
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 18px}
 .tab-btn[data-ta]::after{content:"TA";font:600 9.5px var(--f-mono);letter-spacing:.5px;margin-left:5px;padding:1px 4px;border-radius:4px;border:1px solid currentColor;opacity:.75;vertical-align:1px}
@@ -483,6 +489,7 @@ svg text{font-family:var(--f-mono)}
 <button class="tab-btn" role="tab" id="tab-particles" data-tab="particles" data-ta data-grp="c" aria-selected="false" aria-controls="panel-particles">Charged Particles</button>
 <button class="tab-btn" role="tab" id="tab-motors" data-tab="motors" data-grp="c" aria-selected="false" aria-controls="panel-motors">Motors</button>
 <button class="tab-btn" role="tab" id="tab-speakers" data-tab="speakers" data-grp="c" aria-selected="false" aria-controls="panel-speakers">Loudspeakers</button>
+<button class="tab-btn" role="tab" id="tab-sumup" data-tab="sumup" data-grp="" aria-selected="false" aria-controls="panel-sumup">Sum Up</button>
 </nav>
 <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
 <div class="panel-head"><h2>Overview</h2><div class="spec"><b>All of 6a</b></div></div>
@@ -520,6 +527,10 @@ svg text{font-family:var(--f-mono)}
 <div class="panel-head"><h2>Loudspeakers</h2><div class="spec"><b>6.12</b></div></div>
 <div class="acts"></div>
 </section>
+<section id="panel-sumup" class="panel" role="tabpanel" aria-labelledby="tab-sumup" hidden>
+<div class="panel-head"><h2>Sum It Up</h2><div class="spec"><b>All of 6a</b></div></div>
+<div class="acts"></div>
+</section>
 </div>
 
 <script>
@@ -541,8 +552,8 @@ const raf=f=>requestAnimationFrame(f);
 
 // Units merge (3 Nov 2026): this unit's Units and Key Terms tabs are now one tab, so old links go there.
 try{const to={terms:'electromagnetic-induction.html#terms'}[location.hash.slice(1)];if(to){if(to[0]==='#')history.replaceState(null,'',to);else{location.replace(to);return;}}}catch(e){}
-const STORE_KEY='unit6a-v8',OLD_STORE_KEY='unit6a-v7';
-const TAB_IDS=['overview','magnets','fields','wires','electro','motor','particles','motors','speakers'];
+const STORE_KEY='unit6a-v9',OLD_STORE_KEY='unit6a-v8';
+const TAB_IDS=['overview','magnets','fields','wires','electro','motor','particles','motors','speakers','sumup'];
 let activeTab='overview';
 const reflowers=[];
 const tickers=[];
@@ -1498,28 +1509,76 @@ function matchAct(panel,title,intro,left,right,pairs){
   reflowers.push(tab=>{if(tab===panel)raf(m.reflow);});
 }
 
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','Unit 6a in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'Like poles ',['b1','repel'],' and unlike poles attract. A magnet also attracts magnetic materials such as ',['b2','iron'],
-    '. Steel keeps its magnetism once it is magnetised, so it is magnetically ',['b3','hard'],'. Soft iron loses its magnetism quickly, so it is used for the ',['b4','core'],
-    ' of an electromagnet. Outside a magnet, field lines point from the ',['b5','north'],' pole to the south pole. ','A current in a wire produces a magnetic field around it. A current-carrying wire in a magnetic field feels a ',['b6','force'],
-    ', and Fleming’s ',['b7','left-hand'],' rule gives its direction. ','A d.c. motor keeps turning the same way because a split-ring ',['b8','commutator'],
-    ' reverses the current in the coil every half turn. A loudspeaker uses the same force: an alternating current makes its coil and cone vibrate.'
-  ];
+
+/* ================= Overview hook and Sum It Up (Alex, 12 Nov 2026) =================
+   The Overview no longer opens with a fill-in passage on a topic not yet learned: it is one real prediction (the hook)
+   beside a short list of what the workout covers. The fill-in moved to Sum It Up, the last content tab, as short
+   exam-style word boxes ("Use words from the box…"), done once the content is known. */
+function goalsAct(panel,items){
+  const body=act(panel,'In this workout','By the end you can','');
+  body.appendChild(mk('ul','goals',items.map(g=>'<li>'+(g.ta?'<b class="ta" title="Triple Award only">TA</b> ':'')+g.t+'<span class="sp">'+g.sp+'</span></li>').join('')));
+}
+function pairFirstTwo(panel){
+  const L=$('#panel-'+panel+' .acts'),as=$$(':scope > .act',L);
+  if(as.length<2)return;const pr=mk('div','act-pair');L.insertBefore(pr,as[0]);pr.appendChild(as[0]);pr.appendChild(as[1]);
+}
+// parts: text strings and [slot id, answer]; extras: words in the box that fit no gap
+function wordBox(panel,title,parts,extras){
+  const body=act(panel,'Word box',title,'Use words from the box to complete the sentences. Some words are not needed.');
   const cloze=mk('div','cloze'),slots=[],chips=[];
   parts.forEach(p=>{
     if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
     else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
   });
-  ['copper','right-hand','soft','attract'].forEach((t,i)=>chips.push({id:'x'+i,text:t}));
-  body.appendChild(cloze);body.appendChild(mk('div','pool-label','Word bank'));
+  extras.forEach((t,i)=>chips.push({id:'x-'+slots[0].id+i,text:t}));
+  body.appendChild(cloze);body.appendChild(mk('div','pool-label','Box'));
   const pool=mk('div','chip-pool');body.appendChild(pool);
   let g;
   const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
   const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
   g=createBlankGame({fill:true,slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
+}
+/* Fleming's left-hand rule diagram: magnet poles either side, a wire end-on in the middle.
+   nLeft: N pole on the left. into: current into the page. up: the force is up the page (drawn only with arrow). */
+let lhrN=0;
+function lhrSVG(nLeft,into,up,arrow){
+  const id='lhr'+(++lhrN),L=nLeft?'N':'S',R=nLeft?'S':'N';
+  const pole=(x,t)=>'<rect x="'+x+'" y="28" width="56" height="94" rx="4" fill="var('+(t==='N'?'--north-soft':'--solid-soft')+')" stroke="var('+(t==='N'?'--north':'--solid')+')" stroke-width="2.5"/><text x="'+(x+28)+'" y="82" font-size="22" text-anchor="middle" fill="var('+(t==='N'?'--north':'--solid')+')">'+t+'</text>';
+  const x1=nLeft?74:186,x2=nLeft?186:74;
+  let s='<svg class="viz lhr" viewBox="0 0 260 150" role="img" aria-label="'+L+' pole on the left, '+R+' pole on the right, wire carrying current '+(into?'into':'out of')+' the page'+(arrow?', force '+(up?'up':'down')+' the page':'')+'">';
+  s+='<defs><marker id="'+id+'f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-faint)"/></marker><marker id="'+id+'g" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--gas)"/></marker></defs>';
+  s+=pole(14,L)+pole(190,R);
+  [44,106].forEach(y=>{s+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="var(--ink-faint)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#'+id+'f)"/>';});
+  s+='<circle cx="130" cy="75" r="15" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>';
+  s+=into?'<path d="M120,65 L140,85 M140,65 L120,85" stroke="var(--ink)" stroke-width="2.5"/>':'<circle cx="130" cy="75" r="4" fill="var(--ink)"/>';
+  if(arrow){const y2=up?14:136,y1=up?57:93;s+='<g class="arr"><line x1="130" y1="'+y1+'" x2="130" y2="'+y2+'" stroke="var(--gas)" stroke-width="6" marker-end="url(#'+id+'g)"/><text x="146" y="'+(up?30:126)+'" font-size="14" fill="var(--gas)">F</text></g>';}
+  return s+'</svg>';
+}
+
+/* ================= 1. OVERVIEW: hook + what the workout covers ================= */
+{
+  createPredict({
+    host:act('overview','Predict','Switch it on','A copper wire sits between the poles of a magnet, at right angles to the field lines.'),
+    q:'The switch is closed, so a current flows along the wire, into the page. What happens to the wire?',
+    pre:lhrSVG(true,true,false,false),
+    options:[
+      {text:'Pushed at right angles to the field lines',correct:true},
+      {text:'Pulled towards the N pole of the magnet',why:'Copper is not a magnetic material, so neither pole attracts it. The push is at right angles to the field, not along it.'},
+      {text:'Nothing, as copper is not a magnetic material',why:'Copper is not magnetic, but the current in it makes its own magnetic field, and that field and the magnet’s field push on each other.'},
+      {text:'Warmed by the current until it sags down',why:'A small current hardly warms the wire, and reversing the current pushes the wire the other way, which heating could not do.'}
+    ],
+    explain:'This push is the motor effect: the current makes a magnetic field round the wire, and it acts on the magnet’s field. Every electric motor and loudspeaker works this way. Here the wire is pushed down the page; the Motor Effect tab shows how the left-hand rule tells you that.',
+    reveal:lhrSVG(true,true,false,true)
+  });
+  goalsAct('overview',[
+    {t:'Tell a magnet from a magnetic material, and magnetically hard from soft',sp:'6.2–6.5'},
+    {t:'Draw the field lines round magnets, and set up a uniform field',sp:'6.4, 6.6, 6.7'},
+    {ta:1,t:'Draw the field round a wire, a coil and a solenoid, and build an electromagnet',sp:'6.8–6.10P'},
+    {t:'Use the left-hand rule, and say what changes the force on a wire',sp:'6.12–6.14'},
+    {ta:1,t:'Say when a moving charged particle feels a force',sp:'6.11P'},
+    {t:'Explain how a d.c. motor and a loudspeaker work',sp:'6.12'}
+  ]);
+  pairFirstTwo('overview');
 }
 /* ================= 3. MAGNETS ================= */
 {
@@ -1717,6 +1776,21 @@ function matchAct(panel,title,intro,left,right,pairs){
   });
 }
 
+/* ================= 9. SUM IT UP: two exam-style word boxes ================= */
+{
+  wordBox('sumup','Magnets',[
+    'Two north poles ',['m1','repel'],' each other. A magnet attracts an iron nail because magnetism is ',['m2','induced'],
+    ' in the nail. Steel keeps its magnetism once it is magnetised, so it is a magnetically ',['m3','hard'],
+    ' material. Outside a magnet, the field lines point from the north pole to the ',['m4','south'],' pole.'
+  ],['attract','soft','charged']);
+  wordBox('sumup','The motor effect',[
+    'A current in a wire produces a magnetic ',['e1','field'],' around it. Between the poles of a magnet the wire feels a ',['e2','force'],
+    ', and Fleming’s ',['e3','left-hand'],' rule gives its direction. A larger ',['e4','current'],
+    ' in the wire makes the force larger. In a d.c. motor the split-ring ',['e5','commutator'],' reverses the current in the coil every half turn.'
+  ],['right-hand','resistance']);
+  pairFirstTwo('sumup');
+}
+
 /* ================= tabs, startup ================= */
 // Two Predict activities in a row sit side by side (they stack again on narrow screens).
 function pairPredicts(){
@@ -1816,15 +1890,15 @@ byId('tab-overview').parentNode.addEventListener('keydown',e=>{
 // Answers saved under v5 are carried over once: every key as it was, except the electro activities, which move.
 // (11 Nov 2026, later: the Making an electromagnet Order, old electro-2, was removed, so it is not carried.)
 // 5a (11 Nov 2026): the core practical's frame and practical activities left this page; answers to the activities that stayed carry over (old key -> new key).
-const CARRY={"overview-0":"overview-0","magnets-0":"magnets-0","magnets-1":"magnets-1","magnets-2":"magnets-2","fields-0":"fields-0","fields-1":"fields-1","fields-2":"fields-2","wires-0":"wires-0","electro-0":"electro-0","motor-0":"motor-0","motor-1":"motor-1","particles-0":"particles-0","particles-1":"particles-1","motors-0":"motors-0","speakers-0":"speakers-0"};
+// 12 Nov 2026: the Overview's fill-in passage became a Predict (the passage moved to Sum It Up, rewritten as word boxes).
+// Answers saved under the old key carry over once, except the Overview's (old overview-0 was the passage).
 function readSaved(){
   try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
   try{const s=JSON.parse(localStorage.getItem(OLD_STORE_KEY)||'null');
-    if(s&&typeof s==='object'){const v=s.v||{},n={};Object.keys(CARRY).forEach(k=>{if(v[k])n[CARRY[k]]=v[k];});return {tab:s.tab,v:n};}
+    if(s&&typeof s==='object'){const v=s.v||{},n={};Object.keys(v).forEach(k=>{if(k.indexOf('overview-')!==0)n[k]=v[k];});return {tab:s.tab,v:n};}
   }catch(e){}
   return {};
-}
-function start(data){
+}function start(data){
   const v=(data&&data.v)||{};
   games.forEach(g=>{if(v[g.key]&&typeof v[g.key]==='object'){try{g.setState(v[g.key]);}catch(e){console.error(e);}}});
   saveReady=true;showProgress(false);
