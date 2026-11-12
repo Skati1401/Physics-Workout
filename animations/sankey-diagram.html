@@ -183,6 +183,14 @@
   .pick .ring{fill:none;stroke:transparent;}
   .pick:focus-visible .ring{stroke:var(--accent);stroke-opacity:.55;}
   #sk-main{pointer-events:none;}
+  .bank{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0;}
+  .bank .lab{flex:1 0 100%;margin:0;}
+  .under .bank{flex:1 0 100%;margin:0;}
+  .bank .chip{font:600 14px var(--font-mono);min-height:44px;padding:6px 12px;border:1.5px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:grab;touch-action:none;user-select:none;}
+  .bank .chip[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent);}
+  .bank .chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .chip-ghost{position:fixed;z-index:50;pointer-events:none;font:600 14px var(--font-mono);padding:6px 12px;border:1.5px solid var(--accent);border-radius:8px;background:var(--panel);color:var(--ink);box-shadow:var(--shadow);transform:translate(-50%,-50%);}
+  .pick.over .ring{stroke:var(--accent);stroke-opacity:.55;}
   @media (max-height:640px){ .seg button{min-height:38px;} .note{font-size:14px;} .side:not(.q) .hint{display:none;} }
   .under .sliders{flex:1 1 240px;}
   .ansrow label{font:12.5px var(--font-mono);color:var(--ink-soft);font-weight:400;}
@@ -336,6 +344,7 @@
         <div class="seg" id="sk-points"><button type="button" data-p="in" aria-pressed="false">Input</button><button type="button" data-p="use" aria-pressed="false">Useful output</button><button type="button" data-p="all" aria-pressed="false">Whole diagram</button></div>
       </div>
       <p class="note" id="sk-note" aria-live="polite"></p>
+      <div class="bank" id="sk-bank" role="group" aria-label="Labels to put on the diagram" hidden></div>
       <div class="eq" id="sk-qeq" hidden></div>
       <div class="stats four" id="sk-stats">
         <div class="stat"><small>Input</small><strong id="sk-si">0 J</strong></div>
@@ -625,13 +634,13 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||'';
     for(var i=S.B.length-1;i>=0;i--) g+=outArrow(S.B[i],pout[i],S.hl,COL[S.B[i].f.role],0.9);
     if(flowing) g+=dots(S,P.pin,pout);
     // labels, each in clear space beside its arrow
-    // hide: 'x' no label and '?' no value until the answer is marked; 'box' a line the student fills in (drawPicks draws it)
+    // hide: 'x' no label and '?' no value until the answer is marked; 'box' a label the student drags in (drawPicks draws its boxes)
     var hide=pr && q ? q.hide : {}, yT=L.top-(L.tall?19:23), yL=L.yEnd-(L.tall?52:44);
     function val(k,v){ return hide[k]==='?' && !done ? '? J' : num(v)+' J'; }
-    if(P.pin>0) g+=label(L.x0,yT,'start','Input: '+num(F.E)+' J',hide.inp==='box'?'':'transferred electrically',40,COL.in);
+    if(P.pin>0) g+=label(L.x0,yT,'start','Input: '+num(F.E)+' J','transferred electrically',40,COL.in);
     if(part && pout[1]<1){ var bw=S.B[1]; g+=ln(bw.ox+2,yL-4,bw.ox+8,yL-4,COL.therm,1.4)+label(bw.ox+11,yL,'start','Wasted output','energy',L.wr,COL.therm); }
     S.B.forEach(function(b,i){
-      if(pout[i]<1 || (hide[i]==='x' && !done)) return;
+      if(pout[i]<1 || (hide[i]==='x' && !done) || hide[i]==='box') return;
       var f=b.f, c=COL[f.role];
       if(i===0) g+=label(L.tip,yT,'end','Useful: '+val(0,f.v),f.l,40,c);
       else if(i===1) g+=ln(b.ox+2,yL-4,b.ox+8,yL-4,c,1.4)+label(b.ox+11,yL,'start','Wasted: '+val(1,f.v),hide[1]==='box'?'':f.l,L.wr,c);
@@ -665,8 +674,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||'';
   /* ---------- Questions: a question is dealt in the picture, answered on the picture or as a number, then Go ----------
      The five kinds follow the Edexcel papers (checked against the IGCSE Question Index, 12 Nov 2026): draw the Sankey diagram
      for a given efficiency (4PH1/1P Jan 2023 Q3(b)(i), May 2022 Q8(b)(iii); 4PH0/1P Jan 2018 Q5(d), May 2014 Q2(c)(ii)); complete
-     the diagram by giving the missing information: how the input is transferred, the useful energy, the wasted energy's store
-     (4PH1/1P May 2023 Q7(c)); read the wasted energy (4PH0/2PR May 2014 Q1(c)(i)); complete an incomplete diagram by drawing the
+     the diagram by giving the missing information, here by dragging labels in: the amount each arrow carries and its store
+     (4PH1/1P May 2023 Q7(c); the pathway gap of that question is left out, Alex 12 Nov 2026); read the wasted energy (4PH0/2PR May 2014 Q1(c)(i)); complete an incomplete diagram by drawing the
      useful arrow to scale (4PH1/1PR May 2023 Q3(c)(iii)); read the efficiency (4PH1/1P May 2023 Q7(d)).
      The picture dealt is the picture that runs on Go. */
   var QEFF={fil:[10,20,30], led:[40,50,60], mot:[60,70,80], ket:[80,90]};
@@ -681,22 +690,26 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||'';
       o.text='Draw it. '+cap(DEV[d].a)+' is '+eff+'% efficient. Its input arrow is 10 squares wide. Click the grid line where the arrow must split. The useful arrow carries straight on; the wasted arrow bends away.'; }
     else if(kind==='complete'){ o.hide={0:'x',1:'x'}; o.ans=eff/10;
       o.text='Complete it. This Sankey diagram for '+DEV[d].a+' is incomplete. Of the '+num(E)+' J supplied, '+num(U)+' J '+o.list[0].s+'. Click the grid line where the input arrow must split, so that the useful arrow is drawn to scale.'; }
-    else if(kind==='boxes'){ o.list[1].l='thermal store of the surroundings'; o.hide={0:'?',inp:'box',1:'box'}; o.ans=U; o.unit='J';
-      o.opts={a:mix(['electrically','mechanically','by heating','by radiation']), c:mix(['thermal','kinetic','chemical','gravitational'])}; o.right={a:'electrically',c:'thermal'}; o.sel={a:-1,c:-1};
-      o.text='Complete it. Give the missing information on this Sankey diagram for '+DEV[d].a+'. Click each dashed box until it shows the right words, and type in the useful energy.'; }
+    else if(kind==='boxes'){   // drag the labels in: an amount and a store for each output arrow (motor and kettle: both outputs are stores)
+      d=pickOf(['mot','ket']); eff=pickOf(QEFF[d]); o={list:two(d,E,eff), eff:eff}; U=E*eff/100;
+      var obj=d==='mot'?'load':'water';
+      o.list[1].l='thermal store of the surroundings'; o.hide={0:'box',1:'box'};
+      o.right={ua:num(U)+' J', us:d==='mot'?'gravitational':'thermal', wa:num(E-U)+' J', ws:'thermal'}; o.put={ua:null,us:null,wa:null,ws:null}; o.obj=obj;
+      o.chips=[num(U)+' J',num(E-U)+' J',num(E)+' J'].sort(function(m,n){ return parseFloat(m.replace(' ',''))-parseFloat(n.replace(' ','')); }).map(function(t){ return {t:t,k:'a'}; })
+        .concat(mix(['gravitational','thermal','kinetic','chemical']).map(function(t){ return {t:t,k:'s'}; }));
+      o.text='Complete it. '+cap(DEV[d].a)+' is supplied with '+num(E)+' J and wastes '+num(E-U)+' J. Drag a label into each dashed box on its Sankey diagram to show how much energy each arrow carries and the store it ends up in.'; }
     else if(kind==='wasted'){ o.hide={1:'?'}; o.ans=E*(100-eff)/100; o.unit='J';
       o.text='Read it. This is the Sankey diagram for '+DEV[d].a+'. Work out the energy that is wasted, then type it in.'; }
     else { o.hide={0:'?'}; o.ans=eff; o.unit='%';
       o.text='Read it. This is the Sankey diagram for '+DEV[d].a+'. Work out its efficiency as a percentage, then type it in.'; }
     o.kind=kind; o.dev=d; o.E=E; o.phase='ask'; o.pick=null; o.ph0=0; q=o;
     T = isDraw(o) ? TIN : TALL;
-    ansIn.value=''; ansIn.disabled=false; $('#sk-ans').hidden = isDraw(o); $('#sk-unit').textContent=o.unit||'';
-    $('#sk-ans label').textContent = kind==='boxes' ? 'Useful energy' : 'Your answer';
+    ansIn.value=''; ansIn.disabled=false; $('#sk-ans').hidden = isDraw(o) || kind==='boxes'; $('#sk-unit').textContent=o.unit||''; sel=null;
     $('#sk-note').innerHTML = kind==='draw' ? 'Work out how many of the 10 squares are useful. <b>Click a grid line</b> on the end of the input arrow, then press Go.'
       : kind==='complete' ? 'Count squares to find the scale of the diagram, then work out how wide the useful arrow must be. <b>Click a grid line</b> on the end of the input arrow, then press Go.'
-      : kind==='boxes' ? '<b>Click a dashed box</b> to change its words. Energy is conserved: use that to find the useful energy, <b>type it in</b>, then press Go.'
+      : kind==='boxes' ? '<b>Drag each label</b> into a dashed box, or click a label and then a box. A label can be used more than once. Click a filled box to empty it. Then press Go.'
       : 'Read the values off the diagram, <b>type your answer</b>, then press Go.';
-    layout(); drawQ(); drawPicks(); draw(); syncGo();
+    layout(); drawQ(); drawBank(); drawPicks(); draw(); syncGo();
   }
   function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
   function drawQ(){
@@ -705,7 +718,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||'';
     wrapLines(s,L.qwrap).slice(0,L.tall?6:3).forEach(function(line,i){ g+=txt(L.tall?6:12,-L.band+(L.tall?13:17)+i*L.qlh,line,{fs:L.qfs,c:col,w:done?600:500}); });
     qEl.innerHTML=g;
   }
-  // the things to click: grid lines across the end of the input arrow (draw, complete), or the two boxes of words (boxes)
+  // the things to click: grid lines across the end of the input arrow (draw, complete), or the four boxes that labels are dragged into (boxes)
   function drawPicks(){
     if(mode!=='predict' || !q || (!isDraw(q) && q.kind!=='boxes')){ picksEl.innerHTML=''; return; }
     var g='', done=q.phase==='done', lock=q.phase!=='ask';
@@ -720,24 +733,64 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||'';
           ln(xa,y,xb,y,on?col(st):'var(--ink)',on?4:1.8,on?' stroke-linecap="round"':' stroke-dasharray="5 4" opacity=".6"')+
           (on?'<circle cx="'+f1(xb+7)+'" cy="'+f1(y)+'" r="4.5" fill="'+col(st)+'"/>':'')+'</g>'; }
     } else {
-      // a box of words: each click shows the next choice. Once marked it shows the right words, green if the student had them.
-      var S=shapes(flows()), yT=L.top-(L.tall?19:23), yL=L.yEnd-(L.tall?52:44), cw=L.fs*0.6;
-      var wordBox=function(id, x, y, pre, post, under, c){
-        var i=q.sel[id], mine=i<0?'':q.opts[id][i], right=q.right[id], okk=mine===right, w=(pre+post).length*cw+Math.max.apply(null,q.opts[id].map(function(o){ return o.length; }))*cw+12, h=L.lh+7;
-        var words=done?right:(mine||'choose'), edge=done?(okk?'var(--good)':'var(--bad)'):(mine?'var(--ink)':'var(--ink-soft)');
-        g+=open(id,(pre+(mine||'not chosen')+post+' '+under).trim()+'. Press to change')+rect(x-7,y-L.lh-14,w+6,h+(under?L.lh:0)+24,'transparent',' class="hit"')+
-          '<rect class="ring" x="'+f1(x-8)+'" y="'+f1(y-L.lh-1)+'" width="'+f1(w+8)+'" height="'+f1(h+8)+'" rx="6" stroke-width="2.5"/>'+
-          rect(x-4,y-L.lh+3,w,h,'var(--panel)',' rx="4" stroke="'+edge+'" stroke-width="'+(done||mine?2:1.5)+'"'+(done||mine?'':' stroke-dasharray="5 4"'))+
-          txt(x+3,y,pre+'<tspan font-weight="700" fill="'+(done?edge:mine?c:'var(--ink-faint)')+'">'+words+'</tspan>'+post,{fs:L.fs,c:'var(--ink)'})+
-          (done && !okk && mine ? txt(x+w+2,y,'✗ '+mine,{fs:L.fs-1,c:'var(--bad)',halo:1}) : '')+
-          (under?txt(x+3,y+L.lh+6,under,{fs:L.fs,c:'var(--ink-soft)',halo:1}):'')+'</g>';
+      // a box a label is dropped into. Once marked it shows the right label: green if the student had it, red if not (the note says what they put).
+      var S=shapes(flows()), yT=L.top-(L.tall?19:23), yL=L.yEnd-(L.tall?52:44), cw=L.fs*0.6, h=L.lh+7, wA=cw*7+12, wS=cw*13+12;
+      var slot=function(id, x, y, w, name){
+        var mine=q.put[id], right=q.right[id], okk=mine===right, words=done?right:(mine||''), edge=done?(okk?'var(--good)':'var(--bad)'):(mine?'var(--ink)':'var(--ink-soft)');
+        g+=open(id,name+': '+(mine||'empty')+(lock?'':'. Press to put the chosen label here, or to empty it'))+
+          rect(x-4,y-L.lh-9,w+8,h+18,'transparent',' class="hit"')+
+          '<rect class="ring" x="'+f1(x-4)+'" y="'+f1(y-L.lh-1)+'" width="'+f1(w+8)+'" height="'+f1(h+8)+'" rx="6" stroke-width="2.5"/>'+
+          rect(x,y-L.lh+3,w,h,'var(--panel)',' rx="4" stroke="'+edge+'" stroke-width="'+(done||mine?2:1.5)+'"'+(done||mine?'':' stroke-dasharray="5 4"'))+
+          txt(x+w/2,y,words,{a:'middle',fs:L.fs,c:done?edge:'var(--ink)',w:700})+'</g>';
       };
-      wordBox('a', L.x0, yT+L.lh+4, 'transferred ', '', '', COL.in);
-      wordBox('c', S.B[1].ox+11, yL+L.lh+4, '', ' store', 'of the surroundings', COL.therm);
+      var plain=function(x,y,s,c,a){ g+=txt(x,y,s,{fs:L.fs,c:c||'var(--ink-soft)',halo:1,a:a,w:c?700:0}); };
+      // useful: two rows above the arrow, ending at its tip
+      var tail=' store of the '+q.obj, tw=tail.length*cw, y2=L.top-(L.tall?9:12), y1=y2-h-(L.tall?5:6), lab='Useful: ', lw=lab.length*cw;
+      plain(L.tip-wA-lw,y1,lab,COL.use); slot('ua',L.tip-wA,y1,wA,'Useful energy');
+      slot('us',L.tip-tw-wS-4,y2,wS,'Useful energy store'); plain(L.tip-tw,y2,tail);
+      // wasted: beside the wasted arrow's head
+      var bx=S.B[1].ox+11, wy1=yL-(L.tall?12:4), wy2=wy1+h+(L.tall?5:6);
+      g+=ln(bx-9,wy1-4,bx-3,wy1-4,COL.therm,1.4);
+      plain(bx,wy1,'Wasted: ',COL.therm); slot('wa',bx+('Wasted: ').length*cw,wy1,wA,'Wasted energy');
+      slot('ws',bx,wy2,wS,'Wasted energy store'); if(L.tall){ plain(bx+wS+6,wy2,'store of the'); plain(bx,wy2+L.lh+6,'surroundings'); } else plain(bx+wS+6,wy2,'store of the surroundings');
     }
     setKeepFocus(picksEl,g);
   }
-  function ready(){ return q && q.phase==='ask' && (isDraw(q) ? q.pick!==null : ansIn.value.trim()!=='' && (q.kind!=='boxes' || (q.sel.a>=0 && q.sel.c>=0))); }
+  function ready(){ return q && q.phase==='ask' && (isDraw(q) ? q.pick!==null : q.kind==='boxes' ? !!(q.put.ua && q.put.us && q.put.wa && q.put.ws) : ansIn.value.trim()!==''); }
+  /* the bank of labels for a boxes question: chips that are copied into a box, never used up. Drag one, or choose it and then a box. */
+  var bankEl=$('#sk-bank'), sel=null;
+  function drawBank(){
+    var show=mode==='predict' && q && q.kind==='boxes' && q.phase==='ask';
+    bankEl.hidden=!show; if(!show){ bankEl.innerHTML=''; return; }
+    var home=L.tall ? $('.under') : $('#sk-note').parentNode;   // on a phone the labels sit straight under the picture, so both are on screen together
+    if(bankEl.parentNode!==home){ if(L.tall) home.insertBefore(bankEl, home.querySelector('.btn-group').nextSibling); else home.insertBefore(bankEl, $('#sk-note').nextSibling); }
+    bankEl.innerHTML='<div class="lab">Labels</div>'+q.chips.map(function(c,i){ return '<button type="button" class="chip" data-i="'+i+'" aria-pressed="'+(sel===i)+'">'+c.t+'</button>'; }).join('');
+  }
+  function place(id, i){   // put chip i into box id, if it is the right kind of label for that box
+    var c=q.chips[i]; if(!c || !(id in q.put)) return false;
+    if((id.charAt(1)==='a')!==(c.k==='a')){ $('#sk-note').innerHTML = c.k==='a' ? 'An amount of energy goes in a box beside <b>Useful:</b> or <b>Wasted:</b>.' : 'The name of a store goes in a box in front of <b>store of the …</b>.'; return false; }
+    q.put[id]=c.t; return true;
+  }
+  (function(){   // pointer drag: 6 px before a press becomes a drag; the box under the pointer takes the label
+    var d=null;
+    function boxAt(x,y){ var e=document.elementFromPoint(x,y); e=e && e.closest ? e.closest('#sk-picks .pick') : null; return e; }
+    function over(el){ Array.prototype.forEach.call(picksEl.querySelectorAll('.pick.over'),function(n){ n.classList.remove('over'); }); if(el) el.classList.add('over'); }
+    bankEl.addEventListener('pointerdown',function(e){ var b=e.target.closest('.chip'); if(!b || !q || q.phase!=='ask') return; d={i:+b.dataset.i,x:e.clientX,y:e.clientY,g:null,id:e.pointerId}; });
+    window.addEventListener('pointermove',function(e){
+      if(!d || e.pointerId!==d.id) return;
+      if(!d.g){ if(Math.hypot(e.clientX-d.x,e.clientY-d.y)<6) return; d.g=document.createElement('div'); d.g.className='chip-ghost'; d.g.textContent=q.chips[d.i].t; document.body.appendChild(d.g); }
+      d.g.style.left=e.clientX+'px'; d.g.style.top=e.clientY+'px'; over(boxAt(e.clientX,e.clientY)); e.preventDefault();
+    },{passive:false});
+    function end(e){
+      if(!d || e.pointerId!==d.id) return; var was=d; d=null;
+      if(!was.g) return;   // a tap: the click handler chooses the chip
+      was.g.remove(); over(null); bankEl.dataset.dragged='1'; setTimeout(function(){ delete bankEl.dataset.dragged; },0);
+      var el=e.type==='pointerup' ? boxAt(e.clientX,e.clientY) : null;
+      if(el && q && q.phase==='ask' && place(el.getAttribute('data-pick'),was.i)){ sel=null; drawBank(); drawPicks(); syncGo(); }
+    }
+    window.addEventListener('pointerup',end); window.addEventListener('pointercancel',end);
+    bankEl.addEventListener('click',function(e){ var b=e.target.closest('.chip'); if(!b || bankEl.dataset.dragged) return; var i=+b.dataset.i; sel=sel===i?null:i; drawBank(); var n=bankEl.querySelector('.chip[data-i="'+i+'"]'); if(n) n.focus(); });
+  })();
   function syncGo(){
     var pr=mode==='predict';
     goBtn.innerHTML = playing ? '&#10074;&#10074; Pause' : pr ? '&#9654; Go' : '&#9654; Switch on';
@@ -757,10 +810,11 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||'';
       note=(ok?'':(q.pick===10-q.ans?'You have drawn the wasted energy as the useful arrow. ':''))+'The input arrow is 10 squares wide for '+num(E)+' J, so each square stands for '+num(Jsq)+' J. The useful '+num(U)+' J needs an arrow '+sqs(U,Jsq)+' wide, carrying straight on. With the wasted arrow, '+sqs(W,Jsq)+' wide, the outputs are exactly as wide as the input.';
       eq='scale: 1 square = [['+num(E)+'|10]] J<br>scale: 1 square = '+num(Jsq)+' J<br>useful width = [['+num(U)+'|'+num(Jsq)+']]<br>useful width = <b>'+sqs(U,Jsq)+'</b>';
     } else if(q.kind==='boxes'){
-      var vb=parseFloat(ansIn.value), okA=q.opts.a[q.sel.a]===q.right.a, okC=q.opts.c[q.sel.c]===q.right.c, okN=Math.abs(vb-U)<=Math.max(0.05,U*0.02), n3=(okA?1:0)+(okC?1:0)+(okN?1:0);
-      ok=n3===3;
-      q.verdict='Transferred electrically; '+num(U)+' J useful; thermal store of the surroundings.';
-      note=(ok?'':'You have '+n3+' of the 3 right. ')+'A cable supplies '+D.the+', so the input energy is transferred <b>electrically</b>. Energy is conserved, so the useful arrow carries '+num(E)+' − '+num(W)+' = <b>'+num(U)+' J</b>'+(!okN && Math.abs(vb-W)<0.5?' (you gave the wasted energy)':'')+'. The wasted energy spreads out and heats the surroundings: it ends up in their <b>thermal</b> store.';
+      var ids=['ua','us','wa','ws'], n4=ids.filter(function(k){ return q.put[k]===q.right[k]; }).length, swap=q.put.ua===q.right.wa && q.put.wa===q.right.ua;
+      ok=n4===4;
+      q.verdict='Useful: '+num(U)+' J to the '+q.list[0].l+'. Wasted: '+num(W)+' J to the thermal store of the surroundings.';
+      var names={ua:'the useful energy',us:'the useful store',wa:'the wasted energy',ws:'the wasted store'}, bad=ids.filter(function(k){ return q.put[k]!==q.right[k]; }).map(function(k){ return names[k]+' (you put '+q.put[k]+')'; });
+      note=(ok?'':'You have '+n4+' of the 4 labels right. Not right: '+bad.join(', ')+'. ')+(swap?'You have the two amounts the wrong way round: the wasted arrow is '+sqs(W,Jsq)+' wide, so it carries the '+num(W)+' J. ':'')+'Energy is conserved, so the useful arrow carries '+num(E)+' − '+num(W)+' = <b>'+num(U)+' J</b>, '+(q.dev==='mot'?'which lifts the load: it goes to the <b>gravitational</b> store of the load':'which heats the water: it goes to the <b>thermal</b> store of the water')+'. The wasted <b>'+num(W)+' J</b> spreads out and heats the surroundings: it ends up in their <b>thermal</b> store.';
       eq='input = useful + wasted<br>'+num(E)+' = useful + '+num(W)+'<br>useful = '+num(E)+' − '+num(W)+'<br>useful = <b>'+num(U)+' J</b>';
     } else {
       var v=parseFloat(ansIn.value); ok=Math.abs(v-q.ans)<=Math.max(0.05,Math.abs(q.ans)*0.02);
@@ -778,7 +832,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||'';
     $('#sk-note').innerHTML=(ok?'<b>Correct.</b> ':'<b>Not quite.</b> ')+note;
     $('#sk-qeq').innerHTML=FR(eq);
     $('#sk-hint').textContent='Score: '+score[0]+' of '+score[1];
-    drawQ(); drawPicks(); draw(); syncGo();
+    drawQ(); drawBank(); drawPicks(); draw(); syncGo();
   }
 
   /* ---------- running ---------- */
@@ -797,7 +851,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||'';
     if(playing){ stop(); syncGo(); drawT(); return; }
     if(mode==='predict'){
       if(!ready()) return;
-      q.phase='run'; q.ph0=ph; ansIn.disabled=true;
+      q.phase='run'; q.ph0=ph; ansIn.disabled=true; sel=null; drawBank();
       if(isDraw(q)){ T=TIN; q.tEnd=TALL+0.6; } else { T=TALL; q.tEnd=TALL+2.2; }
       drawPicks();
     } else {
@@ -828,7 +882,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||'';
   });
   onPick(svgEl,function(id){
     if(mode!=='predict' || !q || q.phase!=='ask') return;
-    if(q.kind==='boxes') q.sel[id]=(q.sel[id]+1)%q.opts[id].length; else q.pick=+id;
+    if(q.kind==='boxes'){ if(sel!==null){ if(place(id,sel)){ sel=null; drawBank(); } } else q.put[id]=null; } else q.pick=+id;
     drawPicks(); draw(); syncGo();
   });
   ansIn.addEventListener('input',syncGo);
@@ -839,13 +893,13 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||'';
     $('.side').classList.toggle('q',pr);
     $('#sk-setup').hidden=pr; $('#sk-sliders').hidden=pr; $('#sk-working').hidden=pr; $('#sk-stats').hidden=pr; $('#sk-qeq').hidden=true; $('#sk-ans').hidden=true;
     if(pr){ $('#sk-hint').textContent='Score: '+score[0]+' of '+score[1]; deal(); }
-    else { q=null; $('#sk-hint').textContent='Give the filament lamp and the LED lamp the same input. Which wastes less?'; reset(); }
+    else { q=null; drawBank(); $('#sk-hint').textContent='Give the filament lamp and the LED lamp the same input. Which wastes less?'; reset(); }
   }
   modeEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b || b.dataset.v===mode) return; setMode(b.dataset.v); });
 
   watchEquals($('#sk-eq')); watchEquals($('#sk-qeq'));
   $('#sk-eo').textContent=num(+eIn.value)+' J';
-  if(window.ResizeObserver) new ResizeObserver(function(){ var was=L && L.tall; layout(); if(L.tall!==was){ drawQ(); drawPicks(); } drawT(); }).observe(svgEl);
+  if(window.ResizeObserver) new ResizeObserver(function(){ var was=L && L.tall; layout(); if(L.tall!==was){ drawQ(); drawBank(); drawPicks(); } drawT(); }).observe(svgEl);
   layout();
   if(/[?&]show=predict\b/.test(location.search)) setMode('predict'); else reset();
 })();
