@@ -6,8 +6,10 @@
 function applyTabUI(){}
 const ROWS=JSON.parse(byId('ch-rows').textContent);
 const PICK_KEY=STORE_KEY+'-pick';
-let pick={on:[],mix:false,da:false,view:'choose',order:[]};
+let pick={on:[],mix:false,da:false,view:'choose',order:[],v:0};
 try{const s=JSON.parse(localStorage.getItem(PICK_KEY)||'null');if(s&&typeof s==='object')pick=Object.assign(pick,s);}catch(e){}
+// Every equation starts ticked (Alex, 12 Nov 2026); ticks saved before then (v<2) are replaced once.
+if(pick.v!==2){pick.on=ROWS.map(r=>r.id);pick.v=2;}
 function savePick(){try{localStorage.setItem(PICK_KEY,JSON.stringify(pick));}catch(e){}}
 ROWS.forEach(r=>{
   r.els=r.cards.map(c=>$$('#panel-'+c[0]+' .act').find(a=>a.dataset.raw===c[1])).filter(Boolean);
@@ -98,7 +100,6 @@ function showChooser(){
 byId('ch-start').addEventListener('click',startPractice);
 byId('pr-back').addEventListener('click',showChooser);
 byId('pr-back2').addEventListener('click',showChooser);
-byId('ch-all').addEventListener('click',()=>{ROWS.filter(visible).forEach(r=>setOn(r.id,true));savePick();refresh();});
 byId('ch-none').addEventListener('click',()=>{pick.on=[];savePick();refresh();});
 byId('ch-da').addEventListener('click',()=>{pick.da=!pick.da;savePick();refresh();});
 byId('ch-mix').addEventListener('change',e=>{pick.mix=e.target.checked;savePick();});

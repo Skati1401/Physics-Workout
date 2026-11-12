@@ -61,7 +61,6 @@ SETS = {
       (U_2, 'charge', 'Charge, current and energy', ['Q = It', 'E = QV'], [('2b-charge', 'Q = I × t and E = Q × V')]),
       (U_2, 'series', 'Currents and voltages in series and parallel', ['I = I₁ + I₂', 'V = V₁ + V₂'], [('2b-series', 'Currents and voltages')]),
       (U_2, 'resistance', 'Resistance', ['V = IR'], [('2b-resistance', 'V = I × R')]),
-      (U_2, 'seriesr', 'Two resistors in series', ['R = R₁ + R₂'], [('2c-seriescalc', 'Two resistors in series')]),
       (U_3, 'wave', 'Wave speed, frequency and period', ['v = fλ', 'f = [[1|T]]'], [('3a-equation', 'v = f × λ and f = [[1|T]]')]),
       (U_3, 'reflection', 'The law of reflection', ['i = r'], [('3b-refraction', 'The law of reflection')]),
       (U_3, 'refraction', 'Refractive index', ['n = [[sin i|sin r]]'], [('3b-refraction', 'n = [[sin i|sin r]]')]),
@@ -76,14 +75,9 @@ SETS = {
       (U_5, 'pressure', 'Pressure', ['p = [[F|A]]'], [('5a-pressure', 'Pressure, force and area')]),
       (U_5, 'depth', 'Pressure difference in a liquid', ['p = hρg'], [('5a-fluids', 'Pressure difference in a liquid')]),
       (U_5, 'shc', 'Specific heat capacity', ['ΔQ = mcΔT'], [('5a-shc', 'Thermal energy, mass, c and temperature change')]),
-      (U_5, 'kelvin', 'Celsius and kelvin', ['T = θ + 273'], [('5b-kelvin', 'Convert and compare')]),
       (U_5, 'gaslaws', 'The gas laws', ['p₁V₁ = p₂V₂', '[[p₁|T₁]] = [[p₂|T₂]]'], [('5b-laws', 'Use the gas laws')]),
       (U_6, 'turns', 'Transformer turns ratio', ['[[V<sub>p</sub>|V<sub>s</sub>]] = [[N<sub>p</sub>|N<sub>s</sub>]]'], [('6b-transformers', 'The turns ratio')]),
       (U_6, 'tpower', 'Transformer power', ['V<sub>p</sub>I<sub>p</sub> = V<sub>s</sub>I<sub>s</sub>'], [('6b-grid', 'Input power = output power')]),
-      (U_7, 'particles', 'Protons, neutrons and electrons', ['neutrons = A − Z'], [('7a-atoms', 'Counting particles')]),
-      (U_7, 'decay', 'Balance decay equations', [], [('7a-equations', 'Balance the equations')]),
-      (U_7, 'fission', 'Balance fission and fusion equations', [], [('7b-fission', 'Balance a fission equation'), ('7b-fusion', 'Balance a fusion equation')]),
-      (U_7, 'halflife', 'Half-life, and changing its units', [], [('7a-halflife', 'Half-life calculations'), ('7b-units', 'Convert the units')]),
       (U_8, 'weight', 'Weight on other worlds', ['W = mg'], [('8a-orbits', 'Weight on other worlds')]),
       (U_8, 'orbital', 'Orbital speed', ['v = [[2πr|T]]'], [('8a-orbital', 'v = [[2 × π × r|T]]')]),
       (U_8, 'redshift', 'Red-shift', ['[[Δλ|λ₀]] = [[v|c]]'], [('8b-equation', '[[Δλ|λ₀]] = [[v|c]]')]),
@@ -102,7 +96,6 @@ SETS = {
       '2b-charge': ('circuits.html', 'CHARGE AND ENERGY'),
       '2b-series': ('circuits.html', 'SERIES AND PARALLEL'),
       '2b-resistance': ('circuits.html', 'RESISTANCE'),
-      '2c-seriescalc': ('circuit-components.html', 'SERIES CIRCUIT CALCULATIONS'),
       '3a-equation': ('waves.html', 'WAVE EQUATIONS'),
       '3b-refraction': ('light-and-sound.html', 'REFRACTION'),
       '3b-tir': ('light-and-sound.html', 'TOTAL INTERNAL REFLECTION'),
@@ -116,16 +109,9 @@ SETS = {
       '5a-pressure': ('density-pressure-state.html', 'PRESSURE'),
       '5a-fluids': ('density-pressure-state.html', 'FLUIDS'),
       '5a-shc': ('density-pressure-state.html', 'SPECIFIC HEAT CAPACITY'),
-      '5b-kelvin': ('gases.html', 'KELVIN'),
       '5b-laws': ('gases.html', 'GAS LAWS'),
       '6b-transformers': ('electromagnetic-induction.html', 'TRANSFORMERS'),
       '6b-grid': ('electromagnetic-induction.html', 'NATIONAL GRID'),
-      '7a-atoms': ('radioactivity.html', 'ATOMS AND ISOTOPES'),
-      '7a-equations': ('radioactivity.html', 'DECAY EQUATIONS'),
-      '7a-halflife': ('radioactivity.html', 'HALF-LIFE'),
-      '7b-fission': ('fission-and-fusion.html', 'FISSION'),
-      '7b-fusion': ('fission-and-fusion.html', 'FUSION'),
-      '7b-units': ('fission-and-fusion.html', 'UNITS AND KEY TERMS (ALL OF UNIT 7)'),
       '8a-orbits': ('universe-and-stars.html', 'GRAVITY AND ORBITS'),
       '8a-orbital': ('universe-and-stars.html', 'ORBITAL SPEED'),
       '8b-equation': ('cosmology.html', 'THE RED-SHIFT EQUATION'),
@@ -230,14 +216,13 @@ def chooser_body(cfg, ids):
       '<h1>' + cfg['title'] + '</h1>\n<span class="head-note">TA = Triple Award only</span>\n</header>\n'
       '<section id="chooser" aria-labelledby="ch-title">\n<div class="ch-top">\n'
       '<h2 id="ch-title" tabindex="-1">Choose Your Equations</h2>\n'
-      '<p>Tick the equations you want to practise, then press Start. Each one gives you two questions, and New problems gives you two more.</p>\n'
-      '<div class="ch-tools"><button type="button" class="btn" id="ch-all">Tick all</button>'
+      '<p>Every equation is ticked. Press Start to practise them all, or untick the ones you don’t want first. Each one gives you two questions, and New problems gives you two more.</p>\n'
+      '<div class="ch-go"><button type="button" class="btn primary" id="ch-start" disabled>Start</button>'
+      '<span class="ch-count" id="ch-count" aria-live="polite"></span>'
+      '<label class="ch-mix"><input type="checkbox" id="ch-mix"> Mix the order</label>'
       '<button type="button" class="btn" id="ch-none">Clear ticks</button>'
       '<button type="button" class="btn" id="ch-da" aria-pressed="false">Leave out TA</button></div>\n</div>\n'
-      '<div class="ch-units" id="ch-units"></div>\n'
-      '<div class="ch-go"><span class="ch-count" id="ch-count" aria-live="polite"></span>'
-      '<label class="ch-mix"><input type="checkbox" id="ch-mix"> Mix the order</label>'
-      '<button type="button" class="btn primary" id="ch-start" disabled>Start</button></div>\n</section>\n'
+      '<div class="ch-units" id="ch-units"></div>\n</section>\n'
       '<section id="practice" aria-labelledby="pr-title" hidden>\n'
       '<div class="pr-bar"><h2 id="pr-title" tabindex="-1">Practise</h2><span class="pr-count" id="pr-count" aria-live="polite"></span>'
       '<button type="button" class="btn" id="pr-back">&larr; Change equations</button></div>\n'
