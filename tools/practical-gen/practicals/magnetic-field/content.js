@@ -1,47 +1,4 @@
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','The method and what you find','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  // Bullet points, one step each, as students write the method (Alex, 11 Nov 2026).
-  const lists=[
-    ['Method',[
-      ['Put a bar magnet in the middle of a sheet of paper and draw round it.'],
-      ['Place a small ',['b1','plotting compass'],' next to the north pole.'],
-      ['Mark a dot where the ',['b2','north'],' end of the needle points.'],
-      ['Move the compass so the tail of the needle is on that dot, then mark the next dot.'],
-      ['Repeat until you reach the ',['b3','south'],' pole or the edge of the paper.'],
-      ['Join the dots to form a ',['b4','field line'],' and add an arrow from N to S.'],
-      ['Draw more lines from other starting points (or use many compasses at once).']
-    ]],
-    ['What you find',[
-      ['Field lines never cross. They are closest together at the ',['b5','poles'],', where the field is ',['b6','strongest'],'.'],
-      ['Between two north poles facing each other there is a ',['b7','neutral point'],', where the field is zero.'],
-      ['Opposite poles facing, close together but not touching, give a ',['b8','uniform'],' field: straight, parallel, evenly spaced lines.'],
-      ['Iron filings show the shape of the field, but only a plotting compass shows its ',['b9','direction'],'.']
-    ]]
-  ];
-  const cloze=mk('div','cloze'),slots=[],chips=[];
-  lists.forEach(([head,items])=>{
-    cloze.appendChild(mk('p','sub',head));
-    const ul=mk('ul','');cloze.appendChild(ul);
-    items.forEach(parts=>{
-      const li=mk('li','');ul.appendChild(li);
-      parts.forEach(p=>{
-        if(typeof p==='string')li.appendChild(document.createTextNode(p));
-        else{const s=mk('span','blank');li.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
-      });
-    });
-  });
-  ['weakest','middle','random','east'].forEach((t,i)=>chips.push({id:'d'+i,text:t}));
-  body.appendChild(cloze);
-  body.appendChild(mk('div','pool-label','Word bank'));
-  const pool=mk('div','chip-pool');body.appendChild(pool);
-  const g={};
-  const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-  const score=mk('span','score');b.el.insertBefore(score,b.msg);
-  Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
-}
-
-/* ================= 2. METHOD ================= */
+/* ================= 1. METHOD ================= */
 {
   const body=act('method','Order','Plot a field line with a compass','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
   createReorder({host:body,steps:[
@@ -68,7 +25,7 @@
   ]});
 }
 
-/* ================= 3. IRON FILINGS ================= */
+/* ================= 2. IRON FILINGS ================= */
 {
   const body=act('filings','Order','Show the pattern with iron filings','Put the steps in order. Drag the ≡ handle, or use the ▲▼ buttons.');
   createReorder({host:body,steps:[
@@ -113,7 +70,7 @@
   ]});
 }
 
-/* ================= 4. EXPERIMENT ================= */
+/* ================= 3. EXPERIMENT ================= */
 {
   act('experiment','Your turn','Take your own readings','Press Experiment. Plot at least four field lines round one bar magnet, then press Compare with field lines. Then try like poles, unlike poles and unlike poles close together. Where do your lines start and end, where are they closest together, and what happens between two north poles?');
 }
@@ -137,7 +94,7 @@ frameAct('experiment','animations/magnetic-field-patterns.html','','Magnetic fie
   ],explain:'A field line shows the direction a compass needle points. At any point the needle can point only one way, so two field lines can never cross.'});
 }
 
-/* ================= 5. RESULTS: reading a field pattern ================= */
+/* ================= 4. RESULTS: reading a field pattern ================= */
 // A bar magnet's field lines, traced from two point poles (N on the left), with labelled points.
 function barFieldSVG(marks,pick){
   const W=520,H=290,cx=260,cy=145,NX=cx-74,SX=cx+74;
@@ -305,7 +262,7 @@ function twoNorthSVG(wrong){
   ]});
 }
 
-/* ================= 6. TWO MAGNETS ================= */
+/* ================= 5. TWO MAGNETS ================= */
 let sortBody;
 {
   const body=sortBody=act('twomag','Sort','Attract, repel or no force?','Sort each pair, then press Check.');
@@ -353,7 +310,7 @@ let sortBody;
   body.appendChild(d);
 }
 
-/* ================= 7. ACCURACY AND SAFETY ================= */
+/* ================= 6. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
