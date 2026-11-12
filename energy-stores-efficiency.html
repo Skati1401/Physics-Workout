@@ -320,6 +320,11 @@ svg text{font-family:var(--f-mono)}
 .legend i{width:14px;height:14px;border-radius:3px;flex:none}
 .legend b{font:500 13px var(--f-mono)}
 svg.sankey{background:var(--panel)}
+svg.sankey text.sk-l{font:600 13px 'IBM Plex Mono',monospace;fill:var(--ink)}
+.sk-q{display:flex;gap:14px;align-items:center}
+.sk-fig{flex:0 0 210px;max-width:210px}
+.sk-fig svg{width:100%;height:auto;display:block}
+@media (max-width:480px){.sk-q{flex-direction:column;align-items:flex-start}.sk-fig{flex-basis:auto;width:100%;max-width:260px}}
 .label-split .graph-plot-wrap{max-width:560px}
 .graph-line-drop .drop-caption{max-width:140px}
 @keyframes lockpop{50%{transform:scale(1.05)}}
@@ -479,8 +484,8 @@ svg.sankey{background:var(--panel)}
 <button class="tab-btn" role="tab" id="tab-stores" data-tab="stores" data-grp="b" aria-selected="false" aria-controls="panel-stores">Stores</button>
 <button class="tab-btn" role="tab" id="tab-transfers" data-tab="transfers" data-grp="b" aria-selected="false" aria-controls="panel-transfers">Transfers</button>
 <button class="tab-btn" role="tab" id="tab-conserve" data-tab="conserve" data-grp="b" aria-selected="false" aria-controls="panel-conserve">Conservation</button>
-<button class="tab-btn" role="tab" id="tab-efficiency" data-tab="efficiency" data-grp="b" aria-selected="false" aria-controls="panel-efficiency">Efficiency</button>
 <button class="tab-btn" role="tab" id="tab-sankey" data-tab="sankey" data-grp="b" aria-selected="false" aria-controls="panel-sankey">Sankey</button>
+<button class="tab-btn" role="tab" id="tab-efficiency" data-tab="efficiency" data-grp="b" aria-selected="false" aria-controls="panel-efficiency">Efficiency</button>
 <button class="tab-btn" role="tab" id="tab-sumup" data-tab="sumup" data-grp="" aria-selected="false" aria-controls="panel-sumup">Sum Up</button>
 </nav>
 <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
@@ -532,7 +537,7 @@ const raf=f=>requestAnimationFrame(f);
 // Units merge (3 Nov 2026): this unit's Units and Key Terms tabs are now one tab, so old links go there.
 try{const to={units:'unit-4-units-and-terms.html#units'}[location.hash.slice(1)];if(to){if(to[0]==='#')history.replaceState(null,'',to);else{location.replace(to);return;}}}catch(e){}
 const STORE_KEY='unit4a-energy-v6',OLD_STORE_KEY='unit4a-energy-v5';
-const TAB_IDS=['overview','stores','transfers','conserve','efficiency','sankey','sumup'];
+const TAB_IDS=['overview','stores','transfers','conserve','sankey','efficiency','sumup'];
 let activeTab='overview';
 const reflowers=[];
 
@@ -1461,11 +1466,24 @@ function sankeySVG(o){
     const b=bands[i],R=r+b.w,xc=Math.max(xs+10,prevOuter+gap-r),ox=xc+R,ix=xc+r,hy=yEnd-14;
     svg+='<path d="M'+xs+','+b.ya+' L'+xc+','+b.ya+' A'+R+','+R+' 0 0 1 '+ox+','+(b.ya+R)+' L'+ox+','+hy+' L'+(ox+7)+','+hy+' L'+((ox+ix)/2)+','+yEnd+' L'+(ix-7)+','+hy+' L'+ix+','+hy+' L'+ix+','+(b.ya+R)+' A'+r+','+r+' 0 0 0 '+xc+','+b.yb+' L'+xs+','+b.yb+' Z" fill="'+b.f.c+'" opacity=".9"/>';
     anchors[b.f.id]={x:(ox+ix)/2,y:Math.max(b.ya+R+18,hy-(o.flows.length-i)*46)};
+    b.lx=ox+10;b.ly=(b.ya+R+hy)/2+4;
     prevOuter=ox;
   }
+  if(o.labels){const L=o.labels,T=(x,y,a,t)=>t?'<text class="sk-l" x="'+x+'" y="'+y+'" text-anchor="'+a+'">'+t+'</text>':'';
+    svg+=T(x0,top-7,'start',L.in)+T(W-12,u.ya-7,'end',L[u.f.id]);
+    bands.slice(1).forEach(b=>{if(b.lx)svg+=T(b.lx,b.ly,'start',L[b.f.id]);});}
   svg+=(o.extra||'')+'</svg>';
   const pct={};Object.keys(anchors).forEach(k=>pct[k]={x:anchors[k].x/W*100,y:anchors[k].y/H*100});
   return {svg:svg,pct:pct};
+}
+
+
+// A Calculate question with a small Sankey diagram (drawn to scale, input 70 px wide) beside its text (12 Nov 2026).
+// flows: [useful, wasted…] with v in any unit; labels: {in, u, w} as in sankeySVG.
+function sankeyQ(flows,labels,text,aria){
+  const tot=flows.reduce((a,f)=>a+f.v,0);
+  const svg=sankeySVG({flows:flows,scale:70/tot,inColor:COL.e,W:260,H:156,split:100,labels:labels,label:aria}).svg;
+  return '<span class="sk-q"><span class="sk-fig">'+svg+'</span><span class="sk-t">'+text+'</span></span>';
 }
 
 
@@ -1503,7 +1521,7 @@ function wordBox(panel,title,parts,extras){
     q:"Where has the missing energy gone?",
     options:[{"text": "Heating the ball, the floor and the air", "correct": true}, {"text": "It is used up by every bounce, so it is gone", "why": "Energy cannot be destroyed. It is still there, but spread out where it is no use to the ball."}, {"text": "It is stored inside the ball for the next drop", "why": "If it stayed in the ball, the ball would bounce back just as high. It has been transferred away."}, {"text": "It turns into the force of the bounce", "why": "A force is not a store of energy. The energy has been transferred, mostly by heating, to the surroundings."}],
     explain:"Each bounce squashes the ball and makes a sound, transferring some energy by heating to the thermal stores of the ball, the floor and the air. The total energy stays the same, but less is left in the ball’s gravitational store at the top of each bounce: it has been dissipated."});
-  goalsAct("overview",[{"ta": 0, "t": "Name the energy stores, and the ways energy is transferred between them", "sp": "4.2, 4.3"}, {"ta": 0, "t": "Use conservation of energy", "sp": "4.3"}, {"ta": 0, "t": "Calculate efficiency from the useful and total energy output", "sp": "4.4"}, {"ta": 0, "t": "Draw and use Sankey diagrams", "sp": "4.4, 4.5"}]);
+  goalsAct("overview",[{"ta": 0, "t": "Name the energy stores, and the ways energy is transferred between them", "sp": "4.2, 4.3"}, {"ta": 0, "t": "Use conservation of energy", "sp": "4.3"}, {"ta": 0, "t": "Draw and use Sankey diagrams", "sp": "4.4, 4.5"}, {"ta": 0, "t": "Calculate efficiency from the useful and total energy output", "sp": "4.4"}]);
   pairFirstTwo("overview");
 }
 /* ================= SUM UP: exam-style word boxes ================= */
@@ -1669,6 +1687,28 @@ const es_n=x=>{const v=+(+x).toFixed(4),q=String(Math.abs(v)).split('.');if(q[0]
       {id:'w3',text:'Loudspeaker: energy heating the coil',cat:'w'}
     ]});
 
+    // Two questions (11 Nov 2026): the first rearranges the efficiency equation for the total or the useful energy; the second
+  // reads arrow widths with a scale, or finds the energy from power × time first. New problems changes the numbers and device.
+  // 12 Nov 2026 (Alex): moved here from the Sankey tab; each question has a Sankey diagram beside its text.
+  const es_q1=rnd=>{let pc,T,U,k=0;do{pc=calcPick(rnd,[20,25,30,40,60,75,80]);T=calcPick(rnd,[600,900,1200,1500,1800,2000,2400,3000,4500]);U=T*pc/100;}while(!Number.isInteger(U)&&++k<60);
+  const n=calcNum,d=calcPick(rnd,[['An LED lamp','In one minute it gives out','of light'],['An electric motor','In ten seconds it transfers','to the kinetic store of a lift'],['Lucas’s food blender','In ten seconds it transfers','to the kinetic store of its blades'],['A kettle','In ten seconds it transfers','to the thermal store of the water']]),e=n(pc/100);
+  const fl=[{id:'u',v:pc,c:COL.r},{id:'w',v:100-pc,c:COL.t}],aria='Sankey diagram for '+d[0].toLowerCase().replace('’s',' ')+', drawn to scale';
+  return rnd()<0.6?{q:sankeyQ(fl,{in:'? J',u:n(U)+' J',w:'wasted'},d[0]+' is '+pc+'% efficient. '+d[1]+' '+n(U)+' J '+d[2]+'. The total energy supplied to it is',aria),unit:'J',answer:T,
+      working:'efficiency = '+pc+'% = '+e+'<br>useful energy output = '+n(U)+' J<br>total energy output = ?||efficiency = [[useful energy output|total energy output]]<br>'+e+' = [['+n(U)+'|total energy output]]<br>'+e+' × total energy output = '+n(U)+'<br>total energy output = [['+n(U)+'|'+e+']]<br>total energy output = '+n(T)+' J'}
+    :{q:sankeyQ(fl,{in:n(T)+' J',u:'? J',w:'wasted'},d[0]+' is '+pc+'% efficient. It is supplied with '+n(T)+' J. The useful energy it transfers '+d[2]+' is',aria),unit:'J',answer:U,
+      working:'efficiency = '+pc+'% = '+e+'<br>total energy output = '+n(T)+' J<br>useful energy output = ?||efficiency = [[useful energy output|total energy output]]<br>'+e+' = [[useful energy output|'+n(T)+']]<br>useful energy output = '+e+' × '+n(T)+'<br>useful energy output = '+n(U)+' J'};};
+  const es_q2=rnd=>{const n=calcNum;return rnd()<0.5?(()=>{const sc=calcPick(rnd,[2,4,5,10,20]),wi=calcPick(rnd,[30,40,50,60]),fr=calcPick(rnd,[0.2,0.3,0.4,0.6]),wu=Math.round(wi*fr),I=wi*sc,U=wu*sc,W=I-U,pc=+(U/I*100).toFixed(1);
+    return {q:sankeyQ([{id:'u',v:wu,c:COL.r},{id:'w',v:wi-wu,c:COL.t}],{in:wi+' mm',u:'useful',w:(wi-wu)+' mm'},'On a Sankey diagram, 1 mm of width stands for '+sc+' J. The input arrow is '+wi+' mm wide and the wasted arrow is '+(wi-wu)+' mm wide. The efficiency, as a percentage, is','Sankey diagram with an input arrow '+wi+' mm wide and a wasted arrow '+(wi-wu)+' mm wide'),unit:'%',answer:pc,
+      hints:['Turn the widths into joules with the scale.','Useful energy = input − wasted.','Then efficiency = [[useful energy output|total energy output]], as a percentage.'],
+      working:'scale: 1 mm = '+sc+' J<br>input width = '+wi+' mm<br>wasted width = '+(wi-wu)+' mm<br>efficiency = ?||input = '+wi+' × '+sc+' = '+I+' J<br>wasted = '+(wi-wu)+' × '+sc+' = '+W+' J<br>useful = '+I+' − '+W+' = '+U+' J<br>efficiency = [[useful energy output|total energy output]]<br>efficiency = [['+U+'|'+I+']]<br>efficiency = '+n(U/I)+'<br>efficiency = '+n(pc)+'%'};})()
+  :(()=>{const c=calcPick(rnd,[['lamp',[40,60,100],[10,20,25],'as light'],['motor',[200,500,1000],[50,60,75,80],'usefully'],['loudspeaker',[20,40,50],[10,20,25],'as sound']]),P=calcPick(rnd,c[1]),pc=calcPick(rnd,c[2]),m=calcPick(rnd,[1,2,5,10]),T=P*m*60,U=T*pc/100;
+    return {q:sankeyQ([{id:'u',v:pc,c:COL.r},{id:'w',v:100-pc,c:COL.t}],{in:'P × t',u:'? J',w:'wasted'},'A '+P+' W '+c[0]+' is '+pc+'% efficient. It runs for '+m+(m===1?' minute':' minutes')+'. The energy it transfers '+c[3]+' is','Sankey diagram for a '+c[0]+', drawn to scale'),unit:'J',answer:U,
+      hints:['Change the time into seconds.','Total energy supplied = power × time.','Then rearrange the efficiency equation for the useful energy.'],
+      working:'P = '+P+' W<br>t = '+m+' min = '+m*60+' s<br>efficiency = '+pc+'% = '+n(pc/100)+'<br>useful energy output = ?||total energy output = '+P+' × '+m*60+'<br>total energy output = '+n(T)+' J<br>efficiency = [[useful energy output|total energy output]]<br>'+n(pc/100)+' = [[useful energy output|'+n(T)+']]<br>useful energy output = '+n(pc/100)+' × '+n(T)+'<br>useful energy output = '+n(U)+' J'};})();};
+  createCalc({
+  host:act('efficiency','Calculate','Calculate efficiency','Use efficiency = [[useful energy output|total energy output]]. Write a percentage as a decimal first (40% = 0.40). Each Sankey diagram is drawn to scale. Press New problems for another pair.'),
+  questions:[calcFix(es_q1,1),calcFix(es_q2,2)]
+  });
 }
 
 /* ================= 6. SANKEY DIAGRAMS ================= */
@@ -1734,26 +1774,6 @@ const es_n=x=>{const v=+(+x).toFixed(4),q=String(Math.abs(v)).split('.');if(q[0]
   const lsc=mk('span','score');lb.el.insertBefore(lsc,lb.msg);
   gm=createBlankGame({fill:true,slots:slots,pool:pool,chips:chips,msg:lb,score:lsc,isCorrect:(c,s)=>c.text===s.answer,slotText:c=>c.short,placedClass:'drop-caption'});
 
-    // Two questions (11 Nov 2026): the first rearranges the efficiency equation for the total or the useful energy; the second
-  // reads arrow widths with a scale, or finds the energy from power × time first. New problems changes the numbers and device.
-  const es_q1=rnd=>{let pc,T,U,k=0;do{pc=calcPick(rnd,[20,25,30,40,60,75,80]);T=calcPick(rnd,[600,900,1200,1500,1800,2000,2400,3000,4500]);U=T*pc/100;}while(!Number.isInteger(U)&&++k<60);
-    const n=calcNum,d=calcPick(rnd,[['An LED lamp','In one minute it gives out','of light'],['An electric motor','In ten seconds it transfers','to the kinetic store of a lift'],['Lucas’s food blender','In ten seconds it transfers','to the kinetic store of its blades'],['A kettle','In ten seconds it transfers','to the thermal store of the water']]),e=n(pc/100);
-    return rnd()<0.6?{q:d[0]+' is '+pc+'% efficient. '+d[1]+' '+n(U)+' J '+d[2]+'. The total energy supplied to it is',unit:'J',answer:T,
-        working:'efficiency = '+pc+'% = '+e+'<br>useful energy output = '+n(U)+' J<br>total energy output = ?||efficiency = [[useful energy output|total energy output]]<br>'+e+' = [['+n(U)+'|total energy output]]<br>'+e+' × total energy output = '+n(U)+'<br>total energy output = [['+n(U)+'|'+e+']]<br>total energy output = '+n(T)+' J'}
-      :{q:d[0]+' is '+pc+'% efficient. It is supplied with '+n(T)+' J. The useful energy it transfers '+d[2]+' is',unit:'J',answer:U,
-        working:'efficiency = '+pc+'% = '+e+'<br>total energy output = '+n(T)+' J<br>useful energy output = ?||efficiency = [[useful energy output|total energy output]]<br>'+e+' = [[useful energy output|'+n(T)+']]<br>useful energy output = '+e+' × '+n(T)+'<br>useful energy output = '+n(U)+' J'};};
-  const es_q2=rnd=>{const n=calcNum;return rnd()<0.5?(()=>{const sc=calcPick(rnd,[2,4,5,10,20]),wi=calcPick(rnd,[30,40,50,60]),fr=calcPick(rnd,[0.2,0.3,0.4,0.6]),wu=Math.round(wi*fr),I=wi*sc,U=wu*sc,W=I-U,pc=+(U/I*100).toFixed(1);
-      return {q:'On a Sankey diagram, 1 mm of width stands for '+sc+' J. The input arrow is '+wi+' mm wide and the wasted arrow is '+(wi-wu)+' mm wide. The efficiency, as a percentage, is',unit:'%',answer:pc,
-        hints:['Turn the widths into joules with the scale.','Useful energy = input − wasted.','Then efficiency = [[useful energy output|total energy output]], as a percentage.'],
-        working:'scale: 1 mm = '+sc+' J<br>input width = '+wi+' mm<br>wasted width = '+(wi-wu)+' mm<br>efficiency = ?||input = '+wi+' × '+sc+' = '+I+' J<br>wasted = '+(wi-wu)+' × '+sc+' = '+W+' J<br>useful = '+I+' − '+W+' = '+U+' J<br>efficiency = [[useful energy output|total energy output]]<br>efficiency = [['+U+'|'+I+']]<br>efficiency = '+n(U/I)+'<br>efficiency = '+n(pc)+'%'};})()
-    :(()=>{const c=calcPick(rnd,[['lamp',[40,60,100],[10,20,25],'as light'],['motor',[200,500,1000],[50,60,75,80],'usefully'],['loudspeaker',[20,40,50],[10,20,25],'as sound']]),P=calcPick(rnd,c[1]),pc=calcPick(rnd,c[2]),m=calcPick(rnd,[1,2,5,10]),T=P*m*60,U=T*pc/100;
-      return {q:'A '+P+' W '+c[0]+' is '+pc+'% efficient. It runs for '+m+(m===1?' minute':' minutes')+'. The energy it transfers '+c[3]+' is',unit:'J',answer:U,
-        hints:['Change the time into seconds.','Total energy supplied = power × time.','Then rearrange the efficiency equation for the useful energy.'],
-        working:'P = '+P+' W<br>t = '+m+' min = '+m*60+' s<br>efficiency = '+pc+'% = '+n(pc/100)+'<br>useful energy output = ?||total energy output = '+P+' × '+m*60+'<br>total energy output = '+n(T)+' J<br>efficiency = [[useful energy output|total energy output]]<br>'+n(pc/100)+' = [[useful energy output|'+n(T)+']]<br>useful energy output = '+n(pc/100)+' × '+n(T)+'<br>useful energy output = '+n(U)+' J'};})();};
-  createCalc({
-    host:act('sankey','Calculate','Reading Sankey diagrams','Use efficiency = [[useful energy output|total energy output]]. Write a percentage as a decimal first (40% = 0.40). Press New problems for another pair.'),
-    questions:[calcFix(es_q1,1),calcFix(es_q2,2)]
-  });
 }
 
 
