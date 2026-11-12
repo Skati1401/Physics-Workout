@@ -25,7 +25,7 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 - [x] **3d** Calculations & Graphs section on `igcse.html` below Core Practicals (12 Nov 2026, Alex): `calculations.html` rebuilt as an equation chooser and published (card added, `noindex` off). Alex to check it (`tools/REVIEW.md`).
 - [ ] **3e** Multi-step Workout for the Calculations & Graphs section: problems that chain two or three equations, often across units, based on past-paper questions from the IGCSE Question Index, marked step by step (Alex, 12 Nov 2026).
 - [ ] **3f** Graphs Workout for the Calculations & Graphs section (not yet: Alex, 12 Nov 2026). The draft `graphs.html` is the starting point.
-- [ ] **3g** Check Warm Up and Sum Up on the 26 workouts (12 Nov 2026): each Warm Up question and "By the end you can" list, and each Sum Up word box; and the 8 new Unit n Units and Key Terms pages (what to look at is in `tools/REVIEW.md`).
+- [ ] **3g** Check Warm Up and Sum Up on the 24 workouts (12 Nov 2026): each Warm Up question and "By the end you can" list, and each Sum Up word box; and the 8 new Unit n Units and Key Terms pages (what to look at is in `tools/REVIEW.md`).
 
 ## 4. Build: workouts (IGCSE, spec order)
 
