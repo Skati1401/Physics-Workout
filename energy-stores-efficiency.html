@@ -325,6 +325,9 @@ svg.sankey text.sk-l{font:600 13px 'IBM Plex Mono',monospace;fill:var(--ink)}
 .sk-fig{flex:0 0 210px;max-width:210px}
 .sk-fig svg{width:100%;height:auto;display:block}
 @media (max-width:480px){.sk-q{flex-direction:column;align-items:flex-start}.sk-fig{flex-basis:auto;width:100%;max-width:260px}}
+.anim-frame{display:block;width:100%;height:600px;border:0}
+.anim-open{font:600 13px var(--f-mono);margin:4px 0 18px}
+.anim-open a{color:var(--accent)}
 .label-split .graph-plot-wrap{max-width:560px}
 .graph-line-drop .drop-caption{max-width:140px}
 @keyframes lockpop{50%{transform:scale(1.05)}}
@@ -471,6 +474,7 @@ svg.sankey text.sk-l{font:600 13px 'IBM Plex Mono',monospace;fill:var(--ink)}
   })();
 </script>
 <!-- /pw-review -->
+<meta name="pw-draft" content="energy-stores-efficiency.html">
 </head>
 <body>
 <div class="page">
@@ -1484,6 +1488,16 @@ function sankeyQ(flows,labels,text,aria){
   const svg=sankeySVG({flows:flows,scale:70/tot,inColor:COL.e,W:260,H:156,split:100,labels:labels,label:aria}).svg;
   return '<span class="sk-q"><span class="sk-fig">'+svg+'</span><span class="sk-t">'+text+'</span></span>';
 }
+// A teaching animation shown in a frame: the animation page is the only copy (see CLAUDE.md, "One copy of each animation").
+function frameAct(panel,file,show,title,name,first){
+  const w=mk('div','anim-wrap');
+  w.innerHTML='<iframe class="anim-frame" src="'+file+'?embed'+(show?'&show='+show:'')+'" title="'+title+'"></iframe><p class="anim-open"><a href="'+file+'">Open the '+name+' animation full screen &rarr;</a></p>';
+  const acts=$('#panel-'+panel+' .acts');if(first)acts.prepend(w);else acts.appendChild(w);
+}
+window.addEventListener('message',e=>{
+  const h=e.data&&e.data.animHeight;if(typeof h!=='number')return;
+  $$('iframe.anim-frame').forEach(f=>{if(f.contentWindow===e.source)f.style.height=h+'px';});
+});
 
 
 /* ================= Warm Up and Sum Up (Alex, 12 Nov 2026) =================
@@ -1712,37 +1726,8 @@ const es_n=x=>{const v=+(+x).toFixed(4),q=String(Math.abs(v)).split('.');if(q[0]
 
 /* ================= 6. SANKEY DIAGRAMS ================= */
 {
-  const DEV={
-    fil:{n:'Filament lamp',f:[{id:'u',l:'Light',v:10,c:COL.r},{id:'h',l:'Heating the surroundings',v:90,c:COL.t}]},
-    led:{n:'LED lamp',f:[{id:'u',l:'Light',v:40,c:COL.r},{id:'h',l:'Heating the surroundings',v:60,c:COL.t}]},
-    mot:{n:'Electric motor',f:[{id:'u',l:'Kinetic store of the load',v:70,c:COL.r},{id:'h',l:'Heating the motor and air',v:25,c:COL.t},{id:'s',l:'Sound',v:5,c:COL.s}]},
-    ket:{n:'Kettle',f:[{id:'u',l:'Thermal store of the water',v:85,c:COL.r},{id:'h',l:'Heating the kettle and air',v:13,c:COL.t},{id:'s',l:'Sound',v:2,c:COL.s}]}
-  };
-  let dev='fil';
-  const body=act('sankey','Explore','Sankey diagrams to scale','Choose a device and the energy supplied. Every arrow is drawn to scale: its width shows how much energy it carries.');
-  body.innerHTML=`
-  <div class="sim sim-small" style="--simw:420px" data-minw="0.45">
-    <div class="sim-view"><div id="sk2-pic"></div></div>
-    <div class="ctl">
-      <div class="ctl-row"><span class="sub">Device</span><div class="seg" id="sk2-seg"></div></div>
-      <div class="ctl-row"><label for="sk2-in">Energy supplied electrically <output id="sk2-ino"></output></label><input type="range" id="sk2-in" min="100" max="1000" step="50" value="500"></div>
-      <ul class="legend" id="sk2-leg"></ul>
-      <div class="eq" id="sk2-eq"></div>
-      <p class="note">The useful arrow carries straight on. Wasted energy bends away. Add up the outputs: they always equal the input.</p>
-    </div>
-  </div>`;
-  const IN=slider('sk2-in',upd);
-  seg(byId('sk2-seg'),Object.keys(DEV).map(k=>({key:k,label:DEV[k].n})),'fil',k=>{dev=k;upd();});
-  function upd(){
-    const E=+IN.value,d=DEV[dev],fl=d.f.map(f=>({id:f.id,l:f.l,c:f.c,v:E*f.v/100}));
-    byId('sk2-ino').textContent=fmt(E)+' J';
-    byId('sk2-pic').innerHTML=sankeySVG({flows:fl,scale:0.13,inColor:COL.e,label:'Sankey diagram for a '+d.n.toLowerCase()}).svg;
-    byId('sk2-leg').innerHTML='<li><i style="background:'+COL.e+'"></i>Supplied electrically: <b>'+fmt(E)+' J</b></li>'+fl.map((f,i)=>'<li><i style="background:'+f.c+'"></i>'+(i===0?'Useful: ':'Wasted: ')+f.l.toLowerCase()+': <b>'+fmt(f.v)+' J</b></li>').join('');
-    const u=fl[0].v;
-    byId('sk2-eq').innerHTML=FR('efficiency = [[useful energy output|total energy output]]<br>efficiency = [['+fmt(u)+'|'+fmt(E)+']]<br>efficiency = <b>'+(u/E).toFixed(2)+' = '+Math.round(u/E*100)+'%</b>');
-  }
-  upd();
-
+  // The Sankey explore is now a teaching animation with its own page (12 Nov 2026): one copy, shown here in a frame.
+  frameAct('sankey','animations/sankey-diagram.html','','Sankey diagram animation: a device and its Sankey diagram drawn to scale','Sankey diagram',true);
 
   /* ---- label the Sankey for a drill ---- */
   const lbody=act('sankey','Label the diagram','A drill’s Sankey diagram','The diagram is drawn to scale. Drag the right caption onto each lettered arrow. Use the widths: the input is 500 J.');

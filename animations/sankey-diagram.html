@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sankey Diagram Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation. Switch on a lamp, a motor or a kettle and watch its Sankey diagram build to scale, then draw and read Sankey diagrams yourself: useful and wasted energy, and efficiency.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#7a3fc4;   --topic-soft:#eee3fb;
+    --grav:#2f63c9;    --grav-soft:#e0e9fa;
+    --steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --rail:#2c3648;
+    --deck-t:#d3d9e3; --deck-f:#a3adbf; --deck-s:#7f8a9f;
+    --ground-t:#d5e6c8; --ground-f:#a4bf90; --ground-s:#86a374;
+    --car-f:#7a3fc4; --car-t:#b792ee; --car-s:#552a8f; --skin:#f0c7a3; --hair:#3b2a1e; --shirt:#f2b01e;
+    --kin:#c2560c;     --kin-soft:#fbe4cd;
+    --therm:#b8322a;   --therm-soft:#fbe2df;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#c29bff; --topic-soft:#2e1f4a;
+      --grav:#86a9ff; --grav-soft:#1a2b55; --kin:#ff9f5c; --kin-soft:#3a2413; --therm:#ff8a80; --therm-soft:#402023;
+      --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --rail:#c3ccda;
+      --deck-t:#7d899e; --deck-f:#5c677c; --deck-s:#434d60;
+      --ground-t:#3f5a3a; --ground-f:#2c4229; --ground-s:#22331f;
+      --car-f:#9b6be6; --car-t:#cdb2ff; --car-s:#6a3fb5; --skin:#f0c7a3; --hair:#2a1d14; --shirt:#f2b01e;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#c29bff; --topic-soft:#2e1f4a;
+    --grav:#86a9ff; --grav-soft:#1a2b55; --kin:#ff9f5c; --kin-soft:#3a2413; --therm:#ff8a80; --therm-soft:#402023;
+    --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --rail:#c3ccda;
+    --deck-t:#7d899e; --deck-f:#5c677c; --deck-s:#434d60;
+    --ground-t:#3f5a3a; --ground-f:#2c4229; --ground-s:#22331f;
+    --car-f:#9b6be6; --car-t:#cdb2ff; --car-s:#6a3fb5; --skin:#f0c7a3; --hair:#2a1d14; --shirt:#f2b01e;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; controls, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view-wrap{position:relative;}
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 290px));touch-action:pan-y;}
+  .view-wrap canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .embed .view{max-height:460px;}
+  .under{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px;margin-top:12px;}
+  .under .btn-group{flex:0 1 auto;}
+  .sliders{flex:1 1 300px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px 16px;min-width:0;}
+  .view text{font-family:var(--font-mono);}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--accent);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+  .hint{font-size:12.5px;color:var(--ink-soft);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  /* drag the hill tops up and down to set h1 and h2 */
+  .grab{cursor:grab;touch-action:none;}
+  .dragme{cursor:grab;}
+  .dragme:focus{outline:none;}
+  .dragme:focus-visible .focus-ring{stroke:var(--accent);stroke-width:3;}
+  @media (max-width:560px){ .stage{padding:12px;} .eq{font-size:12.5px;padding:6px 8px;} .note{font-size:14px;} }
+
+  .over{margin-top:8px;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{border-radius:0;margin-left:-1px;font-weight:600;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  /* things to click in the picture (Predict) */
+  .pick{cursor:pointer;}
+  .pick:focus{outline:none;}
+  .pick .ring{stroke:transparent;}
+  .pick:focus-visible .ring{stroke:var(--accent);}
+
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .hint{display:none;}
+
+  .view{max-height:max(240px,calc(100vh - 330px));}
+  .view.tall,.embed .view.tall{max-height:none;}
+  .under .sliders{flex-basis:100%;}
+  :root{ --elec:#7a3fc4; --use:#0b7f7f; --snd:#a07a00; --grid:#d9dee6; --glow:#ffc83d; --glass:#e6eef6;
+    --wood-f:#c59a62; --wood-t:#dfbb86; --wood-s:#9a7444; --case:#3f4a5e; --brass:#d9a520; --topic:#0b7f7f; --topic-soft:#d6f0ef; }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --elec:#c29bff; --use:#4fcbc8; --snd:#e8c04a; --grid:#343d50; --glow:#ffd75e; --glass:#39465c;
+    --wood-f:#8a6a42; --wood-t:#a88556; --wood-s:#63492a; --case:#9aa6ba; --brass:#e0b53c; --topic:#4fcbc8; --topic-soft:#113b3b; } }
+  :root[data-theme="dark"]{ --elec:#c29bff; --use:#4fcbc8; --snd:#e8c04a; --grid:#343d50; --glow:#ffd75e; --glass:#39465c;
+    --wood-f:#8a6a42; --wood-t:#a88556; --wood-s:#63492a; --case:#9aa6ba; --brass:#e0b53c; --topic:#4fcbc8; --topic-soft:#113b3b; }
+  /* Sankey page: typed answers, question picks */
+  .jump-lab{margin-top:10px;}
+  .ansrow{display:flex;align-items:center;gap:8px;font:600 15px var(--font-mono);}
+  .ansrow input{font:600 16px var(--font-mono);width:130px;min-height:44px;padding:6px 10px;border:1.5px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);}
+  .ansrow input:disabled{opacity:.7;}
+  .stats.four{grid-template-columns:repeat(4,minmax(0,1fr));}
+  @media (max-width:560px){ .stats.four{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  .pick .hit{fill:transparent;stroke:none;}
+  .pick .ring{fill:none;stroke:transparent;}
+  .pick:focus-visible .ring{stroke:var(--accent);stroke-opacity:.55;}
+  #sk-main{pointer-events:none;}
+  @media (max-height:640px){ .seg button{min-height:38px;} .note{font-size:14px;} .side:not(.q) .hint{display:none;} }
+  .under .sliders{flex:1 1 240px;}
+  .ansrow label{font:12.5px var(--font-mono);color:var(--ink-soft);font-weight:400;}
+  .embed .under .sliders{flex-basis:240px;}
+  .view{max-height:max(240px,calc(100vh - 296px));}
+  .view.q{max-height:max(240px,calc(100vh - 266px));}
+  .side.q .note{font-size:14px;min-height:0;}
+  .side.q .eq{font-size:13px;line-height:1.6;}
+  @media (max-width:420px){ .eq,.side.q .eq{font-size:11.5px;padding:6px 6px;} }
+</style>
+<style id="choice-kit">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
+.seg.pick{background:var(--bg);box-shadow:inset 0 0 0 1px var(--panel-border);border-radius:8px;}
+.seg.pick.fit{width:fit-content;max-width:100%;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on){background:transparent;border-color:transparent;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on):not(:disabled):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode{display:flex;flex-wrap:nowrap;align-self:stretch;flex-grow:1;background:var(--bg);box-shadow:0 0 0 1px var(--panel-border);border-radius:11px;padding:3px;gap:3px;}
+.seg.mode>button:nth-child(n){flex:1 1 0;min-height:38px;margin-left:0;padding:6px 12px;border-radius:8px;white-space:nowrap;font:600 14.5px var(--font-body,inherit);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]){background:transparent;border-color:transparent;color:var(--ink);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode>button:nth-child(n)[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel);}
+.to-q[hidden]{display:none!important;}
+.to-q:nth-child(n){border-style:dashed;border-color:var(--ink);font-weight:600;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' \u00b7 ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+<!-- pw-review -->
+<script>
+  // Draft tags and Alex's reviewer button (tools/review/drafts.py writes this block; edit tools/review/snippet.html, then run drafts.py sync).
+  // A page is Draft while its row in tools/REVIEW.md is not ✅: <meta name="pw-draft"> on the page, data-draft on its list cards.
+  // ?reviewer (once, on any page) turns on reviewer mode in this browser; ?reviewer=off turns it off.
+  (function(){
+    var on = false, embed = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var m = /[?&]reviewer(?:=([^&]*))?/.exec(location.search);
+    on = !!m && m[1] !== 'off';
+    try {
+      if (m) { if (m[1] === 'off') localStorage.removeItem('pw-reviewer'); else localStorage.setItem('pw-reviewer', '1'); }
+      else on = localStorage.getItem('pw-reviewer') === '1';
+    } catch (e) {}
+    var CSS = '.pw-draft{display:inline-block;vertical-align:middle;margin-left:10px;font:600 11.5px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:0;color:var(--bad,#b42318);border:1px dashed currentColor;border-radius:5px;padding:1px 7px;white-space:nowrap}'
+      + '.act-top .pw-draft{margin-left:auto;flex:none}.act-top .pw-draft~.cp-tag,.act-top .pw-draft~.ta-tag{margin-left:0}'
+      + 'a[data-draft]{position:relative}.pw-draft.pw-corner{position:absolute;top:10px;right:10px;margin:0;background:var(--panel,#fff)}'
+      + 'summary .pw-draft{margin-left:0;flex:none}'
+      + '.pw-check{display:inline-block;vertical-align:middle;margin-left:8px;font:600 13px/1.4 "IBM Plex Sans",system-ui,sans-serif;color:#fff;background:#1a7f37;border-radius:6px;padding:4px 10px;text-decoration:none;white-space:nowrap}'
+      + '.pw-check:hover{background:#116329}.pw-check:focus-visible{outline:2px solid #1a7f37;outline-offset:2px}'
+      + '.pw-reviewer{position:fixed;left:10px;bottom:10px;z-index:9999;font:500 12px/1.4 "IBM Plex Mono",ui-monospace,monospace;background:#1d2433;color:#fff;border-radius:6px;padding:4px 9px;opacity:.85}'
+      + '.pw-reviewer a{color:#ffc83d}';
+    function tag(){ var t = document.createElement('span'); t.className = 'pw-draft'; t.title = 'Not yet checked'; t.textContent = 'Draft'; return t; }
+    function go(){
+      var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+      var meta = document.querySelector('meta[name="pw-draft"]'), h1 = document.querySelector('h1');
+      if (meta && h1 && !embed) {
+        h1.appendChild(tag());
+        if (on) {
+          var page = meta.getAttribute('content'), b = document.createElement('a');
+          b.className = 'pw-check'; b.target = '_blank'; b.rel = 'noopener'; b.textContent = '✓ Checked';
+          b.title = 'Opens a GitHub issue. Submit it and the Draft tag goes in a minute or two.';
+          b.href = 'https://github.com/Skati1401/Physics-Workout/issues/new?title=' + encodeURIComponent('Checked: ' + page)
+            + '&body=' + encodeURIComponent('Submit this issue to mark `' + page + '` as checked. The Draft tag goes in a minute or two, and the issue closes itself.');
+          h1.appendChild(b);
+        }
+      }
+      document.querySelectorAll('a[data-draft]').forEach(function(a){
+        if (a.querySelector('.pw-draft')) return;
+        var t = tag(), top = a.querySelector('.act-top');
+        if (top) top.insertBefore(t, top.querySelector('.cp-tag,.ta-tag'));
+        else { t.className += ' pw-corner'; a.appendChild(t); }
+      });
+      document.querySelectorAll('details.unit').forEach(function(d){
+        var s = d.querySelector('summary');
+        if (!s || s.querySelector('.pw-draft') || !d.querySelector('a[data-draft]')) return;
+        var h2 = s.querySelector('h2'); if (h2) h2.parentNode.insertBefore(tag(), h2.nextSibling); else s.appendChild(tag());
+      });
+      if (on && !embed) {
+        // Carry ?reviewer in every link to another page of the site, so reviewer mode survives
+        // browsers that clear site storage (school Chromebooks) and pages cached from before.
+        var carry = function(a){
+          try {
+            var u = new URL(a.href, location.href);
+            if (u.origin !== location.origin || !/(\.html|\/)$/.test(u.pathname) || u.searchParams.has('reviewer')) return;
+            u.searchParams.set('reviewer', ''); a.href = u.href.replace('reviewer=', 'reviewer');
+          } catch (e) {}
+        };
+        document.querySelectorAll('a[href]').forEach(carry);
+        ['click', 'auxclick', 'contextmenu'].forEach(function(ev){
+          document.addEventListener(ev, function(e){ var a = e.target.closest && e.target.closest('a[href]'); if (a) carry(a); }, true);
+        });
+        var r = document.createElement('div'); r.className = 'pw-reviewer';
+        r.innerHTML = 'Reviewer mode · <a href="' + location.pathname + '?reviewer=off">turn off</a>';
+        document.body.appendChild(r);
+      }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  })();
+</script>
+<!-- /pw-review -->
+<meta name="pw-draft" content="animations/sankey-diagram.html">
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; energy</div>
+    <h1>Sankey Diagrams</h1>
+  </header>
+  <section class="card stage">
+    <div>
+      <svg class="view" id="sk-svg" viewBox="0 0 860 350" role="img" aria-label="An electrical device on a bench and, beside it, its Sankey diagram drawn to scale on a grid: one input arrow that splits into a useful arrow, which carries straight on, and wasted arrows, which bend away.">
+        <g id="sk-main"></g><g id="sk-q"></g><g id="sk-picks"></g>
+      </svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="sk-go" type="button">&#9654; Switch on</button>
+          <button class="btn" id="sk-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="sk-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn to-q" type="button" data-mode="sk-mode" hidden>Try the questions &rarr;</button>
+        </div>
+        <div id="sk-ans" class="ansrow" hidden><label for="sk-in">Your answer</label><input type="number" id="sk-in" inputmode="decimal" step="any" autocomplete="off"><span id="sk-unit">J</span></div>
+        <div class="sliders" id="sk-sliders">
+          <div><label class="lab" for="sk-e"><span>Energy supplied</span> <output id="sk-eo"></output></label><input type="range" id="sk-e" min="100" max="1000" step="100" value="500"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="seg tabs mode" id="sk-mode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
+      <div id="sk-setup">
+        <div class="lab">Device</div>
+        <div class="seg" id="sk-dev"><button type="button" data-d="fil" aria-pressed="true">Filament lamp</button><button type="button" data-d="led" aria-pressed="false">LED lamp</button><button type="button" data-d="mot" aria-pressed="false">Motor</button><button type="button" data-d="ket" aria-pressed="false">Kettle</button></div>
+        <div class="lab jump-lab">Jump to a point</div>
+        <div class="seg" id="sk-points"><button type="button" data-p="in" aria-pressed="false">Input</button><button type="button" data-p="use" aria-pressed="false">Useful output</button><button type="button" data-p="all" aria-pressed="false">Whole diagram</button></div>
+      </div>
+      <p class="note" id="sk-note" aria-live="polite"></p>
+      <div class="eq" id="sk-qeq" hidden></div>
+      <div class="stats four" id="sk-stats">
+        <div class="stat"><small>Input</small><strong id="sk-si">0 J</strong></div>
+        <div class="stat"><small>Useful</small><strong id="sk-su">0 J</strong></div>
+        <div class="stat"><small>Wasted</small><strong id="sk-sw">0 J</strong></div>
+        <div class="stat hi"><small>Efficiency</small><strong id="sk-sf">0%</strong></div>
+      </div>
+      <p class="hint" id="sk-hint">Give the filament lamp and the LED lamp the same input. Which wastes less?</p>
+      <details class="working" id="sk-working">
+        <summary>Show working</summary>
+        <div class="eq" id="sk-eq"></div>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link.
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||'';
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[PW_LEVEL];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // sankey-diagram.html is the one copy of this animation. On its own it is the lesson version;
+  // with ?embed it drops its heading so a workout tab can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  var page = document.getElementById('page');
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    document.getElementById('sk-working').open = true;
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  function num(n, dp){   // round, drop trailing zeros, group thousands with a space from 10 000
+    var f = Math.pow(10, dp||0), r = Math.round(n*f)/f, t = String(r);
+    if(Math.abs(r)>=10000) t = t.replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    return t;
+  }
+  function FR(t){
+    return String(t).replace(/(\d) (?=\d{3}\b)/g,'$1 ')
+      .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  function clamp(x){ return Math.max(0, Math.min(1, x)); }
+  function pickOf(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+  // ---- solid kit (the same block is in roller-coaster-energy.html, heat-transfer.html, density.html and liquid-pressure.html) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
+
+  /* ---------- the devices ----------
+     Each flow: [role, label on the diagram, what happens to it (for the note), share of the input in %].
+     The first flow is the useful output and carries straight on; the rest are wasted and bend away. */
+  var DEV={
+    fil:{n:'Filament lamp', a:'a filament lamp', the:'the lamp', f:[['use','light','is transferred by light',10],['therm','heating the surroundings','heats the surroundings',90]]},
+    led:{n:'LED lamp', a:'an LED lamp', the:'the lamp', f:[['use','light','is transferred by light',40],['therm','heating the surroundings','heats the surroundings',60]]},
+    mot:{n:'Electric motor', a:'an electric motor', the:'the motor', f:[['use','gravitational store of the load','goes to the gravitational store of the load',70],['therm','heating the motor and the air','heats the motor and the air',25],['snd','sound','is carried away by sound',5]]},
+    ket:{n:'Kettle', a:'a kettle', the:'the kettle', f:[['use','thermal store of the water','goes to the thermal store of the water',85],['therm','heating the kettle and the air','heats the kettle and the air',13],['snd','sound','is carried away by sound',2]]}
+  };
+  var COL={in:'var(--elec)', use:'var(--use)', therm:'var(--therm)', snd:'var(--snd)'};
+  var TIN=1.5, TUSE=3, TALL=4.5, TEND=8;   // the diagram builds in three steps, then the energy keeps flowing until TEND
+
+  var svgEl=$('#sk-svg'), mainEl=$('#sk-main'), qEl=$('#sk-q'), picksEl=$('#sk-picks');
+  var goBtn=$('#sk-go'), resetBtn=$('#sk-reset'), slowBtn=$('#sk-slow'), modeEl=$('#sk-mode'), devEl=$('#sk-dev'), pointsEl=$('#sk-points');
+  var eIn=$('#sk-e'), ansIn=$('#sk-in');
+  var L=null, mode='explore', dev='fil', T=TALL, ph=0, started=false, finished=false, playing=false, last=0, raf=0;
+  var q=null, qn=0, score=[0,0];
+
+  /* ---------- layout: one wide picture (device left, Sankey right); under 520px a tall one (device above) ---------- */
+  function layout(){
+    var pr = mode==='predict', tall = svgEl.clientWidth>0 && svgEl.clientWidth<520;
+    L = tall
+      ? {tall:true, W:430, H:470, band:pr?98:0, x0:14, xs:112, tip:420, top:204, yEnd:440, sq:pr?16:8, dev:[139,-52,0.6], fs:11, lh:13, wl:14, wr:20, qfs:12.5, qlh:16, qwrap:52}
+      : {tall:false, W:860, H:350, band:pr?66:0, x0:262, xs:420, tip:846, top:52, yEnd:322, sq:pr?20:10, dev:[0,8,1], fs:12.5, lh:15, wl:24, wr:30, qfs:13.5, qlh:19, qwrap:100};
+    svgEl.setAttribute('viewBox','0 '+(-L.band)+' '+L.W+' '+(L.H+L.band)); svgEl.classList.toggle('tall', L.tall); svgEl.classList.toggle('q', pr);
+  }
+
+  /* ---------- the energy flows now on show ---------- */
+  function flows(){
+    if(mode==='predict' && q) return {E:q.E, Jsq:q.E/10, list:q.list};
+    var E=+eIn.value;
+    return {E:E, Jsq:50, list:DEV[dev].f.map(function(f){ return {role:f[0], l:f[1], s:f[2], v:E*f[3]/100}; })};
+  }
+  // where every band is: the useful band on top, the wasted bands under it. The lowest band bends away first.
+  function shapes(F){
+    var s=L.sq/F.Jsq, y=L.top, r=12, gap=12, hl=L.tall?12:15, B=[];
+    F.list.forEach(function(f){ var w=Math.max(2,f.v*s); B.push({f:f, ya:y, yb:y+w, w:w}); y+=w; });
+    B[0].straight=true; B[0].len=L.tip-hl-L.xs;
+    var prevOuter=L.xs+r-gap;
+    for(var i=B.length-1;i>=1;i--){
+      var b=B[i]; b.xc=Math.max(L.xs+10, prevOuter+gap-r); b.cy=b.yb+r; b.r=r; b.rc=r+b.w/2;
+      b.ox=b.xc+r+b.w; b.ix=b.xc+r; prevOuter=b.ox;
+      b.len=(b.xc-L.xs)+b.rc*Math.PI/2+(L.yEnd-hl-b.cy);
+    }
+    return {B:B, win:y-L.top, hl:hl};
+  }
+  // a point a distance s from the split, along the lane of band b that starts off = 0 (top edge) to w (bottom edge) down the band
+  function lanePt(b, off, s){
+    if(b.straight) return [L.xs+s, b.ya+off, 0];
+    var rho=b.r+b.w-off, a=b.xc-L.xs, arc=rho*Math.PI/2;
+    if(s<=a) return [L.xs+s, b.ya+off, 0];
+    if(s<=a+arc){ var th=(s-a)/rho; return [b.xc+rho*Math.sin(th), b.cy-rho*Math.cos(th), th]; }
+    return [b.xc+rho, b.cy+(s-a-arc), Math.PI/2];
+  }
+  function laneLen(b, off, hl){ return b.straight ? b.len : (b.xc-L.xs)+(b.r+b.w-off)*Math.PI/2+(L.yEnd-hl-b.cy); }
+  function centre(b){ return b.straight ? 'M'+f1(L.xs)+','+f1((b.ya+b.yb)/2)+' L'+f1(L.xs+b.len)+','+f1((b.ya+b.yb)/2)
+    : 'M'+f1(L.xs)+','+f1((b.ya+b.yb)/2)+' L'+f1(b.xc)+','+f1((b.ya+b.yb)/2)+' A'+f1(b.rc)+','+f1(b.rc)+' 0 0 1 '+f1(b.xc+b.rc)+','+f1(b.cy)+' L'+f1(b.xc+b.rc)+','+f1(b.cy+(b.len-(b.xc-L.xs)-b.rc*Math.PI/2)); }
+  // one output arrow, grown a fraction p of the way: a thick line along the band's centre, with the arrowhead at its front
+  function outArrow(b, p, hl, col, op){
+    if(p<=0) return '';
+    var sf=p*b.len, pt=lanePt(b, b.w/2, sf), c=Math.cos(pt[2]), s=Math.sin(pt[2]), hw=b.w/2+(L.tall?5:6.5);
+    return '<g opacity="'+op+'"><path d="'+centre(b)+'" fill="none" stroke="'+col+'" stroke-width="'+f1(b.w)+'" stroke-dasharray="'+f1(sf)+' 9999"/>'+
+      pg([[pt[0]-c*0.8-s*hw,pt[1]-s*0.8+c*hw],[pt[0]+c*hl,pt[1]+s*hl],[pt[0]-c*0.8+s*hw,pt[1]-s*0.8-c*hw]],col)+'</g>';
+  }
+  function inArrow(win, p, col, op){
+    if(p<=0) return '';
+    var xf=L.x0+14+(L.xs-L.x0-14)*p;
+    return pg([[L.x0,L.top],[xf,L.top],[xf,L.top+win],[L.x0,L.top+win],[L.x0+Math.min(14,win*0.6),L.top+win/2]],col,' opacity="'+op+'"');
+  }
+  function grid(){
+    var g='', sq=L.sq, x, y, xa=L.xs-Math.ceil((L.xs-L.x0+sq)/sq)*sq, xb=L.tip+(L.tall?6:8), yb=L.yEnd+2;
+    for(x=xa;x<=xb+0.1;x+=sq) g+=ln(x,L.top,x,yb,'var(--grid)',1);
+    for(y=L.top;y<=yb+0.1;y+=sq) g+=ln(xa,y,xb,y,'var(--grid)',1);
+    return g;
+  }
+  // packets of energy: dots that ride each lane from the input arrow into the output arrow it becomes
+  function dots(S, pin, pout){
+    var d='', a=L.xs-L.x0-14, gapL=L.tall?7:8, sp=L.tall?30:34;
+    S.B.forEach(function(b, bi){
+      var n=Math.max(1,Math.round(b.w/gapL));
+      for(var j=0;j<n;j++){
+        var off=(j+0.5)/n*b.w, out=laneLen(b,off,S.hl), tot=a+out, u0=(ph*70+(bi*7+j)*13.7)%sp;
+        for(var u=u0;u<tot;u+=sp){
+          var pt;
+          if(u<a){ if(u>a*pin) continue; pt=[L.x0+14+u, b.ya+off]; }
+          else { if(u-a>out*pout[bi]-2) continue; pt=lanePt(b,off,u-a); }
+          d+='M'+f1(pt[0])+','+f1(pt[1])+'h0';
+        }
+      }
+    });
+    return d ? '<path d="'+d+'" fill="none" stroke="var(--panel)" stroke-width="'+(L.tall?2.4:3)+'" stroke-linecap="round" opacity=".85"/>' : '';
+  }
+  function sqs(v, Jsq){ var n=Math.round(v/Jsq*10)/10; return num(n,1)+(n===1?' square':' squares'); }
+  // a label in clear space beside its arrow: a bold first line, then what the energy does
+  function label(x, y, a, title, desc, n, col){
+    var g=txt(x,y,title,{a:a,fs:L.fs,c:col,w:700,halo:1});
+    wrapLines(desc,n).forEach(function(s,i){ g+=txt(x,y+(i+1)*L.lh,s,{a:a,fs:L.fs,c:'var(--ink-soft)',halo:1}); });
+    return g;
+  }
+
+  /* ---------- the device, drawn solid on its bench. on: 0 to 1; lift: how far the motor has raised its load ---------- */
+  function cable(x){ return '<path d="M'+x+',284 C'+(x-30)+',292 44,276 4,284" fill="none" stroke="var(--case)" stroke-width="3.2" stroke-linecap="round"/>'; }
+  function device(kind, on, lift){
+    var g=box(24,292,196,9,12,-9,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'}), i;
+    if(kind==='fil' || kind==='led'){
+      g+=cable(100);
+      if(on>0){
+        g+='<circle cx="126" cy="174" r="54" fill="var(--glow)" opacity="'+f1(0.3*on)+'"/>';
+        for(i=0;i<9;i++){ var cx=Math.cos(Math.PI+i*Math.PI/8), sy=Math.sin(Math.PI+i*Math.PI/8);
+          g+=ln(126+cx*62,174+sy*62,126+cx*76,174+sy*76,'var(--glow)',2.6,' stroke-linecap="round" opacity="'+f1(0.9*on)+'"'); }
+      }
+      g+=box(96,273,60,11,8,-6,'var(--steel)');
+      g+=tube(126,272,126,216,7,'var(--steel-sh)','var(--steel-hi)');
+      if(kind==='fil'){
+        g+=rect(114,200,24,17,'var(--steel)',' rx="3"')+ln(114,206,138,206,'var(--steel-sh)',1.2)+ln(114,211,138,211,'var(--steel-sh)',1.2);
+        g+='<circle cx="126" cy="172" r="31" fill="var(--glass)" stroke="var(--ink-faint)" stroke-width="1.5"/>';
+        if(on>0) g+='<circle cx="126" cy="172" r="30" fill="var(--glow)" opacity="'+f1(0.75*on)+'"/>';
+        g+=pl([[119,201],[119,180],[122,171],[126,180],[130,171],[133,180],[133,201]], on>0?'#fff8d6':'var(--ink-soft)',1.6);
+        g+=ell(114,160,5,9,'#fff',' opacity=".55" transform="rotate(28 114 160)"');
+      } else {
+        g+=rect(106,196,40,22,'var(--steel)',' rx="4"')+ln(112,202,112,214,'var(--steel-sh)',1.4)+ln(120,202,120,214,'var(--steel-sh)',1.4)+ln(132,202,132,214,'var(--steel-sh)',1.4)+ln(140,202,140,214,'var(--steel-sh)',1.4);
+        g+='<path d="M100,196 v-22 a26,26 0 0 1 52,0 v22 z" fill="var(--glass)" stroke="var(--ink-faint)" stroke-width="1.5"/>';
+        if(on>0) g+='<path d="M101,195 v-21 a25,25 0 0 1 50,0 v21 z" fill="var(--glow)" opacity="'+f1(0.75*on)+'"/>';
+        for(i=0;i<3;i++) g+=rect(111+i*11,186,8,6,on>0?'#fff8d6':'var(--snd)',' rx="1.5"');
+        g+=ell(111,166,4,8,'#fff',' opacity=".55" transform="rotate(24 111 166)"');
+      }
+    } else if(kind==='mot'){
+      g+=cable(62);
+      g+=box(54,170,54,122,10,-8,'var(--case)');
+      g+=rect(42,132,84,38,'var(--steel)',' rx="8"')+ln(50,140,118,140,'var(--steel-hi)',3,' stroke-linecap="round" opacity=".8"')+rect(42,156,84,14,'#000',' rx="7" opacity=".14"');
+      g+=ell(126,151,7,18,'var(--steel-sh)');
+      g+=tube(128,151,150,151,5,'var(--steel-sh)','var(--steel-hi)');
+      var ang=lift*26;
+      g+='<circle cx="162" cy="151" r="15" fill="var(--wood-f)" stroke="var(--wood-s)" stroke-width="2"/>'+ln(162-Math.cos(ang)*11,151-Math.sin(ang)*11,162+Math.cos(ang)*11,151+Math.sin(ang)*11,'var(--wood-s)',2.2)+'<circle cx="162" cy="151" r="3" fill="var(--steel-sh)"/>';
+      var ly=258-74*lift;
+      g+=ln(177,151,177,ly,'var(--ink-soft)',1.4)+box(165,ly,24,22,6,-5,'var(--brass)');
+    } else {
+      g+=cable(92);
+      g+=box(84,281,86,8,8,-6,'var(--case)');
+      g+=pg([[94,236],[68,214],[62,221],[90,256]],'var(--steel)')+pg([[94,236],[68,214],[66,216.5],[92,243]],'#fff',' opacity=".35"');
+      g+='<path d="M166,224 C196,224 196,268 166,268" fill="none" stroke="var(--case)" stroke-width="8" stroke-linecap="round"/>';
+      g+=cyl(128,214,277,40,9,'var(--steel)',{hi:'var(--steel-hi)'});
+      g+=ell(128,210,11,4.5,'var(--case)')+rect(124,204,8,7,'var(--case)',' rx="2"');
+      if(on>0) for(i=0;i<3;i++){ var up=(ph*16+i*9)%27, sx=58+i*7-up*0.25;
+        g+='<path d="M'+f1(sx)+','+f1(210-up)+' q-6,-8 0,-16 q6,-8 0,-16" fill="none" stroke="var(--ink-faint)" stroke-width="2.4" stroke-linecap="round" opacity="'+f1(on*0.85*(1-up/27))+'"/>'; }
+    }
+    return g;
+  }
+
+  /* ---------- drawing ---------- */
+  function prog(){   // how much of each part is drawn, from the time T
+    return {pin:clamp(T/TIN), use:clamp((T-TIN)/(TUSE-TIN)), waste:clamp((T-TUSE)/(TALL-TUSE))};
+  }
+  function draw(){
+    if(!L) layout();
+    var F=flows(), S=shapes(F), P=prog(), pr=mode==='predict', g='', d=L.dev, kind=pr&&q?q.dev:dev;
+    var done=pr && q && q.phase==='done', flowing=pr ? (q && q.phase!=='ask') : started;
+    var on=playing?1:0, lift=pr ? (flowing?clamp((ph-q.ph0)/3):0) : (started?clamp((T-TIN)/5.5):0);
+    // the device and its name
+    g+='<g transform="translate('+d[0]+','+d[1]+') scale('+d[2]+')">'+device(kind,on,lift)+'</g>';
+    g+=txt(d[0]+126*d[2], d[1]+(L.tall?330:322)*d[2], DEV[kind].n, {a:'middle',fs:L.tall?12:13.5,c:'var(--ink)',w:600});
+    // graph paper, then the student's own diagram (grey), then the arrows
+    g+=grid();
+    if(pr && q && q.kind==='draw' && q.pick && q.phase==='ask'){   // the student's own diagram, in grey, until Go
+      var G=shapes({E:10, Jsq:1, list:[{v:q.pick},{v:10-q.pick}]});
+      g+=outArrow(G.B[0],1,G.hl,'var(--ink-soft)',0.3)+outArrow(G.B[1],1,G.hl,'var(--ink-soft)',0.3);
+    }
+    g+=inArrow(S.win,P.pin,COL.in,0.9);
+    var pout=S.B.map(function(b,i){ return i===0?P.use:P.waste; });
+    for(var i=S.B.length-1;i>=0;i--) g+=outArrow(S.B[i],pout[i],S.hl,COL[S.B[i].f.role],0.9);
+    if(flowing) g+=dots(S,P.pin,pout);
+    // labels, each in clear space beside its arrow
+    var hide=pr && q && !done ? q.hide : {}, yT=L.top-(L.tall?19:23), yL=L.yEnd-(L.tall?52:44);
+    function val(k,v){ return hide[k]==='?' ? '? J' : num(v)+' J'; }
+    if(P.pin>0) g+=label(L.x0,yT,'start','Input: '+num(F.E)+' J','transferred electrically',40,COL.in);
+    S.B.forEach(function(b,i){
+      if(pout[i]<1 || hide[i]==='x') return;
+      var f=b.f, c=COL[f.role];
+      if(i===0) g+=label(L.tip,yT,'end','Useful: '+val(0,f.v),f.l,40,c);
+      else if(i===1) g+=ln(b.ox+2,yL-4,b.ox+8,yL-4,c,1.4)+label(b.ox+11,yL,'start','Wasted: '+val(1,f.v),f.l,L.wr,c);
+      else g+=ln(b.ix-8,yL-4,b.ix-2,yL-4,c,1.4)+label(b.ix-11,yL,'end','Wasted: '+val(2,f.v),f.l,L.wl,c);
+    });
+    g+=txt(L.tall?L.W-6:L.x0, L.H-(L.tall?8:7), '1 square = '+num(F.Jsq)+' J', {a:L.tall?'end':'start',fs:L.tall?11:11.5,c:'var(--ink-faint)',halo:1});
+    mainEl.innerHTML=g;
+    readout(F,S);
+  }
+
+  /* ---------- the note, readings and working ---------- */
+  function readout(F,S){
+    var D=DEV[mode==='predict'&&q?q.dev:dev], E=F.E, U=F.list[0].v, W=E-U, eff=U/E*100, pr=mode==='predict';
+    if(pr){
+      var done=q && q.phase==='done';
+      $('#sk-qeq').hidden=!done;
+      return;
+    } else {
+      var note;
+      if(!started) note='<b>Switch on</b> '+D.the+' and watch where the energy goes. On a Sankey diagram the <b>width</b> of each arrow shows how much energy it carries.';
+      else if(T<=TIN) note='Input: <b>'+num(E)+' J</b> is transferred electrically to '+D.the+'. Each square stands for '+num(F.Jsq)+' J, so the input arrow is <b>'+sqs(E,F.Jsq)+'</b> wide.';
+      else if(T<=TUSE) note='Useful: <b>'+num(U)+' J</b> '+F.list[0].s+'. The useful arrow carries <b>straight on</b>. It is '+sqs(U,F.Jsq)+' wide.';
+      else if(!finished) note='Wasted: '+F.list.slice(1).map(function(f){ return '<b>'+num(f.v)+' J</b> '+f.s; }).join(' and ')+'. Wasted energy <b>bends away</b>. '+F.list.map(function(f){ return num(f.v); }).join(' + ')+' = '+num(E)+' J: together the outputs are exactly as wide as the input. Energy is conserved.';
+      else note='Of every '+num(E)+' J supplied, only '+num(U)+' J is useful, so '+D.the+' is <b>'+num(eff,1)+'%</b> efficient. The wasted '+num(W)+' J spreads out into the thermal store of the surroundings.';
+      $('#sk-note').innerHTML=note;
+      $('#sk-eq').innerHTML=FR('efficiency = [[useful energy output|total energy output]] × 100%<br>efficiency = [['+num(U)+'|'+num(E)+']] × 100%<br>efficiency = <b>'+num(eff,1)+'%</b>');
+    }
+    $('#sk-si').textContent=num(E)+' J'; $('#sk-su').textContent=num(U)+' J'; $('#sk-sw').textContent=num(W)+' J'; $('#sk-sf').textContent=num(eff,1)+'%';
+  }
+
+  /* ---------- Questions: a question is dealt in the picture, answered on the picture or as a number, then Go ----------
+     The four kinds follow the Edexcel papers: draw the Sankey diagram for a given efficiency (4PH0/1P May 2014 Q2(c)(ii):
+     marks for one input and two outputs, and for the proportions); read the wasted energy and the efficiency off a diagram
+     (4PH0/2PR May 2014 Q1(c)); and match each amount to its arrow (4420/2H November 2010 Q14: a mark is lost when the
+     smaller output is put on the larger arrow). The picture dealt is the picture that runs on Go. */
+  var QEFF={fil:[10,20,30], led:[40,50,60], mot:[60,70,80], ket:[80,90]};
+  function two(d, E, eff){ var f=DEV[d].f; return [{role:'use',l:f[0][1],s:f[0][2],v:E*eff/100},{role:'therm',l:f[1][1],s:f[1][2],v:E*(100-eff)/100}]; }
+  function deal(){
+    var kind=['draw','wasted','which','eff'][qn%4], d, E, eff, o; qn++;
+    stop();
+    if(kind==='which'){
+      d=pickOf(['mot','ket']); E=pickOf([200,400,1000]); var set=pickOf([[70,20,10],[60,30,10],[80,15,5],[50,30,20]]), f=DEV[d].f, t=pickOf([1,2,1,2,0]);
+      o={list:set.map(function(p,i){ return {role:f[i][0],l:f[i][1],s:f[i][2],v:E*p/100}; }), hide:{0:'x',1:'x',2:'x'}, target:t, ans:['A','C','B'][t]};
+      o.text='Which arrow? '+cap(DEV[d].a)+' is supplied with '+num(E)+' J. '+num(o.list[0].v)+' J '+o.list[0].s+', '+num(o.list[1].v)+' J '+o.list[1].s+' and '+num(o.list[2].v)+' J '+o.list[2].s+'. Click the arrow for the energy that '+o.list[t].s+'.';
+    } else {
+      d=pickOf(['fil','led','mot','ket']); E=pickOf([200,400,500,1000]); eff=pickOf(QEFF[d]); o={list:two(d,E,eff), eff:eff};
+      if(kind==='draw'){ o.hide={0:'x',1:'x'}; o.ans=eff/10;
+        o.text='Draw it. '+cap(DEV[d].a)+' is '+eff+'% efficient. Its input arrow is 10 squares wide. Click the grid line where the arrow must split. The useful arrow carries straight on; the wasted arrow bends away.'; }
+      else if(kind==='wasted'){ o.hide={1:'?'}; o.ans=E*(100-eff)/100; o.unit='J';
+        o.text='Read it. This is the Sankey diagram for '+DEV[d].a+'. Work out the energy that is wasted, then type it in.'; }
+      else { o.hide={0:'?'}; o.ans=eff; o.unit='%';
+        o.text='Read it. This is the Sankey diagram for '+DEV[d].a+'. Work out its efficiency as a percentage, then type it in.'; }
+    }
+    o.kind=kind; o.dev=d; o.E=E; o.phase='ask'; o.pick=null; o.ph0=0; q=o;
+    T = kind==='draw' ? TIN : TALL;
+    ansIn.value=''; ansIn.disabled=false; $('#sk-ans').hidden = !(kind==='wasted' || kind==='eff'); $('#sk-unit').textContent=o.unit||'';
+    $('#sk-note').innerHTML = kind==='draw' ? 'Work out how many of the 10 squares are useful. <b>Click a grid line</b> on the end of the input arrow, then press Go.'
+      : kind==='which' ? 'The width of an arrow shows how much energy it carries. <b>Click an arrow</b>, then press Go.'
+      : 'Read the values off the diagram, <b>type your answer</b>, then press Go.';
+    layout(); drawQ(); drawPicks(); draw(); syncGo();
+  }
+  function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+  function drawQ(){
+    if(mode!=='predict' || !q){ qEl.innerHTML=''; return; }
+    var done=q.phase==='done', s=done ? (q.ok?'✓ Correct. ':'✗ Not quite. ')+q.verdict : q.text, col=done?(q.ok?'var(--good)':'var(--bad)'):'var(--ink)', g='';
+    wrapLines(s,L.qwrap).slice(0,L.tall?6:3).forEach(function(line,i){ g+=txt(L.tall?6:12,-L.band+(L.tall?13:17)+i*L.qlh,line,{fs:L.qfs,c:col,w:done?600:500}); });
+    qEl.innerHTML=g;
+  }
+  // the things to click: grid lines across the end of the input arrow (draw), or the three output arrows (which)
+  function drawPicks(){
+    if(mode!=='predict' || !q || (q.kind!=='draw' && q.kind!=='which')){ picksEl.innerHTML=''; return; }
+    var g='', done=q.phase==='done', lock=q.phase!=='ask';
+    function state(id){ var mine=String(q.pick)===String(id), right=String(q.ans)===String(id); return done ? (right?'good':mine?'bad':'') : (mine?'mine':''); }
+    function col(st){ return st==='good'?'var(--good)':st==='bad'?'var(--bad)':st==='mine'?'var(--ink)':'var(--ink-faint)'; }
+    function open(id, lab){ return '<g class="pick" data-pick="'+id+'"'+(lock?'':' tabindex="0"')+' role="button" aria-label="'+lab+'">'; }
+    if(q.kind==='draw'){
+      var xa=L.xs-(L.tall?30:44), xb=L.xs+(L.tall?16:22);
+      for(var k=1;k<=9;k++){ var y=L.top+k*L.sq, st=state(k), on=st!=='';
+        g+=open(k,'Split '+k+' squares from the top')+rect(xa-6,y-L.sq/2,xb-xa+12,L.sq,'transparent',' class="hit"')+
+          '<rect class="ring" x="'+f1(xa-5)+'" y="'+f1(y-L.sq/2+1)+'" width="'+f1(xb-xa+10)+'" height="'+f1(L.sq-2)+'" rx="4" stroke-width="2.5"/>'+
+          ln(xa,y,xb,y,on?col(st):'var(--ink)',on?4:1.8,on?' stroke-linecap="round"':' stroke-dasharray="5 4" opacity=".6"')+
+          (on?'<circle cx="'+f1(xb+7)+'" cy="'+f1(y)+'" r="4.5" fill="'+col(st)+'"/>':'')+'</g>'; }
+    } else {
+      var S=shapes(flows()), R=L.tall?10:11;
+      [['A',0],['B',2],['C',1]].forEach(function(p){ var b=S.B[p[1]], st=state(p[0]), on=st!=='', lx, ly;
+        if(b.straight){ lx=L.tip-R; ly=b.yb+R+10; } else { lx=b.xc+b.rc; ly=L.yEnd+R+4; }
+        g+=open(p[0],'Arrow '+p[0])+'<path class="hit" d="'+centre(b)+'" style="fill:none;stroke:transparent;stroke-width:'+f1(Math.max(18,b.w+8))+'px"/>'+
+          '<path class="ring" d="'+centre(b)+'" stroke-width="'+f1(b.w+8)+'"/>'+
+          '<circle cx="'+f1(lx)+'" cy="'+f1(ly)+'" r="'+R+'" fill="'+(on?col(st):'var(--panel)')+'" stroke="'+col(st)+'" stroke-width="1.8"'+(on?'':' stroke-dasharray="4 3"')+'/>'+
+          txt(lx,ly+4.5,p[0],{a:'middle',fs:13,c:on?'var(--panel)':'var(--ink)',w:700})+'</g>'; });
+    }
+    setKeepFocus(picksEl,g);
+  }
+  function ready(){ return q && q.phase==='ask' && ((q.kind==='draw'||q.kind==='which') ? q.pick!==null : ansIn.value.trim()!==''); }
+  function syncGo(){
+    var pr=mode==='predict';
+    goBtn.innerHTML = playing ? '&#10074;&#10074; Pause' : pr ? '&#9654; Go' : '&#9654; Switch on';
+    goBtn.disabled = pr && !playing && !ready();
+    resetBtn.innerHTML = pr ? 'New question' : '&#8634; Reset';
+  }
+  function judge(){
+    var E=q.E, Jsq=E/10, U=q.list[0].v, W=E-U, D=DEV[q.dev], ok, note, eq;
+    if(q.kind==='draw'){
+      ok=q.pick===q.ans;
+      q.verdict='The useful arrow is '+q.ans+' of the 10 squares and the wasted arrow is '+(10-q.ans)+'.';
+      note=(ok?'':(q.pick===10-q.ans?'You have the two outputs the wrong way round: the useful share is the '+q.eff+'%. ':'')+'')+q.eff+'% of the input is useful, so the useful arrow is '+q.ans+' squares wide and carries straight on. The other '+(10-q.ans)+' squares bend away as wasted energy.';
+      eq='useful width = '+q.eff+'% of 10 squares<br>useful width = '+q.ans+' squares<br>wasted width = 10 − '+q.ans+'<br>wasted width = '+(10-q.ans)+' squares';
+    } else if(q.kind==='which'){
+      var f=q.list[q.target]; ok=q.pick===q.ans;
+      q.verdict='Arrow '+q.ans+' is '+sqs(f.v,Jsq)+' wide, which is '+num(f.v)+' J.';
+      note='Each square stands for '+num(Jsq)+' J, so '+num(f.v)+' J needs an arrow '+sqs(f.v,Jsq)+' wide: arrow '+q.ans+'. '+(q.target===0?'It is the useful output, so it carries straight on.':'It is wasted energy, so it bends away.')+(ok?'':' Putting an amount on an arrow of the wrong width loses the mark.');
+      eq='scale: 1 square = '+num(Jsq)+' J<br>width = [['+num(f.v)+'|'+num(Jsq)+']]<br>width = '+sqs(f.v,Jsq);
+    } else {
+      var v=parseFloat(ansIn.value); ok=Math.abs(v-q.ans)<=Math.max(0.05,Math.abs(q.ans)*0.02);
+      if(q.kind==='wasted'){
+        q.verdict='The wasted energy is '+num(W)+' J.';
+        note='Energy is conserved, so the outputs add up to the input. The wasted arrow carries what is left: '+num(E)+' − '+num(U)+' = '+num(W)+' J.'+(!ok && Math.abs(v-U)<0.5?' You gave the useful energy.':'');
+        eq='input = useful + wasted<br>'+num(E)+' = '+num(U)+' + wasted<br>wasted = '+num(E)+' − '+num(U)+'<br>wasted = <b>'+num(W)+' J</b>';
+      } else {
+        q.verdict='The efficiency is '+q.eff+'%.';
+        note='First find the useful output: '+num(E)+' − '+num(W)+' = '+num(U)+' J. Then divide it by the total.'+(!ok && Math.abs(v-q.eff/100)<0.005?' You gave it as a decimal: the question asks for a percentage.':!ok && Math.abs(v-(100-q.eff))<0.5?' You used the wasted energy, not the useful energy.':'');
+        eq='useful = '+num(E)+' − '+num(W)+' = '+num(U)+' J<br>efficiency = [[useful energy output|total energy output]] × 100%<br>efficiency = [['+num(U)+'|'+num(E)+']] × 100%<br>efficiency = <b>'+q.eff+'%</b>';
+      }
+    }
+    q.ok=ok; q.phase='done'; score[1]++; if(ok) score[0]++;
+    $('#sk-note').innerHTML=(ok?'<b>Correct.</b> ':'<b>Not quite.</b> ')+note;
+    $('#sk-qeq').innerHTML=FR(eq);
+    $('#sk-hint').textContent='Score: '+score[0]+' of '+score[1];
+    drawQ(); drawPicks(); draw(); syncGo();
+  }
+
+  /* ---------- running ---------- */
+  function stop(){ playing=false; cancelAnimationFrame(raf); }
+  function frame(now){
+    var dt=Math.min(0.05,(now-last)/1000)*(slowBtn.getAttribute('aria-pressed')==='true'?0.3:1); last=now;
+    T+=dt; ph+=dt;
+    if(mode==='predict'){
+      if(T>=q.tEnd){ T=TALL; stop(); judge(); return; }
+    } else if(T>=TEND){ T=TEND; finished=true; stop(); syncGo(); }
+    drawT(); if(playing) raf=requestAnimationFrame(frame);
+  }
+  // in a Read it or Which arrow question the whole diagram is on show from the start: only the energy flows on Go
+  function drawT(){ var keep=T; if(mode==='predict' && q && q.kind!=='draw') T=TALL; draw(); T=keep; }
+  function go(){
+    if(playing){ stop(); syncGo(); drawT(); return; }
+    if(mode==='predict'){
+      if(!ready()) return;
+      q.phase='run'; q.ph0=ph; ansIn.disabled=true;
+      if(q.kind==='draw'){ T=TIN; q.tEnd=TALL+0.6; } else { T=TALL; q.tEnd=TALL+2.2; }
+      drawPicks();
+    } else {
+      if(!started || finished){ T=0; ph=0; }
+      started=true; finished=false; setPoint('');
+    }
+    playing=true; last=performance.now(); raf=requestAnimationFrame(frame); syncGo(); drawT();
+  }
+  function setPoint(p){ Array.prototype.forEach.call(pointsEl.children,function(b){ b.setAttribute('aria-pressed', String(b.dataset.p===p)); }); }
+  function reset(){
+    stop();
+    if(mode==='predict'){ deal(); return; }
+    T=TALL; ph=0; started=false; finished=false; setPoint(''); layout(); qEl.innerHTML=''; picksEl.innerHTML=''; draw(); syncGo();
+  }
+  goBtn.addEventListener('click',go);
+  resetBtn.addEventListener('click',reset);
+  slowBtn.addEventListener('click',function(){ slowBtn.setAttribute('aria-pressed', String(slowBtn.getAttribute('aria-pressed')!=='true')); });
+  eIn.addEventListener('input',function(){ $('#sk-eo').textContent=num(+eIn.value)+' J'; reset(); });
+  devEl.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    dev=b.dataset.d; Array.prototype.forEach.call(devEl.children,function(x){ x.setAttribute('aria-pressed', String(x===b)); });
+    $('#sk-hint').textContent = dev==='fil'||dev==='led' ? 'Give the filament lamp and the LED lamp the same input. Which wastes less?' : 'Change the energy supplied. The arrows change width, but does the efficiency change?';
+    reset();
+  });
+  pointsEl.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    stop(); started=true; finished=false; T={in:TIN,use:TUSE,all:TALL}[b.dataset.p]; setPoint(b.dataset.p); draw(); syncGo();
+  });
+  onPick(svgEl,function(id){
+    if(mode!=='predict' || !q || q.phase!=='ask') return;
+    q.pick = q.kind==='draw' ? +id : id; drawPicks(); draw(); syncGo();
+  });
+  ansIn.addEventListener('input',syncGo);
+  ansIn.addEventListener('keydown',function(e){ if(e.key==='Enter' && ready()) go(); });
+  function setMode(m){
+    mode=m; Array.prototype.forEach.call(modeEl.children,function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===m)); });
+    var pr=m==='predict';
+    $('.side').classList.toggle('q',pr);
+    $('#sk-setup').hidden=pr; $('#sk-sliders').hidden=pr; $('#sk-working').hidden=pr; $('#sk-stats').hidden=pr; $('#sk-qeq').hidden=true; $('#sk-ans').hidden=true;
+    if(pr){ $('#sk-hint').textContent='Score: '+score[0]+' of '+score[1]; deal(); }
+    else { q=null; $('#sk-hint').textContent='Give the filament lamp and the LED lamp the same input. Which wastes less?'; reset(); }
+  }
+  modeEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b || b.dataset.v===mode) return; setMode(b.dataset.v); });
+
+  watchEquals($('#sk-eq')); watchEquals($('#sk-qeq'));
+  $('#sk-eo').textContent=num(+eIn.value)+' J';
+  if(window.ResizeObserver) new ResizeObserver(function(){ var was=L && L.tall; layout(); if(L.tall!==was){ drawQ(); drawPicks(); } drawT(); }).observe(svgEl);
+  layout();
+  if(/[?&]show=predict\b/.test(location.search)) setMode('predict'); else reset();
+})();
+</script><script id="choice-kit-js">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices".
+   A group of choices with one chosen gets a track round it (class pick); a .to-q button opens the questions from Explore. */
+(function(){
+  function on(b){ return b.getAttribute('aria-pressed')==='true' || b.classList.contains('is-on'); }
+  function each(sel, fn){ Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+  function mark(s){
+    if(!s.classList.contains('pick')){
+      var n=0; Array.prototype.forEach.call(s.children, function(b){ if(b.tagName==='BUTTON' && on(b)) n++; });
+      if(n===1) s.classList.add('pick');
+    }
+    if(s.classList.contains('pick') && !s.hasAttribute('data-fit')){
+      var d=getComputedStyle(s).display;
+      if(d!=='none'){ s.setAttribute('data-fit','1'); if(d.indexOf('flex')>=0) s.classList.add('fit'); }
+    }
+  }
+  each('.seg:not(.tabs):not(.mode):not(.apps)', function(s){
+    mark(s);
+    if(window.MutationObserver) new MutationObserver(function(){ mark(s); }).observe(s, {childList:true, subtree:true, attributes:true, attributeFilter:['aria-pressed','class']});
+  });
+  each('.to-q[data-mode]', function(b){
+    var seg=document.getElementById(b.getAttribute('data-mode')); if(!seg) return;
+    var bs=seg.querySelectorAll('button');
+    function sync(){ b.hidden=!on(bs[0]) || !seg.getClientRects().length; }   // hidden too when the page hides its mode switch (e.g. at a level with no questions)
+    b.addEventListener('click', function(){ bs[1].click(); bs[1].focus(); });
+    if(window.MutationObserver) new MutationObserver(sync).observe(seg, {subtree:true, attributes:true, attributeFilter:['aria-pressed']});
+    document.addEventListener('click', function(){ setTimeout(sync, 0); });
+    sync(); setTimeout(sync, 0);
+  });
+})();
+</script>
+<footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
+</body>
+</html>
