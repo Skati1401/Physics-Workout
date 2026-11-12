@@ -220,6 +220,7 @@ def chooser_body(cfg, ids):
       '<div class="ch-go"><button type="button" class="btn primary" id="ch-start" disabled>Start</button>'
       '<span class="ch-count" id="ch-count" aria-live="polite"></span>'
       '<label class="ch-mix"><input type="checkbox" id="ch-mix"> Mix the order</label>'
+      '<button type="button" class="btn" id="ch-all">Tick all</button>'
       '<button type="button" class="btn" id="ch-none">Clear ticks</button>'
       '<button type="button" class="btn" id="ch-da" aria-pressed="false">Leave out TA</button></div>\n</div>\n'
       '<div class="ch-units" id="ch-units"></div>\n</section>\n'
