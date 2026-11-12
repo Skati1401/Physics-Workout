@@ -243,6 +243,10 @@ details>div{margin-top:6px;padding:8px 10px;background:var(--panel-2);border-rad
 .sim.sim-small .sim-view{max-width:var(--simw,340px);width:100%;justify-self:center}
 @media (max-width:720px){.sim.sim-small{grid-template-columns:minmax(0,1fr)}}
 .act-pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px;align-items:start;margin-bottom:18px}
+/* Warm Up goals and Sum Up word boxes (12 Nov 2026) */
+.goals{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:9px;line-height:1.5}
+.goals .sp{font:500 12px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-faint);margin-left:6px;white-space:nowrap}
+.goals b.ta,.act-title b.ta{font:500 11px 'IBM Plex Mono',ui-monospace,monospace;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px;white-space:nowrap;vertical-align:2px}
 .act-pair>.act{margin-bottom:0}
 /* a slider explore inside a pair: picture above its controls */
 .act-pair .sim,.act-pair .sim.sim-small{grid-template-columns:minmax(0,1fr)}
@@ -478,24 +482,15 @@ table.units td.given b.ta{font:500 11px var(--f-mono);color:var(--accent);border
 <h1>4c Work and Power Workout</h1>
 </header>
 <nav class="tabs" role="tablist" aria-label="Activities">
-<button class="tab-btn is-active" role="tab" id="tab-overview" data-tab="overview" aria-selected="true" aria-controls="panel-overview">Overview</button>
+<button class="tab-btn is-active" role="tab" id="tab-overview" data-tab="overview" aria-selected="true" aria-controls="panel-overview">Warm Up</button>
 <button class="tab-btn" role="tab" id="tab-work" data-tab="work" aria-selected="false" aria-controls="panel-work">Work and Power</button>
 <button class="tab-btn" role="tab" id="tab-gpeke" data-tab="gpeke" aria-selected="false" aria-controls="panel-gpeke">GPE and KE</button>
 <button class="tab-btn" role="tab" id="tab-link" data-tab="link" aria-selected="false" aria-controls="panel-link">Conservation</button>
 <button class="tab-btn" role="tab" id="tab-cpower" data-tab="cpower" aria-selected="false" aria-controls="panel-cpower">Energy and Power</button>
-<button class="tab-btn" role="tab" id="tab-units" data-tab="units" aria-selected="false" aria-controls="panel-units">Units</button>
-<button class="tab-btn" role="tab" id="tab-terms" data-tab="terms" aria-selected="false" aria-controls="panel-terms">Key Terms</button>
+<button class="tab-btn" role="tab" id="tab-sumup" data-tab="sumup" data-grp="" aria-selected="false" aria-controls="panel-sumup">Sum Up</button>
 </nav>
 <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
-<div class="panel-head"><h2>Overview</h2><div class="spec"><b>4.11 to 4.17</b></div></div>
-<div class="acts"></div>
-</section>
-<section id="panel-units" class="panel" role="tabpanel" aria-labelledby="tab-units" hidden>
-<div class="panel-head"><h2>Unit 4 Units</h2></div>
-<div class="acts"></div>
-</section>
-<section id="panel-terms" class="panel" role="tabpanel" aria-labelledby="tab-terms" hidden>
-<div class="panel-head"><h2>Unit 4 Key Terms</h2></div>
+<div class="panel-head"><h2>Warm Up</h2><div class="spec"><b>4.11 to 4.17</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-work" class="panel" role="tabpanel" aria-labelledby="tab-work" hidden>
@@ -512,6 +507,10 @@ table.units td.given b.ta{font:500 11px var(--f-mono);color:var(--accent);border
 </section>
 <section id="panel-cpower" class="panel" role="tabpanel" aria-labelledby="tab-cpower" hidden>
 <div class="panel-head"><h2>Conservation and Power</h2><div class="spec"><b>4.15</b><b>4.17</b></div></div>
+<div class="acts"></div>
+</section>
+<section id="panel-sumup" class="panel" role="tabpanel" aria-labelledby="tab-sumup" hidden>
+<div class="panel-head"><h2>Sum Up</h2><div class="spec"><b>4.11 to 4.17</b></div></div>
 <div class="acts"></div>
 </section>
 </div>
@@ -534,8 +533,10 @@ const raf=f=>requestAnimationFrame(f);
 
 // 6 Nov 2026 (Alex): the Power tab joined Work Done, so old #power links open Work and Power.
 try{if(location.hash==='#power')history.replaceState(null,'','#work');}catch(e){}
+// Unit 4's Units and Key Terms tabs moved to unit-4-units-and-terms.html (Alex, 12 Nov 2026), so old links go there.
+try{const to={units:'unit-4-units-and-terms.html#units',terms:'unit-4-units-and-terms.html#terms'}[location.hash.slice(1)];if(to){location.replace(to);return;}}catch(e){}
 const STORE_KEY='unit4c-work-power-v5',OLD_STORE_KEY='unit4c-work-power-v4';
-const TAB_IDS=['overview','work','gpeke','link','cpower','units','terms'];
+const TAB_IDS=['overview','work','gpeke','link','cpower','sumup'];
 let activeTab='overview';
 const reflowers=[];
 
@@ -1457,81 +1458,49 @@ window.addEventListener('message',e=>{
   $$('iframe.anim-frame').forEach(f=>{if(f.contentWindow===e.source)f.style.height=h+'px';});
 });
 
-/* ================= 1. OVERVIEW ================= */
-{
-  const body=act('overview','Fill in the blanks','Work and power in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
-  const parts=[
-    'Work is done when a ',['b1','force'],' moves an object through a distance in the direction of the force. The work done is equal to the energy ',['b2','transferred'],
-    ', so both are measured in ',['b3','joules'],'. Lifting an object increases its ',['b4','gravitational potential'],' energy, which depends on its mass, the gravitational field strength and its ',['b5','height'],
-    '. A moving object has kinetic energy, which depends on its mass and the square of its ',['b6','speed'],'. As a ball falls, its gravitational potential energy is transferred to kinetic energy. When friction acts against the motion, work is done against it and some energy ends up in the thermal store of the surroundings. Power is the ',['b7','rate'],
-    ' at which energy is transferred, and is measured in ',['b8','watts'],'. One watt is one joule transferred every second.'
-  ];
+
+/* ================= Warm Up and Sum Up (Alex, 12 Nov 2026) =================
+   The first tab, Warm Up, is one question to think about (the hook) beside a short list of what the workout covers;
+   it no longer opens with a fill-in passage on a topic not yet learned. The fill-in moved to Sum Up, the last tab,
+   as short exam-style word boxes ("Use words from the box…"), done once the content is known. */
+function goalsAct(panel,items){
+  const body=act(panel,'In this workout','By the end you can','');
+  body.appendChild(mk('ul','goals',items.map(g=>'<li>'+(g.ta?'<b class="ta" title="Triple Award only">TA</b> ':'')+g.t+(g.sp?'<span class="sp">'+g.sp+'</span>':'')+'</li>').join('')));
+}
+function pairFirstTwo(panel){
+  const L=$('#panel-'+panel+' .acts'),as=$$(':scope > .act',L);
+  if(as.length<2)return;const pr=mk('div','act-pair');L.insertBefore(pr,as[0]);pr.appendChild(as[0]);pr.appendChild(as[1]);
+}
+// parts: text strings and [slot id, answer]; extras: words in the box that fit no gap
+function wordBox(panel,title,parts,extras){
+  const body=act(panel,'Word box',title,'Use words from the box to complete the sentences. Some words are not needed.');
   const cloze=mk('div','cloze'),slots=[],chips=[];
   parts.forEach(p=>{
     if(typeof p==='string')cloze.appendChild(document.createTextNode(p));
     else{const s=mk('span','blank');cloze.appendChild(s);slots.push({id:p[0],el:s,answer:p[1]});chips.push({id:'c-'+p[0],text:p[1]});}
   });
-  ['newtons','acceleration','kinetic'].forEach((t,i)=>chips.push({id:'x'+i,text:t}));
-  body.appendChild(cloze);body.appendChild(mk('div','pool-label','Word bank'));
+  extras.forEach((t,i)=>chips.push({id:'x-'+slots[0].id+i,text:t}));
+  body.appendChild(cloze);body.appendChild(mk('div','pool-label','Box'));
   const pool=mk('div','chip-pool');body.appendChild(pool);
   let g;
   const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
   const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
   g=createBlankGame({fill:true,slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
 }
-
-/* ================= 4. UNITS AND KEY TERMS (ALL OF UNIT 4) ================= */
-// The Units and Key Terms tabs for the whole unit (split 5 Nov 2026) (3 Nov 2026). Activities from other workouts are named after them.
+/* ================= 1. WARM UP: a question to think about + what the workout covers ================= */
 {
-  function unitTable(panel,title,intro,rows,extras){
-    const body=act(panel,'Quantity, symbol, unit',title,intro);
-    const KEYS=['q','s','u','us'],NAMES={q:'quantity',s:'symbol',u:'unit',us:'unit symbol'};
-    const wrap=mk('div','table-scroll'),tbl=mk('table','units');
-    tbl.innerHTML='<thead><tr><th>Quantity</th><th>Symbol</th><th>Unit</th><th>Unit symbol</th></tr></thead>';
-    const tb=mk('tbody');tbl.appendChild(tb);wrap.appendChild(tbl);
-    const slots=[],chips=[];
-    rows.forEach((r,i)=>{
-      const tr=mk('tr');
-      KEYS.forEach(k=>{
-        const td=mk('td');
-        if(r.g===k){td.className='given';td.textContent=r[k];if(r.ta)td.insertAdjacentHTML('beforeend',' <b class="ta" title="Triple Award only">TA</b>');}
-        else{const s=mk('div','blank');td.appendChild(s);slots.push({id:i+'-'+k,el:s,answer:r[k],label:r[r.g]+': '+NAMES[k]});chips.push({id:'u'+i+k,text:r[k]});}
-        tr.appendChild(td);
-      });
-      tb.appendChild(tr);
-    });
-    extras.forEach((t,i)=>chips.push({id:'ux'+i,text:t}));
-    body.appendChild(wrap);body.appendChild(mk('div','pool-label','Chips: quantities, symbols, units and unit symbols'));
-    const pool=mk('div','chip-pool');body.appendChild(pool);
-    let g;
-    const b=bar(body,[{label:'Check table',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
-    const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
-    g=createBlankGame({fill:true,slots:slots,pool:pool,chips:chips,msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
-  }
-  unitTable('units','Unit 4 quantities','Each row gives you one cell. Drag the other three into place. W is the symbol for work done and the unit symbol for the watt, so work from the quantity. Some chips are not needed.',[
-    {q:'Energy',s:'E',u:'joule',us:'J',g:'q'},
-    {q:'Work done',s:'W',u:'joule',us:'J',g:'q'},
-    {q:'Force',s:'F',u:'newton',us:'N',g:'us'},
-    {q:'Mass',s:'m',u:'kilogram',us:'kg',g:'us'},
-    {q:'Gravitational field strength',s:'g',u:'newton per kilogram',us:'N/kg',g:'us'},
-    {q:'Speed',s:'v',u:'metre per second',us:'m/s',g:'u'},
-    {q:'Power',s:'P',u:'watt',us:'W',g:'q'}
-  ],['pascal','kg/m³','minute']);
-  createCrossword({host:act('terms','Crossword','Unit 4 Key words','Click a square or a clue and type. Check takes out any wrong letters.'),words:[
-  {a:'GRAVITATIONAL',r:9,c:3,d:'a',clue:'___ potential energy: the energy an object gains when it is lifted, m × g × h'},
-  {a:'CONSERVATION',r:2,c:9,d:'d',clue:'___ of energy: energy is never created or destroyed, only transferred'},
-  {a:'INSULATION',r:2,c:11,d:'d',clue:'Material that slows down energy transfer by heating, usually by trapping air'},
-  {a:'CONVECTION',r:2,c:4,d:'a',clue:'Heated fluid expands, becomes less dense and rises, and cooler fluid sinks to take its place'},
-  {a:'RENEWABLE',r:2,c:15,d:'d',clue:'Describes an energy resource that is replaced naturally and will not run out (TA)'},
-  {a:'EFFICIENCY',r:11,c:4,d:'a',clue:'Useful energy output divided by total energy output'},
-  {a:'CONDUCTION',r:0,c:13,d:'d',clue:'Vibrating particles pass energy on to their neighbours; the main way energy is transferred through solids'},
-  {a:'SANKEY',r:0,c:6,d:'d',clue:'___ diagram: a to-scale flow diagram where the width of each arrow shows the amount of energy'},
-  {a:'DISSIPATE',r:0,c:3,d:'a',clue:'To spread out into the surroundings, as wasted energy does'},
-  {a:'KINETIC',r:13,c:7,d:'a',clue:'___ energy: the energy an object has because it is moving, ½ × m × v²'},
-  {a:'TURBINE',r:4,c:0,d:'a',clue:'A wheel of blades spun round by moving steam, air or water; it turns the generator (TA)'},
-  {a:'INFRARED',r:1,c:2,d:'d',clue:'___ radiation: electromagnetic waves that transfer energy and need no particles, so can cross a vacuum'},
-  {a:'POWER',r:7,c:5,d:'a',clue:'The rate of doing work, or the rate of transfer of energy'},
-  {a:'EMITTER',r:0,c:0,d:'d',clue:'A matt black surface is the best ___ of infrared: it gives out infrared fastest'}]});
+  createPredict({host:act("overview","Multiple choice","Up the stairs","Ali runs up a flight of stairs carrying a box. Yassin walks up the same stairs with an identical box."),
+    q:"Who does more work on his box?",
+    options:[{"text": "The same work, but Ali has more power", "correct": true}, {"text": "Ali does more work, as he is faster", "why": "The force (the box’s weight) and the height are the same, so the work done is the same. Speed only changes the power."}, {"text": "Yassin does more work, as it takes longer", "why": "Taking longer does not change the force or the distance, so the work done is the same. It means a lower power."}, {"text": "The same work and the same power", "why": "Power is the rate of doing work. Ali does the same work in less time, so his power is bigger."}],
+    explain:"Both lift the same weight through the same height, so both do the same work and give the boxes the same gain in gravitational potential energy. Ali does it in less time, so his power, the rate of transferring energy, is bigger."});
+  goalsAct("overview",[{"ta": 0, "t": "Use work done = force × distance moved, and link work to energy transferred", "sp": "4.11, 4.12"}, {"ta": 0, "t": "Use GPE = mgh and KE = ½mv²", "sp": "4.13, 4.14"}, {"ta": 0, "t": "Use conservation of energy for falling and moving objects", "sp": "4.15"}, {"ta": 0, "t": "Calculate power from the work done and the time taken", "sp": "4.16, 4.17"}]);
+  pairFirstTwo("overview");
+}
+/* ================= SUM UP: exam-style word boxes ================= */
+{
+  wordBox("sumup","Work and energy",["Work is done when a ", ["a1", "force"], " moves an object through a distance in the direction of the force. The work done is equal to the energy ", ["a2", "transferred"], ", so both are measured in ", ["a3", "joules"], ". Lifting an object increases its ", ["a4", "gravitational potential"], " energy."],["newtons", "watts", "elastic"]);
+  wordBox("sumup","Kinetic energy and power",["Kinetic energy depends on an object’s mass and the square of its ", ["b1", "speed"], ". As a ball falls, its gravitational potential energy is transferred to ", ["b2", "kinetic"], " energy. Power is the ", ["b3", "rate"], " at which energy is transferred, and is measured in ", ["b4", "watts"], "."],["height", "acceleration", "joules"]);
+  pairFirstTwo("sumup");
 }
 
 /* ================= 3. WORK DONE AND POWER ================= */
@@ -1773,6 +1742,8 @@ function readSaved(){
   return {};
 }
 function start(data){
+  // 12 Nov 2026: the first tab's fill-in passage became the Warm Up question; a saved passage is not loaded into it.
+  try{const o=data&&data.v&&data.v[TAB_IDS[0]+'-0'];if(o&&typeof o==='object'&&'l' in o)delete data.v[TAB_IDS[0]+'-0'];}catch(e){}
   const v=(data&&data.v)||{};
   games.forEach(g=>{if(v[g.key]&&typeof v[g.key]==='object'){try{g.setState(v[g.key]);}catch(e){console.error(e);}}});
   saveReady=true;showProgress(false);
