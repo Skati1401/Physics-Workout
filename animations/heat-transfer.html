@@ -316,7 +316,7 @@
     <div class="side">
       <div class="cgrid">
         <span class="rowlab" id="ht-jlab">Jump to</span>
-        <div class="seg" id="ht-jump"><button type="button" data-v="0" aria-pressed="false">Start</button><button type="button" data-v="cu" aria-pressed="false">Copper pin</button><button type="button" data-v="fe" aria-pressed="false">Iron pin</button><button type="button" data-v="end" aria-pressed="false">15 min</button></div>
+        <div class="seg" id="ht-jump"><button type="button" data-v="0" aria-pressed="false">Start</button><button type="button" data-v="cu" aria-pressed="false">Copper pin</button><button type="button" data-v="fe" aria-pressed="false">Iron pin</button><button type="button" data-v="end" aria-pressed="false">10 min</button></div>
         <span class="rowlab" id="ht-hlab">Heat</span>
         <div class="seg" id="ht-heat"><button type="button" data-v="under" aria-pressed="true">Under the crystal</button><button type="button" data-v="mid" aria-pressed="false">In the middle</button><button type="button" data-v="top" aria-pressed="false">At the top</button></div>
         <span class="rowlab" id="ht-slab">Setup</span>
@@ -440,7 +440,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
       if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
     return g; }
-  // a stopwatch showing s (for example 1:37)
+  // a stopwatch showing s (for example 0:55)
   function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
     return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
       rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
@@ -579,28 +579,32 @@ function expKey(x, y, upLabel, downLabel){
   function stop(){ running=false; cancelAnimationFrame(raf); }
   function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
   function frame(now){
-    var real=Math.min(0.05,(now-last)/1000); last=now;
-    var dt=real*(slowOn()?0.3:1);
-    var more=false;
-    if(part()==='cond') more=condTick(dt);
-    else if(part()==='conv') more=convTick(dt);
-    else more=radTick(dt);
+    // keep to clock time on a slow laptop: a long frame is worked through in steps of 0.05 s (up to 0.5 s)
+    var real=Math.min(0.5,(now-last)/1000); last=now;
+    var more=false, p=part();
+    do{
+      var chunk=Math.min(0.05,real), dt=chunk*(slowOn()?0.3:1); real-=chunk;
+      if(p==='cond') more=condTick(dt);
+      else if(p==='conv') more=convTick(dt);
+      else more=radTick(dt);
+    }while(more && real>1e-6);
     draw();
     if(more) raf=requestAnimationFrame(frame); else { running=false; draw(); }
   }
 
   /* ---------------- CONDUCTION ----------------
-     Four rods, 30 cm long, pushed through the side of a tank of hot water kept at 90 °C. A drawing pin is
+     Four rods, 14 cm long, pushed through the side of a tank of hot water kept at 90 °C. A drawing pin is
      stuck with wax 11 cm from the water on each. Each rod: dT/dt = D d²T/dx² − h(T − 20), with the
      far end losing energy only to the air. Real diffusivities; h and the wax (melts at 50 °C) tuned so
-     the copper pin drops at about 1:37, aluminium 1:52, iron about 11 min, glass never in 15 min. */
+     the copper pin drops at about 0:55, aluminium 1:03, iron about 4:54, glass never in 10 min.
+     A run is 10 minutes at 30× speed: 20 s on the clock. */
   var RODS=[
     {k:'cu', name:'Copper',    D:1.11e-4, h:0.0008, col:'#c47a45'},
     {k:'al', name:'Aluminium', D:9.7e-5,  h:0.0008, col:'#b9bec6'},
     {k:'fe', name:'Iron',      D:2.3e-5,  h:0.0008, col:'#77777e'},
     {k:'gl', name:'Glass',     D:3.4e-7,  h:0.0015, col:'#cfe6ee'}
   ];
-  var RL=0.30, RN=40, RDX=RL/RN, PIN=0.11, PI_=Math.round(PIN/RDX), MELT=50, TW=90, TR=20, CEND=900, CSPEED=30;
+  var RL=0.14, RN=28, RDX=RL/RN, PIN=0.11, PI_=Math.round(PIN/RDX), MELT=50, TW=90, TR=20, CEND=600, CSPEED=30;
   var C={t:0, T:null, drop:[], rec:[]};
   function condInit(){ C.t=0; C.T=RODS.map(function(){ var a=[]; for(var i=0;i<=RN;i++) a.push(TR); a[0]=TW; return a; }); C.drop=RODS.map(function(){ return null; }); C.rec=RODS.map(function(){ return null; }); }
   function condStep(ts){   // advance the physics by ts seconds
@@ -644,8 +648,8 @@ function expKey(x, y, upLabel, downLabel){
      Each part is one wide picture of the apparatus as solid objects (viewBox about 860 wide); under 560px the
      same function lays it out tall. The physics above works in its own units; these functions only draw it. */
   function condLay(){ return narrow()
-    ? {W:430,H:384, tx:10,tw:76,ty:66,by:326, dx:24,dy:-13, X0:98, PX:10.4, RY:[112,172,232,292], sw:[346,8], key:[150,352], fs:12.5, tall:1}
-    : {W:860,H:352, tx:30,tw:118,ty:46,by:308, dx:36,dy:-20, X0:166, PX:19, RY:[98,154,210,266], sw:[772,8], key:[330,330], fs:13, tall:0}; }
+    ? {W:430,H:384, tx:10,tw:76,ty:66,by:326, dx:24,dy:-13, X0:98, PX:17, RY:[112,172,232,292], sw:[346,8], key:[150,352], fs:12.5, tall:1}
+    : {W:860,H:352, tx:30,tw:118,ty:46,by:308, dx:36,dy:-20, X0:166, PX:36, RY:[98,154,210,266], sw:[772,8], key:[330,330], fs:13, tall:0}; }
   function drawCond(){
     var L=condLay(), ex=exp(), s='', x0=L.X0, cm=L.PX, xe=x0+RL*100*cm, pxn=x0+PIN*100*cm, by=L.by, r=5;
     var tl=L.tx, tr=L.tx+L.tw, tt=L.ty, th=by-tt, wy=tt+16, dx_=L.dx, dy_=L.dy, hot='rgba(214,38,30,';
@@ -671,7 +675,7 @@ function expKey(x, y, upLabel, downLabel){
       s+=rect(x0,y-r,xe-x0,2*r*0.36,'#fff',' opacity="'+(rd.k==='gl'?0.55:0.3)+'"')+rect(x0,y+r*0.35,xe-x0,r*0.65,'#000',' opacity=".16"');
       if(rd.k==='gl') s+=rect(x0,y-r,xe-x0,2*r,'none',' stroke="var(--glass)" stroke-width="1"');
       s+=ell(xe,y,2.6,r,lastCol)+ell(xe,y,2.6,r,'#fff',' opacity=".28"')+ell(x0,y,4.5,r+3.5,'#34343a')+ell(x0-0.8,y-1,2.2,r,'#fff',' opacity=".12"');
-      s+=txt(xe,y-r-7,rd.name,{a:'end',fs:L.fs,c:'var(--ink)'});
+      s+=txt(xe+10,y+4.5,rd.name,{fs:L.fs,c:'var(--ink)'});
       // the wax and its drawing pin
       var d=C.drop[k], fall=0;
       if(d!=null) fall=RM?40:Math.min(40,(C.t-d)*6);
@@ -693,13 +697,13 @@ function expKey(x, y, upLabel, downLabel){
     var ex=exp(), done=C.t>=CEND-1e-9, order=RODS.map(function(r,k){ return [k,ex?C.rec[k]:C.drop[k]]; }).filter(function(a){ return a[1]!=null; }).sort(function(a,b){ return a[1]-b[1]; });
     if(ex){
       if(C.t===0) return 'Press <b>Start</b>. Each rod has a pin stuck on with wax, 11 cm from the hot water. Watch the pins and record the stopwatch time when each one drops.';
-      if(!done) return 'Timing… '+(order.length?order.length+' of 4 pins have dropped.':'no pins have dropped yet.')+' The run stops at 15 minutes.';
+      if(!done) return 'Timing… '+(order.length?order.length+' of 4 pins have dropped.':'no pins have dropped yet.')+' The run stops at 10 minutes.';
       var best=RODS[order[0][0]].name.toLowerCase();
-      return 'Done. The '+best+' pin dropped first, so '+best+' is the <b>best conductor</b> here. The glass pin was still on after 15 minutes: glass is a poor conductor (an insulator).';
+      return 'Done. The '+best+' pin dropped first, so '+best+' is the <b>best conductor</b> here. The glass pin was still on after 10 minutes: glass is a poor conductor (an insulator).';
     }
     if(C.t===0) return 'Energy from the hot water is conducted along each rod. The colours show the temperature. Press <b>Play</b>.';
     if(!order.length) return 'The ends in the water are hot. Energy is conducted along each rod, fastest along the metals.';
-    if(done) return 'After 15 minutes the copper and aluminium are hot all along. Iron is slower, and the glass is still cold just outside the water: glass is a poor conductor.';
+    if(done) return 'After 10 minutes the copper and aluminium are hot all along. Iron is slower, and the glass is still cold just outside the water: glass is a poor conductor.';
     var k=order[order.length-1][0];
     return 'The '+RODS[k].name.toLowerCase()+' pin dropped at '+mmss(order[order.length-1][1])+': the wax there reached '+MELT+' °C and melted.';
   }
