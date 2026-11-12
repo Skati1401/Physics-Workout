@@ -576,7 +576,7 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 <label class="gen-opt"><input type="checkbox" id="opt-rearr"><span><b>Rearranging</b><span>Find any quantity, not just the one on its own.</span></span></label>
 <label class="gen-opt"><input type="checkbox" id="opt-conv"><span><b>Unit conversions</b><span>g, cm, km, minutes, hours, km/h, cm², cm³, °C.</span></span></label>
 <label class="gen-opt"><input type="checkbox" id="opt-mult"><span><b>Multipliers</b><span>kW, MJ, kV, mA, ms, kΩ, MHz, nm.</span></span></label>
-<label class="gen-opt"><input type="checkbox" id="opt-sf"><span><b>Significant figures</b><span>Awkward numbers; give the answer to 2 or 3 s.f.</span></span></label>
+<label class="gen-opt"><input type="checkbox" id="opt-sf"><span><b>Significant figures</b><span>Values given to 2 or 3 s.f.; give the answer to the fewest s.f. in the data.</span></span></label>
 <label class="gen-opt"><input type="checkbox" id="opt-show"><span><b>Show the equation</b><span>Each question says which equation to use.</span></span></label>
 </div></fieldset>
 <div class="ch-units" id="ch-units"></div>
@@ -978,82 +978,138 @@ function showAs(fam,x,opt,rnd,want){
   if(!use.length)return out;
   const c=calcPick(rnd,use);return {u:c.u,f:c.f,x:fromSI(x,c.f),k:c.k};
 }
+// a measured value written to exactly k s.f. (2.50, 0.0340, 1450, 3.20 × 10⁸)
+function dispSF(y,k){
+  if(y===0)return '0';
+  const v=+(+y).toPrecision(k),a=Math.abs(v),e=Math.floor(Math.log10(a)+1e-12),sg=v<0?MINUS:'';
+  if(a>=1e6||a<1e-3)return sg+(a/Math.pow(10,e)).toFixed(k-1)+' × 10'+sup(e);
+  const p=a.toFixed(Math.max(0,k-1-e)).split('.');
+  if(p[0].length>4)p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  return sg+p.join('.');
+}
+// how many s.f. a written number has: [fewest, most] (1450 could be 3 or 4)
+function sfRangeTxt(t){
+  let d=String(t).replace(/[\s ]/g,'').split('×')[0].replace(MINUS,'').replace('-','');
+  if(d.indexOf('.')>-1){const x=d.replace('.','').replace(/^0+/,'');return [x.length,x.length];}
+  d=d.replace(/^0+/,'');const core=d.replace(/0+$/,'');return [core.length,d.length];
+}
+const vuT=(t,u)=>u===''?t:(u==='%'||u==='°')?t+u:t+' '+u;
 function makeQuestion(e,opt,rnd){
+  for(let n=0;n<60;n++){const q=makeOne(e,opt,rnd);if(q)return q;}
+  return makeOne(e,Object.assign({},opt,{sf:false}),rnd);
+}
+function makeOne(e,opt,rnd){
   const isM=e.kind==='m';
   const c=calcPick(rnd,e.ctx);
-  const sfOn=opt.sf&&!e.nosf;
-  let g=isM?mVals(e,c,rnd,sfOn):e.vals(c,rnd,sfOn);
+  const sfOn=!!opt.sf;
+  let g=isM?mVals(e,c,rnd,false):e.vals(c,rnd,false);
   // which quantity is asked for
   // a fixed value (g = 10 N/kg on Earth, c) or a 'Take …' value is never the unknown
-  const unknowns=e.unknownsFor?e.unknownsFor(c):Object.keys(e.vars).filter(k=>(c.fix||[]).indexOf(k)<0&&!e.vars[k].take);
+  let unknowns=e.unknownsFor?e.unknownsFor(c):Object.keys(e.vars).filter(k=>(c.fix||[]).indexOf(k)<0&&!e.vars[k].take);
+  // a number of turns is a whole number: never the unknown when answers are rounded to s.f.
+  if(opt.sf)unknowns=unknowns.filter(k=>!e.vars[k].int);
   const subject=isM?fac(e.L[0]).k:e.subject;
   let u=opt.rearr?calcPick(rnd,unknowns.concat(unknowns.filter(k=>k!==subject))):subject;
   if(unknowns.indexOf(u)<0||g[u]===0)u=unknowns.find(k=>g[k]!==0)||unknowns[0];
-  // givens: rounded to 3 s.f. (s.f. option) and shown in their units; the answer is worked from what is shown
   // keys: every known value (all go in the working); spoken: the ones the question states (not 'from rest' ones)
   const keys=Object.keys(e.vars).filter(k=>k!==u);
   const spoken=keys.filter(k=>!e.given||e.given(k,c,g));
+  // Significant figures (Alex, 12 Nov 2026): the measured values become awkward numbers written to 2 or 3 s.f.,
+  // and the answer goes to the fewest s.f. in the data (never 1). Constants stay as they are: Take g = 10 N/kg,
+  // whole numbers of turns, and a context's one fixed value (230 V mains, 4200 J/kg °C, 3 × 10⁸ m/s).
+  const measured=k=>{const V=e.vars[k];return sfOn&&spoken.indexOf(k)>-1&&g[k]!==0&&!V.take&&!V.int&&(c.fix||[]).indexOf(k)<0&&!(isM&&k!==c.d&&c.v[k]&&c.v[k].length===1);};
+  const tempC=opt.conv&&rnd()<0.6;
   const shown={},G=Object.assign({},g);
   let nConv=0,nMult=0;
-  const order=shuffle(keys);
-  order.forEach(k=>{
+  for(const k of shuffle(keys)){
     const V=e.vars[k];let x=g[k];
-    if((sfOn&&!V.int)||!tidy(x))x=r3(x);
+    if(!measured(k)&&!tidy(x))x=r3(x);
     let want=null;
-    if(V.take||V.noconv){shown[k]={u:FAM[V.f].u,f:1,x:x};G[k]=x;return;}
     if(opt.conv&&!nConv)want='conv';else if(opt.mult&&!nMult)want='mult';
-    let s=want?showAs(V.f,x,opt,rnd,want):{u:FAM[V.f].u,f:1,x:x};
-    if(!s.k&&!FAM[V.f].always&&rnd()<0.35)s=showAs(V.f,x,opt,rnd,null);
-    if(FAM[V.f].always)s=showAs(V.f,x,opt,rnd,null);
+    const place=x=>{
+      if(V.take||V.noconv)return {u:FAM[V.f].u,f:1,x:x};
+      if(V.f==='temp')return tempC?{u:'°C',f:'C',x:x-273,k:'conv'}:{u:'K',f:1,x:x};
+      let s=want?showAs(V.f,x,opt,rnd,want):{u:FAM[V.f].u,f:1,x:x};
+      if(!s.k&&!FAM[V.f].always&&rnd()<0.35)s=showAs(V.f,x,opt,rnd,null);
+      if(FAM[V.f].always)s=showAs(V.f,x,opt,rnd,null);
+      return s;
+    };
+    let s;
+    if(measured(k)){
+      // an awkward value, written to 2 or 3 s.f. with no doubt about how many (no 1450, no 40 °C)
+      let ok=false;
+      for(let t=0;t<40&&!ok;t++){
+        const kk=rnd()<0.6?3:2,raw=x*(V.f==='temp'?0.97+0.06*rnd():0.92+0.16*rnd());
+        let xs=V.f==='temp'?Math.round(raw):+raw.toPrecision(kk);
+        if(V.f==='angle')xs=+raw.toPrecision(kk);
+        s=place(xs);
+        const y=s.f==='C'?Math.round(s.x):+(+s.x).toPrecision(kk);
+        const txt=s.f==='C'?String(y).replace('-',MINUS):dispSF(y,kk),r=sfRangeTxt(txt);
+        if(r[0]===r[1]&&r[0]>=2&&r[0]<=3){s.x=y;s.txt=txt;s.kk=r[0];ok=true;}
+      }
+      if(!ok)return null;
+    }else{s=place(x);s.txt=fmt(s.x);}
     if(s.k==='conv')nConv++;if(s.k==='mult')nMult++;
     shown[k]=s;G[k]=toSI(s.x,s.f);
-  });
-  // temperatures in one question are all in °C or all in K
-  const tk=keys.filter(k=>e.vars[k].f==='temp');
-  if(tk.some(k=>shown[k].f==='C'))tk.forEach(k=>{shown[k]={u:'°C',f:'C',x:G[k]-273,k:'conv'};});
+  }
+  // the awkward values keep the story: the same order as before (a tyre that warms up still ends hotter)
+  if(sfOn){for(const a of keys)for(const b of keys)if(a<b&&e.vars[a].f===e.vars[b].f&&g[a]!==g[b]&&Math.sign(g[a]-g[b])!==Math.sign(G[a]-G[b]))return null;}
   const w=isM?mWork(e,G,u):e.work(G,u);
   let ans=w.ans;
+  if(!isFinite(ans)||ans===0)return null;
+  if(sfOn&&!w.sym&&Math.sign(ans)!==Math.sign(g[u]))return null;
   // the unit asked for: SI, or converted or prefixed when the options are on
   const V=e.vars[u],F=FAM[V.f];
   let ask={u:F.u,f:1};
   if(F.always)ask={u:F.conv[0][0],f:F.conv[0][1]};
+  else if(V.f==='temp'&&tempC)ask={u:'°C',f:'C'};
   else{
     const opts=[];
-    if(opt.conv&&F.conv&&!w.sym)F.conv.forEach(a=>{const y=fromSI(ans,a[1]);if(Math.abs(y)>=0.1&&Math.abs(y)<1e5)opts.push(a);});
+    if(opt.conv&&F.conv&&!w.sym&&V.f!=='temp')F.conv.forEach(a=>{const y=fromSI(ans,a[1]);if(Math.abs(y)>=0.1&&Math.abs(y)<1e5)opts.push(a);});
     if(opt.mult&&F.pre&&!w.sym)F.pre.forEach(a=>{const y=Math.abs(ans/a[1]);if(y>=1&&y<1000)opts.push(a);});
     const big=Math.abs(ans)>=1e4||Math.abs(ans)<0.01;
     if(opts.length&&(rnd()<(big?0.8:0.4)))ask=(a=>({u:a[0],f:a[1]}))(calcPick(rnd,opts));
   }
   const ansAsk=fromSI(ans,ask.f);
-  const sfN=sfOn?(rnd()<0.7?3:2):0;
+  // how many s.f. the answer needs: the fewest in all the data (a constant such as 12 V or 4200 J/kg °C counts too),
+  // never fewer than 2; up to the fewest in the measured values is also accepted (230 V could be read as 2 or 3 s.f.)
+  const meas=keys.filter(k=>shown[k].kk);
+  let sfN=0,sfLo=0,sfSaid=false;
+  if(sfOn){
+    if(meas.length){sfN=Math.min.apply(null,meas.map(k=>shown[k].kk));sfSaid=false;
+      const others=spoken.filter(k=>!shown[k].kk&&!e.vars[k].take&&!e.vars[k].int).map(k=>sfRangeTxt(shown[k].txt)[0]);
+      sfLo=Math.max(2,Math.min.apply(null,[sfN].concat(others)));}
+    else{sfN=3;sfLo=3;sfSaid=true;}
+  }
   // the question
   const nm=k=>(e.askName&&e.askName(k,G))||e.vars[k].name;
-  const phr=k=>{const p=e.phrase&&e.phrase(k,G,c);if(p)return p;const s=shown[k];return 'the '+e.vars[k].name+' is '+vu(s.x,s.u);};
+  const phr=k=>{const p=e.phrase&&e.phrase(k,G,c);if(p&&!shown[k].kk)return p;const s=shown[k];
+    if(p&&shown[k].kk)return p.replace(/is [^ ]+ /,'is '+(s.txt.replace(MINUS,''))+' ');return 'the '+e.vars[k].name+' is '+vuT(s.txt,s.u);};
   const takes=spoken.filter(k=>e.vars[k].take),parts=spoken.filter(k=>!e.vars[k].take).map(phr);
   let q=c.t+' ';
   if(parts.length){const t=parts.length>1?parts.slice(0,-1).join(', ')+' and '+parts[parts.length-1]:parts[0];q+=t.charAt(0).toUpperCase()+t.slice(1)+'. ';}
   if(e.extra&&e.extra(G,u))q+=e.extra(G,u)+' ';
-  takes.forEach(k=>{q+='Take '+(e.vars[k].sym||k)+' = '+vu(shown[k].x,shown[k].u)+'. ';});
+  takes.forEach(k=>{q+='Take '+(e.vars[k].sym||k)+' = '+vuT(shown[k].txt,shown[k].u)+'. ';});
   q+='Calculate the '+nm(u)+(ask.u!==F.u&&ask.u!=='%'?' in '+ask.u:ask.u==='%'?' as a percentage':'')+'.';
-  if(sfN)q+=' Give your answer to '+sfN+' significant figures.';
+  if(sfOn)q+=sfSaid?' Give your answer to 3 significant figures.':' Give your answer to an appropriate number of significant figures.';
   // the working: givens || equation, steps, answer
   const S=k=>symOf(e,k);
   const given=keys.map(k=>{const s=shown[k],si=FAM[e.vars[k].f].u;
-    let t=S(k)+' = '+vu(s.x,s.u);if(s.f!==1)t+=' = '+vu(G[k],si);return t;});
+    let t=S(k)+' = '+vuT(s.txt,s.u);if(s.f!==1)t+=' = '+vu(G[k],si);return t;});
   given.push((w.sym||S(u))+' = ?');
   const steps=w.lines.slice();
   const ansSym=w.sym||S(u),unitSI=F.u;
   const dp=w.dp;
-  const outSI=dp?(+ans.toFixed(dp)):ans;
   steps.push(ansSym+' = '+(dp&&!sfN?ans.toFixed(dp).replace('-',MINUS)+(unitSI==='°'?'°':' '+unitSI):vu(ans,unitSI)));
   if(ask.f!==1)steps.push(ansSym+' = '+vu(ansAsk,ask.u));
-  if(sfN)steps.push(ansSym+' = '+fmtSF(ansAsk,sfN)+(ask.u===''?'':ask.u==='%'||ask.u==='°'?ask.u:' '+ask.u)+' ('+sfN+' s.f.)');
+  if(sfN)steps.push(ansSym+' = '+vuT(dispSF(ansAsk,sfLo||sfN),ask.u)+' ('+(sfLo||sfN)+' s.f.)');
   const hints=[];
   const conv=keys.filter(k=>shown[k].f!==1&&!FAM[e.vars[k].f].always);
-  if(conv.length)hints.push('Change '+conv.map(k=>vu(shown[k].x,shown[k].u)).join(' and ')+' into '+conv.map(k=>FAM[e.vars[k].f].u).filter((x,i,a)=>a.indexOf(x)===i).join(' and ')+' first.');
+  if(conv.length)hints.push('Change '+conv.map(k=>vuT(shown[k].txt,shown[k].u)).join(' and ')+' into '+conv.map(k=>FAM[e.vars[k].f].u).filter((x,i,a)=>a.indexOf(x)===i).join(' and ')+' first.');
   if(u!==subject)hints.push('Write down '+FR(e.show)+', put the numbers in, then rearrange for '+(e.vars[u].sym||u)+'.');
   if(ask.f!==1)hints.push('Your answer comes out in '+unitSI+'. Change it into '+ask.u+' at the end.');
-  return {eq:e,q:q,unit:ask.u==='%'?'%':ask.u,answer:ansAsk,sf:sfN,dp:dp&&!sfN?dp:0,ansSI:ans,unitSI:unitSI,working:given.join('<br>')+'||'+steps.join('<br>'),hints:hints};
+  if(sfN&&!sfSaid)hints.push('Count the significant figures in each value you are given. The fewest is '+(sfLo||sfN)+', so give your answer to '+(sfLo||sfN)+' s.f.');
+  return {eq:e,q:q,unit:ask.u==='%'?'%':ask.u,answer:ansAsk,sf:sfN,sfLo:sfLo||sfN,dp:dp&&!sfN?dp:0,ansSI:ans,unitSI:unitSI,working:given.join('<br>')+'||'+steps.join('<br>'),hints:hints};
 }
 
 /* ================= the page: choose, then practise one question at a time ================= */
@@ -1183,9 +1239,10 @@ function check(){
   const v=p.v,ans=q.answer;
   let ok,msg='';
   if(q.sf){
-    const target=+ans.toPrecision(q.sf),r=sfRange(p.mant),valOK=Math.abs(v-target)<=Math.abs(target)*1e-9+1e-12;
-    ok=valOK&&r[0]<=q.sf&&q.sf<=r[1];
-    if(!ok&&numClose(v,ans))msg=valOK?'Right value. Now write it to exactly '+q.sf+' significant figures.':'Nearly: round your answer to '+q.sf+' significant figures.';
+    // right value rounded to n s.f., written with n s.f., for an n the data allow (usually just one)
+    const r=sfRange(p.mant);ok=false;
+    for(let n=q.sfLo;n<=q.sf;n++){const target=+ans.toPrecision(n);if(Math.abs(v-target)<=Math.abs(target)*1e-9+1e-12&&r[0]<=n&&n<=r[1])ok=true;}
+    if(!ok&&numClose(v,ans))msg='Right value, wrong number of significant figures. Count the s.f. in each value you are given and use the fewest.';
   }else ok=numClose(v,ans);
   if(ok){
     inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('pop');
@@ -1210,7 +1267,7 @@ function check(){
 }
 function showAnswer(){
   const inp=byId('gen-in'),fb=byId('gen-fb'),q=cur;
-  inp.value=q.sf?(+q.answer).toPrecision(q.sf).replace('e+','e'):shownVal(+(+q.answer).toPrecision(4));
+  inp.value=q.sf?dispSF(q.answer,q.sfLo).replace(/[\s\u00a0]/g,'').replace(MINUS,'-').replace(/×10([⁻⁰¹²³⁴⁵⁶⁷⁸⁹]+)/,(m,x)=>'e'+x.split('').map(c=>SUPMAP[c]).join('')):shownVal(+(+q.answer).toPrecision(4));
   inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');
   byId('gen-work').hidden=false;byId('gen-show').hidden=true;byId('gen-hint').hidden=true;byId('gen-check').hidden=true;
   byId('gen-next').classList.add('primary');
