@@ -387,10 +387,11 @@ svg.sankey{background:var(--panel)}
 button.hg-cell{cursor:pointer}
 button.hg-cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .hg-mark{font:600 18px var(--f-mono);width:20px;flex:none;text-align:center;color:var(--ink-faint)}
-.hg-cell.is-yes .hg-mark{color:var(--good)}.hg-cell.is-no .hg-mark{color:var(--bad)}
+.hg-cell.is-yes .hg-mark,.hg-cell.is-no .hg-mark{color:var(--ink)}
 .hg-cell.is-yes,.hg-cell.is-no{border-color:var(--ink-faint);background:var(--panel)}
 .hg-cell.is-correct{background:var(--good-soft);border-color:var(--good);cursor:default;opacity:1}
-.hg-cell.is-correct.is-no{background:var(--bad-soft);border-color:var(--bad)}
+.hg-cell.is-correct.is-con{background:var(--bad-soft);border-color:var(--bad)}
+.hg-notes{font-size:13.5px;color:var(--ink-soft);margin-top:-4px}.hg-notes p{margin:2px 0}.hg-notes b{color:var(--ink)}
 .hg-cell.is-shown{border-style:dashed}
 .hg-cell.is-wrong{outline:2px solid var(--bad);outline-offset:-2px}
 .hg-cell.is-given{background:var(--accent-soft);border-style:dashed;color:var(--ink-soft)}
@@ -517,7 +518,6 @@ button.hg-cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <nav class="tabs" role="tablist" aria-label="Activities">
 <button class="tab-btn is-active" role="tab" id="tab-overview" data-tab="overview" data-ta aria-selected="true" aria-controls="panel-overview">Warm Up</button>
 <button class="tab-btn" role="tab" id="tab-pros" data-tab="pros" data-ta aria-selected="false" aria-controls="panel-pros">Four Headings</button>
-<button class="tab-btn" role="tab" id="tab-two" data-tab="two" data-ta aria-selected="false" aria-controls="panel-two">Two and Two</button>
 <button class="tab-btn" role="tab" id="tab-choose" data-tab="choose" data-ta aria-selected="false" aria-controls="panel-choose">Discuss</button>
 <button class="tab-btn" role="tab" id="tab-stations" data-tab="stations" data-ta aria-selected="false" aria-controls="panel-stations">Steam Turbines</button>
 <button class="tab-btn" role="tab" id="tab-renew" data-tab="renew" data-ta aria-selected="false" aria-controls="panel-renew">Water and Wind</button>
@@ -530,10 +530,6 @@ button.hg-cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </section>
 <section id="panel-pros" class="panel" role="tabpanel" aria-labelledby="tab-pros" hidden>
 <div class="panel-head"><h2>Four Headings for Every Resource</h2><div class="spec"><b class="ta" title="Triple Award only">TA</b><b>4.19P</b></div></div>
-<div class="acts"></div>
-</section>
-<section id="panel-two" class="panel" role="tabpanel" aria-labelledby="tab-two" hidden>
-<div class="panel-head"><h2>Two Advantages, Two Disadvantages</h2><div class="spec"><b class="ta" title="Triple Award only">TA</b><b>4.19P</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-choose" class="panel" role="tabpanel" aria-labelledby="tab-choose" hidden>
@@ -576,8 +572,8 @@ const raf=f=>requestAnimationFrame(f);
 
 // Units merge (3 Nov 2026): this unit's Units and Key Terms tabs are now one tab, so old links go there.
 try{const to={terms:'unit-4-units-and-terms.html#terms'}[location.hash.slice(1)];if(to){if(to[0]==='#')history.replaceState(null,'',to);else{location.replace(to);return;}}}catch(e){}
-const STORE_KEY='unit4d-energy-resources-v6',OLD_STORE_KEY='unit4d-energy-resources-v5';
-const TAB_IDS=['overview','pros','two','choose','stations','renew','solar','sumup'];
+const STORE_KEY='unit4d-energy-resources-v7',OLD_STORE_KEY='unit4d-energy-resources-v6';
+const TAB_IDS=['overview','pros','choose','stations','renew','solar','sumup'];
 let activeTab='overview';
 const reflowers=[];
 
@@ -1532,7 +1528,7 @@ function wordBox(panel,title,parts,extras){
 /* ================= page builders for 4d (12 Nov 2026 rebuild) ================= */
 // A grid of resources against the four headings. Each open box is clicked to a tick (advantage) or a cross
 // (disadvantage); a correct box locks and shows the exam wording for that point. Given boxes are done already.
-function headingsGrid(panel,title,intro,cols,rows){
+function headingsGrid(panel,title,intro,cols,good,rows,notes){
   const body=act(panel,'Tick or cross',title,intro);
   const grid=mk('div','hg');body.appendChild(grid);
   const head=mk('div','hg-row hg-head');head.appendChild(mk('div','hg-name',''));
@@ -1545,10 +1541,11 @@ function headingsGrid(panel,title,intro,cols,rows){
       if(c.given){const g=mk('div','hg-cell is-given','<span class="hg-say">'+c.given+'</span>');g.dataset.h=cols[i];row.appendChild(g);return;}
       const b=mk('button','hg-cell');b.type='button';b.dataset.h=cols[i];b.dataset.cell=id;
       b.addEventListener('click',()=>{if(locked[id])return;val[id]=val[id]==null?1:(val[id]===1?0:null);if(val[id]==null)delete val[id];draw();});
-      row.appendChild(b);cells.push({id:id,el:b,a:c.a,say:c.say,label:r.name+', '+cols[i]});
+      row.appendChild(b);cells.push({id:id,el:b,a:c.a,pro:c.a===good[i],say:c.say+(c.star?' <b>'+'*'.repeat(c.star)+'</b>':''),label:r.name+', '+cols[i]});
     });
     grid.appendChild(row);
   });
+  if(notes)body.appendChild(mk('div','hg-notes',notes.map(n=>'<p>'+n+'</p>').join('')));
   const b=bar(body,[{label:'Check',primary:true,fn:check},{label:'Start again',fn:reset}]);
   const score=mk('span','score');b.el.insertBefore(score,b.msg);
   const ans=answerBtn(b,()=>{cells.forEach(c=>{if(!locked[c.id]){val[c.id]=c.a;locked[c.id]=true;shown[c.id]=true;}});draw();b.say(SHOWN_MSG,'');});
@@ -1556,10 +1553,10 @@ function headingsGrid(panel,title,intro,cols,rows){
   function draw(){
     cells.forEach(c=>{
       const v=val[c.id],e=c.el;
-      e.className='hg-cell'+(v===1?' is-yes':v===0?' is-no':'')+(locked[c.id]?' is-correct':'')+(shown[c.id]?' is-shown':'')+(fresh[c.id]?' pop':'');
+      e.className='hg-cell'+(v===1?' is-yes':v===0?' is-no':'')+(locked[c.id]?' is-correct'+(c.pro?'':' is-con'):'')+(shown[c.id]?' is-shown':'')+(fresh[c.id]?' pop':'');
       e.disabled=!!locked[c.id];
       e.innerHTML='<span class="hg-mark" aria-hidden="true">'+(v===1?'✓':v===0?'✗':'?')+'</span>'+(locked[c.id]?'<span class="hg-say">'+c.say+'</span>':'');
-      e.setAttribute('aria-label',c.label+': '+(v===1?'tick, an advantage':v===0?'cross, a disadvantage':'not answered')+(locked[c.id]?'. '+c.say:''));
+      e.setAttribute('aria-label',c.label+': '+(v===1?'tick, yes':v===0?'cross, no':'not answered')+(locked[c.id]?(c.pro?'. An advantage: ':'. A disadvantage: ')+c.say.replace(/<[^>]+>/g,''):''));
     });
     score.textContent=Object.keys(locked).length+' / '+cells.length+' correct';
     fresh={};
@@ -1633,17 +1630,17 @@ const AR=' <span class="ch-ar" aria-hidden="true">→</span> ';
 /* ================= 2. FOUR HEADINGS ================= */
 {
   headingsGrid('pros','Every resource under four headings',
-    'Click a box once for ✓ (an advantage) or twice for ✗ (a disadvantage). <b>Reliable</b> means it can generate whenever it is needed, which includes responding quickly to a rise in demand. The shaded boxes are done for you.',
-    ['Renewable?','No greenhouse gases or acid rain?','Little land used or habitat harmed?','Reliable?'],[
-    {id:'wi',name:'Wind',cells:[{a:1,say:'Renewable: will not run out'},{a:1,say:'No carbon dioxide released'},{a:0,say:'A wind farm needs a large area'},{a:0,say:'Depends on the wind, so cannot match demand'}]},
-    {id:'hy',name:'Hydroelectric',cells:[{a:1,say:'Renewable: will not run out'},{a:1,say:'No carbon dioxide released'},{a:0,say:'Floods a valley and destroys habitats; needs a hilly, rainy site'},{a:1,say:'Reliable, and responds quickly to demand'}]},
-    {id:'ti',name:'Tidal',cells:[{a:1,say:'Renewable: will not run out'},{a:1,say:'No carbon dioxide released'},{a:0,say:'Harms habitats in the estuary; few suitable sites'},{given:'Predictable, but the output changes with the tide'}]},
-    {id:'wa',name:'Wave',cells:[{a:1,say:'Renewable: will not run out'},{a:1,say:'No polluting gases released'},{a:0,say:'Can harm wildlife in the sea'},{a:0,say:'Not always available: needs waves'}]},
-    {id:'ge',name:'Geothermal',cells:[{a:1,say:'Renewable: will not run out'},{given:'Releases a little gas from underground'},{given:'Small area, but only a few (volcanic) sites'},{a:1,say:'Reliable: does not depend on the weather'}]},
-    {id:'so',name:'Solar cells',cells:[{a:1,say:'Renewable: will not run out'},{a:1,say:'No carbon dioxide released'},{a:0,say:'A solar farm needs a large area'},{a:0,say:'Nothing at night, less when cloudy; cannot respond to demand'}]},
-    {id:'fo',name:'Fossil fuels',cells:[{a:0,say:'Non-renewable: will run out'},{a:0,say:'Carbon dioxide (global warming) and sulfur dioxide (acid rain)'},{given:'The power station needs only a small area'},{a:1,say:'Reliable, and can respond to demand'}]},
-    {id:'nu',name:'Nuclear',cells:[{a:0,say:'Non-renewable: uranium will run out'},{a:1,say:'No carbon dioxide released'},{given:'Small area, but radioactive waste must be stored for thousands of years'},{given:'Reliable, but slow to start up'}]}
-  ]);
+    'Answer each heading for each resource: click a box once for ✓ (yes) or twice for ✗ (no). Check turns an advantage green and a disadvantage red. <b>Reliable</b> means it can generate whenever it is needed, which includes responding quickly to a rise in demand.',
+    ['Renewable?','Greenhouse gases or acid rain?','Uses a lot of land or harms habitats?','Reliable?'],[1,0,0,1],[
+    {id:'wi',name:'Wind',cells:[{a:1,say:'Renewable: will not run out'},{a:0,say:'No carbon dioxide released'},{a:1,say:'A wind farm needs a large area'},{a:0,say:'Depends on the wind, so cannot match demand'}]},
+    {id:'hy',name:'Hydroelectric',cells:[{a:1,say:'Renewable: will not run out'},{a:0,say:'No carbon dioxide released'},{a:1,say:'Floods a valley and destroys habitats; needs a hilly, rainy site'},{a:1,say:'Reliable, and responds quickly to demand'}]},
+    {id:'ti',name:'Tidal',cells:[{a:1,say:'Renewable: will not run out'},{a:0,say:'No carbon dioxide released'},{a:1,say:'Harms habitats in the estuary; few suitable sites'},{given:'Predictable, but the output changes with the tide'}]},
+    {id:'wa',name:'Wave',cells:[{a:1,say:'Renewable: will not run out'},{a:0,say:'No polluting gases released'},{a:1,say:'Can harm wildlife in the sea'},{a:0,say:'Not always available: needs waves'}]},
+    {id:'ge',name:'Geothermal',cells:[{a:1,say:'Renewable: will not run out'},{a:0,say:'No greenhouse gases released'},{given:'Small area, but only a few (volcanic) sites'},{a:1,say:'Reliable: does not depend on the weather'}]},
+    {id:'so',name:'Solar cells',cells:[{a:1,say:'Renewable: will not run out'},{a:0,say:'No carbon dioxide released'},{a:1,say:'A solar farm needs a large area'},{a:0,say:'Nothing at night, less when cloudy; cannot respond to demand'}]},
+    {id:'fo',name:'Fossil fuels',cells:[{a:0,say:'Non-renewable: will run out'},{a:1,say:'Carbon dioxide (global warming) and sulfur dioxide (acid rain)'},{a:0,say:'The power station needs only a small area'},{a:1,say:'Reliable, and can respond to demand'}]},
+    {id:'nu',name:'Nuclear',cells:[{a:0,say:'Non-renewable: uranium will run out'},{a:0,say:'No carbon dioxide released'},{a:0,star:1,say:'The power station needs only a small area'},{a:1,star:2,say:'Reliable: does not depend on the weather'}]}
+  ],['<b>*</b> Nuclear: the radioactive waste must be stored safely for thousands of years (a disadvantage).','<b>**</b> Nuclear: slow to start up, so it cannot respond quickly to a rise in demand (a disadvantage).']);
   quickCheck('pros','The words in the headings',[
   {title:'Renewable',ctx:'Wind, waves and sunlight are renewable energy resources.',
     q:'What does renewable mean?',
@@ -1672,48 +1669,6 @@ const AR=' <span class="ch-ar" aria-hidden="true">→</span> ';
     {text:'Flooded habitats',why:'Habitats are flooded when a hydroelectric dam is built, not by a gas.'}
     ],
     explain:'Name the gas and its effect together: carbon dioxide causes global warming, and sulfur dioxide causes acid rain. "Pollution" alone is too vague.'}
-  ]);
-}
-
-/* ================= 3. TWO AND TWO ================= */
-{
-  quickCheck('two','Two advantages, two disadvantages',[
-  {title:'Hydroelectric',ctx:'An exam question says: do not write about cost.',
-    q:'Which answer gives two advantages of a hydroelectric power station?',
-    options:[
-    {text:'Renewable, and responds quickly to demand',correct:true},
-    {text:'Renewable, and cheap to run',why:'Cost earns no mark here. Give a second advantage from the four headings.'},
-    {text:'No carbon dioxide, and can be built anywhere',why:'It cannot be built anywhere: it needs a hilly site with plenty of rain.'},
-    {text:'Reliable, and no land is flooded',why:'Building the dam floods a valley, which destroys habitats. That is a disadvantage.'}
-    ],
-    explain:'Renewable (heading 1) and responds quickly to demand (heading 4). No carbon dioxide released (heading 2) would also earn a mark.'},
-  {title:'Solar farm',ctx:'A solar farm is a large field of solar cells.',
-    q:'Which answer gives two disadvantages of a solar farm?',
-    options:[
-    {text:'No output at night, and needs a large area',correct:true},
-    {text:'Non-renewable, and needs a large area',why:'Sunlight will not run out, so solar power is renewable.'},
-    {text:'No output at night, and releases carbon dioxide',why:'Solar cells release no carbon dioxide while they generate.'},
-    {text:'Expensive, and gives less when cloudy',why:'Cost earns no mark. Give a second disadvantage from the four headings.'}
-    ],
-    explain:'Not reliable (heading 4: nothing at night, less when cloudy, cannot respond to demand) and uses a large area of land (heading 3).'},
-  {title:'Nuclear',ctx:'A nuclear power station uses uranium as its fuel.',
-    q:'Which answer gives two disadvantages of nuclear power?',
-    options:[
-    {text:'Non-renewable, and leaves radioactive waste',correct:true},
-    {text:'Non-renewable, and releases carbon dioxide',why:'A nuclear power station burns nothing, so it releases no carbon dioxide while it runs.'},
-    {text:'Radioactive waste, and depends on the weather',why:'Nuclear power does not depend on the weather. It is reliable.'},
-    {text:'Radioactive waste, and causes acid rain',why:'Acid rain comes from the sulfur dioxide released when fossil fuels burn.'}
-    ],
-    explain:'Uranium will run out (heading 1), and the waste stays radioactive for thousands of years, so it needs long-term storage. Slow to start up would also earn a mark.'},
-  {title:'Gas or wind?',ctx:'A country can build a gas power station or a wind farm.',
-    q:'Which answer gives two advantages of the gas power station?',
-    options:[
-    {text:'Reliable, and can respond to demand',correct:true},
-    {text:'Reliable, and gas will not run out',why:'Gas is a fossil fuel. It is non-renewable, so it will run out.'},
-    {text:'Renewable, and uses a smaller area',why:'Gas is non-renewable. The smaller area is true, but only one of the two is right.'},
-    {text:'Cheaper, and no carbon dioxide',why:'Cost earns no mark, and burning gas does release carbon dioxide.'}
-    ],
-    explain:'Gas does not depend on the weather (reliable), and its output can be raised when demand rises. Both come from heading 4, and they are two separate points.'}
   ]);
 }
 
@@ -1919,7 +1874,7 @@ byId('tab-overview').parentNode.addEventListener('keydown',e=>{
 // Review (4 Nov 2026): fewer activities per page. Answers saved before it are carried over once for the
 // activities that did not change (old key -> new key); the rest start fresh.
 // 11 Nov 2026: repeated activities cut (tools/WORKOUTS.md section 5); answers to the activities that did not change carry over.
-const CARRY={"overview-0":"overview-0"};
+const CARRY={"overview-0":"overview-0","pros-1":"pros-1","choose-0":"choose-0","choose-1":"choose-1","stations-0":"stations-0","stations-1":"stations-1","renew-0":"renew-0","renew-1":"renew-1","solar-0":"solar-0","solar-1":"solar-1","sumup-0":"sumup-0","sumup-1":"sumup-1"};
 function readSaved(){
   try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
   try{const s=JSON.parse(localStorage.getItem(OLD_STORE_KEY)||'null');
