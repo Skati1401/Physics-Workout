@@ -19,6 +19,7 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 - [x] **3d** Calculations & Graphs section on `igcse.html` below Core Practicals (12 Nov 2026, Alex): `calculations.html` rebuilt as an equation chooser and published (card added, `noindex` off). Alex to check it (`tools/REVIEW.md`).
 - [x] **3d2** Calculation Generator Workout (`calculation-generator.html`, 12 Nov 2026, Alex): its own generated questions from the ticked equations, with Rearranging, Unit conversions, Multipliers and Significant figures options. Alex to check it (`tools/REVIEW.md`).
 - [x] **3e** Multi-step Workout for the Calculations & Graphs section: problems that chain two or three equations, often across units, based on past-paper questions from the IGCSE Question Index, marked step by step (Alex, 12 Nov 2026). Done 13 Nov 2026: `multi-step.html` published (card added). Alex to check it (`tools/REVIEW.md`).
+- [ ] **3g** `animations/eye.html`, How Your Eye Focuses (new 13 Nov 2026, Extension list, for the corridor display poster "Is the world upside down?"): Alex to check it (`tools/REVIEW.md`) before the poster's QR code is printed.
 - [ ] **3f** Graphs Workout for the Calculations & Graphs section (not yet: Alex, 12 Nov 2026). The draft `graphs.html` is the starting point.
 
 ## 4. Build: workouts (IGCSE, spec order)
