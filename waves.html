@@ -263,6 +263,9 @@ table.units tr:last-child td{border-bottom:0}
 table.units td.given{font-weight:600;padding-left:10px;background:var(--accent-soft);color:var(--ink)}
 table.units td.given b.ta{font:500 11px var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:4px;white-space:nowrap;vertical-align:1px}
 table.units .blank{width:100%;min-width:100px;margin:0}
+table.em-table{min-width:720px}
+table.em-table td.given{width:150px;white-space:nowrap}
+table.em-table td{height:auto;min-height:48px}
 .bins{display:grid;gap:12px}
 .bins-2{grid-template-columns:repeat(2,minmax(0,1fr))} .bins-3{grid-template-columns:repeat(3,minmax(0,1fr))} .bins-4{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media (max-width:640px){.bins-3,.bins-4{grid-template-columns:minmax(0,1fr)}}
@@ -595,7 +598,7 @@ const numClose=(v,a)=>Math.abs(v-a)<=(a===0?0.05:Math.abs(a)*0.02);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const raf=f=>requestAnimationFrame(f);
 
-const STORE_KEY='unit3a-v3',OLD_STORE_KEY='unit3a-v2';
+const STORE_KEY='unit3a-v4',OLD_STORE_KEY='unit3a-v3';
 const TAB_IDS=["overview","types","describing","equation","behaviour","spectrum","uses",'sumup'];
 let activeTab='overview';
 const reflowers=[];
@@ -1863,16 +1866,41 @@ createReorder({host:act('spectrum','Order','The colours of visible light','Put t
   ],constraints:chain(['r','o','y','g','b','i','v']),why:'Red light has the longest wavelength (lowest frequency); violet has the shortest (highest frequency).'});
 
 /* ================= 7. USES AND DANGERS ================= */
-const mgU=createMatchGame({host:act('uses','Match','What is it used for?','Select a radiation, then select a use. Select a joined card to undo it.'),
-  leftTitle:'Radiation',rightTitle:'Use',narrowLeft:true,pairs:[
-    {id:'r',l:'Radio waves',r:'Broadcasting and communications'},
-    {id:'m',l:'Microwaves',r:'Cooking and satellite transmissions'},
-    {id:'i',l:'Infrared',r:'Heaters and night vision equipment'},
-    {id:'u',l:'Ultraviolet',r:'Fluorescent lamps'},
-    {id:'x',l:'X-rays',r:'Seeing the inside of objects, such as broken bones'},
-    {id:'g',l:'Gamma rays',r:'Sterilising food and medical equipment'}
-  ]});
-reflowers.push(t=>{if(t==='uses')raf(mgU.reflow);});
+// 13 Nov 2026 (Alex): the use Match became a table, a use and a danger for each radiation (3.12, 3.13).
+// The dangers are 3.13's; x-rays get gamma's, as both ionise. Radio waves and visible light have none in the spec.
+{
+  const ROWS=[
+    ['Radio waves','Broadcasting and communications','No danger'],
+    ['Microwaves','Cooking and satellite transmissions','Heats body tissue from the inside'],
+    ['Infrared','Heaters and night vision equipment','Burns the skin'],
+    ['Visible light','Optical fibres and photography','No danger'],
+    ['Ultraviolet','Fluorescent lamps','Damages surface cells and causes blindness'],
+    ['X-rays','Seeing inside objects, such as broken bones','Cancer and mutation'],
+    ['Gamma rays','Sterilising food and medical equipment','Cancer and mutation']
+  ];
+  const body=act('uses','Match','Use and danger','Drag a use and a danger into each row, or tap a chip and then tap a box. Each danger can be used more than once.');
+  const wrap=mk('div','table-scroll'),tbl=mk('table','units em-table');
+  tbl.innerHTML='<thead><tr><th>Radiation</th><th>Use</th><th>Danger</th></tr></thead>';
+  const tb=mk('tbody');tbl.appendChild(tb);wrap.appendChild(tbl);
+  const slots=[],chips=[],dangers=[];
+  ROWS.forEach(([r,u,d],i)=>{
+    const tr=mk('tr'),th=mk('td','given');th.textContent=r;tr.appendChild(th);
+    [['use',u],['danger',d]].forEach(([k,ans])=>{
+      const td=mk('td'),bl=mk('div','blank');td.appendChild(bl);tr.appendChild(td);
+      slots.push({id:i+'-'+k,el:bl,answer:ans,label:r+': '+k});
+    });
+    chips.push({id:'u'+i,text:u});
+    if(dangers.indexOf(d)<0)dangers.push(d);
+    tb.appendChild(tr);
+  });
+  dangers.forEach((d,i)=>chips.push({id:'d'+i,text:d}));
+  body.appendChild(wrap);body.appendChild(mk('div','pool-label','Uses and dangers'));
+  const pool=mk('div','chip-pool');body.appendChild(pool);
+  let g;
+  const b=bar(body,[{label:'Check table',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
+  const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
+  g=createBlankGame({fill:true,slots:slots,pool:pool,chips:chips,msg:b,score:sc,palette:true,isCorrect:(c,s)=>c.text===s.answer});
+}
 createSortGame({host:act('uses','Sort','Dangers and protection','Too much exposure to some electromagnetic waves harms the body. Sort each harmful effect and each way of protecting yourself by the radiation, then press Check.'),
   cats:[{id:'m',label:'Microwaves',color:'--motion',soft:'--motion-soft'},
         {id:'i',label:'Infrared',color:'--force',soft:'--force-soft'},
@@ -1970,6 +1998,8 @@ function pairByTitle(t1,t2){
   const a=find(t1),b=find(t2);if(!a||!b)return;
   const pair=mk('div','act-pair');a.parentNode.insertBefore(pair,a);pair.appendChild(a);pair.appendChild(b);
 }
+// 13 Nov 2026 (Alex): the two spectrum Orders side by side on a laptop.
+pairByTitle('The electromagnetic spectrum','The colours of visible light');
 function applyTabUI(tab){
   TAB_IDS.forEach(id=>{const p=byId('panel-'+id);if(p)p.hidden=(id!==tab);});
   $$('.tab-btn').forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('is-active',on);b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1;});
@@ -1990,7 +2020,8 @@ byId('tab-overview').parentNode.addEventListener('keydown',e=>{
 // Review (4 Nov 2026): fewer activities per page. Answers saved before it are carried over once for the
 // activities that did not change (old key -> new key); the rest start fresh.
 // 11 Nov 2026: repeated activities cut (tools/WORKOUTS.md section 5); answers to the activities that did not change carry over.
-const CARRY={"overview-0":"overview-0","types-0":"types-0","types-1":"types-1","describing-0":"describing-0","describing-1":"describing-1","behaviour-0":"behaviour-0","behaviour-1":"behaviour-1","spectrum-0":"spectrum-0","spectrum-1":"spectrum-1","uses-0":"uses-0","uses-1":"uses-1"};
+// 13 Nov 2026: the uses Match became a use-and-danger table; the rest carry over.
+const CARRY={"overview-0":"overview-0","types-0":"types-0","types-1":"types-1","describing-0":"describing-0","describing-1":"describing-1","equation-0":"equation-0","equation-1":"equation-1","behaviour-0":"behaviour-0","behaviour-1":"behaviour-1","spectrum-0":"spectrum-0","spectrum-1":"spectrum-1","uses-1":"uses-1","sumup-0":"sumup-0","sumup-1":"sumup-1"};
 function readSaved(){
   try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
   try{const s=JSON.parse(localStorage.getItem(OLD_STORE_KEY)||'null');

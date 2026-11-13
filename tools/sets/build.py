@@ -121,8 +121,7 @@ SETS = {
     'tabs': [
       {'part': P1, 'page': 'motion.html', 'src': '1a', 'section': 'DISTANCE–TIME GRAPHS', 'tab': 'stgraph', 'label': 's–t Graph'},
       {'part': P1, 'page': 'motion.html', 'src': '1a', 'section': 'VELOCITY–TIME GRAPHS', 'tab': 'vtgraph', 'label': 'v–t Graph'},
-      {'part': P1, 'page': 'forces.html', 'src': '1b', 'section': 'F = ma', 'tab': 'fma', 'label': 'F–a Graph', 'titles': ['Read the graph']},
-      {'part': P1, 'page': 'forces.html', 'src': '1b', 'section': 'WEIGHT', 'tab': 'weight', 'label': 'W–m Graph', 'titles': ['Read the graph']},
+      {'part': P1, 'page': 'forces.html', 'src': '1b', 'section': 'WEIGHT', 'tab': 'weight', 'label': 'Force Graphs', 'titles': ['Force–acceleration graph', 'Weight–mass graph']},
       {'part': P2, 'page': 'falling-stopping-springs.html', 'src': '1c', 'section': 'FALLING', 'tab': 'falling', 'label': 'Falling'},
       {'part': P2, 'page': 'falling-stopping-springs.html', 'src': '1c', 'section': 'STOPPING', 'tab': 'stopping', 'label': 'Stopping'},
       {'part': P2, 'page': 'falling-stopping-springs.html', 'src': '1c', 'section': "HOOKE'S LAW", 'tab': 'hooke', 'label': 'Hooke’s Law', 'kinds': ['Label the graph']},

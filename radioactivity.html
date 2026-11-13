@@ -520,6 +520,18 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 @media (min-width:901px){.graph-split:has(.scope-one){grid-template-columns:minmax(0,max-content) minmax(0,1fr)}}
 .nuc{display:inline-flex;align-items:center;gap:1px;vertical-align:middle;white-space:nowrap}
 .nuc-n{display:inline-flex;flex-direction:column;align-items:flex-end;font-size:.68em;line-height:1.05}
+.eqf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:12px;margin-bottom:12px}
+.eqf-row{grid-template-columns:minmax(0,1fr)}
+.eqf-q{font-size:14px;color:var(--ink-soft)}
+.eqf-eq{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font:500 24px var(--f-mono);color:var(--ink)}
+.eqf-eq .nuc-n{font-size:.62em}
+.eqf-op{color:var(--ink-soft)}
+.eqf-n{gap:3px}
+.eqf-in{width:48px;height:34px;padding:2px 4px;text-align:right;border:1px solid var(--panel-border);border-radius:5px;background:var(--panel);font:600 15px var(--f-mono);color:var(--ink)}
+.eqf-in:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.eqf-in:disabled{border-color:var(--good);background:var(--good-soft);color:var(--good)}
+.eqf-in.is-wrong{border-color:var(--bad);background:var(--bad-soft)}
+.eqf-in.is-shown{border-style:dashed;border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
 .atom-pic .at-shell{fill:none;stroke:var(--ink-faint);stroke-width:1.4;stroke-dasharray:5 4}
 .atom-pic .at-nucleus{fill:var(--panel);stroke:var(--ink-faint);stroke-width:1.2}
 .atom-pic .at-p{fill:var(--force);stroke:var(--panel);stroke-width:1.5}
@@ -543,6 +555,7 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 <button class="tab-btn" role="tab" id="tab-atoms" data-tab="atoms" data-grp="" aria-selected="false" aria-controls="panel-atoms">Atoms</button>
 <button class="tab-btn" role="tab" id="tab-radiation" data-tab="radiation" data-grp="" aria-selected="false" aria-controls="panel-radiation">Alpha, Beta, Gamma</button>
 <a class="tab-btn tab-cp" href="penetrating-power-practical.html" title="Core practical 7.6: Penetrating power. Opens the practical page." aria-label="Core practical 7.6, Penetrating power: open the practical page">7.6 Practical &rarr;</a>
+<button class="tab-btn" role="tab" id="tab-background" data-tab="background" data-grp="" aria-selected="false" aria-controls="panel-background">Background</button>
 <button class="tab-btn" role="tab" id="tab-equations" data-tab="equations" data-grp="" aria-selected="false" aria-controls="panel-equations">Decay Equations</button>
 <button class="tab-btn" role="tab" id="tab-halflife" data-tab="halflife" data-grp="" aria-selected="false" aria-controls="panel-halflife">Half-Life</button>
 <button class="tab-btn" role="tab" id="tab-uses" data-tab="uses" data-grp="" aria-selected="false" aria-controls="panel-uses">Uses and Dangers</button>
@@ -557,7 +570,11 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 <div class="acts"></div>
 </section>
 <section id="panel-radiation" class="panel" role="tabpanel" aria-labelledby="tab-radiation" hidden>
-<div class="panel-head"><h2>Alpha, Beta, Gamma and Background</h2><div class="spec"><b>7.4</b><b>7.5</b><b>7.9</b><b>7.10</b></div></div>
+<div class="panel-head"><h2>Alpha, Beta and Gamma</h2><div class="spec"><b>7.4</b><b>7.5</b><b>7.9</b></div></div>
+<div class="acts"></div>
+</section>
+<section id="panel-background" class="panel" role="tabpanel" aria-labelledby="tab-background" hidden>
+<div class="panel-head"><h2>Background Radiation</h2><div class="spec"><b>7.10</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-equations" class="panel" role="tabpanel" aria-labelledby="tab-equations" hidden>
@@ -595,9 +612,8 @@ const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim
 const raf=f=>requestAnimationFrame(f);
 
 // Review (4 Nov 2026): the Background tab is merged into Alpha, Beta, Gamma, so old links go there.
-try{const to={background:'#radiation'}[location.hash.slice(1)];if(to){if(to[0]==='#')history.replaceState(null,'',to);else{location.replace(to);return;}}}catch(e){}
-const STORE_KEY='unit7a-v4',OLD_STORE_KEY='unit7a-v3';
-const TAB_IDS=["overview","atoms","radiation","equations","halflife","uses",'sumup'];
+const STORE_KEY='unit7a-v5',OLD_STORE_KEY='unit7a-v4';
+const TAB_IDS=["overview","atoms","radiation","background","equations","halflife","uses",'sumup'];
 let activeTab='overview';
 const reflowers=[];
 const tickers=[];
@@ -1800,25 +1816,103 @@ createSortGame({host:act('radiation','Sort','Alpha, beta or gamma?','Sort each d
   ]});
 
 /* ================= 4. DECAY EQUATIONS ================= */
-// Two questions (11 Nov 2026): the first balances one decay (alpha, beta or neutron) for the new A or Z; the second follows a
-// chain of an alpha and then one or two beta decays. New problems changes the nucleus and what is asked.
-const eqb_q1=rnd=>{const k=calcPick(rnd,['a','b','n']);
-  if(k==='a'){const c=calcPick(rnd,EQ_ALPHA),askZ=rnd()<0.5,A=c[0]-4,Z=c[1]-2;
-    return askZ?{q:N(c[0],c[1],c[2])+' gives out an alpha particle. The atomic number of the new nucleus is',unit:'',answer:Z,working:eq_w(['atomic number before = '+c[1],'alpha particle: atomic number = 2','new atomic number Z = ?'],[c[1]+' = Z + 2','Z = '+c[1]+' − 2','Z = '+Z])}
-      :{q:N(c[0],c[1],c[2])+' gives out an alpha particle. The mass number of the new nucleus is',unit:'',answer:A,working:eq_w(['mass number before = '+c[0],'alpha particle: mass number = 4','new mass number A = ?'],[c[0]+' = A + 4','A = '+c[0]+' − 4','A = '+A])};}
-  if(k==='b'){const c=calcPick(rnd,EQ_BETA),Z=c[1]+1;
-    return {q:N(c[0],c[1],c[2])+' gives out a beta particle. The atomic number of the new nucleus is',unit:'',answer:Z,working:eq_w(['atomic number before = '+c[1],'beta particle: atomic number = −1','new atomic number Z = ?'],[c[1]+' = Z + (−1)','Z = '+c[1]+' + 1','Z = '+Z+' ('+c[3]+')'])};}
-  const c=calcPick(rnd,EQ_NEUT),A=c[0]-1;
-  return {q:N(c[0],c[1],c[2])+' gives out a neutron. The mass number of the new nucleus is',unit:'',answer:A,working:eq_w(['mass number before = '+c[0],'neutron: mass number = 1','new mass number A = ?'],[c[0]+' = A + 1','A = '+c[0]+' − 1','A = '+A+' (still '+c[3]+')'])};};
-const eqb_q2=rnd=>{const c=calcPick(rnd,EQ_ALPHA),b=calcPick(rnd,[1,2]),A=c[0]-4,Z=c[1]-2+b,askA=false;
-  return {q:N(c[0],c[1],c[2])+' gives out an alpha particle, then the new nucleus gives out '+(b===1?'a beta particle':'two beta particles, one after the other')+'. The '+(askA?'mass':'atomic')+' number of the final nucleus is',unit:'',answer:askA?A:Z,
-    hints:['Alpha: A falls by 4 and Z falls by 2.','Each beta: A stays the same and Z goes up by 1.'],
-    working:eq_w(['A before = '+c[0],'Z before = '+c[1],'final '+(askA?'A':'Z')+' = ?'],askA?['after the alpha: A = '+c[0]+' − 4 = '+A,'beta decay does not change A','final A = '+A]:['after the alpha: Z = '+c[1]+' − 2 = '+(c[1]-2),'after '+(b===1?'the beta':'two betas')+': Z = '+(c[1]-2)+' + '+b,'final Z = '+Z])};};
-calcAct('equations','Balance the equations','The mass numbers (top) and the atomic numbers (bottom) must add up to the same on both sides. Press New problems for another pair.',[calcFix(eqb_q1,1),calcFix(eqb_q2,2)]);
+// Full equations (Alex, 13 Nov 2026): each card is a whole nuclear equation, as in the exam, with boxes for the
+// mass number (top) and atomic number (bottom) of the particle and of one nucleus. One equation for each of the four
+// kinds of radiation (7.7); New problems changes the nuclei and which nucleus has the boxes. Saved with a seed.
+const EQ_APROD={U:'Th',Ra:'Rn',Rn:'Po',Pu:'U',Am:'Np',Po:'Pb',Th:'Ra'};
+const EQ_BPROD={yttrium:'Y',nitrogen:'N',xenon:'Xe',barium:'Ba',nickel:'Ni',helium:'He',sulfur:'S'};
+const EQ_GAMMA=[[99,43,'Tc','technetium'],[60,28,'Ni','nickel'],[137,56,'Ba','barium']];
+const EQ_PART={a:[4,2,'α','alpha particle'],b:[0,-1,'β','beta particle'],g:[0,0,'γ','gamma ray'],n:[1,0,'n','neutron']};
+function eqGen(rnd){
+  const one=(k)=>{
+    let par,pro;
+    if(k==='a'){const c=calcPick(rnd,EQ_ALPHA);par=[c[0],c[1],c[2]];pro=[c[0]-4,c[1]-2,EQ_APROD[c[2]]];}
+    else if(k==='b'){const c=calcPick(rnd,EQ_BETA);par=[c[0],c[1],c[2]];pro=[c[0],c[1]+1,EQ_BPROD[c[3]]];}
+    else if(k==='g'){const c=calcPick(rnd,EQ_GAMMA);par=[c[0],c[1],c[2]];pro=[c[0],c[1],c[2]];}
+    else{const c=calcPick(rnd,EQ_NEUT);par=[c[0],c[1],c[2]];pro=[c[0]-1,c[1],c[2]];}
+    const pt=EQ_PART[k],askPar=k!=='g'&&rnd()<0.35;
+    return {k:k,name:pt[3],terms:[
+      {A:par[0],Z:par[1],X:par[2],ask:askPar,role:'the nucleus that decays'},
+      {A:pro[0],Z:pro[1],X:pro[2],ask:!askPar,role:'the new nucleus'},
+      {A:pt[0],Z:pt[1],X:pt[2],ask:true,role:'the '+pt[3]}]};
+  };
+  return ['a','b','g','n'].map(one);
+}
+function eqFillAct(panel,title,intro){
+  const host=act(panel,'Complete the equations',title,intro);
+  const wrap=mk('div','eqf-grid');host.appendChild(wrap);
+  let seed=0,eqs=eqGen(calcRnd(1)),boxes=[];
+  const box=(t,w,lbl)=>'<input class="eqf-in" type="text" inputmode="text" autocomplete="off" spellcheck="false" data-t="'+t+'" data-w="'+w+'" aria-label="'+lbl+'">';
+  const nucIn=(x,t)=>'<span class="nuc eqf-nuc"><span class="nuc-n eqf-n">'+box(t,'A','Mass number of '+x.role)+box(t,'Z','Atomic number of '+x.role)+'</span><span>'+x.X+'</span></span>';
+  function draw(){
+    wrap.innerHTML='';
+    eqs.forEach((e,i)=>{
+      const row=mk('div','calc-input-row eqf-row');
+      const T=e.terms.map((x,t)=>x.ask?nucIn(x,t):N(x.A,x.Z,x.X));
+      const top=e.terms.map(x=>x.A),bot=e.terms.map(x=>x.Z),sg=v=>v<0?'('+calcNum(v)+')':calcNum(v);
+      row.innerHTML='<div class="eqf-q">'+(i+1)+'. '+{a:'Alpha decay',b:'Beta decay',g:'Gamma emission',n:'Neutron emission'}[e.k]+'</div>'+
+        '<div class="eqf-eq">'+T[0]+'<span class="eqf-op">→</span>'+T[1]+'<span class="eqf-op">+</span>'+T[2]+'</div>'+
+        '<div class="calc-fb" aria-live="polite"></div>'+
+        '<div class="calc-show-row"><button type="button" class="btn btn-show calc-show" hidden>Show answer</button></div>'+
+        '<div class="calc-working" hidden><div class="calc-working-head">Working</div><div class="cw">'+calcWork('top: '+top[0]+' = '+top[1]+' + '+top[2]+'<br>bottom: '+calcNum(bot[0])+' = '+calcNum(bot[1])+' + '+sg(bot[2]))+'</div></div>';
+      row.querySelector('.calc-show').addEventListener('click',()=>{
+        row.querySelectorAll('.eqf-in').forEach(inp=>{if(inp.disabled&&!inp.classList.contains('is-shown'))return;inp.value=want(e,inp);inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('is-shown');});
+        row.querySelector('.calc-working').hidden=false;row.querySelector('.calc-show').hidden=true;
+        const fb=row.querySelector('.calc-fb');fb.textContent='Answer shown. The top numbers and the bottom numbers each balance.';fb.className='calc-fb';saveSoon();
+      });
+      wrap.appendChild(row);
+    });
+    boxes=$$('.eqf-in',wrap);
+  }
+  const want=(e,inp)=>{const x=e.terms[+inp.dataset.t];return calcNum(inp.dataset.w==='A'?x.A:x.Z);};
+  const val=t=>{const c=t.trim().replace(/[−–]/g,'-').replace(/\s/g,'');return /^[-+]?\d+$/.test(c)?parseInt(c,10):NaN;};
+  const rowOf=inp=>eqs[[...wrap.children].indexOf(inp.closest('.eqf-row'))];
+  const b=bar(host,[{label:'Check answers',primary:true,fn:check},{label:'Clear',fn:clear}]);
+  const nb=mk('button','btn','New problems');nb.type='button';b.el.insertBefore(nb,b.msg);
+  nb.addEventListener('click',()=>{seed=1+Math.floor(Math.random()*2147483646);eqs=eqGen(calcRnd(seed));draw();b.say('New problems: same skills, new nuclei.','');saveSoon();});
+  function check(){
+    let ok=0,bad=0,blank=0;
+    [...wrap.children].forEach((row,i)=>{
+      const e=eqs[i],ins=[...row.querySelectorAll('.eqf-in')];let rb=0;
+      ins.forEach(inp=>{
+        if(inp.disabled){ok++;return;}
+        if(inp.value.trim()===''){blank++;return;}
+        const x=e.terms[+inp.dataset.t],w=inp.dataset.w==='A'?x.A:x.Z;
+        if(val(inp.value)===w){inp.disabled=true;inp.classList.remove('is-wrong');inp.classList.add('pop');ok++;}
+        else{inp.classList.add('is-wrong');bad++;rb++;}
+      });
+      const fb=row.querySelector('.calc-fb');
+      if(rb){row.querySelector('.calc-show').hidden=false;fb.textContent=e.k==='b'?'Not quite. A beta particle is an electron: its atomic number is −1.':'Not quite. The top numbers must add up to the same on both sides, and so must the bottom numbers.';fb.className='calc-fb bad';}
+      else if(ins.every(x=>x.disabled)){fb.textContent='Correct.';fb.className='calc-fb good';}
+    });
+    if(ok===boxes.length){b.say('All '+boxes.length+' numbers correct.','good');celebrate(b.msg);}
+    else b.say(ok+' of '+boxes.length+' numbers correct'+(blank?', '+blank+' left blank':'')+'.',bad?'bad':'');
+    saveSoon();
+  }
+  function clear(){
+    boxes.forEach(inp=>{inp.value='';inp.disabled=false;inp.classList.remove('is-wrong','is-shown');});
+    [...wrap.children].forEach(row=>{row.querySelector('.calc-show').hidden=true;row.querySelector('.calc-working').hidden=true;const fb=row.querySelector('.calc-fb');fb.textContent='';fb.className='calc-fb';});
+    b.say('','');
+  }
+  wrap.addEventListener('input',e=>{if(e.target.classList.contains('eqf-in')){e.target.classList.remove('is-wrong');saveSoon();}});
+  wrap.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList.contains('eqf-in'))check();});
+  draw();
+  return track(host,{reset:clear,
+    getState:()=>({kind:'eqf',seed:seed,v:boxes.map(x=>x.value),ok:boxes.map(x=>x.disabled?(x.classList.contains('is-shown')?2:1):0)}),
+    setState:st=>{
+      if(!st||st.kind!=='eqf')return;
+      seed=st.seed||0;eqs=eqGen(calcRnd(seed||1));draw();
+      boxes.forEach((x,i)=>{const v=st.v&&st.v[i];if(typeof v==='string')x.value=v;const o=st.ok&&st.ok[i];if(o){x.disabled=true;if(o===2)x.classList.add('is-shown');}});
+      [...wrap.children].forEach(row=>{const ins=[...row.querySelectorAll('.eqf-in')];if(ins.every(x=>x.disabled)){const fb=row.querySelector('.calc-fb');fb.textContent='Correct.';fb.className='calc-fb good';}});
+      if(boxes.every(x=>x.disabled))b.say('All '+boxes.length+' numbers correct.','good');
+    },
+    isDone:()=>boxes.length>0&&boxes.every(x=>x.disabled)});
+}
+eqFillAct('equations','Complete the nuclear equations','Type the mass number (top) and the atomic number (bottom) into each pair of boxes. The top numbers add up to the same on both sides, and so do the bottom numbers.');
 
 /* ================= 5. BACKGROUND RADIATION ================= */
-// Review (4 Nov 2026): the Background tab is merged into Alpha, Beta, Gamma (#background forwards there).
-createSortGame({host:act('radiation','Sort','Where does it come from?','Background radiation is around us all the time. Sort each source, then press Check.'),
+// Review (4 Nov 2026): the Background tab was merged into Alpha, Beta, Gamma; 13 Nov 2026 (Alex): its own tab again.
+createSortGame({host:act('background','Sort','Where does it come from?','Background radiation is around us all the time. Sort each source, then press Check.'),
   cats:[{id:'e',label:'From the Earth',color:'--calc',soft:'--calc-soft'},
         {id:'s',label:'From space',color:'--motion',soft:'--motion-soft'},
         {id:'m',label:'Made by people',color:'--force',soft:'--force-soft'}],
@@ -1982,6 +2076,8 @@ function pairByTitle(t1,t2){
   const a=find(t1),b=find(t2);if(!a||!b)return;
   const pair=mk('div','act-pair');a.parentNode.insertBefore(pair,a);pair.appendChild(a);pair.appendChild(b);
 }
+// 13 Nov 2026 (Alex): the Predict sits beside the uses Match.
+pairByTitle('Uses of radioactivity','The most dangerous inside the body');
 function applyTabUI(tab){
   TAB_IDS.forEach(id=>{const p=byId('panel-'+id);if(p)p.hidden=(id!==tab);});
   $$('.tab-btn:not(.tab-cp)').forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('is-active',on);b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1;});
@@ -2003,7 +2099,8 @@ byId('tab-overview').parentNode.addEventListener('keydown',e=>{
 // activities that did not change (old key -> new key); the rest start fresh.
 // 5a (11 Nov 2026): the core practical's frame and practical activities left this page; answers to the activities that stayed carry over (old key -> new key).
 // 11 Nov 2026: repeated activities cut (tools/WORKOUTS.md section 5); answers to the activities that did not change carry over.
-const CARRY={"overview-0":"overview-0","atoms-0":"atoms-0","atoms-1":"atoms-1","radiation-0":"radiation-0","equations-1":"equations-0","radiation-1":"radiation-1","halflife-1":"halflife-1","uses-0":"uses-0","uses-1":"uses-1","uses-2":"uses-2"};
+// 13 Nov 2026: Background is its own tab again and Decay Equations has full equations to complete; the rest carry over.
+const CARRY={"overview-0":"overview-0","atoms-0":"atoms-0","atoms-1":"atoms-1","radiation-0":"radiation-0","radiation-1":"background-0","halflife-0":"halflife-0","halflife-1":"halflife-1","uses-0":"uses-0","uses-1":"uses-1","uses-2":"uses-2","sumup-0":"sumup-0","sumup-1":"sumup-1"};
 function readSaved(){
   try{const s=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(s&&typeof s==='object')return s;}catch(e){}
   try{const s=JSON.parse(localStorage.getItem(OLD_STORE_KEY)||'null');

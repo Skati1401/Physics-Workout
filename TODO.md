@@ -26,7 +26,7 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the cards to `igcse.html`, then add the unit's activities to the Calculations and Graphs sets.
 
-- [ ] **4b** Bring the long IGCSE workouts under 30 minutes. After the 4c cuts (11 Nov 2026): 1b (34), 1d (37), 3a (36), 7a (37); 4b is now 30. Mostly Calculate cards. Estimates and method in `tools/WORKOUTS.md`, section 5 (added 11 Nov 2026).
+- [ ] **4b** Bring the long IGCSE workouts under 30 minutes. After the 4c cuts (11 Nov 2026): 1b (34), 1d (37), 3a (36), 7a (37); 4b is now 30. Mostly Calculate cards. Estimates and method in `tools/WORKOUTS.md`, section 5 (added 11 Nov 2026). 13 Nov 2026 (Alex): 1b cut to about 29 (graph cards to 2 questions, F–a graph to the Force Graphs tab, two free-body pictures); 1d left as it is; 3a and 7a reworked instead of cut (spectrum Orders side by side, use-and-danger table; full decay equations, Background tab, Predict beside the Match), so 3a (~33) and 7a (~39, the full equations take longer than the old Calculate) stay over 30 at Alex's choice.
 
 ## 5. Build: core practicals
 
