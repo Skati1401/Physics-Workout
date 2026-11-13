@@ -1,0 +1,839 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mixing Coloured Light Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation, beyond the exam specifications. Overlap red, green and blue lights on a screen, change how bright each one is and see the colour they make, then answer questions on mixing coloured light.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#7a3fc4;   --topic-soft:#eee3fb;
+    --grav:#2f63c9;    --grav-soft:#e0e9fa;
+    --steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --rail:#2c3648;
+    --deck-t:#d3d9e3; --deck-f:#a3adbf; --deck-s:#7f8a9f;
+    --ground-t:#d5e6c8; --ground-f:#a4bf90; --ground-s:#86a374;
+    --car-f:#7a3fc4; --car-t:#b792ee; --car-s:#552a8f; --skin:#f0c7a3; --hair:#3b2a1e; --shirt:#f2b01e;
+    --kin:#c2560c;     --kin-soft:#fbe4cd;
+    --therm:#b8322a;   --therm-soft:#fbe2df;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#c29bff; --topic-soft:#2e1f4a;
+      --grav:#86a9ff; --grav-soft:#1a2b55; --kin:#ff9f5c; --kin-soft:#3a2413; --therm:#ff8a80; --therm-soft:#402023;
+      --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --rail:#c3ccda;
+      --deck-t:#7d899e; --deck-f:#5c677c; --deck-s:#434d60;
+      --ground-t:#3f5a3a; --ground-f:#2c4229; --ground-s:#22331f;
+      --car-f:#9b6be6; --car-t:#cdb2ff; --car-s:#6a3fb5; --skin:#f0c7a3; --hair:#2a1d14; --shirt:#f2b01e;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#c29bff; --topic-soft:#2e1f4a;
+    --grav:#86a9ff; --grav-soft:#1a2b55; --kin:#ff9f5c; --kin-soft:#3a2413; --therm:#ff8a80; --therm-soft:#402023;
+    --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --rail:#c3ccda;
+    --deck-t:#7d899e; --deck-f:#5c677c; --deck-s:#434d60;
+    --ground-t:#3f5a3a; --ground-f:#2c4229; --ground-s:#22331f;
+    --car-f:#9b6be6; --car-t:#cdb2ff; --car-s:#6a3fb5; --skin:#f0c7a3; --hair:#2a1d14; --shirt:#f2b01e;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left; controls, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view-wrap{position:relative;}
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 290px));touch-action:pan-y;}
+  .view-wrap canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .embed .view{max-height:460px;}
+  .under{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px;margin-top:12px;}
+  .under .btn-group{flex:0 1 auto;}
+  .sliders{flex:1 1 300px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px 16px;min-width:0;}
+  .view text{font-family:var(--font-mono);}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--accent);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+  .hint{font-size:12.5px;color:var(--ink-soft);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  /* drag the hill tops up and down to set h1 and h2 */
+  .grab{cursor:grab;touch-action:none;}
+  .dragme{cursor:grab;}
+  .dragme:focus{outline:none;}
+  .dragme:focus-visible .focus-ring{stroke:var(--accent);stroke-width:3;}
+  @media (max-width:560px){ .stage{padding:12px;} .eq{font-size:12.5px;padding:6px 8px;} .note{font-size:14px;} }
+
+  .over{margin-top:8px;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{border-radius:0;margin-left:-1px;font-weight:600;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  /* things to click in the picture (Predict) */
+  .pick{cursor:pointer;}
+  .pick:focus{outline:none;}
+  .pick .ring{stroke:transparent;}
+  .pick:focus-visible .ring{stroke:var(--accent);}
+
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .hint{display:none;}
+  /* Mixing coloured light */
+  :root{ --topic:#3b5bdb; --topic-soft:#e3e9fd; }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --topic:#8fa7ff; --topic-soft:#1c2750; } }
+  :root[data-theme="dark"]{ --topic:#8fa7ff; --topic-soft:#1c2750; }
+  .view{max-height:max(240px,calc(100vh - 312px));}
+  .view.tall,.embed .view.tall{max-height:none;}
+  .under .sliders{flex:1 1 360px;grid-template-columns:repeat(3,minmax(0,1fr));}
+  @media (max-width:560px){ .under .sliders{grid-template-columns:minmax(0,1fr);flex-basis:100%;} }
+  .rows{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 10px;align-items:center;}
+  .rows .lab{margin:0;}
+  .light{mix-blend-mode:screen;}
+  .ring{fill:none;stroke:#8a8f99;stroke-width:1.2;stroke-dasharray:4 5;pointer-events:none;}
+  .handle{cursor:grab;}
+  .handle:focus{outline:none;}
+  .handle .dot{fill:none;stroke:transparent;stroke-width:3;}
+  .handle:focus-visible .dot{stroke:#fff;}
+  .nm{font:600 15px var(--font-mono);text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+  .pl{font:12.5px var(--font-mono);fill:var(--ink-soft);}
+  .pl.b{font-weight:600;fill:var(--ink);}
+  .bar-track{fill:var(--bg);stroke:var(--panel-border);}
+  .bar-hit{fill:transparent;cursor:ns-resize;touch-action:none;}
+  .sw{stroke:var(--panel-border);stroke-width:1.5;}
+  .seg.opts button{flex:1 1 40%;font:600 14px var(--font-body);}
+  .seg.opts button.is-right{background:var(--good-soft);border-color:var(--good);color:var(--ink);opacity:1;}
+  .seg.opts button.is-wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--ink);opacity:1;}
+  @media (prefers-reduced-motion: no-preference){
+    .seg.opts button.is-right{animation:cm-pop .25s ease-out;}
+    .seg.opts button.is-wrong{animation:cm-shake .45s;}
+  }
+  @keyframes cm-pop{50%{transform:scale(1.05);}}
+  @keyframes cm-shake{20%,60%{transform:translateX(-4px);}40%,80%{transform:translateX(4px);}}
+  .eq .dot{display:inline-block;width:.85em;height:.85em;border-radius:50%;vertical-align:-.08em;margin-right:.15em;border:1px solid var(--panel-border);}
+  .note{min-height:5.4em;}
+  .note small{display:block;font:11.5px var(--font-mono);color:var(--ink-faint);margin-bottom:2px;}
+  @media (max-height:700px){ .seg button{min-height:38px;} .note{font-size:14px;} }
+  #cm-pre button{padding-inline:9px;}
+  @media (max-height:640px){ #cm-hint{display:none;} .note{min-height:4.6em;} }
+</style>
+<style id="choice-kit">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
+.seg.pick{background:var(--bg);box-shadow:inset 0 0 0 1px var(--panel-border);border-radius:8px;}
+.seg.pick.fit{width:fit-content;max-width:100%;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on){background:transparent;border-color:transparent;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on):not(:disabled):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode{display:flex;flex-wrap:nowrap;align-self:stretch;flex-grow:1;background:var(--bg);box-shadow:0 0 0 1px var(--panel-border);border-radius:11px;padding:3px;gap:3px;}
+.seg.mode>button:nth-child(n){flex:1 1 0;min-height:38px;margin-left:0;padding:6px 12px;border-radius:8px;white-space:nowrap;font:600 14.5px var(--font-body,inherit);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]){background:transparent;border-color:transparent;color:var(--ink);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode>button:nth-child(n)[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel);}
+.to-q[hidden]{display:none!important;}
+.to-q:nth-child(n){border-style:dashed;border-color:var(--ink);font-weight:600;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' \u00b7 ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+<!-- pw-review -->
+<script>
+  // Draft tags and Alex's reviewer button (tools/review/drafts.py writes this block; edit tools/review/snippet.html, then run drafts.py sync).
+  // A page is Draft while its row in tools/REVIEW.md is not ✅: <meta name="pw-draft"> on the page, data-draft on its list cards.
+  // ?reviewer (once, on any page) turns on reviewer mode in this browser; ?reviewer=off turns it off.
+  (function(){
+    var on = false, embed = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var m = /[?&]reviewer(?:=([^&]*))?/.exec(location.search);
+    on = !!m && m[1] !== 'off';
+    try {
+      if (m) { if (m[1] === 'off') localStorage.removeItem('pw-reviewer'); else localStorage.setItem('pw-reviewer', '1'); }
+      else on = localStorage.getItem('pw-reviewer') === '1';
+    } catch (e) {}
+    var CSS = '.pw-draft{display:inline-block;vertical-align:middle;margin-left:10px;font:600 11.5px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:0;color:var(--bad,#b42318);border:1px dashed currentColor;border-radius:5px;padding:1px 7px;white-space:nowrap}'
+      + '.act-top .pw-draft{margin-left:auto;flex:none}.act-top .pw-draft~.cp-tag,.act-top .pw-draft~.ta-tag{margin-left:0}'
+      + 'a[data-draft]{position:relative}.pw-draft.pw-corner{position:absolute;top:10px;right:10px;margin:0;background:var(--panel,#fff)}'
+      + '.pw-check{display:inline-block;vertical-align:middle;margin-left:8px;font:600 13px/1.4 "IBM Plex Sans",system-ui,sans-serif;color:#fff;background:#1a7f37;border-radius:6px;padding:4px 10px;text-decoration:none;white-space:nowrap}'
+      + '.pw-check:hover{background:#116329}.pw-check:focus-visible{outline:2px solid #1a7f37;outline-offset:2px}'
+      + '.pw-reviewer{position:fixed;left:10px;bottom:10px;z-index:9999;font:500 12px/1.4 "IBM Plex Mono",ui-monospace,monospace;background:#1d2433;color:#fff;border-radius:6px;padding:4px 9px;opacity:.85}'
+      + '.pw-reviewer a{color:#ffc83d}';
+    function tag(){ var t = document.createElement('span'); t.className = 'pw-draft'; t.title = 'Not yet checked'; t.textContent = 'Draft'; return t; }
+    function go(){
+      var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+      var meta = document.querySelector('meta[name="pw-draft"]'), h1 = document.querySelector('h1');
+      if (meta && h1 && !embed) {
+        h1.appendChild(tag());
+        if (on) {
+          var page = meta.getAttribute('content'), b = document.createElement('a');
+          b.className = 'pw-check'; b.target = '_blank'; b.rel = 'noopener'; b.textContent = '✓ Checked';
+          b.title = 'Opens a GitHub issue. Submit it and the Draft tag goes in a minute or two.';
+          b.href = 'https://github.com/Skati1401/Physics-Workout/issues/new?title=' + encodeURIComponent('Checked: ' + page)
+            + '&body=' + encodeURIComponent('Submit this issue to mark `' + page + '` as checked. The Draft tag goes in a minute or two, and the issue closes itself.');
+          h1.appendChild(b);
+        }
+      }
+      document.querySelectorAll('a[data-draft]').forEach(function(a){
+        if (a.querySelector('.pw-draft')) return;
+        var t = tag(), top = a.querySelector('.act-top');
+        if (top) top.insertBefore(t, top.querySelector('.cp-tag,.ta-tag'));
+        else { t.className += ' pw-corner'; a.appendChild(t); }
+      });
+      // No tag on a unit or theme heading (Alex, 12 Nov 2026): only the pages and their cards.
+      if (on && !embed) {
+        // Carry ?reviewer in every link to another page of the site, so reviewer mode survives
+        // browsers that clear site storage (school Chromebooks) and pages cached from before.
+        var carry = function(a){
+          try {
+            var u = new URL(a.href, location.href);
+            if (u.origin !== location.origin || !/(\.html|\/)$/.test(u.pathname) || u.searchParams.has('reviewer')) return;
+            u.searchParams.set('reviewer', ''); a.href = u.href.replace('reviewer=', 'reviewer');
+          } catch (e) {}
+        };
+        document.querySelectorAll('a[href]').forEach(carry);
+        ['click', 'auxclick', 'contextmenu'].forEach(function(ev){
+          document.addEventListener(ev, function(e){ var a = e.target.closest && e.target.closest('a[href]'); if (a) carry(a); }, true);
+        });
+        var r = document.createElement('div'); r.className = 'pw-reviewer';
+        r.innerHTML = 'Reviewer mode · <a href="' + location.pathname + '?reviewer=off">turn off</a>';
+        document.body.appendChild(r);
+      }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  })();
+</script>
+<!-- /pw-review -->
+<meta name="pw-draft" content="animations/colour-mixing.html">
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="extension.html">&larr; Extension animations</a>
+  <header class="page-head">
+    <div class="eyebrow">Animations &middot; light</div>
+    <h1>Mixing Coloured Light</h1>
+  </header>
+  <section class="card stage">
+    <div>
+      <svg class="view" id="cm-svg" viewBox="0 0 900 390" role="img" aria-label="A dark screen with a red, a green and a blue circle of light that can overlap. Beside it, three bars show how bright each light is and a patch shows the colour all three make together.">
+        <rect id="cm-screen" x="0" y="0" width="610" height="390" rx="12" fill="#000"/>
+        <g id="cm-lights" style="isolation:isolate"></g>
+        <g id="cm-rings"></g>
+        <g id="cm-names" aria-hidden="true"></g>
+        <rect id="cm-hit" x="0" y="0" width="610" height="390" fill="transparent" class="grab"/>
+        <g id="cm-handles"></g>
+        <g id="cm-panel"></g>
+      </svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="cm-check" type="button" hidden>Check</button>
+          <button class="btn" id="cm-show" type="button" hidden>Show answer</button>
+          <button class="btn btn-primary" id="cm-next" type="button" hidden>Next question &rarr;</button>
+          <button class="btn" id="cm-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="cm-names-btn" type="button" aria-pressed="true">Colour names</button>
+          <button class="btn to-q" type="button" data-mode="cm-mode" hidden>Try the questions &rarr;</button>
+        </div>
+        <div class="sliders" id="cm-sliders">
+          <div><label class="lab" for="cm-r"><span>Red light</span> <output id="cm-ro"></output></label><input type="range" id="cm-r" min="0" max="100" step="5" value="100" style="accent-color:#e03131"></div>
+          <div><label class="lab" for="cm-g"><span>Green light</span> <output id="cm-go"></output></label><input type="range" id="cm-g" min="0" max="100" step="5" value="100" style="accent-color:#1f7a35"></div>
+          <div><label class="lab" for="cm-b"><span>Blue light</span> <output id="cm-bo"></output></label><input type="range" id="cm-b" min="0" max="100" step="5" value="100" style="accent-color:#1c7ed6"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side" id="cm-side">
+      <div class="seg tabs mode" id="cm-mode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
+      <div id="cm-setup" class="rows">
+        <div class="lab">Lights</div>
+        <div class="seg" id="cm-pos"><button type="button" data-p="over" aria-pressed="true">Overlapping</button><button type="button" data-p="apart" aria-pressed="false">Apart</button></div>
+        <div class="lab">Switch on</div>
+        <div class="seg" id="cm-pre"><button type="button" data-l="100,100,0" aria-pressed="false" aria-label="Red and green">R + G</button><button type="button" data-l="0,100,100" aria-pressed="false" aria-label="Green and blue">G + B</button><button type="button" data-l="100,0,100" aria-pressed="false" aria-label="Red and blue">R + B</button><button type="button" data-l="100,100,100" aria-pressed="true" aria-label="All three">All three</button><button type="button" data-l="0,0,0" aria-pressed="false">All off</button></div>
+      </div>
+      <p class="note" id="cm-note" aria-live="polite">Three lights shine on a screen in a dark room.</p>
+      <div class="seg opts" id="cm-opts" role="group" aria-label="Your answer" hidden></div>
+      <div id="cm-pixel-wrap">
+        <div class="lab">A phone screen, close up</div>
+        <svg id="cm-pixel" viewBox="0 0 340 64" role="img" aria-label="Four pixels of a screen, each made of a red, a green and a blue strip, and the colour they look from far away."></svg>
+      </div>
+      <p class="hint" id="cm-hint">Drag the lights on the screen, or drag the tops of the bars.</p>
+      <details class="working" id="cm-working">
+        <summary>Show the colour rules</summary>
+        <div class="eq" id="cm-eq"></div>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+(function(){
+  'use strict';
+  var $=function(id){ return document.getElementById(id); };
+  var NS='http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent){ var e=document.createElementNS(NS, tag); for(var k in attrs) e.setAttribute(k, attrs[k]); if(parent) parent.appendChild(e); return e; }
+
+  // In a frame (?embed) the page drops its heading and tells the parent page its height.
+  var EMBED=/[?&]embed\b/.test(location.search);
+  var page=$('page');
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var sendHeight=function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+
+  var svg=$('cm-svg');
+  var NAMES=['red','green','blue'], CAP=['Red','Green','Blue'], PURE=['#ff0000','#00ff00','#0000ff'];
+  var R=100, SW=610, SH=390, X0=0, XW=610;                       // light radius, screen size (SVG units)
+  var OVER=[[300,138],[246,232],[354,232]];        // the three circles overlapping
+  var APART=[[190,105],[420,105],[305,285]];       // no overlap
+  var lv=[100,100,100];                            // brightness of each light, 0 to 100 %
+  var pos=OVER.map(function(p){ return p.slice(); });
+  var showNames=true, mode='explore', locked=false, hideOff=false, narrow=false;
+  var tween=null;
+
+  // ---------- colour helpers ----------
+  function css(c){ return 'rgb('+Math.round(c[0]*2.55)+','+Math.round(c[1]*2.55)+','+Math.round(c[2]*2.55)+')'; }
+  function lum(c){ return (0.299*c[0]+0.587*c[1]+0.114*c[2])/100; }
+  function nameOf(c){
+    var r=c[0]/100, g=c[1]/100, b=c[2]/100, mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+    if(mx<0.08) return 'black';
+    var d=mx-mn, s=d/mx;
+    if(s<0.12) return mx>0.85?'white':(mx>0.25?'grey':'dark grey');
+    var h; if(mx===r) h=((g-b)/d)%6; else if(mx===g) h=(b-r)/d+2; else h=(r-g)/d+4;
+    h*=60; if(h<0) h+=360;
+    var n=h<14?'red':h<45?'orange':h<70?'yellow':h<95?'yellow-green':h<165?'green':h<200?'cyan':h<255?'blue':h<290?'purple':h<320?'magenta':h<345?'pink':'red';
+    if(mx<0.55) return n==='orange'?'brown':'dark '+n;
+    if(s<=0.55) return n==='red'?'pink':'pale '+n;
+    return n;
+  }
+
+  // ---------- build the picture ----------
+  var gL=$('cm-lights'), gR=$('cm-rings'), gN=$('cm-names'), gH=$('cm-handles'), gP=$('cm-panel');
+  var circ=[], ring=[], handle=[];
+  for(var i=0;i<3;i++){
+    circ[i]=el('circle',{r:R,'class':'light'},gL);
+    ring[i]=el('circle',{r:R,'class':'ring'},gR);
+    var h=el('g',{'class':'handle',tabindex:'0',role:'button','aria-label':CAP[i]+' light. Use the arrow keys to move it.','data-i':i},gH);
+    el('circle',{r:R-4,'class':'dot'},h);
+    handle[i]=h;
+  }
+  // panel: three level bars and the colour all three make together
+  var P={};
+  P.title=el('text',{'class':'pl b'},gP); P.title.textContent='Brightness of each light';
+  P.track=[]; P.fill=[]; P.pct=[]; P.nm=[]; P.hit=[];
+  for(i=0;i<3;i++){
+    P.track[i]=el('rect',{'class':'bar-track',rx:5},gP);
+    P.fill[i]=el('rect',{rx:4,fill:PURE[i]},gP);
+    P.pct[i]=el('text',{'class':'pl b','text-anchor':'middle'},gP);
+    P.nm[i]=el('text',{'class':'pl','text-anchor':'middle'},gP); P.nm[i].textContent=CAP[i];
+    P.hit[i]=el('rect',{'class':'bar-hit','data-i':i},gP);
+  }
+  P.cap=el('text',{'class':'pl b'},gP);
+  P.sw=el('rect',{'class':'sw',rx:8},gP);
+  P.swt=el('text',{'class':'nm'},gP);
+  P.cap2=el('text',{'class':'pl b'},gP); P.cap2.textContent='Target';
+  P.sw2=el('rect',{'class':'sw',rx:8},gP);
+  P.swt2=el('text',{'class':'nm'},gP);
+  var target=null, targetHidden=false, mixHidden=false;             // Questions: the colour to make
+
+  var L;                                            // panel layout, wide or phone
+  function layout(){
+    narrow=window.matchMedia('(max-width:560px)').matches;
+    if(narrow){
+      svg.setAttribute('viewBox','60 0 490 600'); svg.classList.add('tall'); X0=60; XW=490;
+      L={tx:66,ty:416, bx:66,by:428,bw:42,bh:110,gap:58, sx:254,sy:440,sw:290,sh:98, cy:430, fs:22, pf:15};
+    }else{
+      svg.setAttribute('viewBox','0 0 900 390'); svg.classList.remove('tall'); X0=0; XW=610;
+      L={tx:640,ty:22, bx:644,by:38,bw:50,bh:176,gap:84, sx:640,sy:290,sw:250,sh:84, cy:281, fs:16, pf:12.5};
+    }
+    $('cm-screen').setAttribute('x',X0); $('cm-screen').setAttribute('width',XW);
+    for(var j=0;j<3;j++) clampPos(j);
+    Array.prototype.forEach.call(gP.querySelectorAll('.pl'),function(t){ t.style.fontSize=L.pf+'px'; });
+    P.title.setAttribute('x',L.tx); P.title.setAttribute('y',L.ty);
+    P.title.textContent=narrow?'Brightness':'Brightness of each light';
+    for(var i=0;i<3;i++){
+      var x=L.bx+i*L.gap;
+      P.track[i].setAttribute('x',x); P.track[i].setAttribute('y',L.by); P.track[i].setAttribute('width',L.bw); P.track[i].setAttribute('height',L.bh);
+      P.hit[i].setAttribute('x',x-8); P.hit[i].setAttribute('y',L.by-10); P.hit[i].setAttribute('width',L.bw+16); P.hit[i].setAttribute('height',L.bh+20);
+      P.pct[i].setAttribute('x',x+L.bw/2); P.pct[i].setAttribute('y',L.by+L.bh+L.pf+4);
+      P.nm[i].setAttribute('x',x+L.bw/2); P.nm[i].setAttribute('y',L.by+L.bh+2*L.pf+8);
+    }
+    render();
+  }
+
+  // ---------- colour names on the picture ----------
+  function drawNames(){
+    while(gN.firstChild) gN.removeChild(gN.firstChild);
+    if(!showNames) return;
+    var best={}, step=10, x, y, i;
+    for(y=step;y<SH;y+=step) for(x=X0+step;x<X0+XW;x+=step){
+      var c=[0,0,0], clear=Math.min(x-X0,y,X0+XW-x,SH-y), any=false;
+      for(i=0;i<3;i++){
+        if(lv[i]<=0) continue;
+        var d=Math.hypot(x-pos[i][0], y-pos[i][1]);
+        if(d<R){ c[i]=lv[i]; any=true; }
+        clear=Math.min(clear, Math.abs(d-R));
+      }
+      if(!any) continue;
+      var key=c.join(',');
+      if(!best[key] || clear>best[key].clear) best[key]={clear:clear,x:x,y:y,c:c};
+    }
+    var minClear=narrow?22:17;
+    for(var k in best){
+      var b=best[k]; if(b.clear<minClear) continue;
+      var t=el('text',{'class':'nm',x:b.x,y:b.y,fill:lum(b.c)>0.5?'#000':'#fff'},gN);
+      t.style.fontSize=(b.clear<34?L.fs*(narrow?0.7:0.8):L.fs)+'px';
+      t.textContent=nameOf(b.c);
+    }
+  }
+
+  // ---------- draw everything ----------
+  var sl=[$('cm-r'),$('cm-g'),$('cm-b')], out=[$('cm-ro'),$('cm-go'),$('cm-bo')];
+  function render(){
+    if(!L) return;
+    var i, v;
+    for(i=0;i<3;i++){
+      v=lv[i];
+      var c=[0,0,0]; c[i]=v;
+      circ[i].setAttribute('cx',pos[i][0]); circ[i].setAttribute('cy',pos[i][1]); circ[i].setAttribute('fill',css(c));
+      ring[i].setAttribute('cx',pos[i][0]); ring[i].setAttribute('cy',pos[i][1]);
+      ring[i].style.display=(hideOff && v<=0)?'none':'';
+      handle[i].setAttribute('transform','translate('+pos[i][0]+','+pos[i][1]+')');
+      var hgt=L.bh*v/100;
+      P.fill[i].setAttribute('x',L.bx+i*L.gap+1); P.fill[i].setAttribute('width',L.bw-2);
+      P.fill[i].setAttribute('y',L.by+L.bh-hgt); P.fill[i].setAttribute('height',Math.max(0,hgt));
+      P.pct[i].textContent=Math.round(v)+'%';
+      if(!tween || !tween.lv){ sl[i].value=Math.round(v); }
+      out[i].textContent=Math.round(v)+'%';
+      sl[i].setAttribute('aria-valuetext',Math.round(v)+' percent');
+    }
+    // the colour all three make together (and the target, in a question)
+    var mix=lv.slice(), two=!!target, w=two?(L.sw-10)/2:L.sw;
+    P.cap.textContent=two?'Your mix':'All three together';
+    P.cap.setAttribute('x',L.sx+(two?w+10:0)); P.cap.setAttribute('y',L.cy);
+    P.sw.setAttribute('x',L.sx+(two?w+10:0)); P.sw.setAttribute('y',L.sy); P.sw.setAttribute('width',w); P.sw.setAttribute('height',L.sh);
+    P.sw.setAttribute('fill',mixHidden?'var(--bg)':css(mix));
+    P.swt.setAttribute('x',L.sx+(two?w+10:0)+w/2); P.swt.setAttribute('y',L.sy+L.sh/2);
+    P.swt.setAttribute('fill',mixHidden?'var(--ink-soft)':(lum(mix)>0.5?'#000':'#fff')); P.swt.style.fontSize=L.fs+'px';
+    P.swt.textContent=mixHidden?'?':(showNames?nameOf(mix):'');
+    P.cap2.style.display=P.sw2.style.display=P.swt2.style.display=two?'':'none';
+    if(two){
+      P.cap2.setAttribute('x',L.sx); P.cap2.setAttribute('y',L.cy);
+      P.sw2.setAttribute('x',L.sx); P.sw2.setAttribute('y',L.sy); P.sw2.setAttribute('width',w); P.sw2.setAttribute('height',L.sh);
+      P.sw2.setAttribute('fill',targetHidden?'var(--bg)':css(target));
+      P.swt2.setAttribute('x',L.sx+w/2); P.swt2.setAttribute('y',L.sy+L.sh/2); P.swt2.style.fontSize=L.fs+'px';
+      P.swt2.setAttribute('fill',targetHidden?'var(--ink-soft)':(lum(target)>0.5?'#000':'#fff'));
+      P.swt2.textContent=targetHidden?'?':nameOf(target);
+    }
+    drawNames();
+    drawPixel();
+    if(mode==='explore'){ $('cm-note').innerHTML=describe(); syncPresets(); }
+  }
+
+  // a screen close up: four pixels, each a red, a green and a blue strip
+  var px=$('cm-pixel'), pxStrip=[], pxFar, pxTxt;
+  (function(){
+    el('rect',{x:0,y:0,width:150,height:64,rx:6,fill:'#000'},px);
+    for(var p=0;p<4;p++) for(var k=0;k<3;k++) pxStrip.push(el('rect',{x:8+p*35+k*10,y:8,width:8,height:48,rx:2},px));
+    var t=el('text',{x:158,y:28,'class':'pl'},px); t.textContent='from far';
+    t=el('text',{x:158,y:44,'class':'pl'},px); t.textContent='away →';
+    pxFar=el('rect',{x:226,y:0,width:114,height:64,rx:6,'class':'sw'},px);
+    pxTxt=el('text',{x:283,y:32,'class':'nm'},px);
+  })();
+  function drawPixel(){
+    for(var n=0;n<pxStrip.length;n++){ var c=[0,0,0]; c[n%3]=lv[n%3]; pxStrip[n].setAttribute('fill',css(c)); }
+    pxFar.setAttribute('fill',css(lv)); pxTxt.setAttribute('fill',lum(lv)>0.5?'#000':'#fff');
+    pxTxt.style.fontSize='14px'; pxTxt.textContent=showNames?nameOf(lv):'';
+  }
+
+  // ---------- what is happening now (Explore) ----------
+  function overlapping(){
+    var on=[0,1,2].filter(function(i){ return lv[i]>0; });
+    for(var a=0;a<on.length;a++) for(var b=a+1;b<on.length;b++)
+      if(Math.hypot(pos[on[a]][0]-pos[on[b]][0], pos[on[a]][1]-pos[on[b]][1])<2*R-6) return true;
+    return false;
+  }
+  function describe(){
+    var on=[0,1,2].filter(function(i){ return lv[i]>0; }), n=on.length, s;
+    if(n===0) return 'All three lights are off. No light reaches your eyes, so the screen looks <b>black</b>.';
+    if(n===1) return 'Only the '+NAMES[on[0]]+' light is on. Red, green and blue are the <b>primary colours</b> of light. Turn up another one.';
+    if(!showNames) return 'The colour names are hidden. What colour is each overlap? Press Colour names to check.';
+    var nm=nameOf(lv);
+    if(n===2){
+      var a=on[0], b=on[1];
+      if(lv[a]===lv[b]){
+        s=CAP[a]+' light + '+NAMES[b]+' light make <b>'+nameOf([a===0||b===0?100:0, a===1||b===1?100:0, a===2||b===2?100:0])+'</b>, a <b>secondary colour</b> of light.';
+        if(lv[a]<100) s+=' Both lights are at '+lv[a]+'%, so it is dimmer.';
+      }else{
+        var hi=lv[a]>lv[b]?a:b, lo=hi===a?b:a;
+        s='More '+NAMES[hi]+' than '+NAMES[lo]+' gives <b>'+nm+'</b>. Changing how bright each light is changes the colour you see.';
+      }
+    }else if(lv[0]===lv[1] && lv[1]===lv[2]){
+      s=lv[0]===100?'Red + green + blue light, all at full brightness, make <b>white</b>.'
+        :'Equal red, green and blue still make white, but at '+lv[0]+'% it is dimmer: you see <b>'+nm+'</b>.';
+    }else{
+      s='Red '+lv[0]+'%, green '+lv[1]+'%, blue '+lv[2]+'% together look <b>'+nm+'</b>. A screen makes every colour this way.';
+    }
+    if(!overlapping()) s='The lights do not overlap yet: drag them together. '+s;
+    return s;
+  }
+  function syncPresets(){
+    var key=lv.join(',');
+    Array.prototype.forEach.call($('cm-pre').children,function(b){ b.setAttribute('aria-pressed', b.getAttribute('data-l')===key?'true':'false'); });
+    var isOver=same(pos,OVER), isApart=same(pos,APART);
+    Array.prototype.forEach.call($('cm-pos').children,function(b){ var p=b.getAttribute('data-p'); b.setAttribute('aria-pressed',(p==='over'&&isOver)||(p==='apart'&&isApart)?'true':'false'); });
+  }
+  function same(a,b){ for(var i=0;i<3;i++) if(Math.abs(a[i][0]-b[i][0])>0.5||Math.abs(a[i][1]-b[i][1])>0.5) return false; return true; }
+
+  // ---------- moving and fading (always ends) ----------
+  function go(to, ms, done){
+    if(tween) cancelAnimationFrame(tween.id);
+    var from={lv:lv.slice(), pos:pos.map(function(p){ return p.slice(); })}, t0=null;
+    tween={lv:to.lv, id:0};
+    function frame(t){
+      if(t0===null) t0=t;
+      var k=Math.min(1,(t-t0)/ms), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      for(var i=0;i<3;i++){
+        if(to.lv) lv[i]=from.lv[i]+(to.lv[i]-from.lv[i])*e;
+        if(to.pos){ pos[i][0]=from.pos[i][0]+(to.pos[i][0]-from.pos[i][0])*e; pos[i][1]=from.pos[i][1]+(to.pos[i][1]-from.pos[i][1])*e; }
+      }
+      if(k>=1){
+        if(to.lv) lv=to.lv.slice();
+        if(to.pos) pos=to.pos.map(function(p){ return p.slice(); });
+        tween=null; render(); if(done) done(); return;
+      }
+      render(); tween.id=requestAnimationFrame(frame);
+    }
+    tween.id=requestAnimationFrame(frame);
+  }
+  function stop(){ if(tween){ cancelAnimationFrame(tween.id); tween=null; for(var i=0;i<3;i++) lv[i]=Math.round(lv[i]/5)*5; } }
+
+  // ---------- controls ----------
+  function setLevel(i,v){ stop(); lv[i]=Math.max(0,Math.min(100,Math.round(v/5)*5)); render(); }
+  sl.forEach(function(s,i){ s.addEventListener('input',function(){ if(locked){ s.value=lv[i]; return; } setLevel(i,+s.value); }); });
+
+  function svgPt(e){ var m=svg.getScreenCTM().inverse(), p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(m); }
+  function clampPos(i){ pos[i][0]=Math.max(X0+R,Math.min(X0+XW-R,pos[i][0])); pos[i][1]=Math.max(R,Math.min(SH-R,pos[i][1])); }
+
+  // drag a light: the one whose centre is nearest the pointer
+  var drag=null, hit=$('cm-hit');
+  hit.addEventListener('pointerdown',function(e){
+    if(locked) return;
+    var p=svgPt(e), best=-1, bd=1e9;
+    for(var i=0;i<3;i++){ var d=Math.hypot(p.x-pos[i][0],p.y-pos[i][1]); if(d<R && d<bd && !(hideOff&&lv[i]<=0)){ bd=d; best=i; } }
+    if(best<0) return;
+    stop(); drag={i:best,dx:pos[best][0]-p.x,dy:pos[best][1]-p.y};
+    try{ hit.setPointerCapture(e.pointerId); }catch(x){}
+    hit.style.cursor='grabbing'; e.preventDefault();
+  });
+  hit.addEventListener('pointermove',function(e){
+    if(!drag) return;
+    var p=svgPt(e); pos[drag.i][0]=p.x+drag.dx; pos[drag.i][1]=p.y+drag.dy; clampPos(drag.i); render();
+  });
+  function endDrag(){ if(drag){ drag=null; hit.style.cursor=''; } }
+  hit.addEventListener('pointerup',endDrag); hit.addEventListener('pointercancel',endDrag);
+  hit.style.touchAction='none';
+  handle.forEach(function(h,i){
+    h.addEventListener('keydown',function(e){
+      var d={ArrowLeft:[-10,0],ArrowRight:[10,0],ArrowUp:[0,-10],ArrowDown:[0,10]}[e.key];
+      if(!d || locked) return;
+      e.preventDefault(); stop(); pos[i][0]+=d[0]; pos[i][1]+=d[1]; clampPos(i); render();
+    });
+    h.style.pointerEvents='none';
+  });
+  // drag the top of a bar
+  var barDrag=-1;
+  function barSet(e){ var p=svgPt(e); setLevel(barDrag,(L.by+L.bh-p.y)/L.bh*100); }
+  P.hit.forEach(function(r,i){
+    r.addEventListener('pointerdown',function(e){ if(locked) return; barDrag=i; try{ r.setPointerCapture(e.pointerId); }catch(x){} barSet(e); e.preventDefault(); });
+    r.addEventListener('pointermove',function(e){ if(barDrag===i) barSet(e); });
+    r.addEventListener('pointerup',function(){ barDrag=-1; }); r.addEventListener('pointercancel',function(){ barDrag=-1; });
+  });
+
+  $('cm-pre').addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    go({lv:b.getAttribute('data-l').split(',').map(Number)},450);
+  });
+  $('cm-pos').addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    go({pos:b.getAttribute('data-p')==='over'?OVER:APART},700);
+  });
+  $('cm-reset').addEventListener('click',function(){
+    if(mode==='predict'){ deal(qi); return; }
+    go({lv:[100,100,100],pos:OVER},500);
+  });
+  $('cm-names-btn').addEventListener('click',function(){
+    showNames=!showNames; this.setAttribute('aria-pressed',showNames?'true':'false'); render();
+  });
+
+  $('cm-eq').innerHTML=[
+    ['#f00','red'],['#0f0','green'],['#00f','blue']].map(function(d){ return '<span class="dot" style="background:'+d[0]+'"></span>'+d[1]; }).join(' &nbsp;')+' are the primary colours of light.<br>'
+    +'red + green = <span class="dot" style="background:#ff0"></span><b>yellow</b><br>'
+    +'green + blue = <span class="dot" style="background:#0ff"></span><b>cyan</b><br>'
+    +'red + blue = <span class="dot" style="background:#f0f"></span><b>magenta</b><br>'
+    +'red + green + blue = <span class="dot" style="background:#fff"></span><b>white</b><br>'
+    +'no light = <span class="dot" style="background:#000"></span><b>black</b><br>'
+    +'Yellow, cyan and magenta are the secondary colours.';
+
+  // ---------- Questions ----------
+  var A=[190,195], B=[420,195], A2=[250,195], B2=[360,195], C=[300,195], OFF=[305,195];
+  var PREDICT=[
+    {q:'The red light and the green light are moved so that they overlap. What colour is the overlap?',
+     s:{lv:[100,100,0],pos:[A,B,OFF]}, e:{lv:[100,100,0],pos:[A2,B2,OFF]}, ans:'Yellow', opts:['Yellow','Brown','Orange','White'],
+     ok:'Red light + green light make yellow.',
+     why:{Brown:'Brown is what red and green paint make. Light adds up: more light gives a brighter colour, not a darker one.',Orange:'Orange needs more red than green. With equal red and green you see yellow.',White:'White needs all three primary colours, and blue is missing.'}},
+    {q:'The green light and the blue light are moved so that they overlap. What colour is the overlap?',
+     s:{lv:[0,100,100],pos:[OFF,A,B]}, e:{lv:[0,100,100],pos:[OFF,A2,B2]}, ans:'Cyan', opts:['Cyan','Dark blue','Yellow','White'],
+     ok:'Green light + blue light make cyan.',
+     why:{'Dark blue':'Adding light never makes the overlap darker. Two lights together are brighter than one.',Yellow:'Yellow is red + green. Here the lights are green and blue.',White:'White needs all three primary colours, and red is missing.'}},
+    {q:'The red light and the blue light are moved so that they overlap. What colour is the overlap?',
+     s:{lv:[100,0,100],pos:[A,OFF,B]}, e:{lv:[100,0,100],pos:[A2,OFF,B2]}, ans:'Magenta', opts:['Magenta','Cyan','Black','White'],
+     ok:'Red light + blue light make magenta.',
+     why:{Cyan:'Cyan is green + blue. Here the lights are red and blue.',Black:'Black means no light at all. Two lights together are brighter than one.',White:'White needs all three primary colours, and green is missing.'}},
+    {q:'All three lights, at full brightness, are moved onto the same spot. What colour is the spot?',
+     s:{lv:[100,100,100],pos:APART}, e:{lv:[100,100,100],pos:OVER}, ans:'White', opts:['White','Black','Brown','Grey'],
+     ok:'Red + green + blue light make white.',
+     why:{Black:'Black means no light at all. Mixing paints gets darker, but mixing light gets brighter.',Brown:'Brown is what mixed paints make. Light adds up: the three primary colours make white.',Grey:'Grey is the same mix with dimmer lights. At full brightness it is white.'}},
+    {q:'Red and green light shine on the same spot, making yellow. The blue light is moved onto the spot. What colour is the overlap?',
+     s:{lv:[100,100,100],pos:[A,A,B]}, e:{lv:[100,100,100],pos:[A2,A2,B2]}, ans:'White', opts:['White','Green','Black','Cyan'],
+     ok:'Yellow light is red + green, so adding blue gives all three primary colours: white.',
+     why:{Green:'Green is what yellow and blue paint make. Yellow light is red + green, so adding blue gives all three: white.',Black:'Black means no light at all. Adding light makes the spot brighter.',Cyan:'Cyan is green + blue only. The red light is still there, so all three are mixed.'}},
+    {q:'Red and blue light shine on the same spot, making magenta. Which light must be added to make the spot white?',
+     s:{lv:[100,0,100],pos:[A,B,A]}, e:{lv:[100,100,100],pos:[A2,B2,A2]}, ans:'Green', opts:['Green','Yellow','Red','Blue'],
+     ok:'White needs red + green + blue. Magenta already has red and blue, so green is missing.',
+     why:{Yellow:'Yellow light would work on a real screen, as it holds green, but it is not one of the three lights here. The missing primary colour is green.',Red:'Magenta already has red in it. The missing primary colour is green.',Blue:'Magenta already has blue in it. The missing primary colour is green.'}},
+    {q:'All three lights shine on the same spot, making white. The blue light is switched off. What colour is the spot now?',
+     s:{lv:[100,100,100],pos:[C,C,C]}, e:{lv:[100,100,0],pos:[C,C,C]}, ans:'Yellow', opts:['Yellow','Blue','Cyan','Magenta'],
+     ok:'Taking blue away leaves red + green, which make yellow.',
+     why:{Blue:'Blue is the light that was switched off. Red and green are left.',Cyan:'Cyan is green + blue, but blue is off. Red and green are left.',Magenta:'Magenta is red + blue, but blue is off. Red and green are left.'}},
+    {q:'Red and green light shine on the same spot, both at 100%, making yellow. The green light is turned down to 50%. What colour is the spot now?',
+     s:{lv:[100,100,0],pos:[C,C,OFF]}, e:{lv:[100,50,0],pos:[C,C,OFF]}, ans:'Orange', opts:['Orange','Yellow-green','Brown','Yellow'],
+     ok:'Now there is more red than green, so the yellow moves towards red: orange.',
+     why:{'Yellow-green':'That would need more green than red. The green was turned down, so red is now stronger.',Brown:'The red light is still at full brightness, so the spot stays bright. More red than green gives orange.',Yellow:'Yellow needs equal red and green. Now there is more red.'}}
+  ];
+  var MAKE=[
+    {t:[100,100,0],name:'yellow',hide:true},{t:[0,100,100],name:'cyan',hide:true},{t:[100,0,100],name:'magenta',hide:true},{t:[100,100,100],name:'white',hide:true},
+    {t:[100,50,0],name:'orange'},{t:[50,0,100],name:'purple'},{t:[50,50,50],name:'grey'},{t:[100,50,100],name:'pale magenta'}
+  ];
+  function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  var order=[], qi=0, right=0, done=0, cur=null, tries=0, answered=false;
+  function newOrder(){
+    var p=shuffle(PREDICT), m=shuffle(MAKE.slice(0,4)).concat(shuffle(MAKE.slice(4)));
+    order=[]; for(var i=0;i<p.length;i++){ order.push({k:'p',d:p[i]}); order.push({k:'m',d:m[i]}); }
+  }
+  function head(){ return '<small>Question '+(qi+1)+' of '+order.length+' &middot; '+right+' right so far</small>'; }
+  function cp(s){ return {lv:s.lv.slice(), pos:s.pos.map(function(p){ return p.slice(); })}; }
+  function deal(n){
+    stop(); qi=n; cur=order[qi]; tries=0; answered=false;
+    var opts=$('cm-opts'); opts.innerHTML='';
+    $('cm-next').hidden=true; $('cm-show').hidden=true;
+    showNames=false; hideOff=true;
+    if(cur.k==='p'){
+      var q=cur.d, s=cp(q.s); lv=s.lv; pos=s.pos; locked=true; target=null; mixHidden=true;
+      $('cm-sliders').hidden=true; $('cm-check').hidden=true; opts.hidden=false; $('cm-reset').hidden=true;
+      shuffle(q.opts).forEach(function(o){
+        var b=document.createElement('button'); b.type='button'; b.textContent=o;
+        b.addEventListener('click',function(){ answer(b,o); }); opts.appendChild(b);
+      });
+      $('cm-note').innerHTML=head()+q.q;
+    }else{
+      lv=[0,0,0]; pos=OVER.map(function(p){ return p.slice(); }); locked=false; hideOff=false; mixHidden=false;
+      target=cur.d.t; targetHidden=!!cur.d.hide;
+      $('cm-sliders').hidden=false; $('cm-check').hidden=false; opts.hidden=true; $('cm-reset').hidden=true;
+      $('cm-note').innerHTML=head()+(cur.d.hide?'Set the three lights so that the place where they all overlap is <b>'+cur.d.name+'</b>. Then press Check.'
+        :'Set the three lights so that your mix matches the <b>target</b> colour. Then press Check.');
+    }
+    render();
+  }
+  function finish(ok){
+    answered=true; locked=true; done++; if(ok && tries===0) right++;
+    showNames=true; targetHidden=false;
+    $('cm-check').hidden=true; $('cm-show').hidden=true;
+    var nx=$('cm-next'); nx.hidden=false; nx.innerHTML=qi+1<order.length?'Next question &rarr;':'Start again &rarr;';
+    render();
+  }
+  function answer(btn,o){
+    if(answered) return;
+    var q=cur.d, ok=o===q.ans;
+    Array.prototype.forEach.call($('cm-opts').children,function(b){ b.disabled=true; if(b.textContent===q.ans) b.classList.add('is-right'); });
+    if(!ok){ btn.classList.add('is-wrong'); tries=1; }
+    finish(ok);
+    showNames=false;
+    $('cm-note').innerHTML=head()+(ok?'<b>Correct.</b> '+q.ok:'<b>Not quite.</b> '+q.why[o]+' Watch the screen.');
+    go(cp(q.e),1100,function(){ showNames=true; mixHidden=false; render(); });
+  }
+  $('cm-check').addEventListener('click',function(){
+    if(answered || cur.k!=='m') return;
+    var t=cur.d.t, bad=[], i;
+    for(i=0;i<3;i++){ if(lv[i]>t[i]+15) bad.push('less '+NAMES[i]); else if(lv[i]<t[i]-15) bad.push('more '+NAMES[i]); }
+    if(!bad.length){
+      finish(true);
+      $('cm-note').innerHTML=head()+'<b>Correct.</b> Red '+t[0]+'%, green '+t[1]+'%, blue '+t[2]+'% make '+cur.d.name+'.'+(cur.d.name==='grey'?' Grey is white light, only dimmer.':'');
+      go({lv:t},300);
+    }else{
+      tries++;
+      $('cm-note').innerHTML=head()+'<b>Not yet.</b> '+(cur.d.hide&&tries<2?'Think about which primary colours make '+cur.d.name+', and which one must be off.':'Your mix needs '+bad.join(' and ')+'.')+' Change the lights and check again.';
+      $('cm-show').hidden=false;
+    }
+  });
+  $('cm-show').addEventListener('click',function(){
+    if(answered) return; var t=cur.d.t; tries=Math.max(1,tries);
+    finish(false);
+    $('cm-note').innerHTML=head()+'Red '+t[0]+'%, green '+t[1]+'%, blue '+t[2]+'% make '+cur.d.name+'.';
+    go({lv:t},600);
+  });
+  $('cm-next').addEventListener('click',function(){
+    if(qi+1<order.length) deal(qi+1); else { right=0; done=0; newOrder(); deal(0); }
+  });
+
+  function setMode(m){
+    mode=m; stop();
+    Array.prototype.forEach.call($('cm-mode').children,function(b){ b.setAttribute('aria-pressed',b.getAttribute('data-v')===m?'true':'false'); });
+    var q=m==='predict';
+    $('cm-setup').hidden=q; $('cm-pixel-wrap').hidden=q; $('cm-working').hidden=q; $('cm-hint').hidden=q; $('cm-names-btn').hidden=q;
+    $('cm-side').classList.toggle('q',q);
+    if(q){ if(!order.length) newOrder(); deal(Math.min(qi,order.length-1)); }
+    else{
+      locked=false; hideOff=false; target=null; mixHidden=false; showNames=$('cm-names-btn').getAttribute('aria-pressed')==='true';
+      $('cm-opts').hidden=true; $('cm-check').hidden=true; $('cm-show').hidden=true; $('cm-next').hidden=true;
+      $('cm-sliders').hidden=false; $('cm-reset').hidden=false;
+      lv=[100,100,100]; pos=OVER.map(function(p){ return p.slice(); }); render();
+    }
+  }
+  $('cm-mode').addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setMode(b.getAttribute('data-v')); });
+
+  window.addEventListener('resize',layout);
+  layout();
+  if(/[?&]show=predict\b/.test(location.search)) setMode('predict');
+})();
+</script><script id="choice-kit-js">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices".
+   A group of choices with one chosen gets a track round it (class pick); a .to-q button opens the questions from Explore. */
+(function(){
+  function on(b){ return b.getAttribute('aria-pressed')==='true' || b.classList.contains('is-on'); }
+  function each(sel, fn){ Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+  function mark(s){
+    if(!s.classList.contains('pick')){
+      var n=0; Array.prototype.forEach.call(s.children, function(b){ if(b.tagName==='BUTTON' && on(b)) n++; });
+      if(n===1) s.classList.add('pick');
+    }
+    if(s.classList.contains('pick') && !s.hasAttribute('data-fit')){
+      var d=getComputedStyle(s).display;
+      if(d!=='none'){ s.setAttribute('data-fit','1'); if(d.indexOf('flex')>=0) s.classList.add('fit'); }
+    }
+  }
+  each('.seg:not(.tabs):not(.mode):not(.apps)', function(s){
+    mark(s);
+    if(window.MutationObserver) new MutationObserver(function(){ mark(s); }).observe(s, {childList:true, subtree:true, attributes:true, attributeFilter:['aria-pressed','class']});
+  });
+  each('.to-q[data-mode]', function(b){
+    var seg=document.getElementById(b.getAttribute('data-mode')); if(!seg) return;
+    var bs=seg.querySelectorAll('button');
+    function sync(){ b.hidden=!on(bs[0]) || !seg.getClientRects().length; }   // hidden too when the page hides its mode switch (e.g. at a level with no questions)
+    b.addEventListener('click', function(){ bs[1].click(); bs[1].focus(); });
+    if(window.MutationObserver) new MutationObserver(sync).observe(seg, {subtree:true, attributes:true, attributeFilter:['aria-pressed']});
+    document.addEventListener('click', function(){ setTimeout(sync, 0); });
+    sync(); setTimeout(sync, 0);
+  });
+})();
+</script>
+
+<footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
+</body>
+</html>
