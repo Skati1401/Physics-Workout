@@ -207,6 +207,16 @@
 .seg.mode>button:nth-child(n):not([aria-pressed="true"]){background:transparent;border-color:transparent;color:var(--ink);}
 .seg.mode>button:nth-child(n):not([aria-pressed="true"]):hover{background:var(--panel);border-color:var(--panel-border);}
 .seg.mode>button:nth-child(n)[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel);}
+/* Choice rows (13 Nov 2026, Alex): in a .cgrid the label sits above its group, each group is only as wide as its
+   buttons, and short groups share a row, as on dc-motor.html. The script wraps each label and its control in a .cgroup. */
+.cgrid.kit{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-start;}
+.cgrid.kit>.cgroup{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;max-width:100%;}
+/* a row of one group (e.g. Graph under the picture) keeps its label beside it, to save height */
+.cgrid.kit.one>.cgroup{flex-direction:row;align-items:center;gap:10px;}
+.cgrid.kit>.cgroup[hidden]{display:none;}
+.cgrid.kit>.cgroup>.rowlab{font:12.5px var(--font-mono,ui-monospace,monospace);color:var(--ink-soft);}
+.cgrid.kit>.cgroup>.seg{display:flex;flex-wrap:wrap;max-width:100%;}
+.cgrid.kit>.cgroup>.seg>button{flex:0 1 auto;}
 .to-q[hidden]{display:none!important;}
 .to-q:nth-child(n){border-style:dashed;border-color:var(--ink);font-weight:600;}
 </style>
@@ -1317,6 +1327,24 @@ function expKey(x, y, upLabel, downLabel){
   each('.seg:not(.tabs):not(.mode):not(.apps)', function(s){
     mark(s);
     if(window.MutationObserver) new MutationObserver(function(){ mark(s); }).observe(s, {childList:true, subtree:true, attributes:true, attributeFilter:['aria-pressed','class']});
+  });
+  // Choice rows: wrap each .rowlab and the control after it in a .cgroup (label above, groups side by side).
+  // A group is hidden when everything in it is hidden, so pages that hide a row's label and control still work.
+  function shown(e){ return !e.hidden && e.style.display!=='none'; }
+  each('.cgrid:not(.kit)', function(g){
+    var kids=Array.prototype.slice.call(g.children), groups=[];
+    for(var i=0;i<kids.length;i++){
+      var w=document.createElement('div'); w.className='cgroup';
+      g.insertBefore(w, kids[i]); w.appendChild(kids[i]);
+      if(kids[i].classList.contains('rowlab') && kids[i+1]){ w.appendChild(kids[i+1]); i++; }
+      groups.push(w);
+    }
+    g.classList.add('kit'); if(groups.length===1) g.classList.add('one');
+    groups.forEach(function(w){
+      function sync(){ var any=false; Array.prototype.forEach.call(w.children, function(c){ if(shown(c)) any=true; }); w.hidden=!any; }
+      sync();
+      if(window.MutationObserver) Array.prototype.forEach.call(w.children, function(c){ new MutationObserver(sync).observe(c, {attributes:true, attributeFilter:['hidden','style']}); });
+    });
   });
   each('.to-q[data-mode]', function(b){
     var seg=document.getElementById(b.getAttribute('data-mode')); if(!seg) return;
