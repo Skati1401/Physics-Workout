@@ -58,6 +58,11 @@ Each animation below has a `?show=measure` mode for its practical page's Do Expe
   - Iron, off at 7 min (20 160 J): lagged 20.0, 24.0, 29.5, 35.5, 42.0, 47.5, 53.5, 58.5, 61.0, 61.0 (492); no lagging 20.0, 24.0, 29.0, 34.5, 40.0, 44.5, 49.5, 53.0, 53.5, 52.0 (602).
   - Copper, off at 6 min (17 280 J): lagged 20.0, 24.5, 31.0, 38.0, 45.0, 51.0, 58.5, 60.5, 60.5 (427); no lagging 20.0, 24.5, 30.5, 36.5, 43.0, 47.5, 52.5, 52.5, 51.0 (532).
   - Water, off at 10 min (28 800 J): lagged 20.0, 20.5, 21.0, 22.0, 23.0, 23.0, 24.0, 24.0, 25.0, 26.0, 26.5, 27.0, 27.0 (4110); no lagging 20.0, 20.5, 21.0, 21.5, 22.5, 23.0, 24.0, 24.0, 25.0, 26.0, 26.5, 26.5, 26.5 (4430).
+- **7.6 `penetrating-power.html?show=measure`** (batch 11, 13 Nov 2026) `&src=a|b|g|x|y` (no src: all the sources show; with it, the Source choice is “No source” and that one source). The student chooses the source and the absorber freely, presses Count for 1 minute and reads the counter when its timer stops at 60 s; the distance is read from the rule along the bench (zero at the source, a mark every centimetre) and the GM tube can be dragged. No radiation is drawn, and there are no reading boxes, table, working or conclusion. A setup counted again gives the same count; the three background counts come round in turn. These are the Experiment mode's own first counts, so Do Experiment and Show Experiment agree.
+  - Background (No source), counts 1, 2, 3: 22, 32, 34 (mean 29.3; a fourth count repeats the first).
+  - At 3 cm, with no absorber, paper, 5 mm aluminium, 2 cm lead: alpha 1907, 27, 22, 27 · beta 1557, 1419, 36, 26 · gamma 597, 619, 561, 211 · source X 1849, 329, 316, 111 · source Y 1480, 1349, 247, 86. (X is alpha + gamma, Y is beta + gamma.)
+  - Corrected with the mean of 29.3, the stopped counts come out a little below zero (alpha: −2.3, −7.3, −2.3; beta through lead −3.3): the practical page should accept them and say they are background. Gamma through paper (619) is higher than with no absorber (597): random scatter, worth a question.
+  - No absorber, tube at 1, 2, 3 … 8 cm: alpha 7242, 4043, 1907, 906, 178, 27, 18, 23 (its range in air is about 5 cm); beta 5956, 3485, 1557, 859, 569, 399, 288, 255. With the lead in, the tube cannot come closer than 3 cm.
 
 ## 5c rebuild: 3.17, 3.19, 3.25P, 3.27P, 5.11P, 5.14P (13 Nov 2026)
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Alpha, Beta and Gamma in Fields Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Fire alpha, beta and gamma through a magnetic or electric field and see which way each bends, and why. IAL and IB extras: r = p/BQ and the electric field.">
+<meta name="description" content="Interactive physics animation. Fire alpha, beta and gamma through a magnetic or electric field and see which way each bends, and why. Questions: click the path each one takes, then fire the beam. IAL and IB extras: r = p/BQ and the electric field.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -23,6 +23,7 @@
     --font-display:'Big Shoulders',system-ui,sans-serif;
     --font-body:'IBM Plex Sans',system-ui,sans-serif;
     --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    /* solid kit colours */ --glass:#9fb4c8; --glass-in:#f4f8fb; --thermo:#f3f6fa; --thread:#d7261e; --steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --wood-f:#c99e6a; --wood-t:#e3c08f; --wood-s:#9c7444; --case:#3f4a5e; 
     color-scheme:light;
   }
   @media (prefers-color-scheme: dark){
@@ -37,7 +38,8 @@
       --topic:#a3d65c; --topic-soft:#1f2e12;
       --alpha:#ff7a7a; --beta:#7da3ff; --gamma:#c39bff;
       --lead:#a7aebb; --alu:#7d8592;
-      color-scheme:dark;
+      /* solid kit colours */ --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f; --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --case:#56617a; 
+    color-scheme:dark;
     }
   }
   :root[data-theme="dark"]{
@@ -51,6 +53,7 @@
     --topic:#a3d65c; --topic-soft:#1f2e12;
     --alpha:#ff7a7a; --beta:#7da3ff; --gamma:#c39bff;
     --lead:#a7aebb; --alu:#7d8592;
+    /* solid kit colours */ --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f; --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --case:#56617a; 
     color-scheme:dark;
   }
 
@@ -117,7 +120,8 @@
   .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
   .stat.hi strong{color:var(--topic);}
   .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
-  .note b{color:var(--topic);}
+  .note b{color:var(--topic);} .note b.bad{color:var(--bad);}
+  @media (max-height:700px) and (min-width:861px){ .side{gap:9px;} .side .seg:not(.mode) button{min-height:38px;padding-block:5px;} .note{font-size:14px;line-height:1.45;padding:8px 11px;min-height:0;} }
   .ta{color:var(--alpha);font-weight:600;} .tb{color:var(--beta);font-weight:600;} .tg{color:var(--gamma);font-weight:600;}
 
   details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
@@ -152,6 +156,9 @@
   .embed .home-link,.embed .page-head{display:none;}
   .embed .view{max-height:460px;}
 
+  .stage.predict .ex-only{display:none!important;} .stage:not(.predict) .pq-only{display:none!important;}
+  .pick{cursor:pointer;} .pick:focus{outline:none;} .pick .ring{stroke:transparent;} .pick:focus-visible .ring{stroke:var(--accent);}
+  .pick.locked{cursor:default;}
 </style>
 <style id="choice-kit">
 /* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
@@ -280,21 +287,24 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="rf-svg" viewBox="0 0 600 300" role="img" aria-label="Alpha, beta and gamma radiation from a source in a lead block pass through a magnetic or electric field. Alpha and beta bend opposite ways; gamma goes straight on."></svg>
+      <svg class="view" id="rf-svg" viewBox="0 0 600 300" role="group" aria-label="Alpha, beta and gamma radiation from a source in a lead block pass through a magnetic or electric field. Alpha and beta bend opposite ways; gamma goes straight on. In Questions, the lettered paths are buttons."><g id="rf-main"></g><g id="rf-picks"></g></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="rf-play" type="button">&#9654; Fire</button>
-          <button class="btn" id="rf-reset" type="button">&#8634; Reset</button>
+          <button class="btn pq-only" id="rf-newq" type="button">New question</button>
+          <button class="btn ex-only" id="rf-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="rf-slow" type="button" aria-pressed="false">Slow motion</button>
-          <button class="btn" id="rf-true" type="button" aria-pressed="false" title="Draw the alpha path at its real curvature (it is drawn 20 times more curved otherwise)">True scale for &alpha;</button>
+          <button class="btn ex-only" id="rf-true" type="button" aria-pressed="false" title="Draw the alpha path at its real curvature (it is drawn 20 times more curved otherwise)">True scale for &alpha;</button>
+          <button class="btn to-q" type="button" data-mode="rf-mode" hidden>Try the questions &rarr;</button>
         </div>
-        <div class="sliders">
+        <div class="sliders ex-only">
           <div><label class="lab" for="rf-s"><span id="rf-sl">Magnetic flux density, B</span> <output id="rf-so"></output></label><input type="range" id="rf-s" min="0.02" max="0.3" step="0.01" value="0.1"></div>
         </div>
       </div>
     </div>
     <div class="side">
-      <div class="cgrid">
+      <div class="seg tabs mode" id="rf-mode" role="group" aria-label="Explore or questions"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
+      <div class="cgrid ex-only">
         <span class="rowlab">Radiation</span>
         <div class="seg" id="rf-rad"><button type="button" data-v="a" aria-pressed="true">&alpha; alpha</button><button type="button" data-v="b" aria-pressed="true">&beta;&minus; beta</button><button type="button" data-v="g" aria-pressed="true">&gamma; gamma</button></div>
         <span class="rowlab">Magnetic</span>
@@ -305,13 +315,13 @@
         <div class="seg" id="rf-fn"><button type="button" data-v="none" aria-pressed="false">No field</button></div>
       </div>
       <p class="note" id="rf-note" aria-live="polite"></p>
-      <div class="stats">
+      <div class="stats ex-only">
         <div class="stat"><small>&alpha; bends</small><strong id="rf-sa" class="ta">&ndash;</strong></div>
         <div class="stat"><small>&beta; bends</small><strong id="rf-sb" class="tb">&ndash;</strong></div>
         <div class="stat"><small>&gamma; bends</small><strong id="rf-sg" class="tg">&ndash;</strong></div>
         <div class="stat hi"><small id="rf-sfl">Field</small><strong id="rf-sf">&ndash;</strong></div>
       </div>
-      <details class="working">
+      <details class="working ex-only">
         <summary>Show working</summary>
         <div class="eq" id="rf-eq1"></div>
         <div class="eq" id="rf-eq2"></div>
@@ -378,8 +388,57 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     return {pick:pick, value:value};
   }
   function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
-  function txt(x,y,s,o){ o=o||{}; return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||11)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
-  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+(+x1).toFixed(1)+'" y1="'+(+y1).toFixed(1)+'" x2="'+(+x2).toFixed(1)+'" y2="'+(+y2).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||1.5)+'"'+(extra||'')+'/>'; }
+  // ---- solid kit (the same block is on every page that names it; see tools/ANIMATION-STYLE.md) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 0:55)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
   // A small seeded random number generator (mulberry32), so the same setup gives the same readings.
   function rng(seed){ var a = seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
   // A Poisson count with mean m (Knuth for small m, a normal approximation for large m)
@@ -405,18 +464,20 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   var A_M=6.64e-27, A_Q=2*E, A_V=Math.sqrt(2*5.0e6*E/A_M), A_P=A_M*A_V;
   var B_PS=[1.5e-22, 2.5e-22, 3.5e-22, 5.0e-22, 6.5e-22, 8.0e-22], B_TYP=5.0e-22;
   // KS4 shows one β path (a typical momentum); KS5 shows the fan of β energies
-  function bps(){ return ks5() ? B_PS : [B_TYP]; }
+  function bps(){ return ks5() && MODE!=='predict' ? B_PS : [B_TYP]; }
   function bv(p){ var en=Math.sqrt(p*p*C*C+ME*ME*C*C*C*C); return p*C*C/en; }   // speed of a beta particle (relativistic)
 
-  var svg=$('#rf-svg'), playBtn=$('#rf-play'), slowBtn=$('#rf-slow'), trueBtn=$('#rf-true'), sIn=$('#rf-s');
+  var MODE='explore', Q=null;
+  var svg=$('#rf-svg'), mainG=$('#rf-main'), picksG=$('#rf-picks'), playBtn=$('#rf-play'), slowBtn=$('#rf-slow'), trueBtn=$('#rf-true'), sIn=$('#rf-s');
   var field='min';
-  function pickField(v){ field=v; ['#rf-fm','#rf-fe','#rf-fn'].forEach(function(s){ Array.prototype.forEach.call($(s).querySelectorAll('button'), function(b){ b.setAttribute('aria-pressed', String(b.dataset.v===v)); }); }); setupSlider(); reset(); }
+  function showField(v){ field=v; ['#rf-fm','#rf-fe','#rf-fn'].forEach(function(s){ Array.prototype.forEach.call($(s).querySelectorAll('button'), function(b){ b.setAttribute('aria-pressed', String(b.dataset.v===v)); }); }); setupSlider(); }
+  function pickField(v){ showField(v); reset(); }
   ['#rf-fm','#rf-fe','#rf-fn'].forEach(function(s){ $(s).addEventListener('click', function(e){ var b=e.target.closest('button'); if(b) pickField(b.dataset.v); }); });
   $('#rf-rad').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; b.setAttribute('aria-pressed', String(!pressed(b))); reset(); });
   function on(k){ return pressed($('#rf-rad [data-v="'+k+'"]')); }
   function magnetic(){ return field==='min'||field==='mout'; }
   function electric(){ return field==='etop'||field==='ebot'; }
-  function trueScale(){ return ks5() && pressed(trueBtn); }
+  function trueScale(){ return ks5() && MODE!=='predict' && pressed(trueBtn); }
   var levelSeg=null;
   function ks5(){ return !!levelSeg && levelSeg.value()!=='ks4'; }
   function slowOn(){ return pressed(slowBtn); }
@@ -460,10 +521,11 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   }
 
   // ---- the run: a stream of particles for 8 s, then the last ones finish their paths (it always ends)
-  var parts=[], t=0, running=false, started=false, spawn=0, raf=0, last=0, EMIT_T=8, SPEED=240;
+  var parts=[], t=0, running=false, started=false, spawn=0, raf=0, last=0, SPEED=240;
+  function emitT(){ return MODE==='predict' ? 2.4 : 8; }      // a question's run is short
   function step(dt){
     t+=dt;
-    if(t<EMIT_T){ spawn+=dt; while(spawn>=0.14){ spawn-=0.14;
+    if(t<emitT()){ spawn+=dt; while(spawn>=0.14){ spawn-=0.14;
       if(PATHS.a) parts.push({k:'a', s:0});
       if(PATHS.g) parts.push({k:'g', s:0});
       if(on('b')) parts.push({k:'b'+Math.floor(Math.random()*bps().length), s:0});
@@ -474,14 +536,14 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       P.reach=Math.max(P.reach, Math.min(p.s, P.pts.length-1));
       return p.s<P.pts.length-1;
     });
-    if(t>=EMIT_T && !parts.length) return true;
+    if(t>=emitT() && !parts.length) return true;
     return false;
   }
 
   function col(k){ return k==='a'?'var(--alpha)':(k==='g'?'var(--gamma)':'var(--beta)'); }
   function at(P, s){ var i=Math.floor(s), f=s-i, a=P.pts[i], b=P.pts[Math.min(i+1,P.pts.length-1)]; return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f]; }
   function draw(){
-    var g='';
+    var g='', q=MODE==='predict' ? Q : null;
     // field region
     if(magnetic()){
       g+='<rect x="'+FX0+'" y="16" width="'+(FX1-FX0)+'" height="276" rx="6" fill="var(--topic-soft)" opacity="0.55"/>';
@@ -489,43 +551,144 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         if(field==='min'){ var d=4; g+='<path d="M'+(fx-d)+','+(fy-d)+' L'+(fx+d)+','+(fy+d)+' M'+(fx+d)+','+(fy-d)+' L'+(fx-d)+','+(fy+d)+'" stroke="var(--ink-faint)" stroke-width="1.4"/>'; }
         else g+='<circle cx="'+fx+'" cy="'+fy+'" r="4.5" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/><circle cx="'+fx+'" cy="'+fy+'" r="1.4" fill="var(--ink-faint)"/>';
       }
-      g+=txt(FX0, 9, 'magnetic field '+(field==='min'?'into':'out of')+' the page', {fs:10.5, c:'var(--ink-faint)'});
+      g+=txt(FX0, 11, 'magnetic field '+(field==='min'?'into':'out of')+' the page', {fs:11.5, c:'var(--ink)'});
     } else if(electric()){
       var topPos = field==='etop';
       for(var ex=FX0+30; ex<FX1; ex+=60){ var y1=topPos?PY0+14:PY1-14, y2=topPos?PY1-14:PY0+14;
         g+=ln(ex, y1, ex, y2, 'var(--ink-faint)', 1, ' stroke-dasharray="2 5"');
         var ay=topPos?y2:y2; g+='<path d="M'+(ex-4)+','+(ay+(topPos?-7:7))+' L'+ex+','+ay+' L'+(ex+4)+','+(ay+(topPos?-7:7))+'" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>';
       }
-      [[PY0-8, topPos], [PY1, !topPos]].forEach(function(pl){
-        g+='<rect x="'+FX0+'" y="'+pl[0]+'" width="'+(FX1-FX0)+'" height="8" rx="2" fill="'+(pl[1]?'var(--alpha)':'var(--beta)')+'" opacity="0.8"/>';
-        g+=txt(FX1+8, pl[0]+8, pl[1]?'+':'−', {fs:16, w:600, c:pl[1]?'var(--alpha)':'var(--beta)'});
+      // the two plates, drawn solid: + red, − blue
+      [[PY0-9, topPos], [PY1, !topPos]].forEach(function(pl){
+        g+=box(FX0, pl[0], FX1-FX0, 9, 6, -4, pl[1]?'var(--alpha)':'var(--beta)');
+        g+=txt(FX1+12, pl[0]+10, pl[1]?'+':'−', {fs:17, w:600, c:pl[1]?'var(--alpha)':'var(--beta)'});
       });
-      g+=txt(FX0, 292, sn(V()/1000,0)+' kV across plates 5.5 cm apart', {fs:10.5, c:'var(--ink-faint)'});
+      g+=txt(FX0, 292, (q ? 'electric field between the plates' : sn(V()/1000,0)+' kV across plates 5.5 cm apart'), {fs:11.5, c:'var(--ink)'});
     }
-    // source in a lead block
-    g+='<rect x="8" y="118" width="54" height="64" rx="4" fill="var(--lead)"/><rect x="20" y="'+(SRC_Y-6)+'" width="42" height="12" fill="var(--panel)"/>';
-    g+='<circle cx="26" cy="'+SRC_Y+'" r="5" fill="var(--accent)"/>'+txt(35, 112, 'source', {a:'middle', fs:10.5});
-    g+=txt(35, 196, 'lead', {a:'middle', fs:10, c:'var(--ink-faint)'});
-    g+=txt(FX1, 9, 'in a vacuum', {a:'end', fs:10, c:'var(--ink-faint)'});
+    // source in a lead block with a narrow slit, drawn solid
+    g+=box(8, 118, 52, 64, 7, -5, 'var(--lead)');
+    g+=rect(22, SRC_Y-5, 38, 10, 'var(--panel)')+rect(22, SRC_Y-5, 38, 2.5, '#000', ' opacity=".25"')+pg([[60,SRC_Y-5],[67,SRC_Y-10],[67,SRC_Y],[60,SRC_Y+5]], 'var(--panel)', ' opacity=".55"');
+    g+='<circle cx="27" cy="'+SRC_Y+'" r="4.6" fill="var(--accent)"/>'+txt(37, 104, 'source', {a:'middle', fs:11.5, c:'var(--ink)'});
+    g+=txt(34, 198, 'lead block', {a:'middle', fs:11.5});
+    g+=txt(FX1, 11, 'in a vacuum', {a:'end', fs:11.5});
+    // a question: the beam as far as the field, and the question in clear space under the source
+    if(q){
+      if(q.kind===1 && !started){ var bc=col(q.rad);
+        g+=ln(62, SRC_Y, FX0-9, SRC_Y, bc, 2.6)+pg([[FX0,SRC_Y],[FX0-11,SRC_Y-5],[FX0-11,SRC_Y+5]], bc);
+        g+=txt(106, SRC_Y-9, RAD[q.rad].sym, {a:'middle', fs:13, w:600, c:bc, halo:1}); }
+      var ql=wrapLines(q.text, 20), yq=222;
+      ql.forEach(function(L_, i){ g+=txt(6, yq+i*14.5, L_, {fs:11.5, c:'var(--ink)', w:i?400:600}); });
+      if(q.done) g+=txt(6, yq+ql.length*14.5+6, (q.ok?'✓ ':'✗ ')+'It is '+q.ans+'.', {fs:13.5, w:700, c:q.ok?'var(--good)':'var(--bad)'});
+    }
     // paths travelled so far, then the particles
     Object.keys(PATHS).forEach(function(k){
       var P=PATHS[k], n=Math.floor(P.reach); if(n<1) return;
-      var pts=P.pts.slice(0,n+1).map(function(q){ return q[0].toFixed(1)+','+q[1].toFixed(1); }).join(' ');
-      g+='<polyline points="'+pts+'" fill="none" stroke="'+col(k[0])+'" stroke-width="'+(k[0]==='b'&&ks5()?1.3:2)+'" opacity="0.5"/>';
+      var pts=P.pts.slice(0,n+1).map(function(q_){ return q_[0].toFixed(1)+','+q_[1].toFixed(1); }).join(' ');
+      g+='<polyline points="'+pts+'" fill="none" stroke="'+col(k[0])+'" stroke-width="'+(k[0]==='b'&&bps().length>1?1.3:2.2)+'" opacity="0.55"/>';
     });
     parts.forEach(function(p){ var P=PATHS[p.k], xy=at(P,p.s);
-      g+='<circle cx="'+xy[0].toFixed(1)+'" cy="'+xy[1].toFixed(1)+'" r="'+(p.k==='a'?4.2:(p.k==='g'?2.6:2.4))+'" fill="'+col(p.k[0])+'"/>';
+      g+='<circle cx="'+xy[0].toFixed(1)+'" cy="'+xy[1].toFixed(1)+'" r="'+(p.k==='a'?4.4:(p.k==='g'?2.8:2.6))+'" fill="'+col(p.k[0])+'"/>';
     });
     // labels at the ends of the finished paths
     function endLabel(k, s){ var P=PATHS[k]; if(!P || P.reach<P.pts.length-1.5) return; var e=P.pts[P.pts.length-1];
       var x=Math.min(588, Math.max(70, e[0]-6)), y=Math.min(282, Math.max(30, e[1]+(e[1]<150?14:-6)));
-      g+=txt(x, y, s, {a:'end', fs:12, w:600, c:col(k[0])}); }
+      if(q && q.kind===2){ var m_=P.pts[Math.max(0, P.pts.length-14)]; x=m_[0]; y=m_[1]+(k==='a' ? -8 : 17); }
+      g+=txt(x, y, s, {a:'end', fs:13, w:600, c:col(k[0]), halo:1}); }
     endLabel('a', magnetic() && !trueScale() ? 'α (bend × 20)' : 'α');
     endLabel('g', 'γ');
     endLabel('b'+(bps().length-1), 'β');
-    if(running && slowOn()) g+=txt(592, 26, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
-    svg.innerHTML=g;
+    if(running && slowOn()) g+=txt(592, 26, 'slow motion', {a:'end', fs:12, c:'var(--accent)'});
+    mainG.innerHTML=g;
     readings();
+  }
+
+  // ---- Questions: a question is dealt in the diagram, the student clicks a lettered path, then Go fires the beam.
+  // Two kinds, from the 4PH1 charged-particle questions (a shaded field region, the field given in words, and the
+  // alpha / beta / gamma paths question): 1 one kind of radiation reaches the field: which way does it go?
+  // 2 the three paths are drawn: which one is the alpha (or beta, or gamma)?  The picture stays as dealt.
+  var RAD={a:{sym:'α', name:'alpha particles'}, b:{sym:'β⁻', name:'beta particles'}, g:{sym:'γ', name:'gamma rays'}};
+  var lastQ='', right=0, tried=0, EX=null;
+  function setRad(o){ ['a','b','g'].forEach(function(k){ $('#rf-rad [data-v="'+k+'"]').setAttribute('aria-pressed', String(!!o[k])); }); }
+  function dirOf(rad, f){                                   // which way a path bends: 'up', 'down' or 'straight'
+    if(rad==='g' || f==='none') return 'straight';
+    var aUp = f==='min' || f==='ebot';                      // alpha: up when the field is into the page, or the + plate is below
+    return (rad==='a') === aUp ? 'up' : 'down';
+  }
+  function newQ(){
+    var fs=ks5() ? ['min','mout','etop','ebot'] : ['min','mout'], q, key;
+    do{ q={kind:Math.random()<0.5?1:2, field:fs[Math.floor(Math.random()*fs.length)], rad:'abg'.charAt(Math.floor(Math.random()*3))}; key=q.kind+q.field+q.rad; } while(key===lastQ);
+    lastQ=key; q.pick=null; q.done=false; q.locked=false; Q=q;
+    stop(); started=false; t=0; spawn=0; parts=[];
+    lastMag=0.1; lastV=200; showField(q.field);
+    setRad(q.kind===1 ? (function(){ var o={}; o[q.rad]=1; return o; })() : {a:1, b:1, g:1});
+    build();
+    if(q.kind===1){
+      q.ans={up:'A', straight:'B', down:'C'}[dirOf(q.rad, q.field)];
+      q.text='Which way do the '+RAD[q.rad].name+' go in the field? Click A, B or C.';
+    } else {
+      // letter the three finished paths from the top of the picture down
+      var ks=['a','g','b0'].sort(function(m,n){ return endY(m)-endY(n); });
+      q.paths={}; ks.forEach(function(k,i){ q.paths['ABC'.charAt(i)]=k; if(k.charAt(0)===q.rad) q.ans='ABC'.charAt(i); });
+      q.text='Which path do the '+RAD[q.rad].name+' take? Click A, B or C.';
+    }
+    drawPicks(); draw();
+  }
+  function endY(k){ var P=PATHS[k].pts; return P[P.length-1][1]; }
+  function pickBody(k, body, lx, ly){
+    var q=Q, st = q.done ? (k===q.ans ? 'good' : (k===q.pick ? 'bad' : '')) : (k===q.pick ? 'on' : '');
+    var c = st==='good' ? 'var(--good)' : st==='bad' ? 'var(--bad)' : st==='on' ? 'var(--accent)' : 'var(--ink)';
+    return '<g class="pick'+(q.locked?' locked':'')+'" data-pick="'+k+'" tabindex="0" role="button" aria-label="Path '+k+(k===q.pick?', your choice':'')+(q.done && k===q.ans?', the right answer':'')+'" style="color:'+c+'">'+body+
+      '<circle class="ring" cx="'+f1(lx)+'" cy="'+f1(ly)+'" r="14" fill="none" stroke-width="3"/>'+
+      '<circle cx="'+f1(lx)+'" cy="'+f1(ly)+'" r="10.5" fill="'+(st?c:'var(--panel)')+'" stroke="'+c+'" stroke-width="1.6"/>'+
+      txt(lx, ly+4.6, k, {a:'middle', fs:13, w:700, c:st?'var(--panel)':'var(--ink)'})+
+      (q.done && st ? txt(lx+15, ly+5.5, st==='good'?'✓':'✗', {fs:16, w:700, c:c, halo:1}) : '')+'</g>';
+  }
+  function drawPicks(){
+    var q=MODE==='predict' ? Q : null, g='';
+    if(!q){ picksG.innerHTML=''; return; }
+    if(q.kind===1){
+      // three dashed paths from where the beam meets the field: A curves up, B goes straight on, C curves down
+      [['A',-1],['B',0],['C',1]].forEach(function(o){
+        var R=190, pts=[], u, th=0, x=FX0, y=SRC_Y;
+        for(u=0;u<=150;u+=6){ th=o[1]*u/R; x=FX0+(o[1]?R*Math.sin(u/R):u); y=SRC_Y+o[1]*R*(1-Math.cos(u/R)); pts.push([x,y]); }
+        var c=Math.cos(th), sn_=Math.sin(th);
+        var body='<polyline points="'+pts.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' ')+'" fill="none" stroke="transparent" stroke-width="18"/>'+
+          '<polyline points="'+pts.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' ')+'" fill="none" stroke="currentColor" stroke-width="2.2" stroke-dasharray="7 5" opacity="'+(q.locked?0.45:1)+'"/>'+
+          '<path d="M'+f1(x+c*11)+','+f1(y+sn_*11)+' L'+f1(x-sn_*5.5)+','+f1(y+c*5.5)+' L'+f1(x+sn_*5.5)+','+f1(y-c*5.5)+' z" fill="currentColor" opacity="'+(q.locked?0.45:1)+'"/>';
+        g+=pickBody(o[0], body, x+c*27, y+sn_*27);
+      });
+    } else {
+      // where each letter goes: just past the end of its path, moved apart when two paths end close together
+      var pos=['A','B','C'].map(function(L_){ var P=PATHS[q.paths[L_]].pts, e=P[P.length-1];
+        var lx=e[0]+16, ly=Math.max(28, Math.min(274, e[1]));
+        if(e[1]<20 || e[1]>280) lx=e[0]+22;
+        return {L:L_, e:e, lx:Math.min(580, lx), ly:ly}; });
+      for(var pass=0; pass<4; pass++) for(var i=1;i<3;i++){ var a=pos[i-1], b=pos[i];
+        if(Math.abs(a.lx-b.lx)<28 && b.ly-a.ly<27){ var mid=(a.ly+b.ly)/2; a.ly=mid-13.5; b.ly=mid+13.5; } }
+      pos.forEach(function(o){ o.ly=Math.max(16, Math.min(284, o.ly)); });
+      pos.forEach(function(o){
+        var L_=o.L, P=PATHS[q.paths[L_]].pts, e=o.e, str=P.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '), lx=o.lx, ly=o.ly;
+        var body='<polyline points="'+str+'" fill="none" stroke="transparent" stroke-width="16"/>'+
+          '<polyline points="'+str+'" fill="none" stroke="'+(q.pick===L_ || (q.done && q.ans===L_) ? 'currentColor' : 'var(--ink-soft)')+'" stroke-width="'+(q.pick===L_?3:2)+'" opacity="'+(q.locked?0.3:1)+'"/>'+
+          (Math.abs(ly-e[1])>3 ? ln(e[0], e[1], lx-9, ly, 'var(--ink-faint)', 1) : '');
+        g+=pickBody(L_, body, lx, ly);
+      });
+    }
+    setKeepFocus(picksG, g);
+  }
+  onPick(svg, function(k){ if(MODE!=='predict' || !Q || Q.locked) return; Q.pick=k; drawPicks(); draw(); });
+  function explain(q){
+    var d=dirOf(q.rad, q.field), mag=q.field==='min'||q.field==='mout', e;
+    var A='<span class="ta">Alpha</span>', Bt='<span class="tb">Beta</span>', G='<span class="tg">Gamma</span>';
+    if(q.kind===1){
+      if(q.rad==='g') e=G+' rays have no charge, so the field puts no force on them: they go <b>straight on</b>.';
+      else if(mag) e = q.rad==='a' ? A+' particles are positive, so they are a current in the direction they move. Fleming’s left-hand rule gives a force <b>'+d+'</b> the page.'
+                                 : Bt+' particles are negative, so they are a current the opposite way to their motion. Fleming’s left-hand rule gives a force <b>'+d+'</b> the page, the opposite way to alpha.';
+      else e = q.rad==='a' ? A+' particles are positive, so they are pulled towards the − plate: they bend <b>'+d+'</b>.' : Bt+' particles are negative, so they are pulled towards the + plate: they bend <b>'+d+'</b>.';
+    } else {
+      e=G+' has no charge, so its path is the straight one. '+A+' and '+Bt.toLowerCase().replace('beta','beta')+' have opposite charges, so they bend opposite ways: alpha '+dirOf('a',q.field)+', beta '+dirOf('b',q.field)+' ('+(mag?'Fleming’s left-hand rule':'alpha towards the − plate, beta towards the + plate')+'). Beta is far lighter, so its path curves much more.';
+    }
+    return e;
   }
 
   var lastNote='';
@@ -568,28 +731,41 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     $('#rf-eq1').innerHTML=FR(w1); $('#rf-eq2').innerHTML=FR(w2); $('#rf-eq2').hidden=!w2; $('#rf-eq3').textContent=w3;
 
     var note;
+    if(MODE==='predict' && Q){
+      var q=Q, sc=tried ? ' <b>'+right+' of '+tried+' right.</b>' : '';
+      if(q.done) note=(q.ok ? '<b>Right: '+q.ans+'.</b> ' : '<b class="bad">Not quite: it is '+q.ans+'.</b> ')+explain(q)+sc+' Press <b>New question</b>.';
+      else if(running) note='Watch where the radiation goes in the field.';
+      else if(q.pick) note=q.text.replace(' Click A, B or C.','')+' You chose <b>'+q.pick+'</b>. Press <b>Go</b> to fire the beam, or click another path.';
+      else note='<b>'+q.text.replace(' Click A, B or C.','')+'</b> Click one of the lettered paths in the picture, then press <b>Go</b>.'+(q.kind===2 && magnetic() ? ' (The alpha path is drawn 20 times more curved than it really is.)' : '');
+      if(note!==lastNote){ $('#rf-note').innerHTML=note; lastNote=note; }
+      playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Go';
+      playBtn.disabled = !q.pick || q.done;
+      return;
+    }
+    playBtn.disabled=false;
     if(!on('a')&&!on('b')&&!on('g')) note='Choose at least one kind of radiation.';
     else if(!started) note='The source is in a lead block with a narrow slit, so the radiation comes out as a thin beam. Choose a field and press <b>Fire</b>.';
     else if(mag) note='Moving charges in a magnetic field feel a force at right angles to their motion (Fleming’s left-hand rule; β⁻ is a current the opposite way). <span class="ta">α</span> (+2e) bends '+aDir+', <span class="tb">β</span> (−e) bends '+bDir+'. <span class="tg">γ</span> has no charge, so it goes straight on.';
     else if(ele) note=V()===0?'No voltage, so no field between the plates: nothing bends.':'The electric field pushes positive charges towards the − plate: <span class="ta">α</span> bends '+aDir+'. <span class="tb">β</span> is negative, so it bends '+bDir+', towards the + plate. <span class="tg">γ</span> has no charge and goes straight on.';
     else note='No field: alpha, beta and gamma all go straight on, so you cannot tell them apart this way.';
-    if(started && !running && t>0) note=(t>=EMIT_T && !parts.length ? 'Done. ' : 'Paused. ')+note;
+    if(started && !running && t>0) note=(t>=emitT() && !parts.length ? 'Done. ' : 'Paused. ')+note;
     if(note!==lastNote){ $('#rf-note').innerHTML=note; lastNote=note; }
-    playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : (started && t>=EMIT_T && !parts.length ? '&#8634; Fire again' : (started ? '&#9654; Play' : '&#9654; Fire'));
+    playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : (started && t>=emitT() && !parts.length ? '&#8634; Fire again' : (started ? '&#9654; Play' : '&#9654; Fire'));
   }
 
   function stop(){ running=false; cancelAnimationFrame(raf); }
   function frame(now){
     if(!running) return;
     var real=Math.min(0.05,(now-last)/1000); last=now;
-    if(step(real*(slowOn()?0.3:1))) stop();
+    if(step(real*(slowOn()?0.3:1))){ stop(); if(MODE==='predict' && Q && !Q.done){ Q.done=true; Q.ok=Q.pick===Q.ans; tried++; if(Q.ok) right++; drawPicks(); } }
     draw(); if(running) raf=requestAnimationFrame(frame);
   }
   function run(){
-    if(started && t>=EMIT_T && !parts.length){ t=0; spawn=0; }
+    if(started && t>=emitT() && !parts.length){ t=0; spawn=0; }
+    if(MODE==='predict' && Q){ if(!Q.pick || Q.done) return; if(!Q.locked){ Q.locked=true; drawPicks(); } }
     started=true; running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw();
   }
-  function reset(){ stop(); started=false; t=0; spawn=0; parts=[]; build(); draw(); }
+  function reset(){ if(MODE==='predict'){ newQ(); return; } stop(); started=false; t=0; spawn=0; parts=[]; build(); drawPicks(); draw(); }
 
   playBtn.addEventListener('click', function(){ if(running){ stop(); draw(); } else run(); });
   slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
@@ -605,9 +781,19 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   });
 
   levelSeg=segGroup($('#rf-level'), function(){ setupSlider(); reset(); });
+  var modeSeg=segGroup($('#rf-mode'), function(v){ setMode(v); });
+  function setMode(v){
+    if(v===MODE) return;
+    if(v==='predict') EX={field:field, mag:lastMag, volt:lastV, rad:{a:on('a'), b:on('b'), g:on('g')}};
+    MODE=v; $('.stage').classList.toggle('predict', v==='predict');
+    if(v==='predict'){ right=0; tried=0; newQ(); }
+    else { Q=null; lastNote=''; if(EX){ setRad(EX.rad); lastMag=EX.mag; lastV=EX.volt; showField(EX.field); } reset(); }
+  }
+  $('#rf-newq').addEventListener('click', newQ);
   watchEquals($('#rf-eq1')); watchEquals($('#rf-eq2'));
   if(PW_LEVEL==='ial'||PW_LEVEL==='ib') levelSeg.pick(PW_LEVEL);   // IAL and IB show the same deeper view
   setupSlider(); reset();
+  if(/[?&]show=predict\b/.test(location.search)){ modeSeg.pick('predict'); setMode('predict'); }
 })();
 </script><script id="choice-kit-js">
 /* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices".
