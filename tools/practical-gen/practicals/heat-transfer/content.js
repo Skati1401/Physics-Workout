@@ -268,6 +268,12 @@ function cansTable(rows,miss){
     {text:'None of them',why:'At 6 minutes it jumps 3.5 °C, then falls at 8 minutes. That breaks the steady pattern.'}
   ],explain:'The shiny can warms by about 1.0 °C every 2 minutes, so at 6 minutes it should be about 23.0 °C. Perhaps the thermometer was read at the wrong angle or touched the side. Repeat the reading if you can, and leave it out of the line of best fit.'});
 }
+{ /* Elena's Calculate on the left, the two Predicts one above the other on the right (Alex, 13 Nov 2026) */
+  const acts=$('#panel-results .acts'),by=t=>[...acts.querySelectorAll(':scope>.act')].find(a=>a.dataset.title===t);
+  const calc=by('Elena’s two cans'),p1=by('Slowing down'),p2=by('An anomalous result');
+  const pair=mk('div','act-pair'),stack=mk('div','act-stack');
+  acts.insertBefore(pair,calc);pair.appendChild(calc);stack.appendChild(p1);stack.appendChild(p2);pair.appendChild(stack);
+}
 
 {
   const body=act('results','Calculate','Charlotte’s cooling cans','Charlotte fills a matt black can and a shiny can with the same volume of hot water. She reads the temperature of each every 2 minutes. One reading is missing.');
