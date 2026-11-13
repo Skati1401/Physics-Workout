@@ -27,6 +27,7 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 - [ ] **3e** Multi-step Workout for the Calculations & Graphs section: problems that chain two or three equations, often across units, based on past-paper questions from the IGCSE Question Index, marked step by step (Alex, 12 Nov 2026).
 - [ ] **3f** Graphs Workout for the Calculations & Graphs section (not yet: Alex, 12 Nov 2026). The draft `graphs.html` is the starting point.
 - [ ] **3g** Check Warm Up and Sum Up on the 24 workouts (12 Nov 2026): each Warm Up question and "By the end you can" list, and each Sum Up word box; and the 8 new Unit n Units and Key Terms pages (what to look at is in `tools/REVIEW.md`).
+- [ ] **3h** Check the interactive illusions page for the corridor display (`animations/illusions.html`, 13 Nov 2026; unpublished draft, no card): six illusions, opened by `#checker`, `#muller-lyer`, `#ebbinghaus`, `#munker`, `#cafe-wall`, `#shepard`. If it is good, point the Section 4 sheets' QR codes at it (sheets 1, 2, 3, 8, 12, 13) in place of the Wikipedia links, and decide whether the other eight sheets get one. What to check is in `tools/REVIEW.md`.
 
 ## 4. Build: workouts (IGCSE, spec order)
 
