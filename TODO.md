@@ -16,19 +16,12 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 ## 3. Alex to review
 
-- [ ] **3a** Check the 20-minute review of all 21 IGCSE workouts (4 Nov 2026): every page cut to about 20 minutes of content (477 → 300 activities), Quick check cards instead of single Predicts, memory games replaced by one crossword per unit. What changed on each page is in `tools/REVIEW.md` (rows starting "4 Nov 2026 20-minute review"). Calculate cards were then put back to 3 questions (Alex, 4 Nov 2026), so pages may run a little over 20 minutes, never 30.
-
 101 pages are 🔍 To review and 1 is ❔ Not recorded in `tools/REVIEW.md` (11 Nov 2026). Go through that table; only Alex marks a page ✅.
 
-- [ ] **3b** Check Units 7 and 8 (7a `radioactivity.html`, 7b `fission-and-fusion.html`, 8a `universe-and-stars.html`, 8b `cosmology.html`; what to look at is in `tools/REVIEW.md`). Draft tags clear themselves once the page is ✅ in `tools/REVIEW.md` (reviewer mode) (added 4 Nov 2026).
-- [ ] **3c** Check Unit 3 (3a `waves.html`, 3b `light-and-sound.html`, 3c `sound.html`; what to look at is in `tools/REVIEW.md`). Draft tags clear themselves once the page is ✅ in `tools/REVIEW.md` (reviewer mode) (added 4 Nov 2026).
 - [x] **3d** Calculations & Graphs section on `igcse.html` below Core Practicals (12 Nov 2026, Alex): `calculations.html` rebuilt as an equation chooser and published (card added, `noindex` off). Alex to check it (`tools/REVIEW.md`).
 - [x] **3d2** Calculation Generator Workout (`calculation-generator.html`, 12 Nov 2026, Alex): its own generated questions from the ticked equations, with Rearranging, Unit conversions, Multipliers and Significant figures options. Alex to check it (`tools/REVIEW.md`).
 - [x] **3e** Multi-step Workout for the Calculations & Graphs section: problems that chain two or three equations, often across units, based on past-paper questions from the IGCSE Question Index, marked step by step (Alex, 12 Nov 2026). Done 13 Nov 2026: `multi-step.html` published (card added). Alex to check it (`tools/REVIEW.md`).
 - [ ] **3f** Graphs Workout for the Calculations & Graphs section (not yet: Alex, 12 Nov 2026). The draft `graphs.html` is the starting point.
-- [ ] **3g** Check Warm Up and Sum Up on the 24 workouts (12 Nov 2026): each Warm Up question and "By the end you can" list, and each Sum Up word box; and the 8 new Unit n Units and Key Terms pages (what to look at is in `tools/REVIEW.md`).
-- [ ] **3h** Check the interactive illusions page for the corridor display (`animations/illusions.html`, 13 Nov 2026; one card on the new Extension animations list, `animations/extension.html`, which has a door on the front page): six illusions, opened by `#checker`, `#muller-lyer`, `#ebbinghaus`, `#munker`, `#cafe-wall`, `#shepard`. If it is good, point the Section 4 sheets' QR codes at it (sheets 1, 2, 3, 8, 12, 13) in place of the Wikipedia links, and decide whether the other eight sheets get one. What to check is in `tools/REVIEW.md`.
-- [ ] **3i** Check the two new Extension animations for the corridor display (13 Nov 2026): the dispersion view of `animations/refraction.html` (`?show=dispersion`) and `animations/sky-colour.html` (Blue Sky, Red Sunset). If they are good, they can be QR links on the Section 2 and Section 3 posters. What to check is in `tools/REVIEW.md`.
 
 ## 4. Build: workouts (IGCSE, spec order)
 
