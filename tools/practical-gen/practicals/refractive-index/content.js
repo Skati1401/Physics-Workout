@@ -205,7 +205,7 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
     {text:'One pair of angles always gives the wrong n',why:'One pair can give a good value, but one badly placed cross would spoil it.'},
     {text:'A graph does not need a protractor at all',why:'You still need a protractor to measure every angle you plot.'},
     {text:'A graph gives the unit of refractive index',why:'Refractive index has no unit: it is a ratio.'}
-  ],explain:'The line of best fit uses all the readings, so small random errors in each one average out, and an anomalous point stands out and can be left out. In an exam, “repeat and find the mean” on its own does not score: say what you repeat and why, or use the graph.'});
+  ],explain:'The line of best fit uses all the readings, so small random errors in each one average out, and an anomalous point stands out and can be left out. In an exam, a bare “repeat and average” does not score: say what you repeat (the readings at each angle of incidence) and what you average (the refractive index), or plot sin i against sin r and use the gradient.'});
 }
 
 /* ================= GRAPH ANALYSIS ================= */

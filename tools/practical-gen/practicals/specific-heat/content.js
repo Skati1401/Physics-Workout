@@ -164,7 +164,7 @@ setMethod(method);
     {text:'Yes: repeating always removes the errors',why:'Repeating averages out random errors, but energy lost to the surroundings makes every value too high.'},
     {text:'Yes: the block warms up more each time',why:'She starts from the same temperature each time. The losses are the same in every repeat.'},
     {text:'No: repeating makes the value more random',why:'Repeating makes the mean more reliable. It just cannot fix an error that is the same every time.'}
-  ],explain:'A mean of repeats is more reliable: it averages out random errors such as misreading the thermometer. But energy lost to the surroundings makes every value of c too high, so the mean is still too high. To get closer to 900 J/kg °C, cut the losses: thicker lagging, a lid on water.'});
+  ],explain:'A mean of repeats is more reliable: it averages out random errors such as misreading the thermometer, and mark schemes credit “repeat and find the mean” as an improvement. But energy lost to the surroundings makes every value of c too high, so the mean is still too high. To get closer to 900 J/kg °C, cut the losses: thicker lagging, a lid on water.'});
 }
 
 /* ================= DO THE EXPERIMENT ================= */
