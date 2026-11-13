@@ -28,6 +28,7 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 - [ ] **3f** Graphs Workout for the Calculations & Graphs section (not yet: Alex, 12 Nov 2026). The draft `graphs.html` is the starting point.
 - [ ] **3g** Check Warm Up and Sum Up on the 24 workouts (12 Nov 2026): each Warm Up question and "By the end you can" list, and each Sum Up word box; and the 8 new Unit n Units and Key Terms pages (what to look at is in `tools/REVIEW.md`).
 - [ ] **3h** Check the interactive illusions page for the corridor display (`animations/illusions.html`, 13 Nov 2026; one card on the new Extension animations list, `animations/extension.html`, which has a door on the front page): six illusions, opened by `#checker`, `#muller-lyer`, `#ebbinghaus`, `#munker`, `#cafe-wall`, `#shepard`. If it is good, point the Section 4 sheets' QR codes at it (sheets 1, 2, 3, 8, 12, 13) in place of the Wikipedia links, and decide whether the other eight sheets get one. What to check is in `tools/REVIEW.md`.
+- [ ] **3i** Check the two new Extension animations for the corridor display (13 Nov 2026): the dispersion view of `animations/refraction.html` (`?show=dispersion`) and `animations/sky-colour.html` (Blue Sky, Red Sunset). If they are good, they can be QR links on the Section 2 and Section 3 posters. What to check is in `tools/REVIEW.md`.
 
 ## 4. Build: workouts (IGCSE, spec order)
 

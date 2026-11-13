@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blue Sky, Red Sunset Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation beyond the exam specifications: why the sky is blue and sunsets are red. Drag the Sun down the sky and watch its path through the air lengthen, the blue light scatter out of the beam (scattering ∝ 1/λ⁴) and the colours of the Sun and the sky change. Then answer questions on the picture.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    /* instrument kit colours */ --cur:#7c3aed; --lead:#3a4352; --lead-hi:#7d8899; --lead-v:#8791a3; --case-f:#4a5464; --case-t:#687385; --case-s:#343c4a; --lcd:#d5dec8; --lcd-ink:#1d2a1f; --plug-r:#d94444; --plug-k:#262d3a; --insul:#262d3a;
+    --steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --wood-f:#c99e6a; --wood-t:#e3c08f; --wood-s:#9c7444; --brass:#c9a13b; --brass-hi:#f0d78a; --copper:#b8651b; --copper-hi:#e6a25c;
+    --glass:#9fb4c8; --glass-in:#f4f8fb; --rule-t:#f3e2ab; --rule-f:#d9c27e; --rule-ink:#5b4a1f; --ceramic:#e4e1d3; --thermo:#f3f6fa; --thread:#d7261e; --case:#3f4a5e;
+    --topic:#b45309;   --topic-soft:#fdecc8;
+    --hot:#dc2626;
+    --water:#d6e9fb;   --ice:#ffffff;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      /* instrument kit colours */ --cur:#c4a1ff; --lead:#566072; --lead-hi:#8e99ab; --lead-v:#8791a3; --case-f:#667083; --case-t:#8a94a6; --case-s:#4a5364; --lcd:#c6d0b8; --lcd-ink:#172018; --plug-r:#d95252; --plug-k:#0c1017; --insul:#0c1017;
+      --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --brass:#b8943a; --brass-hi:#e8cf86; --copper:#f0a35e; --copper-hi:#ffd0a0;
+      --glass:#7f97ad; --glass-in:#202938; --rule-t:#d9c88f; --rule-f:#b39f63; --rule-ink:#3d3214; --ceramic:#b9b6a6; --thermo:#dfe6ee; --thread:#e5392f; --case:#56617a;
+      --topic:#fbbf24; --topic-soft:#3a2a0c;
+      --hot:#f87171;
+      --water:#1c3a5a; --ice:#c9d6e6;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    /* instrument kit colours */ --cur:#c4a1ff; --lead:#566072; --lead-hi:#8e99ab; --lead-v:#8791a3; --case-f:#667083; --case-t:#8a94a6; --case-s:#4a5364; --lcd:#c6d0b8; --lcd-ink:#172018; --plug-r:#d95252; --plug-k:#0c1017; --insul:#0c1017;
+      --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --brass:#b8943a; --brass-hi:#e8cf86; --copper:#f0a35e; --copper-hi:#ffd0a0;
+      --glass:#7f97ad; --glass-in:#202938; --rule-t:#d9c88f; --rule-f:#b39f63; --rule-ink:#3d3214; --ceramic:#b9b6a6; --thermo:#dfe6ee; --thread:#e5392f; --case:#56617a;
+    --topic:#fbbf24; --topic-soft:#3a2a0c;
+      --hot:#f87171;
+      --water:#1c3a5a; --ice:#c9d6e6;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+  /* button rows fill their width (Alex, 2 Nov 2026) */
+  .btn-group>.btn,.exp-btns>.btn{flex:1 1 0;min-width:max-content;justify-content:center;}
+  .seg:not(.tabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));}
+  .seg:not(.tabs)>button{padding-inline:4px;white-space:nowrap;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 335px));touch-action:pan-y;}
+  .view.tall,.embed .view.tall{max-height:none;}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  .view.dragging,.view.dragging *{cursor:grabbing;}
+  .grab{cursor:grab;}
+  .view:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  /* mystery-beaker answer box */
+  .guess{border:1px solid var(--panel-border);border-radius:8px;padding:8px 10px;}
+  .guess-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .guess-row input{width:110px;min-height:44px;font:600 15px var(--font-mono);padding:6px 8px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);}
+  .guess-row .unit{font:13px var(--font-mono);color:var(--ink-soft);}
+  .gfb{font-size:14px;margin-top:6px;min-height:1.4em;}
+  .gfb.ok{color:var(--good);font-weight:600;} .gfb.no{color:var(--bad);font-weight:600;}
+  .seg button sub,.stat sub{font-size:.75em;}
+  .cgrid>[hidden]{display:none!important;}
+
+  #sk-jump,#sk-air,#sk-show{display:flex;flex-wrap:nowrap;}
+  #sk-jump>button,#sk-air>button,#sk-show>button{flex:1 1 auto;padding-inline:6px;}
+  #sk-stats{grid-template-columns:repeat(4,1fr);}
+  #sk-stats .stat strong{font-size:14px;}
+  @media (max-width:560px){ #sk-jump{flex-wrap:wrap;} #sk-stats{grid-template-columns:1fr 1fr;} }
+  .eq sup{font-size:.72em;line-height:0;}
+  .guess-row label{font:12.5px var(--font-mono);color:var(--ink-soft);}
+  .guess-row label sub{font-size:.75em;}
+  .view .pick{cursor:pointer;}
+  .view .pick:focus{outline:none;}
+  .view .pick:focus-visible .ring{stroke:var(--accent);stroke-width:3.2;}
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+
+  /* Build tab: the meters to put in, and the tab switch */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{display:inline-flex;align-items:center;gap:8px;flex:1 1 auto;min-height:44px;padding:6px 12px;border:1px dashed var(--ink-faint);border-radius:8px;background:var(--panel);color:var(--ink);font:12.5px var(--font-mono);cursor:grab;touch-action:none;user-select:none;}
+  .chip[aria-pressed="true"]{border-style:solid;border-color:var(--topic);background:var(--topic-soft);}
+  .chip-m{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.8px solid var(--ink);font-weight:700;font-size:12px;}
+  .ghost{position:fixed;left:0;top:0;z-index:20;pointer-events:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--ink);background:var(--panel);display:grid;place-items:center;font:700 14px var(--font-mono);color:var(--ink);box-shadow:var(--shadow);}
+  .btab{align-self:flex-start;}
+  .toprow{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;}
+  /* Experiment has a table as well, so its rows sit closer and its buttons are shorter */
+  @media (min-width:861px){ .side.exp{gap:8px;} .side.exp .seg button{min-height:36px;padding-block:5px;} .side.exp .note{min-height:0;font-size:14px;} }
+</style>
+<style>
+  /* this page's topic colour: sky blue */
+  :root{--topic:#2158d1;--topic-soft:#dfe8fc;--skyline:#2158d1;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--topic:#7da3ff;--topic-soft:#1a2440;--skyline:#7db4ff;} }
+  :root[data-theme="dark"]{--topic:#7da3ff;--topic-soft:#1a2440;--skyline:#7db4ff;}
+</style>
+<style id="choice-kit">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
+.seg.pick{background:var(--bg);box-shadow:inset 0 0 0 1px var(--panel-border);border-radius:8px;}
+.seg.pick.fit{width:fit-content;max-width:100%;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on){background:transparent;border-color:transparent;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on):not(:disabled):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode{display:flex;flex-wrap:nowrap;align-self:stretch;flex-grow:1;background:var(--bg);box-shadow:0 0 0 1px var(--panel-border);border-radius:11px;padding:3px;gap:3px;}
+.seg.mode>button:nth-child(n){flex:1 1 0;min-height:38px;margin-left:0;padding:6px 12px;border-radius:8px;white-space:nowrap;font:600 14.5px var(--font-body,inherit);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]){background:transparent;border-color:transparent;color:var(--ink);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode>button:nth-child(n)[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel);}
+.to-q[hidden]{display:none!important;}
+.to-q:nth-child(n){border-style:dashed;border-color:var(--ink);font-weight:600;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+<!-- pw-review -->
+<script>
+  // Draft tags and Alex's reviewer button (tools/review/drafts.py writes this block; edit tools/review/snippet.html, then run drafts.py sync).
+  // A page is Draft while its row in tools/REVIEW.md is not ✅: <meta name="pw-draft"> on the page, data-draft on its list cards.
+  // ?reviewer (once, on any page) turns on reviewer mode in this browser; ?reviewer=off turns it off.
+  (function(){
+    var on = false, embed = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var m = /[?&]reviewer(?:=([^&]*))?/.exec(location.search);
+    on = !!m && m[1] !== 'off';
+    try {
+      if (m) { if (m[1] === 'off') localStorage.removeItem('pw-reviewer'); else localStorage.setItem('pw-reviewer', '1'); }
+      else on = localStorage.getItem('pw-reviewer') === '1';
+    } catch (e) {}
+    var CSS = '.pw-draft{display:inline-block;vertical-align:middle;margin-left:10px;font:600 11.5px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:0;color:var(--bad,#b42318);border:1px dashed currentColor;border-radius:5px;padding:1px 7px;white-space:nowrap}'
+      + '.act-top .pw-draft{margin-left:auto;flex:none}.act-top .pw-draft~.cp-tag,.act-top .pw-draft~.ta-tag{margin-left:0}'
+      + 'a[data-draft]{position:relative}.pw-draft.pw-corner{position:absolute;top:10px;right:10px;margin:0;background:var(--panel,#fff)}'
+      + '.pw-check{display:inline-block;vertical-align:middle;margin-left:8px;font:600 13px/1.4 "IBM Plex Sans",system-ui,sans-serif;color:#fff;background:#1a7f37;border-radius:6px;padding:4px 10px;text-decoration:none;white-space:nowrap}'
+      + '.pw-check:hover{background:#116329}.pw-check:focus-visible{outline:2px solid #1a7f37;outline-offset:2px}'
+      + '.pw-reviewer{position:fixed;left:10px;bottom:10px;z-index:9999;font:500 12px/1.4 "IBM Plex Mono",ui-monospace,monospace;background:#1d2433;color:#fff;border-radius:6px;padding:4px 9px;opacity:.85}'
+      + '.pw-reviewer a{color:#ffc83d}';
+    function tag(){ var t = document.createElement('span'); t.className = 'pw-draft'; t.title = 'Not yet checked'; t.textContent = 'Draft'; return t; }
+    function go(){
+      var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+      var meta = document.querySelector('meta[name="pw-draft"]'), h1 = document.querySelector('h1');
+      if (meta && h1 && !embed) {
+        h1.appendChild(tag());
+        if (on) {
+          var page = meta.getAttribute('content'), b = document.createElement('a');
+          b.className = 'pw-check'; b.target = '_blank'; b.rel = 'noopener'; b.textContent = '✓ Checked';
+          b.title = 'Opens a GitHub issue. Submit it and the Draft tag goes in a minute or two.';
+          b.href = 'https://github.com/Skati1401/Physics-Workout/issues/new?title=' + encodeURIComponent('Checked: ' + page)
+            + '&body=' + encodeURIComponent('Submit this issue to mark `' + page + '` as checked. The Draft tag goes in a minute or two, and the issue closes itself.');
+          h1.appendChild(b);
+        }
+      }
+      document.querySelectorAll('a[data-draft]').forEach(function(a){
+        if (a.querySelector('.pw-draft')) return;
+        var t = tag(), top = a.querySelector('.act-top');
+        if (top) top.insertBefore(t, top.querySelector('.cp-tag,.ta-tag'));
+        else { t.className += ' pw-corner'; a.appendChild(t); }
+      });
+      // No tag on a unit or theme heading (Alex, 12 Nov 2026): only the pages and their cards.
+      if (on && !embed) {
+        // Carry ?reviewer in every link to another page of the site, so reviewer mode survives
+        // browsers that clear site storage (school Chromebooks) and pages cached from before.
+        var carry = function(a){
+          try {
+            var u = new URL(a.href, location.href);
+            if (u.origin !== location.origin || !/(\.html|\/)$/.test(u.pathname) || u.searchParams.has('reviewer')) return;
+            u.searchParams.set('reviewer', ''); a.href = u.href.replace('reviewer=', 'reviewer');
+          } catch (e) {}
+        };
+        document.querySelectorAll('a[href]').forEach(carry);
+        ['click', 'auxclick', 'contextmenu'].forEach(function(ev){
+          document.addEventListener(ev, function(e){ var a = e.target.closest && e.target.closest('a[href]'); if (a) carry(a); }, true);
+        });
+        var r = document.createElement('div'); r.className = 'pw-reviewer';
+        r.innerHTML = 'Reviewer mode · <a href="' + location.pathname + '?reviewer=off">turn off</a>';
+        document.body.appendChild(r);
+      }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  })();
+</script>
+<!-- /pw-review -->
+<meta name="pw-draft" content="animations/sky-colour.html">
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="extension.html">&larr; Extension animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">Animations &middot; light &middot; extension</div>
+      <h1>Blue Sky, Red Sunset</h1>
+    </div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="sk-svg" viewBox="0 0 860 350" tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="90" aria-label="Three pictures side by side: the sky and the Sun as you see them, the path of the sunlight through the air, and a graph of the light against wavelength. Drag the Sun, or use the arrow keys, to change its height above the horizon"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="sk-play" type="button">&#9654; Play sunset</button>
+          <button class="btn" id="sk-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="sk-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="sk-new" type="button" hidden>New question</button>
+          <button class="btn to-q" type="button" data-mode="sk-tab" hidden>Try the questions &rarr;</button>
+        </div>
+        <div class="sliders" id="sk-sliders">
+          <div><label class="lab" for="sk-h">Height of the Sun above the horizon (or drag the Sun)<output id="sk-ho"></output></label><input type="range" id="sk-h" min="0" max="90" step="1" value="40"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="toprow"><div class="seg tabs mode" id="sk-tab" role="group" aria-label="Explore or questions"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div></div>
+      <div class="cgrid" id="sk-grid">
+        <span class="rowlab">Jump to</span>
+        <div class="seg" id="sk-jump"><button type="button" data-v="60" aria-pressed="false">High Sun</button><button type="button" data-v="25" aria-pressed="false">Afternoon</button><button type="button" data-v="8" aria-pressed="false">Low Sun</button><button type="button" data-v="1" aria-pressed="false">Sunset</button></div>
+        <span class="rowlab">Air</span>
+        <div class="seg" id="sk-air"><button type="button" data-v="earth" aria-pressed="true">Earth&rsquo;s air</button><button type="button" data-v="none" aria-pressed="false">No air</button></div>
+        <span class="rowlab">Show</span>
+        <div class="seg apps" id="sk-show"><button type="button" data-v="scat" aria-pressed="true">Scattered light</button><button type="button" data-v="eye" aria-pressed="false">Eye sensitivity</button></div>
+      </div>
+      <p class="note" id="sk-note" aria-live="polite"></p>
+      <div class="stats" id="sk-stats"></div>
+      <details class="working" id="sk-working">
+        <summary>Show working</summary>
+        <div class="eq" id="sk-eq1"></div>
+        <div class="eq" id="sk-eq2"></div>
+        <p class="eqnote" id="sk-eq3"></p>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 4.97 × 10⁻¹⁹
+    if(x===0) return '0';
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+Math.abs(m).toFixed(dp)>=10){ m/=10; e++; }
+    return sn(m,dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function sig(x, n){   // n significant figures, as text, real minus sign
+    if(x===0) return '0';
+    x=+x.toPrecision(n); if(x===0) return '0';
+    var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
+    return sn(x, dp);
+  }
+  function grp(t){ return String(t).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }   // 12 345
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  // ---- solid kit (the same block is in roller-coaster-energy.html, heat-transfer.html, density.html and liquid-pressure.html) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
+  // the picture is wide on a laptop (apparatus, then the graph and the exam diagram beside it) and tall on a phone (those go underneath)
+  function sizeView(svg, wide, tall){
+    var w=svg.getBoundingClientRect().width, t=w>0 && w<520, L=t?tall:wide, vb='0 0 '+L.VW+' '+L.VH;
+    if(svg.getAttribute('viewBox')!==vb){ svg.setAttribute('viewBox',vb); svg.classList.toggle('tall',t); }
+    return L;
+  }
+  // ---- end of instrument kit ----
+  function rng(seed){ var a = seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+  // Pointer position in the SVG's own units
+  function svgPoint(svg, e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+  // Drag something in the picture: o.hit(q) says whether the press grabbed it, o.move(q) moves it, o.ok() allows it now.
+  function svgDrag(svg, o){
+    var on=false, ctm=null;
+    svg.addEventListener('pointerdown', function(e){
+      if(o.ok && !o.ok()) return;
+      var q=svgPoint(svg,e); if(!o.hit(q)) return;
+      on=true; ctm=svg.getScreenCTM().inverse();   // freeze the scale while dragging
+      svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
+      if(o.start) o.start(q);
+    });
+    svg.addEventListener('pointermove', function(e){ if(!on) return; var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; o.move(p.matrixTransform(ctm)); });
+    function end(){ if(!on) return; on=false; svg.classList.remove('dragging'); if(o.end) o.end(); }
+    svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  }
+  // keyboard for a focusable picture that sets one value: arrows, Page Up/Down, Home/End
+  function keySlider(svg, get, set, step, big, min, max, ok){
+    svg.addEventListener('keydown', function(e){
+      if(ok && !ok()) return;
+      var k=e.key, v=null, x=get();
+      if(k==='ArrowRight'||k==='ArrowUp') v=x+step; else if(k==='ArrowLeft'||k==='ArrowDown') v=x-step;
+      else if(k==='PageUp') v=x+big; else if(k==='PageDown') v=x-big; else if(k==='Home') v=min; else if(k==='End') v=max;
+      if(v!==null){ set(Math.max(min,Math.min(max,v))); e.preventDefault(); }
+    });
+  }
+
+  // ===== Blue sky, red sunset (extension; no spec point). Rayleigh scattering by the air, ∝ 1/λ⁴, along the Sun's path =====
+  // The model: sunlight is a 5780 K black body. The air scatters each wavelength in proportion to 1/λ⁴ (optical depth 0.098 at 550 nm
+  // for the Sun overhead). The air thins with height (halving about every 5.5 km) round a curved Earth, so a low Sun's light crosses
+  // up to 35 times as much air. Each ray is scattered once only. The ozone layer (22 km up) absorbs a little orange light:
+  // without it the sky overhead at sunset would come out grey, not blue. No dust, no clouds, no bending of the rays.
+  var NS='http://www.w3.org/2000/svg', D2R=Math.PI/180;
+  var svg=$('#sk-svg'), playBtn=$('#sk-play'), slowBtn=$('#sk-slow'), newBtn=$('#sk-new'), hIn=$('#sk-h');
+  var live=document.createElementNS(NS,'g'), picksG=document.createElementNS(NS,'g'); svg.appendChild(live); svg.appendChild(picksG);
+  var tabSeg=segGroup($('#sk-tab'), function(){ setTab(); });
+  var jumpSeg=segGroup($('#sk-jump'), function(v){ stop(); setH(+v, true); });
+  var airSeg=segGroup($('#sk-air'), function(){ stop(); lastNote=''; draw(); });
+  var showEl=$('#sk-show');
+  showEl.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; b.setAttribute('aria-pressed', String(!pressed(b))); draw(); });
+  function showing(v){ return pressed(showEl.querySelector('[data-v="'+v+'"]')); }
+  function predict(){ return tabSeg.value()==='predict'; }
+  function slowOn(){ return pressed(slowBtn); }
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+
+  // ---- light and colour
+  var LAM=[]; (function(){ for(var l=380;l<=730;l+=10) LAM.push(l); })();
+  function planck(l){ var x=1.4388e7/(l*5780); return Math.pow(l,-5)/(Math.exp(x)-1); }
+  var SUN=LAM.map(planck); (function(){ var m=Math.max.apply(null,SUN); SUN=SUN.map(function(v){ return v/m; }); })();
+  function tauOf(l){ return 0.098*Math.pow(550/l,4); }          // scattering by the air, Sun overhead
+  var TAU=LAM.map(tauOf);
+  var TO3=LAM.map(function(l){ return 0.042*Math.exp(-0.5*Math.pow((l-595)/60,2)); });   // absorption by ozone, Sun overhead
+  // CIE 1931 colour-matching functions (the fit of Wyman, Sloan and Shirley, 2013)
+  function gs(l,m,s1,s2){ var t=(l-m)/(l<m?s1:s2); return Math.exp(-0.5*t*t); }
+  function eyeY(l){ return 0.821*gs(l,568.8,46.9,40.5)+0.286*gs(l,530.9,16.3,31.1); }
+  var CMF=LAM.map(function(l){ return [1.056*gs(l,599.8,37.9,31.0)+0.362*gs(l,442.0,16.0,26.7)-0.065*gs(l,501.1,20.4,26.2), eyeY(l), 1.217*gs(l,437.0,11.8,36.0)+0.681*gs(l,459.0,26.0,13.8)]; });
+  function rawRGB(spec){ var X=0,Y=0,Z=0; spec.forEach(function(s,i){ X+=s*CMF[i][0]; Y+=s*CMF[i][1]; Z+=s*CMF[i][2]; }); return [3.2406*X-1.5372*Y-0.4986*Z, -0.9689*X+1.8758*Y+0.0415*Z, 0.0557*X-0.2040*Y+1.0570*Z, Y]; }
+  var WB=rawRGB(SUN);                                           // sunlight above the air is taken as white
+  function lin(spec){ var r=rawRGB(spec); return [r[0]/WB[0], r[1]/WB[1], r[2]/WB[2], r[3]/WB[3]]; }
+  function gam(v){ v=clamp(v,0,1); return Math.round(255*(v<=0.0031308 ? 12.92*v : 1.055*Math.pow(v,1/2.4)-0.055)); }
+  function css(c,L){ var a=[Math.max(0,c[0]),Math.max(0,c[1]),Math.max(0,c[2])], m=Math.max(a[0],a[1],a[2])||1; return 'rgb('+a.map(function(v){ return gam(v/m*L); }).join(',')+')'; }
+  // the colour of one wavelength of light, for the spectrum strip (after Bruton)
+  function wlCol(l){ var r=0,g=0,b=0;
+    if(l<440){ r=(440-l)/60; b=1; } else if(l<490){ g=(l-440)/50; b=1; } else if(l<510){ g=1; b=(510-l)/20; } else if(l<580){ r=(l-510)/70; g=1; } else if(l<645){ r=1; g=(645-l)/65; } else r=1;
+    var f = l<420 ? 0.35+0.65*(l-380)/40 : l>690 ? 0.35+0.65*(780-l)/90 : 1;
+    return 'rgb('+[r,g,b].map(function(v){ return Math.round(255*Math.pow(clamp(v,0,1)*f,0.8)); }).join(',')+')'; }
+
+  // ---- the air: how much of it a ray crosses (1 = straight up through the whole atmosphere)
+  var RE=6371, HS=8, ZT=64, OZ=12.533;   // km: Earth's radius, the height in which the air thins by e, the top used, the ozone layer's thickness
+  function cols(px,py,dx,dy,n){ var b=px*dx+py*dy, c=px*px+py*py-(RE+ZT)*(RE+ZT), L=-b+Math.sqrt(b*b-c), ds=L/n, s=0, o=0;
+    for(var k=0;k<n;k++){ var t=(k+0.5)*ds, z=Math.hypot(px+dx*t,py+dy*t)-RE; s+=Math.exp(-z/HS); o+=Math.exp(-0.5*(z-22)*(z-22)/25); }
+    return [s*ds/HS, o*ds/OZ]; }
+  var M90=cols(0,RE,0,1,80)[0];
+  var massCache={};
+  function massOf(h){ var k=Math.round(h*20); if(!massCache[k]){ var c=cols(0,RE,Math.cos(h*D2R),Math.sin(h*D2R),90); massCache[k]=[c[0]/M90, c[1]]; } return massCache[k]; }
+  function sig3(x){ return x>=99.95 ? String(Math.round(x)) : x>=9.995 ? x.toFixed(1) : x.toFixed(2); }
+  // the direct beam after the fraction f of its way through the air (a: 1 for the Earth's air, 0 for none)
+  function direct(h,a,f){ var M=massOf(h), k=a*(f==null?1:f); return SUN.map(function(s,i){ return s*Math.exp(-(TAU[i]*M[0]+TO3[i]*M[1])*k); }); }
+  function scatAt(h,a,f){ var d=direct(h,a,f); return d.map(function(s,i){ return s*TAU[i]*a; }); }
+  // the light scattered towards you from the sky at the height v (degrees), on the Sun's side
+  function skySpec(v,h,a){ var dx=Math.cos(v*D2R), dy=Math.sin(v*D2R), sx=Math.cos(h*D2R), sy=Math.sin(h*D2R), n=30;
+    var b=RE*dy, L=-b+Math.sqrt(b*b+2*RE*ZT+ZT*ZT), ds=L/n, cv=0, co=0, out=LAM.map(function(){ return 0; }), ct=dx*sx+dy*sy, ph=0.75*(1+ct*ct), i;
+    if(a<=0) return out;
+    for(var k=0;k<n;k++){ var t=(k+0.5)*ds, px=dx*t, py=RE+dy*t, z=Math.hypot(px,py)-RE, w=Math.exp(-z/HS)*ds/HS, wo=Math.exp(-0.5*(z-22)*(z-22)/25)*ds/OZ;
+      cv+=w/2; co+=wo/2; var cs=cols(px,py,sx,sy,14);
+      for(i=0;i<LAM.length;i++) out[i]+=w*Math.exp(-a*(TAU[i]*(cv+cs[0])+TO3[i]*(co+cs[1])));
+      cv+=w/2; co+=wo/2; }
+    return out.map(function(o,j){ return SUN[j]*TAU[j]*a*ph*o; }); }
+  var VS=[0,1,2.5,5,8,12,18,26,36,50,66,90];
+  function skyCss(spec){ var c=lin(spec); return c[3]<=0 ? 'rgb(0,0,0)' : css(c, Math.min(1, Math.pow(c[3]/0.2,0.4))); }
+  var modelCache={}, modelN=0;
+  function model(h,a){ var key=Math.round(h*20)+'|'+Math.round(a*100), M=modelCache[key];
+    if(M) return M;
+    if(modelN>400){ modelCache={}; modelN=0; }
+    var m=massOf(h), d=direct(h,a), dl=lin(d);
+    M={h:h, a:a, m:m[0], dir:d, sun:css(dl,1), day:dl[3], zen:skySpec(90,h,a)};
+    M.stops=VS.map(function(v){ return {v:v, c:skyCss(v===90 ? M.zen : skySpec(v,h,a))}; });
+    modelCache[key]=M; modelN++; return M; }
+  var ZREF=Math.max.apply(null, skySpec(90,90,1).slice(2));   // the brightest point of the overhead sky's curve at midday (from 400 nm)
+  function airOn(){ return airSeg.value()==='earth' ? 1 : 0; }
+  // the numbers given in the readings and the working: scattering alone, to 3 significant figures
+  var BL=0.804, RD=0.951;                // the fraction of blue (450 nm) and red (650 nm) left after one overhead path
+  function pct(x){ x*=100; return x>=9.95 ? Math.round(x)+'%' : x>=0.995 ? x.toFixed(1)+'%' : x>=0.0995 ? x.toFixed(2)+'%' : x>=0.00995 ? x.toFixed(3)+'%' : 'almost 0%'; }
+
+  // ---- layout: what you see, the path through the air, the graph; one under the other on a phone
+  var TALL, PA, PB, G;
+  function layout(){
+    var v=sizeView(svg,{VW:860,VH:350},{VW:430,VH:1000}); TALL=v.VW===430;
+    PA = TALL ? {x:8,y:26,w:414,h:250} : {x:6,y:24,w:286,h:268};
+    PB = TALL ? {x:8,y:342,w:414,h:268} : {x:304,y:24,w:286,h:268};
+    G  = TALL ? {x:40,y:690,w:372,h:190} : {x:640,y:34,w:208,h:190};
+  }
+  function hor(){ return PA.y+PA.h-30; }
+  function sunY(h){ return hor()-(hor()-PA.y-20)*h/90; }
+  function sunX(){ return PA.x+PA.w*0.5; }
+  function geoB(){ var Rp=TALL?190:150, Hp=TALL?78:62, O=[PB.x+PB.w*0.34, PB.y+PB.h-76]; return {Rp:Rp, Hp:Hp, O:O, F:[O[0],O[1]+12], C:[O[0],O[1]+12+Rp]}; }   // O: the eye; F: the feet, on the ground
+  function airLen(g,h){ var R=g.Rp+12, Hh=g.Hp-12, b=R*Math.sin(h*D2R); return -b+Math.sqrt(b*b+2*R*Hh+Hh*Hh); }
+  function sunDist(g,h){ var c=Math.cos(h*D2R), s=Math.sin(h*D2R), dx=c>1e-6 ? (PB.x+PB.w-22-g.O[0])/c : 1e9, dy=s>1e-6 ? (g.O[1]-PB.y-22)/s : 1e9; return Math.min(dx,dy); }
+  function sunB(g,h){ var d=sunDist(g,h); return [g.O[0]+d*Math.cos(h*D2R), g.O[1]-d*Math.sin(h*D2R)]; }
+  function T(x,y,s,o){ return txt(x,y,s,o); }
+  function capt(P,l1,l2,c2){ var cx=P.x+P.w/2, y=P.y+P.h+16; return (l1?T(cx,y,l1,{a:'middle',fs:11.5,c:'var(--ink)'}):'')+(l2?T(cx,y+15,l2,{a:'middle',fs:11.5,c:c2||'var(--ink-soft)',w:c2?700:null}):''); }
+  function head(P,s){ return T(P.x+2,P.y-8,s,{fs:12.5,c:'var(--ink)',w:600}); }
+  function clipDef(id,P){ return '<clipPath id="'+id+'"><rect x="'+P.x+'" y="'+P.y+'" width="'+P.w+'" height="'+P.h+'" rx="8"/></clipPath>'; }
+
+  // ---- panel A: what you see, looking towards the Sun. st.mystery hides it (a question is being asked)
+  function drawA(st){
+    var g='', M=st.M, x0=PA.x, y0=PA.y, w=PA.w, hz=hor(), sx=sunX(), sy=sunY(st.h);
+    g+='<defs>'+clipDef('sk-ca',PA);
+    if(!st.mystery){
+      g+='<linearGradient id="sk-sky" gradientUnits="userSpaceOnUse" x1="0" y1="'+f1(hz)+'" x2="0" y2="'+f1(y0+20)+'">'+M.stops.map(function(s){ return '<stop offset="'+(s.v/90).toFixed(3)+'" stop-color="'+s.c+'"/>'; }).join('')+'</linearGradient>';
+      g+='<radialGradient id="sk-glow"><stop offset="0" stop-color="'+M.sun+'" stop-opacity=".75"/><stop offset="1" stop-color="'+M.sun+'" stop-opacity="0"/></radialGradient>';
+    }
+    g+='</defs>'+head(PA,'What you see')+'<g clip-path="url(#sk-ca)">';
+    if(st.mystery){
+      g+=rect(x0,y0,w,PA.h,'#4f586b')+T(x0+w/2,y0+(st.swatches?62:PA.h/2+22),'?',{a:'middle',fs:st.swatches?46:72,c:'#aab4c8',w:700});
+    } else {
+      g+=rect(x0,y0,w,PA.h,'url(#sk-sky)');
+      if(M.a<0.5){ var rnd=rng(7); for(var k=0;k<46;k++){ var px=x0+rnd()*w, py=y0+rnd()*(hz-y0-6); g+='<circle cx="'+f1(px)+'" cy="'+f1(py)+'" r="'+(0.5+rnd()*0.8).toFixed(1)+'" fill="#fff" opacity="'+(0.35+rnd()*0.6).toFixed(2)+'"/>'; } }
+      else g+='<circle cx="'+f1(sx)+'" cy="'+f1(sy)+'" r="46" fill="url(#sk-glow)"/>';
+      g+='<circle cx="'+f1(sx)+'" cy="'+f1(sy)+'" r="13" fill="'+M.sun+'"/>';
+    }
+    // the ground: darker as the Sun gets low
+    var d=st.mystery ? 0.5 : clamp(Math.pow(M.day,0.6),0.12,1), gc='rgb('+Math.round(14+38*d)+','+Math.round(20+62*d)+','+Math.round(18+34*d)+')';
+    g+='<path d="M'+f1(x0)+','+f1(hz+5)+' Q'+f1(x0+w*0.22)+','+f1(hz-13)+' '+f1(x0+w*0.47)+','+f1(hz+3)+' T'+f1(x0+w)+','+f1(hz-1)+' V'+f1(y0+PA.h)+' H'+f1(x0)+' Z" fill="'+gc+'"/>';
+    var qx=x0+w*0.2, qy=hz-4;   // someone looking at the sky
+    g+='<g fill="none" stroke="#0b0f14" stroke-width="2.6" stroke-linecap="round"><path d="M'+f1(qx)+','+f1(qy-17)+' V'+f1(qy-6)+' M'+f1(qx)+','+f1(qy-6)+' L'+f1(qx-3.5)+','+f1(qy+4)+' M'+f1(qx)+','+f1(qy-6)+' L'+f1(qx+3.5)+','+f1(qy+4)+' M'+f1(qx-4.5)+','+f1(qy-10)+' L'+f1(qx)+','+f1(qy-14)+' L'+f1(qx+5)+','+f1(qy-11)+'"/></g><circle cx="'+f1(qx)+'" cy="'+f1(qy-21.5)+'" r="3.6" fill="#0b0f14"/>';
+    g+='</g>';
+    if(!st.mystery && st.drag){
+      g+='<text x="'+f1(sx+22)+'" y="'+f1(clamp(sy+4,y0+14,hz-6))+'" font-size="11" fill="#fff" stroke="#000" stroke-opacity=".55" stroke-width="3" paint-order="stroke" stroke-linejoin="round">drag</text>';
+      g+='<circle class="grab" cx="'+f1(sx)+'" cy="'+f1(sy)+'" r="28" fill="transparent"/>';
+    }
+    g+='<rect x="'+PA.x+'" y="'+PA.y+'" width="'+PA.w+'" height="'+PA.h+'" rx="8" fill="none" stroke="var(--panel-border)"/>';
+    return g;
+  }
+
+  // ---- panel B: the Earth, its layer of air and the sunbeam, seen from the side (not to scale)
+  // st.beam: 'full' (coloured, with the light scattered out of it), 'plain' (a dashed line: a question is being asked) or 'none'
+  function drawB(st){
+    var g='', M=st.M, q=geoB(), O=q.O, C=q.C, h=st.h, u=[Math.cos(h*D2R), -Math.sin(h*D2R)], a=st.a, k;
+    g+='<defs>'+clipDef('sk-cb',PB)+'<radialGradient id="sk-air-g" gradientUnits="userSpaceOnUse" cx="'+f1(C[0])+'" cy="'+f1(C[1])+'" r="'+(q.Rp+q.Hp)+'">'
+      +'<stop offset="'+(q.Rp/(q.Rp+q.Hp)).toFixed(3)+'" stop-color="#6fa5e6" stop-opacity="'+(0.80*a).toFixed(2)+'"/><stop offset="1" stop-color="#6fa5e6" stop-opacity="'+(0.28*a).toFixed(2)+'"/></radialGradient></defs>';
+    g+=head(PB,'Why: the path through the air')+'<g clip-path="url(#sk-cb)">'+rect(PB.x,PB.y,PB.w,PB.h,'#0a0f1e');
+    if(a>0.01) g+='<circle cx="'+f1(C[0])+'" cy="'+f1(C[1])+'" r="'+(q.Rp+q.Hp)+'" fill="url(#sk-air-g)"/>';
+    var sp=sunB(q,h), L=airLen(q,h), top=[O[0]+u[0]*L, O[1]+u[1]*L];
+    if(st.beam!=='none'){
+      if(st.beam==='plain') g+=ln(sp[0],sp[1],O[0],O[1],'#fff',2,' stroke-dasharray="5 5" opacity=".8"');
+      else {
+        g+=ln(sp[0],sp[1],top[0],top[1],'#fff',4,' stroke-linecap="round"');
+        var N=12, e=[O[0],O[1]], tp=[top[0],top[1]], seg=function(f){ return [tp[0]+(e[0]-tp[0])*f, tp[1]+(e[1]-tp[1])*f]; };
+        if(a<0.01) g+=ln(tp[0],tp[1],e[0],e[1],'#fff',4,' stroke-linecap="round"');
+        else {
+          for(k=0;k<N;k++){ var p0=seg(k/N), p1=seg((k+1)/N); g+=ln(p0[0],p0[1],p1[0],p1[1],css(lin(direct(h,a,(k+0.5)/N)),1),4,' stroke-linecap="'+(k===N-1?'round':'butt')+'"'); }
+          if(st.scat){
+            var y0=lin(scatAt(h,a,0))[3]||1, len=Math.hypot(e[0]-tp[0],e[1]-tp[1]), n=Math.max(2,Math.min(5,Math.round(len/26)));
+            for(k=0;k<n;k++){ var f=(k+0.6)/(n+0.2), P=seg(f), sc=lin(scatAt(h,a,f)), op=clamp(0.2+0.8*Math.sqrt(sc[3]/y0),0,1), col=css(sc,1), ph=(st.phase||0)%1*7;
+              [[-1,62],[1,62],[-1,118]].forEach(function(z,j){ if(j===2 && k%2) return; var an=Math.atan2(-u[1],-u[0])+z[0]*z[1]*D2R, c=Math.cos(an), s=Math.sin(an);
+                g+=arrow(P[0]+c*(6+ph),P[1]+s*(6+ph),P[0]+c*(20+ph),P[1]+s*(20+ph),col,1.8,' opacity="'+op.toFixed(2)+'"'); }); }
+          }
+        }
+      }
+      g+='<circle cx="'+f1(sp[0])+'" cy="'+f1(sp[1])+'" r="15" fill="#fff" opacity=".22"/><circle cx="'+f1(sp[0])+'" cy="'+f1(sp[1])+'" r="9" fill="#fff"/>';
+    }
+    // the Earth, and someone standing on it
+    g+='<circle cx="'+f1(C[0])+'" cy="'+f1(C[1])+'" r="'+q.Rp+'" fill="#2f6b45"/><path d="M'+f1(C[0]-q.Rp*0.6)+','+f1(C[1]-q.Rp*0.8)+' A'+q.Rp+','+q.Rp+' 0 0 1 '+f1(C[0]+q.Rp*0.6)+','+f1(C[1]-q.Rp*0.8)+'" fill="none" stroke="#7fc08f" stroke-width="2" opacity=".7"/>';
+    var F=q.F;
+    g+='<g fill="none" stroke="#10151c" stroke-width="2.2" stroke-linecap="round"><path d="M'+f1(F[0])+','+f1(F[1]-11)+' V'+f1(F[1]-4)+' L'+f1(F[0]-2.5)+','+f1(F[1]+1)+' M'+f1(F[0])+','+f1(F[1]-4)+' L'+f1(F[0]+2.5)+','+f1(F[1]+1)+'"/></g><circle cx="'+f1(F[0])+'" cy="'+f1(F[1]-14.5)+'" r="3" fill="#10151c"/>';
+    if(a>0.01 && st.beam==='full' && h<72) g+=ln(F[0]-9,F[1]-18,F[0]-9,F[1]-q.Hp,'#fff',1.4,' stroke-dasharray="3 3"')+T(F[0]-15,F[1]-q.Hp*0.45,'overhead 1 ×',{a:'end',fs:11,c:'#fff'});
+    g+=T(PB.x+10,PB.y+18,'space',{fs:11,c:'#aab4c8'});
+    g+=T(F[0],F[1]+34,'Earth',{a:'middle',fs:11,c:'#e7f3ea'});
+    if(a>0.01) g+=T(C[0]+(q.Rp+q.Hp*0.5)*Math.cos(118*D2R), C[1]-(q.Rp+q.Hp*0.5)*Math.sin(118*D2R)+4,'air',{a:'middle',fs:11.5,c:'#fff',w:600});
+    else g+=T(PB.x+10,PB.y+34,'no air',{fs:11,c:'#aab4c8'});
+    g+='</g><rect x="'+PB.x+'" y="'+PB.y+'" width="'+PB.w+'" height="'+PB.h+'" rx="8" fill="none" stroke="var(--panel-border)"/>';
+    if(st.drag && st.beam==='full') g+='<circle class="grab" cx="'+f1(sp[0])+'" cy="'+f1(sp[1])+'" r="24" fill="transparent"/>';
+    return g;
+  }
+
+  // ---- the graph: the light against wavelength. st.curves: false while a question is being asked (sunlight above the air only)
+  function GX(l){ return G.x+(l-400)/300*G.w; }
+  function GY(v){ return G.y+G.h-clamp(v,0,1.08)*G.h*0.92; }
+  function curvePts(fn){ var p=[]; LAM.forEach(function(l,i){ if(l>=400 && l<=700) p.push([GX(l),GY(fn(i))]); }); return p; }
+  function drawG(st){
+    var g='', M=st.M, i, l;
+    g+=T(G.x,G.y-10,'Brightness of the light',{fs:12.5,c:'var(--ink)',w:600});
+    for(l=400;l<=700;l+=100){ g+=ln(GX(l),G.y,GX(l),G.y+G.h,'var(--panel-border)',1)+T(GX(l),G.y+G.h+23,String(l),{a:'middle',fs:11,c:'var(--ink-soft)'}); }
+    for(l=400;l<700;l+=5) g+=rect(GX(l),G.y+G.h+2,G.w/60+0.6,8,wlCol(l+2.5));
+    g+=T(G.x+G.w/2,G.y+G.h+38,'Wavelength (nm)',{a:'middle',fs:11.5});
+    if(st.curves){
+      for(i=0;i<LAM.length-1;i++){ l=LAM[i]; if(l<400 || l>=700) continue;
+        g+=pg([[GX(l),GY(0)],[GX(l),GY(M.dir[i]*0.95)],[GX(l+10),GY(M.dir[i+1]*0.95)],[GX(l+10),GY(0)]],wlCol(l+5),' opacity=".85"'); }
+      g+=pl(curvePts(function(j){ return M.dir[j]*0.95; }),'var(--ink)',2.2);
+    }
+    g+=pl(curvePts(function(j){ return SUN[j]*0.95; }),'var(--ink-soft)',1.6,' stroke-dasharray="6 4"');
+    if(st.curves && M.a>0.01) g+=pl(curvePts(function(j){ return M.zen[j]/ZREF*0.8; }),'var(--skyline)',2.6);
+    if(st.eye) g+=pl(curvePts(function(j){ return eyeY(LAM[j])*0.9; }),'var(--good)',1.6,' stroke-dasharray="2 4"');
+    g+=ln(G.x,G.y,G.x,G.y+G.h,'var(--ink-soft)',2)+ln(G.x,G.y+G.h,G.x+G.w,G.y+G.h,'var(--ink-soft)',2);
+    // the key
+    var ky=G.y+G.h+58, rows=[['var(--ink-soft)',1.6,'6 4','Sunlight above the air']];
+    if(st.curves){ rows.push(['var(--ink)',2.2,'','Sunlight that reaches you']); rows.push(['var(--skyline)',2.6,'','Sky overhead (own scale)']); }
+    if(st.eye) rows.push(['var(--good)',1.6,'2 4','How sensitive your eyes are']);
+    rows.forEach(function(r,j){ g+=ln(G.x,ky+j*16-4,G.x+22,ky+j*16-4,r[0],r[1],r[2]?' stroke-dasharray="'+r[2]+'"':'')+T(G.x+28,ky+j*16,r[3],{fs:11,c:'var(--ink)'}); });
+    return g;
+  }
+
+  // ---- Explore
+  var H=40, running=false, raf=0, last=0, phase=0, lastNote='';
+  function drawExplore(){
+    var a=airOn(), M=model(H,a), st={h:H, a:a, M:M, beam:'full', scat:showing('scat'), curves:true, eye:showing('eye'), drag:!running, phase:phase};
+    var mS=sig3(M.m), g=drawA(st)+drawB(st)+drawG(st);
+    g+=capt(PA,'Sun '+(H<9.95 && H!==Math.round(H) ? H.toFixed(1) : Math.round(H))+'° above the horizon', running && slowOn() ? 'slow motion' : '');
+    g+=capt(PB, a ? 'Path through the air = '+mS+' × overhead' : 'No air: nothing to scatter the light', 'not to scale');
+    live.innerHTML=g;
+    if(picksHtml!==''){ picksG.innerHTML=''; picksHtml=''; }
+  }
+
+  // ---- Questions: click the answer in the picture, then Go
+  var Q={n:0, q:null, pick:null, phase:'ask', u:0, ok:false}, picksHtml='', lastVar={};
+  var SUNQ=[[70,'almost white'],[3,'yellow-orange'],[0,'deep orange']];
+  function rnd(list){ return list[Math.floor(Math.random()*list.length)]; }
+  function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  var KINDS=['sun','path','wave','moon'];
+  var VARS={sun:['70','3','0'], path:['most','least','red','white'], wave:['most','least','left'], moon:['sky','sun']};
+  function gen(kind){
+    var v; do { v=rnd(VARS[kind]); } while(v===lastVar[kind]); lastVar[kind]=v;
+    var q={kind:kind, v:v};
+    if(kind==='sun'){
+      q.h=+v;
+      q.opts=shuffle(SUNQ.map(function(s){ return {id:String(s[0]), c:model(s[0],1).sun, name:s[1]}; }).concat([{id:'blue', c:'rgb(96,150,255)', name:'blue'}]));
+      q.ans=v;
+    } else if(kind==='path'){
+      q.els=[90,50,20,0]; q.ans = (v==='most' || v==='red') ? 'D' : 'A';
+    } else if(kind==='wave'){
+      q.ws=[[450,'blue'],[530,'green'],[590,'yellow'],[660,'red']]; q.ans = v==='most' ? 'A' : 'D';
+    } else {
+      q.h=40;
+      q.opts = v==='sky' ? shuffle([{id:'black',c:'rgb(0,0,0)',name:'black'},{id:'blue',c:model(40,1).stops[8].c,name:'blue'},{id:'white',c:'rgb(255,255,255)',name:'white'},{id:'orange',c:'rgb(255,150,40)',name:'orange'}])
+                         : shuffle([{id:'white',c:'rgb(255,255,255)',name:'white'},{id:'yellow',c:'rgb(255,214,90)',name:'yellow'},{id:'orange',c:'rgb(255,125,0)',name:'deep orange'},{id:'blue',c:'rgb(96,150,255)',name:'blue'}]);
+      q.ans = v==='sky' ? 'black' : 'white';
+    }
+    return q;
+  }
+  function qText(q){
+    if(q.kind==='sun') return 'The Sun is '+(q.h ? q.h+'° above the horizon' : 'on the horizon')+', so its light crosses <b>'+sig3(massOf(q.h)[0])+' times</b> as much air as when it is overhead. What colour does the Sun look?';
+    if(q.kind==='path') return q.v==='most' ? 'Where is the Sun when its light passes through the <b>most</b> air to reach you?' : q.v==='least' ? 'Where is the Sun when its light passes through the <b>least</b> air to reach you?' : q.v==='red' ? 'Where is the Sun when it looks <b>reddest</b>?' : 'Where is the Sun when it looks <b>most nearly white</b>?';
+    if(q.kind==='wave') return q.v==='most' ? 'Which of these colours of light does the air scatter the <b>most</b>?' : q.v==='least' ? 'Which of these colours of light does the air scatter the <b>least</b>?' : 'At sunset, which of these colours is there <b>most</b> of in the light that comes straight from the Sun?';
+    return q.v==='sky' ? 'The Moon has no air. An astronaut stands on the Moon in the daytime. What colour is the <b>sky</b>?' : 'The Moon has no air. An astronaut on the Moon looks towards the Sun, through a dark filter. What colour is the <b>Sun</b>?';
+  }
+  function ansName(q){
+    if(q.kind==='sun' || q.kind==='moon') return q.opts.filter(function(o){ return o.id===q.ans; })[0].name;
+    if(q.kind==='path') return q.ans+(q.ans==='D' ? ', on the horizon' : ', overhead');
+    return q.ans+', '+q.ws['ABCD'.indexOf(q.ans)][1];
+  }
+  function explain(q, pick){
+    var m, s='';
+    if(q.kind==='sun'){ m=massOf(q.h)[0];
+      s=(q.h ? 'At '+q.h+'°' : 'On the horizon')+' the light crosses '+sig3(m)+' times as much air as from overhead. '+pct(Math.pow(BL,m))+' of the blue is left in the beam, but '+pct(Math.pow(RD,m))+' of the red'+(q.h>=60 ? ', so the Sun looks almost white.' : q.h>1 ? ', so the Sun looks yellow-orange.' : ', so the Sun looks deep orange.');
+      if(pick==='blue') s+=' Blue is the colour scattered <i>out</i> of the beam: it lights the sky, not the Sun.';
+    } else if(q.kind==='path'){
+      s = q.ans==='D' ? 'On the horizon the light comes in along the ground and crosses about 35 times as much air as from overhead.' : 'Overhead, the light comes straight down through the layer of air: the shortest path.';
+      if(q.v==='red') s+=' The more air it crosses, the more blue and green is scattered out, leaving red and orange.';
+      if(q.v==='white') s+=' The less air it crosses, the less blue is scattered out of it.';
+    } else if(q.kind==='wave'){
+      s='Scattering ∝ [[1|λ⁴]], so the shortest wavelength is scattered most. Blue (450 nm) is scattered about 4.6 times as much as red (660 nm).';
+      if(q.v==='left') s+=' At sunset the long path removes nearly all the blue from the beam, so red is what is left.';
+    } else {
+      s = q.v==='sky' ? 'With no air, nothing scatters sunlight towards you from the rest of the sky. The sky is black, even with the Sun up.' : 'With no air, no blue is scattered out of the beam, so all the colours arrive together: white.';
+    }
+    return s;
+  }
+  function pickRing(x,y,k,sel,st,o){ o=o||{};
+    var good='#22c55e', bad='#ef4444', base=o.dark ? '#e6ebf5' : 'var(--ink-soft)', col=st==='good'?good:st==='bad'?bad:sel?(o.dark?'#ffd166':'var(--topic)'):base, r=o.r||12;
+    return '<g class="pick" data-pick="'+k+'" tabindex="0" role="button" aria-pressed="'+sel+'" aria-label="'+o.label+'">'
+      +'<circle class="ring" cx="'+f1(x)+'" cy="'+f1(y)+'" r="'+r+'" fill="'+(o.fill||(o.dark?'#0a0f1e':'var(--panel)'))+'" stroke="'+col+'" stroke-width="'+(sel||st?3:1.6)+'" stroke-dasharray="'+(sel||st||o.solid?'none':'3 3')+'"/>'
+      +'<text x="'+f1(x+(o.lx||0))+'" y="'+f1(y+(o.ly==null?4.3:o.ly))+'" text-anchor="middle" font-size="12.5" font-weight="700" fill="'+(o.lc||col)+'"'+(o.lc?' stroke="#0a0f1e" stroke-opacity=".65" stroke-width="3" paint-order="stroke" stroke-linejoin="round"':'')+'>'+(o.text||k)+'</text>'
+      +(st ? '<text x="'+f1(x+r+3)+'" y="'+f1(y-r+5)+'" font-size="14" font-weight="700" fill="'+col+'" stroke="'+(o.dark?'#0a0f1e':'var(--panel)')+'" stroke-width="3" paint-order="stroke">'+(st==='good'?'✓':'✗')+'</text>' : '')+'</g>';
+  }
+  function drawPredict(){
+    var q=Q.q, dn=Q.phase==='done', ask=Q.phase==='ask', u=Q.u, g='', pk='', h, a=1, st, M, verdict=dn ? (Q.ok ? '✓ Correct' : '✗ Not quite: it is '+ansName(q)) : '', vc=Q.ok ? 'var(--good)' : 'var(--bad)';
+    function state(k){ var sel=Q.pick===k; return dn ? (k===q.ans ? 'good' : sel ? 'bad' : '') : ''; }
+    if(q.kind==='sun'){ h=ask ? q.h : 90+(q.h-90)*u; }
+    else if(q.kind==='path'){ var end=q.ans==='D' ? 0 : 90; h=ask ? 45 : (90-end)+(end-(90-end))*u; }
+    else if(q.kind==='wave'){ h=ask ? 60 : 60+(1-60)*u; }
+    else { h=q.h; a=ask ? 0 : 1-u; if(dn) a=0; }
+    M=model(h,a);
+    st={h:h, a:a, M:M, mystery:ask, swatches:ask && (q.kind==='sun'||q.kind==='moon'), beam:ask ? (q.kind==='path' ? 'none' : 'plain') : 'full', scat:true, curves:!ask, eye:false, drag:false, phase:u*3};
+    if(q.kind==='moon' && ask){ st.a=0; st.M=model(h,0); }
+    g=drawA(st)+drawB(st)+drawG(st);
+    // the things to click
+    if(q.kind==='sun' || q.kind==='moon'){
+      q.opts.forEach(function(o,j){ var x=PA.x+PA.w*(j+0.5)/4, y=ask ? PA.y+PA.h-118 : PA.y+36, k=o.id, s=state(k), sel=Q.pick===k;
+        if(!ask && !dn) return;
+        pk+=pickRing(x,y,k,sel,s,{dark:1, r:TALL?26:22, fill:o.c, solid:1, text:'ABCD'[j], ly:(TALL?26:22)+16, lc:'#fff', label:'ABCD'[j]+': '+o.name}); });
+      g+=capt(PA, ask ? 'Click a colour' : dn ? (q.kind==='moon' && q.v==='sky' ? 'The sky on the Moon' : 'Sun '+h+'° above the horizon') : '', verdict, vc);
+      g+=capt(PB, q.kind==='moon' ? 'No air' : 'Path through the air = '+sig3(M.m)+' × overhead', 'not to scale');
+    } else if(q.kind==='path'){
+      var gq=geoB();
+      q.els.forEach(function(e,j){ var p=sunB(gq,e), k='ABCD'[j]; pk+=pickRing(p[0],p[1],k,Q.pick===k,state(k),{dark:1, r:12, label:'Position '+k+': the Sun '+(e===90?'overhead':e===0?'on the horizon':e+' degrees above the horizon')}); });
+      g+=capt(PA, ask ? '' : 'Sun '+Math.round(h)+'° above the horizon', '');
+      g+=capt(PB, ask ? 'Click where the Sun is' : 'Path through the air = '+sig3(M.m)+' × overhead', verdict || 'not to scale', verdict ? vc : null);
+    } else {
+      q.ws.forEach(function(w,j){ var k='ABCD'[j], x=GX(w[0]), y=G.y+G.h-26; pk+=ln(x,y+13,x,G.y+G.h,'var(--ink-faint)',1)+pickRing(x,y,k,Q.pick===k,state(k),{r:13, fill:wlCol(w[0]), solid:1, lc:'#fff', label:k+': '+w[1]+' light, '+w[0]+' nanometres'}); });
+      g+=capt(PA, ask ? '' : 'Sun '+Math.round(h)+'° above the horizon', '');
+      g+=capt(PB, ask ? 'Sun 60° above the horizon' : 'Path through the air = '+sig3(M.m)+' × overhead', ask ? 'Click a colour on the graph' : verdict || 'not to scale', verdict ? vc : null);
+    }
+    live.innerHTML=g;
+    if(pk!==picksHtml){ setKeepFocus(picksG, pk); picksHtml=pk; }
+  }
+  onPick(svg, function(k){ if(!predict() || Q.phase!=='ask') return; Q.pick=k; lastNote=''; draw(); });
+
+  function draw(){ layout(); if(predict()) drawPredict(); else drawExplore(); readings(); }
+
+  // ---- readings, working and the note
+  function stat(lab, val, hi){ return '<div class="stat'+(hi?' hi':'')+'"><small>'+lab+'</small><strong>'+val+'</strong></div>'; }
+  function setEq(id, html){ var el=$(id); el.innerHTML=FR(html); el.hidden=!html; }
+  function readings(){
+    var pr=predict(), a=airOn(), M=massOf(H), m=+sig3(M[0]), mS=sig3(M[0]), note='';
+    $('#sk-ho').textContent=(H<9.95 && H!==Math.round(H) ? H.toFixed(1) : Math.round(H))+'°';
+    svg.setAttribute('aria-valuenow', Math.round(H)); svg.setAttribute('aria-valuetext', 'Sun '+Math.round(H)+' degrees above the horizon');
+    if(pr){
+      var q=Q.q;
+      note = Q.phase==='done' ? '<b>'+(Q.ok ? '✓ Correct.' : '✗ Not quite: it is '+ansName(q)+'.')+'</b> '+explain(q, Q.pick)
+           : qText(q)+' '+(Q.pick===null ? 'Click your answer in the picture.' : 'Now press <b>Go</b>.');
+      playBtn.innerHTML='&#9654; Go'; playBtn.disabled = Q.phase!=='ask' || Q.pick===null;
+    } else {
+      var bl=a ? Math.pow(BL,m) : 1, rd=a ? Math.pow(RD,m) : 1;
+      $('#sk-stats').innerHTML=stat('Sun above horizon', Math.round(H)+'°')+stat('Path through air', a ? mS+' ×' : 'no air', true)+stat('Blue left in beam', pct(bl))+stat('Red left in beam', pct(rd));
+      setEq('#sk-eq1','scattering ∝ [[1|λ⁴]]<br>blue light: λ = 450 nm<br>red light: λ = 650 nm<br>[[blue scattered|red scattered]] = ([[650|450]])⁴<br>[[blue scattered|red scattered]] = 4.4');
+      setEq('#sk-eq2', a ? 'path = '+mS+' × overhead path<br>blue left after 1 path = 0.804<br>blue left after '+mS+' paths = 0.804<sup>'+mS+'</sup><br>blue left after '+mS+' paths = <b>'+pct(bl)+'</b><br>red left after 1 path = 0.951<br>red left after '+mS+' paths = 0.951<sup>'+mS+'</sup><br>red left after '+mS+' paths = <b>'+pct(rd)+'</b>'
+                         : 'No air: nothing is scattered, so all of every colour arrives.');
+      $('#sk-eq3').innerHTML='A simple model: clean air round a curved Earth, with each ray scattered once only. “Left in beam” counts scattering alone. The colours drawn also allow for the ozone layer, which absorbs a little orange light; without it the sky overhead at sunset would look grey. Real sunsets also depend on dust and cloud.';
+      if(!a) note='<b>No air</b>, as on the Moon: nothing scatters the light. The Sun looks white, and the sky is black even in the daytime.';
+      else if(H>=45) note='The Sun is high, so its light takes a short path through the air. Only a little blue is scattered out of the beam: the Sun looks nearly white. That scattered blue reaches you from every direction, so the <b>sky is blue</b>.';
+      else if(H>=15) note='The path through the air is now <b>'+mS+' times</b> the overhead path. More blue is scattered out of the beam, so the Sun looks yellower. The sky is still lit by the scattered blue.';
+      else if(H>=4) note='Low Sun: the light crosses <b>'+mS+' times</b> as much air. Most of the blue has been scattered out on the way, so the Sun looks <b>yellow-orange</b>.';
+      else note='Sunset: the light crosses <b>'+mS+' times</b> as much air. Nearly all the blue and green is scattered out before it reaches you, leaving orange and red. The sky near the Sun is lit by that reddened light.';
+      if(a && showing('eye') && H>=15) note+=' Violet is scattered even more than blue, but your eyes are far less sensitive to violet, so the sky looks blue, not violet.';
+      playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play sunset'; playBtn.disabled=false;
+    }
+    if(note!==lastNote){ $('#sk-note').innerHTML=FR(note); lastNote=note; }
+  }
+
+  // ---- motion: Play lowers the Sun to the horizon and stops there; Go runs a question once
+  function frame(now){
+    var real=Math.min(0.05,(now-last)/1000)*(slowOn()?0.3:1); last=now;
+    if(predict()){
+      if(Q.phase==='run'){ Q.u=Math.min(1,Q.u+real/3.2); if(Q.u>=1){ Q.phase='done'; Q.ok=Q.pick===Q.q.ans; lastNote=''; running=false; } }
+    } else if(running){
+      phase+=real*1.6;
+      var v=H-Math.max(1.1,H*0.22)*real;
+      if(v<=0){ v=0; running=false; }
+      H=v; hIn.value=Math.round(H); jumpSeg.pick(null);
+    }
+    draw();
+    if(running) raf=requestAnimationFrame(frame);
+  }
+  function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function setH(v, keep){ H=clamp(v,0,90); hIn.value=Math.round(H); if(!keep) jumpSeg.pick(null); lastNote=''; draw(); }
+  function deal(){ stop(); Q.n++; Q.q=gen(KINDS[(Q.n-1)%KINDS.length]); Q.pick=null; Q.phase='ask'; Q.u=0; Q.ok=false; picksHtml=null; lastNote=''; draw(); }
+  function setRows(){
+    var pr=predict();
+    $('#sk-grid').hidden=pr; $('#sk-sliders').hidden=pr; $('#sk-stats').hidden=pr; $('#sk-working').hidden=pr;
+    $('#sk-reset').hidden=pr; slowBtn.hidden=pr; newBtn.hidden=!pr;
+    if(pr) svg.removeAttribute('tabindex'); else svg.setAttribute('tabindex','0');
+  }
+  function setTab(){ stop(); lastNote=''; setRows(); if(predict()){ if(!Q.q || Q.phase!=='ask') deal(); else { picksHtml=null; draw(); } } else draw(); }
+
+  playBtn.addEventListener('click', function(){
+    if(predict()){ if(Q.phase!=='ask' || Q.pick===null) return; Q.phase='run'; Q.u=0; running=true; lastNote=''; loop(); return; }
+    if(running){ stop(); draw(); return; }
+    if(H<=0.01) H=60;
+    jumpSeg.pick(null); running=true; loop();
+  });
+  newBtn.addEventListener('click', deal);
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
+  $('#sk-reset').addEventListener('click', function(){ stop(); airSeg.pick('earth'); phase=0; setH(40); });
+  hIn.addEventListener('input', function(){ stop(); setH(+hIn.value); });
+  // drag the Sun: up and down in the first picture, or round the Earth in the second
+  var dragIn='';
+  svgDrag(svg, {
+    ok:function(){ return !predict(); },
+    hit:function(q){ var g=geoB(), p=sunB(g,H);
+      if(Math.hypot(q.x-sunX(), q.y-sunY(H))<30){ dragIn='A'; return true; }
+      if(Math.hypot(q.x-p[0], q.y-p[1])<26){ dragIn='B'; return true; }
+      return false; },
+    start:function(){ stop(); },
+    move:function(q){ var g=geoB();
+      if(dragIn==='A') setH(Math.round((hor()-q.y)/(hor()-PA.y-20)*90));
+      else setH(Math.round(Math.atan2(g.O[1]-q.y, Math.max(1e-6,q.x-g.O[0]))/D2R)); }
+  });
+  keySlider(svg, function(){ return Math.round(H); }, function(v){ stop(); setH(v); }, 1, 10, 0, 90, function(){ return !predict(); });
+  if(window.ResizeObserver) new ResizeObserver(function(){ var t=TALL; layout(); if(t!==TALL){ picksHtml=null; draw(); } }).observe(svg);
+
+  watchEquals($('#sk-eq1')); watchEquals($('#sk-eq2'));
+  if(/[?&]show=predict\b/.test(location.search)) tabSeg.pick('predict');
+  setRows(); layout();
+  if(predict()) deal(); else draw();
+})();
+</script><script id="choice-kit-js">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices".
+   A group of choices with one chosen gets a track round it (class pick); a .to-q button opens the questions from Explore. */
+(function(){
+  function on(b){ return b.getAttribute('aria-pressed')==='true' || b.classList.contains('is-on'); }
+  function each(sel, fn){ Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+  function mark(s){
+    if(!s.classList.contains('pick')){
+      var n=0; Array.prototype.forEach.call(s.children, function(b){ if(b.tagName==='BUTTON' && on(b)) n++; });
+      if(n===1) s.classList.add('pick');
+    }
+    if(s.classList.contains('pick') && !s.hasAttribute('data-fit')){
+      var d=getComputedStyle(s).display;
+      if(d!=='none'){ s.setAttribute('data-fit','1'); if(d.indexOf('flex')>=0) s.classList.add('fit'); }
+    }
+  }
+  each('.seg:not(.tabs):not(.mode):not(.apps)', function(s){
+    mark(s);
+    if(window.MutationObserver) new MutationObserver(function(){ mark(s); }).observe(s, {childList:true, subtree:true, attributes:true, attributeFilter:['aria-pressed','class']});
+  });
+  each('.to-q[data-mode]', function(b){
+    var seg=document.getElementById(b.getAttribute('data-mode')); if(!seg) return;
+    var bs=seg.querySelectorAll('button');
+    function sync(){ b.hidden=!on(bs[0]) || !seg.getClientRects().length; }   // hidden too when the page hides its mode switch (e.g. at a level with no questions)
+    b.addEventListener('click', function(){ bs[1].click(); bs[1].focus(); });
+    if(window.MutationObserver) new MutationObserver(sync).observe(seg, {subtree:true, attributes:true, attributeFilter:['aria-pressed']});
+    document.addEventListener('click', function(){ setTimeout(sync, 0); });
+    sync(); setTimeout(sync, 0);
+  });
+})();
+</script>
+<footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
+</body>
+</html>
