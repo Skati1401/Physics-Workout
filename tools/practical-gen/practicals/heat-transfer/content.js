@@ -281,6 +281,11 @@ pairIn('results'); /* Elena’s Calculate and the Plot first, then the two Predi
     {q:'Calculate the fall in temperature of the shiny can in 10 minutes.',unit:'°C',answer:9,working:'fall = 80.0 − 71.0<br>fall = 9.0 °C'}
   ]});
 }
+{ /* The two Calculates side by side at the top, each half width (Alex, 13 Nov 2026) */
+  const acts=$('#panel-results .acts'),by=t=>[...acts.querySelectorAll('.act')].find(x=>x.dataset.title===t);
+  const e=by('Elena’s two cans'),c=by('Charlotte’s cooling cans'),pair=mk('div','act-pair');
+  acts.insertBefore(pair,e);pair.appendChild(e);pair.appendChild(c);
+}
 
 
 /* ================= 7. ACCURACY AND SAFETY ================= */
