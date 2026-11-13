@@ -59,6 +59,16 @@ Each animation below has a `?show=measure` mode for its practical page's Do Expe
   - Copper, off at 6 min (17 280 J): lagged 20.0, 24.5, 31.0, 38.0, 45.0, 51.0, 58.5, 60.5, 60.5 (427); no lagging 20.0, 24.5, 30.5, 36.5, 43.0, 47.5, 52.5, 52.5, 51.0 (532).
   - Water, off at 10 min (28 800 J): lagged 20.0, 20.5, 21.0, 22.0, 23.0, 23.0, 24.0, 24.0, 25.0, 26.0, 26.5, 27.0, 27.0 (4110); no lagging 20.0, 20.5, 21.0, 21.5, 22.5, 23.0, 24.0, 24.0, 25.0, 26.0, 26.5, 26.5, 26.5 (4430).
 
+## 5c rebuild: 3.17, 3.19, 3.25P, 3.27P, 5.11P, 5.14P (13 Nov 2026)
+
+Rebuilt to the 1.22 model in one chat, after measure-mode batches 8a and 8b (another chat did the other pages of 5c at the same time). What each page now holds, and its minutes per tab, is in `tools/REVIEW.md`.
+
+- **Your own results table:** every Do Experiment table on these six pages uses `measTable()`, a helper copied at the top of each `content.js` (1.22 keeps its own). A row is given cells plus boxes `{k, ok(v,g), fill(g), need:[…]}`; a box worked out from other boxes (a mean, a sine, T, a speed) is marked against the student’s own locked readings, and Fill in table fills from them. `o.beside` puts the frame above it side by side with the table (`.mt-split`, in each `page.json` `extraCss`). 3.17 also has `obsTable()`, a table of drop-down lists for things seen rather than read (what the ray does in each prism).
+- **Plots:** the points are the readings as the animation gives them (3.19: the sines to 3 d.p.), so any rounding to the plot’s grid within half a step is accepted. `check.py` can miss a point on the 3.19 plot (0.01 a step, about 4 px): its clicks land on whole pixels, and 0.174 is 0.001 from the half-step. A student aiming at their rounded value is not affected.
+- **3.27P** accepts any time base and whole number of cycles that fit the screen (`FQ_TB`, the screen is 10 divisions), so its Fill in table uses `FQ_FILL`.
+- **3.25P** dropped its method switch: Direct is the Do Experiment, Two microphones its second part, Echo is in Show Experiment.
+- **Cut to the workouts:** 3.17’s ray words, uses of total internal reflection and colour theory (3b covers the fibres; 3b has no prism or periscope item); 3.27P’s Hearing tab and pitch Sort and Match (3c has them); 5.11P’s particle Sort (5a).
+
 ## Starting a batch in a new chat
 
 Paste this into a new chat in the "Animated activities for kids" project:
