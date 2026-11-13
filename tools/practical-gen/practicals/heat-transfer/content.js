@@ -24,6 +24,13 @@ reflowers.push(()=>raf(()=>methodGames.forEach(g=>g&&g.reflow&&g.reflow())));
 const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.';
 const MATCH_INTRO='Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.';
 
+/* Two activities side by side, one row (laptop); they stack on a narrow screen. */
+function pairLast(k){
+  const acts=$('#panel-method .acts'),list=acts.querySelectorAll(':scope>.act'),pair=mk('div','act-pair');pair.dataset.m=k;
+  const x=list[list.length-2],y=list[list.length-1];delete x.dataset.m;delete y.dataset.m;
+  pair.appendChild(x);pair.appendChild(y);acts.appendChild(pair);
+}
+
 /* ================= 1. METHOD ================= */
 methodPicker('method');
 {
@@ -48,6 +55,7 @@ methodPicker('method');
     {id:'h',l:'Beaker of hot water',r:'Heats the end of every rod from the same source, at the same temperature'}
   ]}));
 }
+pairLast('cond');
 {
   const body=act('method','Order','Follow the dye',ORDER_INTRO);forMethod(body,'conv');
   methodGames.push(createReorder({host:body,steps:[
@@ -69,8 +77,7 @@ methodPicker('method');
     {id:'g',l:'Tripod and gauze',r:'Holds the beaker steady over the flame'}
   ]}));
 }
-/* Radiation: the two Orders side by side, one row */
-const radPair=mk('div','act-pair');radPair.dataset.m='rad';
+pairLast('conv');
 {
   const body=act('method','Order','Radiation from a Leslie cube',ORDER_INTRO);
   methodGames.push(createReorder({host:body,steps:[
@@ -95,11 +102,7 @@ const radPair=mk('div','act-pair');radPair.dataset.m='rad';
   ],constraints:[['a','b'],['b','d'],['c','d'],['d','e'],['e','f']],
   why:'Everything except the surface is made the same before the heater goes on: the volume of water, its starting temperature and the distance from the heater. Then both cans are read at the same times.'}));
 }
-{
-  const acts=$('#panel-method .acts'),list=acts.querySelectorAll(':scope>.act');
-  radPair.appendChild(list[list.length-2]);radPair.appendChild(list[list.length-1]);
-  acts.appendChild(radPair);
-}
+pairLast('rad');
 {
   const body=act('method','Match','What each piece of equipment is for',MATCH_INTRO);forMethod(body,'rad');
   methodGames.push(createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
