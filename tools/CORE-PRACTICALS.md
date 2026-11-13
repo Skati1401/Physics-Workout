@@ -7,10 +7,11 @@ Alex wants every IGCSE physics practical built the way 1.22 Hooke's law was. Eac
 Every IGCSE practical page now follows `hookes-law-practical.html` as it stands on 5 Nov 2026 (the teaching-animations skill, "IGCSE practicals", has the details). This replaces the core route + Extra practice layout of 4 Nov.
 
 - **No Overview tab (Alex, 12 Nov 2026)** except on 1.22 Hooke's law, whose Overview is the law and its graph rather than the method: on every other IGCSE practical the Overview's fill-in-the-blanks repeated the Method Order and the results tabs, so it was removed and the page opens on its first remaining tab. IAL and IB practicals keep theirs.
-- **One row of tabs**, in this order: (Overview, 1.22 only), Variables, Method, Accuracy, Do Experiment, Show Experiment, Results, Graph Analysis, Exam Qu Method, Exam Qu Analysis. No core route and no Extra practice: leave `core` and `coreMinutes` out of `page.json`.
-- **Required on every page:** Method (with its Order), Variables, Do Experiment and Show Experiment. The other tabs are used only where the practical gives them real work, and one exam question tab (or none) is fine.
+- **One row of tabs**, in this order: (Overview, 1.22 only), Variables, Method, Accuracy, Do Experiment, Show Experiment, Results, Graph Analysis. No core route and no Extra practice: leave `core` and `coreMinutes` out of `page.json`.
+- **Required on every page:** Method (with its Order), Variables, Do Experiment and Show Experiment. The other tabs are used only where the practical gives them real work.
+- **No exam question tabs (Alex, 13 Nov 2026):** no Exam Qu Method or Exam Qu Analysis tab, and no exam-style long questions on the page. They take too long, and students have practice questions elsewhere; the page is for practice in the lesson and for revising an overview. Mark scheme wording still goes into the Method, model answers and Multiple choice explanations.
 - **No Calculate tab** (equation drill belongs in the workout) and **no Plot on Results** (Do Experiment has the student's own plot). Questions that are not real predictions are Multiple choice.
-- **Time:** students do Do Experiment or Show Experiment, not both, and may skip the exam tabs, so aim for about 40 minutes without them. Give the estimate per tab whenever a page changes (count a typed results table as about 4 minutes).
+- **Time:** students do Do Experiment or Show Experiment, not both, so aim for about 40 minutes. Give the estimate per tab whenever a page changes (count a typed results table as about 4 minutes).
 - **Choose the content from the papers:** list every Question Index part tagged with the practical's spec points (4PH1 papers from 2019 count most) and cover what is asked most.
 
 ## Starting a batch in a new chat
