@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Refraction of Light Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation: a ray box shines a ray through a rectangular block, a semicircular block or a prism. Measure i and r from the normal, find the critical angle, see total internal reflection and dispersion. Experiment mode: trace rays and find n from a graph of sin i against sin r.">
+<meta name="description" content="Interactive physics animation: a ray box shines a ray through a rectangular block, a semicircular block or a prism, with the ray diagram beside it. Measure i and r from the normal, find the critical angle, see total internal reflection and dispersion. Questions: predict the path of the ray, then switch on. Experiment mode: trace rays and find n from a graph of sin i against sin r.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -20,6 +20,7 @@
     --topic:#be185d;   --topic-soft:#fce7f3;
     --ray:#dc2626;     --pencil:#6b7280;
     --paper:#fdfcf8;   --glass:#cfe8f5;   --glass-edge:#5b8db3;   --prot:rgba(255,255,255,0.55);
+    --box-f:#2d3648;   --box-t:#4a5569;   --box-s:#151b27;   --slit:#b4bcc9;   --lamp:#fde68a;   --glass-hi:rgba(255,255,255,0.7);
     --font-display:'Big Shoulders',system-ui,sans-serif;
     --font-body:'IBM Plex Sans',system-ui,sans-serif;
     --font-mono:'IBM Plex Mono',ui-monospace,monospace;
@@ -37,6 +38,7 @@
       --topic:#f472b6; --topic-soft:#3f1530;
       --ray:#f87171; --pencil:#a3acbb;
       --paper:#20283a; --glass:#1e3a52; --glass-edge:#7fb2d9; --prot:rgba(27,33,46,0.55);
+      --box-f:#5d6880; --box-t:#7c879d; --box-s:#353d4f; --slit:#c5ccd8; --lamp:#fde68a; --glass-hi:rgba(200,228,250,0.32);
       color-scheme:dark;
     }
   }
@@ -51,6 +53,7 @@
     --topic:#f472b6; --topic-soft:#3f1530;
       --ray:#f87171; --pencil:#a3acbb;
       --paper:#20283a; --glass:#1e3a52; --glass-edge:#7fb2d9; --prot:rgba(27,33,46,0.55);
+      --box-f:#5d6880; --box-t:#7c879d; --box-s:#353d4f; --slit:#c5ccd8; --lamp:#fde68a; --glass-hi:rgba(200,228,250,0.32);
     color-scheme:dark;
   }
 
@@ -164,6 +167,7 @@
   #rf-block,#rf-jump,#rf-entry,#rf-light,#rf-show{display:flex;flex-wrap:nowrap;}
   #rf-block>button,#rf-jump>button,#rf-entry>button,#rf-light>button,#rf-show>button{flex:1 1 auto;padding-inline:6px;}
   #rf-block>button{padding-inline:3px;font-size:12px;}
+  #rf-light>button,#rf-show>button{font-size:12px;padding-inline:5px;}
   #rf-stats{grid-template-columns:repeat(auto-fit,minmax(74px,1fr));}
   #rf-stats .stat strong{font-size:14px;}
   #rf-svg{max-height:max(260px,calc(100vh - 262px));}
@@ -178,6 +182,18 @@
   .obs li{padding:3px 8px;font-size:13px;}
   #rf-tablewrap{max-height:122px;}
   .slider-hint{font:11.5px var(--font-mono);color:var(--ink-faint);margin-top:2px;}
+  /* Questions: the dashed lines to choose from are in the picture */
+  .pick{cursor:pointer;}
+  .pick:focus{outline:none;}
+  .pick .ring{stroke:transparent;}
+  .pick:focus-visible .ring{stroke:var(--accent);}
+  /* the slider under the picture is one line: its label, then the slider (not in the dispersion view, which has two) */
+  @media (min-width:561px){ html:not(.disp) .under .sliders>div{display:flex;align-items:center;gap:14px;} html:not(.disp) .under .sliders .lab{margin:0;white-space:nowrap;} html:not(.disp) .under .sliders input{flex:1 1 auto;min-width:0;} }
+  @media (max-height:640px) and (min-width:861px){ .seg button{min-height:38px;} .side{gap:9px;} .note{min-height:0;} }
+  /* measure mode (?show=measure): everything that reads, records or explains is hidden */
+  .meas-off{display:none !important;}
+  #rf-pos{display:flex;flex-wrap:nowrap;}
+  #rf-pos>button{flex:1 1 auto;padding-inline:6px;min-width:38px;}
 
 </style>
 <style>
@@ -311,7 +327,7 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="rf-svg" viewBox="0 0 600 360" tabindex="0" role="slider" aria-label="A ray box on a sheet of paper shines a ray of light at a glass block. Drag the ray box, or use the arrow keys, to change the angle of incidence" aria-valuemin="0" aria-valuemax="85"></svg>
+      <svg class="view" id="rf-svg" viewBox="0 0 860 360" tabindex="0" role="slider" aria-label="A ray box on a sheet of paper shines a ray of light at a glass block, with the ray diagram beside it. Drag the ray box, or use the arrow keys, to change the angle of incidence" aria-valuemin="0" aria-valuemax="85"></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="rf-play" type="button">&#9654; Play</button>
@@ -319,12 +335,17 @@
           <button class="btn" id="rf-slow" type="button" aria-pressed="false">Slow motion</button>
           <button class="btn" id="rf-exp" type="button" aria-pressed="false" title="Trace the rays yourself and record the angles">Experiment</button>
           <button class="btn" id="rf-clear" type="button" hidden>Clear readings</button>
+          <button class="btn to-q" type="button" data-mode="rf-mode" hidden>Try the questions &rarr;</button>
+        </div>
+        <div class="sliders">
+          <div><label class="lab" for="rf-i">Angle of incidence, i (or drag the ray box)<output id="rf-io"></output></label><input type="range" id="rf-i" min="0" max="85" step="1" value="40"></div>
+          <div id="rf-wlrow" hidden><label class="lab" for="rf-wl">Wavelength of the light<output id="rf-wlo"></output></label><input type="range" id="rf-wl" min="400" max="700" step="10" value="550"></div>
         </div>
       </div>
     </div>
     <div class="side">
-      <div><label class="lab" for="rf-i">Angle of incidence, i (or drag the ray box)<output id="rf-io"></output></label><input type="range" id="rf-i" min="0" max="85" step="1" value="40"></div>
-      <div id="rf-wlrow" hidden><label class="lab" for="rf-wl">Wavelength of the light<output id="rf-wlo"></output></label><input type="range" id="rf-wl" min="400" max="700" step="10" value="550"></div>
+      <div class="seg tabs mode" id="rf-mode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
+      <div id="rf-posrow" hidden><span class="lab">Ray box position</span><div class="seg" id="rf-pos"><button type="button" data-v="10" aria-pressed="false">1</button><button type="button" data-v="20" aria-pressed="false">2</button><button type="button" data-v="30" aria-pressed="false">3</button><button type="button" data-v="40" aria-pressed="true">4</button><button type="button" data-v="50" aria-pressed="false">5</button><button type="button" data-v="60" aria-pressed="false">6</button><button type="button" data-v="70" aria-pressed="false">7</button></div></div>
       <div class="cgrid">
         <span class="rowlab" id="rf-blab">Block</span>
         <div class="seg" id="rf-block"><button type="button" data-v="rect" aria-pressed="true">Rectangle</button><button type="button" data-v="semi" aria-pressed="false">Semicircle</button><button type="button" data-v="p60" aria-pressed="false">60° prism</button><button type="button" data-v="p45" aria-pressed="false">45° prism</button></div>
@@ -334,6 +355,8 @@
         <div class="seg" id="rf-light"><button type="button" data-v="one" aria-pressed="true">One colour</button><button type="button" data-v="white" aria-pressed="false">White light</button></div>
         <span class="rowlab" id="rf-slab">Show</span>
         <div class="seg" id="rf-show"><button type="button" class="tog" data-v="prot" aria-pressed="false">Protractor</button><button type="button" class="tog" data-v="refl" aria-pressed="true">Weak reflection</button></div>
+      </div>
+      <div class="cgrid">
         <span class="rowlab" id="rf-jlab">Jump to</span>
         <div class="seg" id="rf-jump"></div>
       </div>
@@ -375,6 +398,10 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   // ?show=dispersion (the card on the Extension list): white light through the 60° prism, with a screen, the spectrum on it
   // and the graph of refractive index against wavelength. Everything it adds is behind DISP, so the IGCSE view is unchanged.
   var DISP = /[?&]show=dispersion\b/.test(location.search);
+  // ?show=measure: the Do Experiment tab of the 3.17 and 3.19 practical pages (see "Measure mode" below). &part=index is 3.19:
+  // the rectangular block with seven places for the ray box. Without it the student turns the ray box freely (3.17);
+  // &block=rect|semi|p60|p45, &entry=… and &light=white fix those choices and hide them. Everything it adds is behind MEAS.
+  var MEAS = !DISP && /[?&]show=measure\b/.test(location.search), MIDX = MEAS && /[?&]part=index\b/.test(location.search), modeSeg=null, posSeg=null;
   if(DISP){
     document.title='Dispersion Animation'; document.documentElement.classList.add('disp');
     $('.page-head h1').textContent='Dispersion: White Light Through a Prism';
@@ -651,7 +678,7 @@ function expKey(x, y, upLabel, downLabel){
   function kind(){ return ent().kind; }
   function exp(){ return pressed(expBtn); }
   function slowOn(){ return pressed(slowBtn); }
-  function white(){ return lightSeg.value()==='white' && !(exp() && kind()!=='obs'); }
+  function white(){ return lightSeg.value()==='white' && !(exp() && kind()!=='obs') && !predict() && !MIDX && blockSeg.value()!=='p45'; }   // the 45° prism has no Light choice
 
   // where the ray box is, and the ray it sends at the point P
   function boxPos(i){ var E=ent(), c=Math.cos(i*D2R), s=Math.sin(i*D2R); return add(E.P, [c*E.u[0]+s*E.s[0], c*E.u[1]+s*E.s[1]], E.Rb); }
@@ -666,38 +693,101 @@ function expKey(x, y, upLabel, downLabel){
   function keyIdx(tr){ var P=ent().P, k=-1; tr.ev.forEach(function(e,j){ if(k<0 && Math.hypot(e.p[0]-P[0], e.p[1]-P[1])<0.5) k=j; }); return k; }
 
   // ================= layout =================
-  var narrowQ=window.matchMedia('(max-width:560px)'), G=null, FS=1, SCR=null, NGR=null;
-  function hasGraph(){ return exp() && kind()==='graph'; }
+  // The picture is 860 wide on a laptop: the sheet of paper (600 × 360, the units the optics use) and, beside it, a panel for the
+  // ray diagram, the graph, the question or the protractor seen close up. On a phone the panel goes under the paper.
+  var narrowQ=window.matchMedia('(max-width:560px)'), G=null, FS=1, SCR=null, NGR=null, PAN=null;
+  function hasGraph(){ return exp() && kind()==='graph' && !MEAS; }
   function layout(){
     FS = narrowQ.matches ? 1.45 : 1;
-    if(DISP){ G=null;
+    if(DISP){ G=null; PAN=null;
       if(narrowQ.matches){ SCR={x:40, y:402, w:520, h:56}; NGR={x:96, y:566, w:440, h:150}; svg.setAttribute('viewBox','0 0 600 790'); }
       else { SCR={x:628, y:36, w:222, h:42}; NGR={x:668, y:146, w:180, h:140}; svg.setAttribute('viewBox','0 0 860 360'); }
       return; }
-    if(!hasGraph()){ G=null; svg.setAttribute('viewBox','0 0 600 360'); return; }
-    if(narrowQ.matches){ G={x:84, y:402, w:470, h:236}; svg.setAttribute('viewBox','0 0 600 700'); }
-    else { G={x:668, y:28, w:172, h:276}; svg.setAttribute('viewBox','0 0 860 360'); }
+    if(narrowQ.matches){
+      PAN={x:0, y:372, w:600, h: MEAS ? 496 : hasGraph() ? 328 : predict() ? 250 : 478, tall:true};
+      G={x:84, y:402, w:470, h:236}; svg.setAttribute('viewBox','0 0 600 '+(PAN.y+PAN.h)); }
+    else { PAN={x:612, y:0, w:248, h:360}; G={x:668, y:28, w:172, h:276}; svg.setAttribute('viewBox','0 0 860 360'); }
+    if(!hasGraph()) G=null;
   }
   if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ layout(); draw(); });
 
   // ================= drawing =================
   function T(x,y,s,o){ o=o||{}; o.fs=(o.fs||12)*FS; return txt(x,y,s,o); }
+  // text with an edge the colour of what is behind it, so that a line passing close by never cuts a letter
+  function TH(x,y,s,o){ o=o||{}; return T(x,y,s,{a:o.a, fs:o.fs, c:o.c, w:o.w}).replace('<text ','<text stroke="var(--'+(o.bg||'paper')+')" stroke-width="'+(4*FS)+'" stroke-linejoin="round" paint-order="stroke" '); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
   function poly(pts, col, w, op, extra){ return '<polyline points="'+pts.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' ')+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!=null?' opacity="'+(+op).toFixed(2)+'"':'')+(extra||'')+'/>'; }
-  function clipLine(a, b){ return [a, b]; }
+  function pgon(pts, fill, extra){ return '<polygon points="'+pts.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' ')+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function tri(x,y,ang,size,col,extra){ return '<path d="M0,0 L'+(-size*1.7).toFixed(1)+','+(size*0.8).toFixed(1)+' L'+(-size*1.7).toFixed(1)+','+(-size*0.8).toFixed(1)+' z" transform="translate('+x.toFixed(1)+','+y.toFixed(1)+') rotate('+ang.toFixed(1)+')" fill="'+col+'"'+(extra||'')+'/>'; }
   function arrowMid(a, b, col, op){   // a small arrowhead halfway along a ray
     var m=[(a[0]+b[0])/2,(a[1]+b[1])/2], d=unit([b[0]-a[0], b[1]-a[1]]), n=[-d[1], d[0]], s=7;
     var p1=add(add(m,d,-s),n,s*0.55), p2=add(add(m,d,-s),n,-s*0.55);
     return '<path d="M'+f1(p1[0])+','+f1(p1[1])+' L'+f1(m[0]+d[0]*3)+','+f1(m[1]+d[1]*3)+' L'+f1(p2[0])+','+f1(p2[1])+'" fill="none" stroke="'+col+'" stroke-width="2"'+(op!=null?' opacity="'+(+op).toFixed(2)+'"':'')+'/>';
   }
-  // angle arc at p between two directions (unit vectors pointing away from p), with a label
-  function angArc(p, a, b, R, lab, col){
+
+  // ---- labels in clear space (Alex, 10 Nov 2026: labels never lie over the picture). A label goes to the first of its
+  // candidate places where it lies over no ray, normal, edge of the block or other label, and stays on the paper.
+  function placer(b){ return {b:b, boxes:[], segs:[]}; }
+  function clipT(a, c, x0, y0, x1, y1){   // the part of the line from a to c that is inside the box, as [t0, t1], or null
+    var t0=0, t1=1, dx=c[0]-a[0], dy=c[1]-a[1], p=[-dx,dx,-dy,dy], q=[a[0]-x0,x1-a[0],a[1]-y0,y1-a[1]];
+    for(var i=0;i<4;i++){
+      if(Math.abs(p[i])<1e-9){ if(q[i]<0) return null; }
+      else { var r=q[i]/p[i]; if(p[i]<0){ if(r>t1) return null; if(r>t0) t0=r; } else { if(r<t0) return null; if(r<t1) t1=r; } }
+    }
+    return [t0,t1];
+  }
+  function plFits(P, cx, cy, w, h, loose){
+    var x0=cx-w/2-2, x1=cx+w/2+2, y0=cy-h/2-1, y1=cy+h/2+1, i;
+    if(x0<P.b[0] || y0<P.b[1] || x1>P.b[2] || y1>P.b[3]) return false;
+    for(i=0;i<P.boxes.length;i++){ var B=P.boxes[i]; if(!(x1<=B[0] || B[2]<=x0 || y1<=B[1] || B[3]<=y0)) return false; }
+    if(!loose) for(i=0;i<P.segs.length;i++) if(clipT(P.segs[i][0], P.segs[i][1], x0, y0, x1, y1)) return false;
+    return true;
+  }
+  function plPut(P, cands, w, h, maybe){   // maybe: a label that can be left out when there is no room (returns null)
+    var c=null, i;
+    for(i=0;i<cands.length && !c;i++) if(plFits(P, cands[i][0], cands[i][1], w, h)) c=cands[i];
+    for(i=0;i<cands.length && !c;i++) if(plFits(P, cands[i][0], cands[i][1], w, h, true)) c=cands[i];
+    if(!c && maybe) return null;
+    if(!c) c=[Math.max(P.b[0]+w/2+2, Math.min(P.b[2]-w/2-2, cands[0][0])), Math.max(P.b[1]+h/2+1, Math.min(P.b[3]-h/2-1, cands[0][1]))];
+    P.boxes.push([c[0]-w/2-2, c[1]-h/2-1, c[0]+w/2+2, c[1]+h/2+1]); return c;
+  }
+  function plBox(P, x0, y0, x1, y1){ P.boxes.push([x0,y0,x1,y1]); }
+  function tw(s, fs){ return String(s).replace(/&[a-z]+;/g,'x').length*fs*FS*0.61; }
+  function label(P, cands, s, o){ o=o||{}; var fs=o.fs||12, w=tw(s,fs), h=fs*FS*1.15, c=plPut(P,cands,w,h,o.maybe);
+    if(!c) return '';
+    return TH(c[0], c[1]+fs*FS*0.35, s, {a:'middle', fs:fs, c:o.c, w:o.w, bg:o.bg}); }
+  // places for a label beside the line from a to c: at fr of the way along, on either side
+  function sideCands(a, c, w, h, frs){
+    var d=unit([c[0]-a[0], c[1]-a[1]]), n=[-d[1], d[0]], s=w/2*Math.abs(n[0])+h/2*Math.abs(n[1])+5, out=[];
+    [0,16].forEach(function(more){ (frs||[0.5,0.32,0.68,0.2,0.8,0.1,0.9]).forEach(function(f){ var m=[a[0]+(c[0]-a[0])*f, a[1]+(c[1]-a[1])*f]; out.push(add(m,n,s+more)); out.push(add(m,n,-s-more)); }); });
+    return out;
+  }
+  // places for the label of an angle at p between the arms a and b (unit vectors from p): inside the angle, then outside each arm
+  function angCands(p, a, b, R, w, h){
+    var out=[], m=unit([a[0]+b[0], a[1]+b[1]]);
+    function sup(n){ return w/2*Math.abs(n[0])+h/2*Math.abs(n[1]); }
+    function outside(arm, other){ var n=[-arm[1],arm[0]]; if(dot(n,other)>0) n=[-n[0],-n[1]]; return n; }
+    var nb=outside(b,a), na=outside(a,b);
+    [R+13*FS, R+26*FS, R+40*FS].forEach(function(r){ out.push(add(p, m, r)); });
+    [R+2, R+18, R+36, R+56].forEach(function(r){ out.push(add(add(p,b,r), nb, sup(nb)+5)); });
+    [R+2, R+18, R+36].forEach(function(r){ out.push(add(add(p,a,r), na, sup(na)+5)); });
+    // further out, for when a protractor lies round the point: beyond its scale
+    [R+62, R+80].forEach(function(r){ out.push(add(p, m, r+sup(m))); out.push(add(add(p,b,r), nb, sup(nb)+5)); out.push(add(add(p,a,r), na, sup(na)+5)); out.push(add(add(p,b,r), nb, -sup(nb)-5)); });
+    var pm=[-m[1],m[0]]; [1,-1].forEach(function(sg){ out.push(add(add(p,pm,sg*(R+56+sup(pm))), m, 14)); out.push(add(add(p,pm,sg*(R+56+sup(pm))), m, 40)); });   // or beside it
+    return out;
+  }
+  // the arc of an angle at p between two directions (unit vectors pointing away from p)
+  function arcPath(p, a, b, R, col){
     var a0=Math.atan2(a[1],a[0]), a1=Math.atan2(b[1],b[0]), da=a1-a0;
     while(da>Math.PI) da-=2*Math.PI; while(da<-Math.PI) da+=2*Math.PI;
     if(Math.abs(da)<0.02) return '';
     var x0=p[0]+R*Math.cos(a0), y0=p[1]+R*Math.sin(a0), x1=p[0]+R*Math.cos(a1), y1=p[1]+R*Math.sin(a1);
-    var am=a0+da/2, ca=Math.cos(am), anc=ca<-0.3?'end':ca>0.3?'start':'middle', LR=R+(anc==='middle'?13:6)*FS, lx=p[0]+LR*ca, ly=p[1]+LR*Math.sin(am)+4*FS+(anc==='middle'&&Math.sin(am)>0?6*FS:0);
-    return '<path d="M'+f1(x0)+','+f1(y0)+' A'+R+','+R+' 0 0 '+(da>0?1:0)+' '+f1(x1)+','+f1(y1)+'" fill="none" stroke="'+col+'" stroke-width="1.6"/>'+
-      '<text x="'+f1(lx)+'" y="'+f1(ly)+'" text-anchor="'+anc+'" font-size="'+(11.5*FS)+'" font-weight="600" fill="'+col+'" stroke="var(--paper)" stroke-width="4" stroke-linejoin="round" paint-order="stroke">'+lab+'</text>';
+    return '<path d="M'+f1(x0)+','+f1(y0)+' A'+f1(R)+','+f1(R)+' 0 0 '+(da>0?1:0)+' '+f1(x1)+','+f1(y1)+'" fill="none" stroke="'+col+'" stroke-width="1.6"/>';
+  }
+  function angLabel(P, p, a, b, R, lab, col, bg){
+    if(!lab || Math.abs(dot(a,b))>0.9998) return '';
+    var fs=11.5, w=tw(lab,fs), h=fs*FS*1.15, c=plPut(P, angCands(p,a,b,R,w,h), w, h);
+    return TH(c[0], c[1]+fs*FS*0.35, lab, {a:'middle', fs:fs, w:600, c:col, bg:bg});
   }
   function normalLine(p, N, len, op){
     return ln(p[0]-N[0]*len, p[1]-N[1]*len, p[0]+N[0]*len, p[1]+N[1]*len, 'var(--ink-soft)', 1.3, ' stroke-dasharray="5 4"'+(op!=null?' opacity="'+op+'"':''));
@@ -715,13 +805,39 @@ function expKey(x, y, upLabel, downLabel){
     }
     return g+'</g>';
   }
-  function rayBox(B, d){
-    var ang=deg(Math.atan2(d[1],d[0]));
-    return '<g class="grab" transform="translate('+f1(B[0])+' '+f1(B[1])+') rotate('+f1(ang)+')">'+
-      '<rect x="-26" y="-13" width="50" height="26" rx="4" fill="var(--ink)" />'+
-      '<rect x="18" y="-6" width="6" height="12" fill="var(--panel-border)"/>'+
-      '<rect x="22" y="-1.5" width="4" height="3" fill="#fde68a"/>'+
-      '<rect x="-36" y="-36" width="70" height="72" fill="transparent"/></g>';
+
+  function protBoxes(P, p, N){ var base=Math.atan2(N[1],N[0]), R=78; for(var a=0;a<360;a+=30){ var t=base+a*D2R, x=p[0]+(R-16)*Math.cos(t), y=p[1]+(R-16)*Math.sin(t); plBox(P, x-8*FS, y-6*FS, x+8*FS, y+6*FS); } }   // the protractor's numbers
+
+  // ---- the apparatus, drawn solid and seen from above ----
+  // The ray box: a black metal box with cooling slots, its lead, and a slit plate at the front. B is its centre and d the way it points;
+  // the ray leaves at paper level from under the front edge. The top is drawn a little up and to the left of the base, so it reads as a box.
+  function rayBox(B, d, lit){
+    var a=Math.atan2(d[1],d[0]), ca=Math.cos(a), sa=Math.sin(a), up=[-2.6,-3.4], g='<g class="grab">', k;
+    function q(x,y,o){ return [B[0]+x*ca-y*sa+(o?o[0]:0), B[1]+x*sa+y*ca+(o?o[1]:0)]; }
+    function r4(x0,y0,x1,y1,o){ return [q(x0,y0,o),q(x1,y0,o),q(x1,y1,o),q(x0,y1,o)]; }
+    var c0=q(-28,0), c1=q(-46,2), c2=q(-58,-12), c3=q(-76,-8);
+    g+='<path d="M'+f1(c0[0])+','+f1(c0[1])+' C'+f1(c1[0])+','+f1(c1[1])+' '+f1(c2[0])+','+f1(c2[1])+' '+f1(c3[0])+','+f1(c3[1])+'" fill="none" stroke="var(--box-s)" stroke-width="3.4" stroke-linecap="round"/>';
+    g+=pgon(r4(-28,-15,24,15,[4,5.5]),'#000',' opacity=".16"');
+    g+=pgon(r4(-28,-15,24,15),'var(--box-s)',' stroke="var(--box-s)" stroke-width="1" stroke-linejoin="round"');
+    g+=pgon(r4(-28,-15,24,15,up),'var(--box-f)',' stroke="var(--box-f)" stroke-width="1" stroke-linejoin="round"');
+    g+=pgon(r4(-24,-11,12,11,up),'var(--box-t)');
+    for(k=0;k<4;k++) g+=pgon(r4(-20+k*8,-7.5,-16.5+k*8,7.5,up),'var(--box-s)');
+    g+=pgon(r4(17,-13,24,13,up),'var(--slit)')+pgon(r4(20.5,-1.6,24.4,1.6,up), lit ? 'var(--lamp)' : 'var(--box-s)');
+    if(lit){ var s=q(24,0); g+='<circle cx="'+f1(s[0])+'" cy="'+f1(s[1])+'" r="5" fill="var(--lamp)" opacity=".55"/>'; }
+    g+=pgon(r4(-38,-38,36,38),'transparent');
+    return g+'</g>';
+  }
+  // The glass block: a slab of clear glass lying on the paper. Its upright sides show as a darker band inside the outline,
+  // with a light edge towards the top left and a soft shadow on the paper. op fades it as it is lifted off.
+  function glassBlock(b, op){
+    var g='<g'+(op<1?' opacity="'+op.toFixed(2)+'"':'')+'>';
+    g+='<path d="'+b.path+'" transform="translate(5 6)" fill="#000" opacity=".10"/>';
+    g+='<path d="'+b.path+'" fill="var(--glass)" fill-opacity="0.8"/>';
+    g+='<g clip-path="url(#rf-gclip)"><path d="'+b.path+'" fill="none" stroke="var(--glass-edge)" stroke-opacity=".3" stroke-width="20" stroke-linejoin="round"/>'+
+       '<path d="'+b.path+'" transform="translate(-3 -3.6)" fill="none" stroke="var(--glass-edge)" stroke-opacity=".34" stroke-width="5"/>'+
+       '<path d="'+b.path+'" transform="translate(3 3.6)" fill="none" stroke="var(--glass-hi)" stroke-width="4.5"/></g>';
+    g+='<path d="'+b.path+'" fill="none" stroke="var(--glass-edge)" stroke-width="1.8" stroke-linejoin="round"/>';
+    return g+'</g>';
   }
   function cross(p, s){ s=(s||5)*FS; return '<path d="M'+f1(p[0]-s)+','+f1(p[1]-s)+' L'+f1(p[0]+s)+','+f1(p[1]+s)+' M'+f1(p[0]+s)+','+f1(p[1]-s)+' L'+f1(p[0]-s)+','+f1(p[1]+s)+'" stroke="var(--pencil)" stroke-width="1.8"/>'; }
   // a point on the last stretch of a ray, d along it, kept on the paper
@@ -735,6 +851,7 @@ function expKey(x, y, upLabel, downLabel){
     var g='', pts=tr.pts;            // from the front of the ray box
     for(var k=0;k<pts.length-1;k++){
       var op=Math.max(0.22, Math.min(1, tr.inten[k]));
+      if(keep && !white()) g+=poly([pts[k],pts[k+1]], col, 7, op*0.16);   // the glow of the light on the paper
       g+=poly([pts[k],pts[k+1]], col, 2.4, op);
       if(DISP && white() && !keep) continue;
       if((k===0 && !white()) || k===pts.length-2) g+=arrowMid(pts[k], k===pts.length-2 ? add(pts[k], tr.dir, 120) : pts[k+1], col, op);
@@ -742,20 +859,37 @@ function expKey(x, y, upLabel, downLabel){
     if(keep && showing('refl')) tr.part.forEach(function(q){ if(q.I>0.004) g+=poly([q.p, add(q.p,q.dir,110)], col, 1.6, Math.min(0.85, 0.12+2.2*q.I)); });
     return g;
   }
+  // everything on the paper that a label must keep clear of
+  function paperPlacer(R, tr){
+    var P=placer([3,3,PW-3,PH-3]), b=blk(), j;
+    plBox(P, 0, PH-20*FS, 150*FS, PH);                                   // "paper, seen from above"
+    plBox(P, R.B[0]-36, R.B[1]-36, R.B[0]+36, R.B[1]+36);                // the ray box
+    for(j=0;j<tr.pts.length-1;j++) P.segs.push([tr.pts[j], tr.pts[j+1]]);
+    if(white()){ var a=R.list[0].tr, z=R.list[R.list.length-1].tr; [a,z].forEach(function(t){ for(var i=1;i<t.pts.length-1;i++) P.segs.push([t.pts[i], t.pts[i+1]]); }); }
+    if(showing('refl')) tr.part.forEach(function(q){ if(q.I>0.004) P.segs.push([q.p, add(q.p,q.dir,110)]); });
+    b.edges.forEach(function(e){
+      if(e.t==='s') P.segs.push([e.a,e.b]);
+      else for(var i=0;i<12;i++){ var t0=i*Math.PI/12, t1=(i+1)*Math.PI/12; P.segs.push([[e.c[0]+e.r*Math.cos(t0), e.c[1]+e.r*Math.sin(t0)],[e.c[0]+e.r*Math.cos(t1), e.c[1]+e.r*Math.sin(t1)]]); }
+    });
+    return P;
+  }
   function scene(){
+    if(predict() && Q) return sceneQ();
     var g='', b=blk(), E=ent(), R=rays(I), tr=R.list[Math.floor(R.list.length/2)].tr, k=keyIdx(tr), m=X.mark;
     var ph = m ? TRACE_T-X.busy : -1;                    // how far through tracing a reading we are
     var SC = DISP ? screenOf(R) : null;
-    g+='<defs><clipPath id="rf-paper"><rect x="0" y="0" width="'+PW+'" height="'+PH+'"/></clipPath></defs>';
+    var P=paperPlacer(R, tr), labs='';
+    g+='<defs><clipPath id="rf-paper"><rect x="0" y="0" width="'+PW+'" height="'+PH+'"/></clipPath><clipPath id="rf-gclip"><path d="'+b.path+'"/></clipPath></defs>';
     g+='<rect x="0.5" y="0.5" width="'+(PW-1)+'" height="'+(PH-1)+'" rx="4" fill="var(--paper)" stroke="var(--panel-border)"/>';
     g+='<g clip-path="url(#rf-paper)">';
     var lifted = m && ph>=0.5;
     // the block (lifted off once the crosses are marked) and its pencil outline
     if(exp()) g+='<path d="'+b.path+'" fill="none" stroke="var(--pencil)" stroke-width="1.2"/>';
-    if(!lifted) g+='<path d="'+b.path+'" fill="var(--glass)" fill-opacity="0.75" stroke="var(--glass-edge)" stroke-width="2"/>';
-    else if(ph<0.9) g+='<path d="'+b.path+'" fill="var(--glass)" fill-opacity="'+(0.75*(0.9-ph)/0.4).toFixed(2)+'" stroke="none"/>';
-    if(blockSeg.value()==='semi') g+=ln(296,118,304,118,'var(--ink)',1.5)+ln(300,114,300,122,'var(--ink)',1.5)+T(334,112,'centre',{a:'middle',fs:9.5,c:'var(--ink-faint)'});
-    if(showing('prot') && !m && k>=0) g+=protractor(tr.ev[k].p, tr.ev[k].N);
+    if(!lifted) g+=glassBlock(b, 1);
+    else if(ph<0.9) g+=glassBlock(b, (0.9-ph)/0.4);
+    if(blockSeg.value()==='semi') g+=ln(296,118,304,118,'var(--ink)',1.5)+ln(300,114,300,122,'var(--ink)',1.5);
+    if(showing('prot') && !m && k>=0){ g+=protractor(tr.ev[k].p, tr.ev[k].N); protBoxes(P, tr.ev[k].p, tr.ev[k].N); }
+    if(blockSeg.value()==='semi' && !m) labs+=label(P, [[338,108],[262,108],[338,130],[262,130],[300,100],[410,108],[190,108]], 'centre', {fs:10, c:'var(--ink-soft)', maybe:1});
     // the rays (off while the block is lifted)
     if(!lifted){
       if(SC && SC.ghost) SC.ghost.forEach(function(q){ g+=poly([q.p,q.h], q.col, 1.6, 0.55, ' stroke-dasharray="5 4"'); });
@@ -764,15 +898,17 @@ function expKey(x, y, upLabel, downLabel){
       if(white()) g+=poly([R.S, tr.pts[1]], '#fde68a', 5, 0.9)+poly([R.S, tr.pts[1]], '#d97706', 1.4, 1);
     }
     // normals and angles where the ray meets each face
-    var showAng = !m && !X.busy;
+    var showAng = !m && !X.busy && !MEAS;                 // measure mode: no normal and no angles until the student has traced the ray
     tr.ev.forEach(function(e, j){
       if(j<k || k<0) return;
-      if(!(m && j>k)) g+=normalLine(e.p, e.N, 52, lifted?1:0.9);
-      if(!showAng || j>k+(DISP?0:1)) return;
-      var big = j===k, fs=big?1:0.8, inc=[-e.din[0],-e.din[1]], nIn=[-e.N[0],-e.N[1]];
-      if(e.i>0.6) g+=angArc(e.p, e.N, inc, big?34:26, (big?'i = ':'')+d1(e.i), 'var(--topic)');
-      if(e.kind==='tir') g+=angArc(e.p, e.N, e.dout, big?44:34, d1(e.i), 'var(--topic)');
-      else if(e.r>0.6 && !white()) g+=angArc(e.p, nIn, e.dout, big?44:34, (big?'r = ':'')+d1(e.r), 'var(--accent)');
+      if(!(m && j>k) && !(MEAS && !m)){ g+=normalLine(e.p, e.N, 52, lifted?1:0.9); P.segs.push([add(e.p,e.N,-52), add(e.p,e.N,52)]); }
+    });
+    tr.ev.forEach(function(e, j){
+      if(j<k || k<0 || !showAng || j>k+(DISP?0:1)) return;
+      var big = j===k, inc=[-e.din[0],-e.din[1]], nIn=[-e.N[0],-e.N[1]];
+      if(e.i>0.6){ g+=arcPath(e.p, e.N, inc, big?34:26, 'var(--topic)'); labs+=angLabel(P, e.p, e.N, inc, big?34:26, (big?'i = ':'')+d1(e.i), 'var(--topic)'); }
+      if(e.kind==='tir'){ g+=arcPath(e.p, e.N, e.dout, big?44:34, 'var(--topic)'); labs+=angLabel(P, e.p, e.N, e.dout, big?44:34, d1(e.i), 'var(--topic)'); }
+      else if(e.r>0.6 && !white()){ g+=arcPath(e.p, nIn, e.dout, big?44:34, 'var(--accent)'); labs+=angLabel(P, e.p, nIn, e.dout, big?44:34, (big?'r = ':'')+d1(e.r), 'var(--accent)'); }
     });
     // the traced reading: crosses, then the block lifted, pencil lines, the normal and the protractor
     if(m){
@@ -784,22 +920,80 @@ function expKey(x, y, upLabel, downLabel){
         g+='<polyline points="'+pts.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' ')+'" fill="none" stroke="var(--pencil)" stroke-width="1.6" stroke-dasharray="'+f1(L)+'" stroke-dashoffset="'+f1(L*(1-t1))+'"/>';
       }
       if(ph>=1.5){
-        var e=m.e, inc=[-e.din[0],-e.din[1]], nIn=[-e.N[0],-e.N[1]];
-        g+=protractor(e.p, e.N);
-        g+=angArc(e.p, e.N, inc, 34, ph>=TRACE_T-1e-6 && m.lab1 ? m.lab1 : '?', 'var(--topic)');
+        var e=m.e, inc=[-e.din[0],-e.din[1]], nIn=[-e.N[0],-e.N[1]], fin=ph>=TRACE_T-1e-6, q1=fin ? m.lab1 : '?', q2=fin ? m.lab2 : '?';
+        g+=protractor(e.p, e.N); protBoxes(P, e.p, e.N);
+        g+=arcPath(e.p, e.N, inc, 34, 'var(--topic)'); labs+=angLabel(P, e.p, e.N, inc, 34, q1, 'var(--topic)');
         if(m.lab2===null){}
-        else if(e.kind==='tir') g+=angArc(e.p, e.N, e.dout, 46, ph>=TRACE_T-1e-6 && m.lab2 ? m.lab2 : '?', 'var(--accent)');
-        else if(e.r>0.6) g+=angArc(e.p, nIn, e.dout, 46, ph>=TRACE_T-1e-6 && m.lab2 ? m.lab2 : '?', 'var(--accent)');
+        else if(e.kind==='tir'){ g+=arcPath(e.p, e.N, e.dout, 46, 'var(--accent)'); labs+=angLabel(P, e.p, e.N, e.dout, 46, q2, 'var(--accent)'); }
+        else if(e.r>0.6){ g+=arcPath(e.p, nIn, e.dout, 46, 'var(--accent)'); labs+=angLabel(P, e.p, nIn, e.dout, 46, q2, 'var(--accent)'); }
       }
     }
     g+='</g>';
     // the ray box (drag it)
-    if(!lifted || !m){ g+=rayBox(R.B, R.d); }
-    if(!exp() || !X.rd.length){ var hb=add(R.B, E.u, 30); if(inPaper(hb) && !m) g+=T(hb[0], hb[1]+4, 'drag', {a:'middle', fs:9.5, c:'var(--topic)'}); }
+    if(!lifted || !m){ g+=rayBox(R.B, R.d, true); }
+    if((!exp() || !X.rd.length) && !m){ var n=[-R.d[1],R.d[0]], bk=[-R.d[0],-R.d[1]];
+      labs+=label(P, [add(R.B,n,-46), add(R.B,n,46), add(add(R.B,bk,52),n,-30), add(add(R.B,bk,52),n,30), add(R.B,E.u,60)], 'drag', {fs:10, c:'var(--topic)', maybe:1}); }
     g+=T(8, PH-8, 'paper, seen from above', {fs:9.5, c:'var(--ink-faint)'});
     if(running && slowOn()) g+=T(PW-8, 16, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
+    g+='<g clip-path="url(#rf-paper)">'+labs+'</g>';
     if(DISP) g+=dispPanels(R, SC);
+    else if(MEAS) g+=measPanel(m, ph);
+    else if(!G) g+=rayDiagram(R);
     return g;
+  }
+
+  // ---- the ray diagram beside the paper: the same rays as an exam draws them, flat, with their parts named
+  var DWIN={rect:300, semi:300, p60:300, p45:262};
+  var DGLASS={rect:[[232,246],[408,246],[232,158],[408,158],[320,200]], semi:[[218,136],[382,136],[300,216],[250,176],[350,176]],
+              p60:[[232,286],[368,286],[300,268],[300,160]], p45:[[224,244],[330,248],[216,136],[246,214]]};
+  function rayDiagram(R){
+    var b=blk(), wide=!PAN.tall, k=wide?0.8:1.4, ww=300, wh=wide?360:300, wx0=DWIN[blockSeg.value()]-ww/2, wy0=wide?0:30;
+    var W=ww*k, H=wh*k, X0=PAN.x+(PAN.w-W)/2, Y0=PAN.y+(wide?30:44), g='', labs='', P=placer([X0+2, Y0+2, X0+W-2, Y0+H-2]);
+    function M(p){ return [X0+(p[0]-wx0)*k, Y0+(p[1]-wy0)*k]; }
+    function seg(a, c){ var t=clipT(a, c, X0, Y0, X0+W, Y0+H); return t && t[1]-t[0]>1e-6 ? [[a[0]+(c[0]-a[0])*t[0], a[1]+(c[1]-a[1])*t[0]], [a[0]+(c[0]-a[0])*t[1], a[1]+(c[1]-a[1])*t[1]]] : null; }
+    var list=R.list, mid=list[Math.floor(list.length/2)], wl=white(), show = wl ? [list[0], list[list.length-1]] : [mid];
+    var tr=mid.tr, kq=keyIdx(tr), named=[];
+    g+=T(X0, PAN.y+(wide?20:28), 'Ray diagram', {fs:12.5, w:600, c:'var(--ink)'});
+    g+='<clipPath id="rf-dclip"><rect x="'+f1(X0)+'" y="'+f1(Y0)+'" width="'+f1(W)+'" height="'+f1(H)+'" rx="4"/></clipPath>';
+    g+='<rect x="'+f1(X0)+'" y="'+f1(Y0)+'" width="'+f1(W)+'" height="'+f1(H)+'" rx="4" fill="var(--panel)" stroke="var(--panel-border)"/>';
+    g+='<g clip-path="url(#rf-dclip)">';
+    g+='<path d="'+b.path+'" transform="translate('+f1(X0-wx0*k)+' '+f1(Y0-wy0*k)+') scale('+k+')" fill="var(--glass)" fill-opacity=".45" stroke="var(--ink)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>';
+    b.edges.forEach(function(e){
+      if(e.t==='s') P.segs.push([M(e.a),M(e.b)]);
+      else for(var i=0;i<12;i++){ var t0=i*Math.PI/12, t1=(i+1)*Math.PI/12; P.segs.push([M([e.c[0]+e.r*Math.cos(t0), e.c[1]+e.r*Math.sin(t0)]), M([e.c[0]+e.r*Math.cos(t1), e.c[1]+e.r*Math.sin(t1)])]); }
+    });
+    // the rays, each stretch with an arrowhead halfway along the part that shows
+    show.forEach(function(L, j){
+      var t=L.tr, n=t.pts.length-1, col=wl ? L.col : 'var(--ink)';
+      for(var s=0;s<n;s++){
+        if(wl && s===0 && j>0) continue;                                // the white ray going in is drawn once
+        var c=seg(M(t.pts[s]), M(s===n-1 ? add(t.pts[s], t.dir, 700) : t.pts[s+1])); if(!c) continue;
+        var cc=(wl && s===0) ? 'var(--ink)' : col;
+        g+=ln(c[0][0],c[0][1],c[1][0],c[1][1],cc,1.8); P.segs.push(c);
+        if(Math.hypot(c[1][0]-c[0][0], c[1][1]-c[0][1])>26) g+=tri((c[0][0]+c[1][0])/2+0, (c[0][1]+c[1][1])/2+0, deg(Math.atan2(c[1][1]-c[0][1], c[1][0]-c[0][0])), 5.2, cc);
+        var name = wl ? (s===0 ? 'white light' : s===n-1 ? (j===0 ? 'red' : 'violet') : '')
+                      : s===0 ? 'incident ray' : (s===kq+1 ? (t.ev[kq].kind==='tir' ? 'reflected ray' : 'refracted ray') : (s===n-1 && t.ev[n-2].kind==='out' ? 'emergent ray' : ''));
+        if(name) named.push({c:c, name:name, col:wl && s>0 ? L.col : 'var(--ink)', end:wl && s===n-1});
+        if(wl && s===n-1 && j===1){ var red=named[named.length-2]; if(red && red.end && Math.hypot(red.c[1][0]-c[1][0], red.c[1][1]-c[1][1])<14) named.splice(named.length-2, 2); }   // together still: no colours to name
+      }
+    });
+    // the normal where the angle of incidence is set, and the two angles
+    if(kq>=0){
+      var e=tr.ev[kq], p=M(e.p), inc=[-e.din[0],-e.din[1]], nIn=[-e.N[0],-e.N[1]], nl=46*k, tip=add(p,e.N,nl);
+      g+=ln(p[0]-e.N[0]*nl, p[1]-e.N[1]*nl, tip[0], tip[1], 'var(--ink-soft)', 1.2, ' stroke-dasharray="5 4"'); P.segs.push([add(p,e.N,-nl), tip]);
+      if(e.i>0.6){ g+=arcPath(p, e.N, inc, 22, 'var(--topic)'); labs+=angLabel(P, p, e.N, inc, 22, 'i', 'var(--topic)', 'panel'); }
+      if(!wl){
+        if(e.kind==='tir'){ g+=arcPath(p, e.N, e.dout, 22, 'var(--accent)'); labs+=angLabel(P, p, e.N, e.dout, 22, 'r', 'var(--accent)', 'panel'); }
+        else if(e.r>0.6){ g+=arcPath(p, nIn, e.dout, 28, 'var(--accent)'); labs+=angLabel(P, p, nIn, e.dout, 28, 'r', 'var(--accent)', 'panel'); }
+      }
+      var nw=tw('normal',11), nh=11*FS*1.15, side=[-e.N[1],e.N[0]], sp=nw/2*Math.abs(side[0])+nh/2*Math.abs(side[1])+5;
+      labs+=label(P, [add(add(p,e.N,nl-8),side,sp), add(add(p,e.N,nl-8),side,-sp), add(p,e.N,nl+nh/2+4+nw/2*Math.abs(e.N[0])), add(add(p,e.N,-nl+8),side,sp), add(add(p,e.N,-nl+8),side,-sp)], 'normal', {fs:11, c:'var(--ink-soft)', bg:'panel'});
+    }
+    named.forEach(function(q){ var fs=11, w=tw(q.name,fs), h=fs*FS*1.15;
+      labs+=label(P, sideCands(q.c[0], q.c[1], w, h, q.end ? [0.75,0.6,0.88,0.45] : null), q.name, {fs:fs, c:q.col, bg:'panel', maybe:1}); });   // a name is left out when it would lie over something
+    labs+=label(P, DGLASS[blockSeg.value()].map(M), 'glass', {fs:11, c:'var(--glass-edge)', w:600, bg:'panel', maybe:1});
+    labs+=label(P, [[X0+24*FS,Y0+16*FS],[X0+W-24*FS,Y0+16*FS],[X0+24*FS,Y0+H-14*FS],[X0+W-24*FS,Y0+H-14*FS],[X0+W/2,Y0+16*FS]], 'air', {fs:11, c:'var(--ink-soft)', w:600, bg:'panel', maybe:1});
+    return g+labs+'</g>';
   }
 
   // ---- dispersion view: a screen across the light that leaves the prism, the spectrum on it (magnified), and n against wavelength
@@ -885,7 +1079,9 @@ function expKey(x, y, upLabel, downLabel){
   function draw(){
     var g=scene();
     if(G) g+=graph();
+    var f=document.activeElement, kf=f && f!==svg && svg.contains(f) ? f.getAttribute('data-pick') : null;
     svg.innerHTML=g;
+    if(kf){ var nf=svg.querySelector('.pick[data-pick="'+kf+'"]'); if(nf && nf.focus) nf.focus(); }
     svg.setAttribute('aria-valuenow', I); svg.setAttribute('aria-valuemax', ent().max);
     svg.setAttribute('aria-valuetext', 'Angle of incidence '+d1(I));
     readings();
@@ -921,7 +1117,7 @@ function expKey(x, y, upLabel, downLabel){
     var c1=add(start, R.d, 6), c2=add(start, R.d, Math.max(12, Math.hypot(first[0]-start[0], first[1]-start[1])-22));
     var crosses=[c1, c2, alongLast(tr, 26), alongLast(tr, 120)];
     var line=[c1].concat(tr.pts.slice(1, tr.pts.length-1)).concat([alongLast(tr, 120)]);
-    X.mark={crosses:crosses, line:line, e:e, lab1:'', lab2:''};
+    X.mark={crosses:crosses, line:line, e:e, i:I, lab1:'', lab2:''};
     var row={i:I};
     if(K==='graph'){ row.r=readAngle(e.r, I); row.si=sinD(row.i); row.sr=sinD(row.r); X.mark.lab1='i = '+row.i+'°'; X.mark.lab2='r = '+row.r+'°'; }
     else if(K==='crit'){
@@ -939,9 +1135,218 @@ function expKey(x, y, upLabel, downLabel){
       else { if(en==='short' && tirs===1 && exitFace==='short2') row.ok.push('t90'); if(en==='long' && tirs===2 && exitFace==='long') row.ok.push('t180'); }
     }
     X.pending=row;   // recorded when the tracing animation ends
+    if(MEAS){ X.pending=null; X.mark.lab1 = K==='crit' ? '' : 'i'; X.mark.lab2 = K==='crit' ? '' : 'r'; }   // measure mode: the student reads the protractor
   }
   function record(){ var row=X.pending; X.pending=null; if(!row) return; X.rd.push(row); X.just=row; (row.ok||[]).forEach(function(k){ X.obs[k]=1; }); lastNote=''; }
   function clearRun(){ X={rd:[], busy:0, mark:null, obs:{}, k:0, just:null, pending:null}; }
+
+  // ================= Questions: predict the path of the ray on the picture, then Go =================
+  // The kinds of question are the ones the 4PH1 papers ask as "draw the path of the ray" (3.16): into glass (May 2019 1P Q7(b)(i),
+  // Jan 2023 1P Q6(b)(i)), out of a block parallel to the ray going in (Nov 2021 1P Q6(b)(i), Jan 2021 1P Q9(b)), out of a prism
+  // (Nov 2024 1P Q6(c)(ii)), total internal reflection (May 2019 1P Q7(c)(iv), May 2025 1PR Q7(b)(i), Jan 2020 1PR), along the
+  // normal (Nov 2020 1P Q8(b)(ii)) and the reflected ray (Jan 2021 1P Q9(a)(i)). The student clicks one of the dashed lines.
+  var Q=null, score=[0,0], qN=0, lastKind='', saved=null, QSPEED=330, pk=function(a){ return a[Math.floor(Math.random()*a.length)]; };
+  function predict(){ return !MEAS && !DISP && modeSeg && modeSeg.value()==='predict'; }
+  // each kind: where the ray box is, which face the question is about (0: the face where i is set, 1: the next one, -1: the one before),
+  // the lines to choose from as angles from the normal (refl: back on the side the ray came from), and the words
+  var QK={
+    into:{w:3, set:function(){ return pk([['rect','top'],['rect','top'],['semi','flat']]).concat([pk([40,45,50,55,60,65])]); }, at:0,
+      ask:'A ray of light meets the glass at an angle. Which line shows the ray in the glass?',
+      lines:function(e){ return [{a:e.r, ok:1, w:'bends towards the normal'}, {a:e.i, w:'carries straight on', no:'A ray only carries straight on when it meets the surface along the normal.'},
+        {a:Math.min(82, e.i+(e.i-e.r)), w:'bends away from the normal', no:'A ray bends away from the normal when it speeds up, going from glass into air. Here it is going into glass and slowing down.'},
+        {a:0, w:'goes along the normal', opt:1, no:'It bends towards the normal, but not all the way onto it.'}]; },
+      why:function(e){ return 'Light slows down as it goes into glass, so the ray <b>bends towards the normal</b>: the angle of refraction ('+d0(e.r)+') is smaller than the angle of incidence ('+d0(e.i)+').'; }},
+    out:{w:3, set:function(){ return ['rect','top',pk([40,45,50,55,60])]; }, at:1,
+      ask:'The ray is shown going through the glass block. Which line shows the ray after it leaves the block?',
+      lines:function(e){ return [{a:e.r, ok:1, w:'bends away from the normal, parallel to the ray going in'}, {a:e.i, w:'carries straight on', no:'It speeds up as it leaves the glass, so it changes direction.'},
+        {a:Math.max(5, e.i-14), w:'bends towards the normal', no:'A ray bends towards the normal when it slows down, going into glass. Here it is leaving the glass and speeding up.'},
+        {a:0, w:'leaves along the normal', opt:1, no:'It bends away from the normal, not onto it.'}]; },
+      why:function(e){ return 'Light speeds up as it leaves the glass, so the ray <b>bends away from the normal</b>. The two faces are parallel, so it leaves at '+d0(e.r)+', <b>parallel to the ray going in</b>.'; }},
+    below:{w:2, set:function(){ return ['semi','curved',pk([24,28,32,36])]; }, at:0,
+      ask:function(e){ return 'The ray goes in along a radius and meets the flat face at '+d0(e.i)+'. The critical angle of the glass is 42°. Which line shows the path of most of the light?'; },
+      lines:function(e){ return [{a:e.r, ok:1, w:'leaves the glass, bending away from the normal'}, {a:e.i, w:'carries straight on', no:'It speeds up as it leaves the glass, so it bends away from the normal.'},
+        {a:e.i, refl:1, w:'is reflected back into the glass', no:'All the light is reflected only when the angle is greater than the critical angle.'},
+        {a:Math.max(4, e.i*0.45), w:'bends towards the normal', opt:1, no:'A ray bends towards the normal when it slows down. Here it is leaving the glass and speeding up.'}]; },
+      why:function(e){ return d0(e.i)+' is <b>less than the critical angle</b>, so most of the light is refracted out of the glass, bending away from the normal. A little is reflected.'; }},
+    above:{w:3, set:function(){ return ['semi','curved',pk([48,52,56,60,64])]; }, at:0,
+      ask:function(e){ return 'The ray goes in along a radius and meets the flat face at '+d0(e.i)+'. The critical angle of the glass is 42°. Which line shows the path of most of the light?'; },
+      lines:function(e){ return [{a:e.i, refl:1, ok:1, w:'is reflected back into the glass, at the same angle'}, {a:Math.min(84, e.i+22), w:'leaves the glass, bending away from the normal', no:'That is what happens below the critical angle.'},
+        {a:e.i, w:'carries straight on', no:'Light never carries straight on when it meets a boundary at an angle.'},
+        {a:Math.max(6, e.i-30), refl:1, w:'is reflected at a smaller angle', opt:1, no:'It is reflected, but the angle of reflection must equal the angle of incidence.'}]; },
+      why:function(e){ return d0(e.i)+' is <b>greater than the critical angle</b>, so there is <b>total internal reflection</b>: all the light is reflected back into the glass, and the angle of reflection equals the angle of incidence.'; }},
+    normal:{w:2, set:function(){ return pk([['rect','top',0],['semi','flat',0],['semi','curved',pk([24,36,52])]]); }, at:function(s){ return s[1]==='curved' ? -1 : 0; },
+      ask:function(e, s){ return s[1]==='curved' ? 'The ray is aimed along a radius of the semicircular block. Which line shows the ray in the glass?' : 'The ray meets the glass along the normal. Which line shows the ray in the glass?'; },
+      lines:function(e){ return [{a:0, ok:1, w:'carries straight on'}, {a:20, w:'bends to one side', no:'The angle of incidence is 0°, so the ray has no side to bend towards.'}, {a:-20, w:'bends to one side', no:'The angle of incidence is 0°, so the ray has no side to bend towards.'}]; },
+      why:function(e, s){ return (s[1]==='curved' ? 'A radius meets the curved side along the normal. ' : '')+'The angle of incidence is 0°, so the ray <b>does not change direction</b> (it still slows down).'; }},
+    prism:{w:2, set:function(){ return ['p45',pk(['short','long']),0]; }, at:1,
+      ask:'The ray goes straight into the prism and meets the next side at 45°. The critical angle of the glass is 42°. Which line shows the path of the light?',
+      lines:function(e){ return [{a:45, refl:1, ok:1, w:'is reflected through 90°'}, {a:80, w:'leaves the glass, bending away from the normal', no:'That is what happens below the critical angle.'},
+        {a:45, w:'carries straight on', no:'Light never carries straight on when it meets a boundary at an angle.'}, {a:12, refl:1, w:'is reflected back the way it came', opt:1, no:'It is reflected, but the angle of reflection must equal the angle of incidence (45°).'}]; },
+      why:function(){ return '45° is <b>greater than the critical angle</b> (42°), so there is <b>total internal reflection</b>: the ray is turned through 90°. This is how the prisms in a periscope work.'; }},
+    prismOut:{w:2, set:function(){ return ['p60','left',pk([40,45,50,55])]; }, at:1,
+      ask:'The ray is shown going through the prism. Which line shows the ray after it leaves the prism?',
+      lines:function(e){ return [{a:e.r, ok:1, w:'bends away from the normal'}, {a:e.i, w:'carries straight on', no:'It speeds up as it leaves the glass, so it changes direction.'},
+        {a:Math.max(4, e.i*0.4), w:'bends towards the normal', no:'A ray bends towards the normal when it slows down. Here it is leaving the glass and speeding up.'},
+        {a:e.i, refl:1, w:'is reflected back into the glass', opt:1, no:'All the light is reflected only when the angle is greater than the critical angle (42°).'}]; },
+      why:function(e){ return 'Light speeds up as it leaves the glass, so the ray <b>bends away from the normal</b>. It met this face at '+d0(e.i)+', less than the critical angle, so it is not totally internally reflected.'; }},
+    reflect:{w:2, set:function(){ return ['rect','top',pk([40,45,50,55,60])]; }, at:0, refl:1,
+      ask:'A little of the light is reflected from the surface of the glass block. Which line shows the reflected ray?',
+      lines:function(e){ return [{a:e.i, refl:1, ok:1, w:'leaves at the same angle to the normal'}, {a:Math.max(8, e.i-24), refl:1, w:'leaves nearer the normal', no:'The angle of reflection must equal the angle of incidence.'},
+        {a:Math.min(84, e.i+22), refl:1, w:'leaves further from the normal', no:'The angle of reflection must equal the angle of incidence.'}, {a:0, refl:1, w:'leaves along the normal', opt:1, no:'The angle of reflection must equal the angle of incidence.'}]; },
+      why:function(e){ return 'The law of reflection: the <b>angle of reflection equals the angle of incidence</b>, both '+d0(e.i)+' from the normal. Most of the light goes into the glass.'; }}
+  };
+  function qDir(e, c){   // the direction of a line at angle a from the normal, on the far side (or reflected back)
+    var cs=-dot(e.N,e.din), tv=[e.din[0]+cs*e.N[0], e.din[1]+cs*e.N[1]], L=Math.hypot(tv[0],tv[1]);
+    var t = L>1e-6 ? [tv[0]/L,tv[1]/L] : [-e.N[1],e.N[0]], n = c.refl ? e.N : [-e.N[0],-e.N[1]], a=c.a*D2R;
+    return unit([Math.cos(a)*n[0]+Math.sin(a)*t[0], Math.cos(a)*n[1]+Math.sin(a)*t[1]]);
+  }
+  function newQ(){
+    var names=Object.keys(QK).filter(function(k){ return k!==lastKind; }), bag=[], name, K, s, tr, kq, e, lines, i;
+    names.forEach(function(k){ for(var j=0;j<QK[k].w;j++) bag.push(k); });
+    name=pk(bag); K=QK[name]; s=K.set(); lastKind=name;
+    curBlock=s[0]; blockSeg.pick(s[0]); setEntries(); entrySeg.pick(s[1]); I=s[2]; iIn.max=ent().max; iIn.value=I;
+    tr=rays(I).list[0].tr; kq=keyIdx(tr)+(typeof K.at==='function' ? K.at(s) : K.at); e=tr.ev[kq];
+    lines=K.lines(e);
+    // three or four lines: an optional one is sometimes left out, and none within 13° of another on the same side
+    lines=lines.filter(function(c){ return !c.opt || Math.random()<0.6; });
+    lines=lines.filter(function(c, j){ return c.ok || !lines.some(function(o, m){ return (m<j || o.ok) && o!==c && !!o.refl===!!c.refl && Math.abs(o.a-c.a)<13; }); });
+    lines.forEach(function(c){ c.dir=qDir(e, c); c.ang=Math.atan2(c.dir[1], c.dir[0]); });
+    // letters go round the point in order, starting from a random line, clockwise or the other way
+    lines.sort(function(a,b){ return a.ang-b.ang; });
+    lines.forEach(function(c, j){ c.odd=j%2; });
+    if(Math.random()<0.5) lines.reverse();
+    var sh=Math.floor(Math.random()*lines.length); lines=lines.slice(sh).concat(lines.slice(0,sh));
+    lines.forEach(function(c, j){ c.id='ABCD'.charAt(j); });
+    // how far the light still has to go once it is switched on
+    var rest=[e.p].concat(tr.pts.slice(kq+2)), len=0; rest[rest.length-1]=add(rest[rest.length-2], tr.dir, 420);
+    for(i=1;i<rest.length;i++) len+=Math.hypot(rest[i][0]-rest[i-1][0], rest[i][1]-rest[i-1][1]);
+    Q={name:name, K:K, s:s, tr:tr, kq:kq, e:e, lines:lines, ans:lines.filter(function(c){ return c.ok; })[0].id, pick:null, phase:'ask', t:0, rest:rest, len:Math.min(len, 760), n:++qN,
+       ask: typeof K.ask==='function' ? K.ask(e, s) : K.ask};
+    lastNote=''; layout();
+  }
+  function qJudge(){ Q.phase='done'; Q.ok=Q.pick===Q.ans; score[1]++; if(Q.ok) score[0]++; lastNote=''; }
+  function partLine(pts, L){   // the first L units of a line through pts
+    var out=[pts[0]], i;
+    for(i=1;i<pts.length && L>0;i++){ var d=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
+      if(d<=L){ out.push(pts[i]); L-=d; } else { out.push([pts[i-1][0]+(pts[i][0]-pts[i-1][0])*L/d, pts[i-1][1]+(pts[i][1]-pts[i-1][1])*L/d]); L=0; } }
+    return out;
+  }
+  function sceneQ(){
+    var g='', labs='', b=blk(), R=rays(I), tr=Q.tr, e=Q.e, done=Q.phase==='done', ask=Q.phase==='ask', given=tr.pts.slice(0, Q.kq+2), j;
+    var P=placer([3,3,PW-3,PH-3]);
+    plBox(P, R.B[0]-36, R.B[1]-36, R.B[0]+36, R.B[1]+36); plBox(P, 0, PH-20*FS, 150*FS, PH);
+    g+='<defs><clipPath id="rf-paper"><rect x="0" y="0" width="'+PW+'" height="'+PH+'"/></clipPath><clipPath id="rf-gclip"><path d="'+b.path+'"/></clipPath></defs>';
+    g+='<rect x="0.5" y="0.5" width="'+(PW-1)+'" height="'+(PH-1)+'" rx="4" fill="var(--paper)" stroke="var(--panel-border)"/>';
+    g+='<g clip-path="url(#rf-paper)">'+glassBlock(b, 1);
+    if(blockSeg.value()==='semi') g+=ln(296,118,304,118,'var(--ink)',1.5)+ln(300,114,300,122,'var(--ink)',1.5);
+    // the ray as far as the face the question is about
+    for(j=0;j<given.length-1;j++){ g+=poly([given[j],given[j+1]], 'var(--ray)', 7, 0.16)+poly([given[j],given[j+1]], 'var(--ray)', 2.4, 1); P.segs.push([given[j],given[j+1]]); }
+    g+=arrowMid(given[0], given[1], 'var(--ray)', 1);
+    // what the light really does, from Go
+    if(!ask){
+      var lit=partLine(Q.rest, Q.t);
+      g+=poly(lit, 'var(--ray)', 7, 0.16)+poly(lit, 'var(--ray)', 2.4, 1);
+      tr.part.forEach(function(q){ var at=Math.hypot(q.p[0]-e.p[0], q.p[1]-e.p[1])<0.5, main=at && Q.K.refl;   // the weak reflections; the one at this face grows with the light
+        if(q.I>0.004 && (at || done)) g+=poly([q.p, add(q.p, q.dir, at ? Math.min(Q.t, main?150:110) : 110)], 'var(--ray)', main?2.2:1.6, main?0.9:Math.min(0.85, 0.12+2.2*q.I)); });
+    }
+    g+=normalLine(e.p, e.N, 60, 0.9); P.segs.push([add(e.p,e.N,-60), add(e.p,e.N,60)]);
+    g+='</g>';
+    g+=rayBox(R.B, R.d, true);
+    // the lines to choose from: dashed, each with its letter at the end
+    // lines next to each other are different lengths, so that their letters never touch; all are shortened together to stay on the paper
+    var pks='', sc=1, rr=(PAN.tall ? 9.5 : 11)*FS, mg=rr+10*FS;
+    Q.lines.forEach(function(c){ c.L=c.odd ? 100-29*FS : 100; [[c.dir[0], e.p[0]], [c.dir[1], e.p[1]]].forEach(function(q, ax){ var lim=ax ? PH : PW;
+      if(q[0]>1e-6) sc=Math.min(sc, (lim-mg-q[1])/(q[0]*c.L)); if(q[0]<-1e-6) sc=Math.min(sc, (mg-q[1])/(q[0]*c.L)); }); });
+    Q.lines.forEach(function(c){
+      var L=c.L*Math.max(0.5, sc), end=add(e.p, c.dir, L);
+      var sel=Q.pick===c.id, st = done ? (c.ok ? 'good' : (sel ? 'bad' : '')) : '', col = st==='good' ? 'var(--good)' : st==='bad' ? 'var(--bad)' : sel ? 'var(--accent)' : 'var(--ink-soft)';
+      var fill = st==='good' ? 'var(--good-soft)' : st==='bad' ? 'var(--bad-soft)' : sel ? 'var(--accent-soft)' : 'var(--panel)', r=rr, a0=add(e.p, c.dir, 7), a1=add(e.p, c.dir, L-r);
+      P.segs.push([a0, a1]); plBox(P, end[0]-r-2, end[1]-r-10*FS, end[0]+r+10*FS, end[1]+r+2);
+      pks+='<g class="pick" data-pick="'+c.id+'" tabindex="'+(ask?0:-1)+'" role="button" aria-label="Line '+c.id+': the ray '+c.w+'"'+(sel?' aria-pressed="true"':'')+(done && !c.ok && !sel ? ' opacity=".4"' : '')+'>'+
+        ln(a0[0],a0[1],a1[0],a1[1],'transparent',10)+ln(a0[0],a0[1],a1[0],a1[1],col,sel||st?2.4:1.7,sel||st?'':' stroke-dasharray="6 4"')+
+        '<circle class="ring" cx="'+f1(end[0])+'" cy="'+f1(end[1])+'" r="'+f1(r+4)+'" fill="none" stroke-width="3"/>'+
+        '<circle cx="'+f1(end[0])+'" cy="'+f1(end[1])+'" r="'+f1(r)+'" fill="'+fill+'" stroke="'+col+'" stroke-width="2"/>'+
+        T(end[0], end[1]+4.4*FS, c.id, {a:'middle', fs:12.5, w:700, c:col})+
+        (st ? TH(end[0]+r*0.95, end[1]-r*0.55, st==='good'?'✓':'✗', {a:'middle', fs:11.5, w:700, c:col}) : '')+'</g>';
+    });
+    g+=pks;
+    // once it has run: the two angles at this face
+    if(done){
+      var inc=[-e.din[0],-e.din[1]], right=Q.lines.filter(function(c){ return c.ok; })[0];
+      if(e.i>0.6){ g+=arcPath(e.p, e.N, inc, 30, 'var(--topic)'); labs+=angLabel(P, e.p, e.N, inc, 30, d0(e.i), 'var(--topic)'); }
+      if(right.a>0.6){ var base=right.refl ? e.N : [-e.N[0],-e.N[1]]; g+=arcPath(e.p, base, right.dir, 38, 'var(--accent)'); labs+=angLabel(P, e.p, base, right.dir, 38, d0(right.a), 'var(--accent)'); }
+    }
+    var nw=tw('normal',10.5), nh=10.5*FS*1.15, side=[-e.N[1],e.N[0]], sp=nw/2*Math.abs(side[0])+nh/2*Math.abs(side[1])+5;
+    labs+=label(P, [add(add(e.p,e.N,52),side,sp), add(add(e.p,e.N,52),side,-sp), add(add(e.p,e.N,-52),side,sp), add(add(e.p,e.N,-52),side,-sp)], 'normal', {fs:10.5, c:'var(--ink-soft)'});
+    g+=T(8, PH-8, 'paper, seen from above', {fs:9.5, c:'var(--ink-faint)'});
+    if(Q.phase==='run' && slowOn()) g+=T(PW-8, 16, 'slow motion', {a:'end', fs:11, c:'var(--accent)'});
+    g+='<g clip-path="url(#rf-paper)">'+labs+'</g>';
+    // the question, and afterwards the answer, in the panel beside the paper
+    var x=PAN.x+(PAN.tall?12:4), y=PAN.y+22*FS, lh=17*FS, wrap=PAN.tall?44:30, right2=Q.lines.filter(function(c){ return c.ok; })[0];
+    g+=T(x, y, 'Question '+Q.n, {fs:12.5, w:600, c:'var(--ink)'}); y+=lh+3*FS;
+    wrapLines(Q.ask, wrap).forEach(function(s){ g+=T(x, y, s, {fs:12, c:'var(--ink)'}); y+=lh; });
+    y+=6*FS;
+    if(done){ wrapLines((Q.ok ? '✓ Right: ' : '✗ Not quite: ')+'line '+Q.ans+'. The ray '+right2.w+'.', wrap).forEach(function(s){ g+=T(x, y, s, {fs:12, w:600, c:Q.ok?'var(--good)':'var(--bad)'}); y+=lh; }); }
+    else wrapLines(ask ? 'Click a line'+(Q.pick ? ' (you chose '+Q.pick+')' : '')+', then press Go.' : 'The ray box is switched on…', wrap).forEach(function(s){ g+=T(x, y, s, {fs:12, c:'var(--ink-soft)'}); y+=lh; });
+    if(score[1]) g+=T(x, PAN.y+PAN.h-10*FS, 'Score: '+score[0]+' out of '+score[1], {fs:11.5, c:'var(--ink-soft)'});
+    return g;
+  }
+  function qReadings(){
+    var note, right=Q.lines.filter(function(c){ return c.ok; })[0], mine=Q.lines.filter(function(c){ return c.id===Q.pick; })[0];
+    if(Q.phase==='ask') note='<b>Predict.</b> '+Q.ask+' Click a dashed line on the picture'+(Q.pick ? ' (you chose <b>'+Q.pick+'</b>)' : '')+', then press <b>Go</b>.';
+    else if(Q.phase==='run') note='The ray box is switched on. Watch where the light goes.';
+    else note=(Q.ok ? '<b>Right: line '+Q.ans+'.</b> ' : '<b>Not quite: it is line '+Q.ans+'.</b> '+(mine && mine.no ? mine.no+' ' : ''))+Q.K.why(Q.e, Q.s);
+    if(note!==lastNote){ $('#rf-note').innerHTML=FR(note); lastNote=note; }
+    playBtn.innerHTML='&#9654; Go'; playBtn.disabled = Q.phase!=='ask' || !Q.pick;
+    $('#rf-io').textContent='';
+  }
+
+  // ================= Measure mode (?show=measure): the Do Experiment tab of the 3.17 and 3.19 practical pages =================
+  // The student traces the ray and reads the two angles off the protractor, which is shown close up beside the paper. Nothing is
+  // read, recorded or explained for them. The readings are the true angles to the nearest degree, so a reading taken again is the
+  // same; tools/CORE-PRACTICALS.md ("Measure modes") lists them and the practical pages' content.js check against the same numbers.
+  var MPOS=[10,20,30,40,50,60,70];                       // part=index (3.19): the seven places for the ray box on the rectangular block
+  function measRead(e){ return e.kind==='tir' ? null : Math.round(e.r); }
+  function quadrant(cx, cy, R, lines){
+    // a quarter of a protractor, close up: 0° (the normal) is straight up and 90° is to the right. lines: [angle, colour]
+    var g='', a;
+    g+='<path d="M'+f1(cx)+','+f1(cy)+' L'+f1(cx)+','+f1(cy-R)+' A'+R+','+R+' 0 0 1 '+f1(cx+R)+','+f1(cy)+' Z" fill="var(--prot)" stroke="var(--ink-faint)" stroke-width="1"/>';
+    for(a=0;a<=90;a++){ var t=a*D2R, s=Math.sin(t), c=Math.cos(t), big=a%10===0, mid=a%5===0, r0=R-(big?15:mid?11:6);
+      g+=ln(cx+R*s, cy-R*c, cx+r0*s, cy-r0*c, 'var(--ink-soft)', big?1.4:mid?1.1:0.8);
+      if(big) g+=T(cx+(R+11*FS)*s, cy-(R+11*FS)*c+4*FS, a, {a:'middle', fs:11.5, c:'var(--ink)'}); }
+    g+=ln(cx, cy, cx, cy-R-4, 'var(--ink-soft)', 1.3, ' stroke-dasharray="5 4"');
+    lines.forEach(function(L){ var t=L[0]*D2R; g+=ln(cx, cy, cx+(R+3)*Math.sin(t), cy-(R+3)*Math.cos(t), L[1], 1.8, ' stroke-linecap="round"'); });
+    g+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="2.4" fill="var(--ink)"/>';
+    return g;
+  }
+  function measPanel(m, ph){
+    var g='', tall=PAN.tall, R=tall?330:206, cx=PAN.x+(tall?120:10), cy=PAN.y+(tall?386:250), x=PAN.x+(tall?12:4), K=kind();
+    g+=T(x, PAN.y+(tall?24:16), 'The protractor, close up', {fs:12.5, w:600, c:'var(--ink)'});
+    if(!m || ph<1.5){
+      g+='<g opacity=".45">'+quadrant(cx, cy, R, [])+'</g>';
+      wrapLines('Trace the ray. Then read the angles here.', 22).forEach(function(s, j){ g+=TH(cx+R*0.4, cy-R*0.34+j*16*FS, s, {a:'middle', fs:11.5, c:'var(--ink-soft)', bg:'panel'}); });
+      return g;
+    }
+    var e=m.e, r=measRead(e), lines=[[m.i, 'var(--topic)']], key=[['var(--topic)', K==='crit' ? 'ray in the glass' : 'incident ray: read i']];
+    if(r!==null){ lines.push([r, 'var(--accent)']); key.push(['var(--accent)', K==='crit' ? 'ray in the air' : 'refracted ray: read r']); }
+    g+=quadrant(cx, cy, R, lines);
+    key.forEach(function(q, j){ var y=cy+(tall?44:26)+j*17*FS; g+=ln(x, y-4*FS, x+22, y-4*FS, q[0], 2.2, ' stroke-linecap="round"')+T(x+28, y, q[1], {fs:11.5, c:'var(--ink)'}); });
+    g+=T(x, cy+(tall?44:26)+2*17*FS+2, '0° is the normal. Each mark is 1°.', {fs:11, c:'var(--ink-soft)'});
+    return g;
+  }
+  function measReadings(){
+    var K=kind(), note, m=X.mark;
+    if(X.busy) note = X.busy>TRACE_T-0.5 ? 'Marking two crosses on the ray going in and two on the ray coming out, far apart…' : X.busy>TRACE_T-1.5 ? 'Lifting the block off, then joining the crosses with a ruler, through the outline…' : 'Drawing the normal and putting the protractor on it…';
+    else if(m) note = K==='crit' ? 'Read the angle <b>in the glass</b> on the protractor, to the nearest degree. Does a ray leave the flat face? If it does, read its angle <b>in the air</b>. Write down what you see, then turn the ray box.'
+                    : K==='obs' ? 'Read the angle of incidence, <b>i</b>, and the angle of refraction, <b>r</b>, to the nearest degree. Write down what the ray does at each face of the prism, then turn the ray box.'
+                    : 'Read the angle of incidence, <b>i</b>, and the angle of refraction, <b>r</b>, on the protractor, to the nearest degree. Write them in your table, then '+(MIDX ? 'choose the next position.' : 'turn the ray box.');
+    else note = MIDX ? 'Choose a position for the ray box, then press <b>Trace the ray</b>. You will measure the angles from the normal with the protractor.'
+                     : 'Turn the ray box (drag it, or use the slider), then press <b>Trace the ray</b>.'+(K==='crit' ? ' Find the angle at which the light stops leaving the flat face.' : '');
+    if(note!==lastNote){ $('#rf-note').innerHTML=FR(note); lastNote=note; }
+    playBtn.innerHTML='&#9654; Trace the ray'; playBtn.disabled=X.busy>0;
+    $('#rf-io').textContent='';
+    if(MIDX) posSeg.pick(String(I));
+  }
 
   // ================= readings, working, note =================
   var lastNote='';
@@ -983,6 +1388,8 @@ function expKey(x, y, upLabel, downLabel){
   }
   function readings(){
     if(DISP){ dispReadings(); return; }
+    if(predict() && Q){ qReadings(); return; }
+    if(MEAS){ measReadings(); return; }
     var b=blockSeg.value(), K=kind(), ex=exp(), R=rays(I), mid=R.list[Math.floor(R.list.length/2)], tr=mid.tr, k=keyIdx(tr), e=tr.ev[k], nx=tr.ev[k+1];
     var n = white() ? NGREEN : NG, nTxt = white() ? '1.51' : '1.50', C=crit(n);
     $('#rf-io').textContent=d1(I);
@@ -1102,8 +1509,10 @@ function expKey(x, y, upLabel, downLabel){
       I=Math.round(v*100)/100; iIn.value=Math.round(I); jumpSeg.pick(null);
     }
     if(X.busy){ X.busy-=real; if(X.busy<=0){ X.busy=0; record(); } }
+    var qrun=predict() && Q && Q.phase==='run';
+    if(qrun){ Q.t+=QSPEED*real*(slowOn()?0.3:1); if(Q.t>=Q.len){ Q.t=Q.len; qJudge(); qrun=false; } }
     draw();
-    if(running || X.busy) raf=requestAnimationFrame(frame);
+    if(running || X.busy || qrun) raf=requestAnimationFrame(frame);
   }
   function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
   function stop(){ running=false; cancelAnimationFrame(raf); }
@@ -1133,24 +1542,44 @@ function expKey(x, y, upLabel, downLabel){
     var ex=exp(), K=kind(), multi=Object.keys(blk().entries).length>1;
     $('#rf-elab').hidden=entryEl.hidden=!multi;
     $('#rf-jlab').hidden=jumpEl.hidden=ex;
-    $('#rf-slab').hidden=showEl.hidden=ex; $('#rf-stats').hidden=ex;
-    $('details.working').hidden = ex && K==='obs'; $('#rf-tablewrap').style.maxHeight = K==='obs' ? '98px' : '';
+    var pr=predict();
+    $('#rf-slab').hidden=showEl.hidden=ex; $('#rf-stats').hidden=ex || pr;
+    Array.prototype.forEach.call(document.querySelectorAll('.cgrid'), function(c){ c.hidden=pr; }); iIn.parentNode.hidden=pr || MIDX; expBtn.hidden=pr; $('#rf-posrow').hidden=!MIDX;
+    $('#rf-reset').innerHTML = pr ? 'New question' : '&#8634; Reset';
+    $('details.working').hidden = (ex && K==='obs') || pr; $('#rf-tablewrap').style.maxHeight = K==='obs' ? '98px' : '';
     $('#rf-llab').hidden=$('#rf-light').hidden = (ex && K!=='obs') || blockSeg.value()==='p45';
     $('#rf-clear').hidden=!ex; $('#rf-tablewrap').hidden=!ex; $('#rf-obs').hidden=!(ex && K==='obs');
     iIn.max=ent().max;
-    if(DISP){ $('#rf-blab').hidden=$('#rf-block').hidden=true; expBtn.hidden=true; $('#rf-wlrow').hidden=white(); }
+    if(DISP){ $('#rf-blab').hidden=$('#rf-block').hidden=true; expBtn.hidden=true; $('#rf-wlrow').hidden=white(); $('#rf-mode').hidden=true; }
   }
   function newSetup(){ stop(); clearRun(); setJumps(); setRows(); layout(); if(I>ent().max) I=ent().max; if(exp()) I=Math.round(I); iIn.value=Math.round(I); lastNote=''; draw(); }
 
+  // Explore or Questions
+  function setMode(){
+    stop(); X.mark=null;
+    if(predict()){ saved={b:blockSeg.value(), e:entrySeg.value(), i:I}; expBtn.setAttribute('aria-pressed','false'); clearRun(); newQ(); }
+    else { Q=null; if(saved){ curBlock=saved.b; blockSeg.pick(saved.b); setEntries(); entrySeg.pick(saved.e); I=saved.i; iIn.max=ent().max; iIn.value=Math.round(I); saved=null; } }
+    svg.setAttribute('aria-label', predict() ? 'A ray box shines a ray at a glass block on a sheet of paper. Dashed lines with letters show where the ray might go next. Press Tab to reach a line and Enter to choose it, then press Go.' : ARIA0);
+    setJumps(); setRows(); layout(); lastNote=''; draw();
+  }
+  var ARIA0=svg.getAttribute('aria-label');
+  modeSeg=segGroup($('#rf-mode'), function(){ setMode(); });
+  posSeg=segGroup($('#rf-pos'), function(v){ stop(); setI(+v, true); });
+  function nearPos(v){ var b=MPOS[0]; MPOS.forEach(function(p){ if(Math.abs(p-v)<Math.abs(b-v)) b=p; }); return b; }
+  function choose(t){ if(t && Q && Q.phase==='ask' && predict()){ Q.pick=t.getAttribute('data-pick'); lastNote=''; draw(); } }
+  svg.addEventListener('click', function(e){ choose(e.target.closest('.pick')); });
+  svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); choose(t); } });
+
   svgDrag(svg, {
-    ok:function(){ return !X.busy; },
+    ok:function(){ return !X.busy && !predict(); },
     hit:function(q){ var B=boxPos(I); return Math.hypot(q.x-B[0], q.y-B[1])<40; },
     start:function(){ stop(); },
-    move:function(q){ var E=ent(), v=[q.x-E.P[0], q.y-E.P[1]], a=deg(Math.atan2(dot(v,E.s), dot(v,E.u))); setI(Math.round(Math.max(0,a))); }
+    move:function(q){ var E=ent(), v=[q.x-E.P[0], q.y-E.P[1]], a=deg(Math.atan2(dot(v,E.s), dot(v,E.u))); setI(MIDX ? nearPos(a) : Math.round(Math.max(0,a))); }
   });
   svg.addEventListener('keydown', function(e){
-    if(X.busy) return;
+    if(X.busy || predict()) return;
     var k=e.key, v=null;
+    if(MIDX){ var pi=MPOS.indexOf(nearPos(I)); if(k==='ArrowRight'||k==='ArrowUp') v=MPOS[Math.min(MPOS.length-1,pi+1)]; else if(k==='ArrowLeft'||k==='ArrowDown') v=MPOS[Math.max(0,pi-1)]; if(v!==null){ stop(); setI(v); e.preventDefault(); } return; }
     if(k==='ArrowRight'||k==='ArrowUp') v=Math.floor(I)+1; else if(k==='ArrowLeft'||k==='ArrowDown') v=Math.ceil(I)-1;
     else if(k==='PageUp') v=I+10; else if(k==='PageDown') v=I-10; else if(k==='Home') v=0; else if(k==='End') v=ent().max;
     if(v!==null){ stop(); setI(v); e.preventDefault(); }
@@ -1159,6 +1588,7 @@ function expKey(x, y, upLabel, downLabel){
   wlIn.addEventListener('input', function(){ stop(); WL=+wlIn.value; wlF=WL; draw(); });
 
   playBtn.addEventListener('click', function(){
+    if(predict()){ if(Q && Q.phase==='ask' && Q.pick){ Q.phase='run'; Q.t=0; lastNote=''; loop(); } return; }
     if(exp()){ if(X.busy) return; takeReading(); X.busy=TRACE_T; loop(); return; }
     if(running){ stop(); draw(); return; }
     if(DISP && !white()){ wlF = WL<=400 ? 700 : WL; if(WL<=400){ WL=700; wlIn.value=700; } running=true; loop(); return; }
@@ -1167,15 +1597,30 @@ function expKey(x, y, upLabel, downLabel){
   });
   slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
   expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); newSetup(); });
-  $('#rf-reset').addEventListener('click', function(){ stop(); if(DISP){ WL=550; wlF=550; wlIn.value=550; } if(exp()){ clearRun(); I=Math.round(I); draw(); return; } jumpSeg.pick(null); setI(40); });
+  $('#rf-reset').addEventListener('click', function(){ stop(); if(predict()){ newQ(); draw(); return; } if(DISP){ WL=550; wlF=550; wlIn.value=550; } if(exp()){ clearRun(); I=Math.round(I); draw(); return; } jumpSeg.pick(null); setI(40); });
   $('#rf-clear').addEventListener('click', function(){ stop(); clearRun(); draw(); });
 
   watchEquals($('#rf-eq1')); watchEquals($('#rf-eq2'));
-  if(DISP){   // both sliders go under the picture, so that the card still fits one laptop screen
-    var sl=document.createElement('div'); sl.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px';
-    sl.appendChild(iIn.parentNode); sl.appendChild($('#rf-wlrow')); $('.under').appendChild(sl); }
   if(DISP){ curBlock='p60'; blockSeg.pick('p60'); lightSeg.pick('white'); showEl.querySelector('[data-v="refl"]').setAttribute('aria-pressed','false'); }
-  setEntries(); setJumps(); setRows(); layout(); draw();
+  if(MEAS){
+    document.documentElement.classList.add('measure');
+    expBtn.setAttribute('aria-pressed','true');
+    ['#rf-exp','#rf-slow','#rf-clear','#rf-reset','#rf-stats','#rf-tablewrap','#rf-obs','details.working','#rf-mode','.to-q'].forEach(function(q){ var el=$(q); if(el) el.classList.add('meas-off'); });
+    var off=function(a){ a.forEach(function(q){ $(q).classList.add('meas-off'); }); };
+    var mb=location.search.match(/[?&]block=(rect|semi|p60|p45)\b/), me=location.search.match(/[?&]entry=(top|curved|flat|left|short|long)\b/), fixB=MIDX || !!mb;
+    if(mb && !MIDX){ curBlock=mb[1]; blockSeg.pick(mb[1]); }
+    if(fixB) off(['#rf-blab','#rf-block']);
+    setEntries();
+    if(me && !MIDX && blk().entries[me[1]]){ entrySeg.pick(me[1]); off(['#rf-elab','#rf-entry']); }
+    if(/[?&]light=white\b/.test(location.search) && !MIDX){ lightSeg.pick('white'); off(['#rf-llab','#rf-light']); }
+    if(/[?&]light=one\b/.test(location.search) || MIDX) off(['#rf-llab','#rf-light']);
+    $('label[for="rf-i"]').firstChild.nodeValue='Turn the ray box (or drag it)';
+    svg.setAttribute('aria-label','A ray box on a sheet of paper shines a ray of light at a glass block. Beside it, the protractor seen close up, to read the angles after the ray is traced. Drag the ray box, or use the arrow keys, to turn it.');
+  } else setEntries();
+  var showP=/[?&]show=predict\b/.test(location.search) && !DISP && !MEAS;
+  if(showP) modeSeg.pick('predict');
+  setJumps(); setRows(); layout();
+  if(showP) setMode(); else draw();
 })();
 </script><script id="choice-kit-js">
 /* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices".
