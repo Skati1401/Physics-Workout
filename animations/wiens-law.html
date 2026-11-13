@@ -780,12 +780,12 @@ function expKey(x, y, upLabel, downLabel){
   function region(l){ return l<400 ? 'ultraviolet' : l<=700 ? 'visible' : 'infrared'; }
   function colourWord(T){ return T<3700 ? 'red' : T<5000 ? 'orange' : T<5500 ? 'yellow' : T<7500 ? 'white' : T<10000 ? 'blue-white' : 'blue'; }
   function fmtT(T){ T=Math.round(T); return T>=10000 ? grp(T) : String(T); }
-  // the colour of a black body at T (a standard approximation), made a little stronger so the picture reads on a projector
-  function rgbOf(T){ var t=T/100, r, g, b;
-    r = t<=66 ? 255 : 329.698727446*Math.pow(t-60,-0.1332047592);
-    g = t<=66 ? 99.4708025861*Math.log(t)-161.1195681661 : 288.1221695283*Math.pow(t-60,-0.0755148492);
-    b = t>=66 ? 255 : t<=19 ? 0 : 138.5177312231*Math.log(t-10)-305.0447927307;
-    var m=(r+g+b)/3; return [r,g,b].map(function(c){ return Math.max(0,Math.min(255,m+(c-m)*1.25)); }); }
+  // the colour the star is drawn in. Not the true colour of a black body (which is only orange at 3500 K and a pale blue-white at 12 000 K):
+  // the red and blue ends are made stronger on purpose (Alex, 13 Nov 2026), so the picture matches the colour words. White at the Sun's 5800 K.
+  var STAR_COL=[[2500,[255,58,36]],[3500,[255,84,44]],[4400,[255,150,60]],[5200,[255,222,120]],[5800,[255,250,240]],[7000,[244,247,255]],[8500,[178,208,255]],[10000,[120,168,255]],[12000,[70,125,255]]];
+  function rgbOf(T){ var L=STAR_COL, i;
+    if(T<=L[0][0]) return L[0][1]; if(T>=L[L.length-1][0]) return L[L.length-1][1];
+    for(i=1;i<L.length;i++) if(T<=L[i][0]){ var k=(T-L[i-1][0])/(L[i][0]-L[i-1][0]); return [0,1,2].map(function(j){ return L[i-1][1][j]+(L[i][1][j]-L[i-1][1][j])*k; }); } }
   function mix(c,d,k){ return [0,1,2].map(function(i){ return c[i]+(d[i]-c[i])*k; }); }
   function css(c){ return 'rgb('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+')'; }
 
@@ -820,7 +820,7 @@ function expKey(x, y, upLabel, downLabel){
     if(o.T){
       var col=rgbOf(o.T), k=Math.max(0,Math.min(1,(o.T-TMIN)/(TMAX-TMIN))), rg=c.r*(0.72+0.24*k), rb=c.r*0.4;
       g+='<defs><radialGradient id="wl-glow"><stop offset="0" stop-color="'+css(col)+'" stop-opacity="'+f1(0.6+0.3*k)+'"/><stop offset=".5" stop-color="'+css(col)+'" stop-opacity="'+(0.2+0.14*k).toFixed(2)+'"/><stop offset="1" stop-color="'+css(col)+'" stop-opacity="0"/></radialGradient>'
-        +'<radialGradient id="wl-body" cx=".38" cy=".34" r=".78"><stop offset="0" stop-color="'+css(mix(col,[255,255,255],0.65))+'"/><stop offset=".55" stop-color="'+css(col)+'"/><stop offset="1" stop-color="'+css(mix(col,[0,0,0],0.28))+'"/></radialGradient></defs>';
+        +'<radialGradient id="wl-body" cx=".38" cy=".34" r=".78"><stop offset="0" stop-color="'+css(mix(col,[255,255,255],0.42))+'"/><stop offset=".55" stop-color="'+css(col)+'"/><stop offset="1" stop-color="'+css(mix(col,[0,0,0],0.28))+'"/></radialGradient></defs>';
       g+='<circle cx="'+c.cx+'" cy="'+c.cy+'" r="'+f1(rg)+'" fill="url(#wl-glow)"/><circle cx="'+c.cx+'" cy="'+c.cy+'" r="'+f1(rb)+'" fill="url(#wl-body)"/>';
     } else {
       g+='<circle cx="'+c.cx+'" cy="'+c.cy+'" r="'+f1(c.r*0.4)+'" fill="#232a3b" stroke="#4a556e" stroke-width="1.5" stroke-dasharray="4 4"/>'+'<text x="'+c.cx+'" y="'+(c.cy+10)+'" text-anchor="middle" font-size="28" font-weight="700" fill="#c9d2e3">?</text>';
