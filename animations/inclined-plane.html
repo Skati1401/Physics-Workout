@@ -58,6 +58,15 @@
     color-scheme:dark;
   }
 
+  /* solid kit colours (batch 12, 13 Nov 2026) */
+  :root{--ramp-t:#d9c8a6;--ramp-s:#93805e;--block-t:#f6f8fb;--block-s:#b9c2d0;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--ramp-t:#9a8562;--ramp-s:#5c4d36;--block-t:#3f4a5e;--block-s:#1f2633;} }
+  :root[data-theme="dark"]{--ramp-t:#9a8562;--ramp-s:#5c4d36;--block-t:#3f4a5e;--block-s:#1f2633;}
+  @media (max-height:640px) and (min-width:861px){ .side .seg button{min-height:38px;padding-block:4px;} .side{gap:9px;} }
+  :root{--steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --case:#3f4a5e; --wood-f:#c99e6a; --wood-t:#e3c08f; --wood-s:#9c7444; --grass-t:#cfe8b4; --grass-f:#9cc47a; --grass-s:#6f9a52; --earth:#b9a27c; --earth-s:#8f7a58; --skin:#c99a6c; --hair:#3b2a1f; --jeans:#3d4c70; --jeans-hi:#7384a8; --shirt:#2f7a8c; --shirt-hi:#69b3c4; --thermo:#f4f6f9; --thread:#c0311a; --glass:#cfe6f7; --glass-in:#e8f3fb; --ice-t:#e4f1fb; --ice-f:#bcd6ea;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --case:#56617a; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --grass-t:#2c4621; --grass-f:#22361a; --grass-s:#48693a; --earth:#7d6a4c; --earth-s:#5c4d36; --skin:#c29364; --hair:#7a563c; --jeans:#4a5b85; --jeans-hi:#8496bd; --shirt:#3a94a8; --shirt-hi:#7fc6d6; --thermo:#2a3242; --thread:#f27159; --glass:#35506a; --glass-in:#22303f; --ice-t:#2b3d52; --ice-f:#1f2e40;} }
+  :root[data-theme="dark"]{--steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --case:#56617a; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --grass-t:#2c4621; --grass-f:#22361a; --grass-s:#48693a; --earth:#7d6a4c; --earth-s:#5c4d36; --skin:#c29364; --hair:#7a563c; --jeans:#4a5b85; --jeans-hi:#8496bd; --shirt:#3a94a8; --shirt-hi:#7fc6d6; --thermo:#2a3242; --thread:#f27159; --glass:#35506a; --glass-in:#22303f; --ice-t:#2b3d52; --ice-f:#1f2e40;}
+
   *{box-sizing:border-box;}
   body{
     margin:0;
@@ -507,33 +516,104 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function done(){ return started && t>=RUN.T-1e-9; }
   function expOn(){ return pressed($('#ip-exp')); }
 
+    // ---- solid kit (the same block is in reaction-time.html, roller-coaster-energy.html, heat-transfer.html, density.html and liquid-pressure.html) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function solidArrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
+
   // ---- the picture
   function arrow(x1,y1,x2,y2,col,dash,w){
     var dx=x2-x1, dy=y2-y1, Ln=Math.hypot(dx,dy); if(Ln<4) return '';
-    var ux=dx/Ln, uy=dy/Ln, hx=x2-ux*9, hy=y2-uy*9;
-    return '<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+hx.toFixed(1)+'" y2="'+hy.toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||2.6)+'"'+(dash?' stroke-dasharray="5 4"':'')+'/>'
-      +'<path d="M'+x2.toFixed(1)+','+y2.toFixed(1)+' L'+(hx-uy*5).toFixed(1)+','+(hy+ux*5).toFixed(1)+' L'+(hx+uy*5).toFixed(1)+','+(hy-ux*5).toFixed(1)+' Z" fill="'+col+'"'+(dash?' opacity="0.75"':'')+'/>';
+    var ux=dx/Ln, uy=dy/Ln, hx=x2-ux*11, hy=y2-uy*11;
+    return '<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+hx.toFixed(1)+'" y2="'+hy.toFixed(1)+'" stroke="'+col+'" stroke-width="'+(w||3.2)+'"'+(dash?' stroke-dasharray="5 4"':'')+'/>'
+      +'<path d="M'+x2.toFixed(1)+','+y2.toFixed(1)+' L'+(hx-uy*6).toFixed(1)+','+(hy+ux*6).toFixed(1)+' L'+(hx+uy*6).toFixed(1)+','+(hy-ux*6).toFixed(1)+' Z" fill="'+col+'"'+(dash?' opacity="0.75"':'')+'/>';
   }
+  // one wide picture (640 wide); under 520 px wide the same draw() uses a narrower one (420 wide) with a shorter ramp, so the text stays readable on a phone
+  var VW=640, OX=60, narrowQ=window.matchMedia('(max-width:520px)');
+  function layout(){
+    var n=narrowQ.matches; VW=n?420:640; var el=$('#ip-svg'); el.setAttribute('viewBox','0 -12 '+VW+' 384'); el.classList.toggle('tall',n);
+    // a steep ramp is short, so it stands in the middle of the picture with room for the labels on both sides (not moved while it is being dragged)
+    if(!dragIp) OX=Math.max(n?78:84, (VW-lenPx()*Math.cos(+thIn.value*Math.PI/180))/2-(n?0:20));
+  }
+  if(narrowQ.addEventListener) narrowQ.addEventListener('change',function(){ draw(); });
   function draw(){
+    layout();
     var p=RUN.p, th=p.th*Math.PI/180, c=Math.cos(th), s=Math.sin(th), g='';
-    var Lp=Math.min(520, 230/Math.max(s,1e-6)), ox=60, oy=300;
+    var Lp=lenPx(), ox=OX, oy=300;
     var topX=ox+Lp*c, topY=oy-Lp*s;
-    // ground, ramp and angle
-    g+='<line x1="0" x2="640" y1="'+oy+'" y2="'+oy+'" stroke="var(--ink-soft)" stroke-width="2"/>';
-    g+='<polygon points="'+ox+','+oy+' '+topX.toFixed(1)+','+oy+' '+topX.toFixed(1)+','+topY.toFixed(1)+'" fill="var(--ramp)" opacity="0.55" stroke="var(--ink-soft)" stroke-width="1.5"/>';
+    // the bench (a lit top strip and a darker front edge) and the ramp, a solid wedge: lit slope, plain front, darker end
+    var DX=12, DY=-7, thBox=null;
+    g+=pg([[0,oy],[VW,oy],[VW,oy+DY],[DX,oy+DY]],'var(--wood-t)')+rect(0,oy,VW,9,'var(--wood-f)')+ln(0,oy,VW,oy,'var(--wood-s)',1.2);
+    g+=pg([[topX,oy],[topX,topY],[topX+DX,topY+DY],[topX+DX,oy+DY]],'var(--ramp-s)');
+    g+=pg([[ox,oy],[topX,topY],[topX+DX,topY+DY],[ox+DX,oy+DY]],'var(--ramp-t)');
+    g+=pg([[ox,oy],[topX,oy],[topX,topY]],'var(--ramp)')+pl([[ox,oy],[topX,topY]],'var(--ramp-s)',1.4);
     if(p.th>0){
-      g+='<path d="M'+(ox+44)+','+oy+' A44,44 0 0 0 '+(ox+44*c).toFixed(1)+','+(oy-44*s).toFixed(1)+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.2"/>';
-      g+='<text x="'+(ox+50)+'" y="'+(oy-8)+'" font-size="12" fill="var(--ink)">θ = '+p.th+'°</text>';
+      g+='<path d="M'+(ox+58)+','+oy+' A58,58 0 0 0 '+(ox+58*c).toFixed(1)+','+(oy-58*s).toFixed(1)+'" fill="none" stroke="var(--ink)" stroke-width="1.4"/>';
+      g+=txt(ox-8,oy-9,'θ = '+p.th+'°',{a:'end',fs:15,c:'var(--ink)',w:600});   // in clear space beside the foot of the ramp
+      thBox=[ox-8-('θ = '+p.th+'°').length*9.2, ox-4, oy-24, oy-4];
     }
     // tick marks every metre along the ramp
-    for(var i=0;i<=L;i++){ var tx=ox+Lp*i/L*c, ty=oy-Lp*i/L*s; g+='<line x1="'+tx.toFixed(1)+'" y1="'+ty.toFixed(1)+'" x2="'+(tx+5*s).toFixed(1)+'" y2="'+(ty+5*c).toFixed(1)+'" stroke="var(--ink-soft)" stroke-width="1"/>'; }
-    // the block
+    for(var i=0;i<=L;i++){ var tx=ox+Lp*i/L*c, ty=oy-Lp*i/L*s; g+='<line x1="'+tx.toFixed(1)+'" y1="'+ty.toFixed(1)+'" x2="'+(tx+6*s).toFixed(1)+'" y2="'+(ty+6*c).toFixed(1)+'" stroke="var(--ink-soft)" stroke-width="1.2"/>'; }
+    // the block: a solid block standing on the front edge of the slope. Its mass is written under the bench, clear of the arrows.
     var st=at(t), B=36, bx=ox+Lp*st.s/L*c - (B/2)*s, by=oy-Lp*st.s/L*s - (B/2)*c;
-    g+='<g transform="translate('+bx.toFixed(1)+','+by.toFixed(1)+') rotate('+(-p.th)+')"><rect x="'+(-B/2)+'" y="'+(-B/2)+'" width="'+B+'" height="'+B+'" rx="3" fill="var(--block)" stroke="var(--ink)" stroke-width="2"/><text x="0" y="4" text-anchor="middle" font-size="11" fill="var(--ink)">'+n3(p.m)+' kg</text></g>';
+    g+='<g transform="translate('+bx.toFixed(1)+','+by.toFixed(1)+') rotate('+(-p.th)+')">'+box(-B/2,-B/2,B,B,7,-5,'var(--block)',{top:'var(--block-t)',side:'var(--block-s)'})+'<rect x="'+(-B/2)+'" y="'+(-B/2)+'" width="'+B+'" height="'+B+'" rx="2" fill="none" stroke="var(--ink)" stroke-width="1.6"/></g>';
     // forces from the centre of the block, to scale (W is 80 px)
     var f=forcesAt(p, st.v), k=80/f.W, num=pressed($('#ip-num'));
     var down=[0,1], perpOut=[-s,-c], upSlope=[c,-s];
-    function lab(x,y,text,col,anchor){ return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" font-size="11.5" font-weight="600" fill="'+col+'"'+(anchor?' text-anchor="'+anchor+'"':'')+'>'+svgSub(sy(text))+'</text>'; }
+    function lab(x,y,text,col,anchor){
+      var w=String(sy(text)).replace(/<[^>]+>/g,'').length*9.2+4;   // about how wide the label is, so that it can be kept inside the picture
+      if(anchor==='end') x=Math.max(x,w+2); else x=Math.min(x,VW-w-2);
+      y=Math.max(4,Math.min(366,y));
+      var x0=anchor==='end'?x-w:x;
+      if(thBox && x0<thBox[1] && x0+w>thBox[0] && y-13<thBox[3] && y+3>thBox[2]) y=(y+3>thBox[3]-2 && thBox[3]+16<=366) ? thBox[3]+34 : thBox[2]-5;   // a force label never lies over the angle's label
+      return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" font-size="15" font-weight="600" fill="'+col+'"'+(anchor?' text-anchor="'+anchor+'"':'')+' paint-order="stroke" stroke="var(--panel)" stroke-width="4.5" stroke-linejoin="round">'+svgSub(sy(text))+'</text>'; }
     if(pressed($('#ip-comp')) && p.th>0){
       var wpX=bx+(-upSlope[0])*f.Wpar*k, wpY=by+(-upSlope[1])*f.Wpar*k;
       var wnX=bx+(-perpOut[0])*f.Wperp*k, wnY=by+(-perpOut[1])*f.Wperp*k;
@@ -541,7 +621,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       g+=lab(wpX-8,wpY+14,'{W} sin θ'+(num?' = '+n3(f.Wpar)+' N':''),'var(--fw)','end');
       g+=lab(wnX+6,wnY+12,'{W} cos θ'+(num?' = '+n3(f.Wperp)+' N':''),'var(--fw)');
     }
-    g+=arrow(bx,by,bx,by+f.W*k,'var(--fw)')+lab(bx-6,by+f.W*k+4,'{W}'+(num?' = '+n3(f.W)+' N':''),'var(--fw)','end');
+    // on a steep slope W sin θ lies close to W, so W's label goes to the other side of its arrow
+    g+=arrow(bx,by,bx,by+f.W*k,'var(--fw)')+(p.th>=42 ? lab(bx+9,by+f.W*k+6,'{W}'+(num?' = '+n3(f.W)+' N':''),'var(--fw)') : lab(bx-6,by+f.W*k+4,'{W}'+(num?' = '+n3(f.W)+' N':''),'var(--fw)','end'));
     var rx=bx+perpOut[0]*f.R*k, ry=by+perpOut[1]*f.R*k;
     g+=arrow(bx,by,rx,ry,'var(--fr)')+lab(rx-4,ry-6,'{R}'+(num?' = '+n3(f.R)+' N':''),'var(--fr)','end');
     if(Math.abs(f.F)>1e-6){
@@ -549,30 +630,31 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       g+=arrow(bx,by,fx,fy,'var(--ff)')+lab(fx+(f.F>0?6:-6),fy-6,'{F}'+(num?' = '+n3(Math.abs(f.F))+' N':''),'var(--ff)',f.F>0?'start':'end');
     }
     // the axes used for resolving
-    var ax=560, ay=60, e1=tilt?upSlope:[1,0], e2=tilt?perpOut:[0,-1];
-    g+=arrow(ax,ay,ax+e1[0]*44,ay+e1[1]*44,'var(--ink-soft)',false,1.5)+arrow(ax,ay,ax+e2[0]*44,ay+e2[1]*44,'var(--ink-soft)',false,1.5);
-    g+='<text x="'+(ax+e1[0]*52).toFixed(1)+'" y="'+(ay+e1[1]*52+4).toFixed(1)+'" font-size="11" fill="var(--ink-soft)">x</text><text x="'+(ax+e2[0]*52-3).toFixed(1)+'" y="'+(ay+e2[1]*52).toFixed(1)+'" font-size="11" fill="var(--ink-soft)">y</text>';
+    var ax=VW-80, ay=narrowQ.matches?64:60, e1=tilt?upSlope:[1,0], e2=tilt?perpOut:[0,-1];
+    g+=arrow(ax,ay,ax+e1[0]*44,ay+e1[1]*44,'var(--ink-soft)',false,1.8)+arrow(ax,ay,ax+e2[0]*44,ay+e2[1]*44,'var(--ink-soft)',false,1.8);
+    g+='<text x="'+(ax+e1[0]*54).toFixed(1)+'" y="'+(ay+e1[1]*54+5).toFixed(1)+'" font-size="15" fill="var(--ink)">x</text><text x="'+(ax+e2[0]*54-4).toFixed(1)+'" y="'+(ay+e2[1]*54).toFixed(1)+'" font-size="15" fill="var(--ink)">y</text>';
     // resultant force, in its own box because it is not a separate force
     var Fnet=f.a*p.m;
-    g+='<rect x="10" y="10" width="170" height="44" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';
-    g+='<text x="20" y="28" font-size="11" fill="var(--ink-soft)">resultant force</text>';
-    g+='<text x="20" y="46" font-size="12.5" font-weight="600" fill="var(--fn)">'+(Math.abs(Fnet)<0.005?'0 N':n3(Math.abs(Fnet))+' N '+(Fnet>0?'up':'down')+' the slope')+'</text>';
+    g+='<rect x="6" y="-8" width="226" height="74" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';
+    g+='<text x="16" y="12" font-size="14" fill="var(--ink-soft)">mass of the block <tspan font-weight="600" fill="var(--ink)">'+n3(p.m)+' kg</tspan></text>';
+    g+='<text x="16" y="34" font-size="14" fill="var(--ink-soft)">resultant force</text>';
+    g+='<text x="16" y="54" font-size="15.5" font-weight="600" fill="var(--fn)">'+(Math.abs(Fnet)<0.005?'0 N':n3(Math.abs(Fnet))+' N '+(Fnet>0?'up':'down')+' the slope')+'</text>';
     // grab areas (drawn last so they sit over the arrows): the top end of the ramp sets θ, the block sets its start
     if(!running){
       g+='<circle class="grab" data-drag="th" cx="'+topX.toFixed(1)+'" cy="'+topY.toFixed(1)+'" r="24" fill="transparent"/>';
       g+='<rect class="grab" data-drag="s" x="'+(-B/2-6)+'" y="'+(-B/2-6)+'" width="'+(B+12)+'" height="'+(B+12)+'" fill="transparent" transform="translate('+bx.toFixed(1)+','+by.toFixed(1)+') rotate('+(-p.th)+')"/>';
     }
-    if(running && pressed(slowBtn)) g+='<text x="630" y="330" text-anchor="end" font-size="11.5" fill="var(--accent)">slow motion</text>';
+    if(running && pressed(slowBtn)) g+=txt(VW-10,oy+30,'slow motion',{a:'end',fs:14,c:'var(--accent)'});
     $('#ip-svg').innerHTML=g;
     graph(); table(f); readouts(f, st);
   }
 
   // ---- drag the top of the ramp to set θ, or the block along the ramp to set its start (the sliders do the same with the keyboard)
-  var dragIp=null, ipSvg=$('#ip-svg'), OX=60, OY=300;
+  var dragIp=null, ipSvg=$('#ip-svg'), OY=300;
   function svgPt(e){ var q=ipSvg.createSVGPoint(); q.x=e.clientX; q.y=e.clientY; return q.matrixTransform(ipSvg.getScreenCTM().inverse()); }
   function setRange(el, v){ var st=+el.step; v=Math.round(v/st)*st; v=Math.max(+el.min, Math.min(+el.max, v)); v=+v.toFixed(2); if(+el.value!==v){ el.value=v; reset(); } }
   function ptAngle(q){ return Math.atan2(OY-q.y, q.x-OX)*180/Math.PI; }
-  function lenPx(){ var s=Math.sin(+thIn.value*Math.PI/180); return Math.min(520, 230/Math.max(s,1e-6)); }
+  function lenPx(){ var s=Math.sin(+thIn.value*Math.PI/180); return Math.min(VW<500?240:520, 230/Math.max(s,1e-6)); }
   function along(q){ var th=+thIn.value*Math.PI/180; return ((q.x-OX)*Math.cos(th)+(OY-q.y)*Math.sin(th))/lenPx()*L; }   // metres up the slope
   ipSvg.addEventListener('pointerdown', function(e){
     var h=e.target.closest('.grab'); if(!h || running) return;
@@ -596,11 +678,11 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     pts.forEach(function(q){ lo=Math.min(lo,q.v); hi=Math.max(hi,q.v); });
     var st=niceStep((hi-lo)/4||1); lo=Math.floor(lo/st)*st; hi=Math.ceil(hi/st)*st; if(hi===lo) hi=lo+st;
     function gx(x){ return GL+x/T*(GR-GL); } function gy(v){ return GB-(v-lo)/(hi-lo)*(GB-GT); }
-    for(var v=lo; v<=hi+1e-9; v+=st) g+='<line x1="'+GL+'" x2="'+GR+'" y1="'+gy(v)+'" y2="'+gy(v)+'" stroke="var(--panel-border)"/><text x="'+(GL-5)+'" y="'+(gy(v)+4)+'" text-anchor="end" font-size="10.5" fill="var(--ink-faint)">'+sn(+v.toFixed(6),st<1?1:0)+'</text>';
+    for(var v=lo; v<=hi+1e-9; v+=st) g+='<line x1="'+GL+'" x2="'+GR+'" y1="'+gy(v)+'" y2="'+gy(v)+'" stroke="var(--panel-border)"/><text x="'+(GL-5)+'" y="'+(gy(v)+4)+'" text-anchor="end" font-size="12" fill="var(--ink-soft)">'+sn(+v.toFixed(6),st<1?1:0)+'</text>';
     var ts=niceStep(T/6);
-    for(var x=0; x<=T+1e-9; x+=ts) g+='<line x1="'+gx(x)+'" x2="'+gx(x)+'" y1="'+GT+'" y2="'+GB+'" stroke="var(--panel-border)"/><text x="'+gx(x)+'" y="'+(GB+15)+'" text-anchor="middle" font-size="10.5" fill="var(--ink-faint)">'+(+x.toFixed(6))+'</text>';
+    for(var x=0; x<=T+1e-9; x+=ts) g+='<line x1="'+gx(x)+'" x2="'+gx(x)+'" y1="'+GT+'" y2="'+GB+'" stroke="var(--panel-border)"/><text x="'+gx(x)+'" y="'+(GB+15)+'" text-anchor="middle" font-size="12" fill="var(--ink-soft)">'+(+x.toFixed(6))+'</text>';
     g+='<line x1="'+GL+'" x2="'+GR+'" y1="'+gy(0)+'" y2="'+gy(0)+'" stroke="var(--ink-soft)" stroke-width="1.5"/><line x1="'+GL+'" x2="'+GL+'" y1="'+GT+'" y2="'+GB+'" stroke="var(--ink-soft)" stroke-width="1.5"/>';
-    g+='<text x="'+((GL+GR)/2)+'" y="'+(GB+32)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">t (s)</text><text x="14" y="'+((GT+GB)/2)+'" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)" transform="rotate(-90 14 '+((GT+GB)/2)+')">v (m s⁻¹)</text>';
+    g+='<text x="'+((GL+GR)/2)+'" y="'+(GB+32)+'" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">t (s)</text><text x="14" y="'+((GT+GB)/2)+'" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)" transform="rotate(-90 14 '+((GT+GB)/2)+')">v (m s⁻¹)</text>';
     if(!expOn()) g+='<polyline points="'+pts.map(function(q){ return gx(q.t).toFixed(1)+','+gy(q.v).toFixed(1); }).join(' ')+'" fill="none" stroke="var(--fn)" stroke-width="1.5" opacity="0.4"/>';
     if(started){
       if(expOn()){ for(var x2=0; x2<=t+1e-9; x2+=Math.max(0.05,RUN.T/80)) g+='<circle cx="'+gx(x2).toFixed(1)+'" cy="'+gy(at(x2).v).toFixed(1)+'" r="2.4" fill="var(--fn)"/>'; }
