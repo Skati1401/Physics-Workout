@@ -14,8 +14,9 @@ function methodPicker(panel){
   w.addEventListener('click',e=>{const b=e.target.closest('button[data-m]');if(b)setMethod(b.dataset.m);});
 }
 function forMethod(body,k){body.closest('.act').dataset.m=k;}
+const methodHooks=[];
 function setMethod(k){
-  method=k;try{localStorage.setItem(MKEY,k);}catch(e){}
+  method=k;methodHooks.forEach(f=>f(k));try{localStorage.setItem(MKEY,k);}catch(e){}
   $$('.method-pick button').forEach(b=>{const on=b.dataset.m===k;b.classList.toggle('is-on',on);b.setAttribute('aria-pressed',String(on));});
   $$('.act[data-m],.act-pair[data-m]').forEach(a=>{a.hidden=a.dataset.m!==k;});
   raf(()=>methodGames.forEach(g=>g&&g.reflow&&g.reflow()));
@@ -37,6 +38,71 @@ function pairIn(panel){
   pair.appendChild(list[list.length-2]);pair.appendChild(list[list.length-1]);acts.appendChild(pair);
   return pair;
 }
+/* ================= THE STUDENT'S OWN RESULTS TABLE (Do Experiment; 5c, 13 Nov 2026) =================
+   The same helper is copied into each practical rebuilt to the 1.22 model; 1.22 has its own version.
+   cfg.head: column headings. cfg.rows: rows of cells. A cell is given text, or a box:
+     {k:'key', a:answer, tol, dp, label}           a reading, right if within tol of a (default 0.05)
+     {k:'key', f:v=>number, tol, rel, dp, label}  worked from the student's own readings: v('key') is a box the student
+                                                   already has right (NaN otherwise); right if within tol, or rel × the answer
+     {k:'key', a:'text', opts:[…], label}          a choice from a list (observations)
+   Boxes are checked in table order, so a worked box can use readings to its left or in earlier rows.
+   Fill in table is always there (Alex, 5 Nov 2026): it fills every box, dashed, so a student who cannot
+   read the instrument can still go on. cfg.onChange runs after every check, fill or clear. */
+function ownTable(body,cfg){
+  const wrap=mk('div','table-scroll');body.appendChild(wrap);
+  const cells=[];
+  wrap.innerHTML='<table class="units res-tbl own-tbl"><thead><tr>'+cfg.head.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+
+    cfg.rows.map(r=>'<tr>'+r.map(c=>{
+      if(c===null||typeof c!=='object')return '<td class="given">'+(c==null?'':c)+'</td>';
+      const i=cells.length;cells.push(c);
+      if(c.opts)return '<td><select class="own-sel" data-i="'+i+'" aria-label="'+c.label+'"><option value="">Choose</option>'+c.opts.map(o=>'<option>'+o+'</option>').join('')+'</select></td>';
+      return '<td><input class="calc-num-input" data-i="'+i+'" inputmode="decimal" autocomplete="off" aria-label="'+c.label+'"></td>';
+    }).join('')+'</tr>').join('')+'</tbody></table>';
+  const els=$$('[data-i]',wrap);
+  const num=e=>{const t=e.value.trim().replace(/[−–]/g,'-').replace(',','.');return t===''||!/^-?(\d+\.?\d*|\.\d+)$/.test(t)?NaN:parseFloat(t);};
+  const at={};cells.forEach((c,i)=>{if(c.k)at[c.k]=i;});
+  const v=k=>{const e=els[at[k]];return e&&e.disabled?num(e):NaN;};
+  const want=c=>c.f?c.f(v):c.a;
+  const fmt=(x,c)=>{if(typeof x==='string')return x;const s=x.toFixed(c.dp==null?1:c.dp);return /^-0(\.0+)?$/.test(s)?s.slice(1):s.replace('-','−');};
+  const lock=(e,shown)=>{e.disabled=true;e.classList.remove('is-wrong');if(shown)e.classList.add('is-shown');};
+  const b=bar(body,[{label:'Check table',primary:true,fn:check},{label:'Fill in table',fn:fill},{label:'Clear',fn:reset}]);
+  const changed=()=>{if(cfg.onChange)cfg.onChange();};
+  function good(c,e){
+    const w=want(c);
+    if(c.opts)return e.value===w;
+    const x=num(e);if(!isFinite(x)||!isFinite(w))return false;
+    return Math.abs(x-w)<=Math.max(c.tol==null?0.05:c.tol,(c.rel||0)*Math.abs(w))+1e-9;
+  }
+  function check(){
+    let ok=0,bad=0,blank=0;
+    els.forEach((e,i)=>{
+      if(e.disabled){ok++;return;}
+      if(e.value.trim()===''){blank++;return;}
+      if(good(cells[i],e)){lock(e);e.classList.add('pop');ok++;}else{bad++;e.classList.add('is-wrong');}
+    });
+    if(ok===els.length){b.say(cfg.done||'All correct.','good');celebrate(b.msg);}
+    else b.say(ok+' of '+els.length+' correct'+(blank?', '+blank+' left blank':'')+'.'+(bad&&cfg.hint?' '+cfg.hint:''),bad?'bad':'');
+    changed();
+  }
+  function fill(){
+    els.forEach((e,i)=>{if(e.disabled)return;const w=want(cells[i]);if(cells[i].opts||isFinite(w)){e.value=cells[i].opts?w:fmt(w,cells[i]);lock(e,true);}});
+    b.say(cfg.filled||'Table filled in (dashed). Read it through.','');changed();
+  }
+  function reset(){els.forEach(e=>{e.value='';e.disabled=false;e.classList.remove('is-wrong','is-shown','pop');});b.say('','');changed();}
+  els.forEach(e=>e.addEventListener(e.tagName==='SELECT'?'change':'input',()=>e.classList.remove('is-wrong')));
+  track(body,{reset:reset,
+    getState:()=>({v:els.map(e=>e.value),ok:els.map(e=>e.disabled),sh:els.map(e=>e.classList.contains('is-shown'))}),
+    setState:s=>{reset();els.forEach((e,i)=>{if(!s||!s.v||typeof s.v[i]!=='string')return;e.value=s.v[i];if(s.ok&&s.ok[i])lock(e,s.sh&&s.sh[i]);});if(els.every(e=>e.disabled))b.say(cfg.done||'All correct.','good');changed();},
+    isDone:()=>els.every(e=>e.disabled)});
+  // the value in a box the student has got right (or that was filled in), as typed; null until then
+  return {val:k=>{const e=els[at[k]];return e&&e.disabled?e.value.trim():null;}};
+}
+/* The framed animation and the table side by side (as on 1.22), once the page's set-up has run. */
+function sideBySide(panel,tableActs){
+  setTimeout(()=>{const fr=$('#panel-'+panel+' .anim-wrap');if(!fr)return;const sp=mk('div','do-split');fr.parentNode.insertBefore(sp,fr);sp.appendChild(fr);
+    const col=mk('div','do-col');sp.appendChild(col);tableActs.forEach(a=>col.appendChild(a.closest('.act')));},0);
+}
+
 /* ================= 1. METHOD ================= */
 methodPicker('method');
 {
@@ -119,8 +185,6 @@ pairLast('rad');
     {id:'t',l:'Thermometer',r:'Measures how much the water in each can warms up'}
   ]}));
 }
-setMethod(method);
-
 /* ================= 2. VARIABLES ================= */
 {
   const body=act('variables','Sort','Comparing conductors: which variable?','Elena compares how well four rods conduct. Sort each variable, then press Check.');
@@ -139,7 +203,7 @@ setMethod(method);
   ]});
 }
 {
-  const body=act('variables','Predict','The Leslie cube','');
+  const body=act('variables','Multiple choice','The Leslie cube','');
   createPredict({host:body,q:'In the Leslie cube test, what is the independent variable?',options:[
     {text:'The type of surface facing the detector',correct:true},
     {text:'The reading on the infrared detector',why:'The reading is what is measured, so it is the dependent variable.'},
@@ -148,7 +212,7 @@ setMethod(method);
   ],explain:'Only the surface changes from one reading to the next. The detector reading depends on it, and the water temperature and distance are kept the same.'});
 }
 {
-  const body=act('variables','Predict','The same amount of wax','');
+  const body=act('variables','Multiple choice','The same amount of wax','');
   createPredict({host:body,q:'Why does Aidan use the same amount of wax on every pin?',options:[
     {text:'More wax takes more energy to melt',correct:true},
     {text:'More wax would make the rod conduct better',why:'The wax is outside the rod. It does not change how well the rod itself conducts.'},
@@ -157,13 +221,167 @@ setMethod(method);
   ],explain:'A bigger lump of wax needs more energy to melt, so its pin would drop later even on a good conductor. With equal wax, only the material of the rod changes the time.'});
 }
 
-/* ================= 3. CONDUCTION ================= */
+/* ================= 7. ACCURACY AND SAFETY ================= */
 {
-  act('conduction','Your turn','Time the pins','Press Experiment, then Start. Record the time when each pin drops. Which rod is the best conductor, and which is a poor conductor? Then turn Experiment off and press Play to see the temperature along each rod.');
+  const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
+  createSortGame({host:body,cats:[
+    {id:'a',label:'Better results',hint:'A fairer or more accurate test',color:'--c1',soft:'--c1-soft'},
+    {id:'s',label:'Keeps people safe',hint:'Protects people from harm',color:'--c3',soft:'--c3-soft'}
+  ],items:[
+    {id:'1',text:'Keep the detector the same distance from each face',cat:'a'},
+    {id:'2',text:'Use rods of the same length and thickness',cat:'a'},
+    {id:'3',text:'Read the thermometer with your eye level with the liquid',cat:'a'},
+    {id:'4',text:'Repeat each test and find the mean time',cat:'a'},
+    {id:'5',text:'Do not touch the Leslie cube: its faces are hot',cat:'s'},
+    {id:'6',text:'Stand up, and keep the hot water away from the edge of the bench',cat:'s'},
+    {id:'7',text:'Pick up the crystal with tweezers, not your fingers',cat:'s'},
+    {id:'8',text:'Let the rods cool before you handle them',cat:'s'},
+    {id:'9',text:'Stir the water before you read the thermometer',cat:'a'},
+    {id:'10',text:'Hold hot apparatus by a wooden part: wood is a poor conductor',cat:'s'}
+  ]});
 }
-frameAct('conduction','animations/heat-transfer.html','cond','Conduction animation: four rods in hot water with a pin waxed to each','conduction',false);
 {
-  const body=act('conduction','Predict','The glass rod','');
+  const body=act('accuracy','Multiple choice','Stray radiation','');
+  createPredict({host:body,q:'Why should the Leslie cube test be done away from windows and radiators?',options:[
+    {text:'They give extra infrared to the detector',correct:true},
+    {text:'They cool the water inside the cube',why:'A radiator would not cool the cube. The problem is the extra radiation reaching the detector.'},
+    {text:'Their light changes the colour of the faces',why:'The faces stay the same. The detector picks up infrared from the window or radiator.'},
+    {text:'They make the detector less sensitive',why:'The detector works the same. It just measures radiation from other sources as well.'}
+  ],explain:'An infrared detector measures all the radiation reaching it. Sunlight or a radiator adds radiation that does not come from the face being tested, so the comparison is no longer fair.'});
+}
+{
+  const body=act('accuracy','Multiple choice','Timing the pins','');
+  createPredict({host:body,q:'Aidan’s copper and aluminium pins drop only 8 s apart. How can he be more confident which conducts better?',options:[
+    {text:'Repeat the test and compare the mean times',correct:true},
+    {text:'Use a stopwatch that reads to 0.01 s instead',why:'His reaction time is far bigger than 0.01 s. Repeats give a more reliable comparison.'},
+    {text:'Put more wax on the aluminium pin to slow it',why:'That would change a control variable, so the test would not be fair.'},
+    {text:'Use hotter water for the copper rod this time',why:'Each rod must go in the same water, or the test is not fair.'}
+  ],explain:'Small differences can come from how the wax was stuck on or from reaction time. Repeating the test and comparing mean times shows whether the difference is real.'});
+}
+
+
+/* ================= DO THE EXPERIMENT (the 1.22 model; 5c, 13 Nov 2026) =================
+   The student reads the instruments in the animation's measure mode (animations/heat-transfer.html?show=measure&part=…),
+   for the method chosen at the top of the tab (the same choice as on the Method tab), and fills in their own table.
+   These readings must match the animation's measure mode (tools/CORE-PRACTICALS.md, "Measure modes"):
+   conduction pins at 0:55, 1:03 and 4:54, glass still on at 10:00; Leslie cube at 10 cm and 80 °C; two cans every 2 minutes. */
+const HT_COND=[['Copper',55],['Aluminium',63],['Iron',294]];
+const HT_CUBE=[['Matt black',4.0],['Shiny black',3.4],['Matt white',2.7],['Shiny silver',0.4]];
+const HT_CANS={t:[0,2,4,6,8,10],black:[20.0,24.5,27.0,31.0,35.0,36.0],shiny:[20.0,21.0,22.5,23.0,24.0,25.0]};
+const HT_FRAME=k=>'animations/heat-transfer.html?embed&show=measure&part='+k;
+const htBodies=[];let htTables={},htRows=()=>{};
+methodPicker('do');
+{
+  const c=act('do','Your turn','Take your own readings','Press Start and watch the pins. The stopwatch stops each time a pin drops: write that time in the table in seconds (1:03 is 63 s). Leave it running to 10:00 to see whether the glass pin drops.');forMethod(c,'cond');
+  const v=act('do','Your turn','Take your own readings','Heat under the crystal: press Play, and press Mark the front every few seconds. Draw the path of the dye on the diagram by clicking each dashed line until its arrow points the way the dye went. Then heat at the top and record what the dye does.');forMethod(v,'conv');
+  const r=act('do','Your turn','Take your own readings','Leslie cube: read the millivoltmeter for each face (press the Face buttons) and write it in the table. Then choose Two cans: press Heat for 2 minutes five times, reading both thermometers each time to 0.5 °C. Plot both cans on one graph.');forMethod(r,'rad');
+}
+frameAct('do','animations/heat-transfer.html','measure&part='+method,'Thermal energy transfer experiment: read the stopwatch, the meter and the thermometers','thermal energy transfer',false);
+{
+  const body=act('do','Calculate','Your results: conduction','Write each time in seconds, to the nearest 1 s. For the glass rod, choose what happened. Press Check table.');forMethod(body,'cond');htBodies.push(body);
+  ownTable(body,{head:['Rod','Time for the pin to drop (s)'],
+    rows:HT_COND.map((r,i)=>[r[0],{k:'c'+i,a:r[1],tol:0.5,dp:0,label:'Time for the pin on the '+r[0].toLowerCase()+' rod to drop, in s'}])
+      .concat([['Glass',{k:'g',a:'Still on after 600 s',opts:['Dropped before 600 s','Still on after 600 s'],label:'What the pin on the glass rod did'}]]),
+    hint:'The stopwatch shows minutes:seconds. 1:03 is 60 + 3 = 63 s.',done:'All correct.'});
+}
+/* Convection: the student draws the path of the dye by setting an arrow on each side of the beaker (heated under the crystal). */
+{
+  const body=act('do','Draw','Draw the path of the dye','Heated under the crystal. Click each dashed line until its arrow points the way the dye went, or leave it with no arrow. Press Check.');forMethod(body,'conv');htBodies.push(body);
+  // each side of the beaker: from, to (the way round for state 1); the dye goes up above the heat, across the top, down the far side and back
+  const SEG=[{n:'the left side, above the heat',a:[78,156],b:[78,62]},{n:'the top',a:[92,50],b:[228,50]},{n:'the right side',a:[242,62],b:[242,156]},{n:'the bottom',a:[228,168],b:[92,168]}];
+  const ANS=[1,1,1,1];
+  let st=[0,0,0,0],locked=false,shown=false;
+  const box=mk('div','cv-draw');body.appendChild(box);
+  const b=bar(body,[{label:'Check',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  const ans=answerBtn(b,()=>{st=ANS.slice();locked=true;shown=true;render();b.say('Answer shown (dashed): up above the heat, across the top, down the far side and back along the bottom.','');});
+  function render(){
+    let s='<svg viewBox="0 0 320 236" class="cv-svg" role="group" aria-label="A beaker of water heated under the crystal, at the left. Set the arrow on each side."><defs><marker id="cv-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>'+
+      '<path d="M40,26 L40,200 L280,200 L280,26" fill="color-mix(in srgb,var(--panel-2) 70%,#9cc8f0 30%)" stroke="var(--ink-soft)" stroke-width="2.5"/>'+
+      '<rect x="72" y="190" width="12" height="7" rx="2" fill="#7b2d8e"/><text x="90" y="196" font-size="11" fill="var(--ink-soft)" font-family="var(--f-mono)">crystal</text>'+
+      '<path d="M78,230 L78,210" stroke="var(--bad)" stroke-width="3" marker-end="url(#cv-ah)"/><text x="88" y="226" font-size="12" fill="var(--bad)" font-family="var(--f-mono)">heat</text>';
+    SEG.forEach((g,i)=>{
+      const p=st[i]===2?[g.b,g.a]:[g.a,g.b];
+      s+='<g class="cv-seg'+(locked?' ok':'')+(shown?' shown':'')+'" data-i="'+i+'" tabindex="'+(locked?-1:0)+'" role="button" aria-label="Arrow on '+g.n+': '+(st[i]?'set':'no arrow')+'">'+
+        '<rect x="'+(Math.min(g.a[0],g.b[0])-12)+'" y="'+(Math.min(g.a[1],g.b[1])-12)+'" width="'+(Math.abs(g.a[0]-g.b[0])+24)+'" height="'+(Math.abs(g.a[1]-g.b[1])+24)+'" fill="transparent"/>'+
+        '<line x1="'+p[0][0]+'" y1="'+p[0][1]+'" x2="'+p[1][0]+'" y2="'+p[1][1]+'" stroke="'+(st[i]?'var(--accent)':'var(--ink-faint)')+'" stroke-width="'+(st[i]?3.5:2)+'"'+(st[i]?' marker-end="url(#cv-ah)"':' stroke-dasharray="6 5"')+(shown?' stroke-dasharray="7 4"':'')+'/></g>';
+    });
+    box.innerHTML=s+'</svg>';
+    $$('.cv-seg',box).forEach(g=>{
+      const go=()=>{if(locked)return;const i=+g.dataset.i;st[i]=(st[i]+1)%3;render();const n=$('.cv-seg[data-i="'+i+'"]',box);if(n)n.focus();b.say('','');};
+      g.addEventListener('click',go);keyActivate(g,go);
+    });
+  }
+  function check(){
+    if(locked)return;
+    const right=st.filter((x,i)=>x===ANS[i]).length;
+    if(right===4){locked=true;render();b.say('All 4 correct: a convection current.','good');celebrate(b.msg);ans.off();}
+    else{b.say(right+' of 4 correct. The warm water above the heat rises: start there and follow it round.','bad');ans.on();}
+  }
+  function reset(){st=[0,0,0,0];locked=false;shown=false;ans.off();b.say('','');render();}
+  render();
+  track(body,{reset:reset,getState:()=>({s:st,l:locked,sh:shown}),
+    setState:x=>{reset();if(x&&Array.isArray(x.s)&&x.s.length===4)st=x.s.map(v=>[0,1,2].includes(v)?v:0);locked=!!(x&&x.l);shown=!!(x&&x.sh);render();if(locked)b.say(shown?'Answer shown (dashed).':'All 4 correct: a convection current.',shown?'':'good');},
+    isDone:()=>locked});
+}
+{
+  const body=act('do','Record','Your results: heating at the top','Heat at the top this time. Choose what the dye does, then press Check table.');forMethod(body,'conv');htBodies.push(body);
+  ownTable(body,{head:['Heated','What the dye does'],rows:[['At the top',{k:'top',a:'Stays near the bottom',opts:['Rises to the heat','Goes round the beaker as before','Stays near the bottom'],label:'Heated at the top: what the dye does'}]],
+    hint:'Heat at the top and watch the dye for a while.',done:'Correct: no convection current forms.'});
+}
+{
+  const body=act('do','Calculate','Your results: the Leslie cube','Write each reading to 0.1 mV, as the meter shows it. Press Check table.');forMethod(body,'rad');htBodies.push(body);
+  ownTable(body,{head:['Face','Reading (mV)'],rows:HT_CUBE.map((r,i)=>[r[0],{k:'f'+i,a:r[1],label:'Reading for the '+r[0].toLowerCase()+' face, in mV'}]),
+    hint:'Turn the cube with the Face buttons and copy the millivoltmeter exactly.',done:'All correct.'});
+}
+{
+  const body=act('do','Calculate','Your results: two cans','Read each thermometer to 0.5 °C. Press Check table.');forMethod(body,'rad');htBodies.push(body);
+  htTables.cans=ownTable(body,{head:['Time (min)','Matt black can (°C)','Shiny can (°C)'],
+    rows:HT_CANS.t.map((t,i)=>[t,{k:'b'+i,a:HT_CANS.black[i],tol:0.25,label:'Matt black can at '+t+' minutes, in °C'},{k:'s'+i,a:HT_CANS.shiny[i],tol:0.25,label:'Shiny can at '+t+' minutes, in °C'}]),
+    hint:'Read the close-up of each thermometer to the nearest 0.5 °C.',done:'All correct. Now plot your results.',filled:'Table filled in (dashed). Now plot both cans.',
+    onChange:()=>htRows()});
+}
+{
+  const body=act('do','Plot','Plot your results','Plot temperature against time for both cans: the matt black can first, then the shiny can (both start at 20.0 °C, so that cross is shared). Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');forMethod(body,'rad');
+  const key=i=>i<6?'b'+i:'s'+(i-6),row=i=>{const v=htTables.cans&&htTables.cans.val(key(i)),t=HT_CANS.t[i%6];return (i===0?'Both cans':i<6?'Matt black':'Shiny')+', '+t+' min: '+(v?v+' °C':'your reading');};
+  createPlot({host:body,// both cans start at 20.0 °C: that cross is plotted once (a second click there would take it off again)
+  points:HT_CANS.t.map((t,i)=>({x:t,y:HT_CANS.black[i],n:i})).concat(HT_CANS.t.slice(1).map((t,i)=>({x:t,y:HT_CANS.shiny[i+1],n:i+7}))),
+    rowText:p=>row(p.n),next:' Now answer the question below.',
+    graph:{xMin:0,xMax:10,yMin:20,yMax:40,xTicks:[0,2,4,6,8,10],yTicks:[20,25,30,35,40],minor:[0.5,0.5],snap:[0.5,0.5],xLabel:'time (min)',yLabel:'temperature (°C)',W:560,H:340}});
+  htRows=()=>{$$('.plot-row',body).forEach((li,i)=>{const s=li.firstElementChild;if(s)s.textContent=row(i<6?i:i+1);});};
+}
+{
+  const body=act('do','Predict','Reading your results','');forMethod(body,'cond');
+  createPredict({host:body,q:'Use your table. Which rod is the best conductor?',options:[
+    {text:'Copper: its pin dropped first',correct:true},
+    {text:'Iron: its pin took the longest',why:'A long time means energy took longer to reach the wax, so iron is a poorer conductor than copper and aluminium.'},
+    {text:'Glass: its pin never dropped',why:'The glass pin stayed on because energy is conducted along glass very slowly: glass is the poorest conductor.'},
+    {text:'Aluminium: it dropped second',why:'Its pin dropped 8 s after copper’s, so copper conducts a little better.'}
+  ],explain:'The shortest time means energy reached the wax fastest, so copper is the best conductor here, then aluminium, then iron. Glass is a poor conductor (an insulator). Material is a categoric variable, so show the times on a bar chart.'});
+}
+{
+  const body=act('do','Predict','Reading your results','');forMethod(body,'rad');
+  createPredict({host:body,q:'Use your two tables. Which surface is the best emitter, and which can is the better absorber?',options:[
+    {text:'Matt black for both',correct:true},
+    {text:'Shiny silver for both',why:'Shiny silver gave the lowest reading (0.4 mV), and the shiny can warmed least: it is the poorest emitter and absorber.'},
+    {text:'Matt black emits best; shiny absorbs best',why:'The shiny can rose only 5.0 °C, against 16.0 °C for the matt black can, so the matt black can absorbs better too.'},
+    {text:'Matt white for both',why:'Matt white (2.7 mV) emits less than matt black (4.0 mV), and no white can was tested.'}
+  ],explain:'The matt black face gave the biggest reading, so it is the best emitter of infrared, and the matt black can warmed fastest, so it is the best absorber. Shiny surfaces are poor emitters and poor absorbers: they reflect infrared.'});
+}
+methodHooks.push(k=>{const f=$('#panel-do iframe.anim-frame');if(f&&!f.src.endsWith(HT_FRAME(k)))f.src=HT_FRAME(k);});
+sideBySide('do',htBodies);
+
+/* ================= SHOW THE EXPERIMENT: the readings taken for you =================
+   One frame, showing the part for the method chosen at the top (the same choice as on the Method tab). */
+const HT_SHOW=k=>'animations/heat-transfer.html?embed&show='+k;
+methodPicker('experiment');
+{
+  const c=act('experiment','Your turn','Watch the readings','Press Experiment, then Start: the stopwatch times are recorded for you. Which rod is the best conductor, and which is a poor conductor? Then turn Experiment off and press Play to see the temperature along each rod.');forMethod(c,'cond');
+  const v=act('experiment','Your turn','Watch the readings','Press Experiment, then Play. Press Mark the front every few seconds, then press Compare to see the convection current. Try heating under the crystal, in the middle and at the top.');forMethod(v,'conv');
+  const r=act('experiment','Your turn','Watch the readings','Press Experiment. With the Leslie cube, read each face without moving the detector: the readings fill the table. Then choose Two cans: the temperatures are plotted for you. Which surface is the best emitter, and which is the best absorber?');forMethod(r,'rad');
+}
+frameAct('experiment','animations/heat-transfer.html',method,'Thermal energy transfer animation: conduction along four rods, a convection current, a Leslie cube and two cans','thermal energy transfer',false);
+{
+  const body=act('experiment','Multiple choice','The glass rod','');forMethod(body,'cond');
   createPredict({host:body,q:'After 10 minutes the pin on the glass rod is still on. What does this show?',options:[
     {text:'Glass is a poor conductor',correct:true},
     {text:'The wax on the glass rod was too thick',why:'The same amount of wax was used on every rod, so the wax is not the cause.'},
@@ -172,7 +390,7 @@ frameAct('conduction','animations/heat-transfer.html','cond','Conduction animati
   ],explain:'The end of the glass rod in the water is hot, but energy is conducted along glass so slowly that the wax 11 cm away never reaches its melting point. Glass is a poor conductor (an insulator).'});
 }
 {
-  const body=act('conduction','Predict','Bar chart or line graph?','');
+  const body=act('experiment','Multiple choice','Bar chart or line graph?','');forMethod(body,'cond');
   createPredict({host:body,q:'Aidan wants to show his times on a graph. Why should he draw a bar chart, not a line graph?',options:[
     {text:'The rod material is a categoric variable',correct:true},
     {text:'The times are too far apart to join up',why:'The spread of the times does not matter. A line needs values in between to join.'},
@@ -180,15 +398,9 @@ frameAct('conduction','animations/heat-transfer.html','cond','Conduction animati
     {text:'Line graphs are only used for temperatures',why:'Line graphs suit any continuous variable. The material is not continuous.'}
   ],explain:'The material is a categoric variable: there are no values between copper and iron, so the points cannot be joined by a line. Draw one bar for each material, against a time axis with an even (linear) scale.'});
 }
-pairIn('conduction'); /* The glass rod beside Bar chart or line graph? (Alex, 13 Nov 2026) */
-
-/* ================= 4. CONVECTION ================= */
+{const p=pairIn('experiment');p.dataset.m='cond';}
 {
-  act('convection','Your turn','Follow the dye','Press Experiment, then Play. Press Mark the front every few seconds to mark where the front of the purple dye has got to, then press Compare. Try heating under the crystal, in the middle and at the top. Where does the warm water go, and what happens when you heat the top?');
-}
-frameAct('convection','animations/heat-transfer.html','conv','Convection animation: a beaker of water with a potassium permanganate crystal, heated from below or at the top','convection',false);
-{
-  const body=act('convection','Order','Why a convection current forms','Put the steps in order, starting at the flame. Drag the ≡ handle, or use the ▲▼ buttons.');
+  const body=act('experiment','Order','Why a convection current forms','Put the steps in order, starting at the flame. Drag the ≡ handle, or use the ▲▼ buttons.');forMethod(body,'conv');
   createReorder({host:body,steps:[
     {id:'a',text:'The water just above the flame is heated.'},
     {id:'b',text:'Its particles move faster and further apart, so the water expands.'},
@@ -199,7 +411,7 @@ frameAct('convection','animations/heat-transfer.html','conv','Convection animati
   why:'Heating makes the water expand. With the same mass in a bigger volume, ρ = [[m|V]] is smaller, so the warm water rises and denser water flows in below it.'});
 }
 {
-  const body=act('convection','Predict','Heating at the top','');
+  const body=act('experiment','Predict','Heating at the top','');forMethod(body,'conv');
   createPredict({host:body,q:'Aidan heats the water near the top of the beaker instead. What happens to the dye at the bottom?',options:[
     {text:'It stays near the bottom',correct:true},
     {text:'It rises quickly to the heater',why:'Only warm, less dense water rises. The water at the bottom stays cold and dense.'},
@@ -207,15 +419,9 @@ frameAct('convection','animations/heat-transfer.html','conv','Convection animati
     {text:'It goes round the beaker as before',why:'A current needs warm water below cooler water. Here the warm water is already at the top.'}
   ],explain:'The warm water at the top is less dense, so it stays at the top, and the cold, denser water stays at the bottom. No convection current forms, and the dye only spreads slowly.'});
 }
-pairIn('convection'); /* the Order beside the Predict (Alex, 13 Nov 2026) */
-
-/* ================= 5. RADIATION ================= */
+{const p=pairIn('experiment');p.dataset.m='conv';}
 {
-  act('radiation','Your turn','Compare the surfaces','Press Experiment. With the Leslie cube, drag the detector to a distance, then read each face without moving it. Then choose Two cans and take readings every minute. Which surface is the best emitter, and which is the best absorber?');
-}
-frameAct('radiation','animations/heat-transfer.html','rad','Radiation animation: a Leslie cube with an infrared detector, and two cans beside a heater','radiation',false);
-{
-  const body=act('radiation','Predict','A hotter cube','');
+  const body=act('experiment','Predict','A hotter cube','');forMethod(body,'rad');
   createPredict({host:body,q:'Elena refills the Leslie cube with hotter water. What happens to the reading from the matt black face?',options:[
     {text:'It goes up',correct:true},
     {text:'It goes down',why:'A hotter object emits more infrared, not less.'},
@@ -223,6 +429,8 @@ frameAct('radiation','animations/heat-transfer.html','rad','Radiation animation:
     {text:'Only the shiny faces change',why:'Every face emits more when it is hotter, the black face as well.'}
   ],explain:'The hotter an object, the more infrared radiation it emits each second. Every face gives a bigger reading, and matt black is still the highest.'});
 }
+
+methodHooks.push(k=>{const f=$('#panel-experiment iframe.anim-frame');if(f&&!f.src.endsWith(HT_SHOW(k)))f.src=HT_SHOW(k);});
 
 /* ================= 6. RESULTS ================= */
 const CANS=[[0,20.0,20.0],[2,24.5,21.0],[4,28.0,22.0],[6,31.5,23.0],[8,34.0,24.0],[10,36.5,25.0]];
@@ -242,14 +450,7 @@ function cansTable(rows,miss){
   ]});
 }
 {
-  const body=act('results','Plot','Plot the matt black can','Plot temperature against time for the matt black can, as a small cross. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
-  createPlot({host:body,
-    points:CANS.map(r=>({x:r[0],y:r[1]})),
-    rowText:p=>p.x+' min, '+p.y.toFixed(1)+' °C',
-    graph:{xMin:0,xMax:10,yMin:20,yMax:40,xTicks:[0,2,4,6,8,10],yTicks:[20,25,30,35,40],minor:[1,1],snap:[1,0.5],xLabel:'time (min)',yLabel:'temperature (°C)',W:560,H:340}});
-}
-{
-  const body=act('results','Predict','Slowing down','');
+  const body=act('results','Multiple choice','Slowing down','');
   createPredict({host:body,q:'The matt black can warms more slowly near the end. Why?',options:[
     {text:'As it warms, it loses more energy to the air',correct:true},
     {text:'The heater gives out less radiation over time',why:'The heater’s output stays the same. The can itself is losing more energy as it warms.'},
@@ -258,7 +459,7 @@ function cansTable(rows,miss){
   ],explain:'The can still absorbs the same radiation each second. But the warmer it gets, the more energy it emits and passes to the air, so its temperature rises more slowly.'});
 }
 {
-  const body=act('results','Predict','An anomalous result','');
+  const body=act('results','Multiple choice','An anomalous result','');
   createPredict({host:body,q:'Aidan’s shiny can gave these readings. Which one is anomalous?',
     pre:'<div class="table-scroll"><table class="units res-tbl"><thead><tr><th>Time (min)</th><th>0</th><th>2</th><th>4</th><th>6</th><th>8</th><th>10</th></tr></thead><tbody><tr><th>Shiny can (°C)</th><td>20.0</td><td>21.0</td><td>22.0</td><td>25.5</td><td>24.0</td><td>25.0</td></tr></tbody></table></div>',
     options:[
@@ -288,40 +489,7 @@ pairIn('results'); /* Elena’s Calculate and the Plot first, then the two Predi
 }
 
 
-/* ================= 7. ACCURACY AND SAFETY ================= */
-{
-  const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
-  createSortGame({host:body,cats:[
-    {id:'a',label:'Better results',hint:'A fairer or more accurate test',color:'--c1',soft:'--c1-soft'},
-    {id:'s',label:'Keeps people safe',hint:'Protects people from harm',color:'--c3',soft:'--c3-soft'}
-  ],items:[
-    {id:'1',text:'Keep the detector the same distance from each face',cat:'a'},
-    {id:'2',text:'Use rods of the same length and thickness',cat:'a'},
-    {id:'3',text:'Read the thermometer with your eye level with the liquid',cat:'a'},
-    {id:'4',text:'Repeat each test and find the mean time',cat:'a'},
-    {id:'5',text:'Do not touch the Leslie cube: its faces are hot',cat:'s'},
-    {id:'6',text:'Stand up, and keep the hot water away from the edge of the bench',cat:'s'},
-    {id:'7',text:'Pick up the crystal with tweezers, not your fingers',cat:'s'},
-    {id:'8',text:'Let the rods cool before you handle them',cat:'s'},
-    {id:'9',text:'Stir the water before you read the thermometer',cat:'a'},
-    {id:'10',text:'Hold hot apparatus by a wooden part: wood is a poor conductor',cat:'s'}
-  ]});
-}
-{
-  const body=act('accuracy','Predict','Stray radiation','');
-  createPredict({host:body,q:'Why should the Leslie cube test be done away from windows and radiators?',options:[
-    {text:'They give extra infrared to the detector',correct:true},
-    {text:'They cool the water inside the cube',why:'A radiator would not cool the cube. The problem is the extra radiation reaching the detector.'},
-    {text:'Their light changes the colour of the faces',why:'The faces stay the same. The detector picks up infrared from the window or radiator.'},
-    {text:'They make the detector less sensitive',why:'The detector works the same. It just measures radiation from other sources as well.'}
-  ],explain:'An infrared detector measures all the radiation reaching it. Sunlight or a radiator adds radiation that does not come from the face being tested, so the comparison is no longer fair.'});
-}
-{
-  const body=act('accuracy','Predict','Timing the pins','');
-  createPredict({host:body,q:'Aidan’s copper and aluminium pins drop only 8 s apart. How can he be more confident which conducts better?',options:[
-    {text:'Repeat the test and compare the mean times',correct:true},
-    {text:'Use a stopwatch that reads to 0.01 s instead',why:'His reaction time is far bigger than 0.01 s. Repeats give a more reliable comparison.'},
-    {text:'Put more wax on the aluminium pin to slow it',why:'That would change a control variable, so the test would not be fair.'},
-    {text:'Use hotter water for the copper rod this time',why:'Each rod must go in the same water, or the test is not fair.'}
-  ],explain:'Small differences can come from how the wax was stuck on or from reaction time. Repeating the test and comparing mean times shows whether the difference is real.'});
-}
+
+
+/* The method switch is set once every picker and every method's activities exist, so only the chosen method shows on load. */
+setMethod(method);

@@ -37,6 +37,8 @@ async () => {
   document.querySelectorAll('details.extra-block').forEach(d => d.open = true);
   for (const [kind, c] of window.__R) {
     let host = c.host || c.pool, tab = show(host), res = '';
+    // an activity hidden by a method switch is shown while it is answered (5c, 13 Nov 2026)
+    const hid = host.closest('.act[hidden]'); if (hid) hid.hidden = false;
     await sleep(30);
     try {
     if (kind === 'Calc') {
@@ -107,6 +109,7 @@ async () => {
       res = host.querySelector('.plot-side .fb').textContent;
     }
     } catch (e) { res = 'ERROR ' + e.message; }
+    if (hid) hid.hidden = true;
     out.push([tab, kind, res]);
   }
   return out;

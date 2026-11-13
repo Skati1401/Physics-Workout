@@ -1,99 +1,28 @@
-/* ================= 1. METHOD ================= */
-{
-  const body=act('method','Order','Plot a field line with a compass','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
-  createReorder({host:body,steps:[
-    {id:'a',text:'Put the bar magnet in the middle of a sheet of paper, and draw round it.'},
-    {id:'b',text:'Label the N and S poles on your outline.'},
-    {id:'c',text:'Place the plotting compass next to the north pole.'},
-    {id:'d',text:'Mark a dot where the north end of the needle points.'},
-    {id:'e',text:'Move the compass on so the tail (south end) of the needle is at that dot.'},
-    {id:'f',text:'Mark the next dot, and repeat until you reach the S pole or the edge of the paper.'},
-    {id:'g',text:'Join the dots to form a field line, and add an arrow from N to S.'},
-    {id:'h',text:'Repeat from other starting points to draw several field lines.'}
-  ],constraints:[['a','c'],['b','g'],['c','d'],['d','e'],['e','f'],['f','g'],['g','h']],
-  why:'Each new dot is marked where the north end of the needle points, after its tail has been moved onto the last dot, so the dots follow the field from N to S.'});
-}
-{
-  const body=act('method','Match','What each piece of equipment is for','Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.');
-  createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
-    {id:'c',l:'Plotting compass',r:'Its needle lines up with the field and shows its direction'},
-    {id:'p',l:'Sheet of paper',r:'Holds the outline of the magnet and the dots you mark'},
-    {id:'s',l:'Sharp pencil',r:'Marks each dot exactly at the end of the needle'},
-    {id:'f',l:'Iron filings',r:'Show the whole pattern at once, but not its direction'},
-    {id:'k',l:'Card over the magnet',r:'Keeps iron filings off the magnet so they can be poured back'},
-    {id:'m',l:'Second bar magnet',r:'Shows the pattern between like or unlike poles'}
-  ]});
-}
+/* 6.6 Magnetic field patterns, rebuilt to the 1.22 model (5c, 13 Nov 2026). The Method tab has a "Method type" switch
+   (plotting compass or iron filings, both accepted by the mark schemes), as on the 1.5 page; the choice is remembered in
+   this browser. Like and unlike poles (6.2) and magnetic materials are taught in the 6a workout. */
 
-/* ================= 2. IRON FILINGS ================= */
-{
-  const body=act('filings','Order','Show the pattern with iron filings','Put the steps in order. Drag the ≡ handle, or use the ▲▼ buttons.');
-  createReorder({host:body,steps:[
-    {id:'a',text:'Place a sheet of card (or paper) over the bar magnet.'},
-    {id:'b',text:'Sprinkle iron filings thinly onto the card.'},
-    {id:'c',text:'Tap the card gently.'},
-    {id:'d',text:'Watch the filings line up to show the shape of the field.'},
-    {id:'e',text:'Sketch the pattern, add arrows using a plotting compass, then pour the filings back.'}
-  ],constraints:[['a','b'],['b','c'],['c','d'],['d','e']],
-  why:'The card goes on first so the filings never touch the magnet, and tapping lets them turn to line up with the field. Filings show only the shape, so a plotting compass gives the direction.'});
+const METHODS=[{k:'cm',label:'Plotting compass'},{k:'if',label:'Iron filings'}];
+const MKEY='cp-magnetic-field-method';
+let method='cm';try{const v=localStorage.getItem(MKEY);if(METHODS.some(m=>m.k===v))method=v;}catch(e){}
+const methodGames=[];
+function methodPicker(panel){
+  const w=mk('div','method-pick');
+  w.innerHTML='<span class="method-lab" id="ml-'+panel+'">Method type</span><div class="seg" role="group" aria-labelledby="ml-'+panel+'">'+
+    METHODS.map(m=>'<button type="button" data-m="'+m.k+'">'+m.label+'</button>').join('')+'</div>';
+  $('#panel-'+panel+' .acts').prepend(w);
+  w.addEventListener('click',e=>{const b=e.target.closest('button[data-m]');if(b)setMethod(b.dataset.m);});
 }
-{
-  const body=act('filings','Predict','Tapping the card','');
-  createPredict({host:body,q:'Why does Nabil tap the card after sprinkling the iron filings?',options:[
-    {text:'It lets the filings turn to line up with the field',correct:true},
-    {text:'It magnetises the filings so they stick to each other',why:'The magnet’s field magnetises the filings. Tapping just frees them to turn.'},
-    {text:'It shakes the filings towards the north pole',why:'A tap does not push the filings towards either pole. It frees them from the friction of the card so they can turn.'},
-    {text:'It makes the magnetic field of the bar magnet stronger',why:'Tapping the card cannot change the magnet’s field. It only frees the filings to turn.'}
-  ],explain:'Friction holds each filing where it lands. A gentle tap frees them for a moment, so each one turns to line up with the magnetic field. Tapping also helps spread the filings out, and mark schemes credit “tap to spread the filings” too.'});
+function forMethod(body,k){body.closest('.act').dataset.m=k;}
+function setMethod(k){
+  method=k;try{localStorage.setItem(MKEY,k);}catch(e){}
+  $$('.method-pick button').forEach(b=>{const on=b.dataset.m===k;b.classList.toggle('is-on',on);b.setAttribute('aria-pressed',String(on));});
+  $$('.act[data-m]').forEach(a=>{a.hidden=a.dataset.m!==k;});
+  raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow()));
 }
-{
-  const body=act('filings','Predict','What filings cannot show','');
-  createPredict({host:body,q:'What can the plotting compass method show that iron filings cannot?',options:[
-    {text:'The direction of the field',correct:true},
-    {text:'Where the field is strongest',why:'Filings show this too: they gather most thickly near the poles, where the field is strongest.'},
-    {text:'The shape of the field lines',why:'Filings show the shape well: each one lines up along the field.'},
-    {text:'Where the two poles are',why:'Filings crowd round both poles, so they do show where the poles are.'}
-  ],explain:'A filing lines up with the field but has no north or south end, so it shows only the shape of the field. A plotting compass is needed to show the direction: its north end points along the field.'});
-}
-{
-  const body=act('filings','Sort','Compass or filings?','Which method is each card about? Sort each card, then press Check.');
-  createSortGame({host:body,cats:[
-    {id:'c',label:'Plotting compass',hint:'',color:'--c1',soft:'--c1-soft'},
-    {id:'f',label:'Iron filings',hint:'',color:'--c2',soft:'--c2-soft'}
-  ],items:[
-    {id:'1',text:'Shows the direction of the field',cat:'c'},
-    {id:'2',text:'Dots are marked where the needle points, then joined up',cat:'c'},
-    {id:'3',text:'Still works further from the magnet, where the field is weak',cat:'c'},
-    {id:'4',text:'Shows the shape of the whole pattern at once',cat:'f'},
-    {id:'5',text:'Gathers most thickly where the field is strongest',cat:'f'},
-    {id:'6',text:'Sprinkled on a card over the magnet, then the card is tapped',cat:'f'}
-  ]});
-}
+reflowers.push(()=>raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow())));
 
-/* ================= 3. EXPERIMENT ================= */
-{
-  act('experiment','Your turn','Take your own readings','Press Experiment. Plot at least four field lines round one bar magnet, then press Compare with field lines. Then try like poles, unlike poles and unlike poles close together. Where do your lines start and end, where are they closest together, and what happens between two north poles?');
-}
-frameAct('experiment','animations/magnetic-field-patterns.html','','Magnetic field patterns animation: iron filings, field lines and a plotting compass','magnetic field patterns',false);
-{
-  const body=act('experiment','Predict','Next to the south pole','');
-  createPredict({host:body,q:'A bar magnet lies with its N pole on the left. Fatimah puts a compass just to the right of the S pole. Which way does the north end of its needle point?',options:[
-    {text:'Left, towards the south pole',correct:true},
-    {text:'Right, away from the south pole',why:'Field lines go into a south pole. The north end of a needle points along the field, so it points into the S pole.'},
-    {text:'Up the page, along the magnet',why:'Right next to a pole, the field points straight into (or out of) the pole, not along the magnet.'},
-    {text:'Anywhere: there is no field there',why:'The field is strongest near the poles, so the needle lines up firmly.'}
-  ],explain:'Field lines go from N to S, so they go into the south pole. The north end of a compass needle points along the field: here, left into the S pole. (Unlike poles attract: the needle’s N end is pulled towards the magnet’s S pole.)'});
-}
-{
-  const body=act('experiment','Predict','Lines that never cross','');
-  createPredict({host:body,q:'Lucas notices that his field lines never cross each other. Why not?',options:[
-    {text:'At each point the field has only one direction',correct:true},
-    {text:'Field lines repel, so they push each other apart',why:'Field lines are a picture of the field; they do not push on each other.'},
-    {text:'Where two lines meet, their fields cancel out',why:'If two lines crossed, a compass there would have to point two ways at once, which is impossible.'},
-    {text:'He did not plot enough lines to see them cross',why:'However many lines you plot, they never cross: a compass needle can only point one way.'}
-  ],explain:'A field line shows the direction a compass needle points. At any point the needle can point only one way, so two field lines can never cross.'});
-}
-
+const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.';
 /* ================= 4. RESULTS: reading a field pattern ================= */
 // A bar magnet's field lines, traced from two point poles (N on the left), with labelled points.
 function barFieldSVG(marks,pick){
@@ -153,6 +82,203 @@ function createPointPick(cfg){
   reset();
   return track(host,{reset:reset,getState:()=>({p:chosen}),setState:s=>{reset();(s.p||[]).forEach(choose);},isDone:()=>final});
 }
+
+/* ================= VARIABLES ================= */
+{
+  const body=act('variables','Sort','Which kind of variable is it?','Nabil plots the field round one bar magnet, then between two magnets. Sort each card into the right bin, then press Check.');
+  createSortGame({host:body,cats:[
+    {id:'i',label:'Independent',hint:'You change it',color:'--c1',soft:'--c1-soft'},
+    {id:'d',label:'Dependent',hint:'You observe it',color:'--c2',soft:'--c2-soft'},
+    {id:'c',label:'Control',hint:'You keep it the same',color:'--c3',soft:'--c3-soft'}
+  ],items:[
+    {id:'1',text:'Which poles face each other: like or unlike',cat:'i'},
+    {id:'2',text:'Where he starts each field line',cat:'i'},
+    {id:'3',text:'The direction the compass needle points',cat:'d'},
+    {id:'4',text:'The shape of the field lines',cat:'d'},
+    {id:'5',text:'Where the magnet lies on the paper',cat:'c'},
+    {id:'6',text:'Keeping steel objects away from the paper',cat:'c'}
+  ]});
+}
+{
+  const body=act('variables','Multiple choice','Keep the magnet still','');
+  createPredict({host:body,q:'Why must Nabil not move the magnet while he is plotting a field line?',options:[
+    {text:'His dots would show two fields',correct:true},
+    {text:'Moving the magnet would weaken it',why:'Sliding it a little does not weaken it. The field moves with the magnet, so earlier dots no longer fit.'},
+    {text:'The compass needle would stop working',why:'The needle still lines up with the field. But the field has moved, so the line would not join up.'},
+    {text:'Moving it would swap its N and S poles',why:'Moving a magnet does not swap its poles. The problem is that the field moves with it.'}
+  ],explain:'The field moves with the magnet. Dots marked before and after a move belong to two different fields, so the line would not show the real pattern. Draw round the magnet first, so you can see if it moves.'});
+}
+
+methodPicker('method');
+/* ================= 1. METHOD ================= */
+{
+  const body=act('method','Order','Plot a field line with a compass','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');forMethod(body,'cm');
+  createReorder({host:body,steps:[
+    {id:'a',text:'Put the bar magnet in the middle of a sheet of paper, and draw round it.'},
+    {id:'b',text:'Label the N and S poles on your outline.'},
+    {id:'c',text:'Place the plotting compass next to the north pole.'},
+    {id:'d',text:'Mark a dot where the north end of the needle points.'},
+    {id:'e',text:'Move the compass on so the tail (south end) of the needle is at that dot.'},
+    {id:'f',text:'Mark the next dot, and repeat until you reach the S pole or the edge of the paper.'},
+    {id:'g',text:'Join the dots to form a field line, and add an arrow from N to S.'},
+    {id:'h',text:'Repeat from other starting points to draw several field lines.'}
+  ],constraints:[['a','c'],['b','g'],['c','d'],['d','e'],['e','f'],['f','g'],['g','h']],
+  why:'Each new dot is marked where the north end of the needle points, after its tail has been moved onto the last dot, so the dots follow the field from N to S.'});
+}
+{
+  const body=act('method','Match','What each piece of equipment is for','Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.');forMethod(body,'cm');
+  methodGames.push(createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
+    {id:'c',l:'Plotting compass',r:'Its needle lines up with the field and shows its direction'},
+    {id:'p',l:'Sheet of paper',r:'Holds the outline of the magnet and the dots you mark'},
+    {id:'s',l:'Sharp pencil',r:'Marks each dot exactly at the end of the needle'},
+    {id:'f',l:'Iron filings',r:'Show the whole pattern at once, but not its direction'},
+    {id:'k',l:'Card over the magnet',r:'Keeps iron filings off the magnet so they can be poured back'},
+    {id:'m',l:'Second bar magnet',r:'Shows the pattern between like or unlike poles'}
+  ]}));
+}
+
+
+/* ================= 2. IRON FILINGS ================= */
+{
+  const body=act('method','Order','Show the pattern with iron filings','Put the steps in order. Drag the ≡ handle, or use the ▲▼ buttons.');forMethod(body,'if');
+  createReorder({host:body,steps:[
+    {id:'a',text:'Place a sheet of card (or paper) over the bar magnet.'},
+    {id:'b',text:'Sprinkle iron filings thinly onto the card.'},
+    {id:'c',text:'Tap the card gently.'},
+    {id:'d',text:'Watch the filings line up to show the shape of the field.'},
+    {id:'e',text:'Sketch the pattern, add arrows using a plotting compass, then pour the filings back.'}
+  ],constraints:[['a','b'],['b','c'],['c','d'],['d','e']],
+  why:'The card goes on first so the filings never touch the magnet, and tapping lets them turn to line up with the field. Filings show only the shape, so a plotting compass gives the direction.'});
+}
+{
+  const body=act('method','Multiple choice','Tapping the card','');forMethod(body,'if');
+  createPredict({host:body,q:'Why does Nabil tap the card after sprinkling the iron filings?',options:[
+    {text:'It lets the filings turn to line up with the field',correct:true},
+    {text:'It magnetises the filings so they stick to each other',why:'The magnet’s field magnetises the filings. Tapping just frees them to turn.'},
+    {text:'It shakes the filings towards the north pole',why:'A tap does not push the filings towards either pole. It frees them from the friction of the card so they can turn.'},
+    {text:'It makes the magnetic field of the bar magnet stronger',why:'Tapping the card cannot change the magnet’s field. It only frees the filings to turn.'}
+  ],explain:'Friction holds each filing where it lands. A gentle tap frees them for a moment, so each one turns to line up with the magnetic field. Tapping also helps spread the filings out, and mark schemes credit “tap to spread the filings” too.'});
+}
+{
+  const body=act('method','Multiple choice','What filings cannot show','');forMethod(body,'if');
+  createPredict({host:body,q:'What can the plotting compass method show that iron filings cannot?',options:[
+    {text:'The direction of the field',correct:true},
+    {text:'Where the field is strongest',why:'Filings show this too: they gather most thickly near the poles, where the field is strongest.'},
+    {text:'The shape of the field lines',why:'Filings show the shape well: each one lines up along the field.'},
+    {text:'Where the two poles are',why:'Filings crowd round both poles, so they do show where the poles are.'}
+  ],explain:'A filing lines up with the field but has no north or south end, so it shows only the shape of the field. A plotting compass is needed to show the direction: its north end points along the field.'});
+}
+{
+  const body=act('method','Sort','Compass or filings?','Which method is each card about? Sort each card, then press Check.');
+  createSortGame({host:body,cats:[
+    {id:'c',label:'Plotting compass',hint:'',color:'--c1',soft:'--c1-soft'},
+    {id:'f',label:'Iron filings',hint:'',color:'--c2',soft:'--c2-soft'}
+  ],items:[
+    {id:'1',text:'Shows the direction of the field',cat:'c'},
+    {id:'2',text:'Dots are marked where the needle points, then joined up',cat:'c'},
+    {id:'3',text:'Still works further from the magnet, where the field is weak',cat:'c'},
+    {id:'4',text:'Shows the shape of the whole pattern at once',cat:'f'},
+    {id:'5',text:'Gathers most thickly where the field is strongest',cat:'f'},
+    {id:'6',text:'Sprinkled on a card over the magnet, then the card is tapped',cat:'f'}
+  ]});
+}
+
+
+/* ================= 6. ACCURACY AND SAFETY ================= */
+{
+  const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
+  createSortGame({host:body,cats:[
+    {id:'a',label:'Better results',hint:'A more accurate pattern',color:'--c1',soft:'--c1-soft'},
+    {id:'s',label:'Keeps people and equipment safe',hint:'',color:'--c3',soft:'--c3-soft'}
+  ],items:[
+    {id:'1',text:'Keep steel objects, like zips and pencil cases, away from the paper',cat:'a'},
+    {id:'2',text:'Use a small plotting compass',cat:'a'},
+    {id:'3',text:'Mark each dot exactly at the end of the needle',cat:'a'},
+    {id:'4',text:'Plot lines from many different starting points',cat:'a'},
+    {id:'5',text:'Keep iron filings away from your eyes',cat:'s'},
+    {id:'6',text:'Wash your hands after using iron filings',cat:'s'},
+    {id:'7',text:'Keep magnets away from phones and laptops',cat:'s'},
+    {id:'8',text:'Do not drop the magnets: it can weaken them',cat:'s'}
+  ]});
+}
+
+
+{
+  const body=act('accuracy','Multiple choice','A small compass','');
+  createPredict({host:body,q:'Why is a small plotting compass better than a large one for this practical?',options:[
+    {text:'It shows the direction at one spot',correct:true},
+    {text:'Its needle is a much stronger magnet',why:'A small needle is not a stronger magnet. Its size matters because the field changes direction from place to place.'},
+    {text:'It is not affected by the Earth’s field',why:'Every compass feels the Earth’s field. Near the magnet, the magnet’s field is much stronger.'},
+    {text:'It makes the magnet’s field stronger',why:'A compass does not change the magnet’s field; it only shows its direction.'}
+  ],explain:'The field changes direction from place to place. A long needle would line up with the average field over its length, so a small needle shows the direction at one small spot, and the dots are close together.'});
+}
+
+
+/* ================= DO THE EXPERIMENT (the 1.22 model; 5c, 13 Nov 2026) =================
+   No numbers: the student plots field lines dot by dot with the compass in the animation's measure mode
+   (animations/magnetic-field-patterns.html?show=measure, the Set-up choice left on the page). Their lines have no
+   arrows and the exam diagram stays "?", so the questions below ask what their own lines show (tools/CORE-PRACTICALS.md,
+   "Measure modes"). */
+{
+  act('do','Your turn','Plot your own field lines','Bar magnet: put the compass next to the N pole and click the tip of the north end of the needle (or press Mark a dot). The compass moves on: keep marking until the line reaches the S pole or the edge of the card. Plot at least four lines from different start points. Then try Like poles and Unlike poles close together.');
+}
+frameAct('do','animations/magnetic-field-patterns.html','measure','Magnetic field experiment: plot field lines with a plotting compass','magnetic field patterns',false);
+let mgA,mgB;
+{
+  const body=mgA=act('do','Predict','Arrows on your lines','');
+  createPredict({host:body,q:'Bar magnet: your field lines have no arrows yet. Which way should each arrow point?',options:[
+    {text:'From the N pole round to the S pole',correct:true},
+    {text:'From the S pole round to the N pole',why:'Each dot was marked where the north end of the needle pointed, and it pointed away from the N pole, so the field goes from N to S.'},
+    {text:'Towards each pole from the middle',why:'A field line has one direction all the way along it: out of the N pole and into the S pole.'},
+    {text:'No arrows: the shape is enough',why:'The direction is part of the field. Field drawings score only with arrows from N to S.'}
+  ],explain:'The north end of the compass needle points along the field, away from the N pole and towards the S pole. So every line gets an arrow pointing from N to S. Your lines should start and end on the magnet, never cross, and be closest together near the poles, where the field is strongest.'});
+}
+{
+  const body=mgB=act('do','Predict','Two north poles','');
+  createPredict({host:body,q:'Like poles: two north poles face each other. What do your lines from the two magnets do in the gap?',options:[
+    {text:'They curve away from each other',correct:true},
+    {text:'They join one north pole to the other',why:'A field line goes from a north pole to a south pole, so no line joins two north poles.'},
+    {text:'They cross in the middle of the gap',why:'Field lines never cross: a compass needle can point only one way at each place.'},
+    {text:'They go straight across the gap',why:'The fields of the two north poles push against each other, so the lines turn away, out to the sides.'}
+  ],explain:'Like poles repel, so the lines from the two north poles curve away from each other. Halfway between the poles the two fields cancel: a neutral point, where the compass needle will not settle.'});
+}
+pairActs(mgA,mgB);
+{
+  const body=act('do','Predict','Unlike poles close together','');
+  createPredict({host:body,q:'Unlike poles close together: a north pole faces a south pole across a small gap. What are your lines like in the gap?',options:[
+    {text:'Straight, parallel and evenly spaced',correct:true},
+    {text:'Curving away from each other',why:'That happens between like poles. Unlike poles attract, and the lines go straight across from N to S.'},
+    {text:'Spreading out from the middle of the gap',why:'Spreading lines would show the field getting weaker. In the gap the field is the same everywhere.'},
+    {text:'There are no lines: the fields cancel',why:'Fields cancel between like poles. Between unlike poles the field is strong.'}
+  ],explain:'The lines go straight across from N to S, parallel and evenly spaced: a uniform field, with the same strength and direction everywhere in the gap. Near the edges of the gap the lines bulge outwards.'});
+}
+
+/* ================= SHOW THE EXPERIMENT: the readings taken for you ================= */
+{
+  act('experiment','Your turn','Watch the readings','Press Experiment: the compass plots each line dot by dot for you. Plot at least four field lines round one bar magnet, then press Compare with field lines. Then try like poles, unlike poles and unlike poles close together. Where do your lines start and end, where are they closest together, and what happens between two north poles?');
+}
+frameAct('experiment','animations/magnetic-field-patterns.html','','Magnetic field patterns animation: iron filings, field lines and a plotting compass','magnetic field patterns',false);
+{
+  const body=act('experiment','Predict','Next to the south pole','');
+  createPredict({host:body,q:'A bar magnet lies with its N pole on the left. Fatimah puts a compass just to the right of the S pole. Which way does the north end of its needle point?',options:[
+    {text:'Left, towards the south pole',correct:true},
+    {text:'Right, away from the south pole',why:'Field lines go into a south pole. The north end of a needle points along the field, so it points into the S pole.'},
+    {text:'Up the page, along the magnet',why:'Right next to a pole, the field points straight into (or out of) the pole, not along the magnet.'},
+    {text:'Anywhere: there is no field there',why:'The field is strongest near the poles, so the needle lines up firmly.'}
+  ],explain:'Field lines go from N to S, so they go into the south pole. The north end of a compass needle points along the field: here, left into the S pole. (Unlike poles attract: the needle’s N end is pulled towards the magnet’s S pole.)'});
+}
+{
+  const body=act('experiment','Multiple choice','Lines that never cross','');
+  createPredict({host:body,q:'Lucas notices that his field lines never cross each other. Why not?',options:[
+    {text:'At each point the field has only one direction',correct:true},
+    {text:'Field lines repel, so they push each other apart',why:'Field lines are a picture of the field; they do not push on each other.'},
+    {text:'Where two lines meet, their fields cancel out',why:'If two lines crossed, a compass there would have to point two ways at once, which is impossible.'},
+    {text:'He did not plot enough lines to see them cross',why:'However many lines you plot, they never cross: a compass needle can only point one way.'}
+  ],explain:'A field line shows the direction a compass needle points. At any point the needle can point only one way, so two field lines can never cross.'});
+}
+
+
+/* ================= RESULTS: reading a field pattern ================= */
 let lookBody;
 {
   lookBody=act('results','Look','Poppy’s field pattern','Poppy plotted these field lines round a bar magnet. Click the point where the magnetic field is strongest.');
@@ -262,37 +388,9 @@ function twoNorthSVG(wrong){
   ]});
 }
 
-/* ================= 5. TWO MAGNETS ================= */
-let sortBody;
-{
-  const body=sortBody=act('twomag','Sort','Attract, repel or no force?','Sort each pair, then press Check.');
-  createSortGame({host:body,cats:[
-    {id:'a',label:'Attract',hint:'',color:'--c3',soft:'--c3-soft'},
-    {id:'r',label:'Repel',hint:'',color:'--c2',soft:'--c2-soft'},
-    {id:'n',label:'No force',hint:'',color:'--c1',soft:'--c1-soft'}
-  ],items:[
-    {id:'1',text:'A north pole near a south pole',cat:'a'},
-    {id:'2',text:'A north pole near an iron nail',cat:'a'},
-    {id:'3',text:'A south pole near a steel paper clip',cat:'a'},
-    {id:'4',text:'A north pole near a north pole',cat:'r'},
-    {id:'5',text:'A south pole near a south pole',cat:'r'},
-    {id:'6',text:'Either pole near a copper coin',cat:'n'},
-    {id:'7',text:'Either pole near aluminium foil',cat:'n'}
-  ]});
-}
-{
-  const body=act('twomag','Predict','A uniform field','');
-  pairActs(sortBody,body,'wide-first');   // the sort wider, so its cards fit three to a row (Alex, 11 Nov 2026)
-  createPredict({host:body,q:'Which pattern of field lines shows a uniform magnetic field?',options:[
-    {text:'Straight, parallel lines, evenly spaced',correct:true},
-    {text:'Curved lines that spread out from a pole',why:'Spreading lines show a field that gets weaker, and curving lines show a change of direction.'},
-    {text:'Straight lines that get closer together',why:'Lines getting closer show the field getting stronger, so it is not the same everywhere.'},
-    {text:'Lines that meet at a point in the middle',why:'Field lines never meet. Lines meeting would not show the same field everywhere.'}
-  ],explain:'A uniform field has the same strength and direction everywhere, so its lines are straight (same direction), parallel and evenly spaced (same strength). Opposite poles facing each other, close together but not touching, give one in the gap between them.'});
-}
 
 {
-  const body=act('twomag','Sort','Two north poles: find the two mistakes','Henry draws the field between two bar magnets with their north poles facing each other. His drawing has two mistakes. Sort each statement about his drawing, then press Check.');
+  const body=act('results','Sort','Two north poles: find the two mistakes','Henry draws the field between two bar magnets with their north poles facing each other. His drawing has two mistakes. Sort each statement about his drawing, then press Check.');
   const split=mk('div','graph-split'),box=mk('div','graph-box',twoNorthSVG(true)),side=mk('div','act-body');
   split.appendChild(box);split.appendChild(side);body.appendChild(split);
   createSortGame({host:side,cats:[
@@ -310,55 +408,6 @@ let sortBody;
   body.appendChild(d);
 }
 
-/* ================= 6. ACCURACY AND SAFETY ================= */
-{
-  const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
-  createSortGame({host:body,cats:[
-    {id:'a',label:'Better results',hint:'A more accurate pattern',color:'--c1',soft:'--c1-soft'},
-    {id:'s',label:'Keeps people and equipment safe',hint:'',color:'--c3',soft:'--c3-soft'}
-  ],items:[
-    {id:'1',text:'Keep steel objects, like zips and pencil cases, away from the paper',cat:'a'},
-    {id:'2',text:'Use a small plotting compass',cat:'a'},
-    {id:'3',text:'Mark each dot exactly at the end of the needle',cat:'a'},
-    {id:'4',text:'Plot lines from many different starting points',cat:'a'},
-    {id:'5',text:'Keep iron filings away from your eyes',cat:'s'},
-    {id:'6',text:'Wash your hands after using iron filings',cat:'s'},
-    {id:'7',text:'Keep magnets away from phones and laptops',cat:'s'},
-    {id:'8',text:'Do not drop the magnets: it can weaken them',cat:'s'}
-  ]});
-}
 
-/* ================= EXAM PRACTICE ================= */
-{
-  const body=act('exam','Exam style','The field of a bar magnet','Write each answer, then check it against the model answer.');
-  body.appendChild(mk('p','sub','(a) 4 marks'));
-  body.appendChild(mk('p','','Describe how Camila can use a plotting compass to show the shape and direction of the magnetic field round a bar magnet.'));
-  const d1=mk('details','');
-  d1.innerHTML='<summary>Check your answer</summary><div><ul><li>Put the magnet on a sheet of paper and draw round it.</li><li>Place a plotting compass next to the N pole and mark a dot where the north end of the needle points.</li><li>Move the compass on so the tail of the needle is at the dot, mark the next dot, and repeat until the S pole (or the edge of the paper).</li><li>Join the dots to form a field line, with an arrow from N to S to show the direction.</li><li>Draw several lines from other starting points (use many compasses, or move one compass repeatedly).</li></ul></div>';
-  body.appendChild(d1);
-  body.appendChild(mk('p','sub','(b) 2 marks'));
-  body.appendChild(mk('p','','State where the field of a bar magnet is strongest, and how the field pattern shows this.'));
-  const d2=mk('details','');
-  d2.innerHTML='<summary>Check your answer</summary><div><ul><li>At the poles (the ends of the magnet).</li><li>The field lines are closest together there (further apart means a weaker field).</li></ul></div>';
-  body.appendChild(d2);
-  body.appendChild(mk('p','sub','(c) 2 marks'));
-  body.appendChild(mk('p','','Ruby places two bar magnets end to end with their north poles 6 cm apart. Describe the field pattern between them.'));
-  const d3=mk('details','');
-  d3.innerHTML='<summary>Check your answer</summary><div><ul><li>The lines from each N pole curve away from each other and do not cross or join, with arrows pointing away from both N poles.</li><li>Halfway between the poles there is a neutral point, where the field is zero (no line passes through it).</li></ul></div>';
-  body.appendChild(d3);
-  body.appendChild(mk('p','sub','(d) 2 marks'));
-  body.appendChild(mk('p','','Describe how two permanent magnets can be used to produce a uniform magnetic field, and what its field lines look like.'));
-  const d4=mk('details','');
-  d4.innerHTML='<summary>Check your answer</summary><div><ul><li>Place two magnets with opposite poles facing (N facing S), close together but not touching.</li><li>In the gap the field lines are straight, parallel and evenly spaced, with arrows from N to S.</li></ul></div>';
-  body.appendChild(d4);
-  body.appendChild(mk('p','sub','(e) 2 marks'));
-  body.appendChild(mk('p','','A steel paper clip is held near the magnet and becomes magnetised. Explain why it stays magnetised after the magnet is taken away, when an iron nail would not.'));
-  const d5=mk('details','');
-  d5.innerHTML='<summary>Check your answer</summary><div><ul><li>The clip became an induced magnet while it was in the magnet’s field.</li><li>Steel is magnetically hard, so it retains its induced magnetism.</li><li>Iron is magnetically soft, so it loses its magnetism once the field is gone.</li></ul></div>';
-  body.appendChild(d5);
-  body.appendChild(mk('p','sub','(f) 3 marks'));
-  body.appendChild(mk('p','','Ali uses iron filings instead of a compass. Describe how he can show the shape of the field, and explain why he still needs a plotting compass.'));
-  const d6=mk('details','');
-  d6.innerHTML='<summary>Check your answer</summary><div><ul><li>Place a sheet of card over the magnet and sprinkle iron filings thinly onto it.</li><li>Tap the card gently, so the filings line up to show the shape of the field.</li><li>Filings show only the shape: a plotting compass is needed to show the direction of the field.</li></ul></div>';
-  body.appendChild(d6);
-}
+/* ================= SET THE METHOD SWITCH ================= */
+setMethod(method);

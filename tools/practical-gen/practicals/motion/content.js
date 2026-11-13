@@ -25,6 +25,71 @@ reflowers.push(()=>raf(()=>methodGames.forEach(g=>g.reflow&&g.reflow())));
 const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.';
 const MATCH_INTRO='Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.';
 
+/* ================= THE STUDENT'S OWN RESULTS TABLE (Do Experiment; 5c, 13 Nov 2026) =================
+   The same helper is copied into each practical rebuilt to the 1.22 model; 1.22 has its own version.
+   cfg.head: column headings. cfg.rows: rows of cells. A cell is given text, or a box:
+     {k:'key', a:answer, tol, dp, label}           a reading, right if within tol of a (default 0.05)
+     {k:'key', f:v=>number, tol, rel, dp, label}  worked from the student's own readings: v('key') is a box the student
+                                                   already has right (NaN otherwise); right if within tol, or rel × the answer
+     {k:'key', a:'text', opts:[…], label}          a choice from a list (observations)
+   Boxes are checked in table order, so a worked box can use readings to its left or in earlier rows.
+   Fill in table is always there (Alex, 5 Nov 2026): it fills every box, dashed, so a student who cannot
+   read the instrument can still go on. cfg.onChange runs after every check, fill or clear. */
+function ownTable(body,cfg){
+  const wrap=mk('div','table-scroll');body.appendChild(wrap);
+  const cells=[];
+  wrap.innerHTML='<table class="units res-tbl own-tbl"><thead><tr>'+cfg.head.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+
+    cfg.rows.map(r=>'<tr>'+r.map(c=>{
+      if(c===null||typeof c!=='object')return '<td class="given">'+(c==null?'':c)+'</td>';
+      const i=cells.length;cells.push(c);
+      if(c.opts)return '<td><select class="own-sel" data-i="'+i+'" aria-label="'+c.label+'"><option value="">Choose</option>'+c.opts.map(o=>'<option>'+o+'</option>').join('')+'</select></td>';
+      return '<td><input class="calc-num-input" data-i="'+i+'" inputmode="decimal" autocomplete="off" aria-label="'+c.label+'"></td>';
+    }).join('')+'</tr>').join('')+'</tbody></table>';
+  const els=$$('[data-i]',wrap);
+  const num=e=>{const t=e.value.trim().replace(/[−–]/g,'-').replace(',','.');return t===''||!/^-?(\d+\.?\d*|\.\d+)$/.test(t)?NaN:parseFloat(t);};
+  const at={};cells.forEach((c,i)=>{if(c.k)at[c.k]=i;});
+  const v=k=>{const e=els[at[k]];return e&&e.disabled?num(e):NaN;};
+  const want=c=>c.f?c.f(v):c.a;
+  const fmt=(x,c)=>{if(typeof x==='string')return x;const s=x.toFixed(c.dp==null?1:c.dp);return /^-0(\.0+)?$/.test(s)?s.slice(1):s.replace('-','−');};
+  const lock=(e,shown)=>{e.disabled=true;e.classList.remove('is-wrong');if(shown)e.classList.add('is-shown');};
+  const b=bar(body,[{label:'Check table',primary:true,fn:check},{label:'Fill in table',fn:fill},{label:'Clear',fn:reset}]);
+  const changed=()=>{if(cfg.onChange)cfg.onChange();};
+  function good(c,e){
+    const w=want(c);
+    if(c.opts)return e.value===w;
+    const x=num(e);if(!isFinite(x)||!isFinite(w))return false;
+    return Math.abs(x-w)<=Math.max(c.tol==null?0.05:c.tol,(c.rel||0)*Math.abs(w))+1e-9;
+  }
+  function check(){
+    let ok=0,bad=0,blank=0;
+    els.forEach((e,i)=>{
+      if(e.disabled){ok++;return;}
+      if(e.value.trim()===''){blank++;return;}
+      if(good(cells[i],e)){lock(e);e.classList.add('pop');ok++;}else{bad++;e.classList.add('is-wrong');}
+    });
+    if(ok===els.length){b.say(cfg.done||'All correct.','good');celebrate(b.msg);}
+    else b.say(ok+' of '+els.length+' correct'+(blank?', '+blank+' left blank':'')+'.'+(bad&&cfg.hint?' '+cfg.hint:''),bad?'bad':'');
+    changed();
+  }
+  function fill(){
+    els.forEach((e,i)=>{if(e.disabled)return;const w=want(cells[i]);if(cells[i].opts||isFinite(w)){e.value=cells[i].opts?w:fmt(w,cells[i]);lock(e,true);}});
+    b.say(cfg.filled||'Table filled in (dashed). Read it through.','');changed();
+  }
+  function reset(){els.forEach(e=>{e.value='';e.disabled=false;e.classList.remove('is-wrong','is-shown','pop');});b.say('','');changed();}
+  els.forEach(e=>e.addEventListener(e.tagName==='SELECT'?'change':'input',()=>e.classList.remove('is-wrong')));
+  track(body,{reset:reset,
+    getState:()=>({v:els.map(e=>e.value),ok:els.map(e=>e.disabled),sh:els.map(e=>e.classList.contains('is-shown'))}),
+    setState:s=>{reset();els.forEach((e,i)=>{if(!s||!s.v||typeof s.v[i]!=='string')return;e.value=s.v[i];if(s.ok&&s.ok[i])lock(e,s.sh&&s.sh[i]);});if(els.every(e=>e.disabled))b.say(cfg.done||'All correct.','good');changed();},
+    isDone:()=>els.every(e=>e.disabled)});
+  // the value in a box the student has got right (or that was filled in), as typed; null until then
+  return {val:k=>{const e=els[at[k]];return e&&e.disabled?e.value.trim():null;}};
+}
+/* The framed animation and the table side by side (as on 1.22), once the page's set-up has run. */
+function sideBySide(panel,tableActs){
+  setTimeout(()=>{const fr=$('#panel-'+panel+' .anim-wrap');if(!fr)return;const sp=mk('div','do-split');fr.parentNode.insertBefore(sp,fr);sp.appendChild(fr);
+    const col=mk('div','do-col');sp.appendChild(col);tableActs.forEach(a=>col.appendChild(a.closest('.act')));},0);
+}
+
 /* ================= 1. METHOD ================= */
 methodPicker('method');
 {
@@ -111,8 +176,6 @@ methodPicker('method');
     {id:'6',text:'Records the whole run, to study afterwards',cat:'vc'}
   ]});
 }
-setMethod(method);
-
 /* ================= 2. VARIABLES ================= */
 {
   const body=act('variables','Sort','Which kind of variable is it?','Sort each card into the right bin, then press Check.');
@@ -148,9 +211,90 @@ setMethod(method);
   ],explain:'The car must be released from rest: its initial speed must be zero every run. A push gives the car a starting speed that is different each time, so the times would not be repeatable.'});
 }
 
-/* ================= 3. EXPERIMENT ================= */
+/* ================= 7. ACCURACY AND SAFETY ================= */
 {
-  act('experiment','Your turn','Take your own readings','Press Experiment. Time the car to every mark with the stopwatch, then with light gates, on the 20 cm ramp. Then try 10 cm and 30 cm. Which timing method gives repeatable times, what shape is the distance–time graph, and how does the height of the ramp change the acceleration?');
+  const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
+  createSortGame({host:body,cats:[
+    {id:'a',label:'Better results',hint:'More accurate or more repeatable times',color:'--c1',soft:'--c1-soft'},
+    {id:'s',label:'Keeps people safe',hint:'Protects people and equipment',color:'--c3',soft:'--c3-soft'}
+  ],items:[
+    {id:'1',text:'Time each distance three times and find the mean',cat:'a'},
+    {id:'2',text:'Use light gates instead of a stopwatch',cat:'a'},
+    {id:'3',text:'Time to the front edge of the car every time',cat:'a'},
+    {id:'4',text:'Use longer distances, so reaction time matters less',cat:'a'},
+    {id:'5',text:'Put a box at the bottom to catch the car',cat:'s'},
+    {id:'6',text:'Make sure the ramp cannot slip off its block',cat:'s'},
+    {id:'7',text:'Keep bags and feet clear of the end of the ramp',cat:'s'},
+    {id:'8',text:'Never lean out of a window to drop a ball',cat:'s'}
+  ]});
+}
+{
+  const body=act('accuracy','Multiple choice','The front of the car','');
+  createPredict({host:body,q:'Why should Ananya stop the stopwatch when the front of the car passes each mark, every time?',options:[
+    {text:'The distances are measured to the front of the car',correct:true},
+    {text:'The front of the car is the part that moves fastest',why:'Every part of the car moves at the same speed. The point is to time to the same place you measured to.'},
+    {text:'The back of the car is too hard to see clearly',why:'You could see the back, but the distance would then be wrong by the length of the car.'},
+    {text:'It makes the car accelerate more steadily',why:'Where she looks cannot change how the car moves. It changes which distance she is timing.'}
+  ],explain:'The car starts with its front edge on the start line, so each distance runs to the front of the car. Timing to the back instead would add the car’s length to every distance.'});
+}
+{
+  const body=act('accuracy','Multiple choice','Improving the graph','');
+  createPredict({host:body,q:'Charlie only times the car to three marks, all within 30 cm of the start. His graph looks almost straight. How should he improve it?',options:[
+    {text:'Use more marks, all the way down the ramp',correct:true},
+    {text:'Repeat each of the three times and find the mean',why:'Repeats make each time more reliable, but three marks close together still cannot show that the graph curves.'},
+    {text:'Use a stopwatch that shows times to 0.001 s',why:'A finer display does not remove reaction time, and three close marks still hide the curve.'},
+    {text:'Push the car to give it a faster start each time',why:'A push changes the starting speed every run, so the times would be less repeatable.'}
+  ],explain:'The curve only shows up with enough distances over a wide range. Over the first 30 cm the curve looks nearly straight, so use marks every 20 cm all the way down.'});
+}
+
+
+/* ================= DO THE EXPERIMENT (the 1.22 model; 5c, 13 Nov 2026) =================
+   The student reads the metre rule and the stopwatch in the animation's measure mode
+   (animations/ramp-motion.html?show=measure, the 20 cm ramp), fills in the table and plots distance against mean time.
+   These readings must match the animation's measure mode (MEAS in animations/ramp-motion.html; tools/CORE-PRACTICALS.md,
+   "Measure modes"): markers at 20 … 120 cm, three stopwatch times at each. */
+const RW_D=[20,40,60,80,100,120];
+const RW_T=[[0.70,0.70,0.74],[0.95,0.99,0.99],[1.29,1.25,1.25],[1.48,1.48,1.40],[1.65,1.69,1.53],[1.80,1.80,1.80]];
+const RW_MEAN=RW_T.map(t=>+((t[0]+t[1]+t[2])/3).toFixed(2));
+let rwTable=null,rwRows=()=>{};
+{
+  act('do','Your turn','Take your own readings','Marker 1 is 20 cm down the ramp. Read its distance from the start line on the metre rule in the close-up, then press Release three times and write down each stopwatch time. Do the same for markers 2 to 6, work out each mean time, then plot distance against mean time.');
+}
+frameAct('do','animations/ramp-motion.html','measure','Toy car experiment: read the metre rule and the stopwatch','toy car on a ramp',false);
+{
+  const body=act('do','Calculate','Your results table','Write each distance to the nearest 1 cm and each time to 0.01 s, as the stopwatch shows it. Then work out each mean time, to 0.01 s. Press Check table.');
+  rwTable=ownTable(body,{head:['Marker','Distance (cm)','Time 1 (s)','Time 2 (s)','Time 3 (s)','Mean time (s)'],
+    rows:RW_D.map((d,i)=>[i+1,
+      {k:'d'+i,a:d,tol:0.5,dp:0,label:'Distance to marker '+(i+1)+', in cm'},
+      {k:'a'+i,a:RW_T[i][0],tol:0.005,dp:2,label:'Time 1 to marker '+(i+1)+', in s'},
+      {k:'b'+i,a:RW_T[i][1],tol:0.005,dp:2,label:'Time 2 to marker '+(i+1)+', in s'},
+      {k:'c'+i,a:RW_T[i][2],tol:0.005,dp:2,label:'Time 3 to marker '+(i+1)+', in s'},
+      {k:'m'+i,f:v=>(v('a'+i)+v('b'+i)+v('c'+i))/3,tol:0.006,dp:2,label:'Mean time to marker '+(i+1)+', in s'}]),
+    hint:'Read the distance where the marker meets the rule. Mean = (time 1 + time 2 + time 3) divided by 3, from your own times.',
+    done:'All correct. Now plot your results.',filled:'Table filled in (dashed). Now plot distance against mean time.',
+    onChange:()=>rwRows()});
+}
+{
+  const body=act('do','Plot','Plot your results','Plot distance against mean time as a small cross for each marker. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
+  const row=i=>{const d=rwTable&&rwTable.val('d'+i),m=rwTable&&rwTable.val('m'+i);return 'Marker '+(i+1)+': '+(m?m+' s':'your mean time')+', '+(d?d+' cm':'your distance');};
+  createPlot({host:body,points:RW_MEAN.map((t,i)=>({x:t,y:RW_D[i],n:i})),rowText:p=>row(p.n),next:' Now answer the question below.',
+    graph:{xMin:0,xMax:2,yMin:0,yMax:120,xTicks:[0,0.5,1,1.5,2],yTicks:[0,20,40,60,80,100,120],minor:[0.1,5],snap:[0.05,5],tol:[0.05,2.5],xLabel:'mean time (s)',yLabel:'distance (cm)',W:560,H:340}});
+  rwRows=()=>{$$('.plot-row',body).forEach((li,i)=>{const s=li.firstElementChild;if(s)s.textContent=row(i);});};
+}
+sideBySide('do',[$('#panel-do .own-tbl')]);
+{
+  const body=act('do','Predict','Reading your results','');
+  createPredict({host:body,q:'Use your table and graph. How is the car moving down the ramp?',options:[
+    {text:'Speeding up: each 20 cm takes less time',correct:true},
+    {text:'At a steady speed: the distance goes up each time',why:'Look at the times: the first 20 cm takes about 0.71 s, the last 20 cm only about 0.18 s. Equal distances in less and less time means it is speeding up.'},
+    {text:'Slowing down: the line gets steeper',why:'On a distance–time graph a steeper line means a faster speed, so the car is speeding up, not slowing down.'},
+    {text:'Speeding up, then steady after marker 3',why:'The gaps between the mean times keep getting smaller all the way down, so the car speeds up all the way.'}
+  ],explain:'The car covers each 20 cm more quickly, so the distance–time graph is a curve that gets steeper: the car is accelerating. Its average speed over 120 cm is [[1.20 m|1.80 s]] = 0.67 m/s, and because it started from rest and sped up steadily, its speed at the bottom is about twice that.'});
+}
+
+/* ================= SHOW THE EXPERIMENT: the readings taken for you ================= */
+{
+  act('experiment','Your turn','Watch the readings','Press Experiment: here the results table and graph fill in by themselves. Time the car to every mark with the stopwatch, then with light gates, on the 20 cm ramp. Then try 10 cm and 30 cm. Which timing method gives repeatable times, what shape is the distance–time graph, and how does the height of the ramp change the acceleration?');
 }
 frameAct('experiment','animations/ramp-motion.html','','Toy car on a ramp animation: timing the car with a stopwatch or light gates','toy car on a ramp',false);
 {
@@ -173,7 +317,7 @@ frameAct('experiment','animations/ramp-motion.html','','Toy car on a ramp animat
 }
 
 /* ================= 4. RESULTS ================= */
-const RM=[[0.20,[0.74,0.70,0.75],'0.73'],[0.40,[1.05,0.99,1.02],'?'],[0.60,[1.25,1.27,1.20],'1.24'],[0.80,[1.44,1.41,1.47],'1.44'],[1.00,[1.60,1.63,1.57],'1.60'],[1.20,[1.78,1.73,1.77],'?']];
+const RM=[[0.20,[0.74,0.70,0.75],'0.73'],[0.40,[1.05,0.99,1.02],'1.02'],[0.60,[1.25,1.27,1.20],'1.24'],[0.80,[1.44,1.41,1.47],'1.44'],[1.00,[1.60,1.63,1.57],'1.60'],[1.20,[1.78,1.73,1.77],'?']];
 function rmTable(){
   const t=mk('div','table-scroll');
   t.innerHTML='<table class="units res-tbl"><thead><tr><th>Distance (m)</th><th>Time 1 (s)</th><th>Time 2 (s)</th><th>Time 3 (s)</th><th>Mean time (s)</th></tr></thead><tbody>'+
@@ -185,18 +329,10 @@ function rmTable(){
   const body=act('results','Calculate','Complete Zahra’s results','Zahra timed her toy car three times to each mark with a stopwatch, on a ramp 20 cm high.');
   body.appendChild(rmTable());
   createCalc({host:body,questions:[
-    {q:'Work out the mean time for 0.40 m.',unit:'s',answer:1.02,working:'mean = [[1.05 + 0.99 + 1.02|3]]<br>mean = [[3.06|3]]<br>mean = 1.02 s'},
     {q:'Work out the mean time for 1.20 m.',unit:'s',answer:1.76,working:'mean = [[1.78 + 1.73 + 1.77|3]]<br>mean = [[5.28|3]]<br>mean = 1.76 s'},
     {q:'What is the car’s average speed over the whole 1.20 m?',unit:'m/s',answer:0.68,working:'average speed = [[distance|time]]<br>average speed = [[1.20|1.76]]<br>average speed = 0.68 m/s'},
     {q:'The car sped up steadily from rest, so its final speed was twice its average speed. What was its acceleration?',unit:'m/s²',answer:0.775,working:'final speed = 2 × 0.682<br>final speed = 1.364 m/s<br>a = [[v − u|t]]<br>a = [[1.364 − 0|1.76]]<br>a = 0.775 m/s²'}
   ]});
-}
-{
-  const body=act('results','Plot','Plot Zahra’s results','Plot distance against mean time for each row of Zahra’s table, as a small cross. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
-  createPlot({host:body,
-    points:[{x:0.73,y:0.2},{x:1.02,y:0.4},{x:1.24,y:0.6},{x:1.44,y:0.8},{x:1.60,y:1.0},{x:1.76,y:1.2}],
-    rowText:p=>fmt(p.x,2)+' s, '+p.y.toFixed(1)+' m',
-    graph:{xMin:0,xMax:2,yMin:0,yMax:1.2,xTicks:[0,0.5,1,1.5,2],yTicks:[0,0.2,0.4,0.6,0.8,1,1.2],minor:[0.1,0.1],snap:[0.05,0.1],xLabel:'mean time (s)',yLabel:'distance (m)',W:560,H:340}});
 }
 {
   const body=act('results','Multiple choice','The line of best fit','');
@@ -265,121 +401,6 @@ function rampGraph(){
     {text:'It travels equal distances each second',why:'That would be a steady speed. The car covers more distance each second as it speeds up.'}
   ],explain:'The gradient of a velocity–time graph is the acceleration. A straight line has the same gradient all the way, so the acceleration is constant (uniform).'});
 }
-const GB={xMin:0,xMax:8,yMin:0,yMax:25,xTicks:[0,2,4,6,8],yTicks:[0,5,10,15,20,25],xLabel:'time (s)',yLabel:'velocity (m/s)',W:560,H:340};
-function ballGraph(){
-  const P=[];for(let t=0;t<=8.001;t+=0.1)P.push([t,20*(1-Math.exp(-t/2))]);
-  const g0=lineGraph(Object.assign({points:[[0,0]]},GB));
-  return lineGraph(Object.assign({label:'Velocity against time for a falling ball, with a tangent at the start',points:P,
-    extra:'<line x1="'+g0.gx(0)+'" y1="'+g0.gy(0)+'" x2="'+g0.gx(2.5)+'" y2="'+g0.gy(25)+'" stroke="var(--ink-soft)" stroke-width="2" stroke-dasharray="7 5"/><text x="'+(g0.gx(2.5)+6)+'" y="'+(g0.gy(24)+4)+'" font-size="13" fill="var(--ink-soft)">tangent at t = 0</text>'},GB)).svg;
-}
-{
-  const body=act('graphs','Calculate','A ball falling a long way','A ball is dropped from a great height. Its velocity–time graph is a curve; the dashed line is the tangent to the curve at the start. Read your answers off the graph.');
-  const split=mk('div','graph-split');body.appendChild(split);
-  split.appendChild(mk('div','graph-box',ballGraph()));
-  const side=mk('div','graph-side');split.appendChild(side);
-  createCalc({host:side,questions:[
-    {q:'What is the ball’s terminal velocity?',unit:'m/s',answer:20,working:'The curve levels off at 20 m/s.<br>terminal velocity = 20 m/s'},
-    {q:'Use the tangent to find the ball’s acceleration at the start.',unit:'m/s²',answer:10,working:'acceleration = gradient of the tangent<br>acceleration = [[20 − 0|2.0 − 0]]<br>acceleration = 10 m/s²'}
-  ]});
-}
-{
-  const body=act('graphs','Multiple choice','Why the curve levels off','');
-  createPredict({host:body,q:'The ball’s velocity–time graph gets less and less steep, then flat. Why?',options:[
-    {text:'Air resistance rises until it balances the weight',correct:true},
-    {text:'The ball’s weight gets smaller as it falls further down',why:'The weight stays the same. It is air resistance that changes as the ball speeds up.'},
-    {text:'Gravity stops acting once the ball is moving quickly',why:'Gravity keeps acting; the weight is balanced by air resistance at terminal velocity.'},
-    {text:'Air resistance gets smaller as the ball goes faster',why:'Air resistance gets bigger, not smaller, as the speed goes up.'}
-  ],explain:'As the ball speeds up, air resistance grows, so the resultant force and the acceleration get smaller: the graph gets less steep. When air resistance equals the weight, the resultant force is zero and the ball falls at terminal velocity.'});
-}
-{
-  const body=act('graphs','Multiple choice','A short drop','');
-  createPredict({host:body,q:'Zahra drops a tennis ball from 1 m in the lab. Why can she ignore air resistance for this drop?',options:[
-    {text:'The ball is still slow, so air resistance is tiny',correct:true},
-    {text:'There is no air resistance indoors at all',why:'There is air in the lab. It just cannot push much on a slow ball.'},
-    {text:'A tennis ball is too heavy to feel air resistance',why:'Any moving ball feels air resistance; it grows with speed. After 1 m it is still small.'},
-    {text:'Air resistance only acts on a ball moving upwards',why:'Air resistance acts against the motion, whichever way the ball moves.'}
-  ],explain:'Air resistance grows with speed. After falling only 1 m the ball is moving at about 4.5 m/s, far below its terminal velocity, so air resistance is small compared with its weight.'});
-}
 
-/* ================= 6. CALCULATE ================= */
-{
-  const body=act('calculate','Calculate','Speed, acceleration and distance','Give each answer in the unit shown.');
-  createCalc({host:body,questions:[
-    {q:'A toy car rolls 1.5 m down a ramp in 2.5 s. What is its average speed?',unit:'m/s',answer:0.6,working:'average speed = [[distance|time]]<br>average speed = [[1.5|2.5]]<br>average speed = 0.6 m/s'},
-    {q:'The car goes from rest to 1.2 m/s in 1.5 s. What is its acceleration?',unit:'m/s²',answer:0.8,working:'a = [[v − u|t]]<br>a = [[1.2 − 0|1.5]]<br>a = 0.8 m/s²'},
-    {q:'From rest, the car accelerates at 0.80 m/s² for 1.0 m. Use v² = u² + 2as to find its final speed.',unit:'m/s',answer:1.26,working:'v² = u² + 2as<br>v² = 0² + 2 × 0.80 × 1.0<br>v² = 1.6<br>v = √1.6<br>v = 1.26 m/s'},
-    {q:'A 5.0 cm card on the car blocks a light gate for 0.040 s. What is the car’s speed?',unit:'m/s',answer:1.25,working:'5.0 cm = 0.050 m<br>speed = [[distance|time]]<br>speed = [[0.050|0.040]]<br>speed = 1.25 m/s'}
-  ]});
-}
-
-/* ================= 7. ACCURACY AND SAFETY ================= */
-{
-  const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
-  createSortGame({host:body,cats:[
-    {id:'a',label:'Better results',hint:'More accurate or more repeatable times',color:'--c1',soft:'--c1-soft'},
-    {id:'s',label:'Keeps people safe',hint:'Protects people and equipment',color:'--c3',soft:'--c3-soft'}
-  ],items:[
-    {id:'1',text:'Time each distance three times and find the mean',cat:'a'},
-    {id:'2',text:'Use light gates instead of a stopwatch',cat:'a'},
-    {id:'3',text:'Time to the front edge of the car every time',cat:'a'},
-    {id:'4',text:'Use longer distances, so reaction time matters less',cat:'a'},
-    {id:'5',text:'Put a box at the bottom to catch the car',cat:'s'},
-    {id:'6',text:'Make sure the ramp cannot slip off its block',cat:'s'},
-    {id:'7',text:'Keep bags and feet clear of the end of the ramp',cat:'s'},
-    {id:'8',text:'Never lean out of a window to drop a ball',cat:'s'}
-  ]});
-}
-{
-  const body=act('accuracy','Multiple choice','The front of the car','');
-  createPredict({host:body,q:'Why should Ananya stop the stopwatch when the front of the car passes each mark, every time?',options:[
-    {text:'The distances are measured to the front of the car',correct:true},
-    {text:'The front of the car is the part that moves fastest',why:'Every part of the car moves at the same speed. The point is to time to the same place you measured to.'},
-    {text:'The back of the car is too hard to see clearly',why:'You could see the back, but the distance would then be wrong by the length of the car.'},
-    {text:'It makes the car accelerate more steadily',why:'Where she looks cannot change how the car moves. It changes which distance she is timing.'}
-  ],explain:'The car starts with its front edge on the start line, so each distance runs to the front of the car. Timing to the back instead would add the car’s length to every distance.'});
-}
-{
-  const body=act('accuracy','Multiple choice','Improving the graph','');
-  createPredict({host:body,q:'Charlie only times the car to three marks, all within 30 cm of the start. His graph looks almost straight. How should he improve it?',options:[
-    {text:'Use more marks, all the way down the ramp',correct:true},
-    {text:'Repeat each of the three times and find the mean',why:'Repeats make each time more reliable, but three marks close together still cannot show that the graph curves.'},
-    {text:'Use a stopwatch that shows times to 0.001 s',why:'A finer display does not remove reaction time, and three close marks still hide the curve.'},
-    {text:'Push the car to give it a faster start each time',why:'A push changes the starting speed every run, so the times would be less repeatable.'}
-  ],explain:'The curve only shows up with enough distances over a wide range. Over the first 30 cm the curve looks nearly straight, so use marks every 20 cm all the way down.'});
-}
-
-/* ================= EXAM PRACTICE ================= */
-{
-  const body=act('exam','Exam style','Timing a toy car','Charlie times a toy car rolling from rest down a ramp, three times for each distance. One mean is missing.');
-  const tbl=mk('div','table-scroll');
-  tbl.innerHTML='<table class="units res-tbl" style="width:fit-content"><thead><tr><th>Distance (m)</th><th>Time 1 (s)</th><th>Time 2 (s)</th><th>Time 3 (s)</th><th>Mean time (s)</th></tr></thead><tbody><tr><td>0.50</td><td>1.10</td><td>1.14</td><td>1.12</td><td>1.12</td></tr><tr><td>1.00</td><td>1.60</td><td>1.56</td><td>1.58</td><td>1.58</td></tr><tr><td>1.50</td><td>1.96</td><td>1.92</td><td>1.97</td><td><b>?</b></td></tr></tbody></table>';
-  body.appendChild(tbl);
-  body.appendChild(mk('p','sub','(a) 1 mark'));
-  createCalc({host:body,questions:[
-    {q:'Calculate the missing mean time for 1.50 m.',unit:'s',answer:1.95,working:'mean = [[1.96 + 1.92 + 1.97|3]]<br>mean = [[5.85|3]]<br>mean = 1.95 s'}
-  ]});
-  body.appendChild(mk('p','sub','(b) 2 marks'));
-  createCalc({host:body,questions:[
-    {q:'Calculate the car’s average speed over the 1.50 m.',unit:'m/s',answer:0.77,working:'average speed = [[distance|time]]<br>average speed = [[1.50|1.95]]<br>average speed = 0.77 m/s'}
-  ]});
-  body.appendChild(mk('p','sub','(c) 2 marks'));
-  body.appendChild(mk('p','','Explain why the car’s speed as it passes the 1.50 m mark is not 0.77 m/s. Write your answer, then check it.'));
-  const d1=mk('details','');
-  d1.innerHTML='<summary>Check your answer</summary><div><ul><li>Distance divided by the total time gives the average speed over the whole 1.50 m, not the speed at the 1.50 m mark.</li><li>The car is accelerating (speeding up), so at 1.50 m it is going faster than its average speed (about twice as fast, as it started from rest).</li></ul></div>';
-  body.appendChild(d1);
-  body.appendChild(mk('p','sub','(d) 3 marks'));
-  body.appendChild(mk('p','','Describe how Charlie could measure the car’s speed as it passes the 1.50 m mark. Name any extra equipment he needs.'));
-  const d2=mk('details','');
-  d2.innerHTML=FR('<summary>Check your answer</summary><div><ul><li>Fix a card (interrupter card) to the top of the car, and measure its length with a ruler.</li><li>Put a light gate at the 1.50 m mark, positioned so the card cuts the beam, connected to a data logger (or electronic timer).</li><li>The data logger records the time for which the card blocks the beam.</li><li>Speed = [[length of card|time the beam is blocked]].</li></ul><p>Also accepted: film the car with a video camera, with a scale beside the ramp, and find the distance moved between two frames divided by the time between them. A light gate measures the speed at one point and has no reaction time error.</p></div>');
-  body.appendChild(d2);
-  body.appendChild(mk('p','sub','(e) 3 marks'));
-  body.appendChild(mk('p','','Suggest three reasons why Charlie’s three times for the same distance are not exactly the same.'));
-  const d3=mk('details','');
-  d3.innerHTML='<summary>Check your answer</summary><div><ul><li>His reaction time when starting and stopping the stopwatch is different each run.</li><li>The car may not start from exactly the same position (start line) each time.</li><li>The car may not be released from rest: he may push it slightly as he lets go.</li><li>Friction (or air resistance) on the car may differ, for example if it rubs against the side of the ramp.</li></ul><p>“Human error” on its own does not score: say what the error is.</p></div>';
-  body.appendChild(d3);
-  body.appendChild(mk('p','sub','(f) 6 marks'));
-  body.appendChild(mk('p','','Charlie wants to find out how the height of the ramp affects the car’s average speed down it. Describe a method he could use. Include the variables and how he would make his results reliable.'));
-  const d4=mk('details','');
-  d4.innerHTML=FR('<summary>Check your answer</summary><div><ul><li>The independent variable is the height of the ramp; use at least five different heights.</li><li>The dependent variable is the average speed (found from the time taken).</li><li>Measure the height with a ruler held vertical (checked with a set square), reading at eye level.</li><li>Measure a fixed distance down the ramp between two markers with a metre rule or tape measure.</li><li>Release the car from rest at the start line and time it between the two markers with a stopwatch (or light gates).</li><li>Average speed = [[distance|time]].</li><li>Control variables: the same car, the same distance, the same start line and the same ramp surface.</li><li>Repeat at each height and find a mean.</li></ul><p>Each point scores once; six different points get all 6 marks.</p></div>');
-  body.appendChild(d4);
-}
+/* The method switch is set once every method's activities exist, so only the chosen method shows on load. */
+setMethod(method);
