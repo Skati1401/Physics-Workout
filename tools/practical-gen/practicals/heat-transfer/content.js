@@ -31,6 +31,12 @@ function pairLast(k){
   pair.appendChild(x);pair.appendChild(y);acts.appendChild(pair);
 }
 
+/* The last two activities on a tab side by side, one row on a laptop; they stack on a narrow screen. */
+function pairIn(panel){
+  const acts=$('#panel-'+panel+' .acts'),list=acts.querySelectorAll(':scope>.act'),pair=mk('div','act-pair');
+  pair.appendChild(list[list.length-2]);pair.appendChild(list[list.length-1]);acts.appendChild(pair);
+  return pair;
+}
 /* ================= 1. METHOD ================= */
 methodPicker('method');
 {
@@ -166,15 +172,6 @@ frameAct('conduction','animations/heat-transfer.html','cond','Conduction animati
   ],explain:'The end of the glass rod in the water is hot, but energy is conducted along glass so slowly that the wax 11 cm away never reaches its melting point. Glass is a poor conductor (an insulator).'});
 }
 {
-  const body=act('conduction','Predict','Reading the times','');
-  createPredict({host:body,q:'Aidan’s pins dropped after: copper 55 s, aluminium 1 min 3 s, iron 4 min 54 s. He says iron is the best conductor because its pin stayed on longest. Is he right?',options:[
-    {text:'No: copper is best, its pin dropped first',correct:true},
-    {text:'Yes: the longest time means the most energy',why:'A long time means energy reached the pin slowly. The best conductor gets it there first.'},
-    {text:'Yes: iron is the hardest of the three metals',why:'Hardness does not decide how well a metal conducts. The time for the pin to drop does.'},
-    {text:'No: aluminium is best, its time is in the middle',why:'A middle time is not special. The shortest time shows the best conductor.'}
-  ],explain:'The shorter the time for the pin to drop, the faster energy was conducted along the rod. Copper’s pin dropped first, so copper is the best conductor. Iron took longest, so it is the worst of the three metals.'});
-}
-{
   const body=act('conduction','Predict','Bar chart or line graph?','');
   createPredict({host:body,q:'Aidan wants to show his times on a graph. Why should he draw a bar chart, not a line graph?',options:[
     {text:'The rod material is a categoric variable',correct:true},
@@ -183,6 +180,7 @@ frameAct('conduction','animations/heat-transfer.html','cond','Conduction animati
     {text:'Line graphs are only used for temperatures',why:'Line graphs suit any continuous variable. The material is not continuous.'}
   ],explain:'The material is a categoric variable: there are no values between copper and iron, so the points cannot be joined by a line. Draw one bar for each material, against a time axis with an even (linear) scale.'});
 }
+pairIn('conduction'); /* The glass rod beside Bar chart or line graph? (Alex, 13 Nov 2026) */
 
 /* ================= 4. CONVECTION ================= */
 {
@@ -209,6 +207,7 @@ frameAct('convection','animations/heat-transfer.html','conv','Convection animati
     {text:'It goes round the beaker as before',why:'A current needs warm water below cooler water. Here the warm water is already at the top.'}
   ],explain:'The warm water at the top is less dense, so it stays at the top, and the cold, denser water stays at the bottom. No convection current forms, and the dye only spreads slowly.'});
 }
+pairIn('convection'); /* the Order beside the Predict (Alex, 13 Nov 2026) */
 
 /* ================= 5. RADIATION ================= */
 {
