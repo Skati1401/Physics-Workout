@@ -165,6 +165,8 @@
   .expl b{color:var(--topic);}
   .cgrid>[hidden]{display:none!important;}
 
+  /* measure mode (?show=measure): the practical page's Do Experiment tab. Nothing is read for the student. */
+  .meas-off{display:none !important;}
   /* inside a workout tab (?embed): no page heading, no outer margins */
   .embed body{background:transparent;}
   .embed .page{padding:0;max-width:none;display:flow-root;}
@@ -575,8 +577,29 @@ function expKey(x, y, upLabel, downLabel){
   var faceSeg=segGroup($('#ht-face'), function(v){ turnTo(+v); });
   var intSeg=segGroup($('#ht-int'), function(){ resetPart(); });
   var jumpSeg=segGroup($('#ht-jump'), function(v){ jumpTo(v); });
+  // Measure mode (?show=measure, 13 Nov 2026): the 4.9 practical page's Do Experiment tab (TODO 8f). The student reads the
+  // instruments and writes the readings in a table on the practical page; nothing is read, recorded or explained for them
+  // (no results table, reading boxes, graph, Compare or explanation).
+  //   Conduction: the run goes in whole seconds and stops each time a pin drops, so the large stopwatch can be read.
+  //   Convection: no numbers. The student marks the front of the dye and draws its path; the exam diagram stays "?".
+  //   Leslie cube: the detector stays 10 cm from the cube with the water at 80 °C; the student turns the cube and reads the millivoltmeter.
+  //   Two cans: the heater runs 2 minutes at a time; a close-up of each thermometer (1 °C marks, read to 0.5 °C) replaces the graph.
+  // The readings are fixed, and the practical page checks against the same numbers (tools/CORE-PRACTICALS.md, "Measure modes").
+  // ?show=measure&part=cond|conv|rad shows one part (and hides the Part switch); &setup=cube|cans and &heat=under|mid|top fix those choices.
+  var MEAS=/[?&]show=measure\b/.test(location.search);
   var showQ=location.search.match(/[?&]show=(cond|conv|rad)\b/);
-  if(showQ){ modeSeg.pick(showQ[1]); $('#ht-mode').hidden=true; }
+  if(MEAS){
+    var qp=function(k, re){ var m=location.search.match(new RegExp('[?&]'+k+'=('+re+')\\b')); return m?m[1]:null; };
+    var mp=qp('part','cond|conv|rad'), ms=qp('setup','cube|cans'), mh=qp('heat','under|mid|top');
+    if(mp){ modeSeg.pick(mp); $('#ht-mode').hidden=true; }
+    else if(EMBED){ svg.parentNode.insertBefore($('#ht-mode'), svg); $('#ht-mode').style.marginBottom='10px'; }
+    if(ms){ setupSeg.pick(ms); $('#ht-slab').classList.add('meas-off'); $('#ht-setup').classList.add('meas-off'); }
+    if(mh){ heatSeg.pick(mh); $('#ht-hlab').classList.add('meas-off'); $('#ht-heat').classList.add('meas-off'); }
+    intSeg.pick('2'); expBtn.setAttribute('aria-pressed','true');
+    ['#ht-exp','#ht-clear','#ht-cmp','#ht-slow','#ht-tablewrap','#ht-stats','details.working','#ht-jlab','#ht-jump','#ht-ilab','#ht-int','#ht-sliders'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+    document.documentElement.classList.add('measure');
+  }
+  else if(showQ){ modeSeg.pick(showQ[1]); $('#ht-mode').hidden=true; }
   else if(EMBED){ $('.side').insertBefore($('#ht-mode'), $('.side').firstChild); }
   function part(){ return modeSeg.value(); }
 
@@ -611,7 +634,7 @@ function expKey(x, y, upLabel, downLabel){
   ];
   var RL=0.14, RN=28, RDX=RL/RN, PIN=0.11, PI_=Math.round(PIN/RDX), MELT=50, TW=90, TR=20, CEND=600, CSPEED=30;
   var C={t:0, T:null, drop:[], rec:[]};
-  function condInit(){ C.t=0; C.T=RODS.map(function(){ var a=[]; for(var i=0;i<=RN;i++) a.push(TR); a[0]=TW; return a; }); C.drop=RODS.map(function(){ return null; }); C.rec=RODS.map(function(){ return null; }); }
+  function condInit(){ C.t=0; C.T=RODS.map(function(){ var a=[]; for(var i=0;i<=RN;i++) a.push(TR); a[0]=TW; return a; }); C.drop=RODS.map(function(){ return null; }); C.rec=RODS.map(function(){ return null; }); C.acc=0; C.just=null; }
   function condStep(ts){   // advance the physics by ts seconds
     RODS.forEach(function(r,k){
       var T=C.T[k], left=ts, sub=Math.min(0.4*RDX*RDX/r.D, 1);
@@ -632,6 +655,15 @@ function expKey(x, y, upLabel, downLabel){
   var nRec=0;
   function condTick(dt){
     if(!running) return false;
+    if(MEAS){   // whole seconds, so every run gives the same times; stop the stopwatch as each pin drops
+      C.acc+=dt*CSPEED;
+      while(C.acc>=1 && C.t<CEND-1e-9){
+        var was=C.drop.slice(); condStep(1); C.acc-=1; C.t=Math.round(C.t);
+        for(var q=0;q<RODS.length;q++) if(was[q]==null && C.drop[q]!=null){ C.drop[q]=C.t; C.just=q; C.acc=0; running=false; return false; }
+      }
+      if(C.t>=CEND-1e-9){ C.just=null; running=false; return false; }
+      return true;
+    }
     var target=Math.min(CEND, C.t+dt*CSPEED);
     while(C.t<target-1e-9) condStep(Math.min(1,target-C.t));
     if(exp()) RODS.forEach(function(r,k){
@@ -691,7 +723,8 @@ function expKey(x, y, upLabel, downLabel){
       }
       if(d!=null) s+=txt(pxn+14,y+r+22,(ex?'pin dropped':'dropped at '+mmss(d)),{fs:L.fs-1,c:'var(--topic)'});
     });
-    s+=stopwatch(L.sw[0],L.sw[1],mmss(C.t));
+    if(MEAS) s+=stopwatch(L.sw[0]-(L.tall?26:58),L.sw[1]+4,mmss(C.t),L.tall?1.3:1.7);
+    else s+=stopwatch(L.sw[0],L.sw[1],mmss(C.t));
     if(!ex){
       var gx_=L.key[0], gy_=L.key[1]; for(var j=0;j<=20;j++) s+=rect(gx_+j*7,gy_,7.5,9,heatCol(20+j*3.5));
       s+=txt(gx_-7,gy_+9,'20 °C',{a:'end',fs:12})+txt(gx_+155,gy_+9,'90 °C',{fs:12});
@@ -700,6 +733,13 @@ function expKey(x, y, upLabel, downLabel){
   }
   function condNote(){
     var ex=exp(), done=C.t>=CEND-1e-9, order=RODS.map(function(r,k){ return [k,ex?C.rec[k]:C.drop[k]]; }).filter(function(a){ return a[1]!=null; }).sort(function(a,b){ return a[1]-b[1]; });
+    if(MEAS){
+      if(C.t===0) return 'Each rod has a pin stuck on with wax, 11 cm from the hot water. Press <b>Start</b> and watch the pins. The stopwatch stops each time a pin drops, so that you can read it.';
+      if(done) return 'The stopwatch has reached 10 minutes, and the run stops here. In your table, write “did not drop” for any pin that is still on.';
+      if(running) return 'Timing… watch the pins.';
+      if(C.just!=null) return 'A pin has dropped. Write the <b>time on the stopwatch</b> in your table, in the row for that rod. Then press <b>Carry on</b>.';
+      return 'Paused. Press <b>Carry on</b>.';
+    }
     if(ex){
       if(C.t===0) return 'Press <b>Start</b>. Each rod has a pin stuck on with wax, 11 cm from the hot water. Watch the pins and record the stopwatch time when each one drops.';
       if(!done) return 'Timing… '+(order.length?order.length+' of 4 pins have dropped.':'no pins have dropped yet.')+' The run stops at 10 minutes.';
@@ -867,7 +907,7 @@ function expKey(x, y, upLabel, downLabel){
     if(xh!=null) s+=arrow(MX(xh),d.y+d.h+32,MX(xh),d.y+d.h+6,'#e5392f',4)+txt(MX(xh)+12,d.y+d.h+28,'heat',{fs:12.5,c:'var(--topic)',w:600});
     else s+=ln(d.x+d.w*0.3,d.y+24,d.x+d.w*0.7,d.y+24,'#e5392f',5,' stroke-linecap="round"')+txt(d.x+d.w/2,d.y+d.h+24,'heated at the top',{a:'middle',fs:12.5,c:'var(--topic)',w:600});
     var cap;
-    if(!show){ s+=txt(d.x+d.w/2,d.y+d.h/2+20,'?',{a:'middle',fs:40,c:'var(--ink-faint)',w:600}); cap = ex ? ['Mark the front of the dye,','then press Compare.'] : ['Which way will the water move?','Press Play and watch the dye.']; }
+    if(!show){ s+=txt(d.x+d.w/2,d.y+d.h/2+20,'?',{a:'middle',fs:40,c:'var(--ink-faint)',w:600}); cap = MEAS ? ['Draw the path of the dye','on the diagram in your table.'] : ex ? ['Mark the front of the dye,','then press Compare.'] : ['Which way will the water move?','Press Play and watch the dye.']; }
     else if(xh!=null){ var MM={X:MX,Y:MY,r:14,w:2}; if(xh>40) s+=loopPath(0,xh,1,MM); s+=loopPath(xh,BW-xh,-1,MM); cap=['Warm water is less dense: it rises.','Cooler, denser water sinks.']; }
     else { s+=rect(d.x+2,d.y+13,d.w-4,26,'rgba(214,38,30,0.2)'); cap=['The warm water stays at the top:','no convection current.']; }
     cap.forEach(function(c,i){ s+=txt(d.x+d.w/2,d.y+d.h+(xh!=null?52:44)+i*16,c,{a:'middle',fs:12.5}); });
@@ -880,6 +920,11 @@ function expKey(x, y, upLabel, downLabel){
   }
   function convNote(){
     var ex=exp(), top=heatSeg.value()==='top', done=V.t>=CVEND-1e-9;
+    if(MEAS){
+      if(!V.t) return 'Press <b>Play</b> and watch the purple dye. Press <b>Mark the front</b> every so often, to mark where the front of the dye has got to.';
+      if(!done) return 'Keep marking the front of the dye as it moves ('+V.marks.length+' mark'+(V.marks.length===1?'':'s')+' so far).';
+      return 'Now draw the path of the dye on the diagram in your table. Add arrows to show which way the water moved, if it moved at all.';
+    }
     if(ex){
       if(V.cmp) return top ? 'Your marks stay near the bottom: <b>no convection current</b>. The warm water at the top is less dense, so it stays there, and the cold, denser water stays at the bottom.'
         : 'Your marks follow the <b>convection current</b>: up above the heat, across the top, down the far side and back along the bottom.';
@@ -998,7 +1043,7 @@ function expKey(x, y, upLabel, downLabel){
     s+=pl([[X0,yb],[X0-L.ex*L.bz,fy]],'var(--topic)',2.2)+'<path d="M'+f1(X0-L.ex*L.bz)+','+f1(fy+1)+' l-4.5,-8 h9 z" fill="var(--topic)"/>';
     s+=box(X0+4,yb-8,bw-8,8,13,-8,'var(--steel-sh)')+rect(X0+bw/2-3.5,yc+12,7,yb-yc-20,'var(--steel)')+rect(X0+bw/2-2,yc+12,2,yb-yc-20,'var(--steel-hi)',' opacity=".7"');
     s+=pg([[X0,yc-8],[X0-11,yc-15],[X0-11,yc+15],[X0,yc+8]],'#1d2430')+ell(X0-11,yc,3,15,'#4a556a')+box(X0,yc-15,bw,30,11,-6.5,'var(--steel)')+rect(X0+5,yc-9,bw-10,5,'#fff',' rx="2" opacity=".3"');
-    s+=txt(X0+bw/2,yc-42,'IR detector',{a:'middle',fs:12.5,c:'var(--ink)',halo:1})+txt(X0+bw/2,yc-27,'← drag →',{a:'middle',fs:11.5,c:'var(--ink-faint)',halo:1})+'</g>';
+    s+=txt(X0+bw/2,yc-42,'IR detector',{a:'middle',fs:12.5,c:'var(--ink)',halo:1})+(MEAS?'':txt(X0+bw/2,yc-27,'← drag →',{a:'middle',fs:11.5,c:'var(--ink-faint)',halo:1}))+'</g>';
     // the millivoltmeter and its lead
     var M=L.meter, shown = settled ? (ex ? (Math.round(v/0.1)*0.1).toFixed(1) : v.toFixed(1)) : '…';
     s+='<path d="M'+f1(X0+bw+8)+','+f1(yc-8)+' C'+f1(X0+bw+60)+','+f1(yc-30)+' '+f1(M[0]+M[2]*0.5-40)+','+f1(M[1]+M[3]+70)+' '+f1(M[0]+M[2]*0.5)+','+f1(M[1]+M[3])+'" fill="none" stroke="var(--ink-soft)" stroke-width="2"/>';
@@ -1025,13 +1070,13 @@ function expKey(x, y, upLabel, downLabel){
     s+=box(hx-22,by-8,44,8,10,-6,'var(--steel-sh)')+rect(hx-9,150,18,143,on?'#e5392f':'var(--steel)',' rx="9"')+rect(hx-5,158,4,128,'#fff',' rx="2" opacity="'+(on?0.45:0.3)+'"');
     s+=txt(hx,138,'radiant heater',{a:'middle',fs:12.5,c:'var(--ink)'});
     [[96,'matt black',0.95],[324,'shiny',0.15]].forEach(function(cn,i){
-      var cx=cn[0]+ox, T=canT(cn[2],t), yt=198, rx=33, ry=9, yb=by-ry+2;
+      var cx=cn[0]+ox, T=MEAS ? measCanT(i) : canT(cn[2],t), yt=198, rx=33, ry=9, yb=by-ry+2;
       s+=ell(cx,by+2,rx+7,6,'#000',' opacity=".12"');
       if(i===0) s+=cyl(cx,yt,yb,rx,ry,'#232327',{top:'#3b3b42',hi:'#77777f',hiop:0.3,shade:0.3});
       else s+=cyl(cx,yt,yb,rx,ry,'#cdd3db',{top:'#edf0f4',hi:'#ffffff',hiop:0.95,shade:0.2})+ln(cx+rx*0.12,yt+14,cx+rx*0.12,yb,'#fff',2.2,' stroke-linecap="round" opacity=".7"')+ln(cx-rx*0.86,yt+10,cx-rx*0.86,yb-4,'#8f98a6',1.6,' opacity=".6"');
       // a thermometer through the lid: its scale can be read, and the reading is repeated above it
       s+=thermo(cx,yt+1,yt-12,15,yt-12-30*4.2,45,T,{step:5,num:10,side:i?1:-1,nobulb:1,fs:11.5,from:15})+ell(cx,yt,7,2.8,'#34343a');
-      s+=txt(cx,yt-160,(ex ? (Math.round(T*2)/2).toFixed(1) : T.toFixed(1))+' °C',{a:'middle',fs:14,c:'var(--ink)',w:600});
+      if(!MEAS) s+=txt(cx,yt-160,(ex ? (Math.round(T*2)/2).toFixed(1) : T.toFixed(1))+' °C',{a:'middle',fs:14,c:'var(--ink)',w:600});
       s+=txt(cx,by+30,cn[1]+' can',{a:'middle',fs:12.5,c:'var(--ink)'});
       // the distance from the heater
       var xa=i?hx+13:cx+rx+4, xb=i?cx-rx-4:hx-13;
@@ -1039,6 +1084,7 @@ function expKey(x, y, upLabel, downLabel){
     });
     if(on) s+=drawWaves(hx-14,96+ox+33+8,246,3,2.5,'#d7261e',0.65)+drawWaves(hx+14,324+ox-33-8,246,3,2.5,'#d7261e',0.65);
     s+=txt(hx,by+30,'same distance',{a:'middle',fs:12,c:'var(--ink-faint)'});
+    if(MEAS) return {s:s+measCans(tall), W:tall?430:860, H:tall?684:352, tall:tall};
     // the graph (on phones it goes under the cans)
     s+=ln(GX0,GY0,GX1,GY0,'var(--ink-soft)',1.4)+ln(GX0,GY0,GX0,GY1,'var(--ink-soft)',1.4);
     for(var m=0;m<=10;m+=2){ s+=ln(gx(m),GY0,gx(m),GY0+5,'var(--ink-soft)',1)+txt(gx(m),GY0+19,String(m),{a:'middle',fs:12}); if(m) s+=ln(gx(m),GY0,gx(m),GY1,'var(--panel-border)',0.8); }
@@ -1057,10 +1103,38 @@ function expKey(x, y, upLabel, downLabel){
     }
     return {s:s, W:tall?430:860, H:tall?684:352, tall:tall};
   }
+  // ---- measure mode, two cans: what each thermometer shows (the reading taken, once the heater has stopped), and the
+  // close-up of the two thermometers with a stopwatch, where the graph was
+  function measCanT(i){ var l=R.can[R.can.length-1]; return (!running && l) ? (i?l.s:l.b) : canT(i?0.15:0.95,R.t); }
+  function thermoClose(x,y,w,h,T,id,name){
+    var z=h/12, cy=y+h/2, sx=x+w*0.66, g='', d;
+    g+=rect(x,y,w,h,'var(--panel)',' stroke="var(--panel-border)" rx="10"');
+    g+='<clipPath id="ht-tc'+id+'"><rect x="'+f1(x+3)+'" y="'+f1(y+3)+'" width="'+f1(w-6)+'" height="'+f1(h-6)+'" rx="8"/></clipPath><g clip-path="url(#ht-tc'+id+')">';
+    g+=rect(sx-13,y-4,26,h+8,'var(--thermo)',' stroke="var(--ink-faint)" stroke-width="1.2"')+rect(sx-9,y-4,4,h+8,'#fff',' opacity=".6"');
+    g+=rect(sx-4.5,cy,9,y+h-cy+4,'var(--thread)');
+    for(d=Math.floor(T-7); d<=Math.ceil(T+7); d++){ var yy=cy-(d-T)*z, big=d%5===0;
+      g+=ln(sx-13-(big?24:13),yy,sx-13,yy,'var(--ink)',big?1.7:1.1);
+      if(big && yy>y+12 && yy<y+h-8) g+=txt(sx-13-29,yy+5,String(d),{a:'end',fs:14.5,c:'var(--ink)',w:600}); }
+    g+=ln(x+8,cy,sx+13,cy,'var(--accent)',1.2,' stroke-dasharray="4 3"')+'</g>';
+    return g+txt(x+w/2,y+h+18,name,{a:'middle',fs:12.5,c:'var(--ink)'});
+  }
+  function measCans(tall){
+    var g='', x1=tall?62:548, x2=tall?228:706, y=tall?452:100, h=tall?188:194, sx=tall?166:648, sy=tall?366:14;
+    g+=stopwatch(sx,sy,mmss(R.t*60),1.25)+txt(sx+108,sy+30,'min:s',{fs:12});
+    g+=txt((x1+x2+140)/2,y-10,'Close-up of the thermometers (°C)',{a:'middle',fs:13,c:'var(--ink)',w:600});
+    g+=thermoClose(x1,y,140,h,measCanT(0),'b','matt black can')+thermoClose(x2,y,140,h,measCanT(1),'s','shiny can');
+    return g;
+  }
   function radNote(){
     var ex=exp();
     if(cans()){
       var done=ex ? (R.can.length && R.can[R.can.length-1].t>=10) : R.t>=10;
+      if(MEAS){
+        var lm=R.can[R.can.length-1];
+        if(running) return 'Heating… both cans get the same radiation from the heater.';
+        if(lm.t===0) return 'Both cans hold the same volume of cold water, the same distance from the heater. Read both thermometers in the close-up, to the nearest 0.5 °C, and write the temperatures at 0 minutes in your table. Then press <b>Heat for 2 minutes</b>.';
+        return 'The stopwatch reads '+lm.t+' minutes. Read both thermometers, to the nearest 0.5 °C, and write the temperatures in your table. '+(done?'That was the last reading.':'Then heat for 2 minutes more.');
+      }
       if(ex){
         if(!R.can.length) return 'Both cans hold the same volume of cold water, the same distance from the heater. Press <b>First reading</b>.';
         if(!done) return 'Press <b>Next reading</b> for the next readings, every '+intSeg.value()+' min. The run ends at 10 minutes.';
@@ -1071,6 +1145,8 @@ function expKey(x, y, upLabel, downLabel){
       return done ? 'After 10 minutes the matt black can is much warmer: dark, matt surfaces are <b>good absorbers</b>; shiny surfaces reflect most of the radiation.' : 'Both cans receive the same radiation. The matt black can absorbs more of it, so its water warms faster.';
     }
     var keys=Object.keys(R.rd);
+    if(MEAS) return Math.abs(R.ang-R.angT)>=0.5 ? 'Turning the cube…'
+      : 'The <b>'+FACES[R.face].n.toLowerCase()+'</b> face is towards the detector. Read the <b>millivoltmeter</b> and write the reading in your table. Then turn the cube to another face with the Face buttons. The detector stays 10 cm from the cube, and every face is at the temperature of the water.';
     if(ex){
       if(!keys.length) return 'Drag the detector to a distance, then press <b>Take reading</b>. Turn the cube with the Face buttons and read each face.';
       var ds={}; keys.forEach(function(k){ ds[R.rd[k].d+'/'+R.rd[k].tw]=1; });
@@ -1100,14 +1176,14 @@ function expKey(x, y, upLabel, downLabel){
     var off=0;   // where on the detector it was picked up, so it does not jump to the pointer
     function rawD(e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; var q=p.matrixTransform(svg.getScreenCTM().inverse()); return (q.x-QL.X0)/QL.S; }
     svg.addEventListener('pointerdown', function(e){
-      if(part()!=='rad' || cans() || !e.target.closest('#ht-det')) return;
+      if(MEAS || part()!=='rad' || cans() || !e.target.closest('#ht-det')) return;
       dragging=true; off=rawD(e)-R.d; svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
     });
     svg.addEventListener('pointermove', function(e){ if(!dragging) return; var d=Math.max(5,Math.min(40,Math.round(rawD(e)-off))); if(d!==R.d){ setD(d); } });
     function end(){ if(!dragging) return; dragging=false; svg.classList.remove('dragging'); }
     svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
     svg.addEventListener('keydown', function(e){
-      if(part()!=='rad' || cans()) return;
+      if(MEAS || part()!=='rad' || cans()) return;
       if(e.key==='ArrowRight'||e.key==='ArrowUp'){ setD(Math.min(40,R.d+1)); e.preventDefault(); }
       if(e.key==='ArrowLeft'||e.key==='ArrowDown'){ setD(Math.max(5,R.d-1)); e.preventDefault(); }
     });
@@ -1140,7 +1216,8 @@ function expKey(x, y, upLabel, downLabel){
     var p=part(), ex=exp(), lab;
     if(p==='rad' && !cans() && ex) lab='Take reading';
     else if(p==='rad' && cans() && ex) lab = R.can.length ? 'Next reading' : 'First reading';
-    else lab = running ? '&#10074;&#10074; Pause' : (ex && p==='cond' ? '&#9654; Start' : '&#9654; Play');
+    else lab = running ? '&#10074;&#10074; Pause' : (ex && p==='cond' ? (MEAS && C.t>0 && C.t<CEND-1e-9 ? '&#9654; Carry on' : '&#9654; Start') : '&#9654; Play');
+    if(MEAS && p==='rad' && cans()) lab='&#9654; Heat for 2 minutes';
     playBtn.innerHTML=lab;
     var d = p==='rad' && cans() && ex && R.can.length && R.can[R.can.length-1].t>=10;
     playBtn.disabled = !!d || (p==='rad' && cans() && ex && running);
@@ -1156,11 +1233,12 @@ function expKey(x, y, upLabel, downLabel){
     actBtn.hidden=cmpBtn.hidden=!(p==='conv' && ex);
     $('#ht-clear').hidden=!ex; $('#ht-tablewrap').hidden=!ex; statsEl.hidden=ex;
     slowBtn.hidden = p==='rad' && !cn;
+    if(MEAS){ playBtn.hidden = p==='rad' && !cn; $('#ht-reset').hidden = p==='rad' && !cn; }
     explEl.innerHTML=EXPL[p];
     svg.setAttribute('tabindex', p==='rad' && !cn ? '0' : '-1');
     svg.setAttribute('aria-label', p==='cond' ? 'A tank of hot water with rods of copper, aluminium, iron and glass sticking out of its side. A drawing pin is stuck with wax to each rod, 11 cm from the water.'
       : p==='conv' ? 'A beaker of water on a tripod with a potassium permanganate crystal at the bottom on the left, heated from below or at the top. Purple dye shows how the water moves.'
-      : cn ? 'A radiant heater between two cans of water, one matt black and one shiny, each with a thermometer. A temperature against time graph is beside them.'
+      : cn ? 'A radiant heater between two cans of water, one matt black and one shiny, each with a thermometer. '+(MEAS?'A stopwatch and a close-up of each thermometer are beside them.':'A temperature against time graph is beside them.')
       : 'A Leslie cube of hot water with a thermometer through its lid, and an infrared detector on a bench joined to a millivoltmeter. A small picture shows the cube from above. Use the arrow keys to move the detector.');
   }
   function resetPart(){
@@ -1168,7 +1246,7 @@ function expKey(x, y, upLabel, downLabel){
     var p=part();
     if(p==='cond'){ condInit(); jumpSeg.pick(null); }
     else if(p==='conv') convInit();
-    else { radInit(); if(cans()) R.next=0; }
+    else { radInit(); if(cans()){ R.next=0; if(MEAS) takeCan(); } }
     setRows(); draw();
   }
   function setMode(){ resetPart(); }

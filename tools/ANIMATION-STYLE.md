@@ -129,6 +129,21 @@ Students did not see that "Explore | Practise" was a choice, or that the rows of
 - **The question mode is called Questions** on the button, on every page that deals questions ("Explore | Questions"). Circuit pages keep "Explore | Build". Text that tells students what to press says Questions too (workout intros). The prompt in a question can still start "Predict."
 - **A prompt under the picture.** The button bar ends with `<button class="btn to-q" type="button" data-mode="ID-OF-THE-MODE-SWITCH" hidden>Try the questions &rarr;</button>` ("Try a Build task &rarr;" on Build pages). The kit shows it in Explore, hides it in the other mode and whenever the page hides its mode switch (a level with no questions), and pressing it presses the switch's second button.
 
+## Measure modes (batch 14, 13 Nov 2026)
+
+`density.html`, `ramp-motion.html`, `iv-characteristics.html`, `electrostatic-charging.html`, `heat-transfer.html` and `magnetic-field-patterns.html` have a `?show=measure` mode for their practical page's Do Experiment tab, like `hookes-law.html` and `gamma-radiation.html`. The links and the fixed readings are in `tools/CORE-PRACTICALS.md`, "Measure modes". For later batches (8a, 8b, 8c) to copy:
+
+- **One flag, `MEAS`, and everything it adds is behind it**, so every other mode is unchanged. Check that with a before-and-after comparison of the picture and the visible controls on every other link.
+- **Hide with the class `meas-off`** (`display:none !important`), put on once at start-up, not with `hidden`: the page's own code sets `hidden` on the same elements as the mode or part changes.
+- **A close-up of the instrument goes where the graph was.** A ruler or a metre rule with millimetre marks (`ruleClose` in `density.html`, `measPanel` in `ramp-motion.html`), a measuring cylinder's scale at the meniscus (`scaleClose` in `density.html`), a thermometer with 1 °C marks (`thermoClose` in `heat-transfer.html`), a digital display drawn large (`balStrip` in `density.html`, `measMeters` in `iv-characteristics.html`, the solid kit's `stopwatch` with a scale of 1.7 to 2.2). About 45 to 55 px per cm for a ruler, 15 px per cm³ or per °C for a scale; numbers 14 to 15 px.
+- **One right reading.** Draw the thing being read exactly on the mark it reads (the end of a block on a millimetre mark, a liquid poured to a whole cm³, a thermometer on a whole or a half degree). The picture never writes the value as text.
+- **Fixed readings, the Experiment mode's own where it has them**, so Do Experiment and Show Experiment agree. A run that depends on the frame rate is stepped in whole units in measure mode (the conduction rods go in whole seconds).
+- **A moving instrument stops to be read**: the stopwatch stops as a pin drops or the car passes the marker; the heater runs 2 minutes and stops.
+- **Free choice where the order does not matter** (block and side, marker, slider position, face of the cube), so a reading can be taken again and gives the same value; a main button for steps that must be in order (weigh, hang, lower).
+- **Choices that change the readings are fixed by the link** (`&part=`, `&comp=`, `&mat=`, `&h=`, `&setup=`, `&test=`) and hidden; a part or component left out of the link keeps its switch on the page.
+- **Nothing to read?** (2.23P, 6.6, convection.) The student does the step and records what they see: no charges, no table, no Compare, no arrows drawn for them, and the note asks what they saw without saying it.
+- The note says what to read, to what precision, and what to do next. It never gives a value.
+
 ## Checks before pushing
 
 1. `node --check` on the page's scripts (CLAUDE.md, "Check before you commit").

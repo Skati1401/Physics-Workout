@@ -161,6 +161,8 @@
   /* ===== end of Experiment kit ===== */
   .rtable{--accent-soft:var(--topic-soft);}
   .rtable td:last-child,.rtable th:last-child{text-align:left;}
+  /* measure mode (?show=measure): the practical page's Do Experiment tab. The student plots the field; nothing is drawn or said for them. */
+  .meas-off{display:none !important;}
   html:not(.exp) .fx-only{display:none!important;}
   .exp .fx-hide{display:none!important;}
   .side-btns{display:flex;flex-wrap:wrap;gap:8px;}
@@ -299,6 +301,7 @@
   })();
 </script>
 <!-- /pw-review -->
+<meta name="pw-draft" content="animations/magnetic-field-patterns.html">
 </head>
 <body>
 <div class="page" id="page">
@@ -845,6 +848,20 @@ function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP
   var EXP=false, xLines=[], xCur=null, xStarts=[], xStartIdx=0, xPlaying=false, xSlow=false, xCompared=false, xRaf=0, xLast=0, xAcc=0;
   var NEEDLE=26;   // the compass needle's length, in card units: one dot per needle length
   var playBtn=$('#fx-play'), stepBtn=$('#fx-step'), slowBtn=$('#fx-slow'), cmpBtn=$('#fx-cmp'), expBtn=$('#fp-exp');
+  // Measure mode (?show=measure, 13 Nov 2026): the 6.6 practical page's Do Experiment tab (TODO 8f). There are no numbers
+  // here: the student plots the field with the compass, one dot at a time. They click the tip of the north end of the needle
+  // (or press Mark a dot), the compass moves on so that its south end sits on that dot, and the dots are joined as they go.
+  // Nothing is drawn or said for them: no automatic plotting, no arrows on their lines, no table, no Compare, and the exam
+  // diagram stays "?"; they draw the pattern in a table on the practical page. What that page checks against is the field
+  // itself (SETUPS and field()): tools/CORE-PRACTICALS.md, "Measure modes". ?show=measure&setup=bar|like|unlike|close
+  // shows one set-up (and hides the choice).
+  var MEAS=/[?&]show=measure\b/.test(location.search), mMsg='';
+  function nextTip(){   // where the next dot goes: the north end of the needle, as stepDot() works it out
+    if(!xCur||xCur.end) return null;
+    var pts=xCur.pts, p=pts[pts.length-1], k=pts.length+3*xLines.length, d0=unit(p[0],p[1]);
+    var d=unit(p[0]+d0[0]*NEEDLE/2, p[1]+d0[1]*NEEDLE/2, expErr(k)*2.5*Math.PI/180);
+    return [p[0]+d[0]*NEEDLE, p[1]+d[1]*NEEDLE];
+  }
   function unit(x,y,err){ var b=field(x,y), a=Math.atan2(b[1],b[0])+(err||0); return [Math.cos(a),Math.sin(a),Math.hypot(b[0],b[1])]; }
   function makeStarts(){
     xStarts=[];
@@ -898,7 +915,7 @@ function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP
       var p=l.pts;
       if(p.length>1){
         c+=pl(p,'var(--ink-soft)',1.4);
-        if(l.end&&p.length>2){ var i=Math.floor(p.length/2), a=p[i-1], b=p[i]; c+=tri((a[0]+b[0])/2,(a[1]+b[1])/2,Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI,4,'var(--ink)'); }
+        if(l.end&&p.length>2&&!MEAS){ var i=Math.floor(p.length/2), a=p[i-1], b=p[i]; c+=tri((a[0]+b[0])/2,(a[1]+b[1])/2,Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI,4,'var(--ink)'); }
       }
       p.forEach(function(q){ c+='<circle cx="'+f1(q[0])+'" cy="'+f1(q[1])+'" r="2.6" fill="var(--ink)"/>'; });
     });
@@ -908,7 +925,7 @@ function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP
     var g=cardG(c), y0=L.n?L.py+20:L.py+22;
     g+=panelText(['Exam diagram'],y0,{w:600,fs:14})+panelText(['how you would draw this field'],y0+18,{c:'var(--ink-soft)',fs:12.5});
     g+=diagram(xCompared, L.dy);
-    g+=panelText(xCompared?['Your dots follow the field lines.']:['Plot three lines, then press','Compare with field lines.'],L.dy+H*L.dk+24,{c:'var(--ink-soft)',fs:12.5});
+    g+=panelText(MEAS?['Plot lines from several start','points, then draw the pattern.']:xCompared?['Your dots follow the field lines.']:['Plot three lines, then press','Compare with field lines.'],L.dy+H*L.dk+24,{c:'var(--ink-soft)',fs:12.5});
     top.innerHTML=g;
     $('#fx-n').textContent=String(xLines.length);
     cmpBtn.disabled=xCompared||xLines.length<3;
@@ -916,6 +933,16 @@ function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP
   }
   function expNote(){
     var s, n=xLines.length, last=xLines[n-1];
+    if(MEAS){
+      if(mMsg) s=mMsg;
+      else if(xCur&&!xCur.end) s = xCur.pts.length===1 ? 'The plotting compass is at a start point. Click the tip of the <b>north</b> end of its needle (the red end) to mark a dot there, or press <b>Mark a dot</b>. The compass then moves on, so that its south end sits on your dot.'
+        : 'Line '+xCur.n+', dot '+(xCur.pts.length-1)+'. Mark the next dot at the north end of the needle.';
+      else if(n){
+        s = last.end==='weak' ? 'Here the needle will not settle in any direction, so this line stops.' : last.end==='edge' ? 'The compass has reached the edge of the card, so this line is finished.' : last.end==='stopped' ? 'You stopped this line early.' : 'The compass has reached a magnet, so this line is finished.';
+        s+=' Press <b>New start point</b> (or click the card) and plot another line.'+(n>=3?' When you can see the pattern, draw it in your table: join the dots with smooth lines and add arrows.':'');
+      } else s='Press <b>New start point</b>.';
+      $('#fp-note').innerHTML=s; return;
+    }
     if(xCompared) s=SETUPS[setup].text+' Your pencil lines follow the field lines (dashed).';
     else if(!xCur&&!n) s='Experiment: a plotting compass will start by a north pole (the dashed circle). Press <b>Plot a line</b>: a dot is marked at the north end of the needle, the compass moves on so its south end sits on that dot, and so on. Plot several lines from different start points.';
     else if(xCur&&!xCur.end) s='Line '+xCur.n+', dot '+(xCur.pts.length-1)+'. The north end of the needle shows the direction of the field here.';
@@ -942,8 +969,10 @@ function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP
     if(xPlaying){ xStop(); drawExp(); return; }
     ensureLine(); xPlaying=true; xAcc=0.3; xLast=performance.now(); playBtn.innerHTML='Pause'; xRaf=requestAnimationFrame(xFrame);
   }
-  function xStep(){ xStop(); ensureLine(); if(!stepDot()) xStartIdx++; drawExp(); }
-  function expReset(){ xStop(); xLines=[]; xCur=null; xStartIdx=0; xCompared=false; makeStarts(); drawExp(); }
+  function xStep(){ xStop(); mMsg='';
+    if(MEAS&&(!xCur||xCur.end)){ ensureLine(); drawExp(); return; }   // measure mode: the first press only puts the compass at the start point
+    ensureLine(); if(!stepDot()) xStartIdx++; drawExp(); }
+  function expReset(){ xStop(); xLines=[]; xCur=null; xStartIdx=0; xCompared=false; mMsg=''; makeStarts(); if(MEAS) ensureLine(); drawExp(); }
   function setExp(on){
     EXP=on; expBtn.setAttribute('aria-pressed',String(on)); document.documentElement.classList.toggle('exp',on);
     xStop();
@@ -954,12 +983,18 @@ function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP
   playBtn.addEventListener('click',xPlay);
   stepBtn.addEventListener('click',xStep);
   slowBtn.addEventListener('click',function(){ toggle(slowBtn); xSlow=pressed(slowBtn); });
-  $('#fx-next').addEventListener('click',function(){ xStop(); if(xCur&&!xCur.end&&xCur.pts.length>1){ xCur.end='stopped'; xLines.push(xCur); } xCur=null; xStartIdx++; drawExp(); });
+  $('#fx-next').addEventListener('click',function(){ xStop(); if(xCur&&!xCur.end&&xCur.pts.length>1){ xCur.end='stopped'; xLines.push(xCur); } xCur=null; xStartIdx++; mMsg=''; if(MEAS) ensureLine(); drawExp(); });
   cmpBtn.addEventListener('click',function(){ xStop(); xCompared=true; drawExp(); });
   top.addEventListener('click',function(e){
     if(!EXP) return;
-    var p=cardPoint(e); if(p.x<0||p.x>W||p.y<0||p.y>H||inMag(p.x,p.y,6)) return;
-    xStop(); startLine([p.x,p.y]); drawExp();
+    var p=cardPoint(e);
+    if(MEAS&&xCur&&!xCur.end){   // measure mode: a click on the tip of the north end marks the dot; a click elsewhere on the compass does not
+      var t=nextTip();
+      if(t&&Math.hypot(p.x-t[0],p.y-t[1])<=11){ xStep(); return; }
+      if(Math.hypot(p.x-comp.x,p.y-comp.y)<26){ mMsg='Mark the dot at the tip of the <b>north</b> end of the needle (the red end).'; drawExp(); return; }
+    }
+    if(p.x<0||p.x>W||p.y<0||p.y>H||inMag(p.x,p.y,6)) return;
+    mMsg=''; xStop(); startLine([p.x,p.y]); drawExp();
   });
 
   var seg=segGroup($('#fp-setup'), newSetup);
@@ -977,6 +1012,16 @@ function expErr(i){ return EXP_ERR[((i % EXP_ERR.length) + EXP_ERR.length) % EXP
   if(window.ResizeObserver) new ResizeObserver(fitCanvas).observe(wrap); else window.addEventListener('resize',fitCanvas);
   if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawFilings);
   drawBase(); newSetup('bar'); fitCanvas();
+  if(MEAS){
+    ['#fx-play','#fx-slow','#fx-cmp','#fp-exp','.toprow','.to-q'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+    $('#fx-table').parentNode.classList.add('meas-off');
+    stepBtn.innerHTML='&#9654; Mark a dot'; stepBtn.classList.add('btn-primary');
+    document.documentElement.classList.add('measure');
+    $('#fp-svg').setAttribute('aria-label','Bar magnets lying on a card with a plotting compass. Mark a dot at the north end of the needle and the compass moves on; the exam diagram beside it is left for you to draw');
+    var ms=(location.search.match(/[?&]setup=(bar|like|unlike|close)\b/)||[])[1];
+    setExp(true);
+    if(ms){ seg.pick(ms); newSetup(ms); $('#fp-setup').parentNode.classList.add('meas-off'); }
+  }
 
 })();
 </script><script id="choice-kit-js">

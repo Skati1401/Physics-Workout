@@ -189,6 +189,8 @@
   .revbox{display:flex;align-items:end;}
   @media (max-height:640px) and (min-width:861px){ .seg button,.chip{min-height:38px;} .side{gap:9px;} .note{min-height:0;} }
 
+  /* measure mode (?show=measure): the practical page's Do Experiment tab. Nothing is read for the student. */
+  .meas-off{display:none !important;}
   /* inside a workout tab (?embed): no page heading, no outer margins */
   .embed body{background:transparent;}
   .embed .page{padding:0;max-width:none;display:flow-root;}
@@ -1031,6 +1033,30 @@ function expKey(x, y, upLabel, downLabel){
   var compSeg=segGroup($('#iv-comp'), function(){ stop(); trace=[]; X={rd:[], reading:0, just:null}; setJumps(); jumpSeg.pick(null); addTrace(); lastNote=''; draw(); });
   var gradSeg=segGroup($('#iv-grad'), function(){ draw(); });
   var jumpEl=$('#iv-jump'), jumpSeg=segGroup(jumpEl, function(v){ jumpTo(+v); });
+  // Measure mode (?show=measure, 13 Nov 2026): the 2.9 practical page's Do Experiment tab (TODO 8f). The slider of the
+  // variable resistor clicks into seven positions (0 to 6), and the battery can be reversed. The student reads the ammeter
+  // and the voltmeter in a close-up, where the graph was, and writes the readings in a table on the practical page.
+  // No graph, table, reading box or working. The readings are fixed, and the practical page checks against the same
+  // numbers (tools/CORE-PRACTICALS.md, "Measure modes"): at position k the slider gives k + MEAS_DV[k] volts, the
+  // voltmeter reads the voltage across the component to 0.01 V and the ammeter reads the current, with MEAS_DI[k] mA
+  // of error, to 0.001 A. With the battery reversed both readings are negative, the same sizes.
+  // ?show=measure&comp=res|lamp|diode fixes the component (and hides the choice).
+  var MEAS=/[?&]show=measure\b/.test(location.search);
+  var MEAS_DV=[0,0.02,-0.03,0.04,-0.02,0.03,-0.04], MEAS_DI=[0,1,-1,0,1,-1,0];
+  function measRead(){
+    var k=Math.round(Math.abs(VS)), sg=VS<0?-1:1, o=op(sg*(k+MEAS_DV[k]));
+    if(Math.abs(o.i)<0.0005) return {v:Math.round(o.v*100)/100, i:0};
+    return {v:Math.round(o.v*100)/100, i:Math.round(o.i*1000+sg*MEAS_DI[k])/1000};
+  }
+  function measMeters(){
+    var r=measRead(), tall=LAY.tall, w=tall?168:200, h=tall?84:92, cx=G.x+G.w/2-4;
+    var A=tall ? {cx:G.x+G.w/4-12, top:G.y+30, w:w, h:h} : {cx:cx, top:G.y+14, w:w, h:h};
+    var V=tall ? {cx:G.x+G.w*3/4+2, top:G.y+30, w:w, h:h} : {cx:cx, top:G.y+14+h+50, w:w, h:h};
+    var g=txt(tall?G.x-40:cx, tall?G.y+6:12, 'Close-up of the meters', {a:tall?'start':'middle', fs:12});
+    g+=dmm(A,{text:sn(r.i,3)+' A', letter:'A', fs:tall?22:26})+txt(A.cx,A.top+h+19,'ammeter',{a:'middle',fs:12});
+    g+=dmm(V,{text:sn(r.v,2)+' V', letter:'V', fs:tall?22:26})+txt(V.cx,V.top+h+19,'voltmeter',{a:'middle',fs:12});
+    return g;
+  }
   function ks5(){ return levelSeg.value()!=='igcse'; }
   // 4PH1 says "voltage"; the IAL and IB papers say p.d. ("the current-p.d. characteristic of an LED", WPH12 Oct 2024 Q14(a))
   function vw(t){ return ks5() ? String(t).replace(/voltage/g,'p.d.') : t; }
@@ -1132,7 +1158,7 @@ function expKey(x, y, upLabel, downLabel){
   var G;
   function layout(){
     var bd=build();
-    LY=sizeView(svg,{VW:860,VH:350},{VW:430,VH:bd?694:936});
+    LY=sizeView(svg,{VW:860,VH:350},{VW:430,VH:bd?694:MEAS?822:936});
     var tall=LY.VW===430;
     if(bd) LAY={tall:tall, TB:tall?{x:2,y:6,sx:1.04,sy:1.1}:{x:8,y:18,sx:1.12,sy:1.1}, TD:tall?{x:28,y:322,sx:1,sy:1}:{x:496,y:8,sx:0.9,sy:0.9}};
     else if(tall){ LAY={tall:true, TB:{x:20,y:10,sx:1.15,sy:1.08}, TD:{x:60,y:338,sx:0.95,sy:0.95}}; G={x:56,y:680,w:352,h:210}; }
@@ -1168,10 +1194,11 @@ function expKey(x, y, upLabel, downLabel){
     var tall=LAY.tall, TB=LAY.TB, TD=LAY.TD, c=comp(), P=ivPreset(c), o=op(VS), ex=exp();
     var rv = ex ? (X.just ? X.just.v : null) : o.v, ri = ex ? (X.just ? X.just.i : null) : o.i;
     if(ex && X.reading){ rv=null; ri=null; }
+    if(MEAS){ var mr=measRead(); rv=mr.v; ri=mr.i; }
     var st={placed:{wa:'A', vC:'V'}, slots:false, noflip:true, rev:REV, mw:78, xw:xwU(), dist:dist, cur:curs(),
       text:{wa: ri===null ? '– – –' : sn(ri,3)+' A', vC: rv===null ? '– – –' : sn(rv,2)+' V'}, glow:{C:Math.min(1,Math.abs(o.v*o.i)/1.8)},
       name:function(e){ return e.id==='RP' ? ['protective','22 Ω'] : e.id==='C' ? (c==='res' ? '20 Ω' : c) : ''; }};
-    var D=kDiagram(P,st,TD), g=arrowDefs()+kBench(P,st,TB)+D.g+D.slots+graph();
+    var D=kDiagram(P,st,TD), g=arrowDefs()+kBench(P,st,TB)+D.g+D.slots+(MEAS?measMeters():graph());
     // labels, all in clear space
     var kb=kMap(TB,[st.xw,50]), bb=kMap(TB,[BXU,276]), bd=kMap(TD,[BXU,276]), pt=kMap(TD,[180,50]), right=st.xw>220;
     g+=txt(TB.x,12,'Built on the bench',{fs:12})+txt(tall?TD.x-40:TD.x+12,TD.y-(tall?-14:28),'Circuit diagram',{fs:12});
@@ -1183,7 +1210,7 @@ function expKey(x, y, upLabel, downLabel){
     if(running && slowOn()) g+=txt(TB.x+150, 12, 'slow motion', {fs:12, c:'var(--accent)'});
     live.innerHTML=g;
     if(slotsHtml!==''){ slotsG.innerHTML=''; slotsHtml=''; }
-    svg.setAttribute('aria-valuenow', Math.abs(VS)); svg.setAttribute('aria-valuetext', sn(VS,1)+' volts across the component'+(REV?', battery reversed':''));
+    svg.setAttribute('aria-valuenow', Math.abs(VS)); svg.setAttribute('aria-valuetext', (MEAS ? 'slider position '+Math.round(Math.abs(VS))+' of 6' : sn(VS,1)+' volts across the component')+(REV?', battery reversed':''));
     revBtn.setAttribute('aria-pressed', String(REV));
   }
   function bGlow(S){ var S0=bSolve(false); return Math.abs(S.cur.C)<Math.abs(S0.cur.C)*0.1 ? 0 : Math.min(1, 0.6*Math.pow(S.cur.C/S0.cur.C,2)); }
@@ -1225,6 +1252,15 @@ function expKey(x, y, upLabel, downLabel){
   function rTxt(v,i){ return Math.abs(i)<1e-6 ? '—' : sig(v/i,3)+' Ω'; }
   function readings(){
     var o=op(VS), K=ks5(), c=comp(), ex=exp(), bd=build();
+    if(MEAS){
+      var mk=Math.round(Math.abs(VS)), cn={res:'resistor', lamp:'lamp', diode:'diode'}[c], mn;
+      $('#iv-vo').textContent=mk+' of 6';
+      if(REV) mn='The battery is reversed, so the current goes the other way through the '+cn+' and the readings are <b>negative</b>. Slider position '+mk+' of 6: write the <b>voltmeter</b> and <b>ammeter</b> readings in your table, with their minus signs.'+(mk<6?' Then move the slider on.':'');
+      else if(mk===0) mn='The slider is at position 0. Read the <b>voltmeter</b> (across the '+cn+') and the <b>ammeter</b> (in series with it) in the close-up, and write both in your table. Then drag the slider of the '+potName()+' to position 1.';
+      else mn='Slider position '+mk+' of 6. Write the <b>voltmeter</b> and <b>ammeter</b> readings in your table. '+(mk<6?'Then move the slider on.':'That is the last position: now press <b>Reverse the battery</b> and take the readings again.');
+      if(mn!==lastNote){ $('#iv-note').innerHTML=mn; lastNote=mn; }
+      return;
+    }
     $('#iv-vo').textContent=sn(VS,1)+' V';
     var s='';
     if(bd) s=stat('Task', String(B.n))+stat('Right first time', B.right+' of '+B.tried, true);
@@ -1312,12 +1348,15 @@ function expKey(x, y, upLabel, downLabel){
       if(Math.abs(q.x-kb[0])<20 && Math.abs(q.y-kb[1])<26){ grabT=LAY.TB; return true; }
       if(Math.abs(q.x-kd[0])<18 && q.y>kd[1]-12 && q.y<kd[1]+44){ grabT=LAY.TD; return true; }
       return false; },
-    start:function(){ stop(); sweep=false; },
+    start:function(){ stop(); sweep=false; grabbing=MEAS; },
+    end:function(){ if(grabbing){ grabbing=false; setMag(Math.abs(VS)); } },
     move:function(q){ setMag(Math.round(((q.x-grabT.x)/grabT.sx-60)/240*6*10)/10); }
   });
-  keySlider(svg, function(){ return Math.abs(VS); }, function(v){ stop(); sweep=false; setMag(Math.round(v*10)/10); }, 0.1, 1, 0, 6, function(){ return !build() && !X.reading; });
+  keySlider(svg, function(){ return Math.abs(VS); }, function(v){ stop(); sweep=false; setMag(Math.round(v*10)/10); }, MEAS?1:0.1, 1, 0, 6, function(){ return !build() && !X.reading; });
   // the slider sets the size of the voltage; the battery's way round sets its sign
-  function setMag(m){ m=Math.max(0,Math.min(6,m)); VS=REV?-m:m; setVS(VS); }
+  function setMag(m){ m=Math.max(0,Math.min(6,m)); if(MEAS) m=Math.round(m); VS=REV?-m:m; setVS(VS);
+    if(MEAS && !grabbing){ sweep=false; running=true; runFor=0; loop(); } }   // measure mode: the current arrows run for a while after each change
+  var grabbing=false;
   function reverse(){ if(X.reading || build()) return; stop(); sweep=false; REV=!REV; setMag(Math.abs(VS)); }
   revBtn.addEventListener('click', reverse);
   svg.addEventListener('click', function(e){ if(build()) return; var q=svgPoint(svg,e), bb=kMap(LAY.TB,[BXU,276]), bd=kMap(LAY.TD,[BXU,276]);
@@ -1376,12 +1415,21 @@ function expKey(x, y, upLabel, downLabel){
     stop(); sweep=false;
     if(build()){ setInit(); B.on=false; B.res=null; dist={}; msg=''; lastNote=''; draw(); return; }
     if(exp()){ X={rd:[], reading:0, just:null}; draw(); return; }
-    trace=[]; dist={}; setVS(3); });
+    trace=[]; dist={}; if(MEAS){ REV=false; setVS(0); return; } setVS(3); });
   $('#iv-clear').addEventListener('click', function(){ stop(); X={rd:[], reading:0, just:null}; draw(); });
   vIn.addEventListener('input', function(){ stop(); sweep=false; setMag(+vIn.value); });
 
   watchEquals($('#iv-eq1'));
   setJumps();
+  if(MEAS){
+    var mc=(location.search.match(/[?&]comp=(res|lamp|diode)\b/)||[])[1];
+    if(mc){ compSeg.pick(mc); $('#iv-clab').classList.add('meas-off'); $('#iv-comp').classList.add('meas-off'); }
+    ['#iv-tab','#iv-level','#iv-play','#iv-slow','#iv-exp','#iv-clear','.to-q','#iv-stats','#iv-working','#iv-tablewrap','#iv-glab','#iv-grad','#iv-jlab','#iv-jump'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+    document.documentElement.classList.add('measure');
+    vIn.step=1; $('label[for="iv-v"]').firstChild.nodeValue='Slider of the variable resistor: position';
+    svg.setAttribute('aria-label','The slider of the variable resistor: drag it along, or use the arrow keys, to one of seven positions. Click the battery to reverse it. The circuit is built on the bench with a battery, the component, an ammeter and a voltmeter, beside its circuit diagram and a close-up of the two meters to read');
+    VS=0; setVS(0);
+  }
   if(/[?&]show=build\b/.test(location.search)){ tabSeg.pick('build'); setTab(); }
   else { setRows(); addTrace(); draw(); }
   // redraw when the picture changes between its wide and its tall shape

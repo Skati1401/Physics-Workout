@@ -214,6 +214,12 @@
   #rm-pic{max-height:max(240px,calc(100vh - 262px));margin-inline:auto;}
   .embed #rm-pic{max-height:420px;}
   #rm-pic.tall,.embed #rm-pic.tall{max-height:none;}
+  /* measure mode (?show=measure): the practical page's Do Experiment tab. Nothing is read for the student. */
+  .meas-off{display:none !important;}
+  #rm-mk{display:grid;grid-template-columns:repeat(6,minmax(44px,1fr));}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .cgrid[hidden]{display:none;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
   /* end batch 4 */
 </style>
 <style id="choice-kit">
@@ -342,6 +348,10 @@
     <div class="rm-left">
       <svg class="view" id="rm-pic" viewBox="0 0 860 384" role="img" aria-label="A toy car on a wooden ramp on a bench, with distance marks and a stopwatch or light gates. Below, its distance–time and velocity–time graphs."></svg>
       <div class="under">
+        <div class="cgrid" id="rm-mrow" hidden>
+          <span class="rowlab">Marker</span>
+          <div class="seg" id="rm-mk"><button type="button" data-v="0" aria-pressed="true">1</button><button type="button" data-v="1" aria-pressed="false">2</button><button type="button" data-v="2" aria-pressed="false">3</button><button type="button" data-v="3" aria-pressed="false">4</button><button type="button" data-v="4" aria-pressed="false">5</button><button type="button" data-v="5" aria-pressed="false">6</button></div>
+        </div>
         <div class="btn-group">
           <button class="btn btn-primary" id="rm-go" type="button">&#9654; Release</button>
           <button class="btn rx-only" id="rm-one" type="button">One run</button>
@@ -567,6 +577,20 @@ function expKey(x, y, upLabel, downLabel){
     var t=0, running=false, last=0, raf=0;                 // watch mode
     var rows=[], di=0, rk=0, run=null, auto=false;         // experiment: rows of {d,ts:[],v}, distance index, repeat, current run
     var pic=$('#rm-pic'), L=null, goBtn=$('#rm-go'), oneBtn=$('#rm-one'), expBtn=$('#rm-exp');
+    // Measure mode (?show=measure, 13 Nov 2026): the 1.5 practical page's Do Experiment tab (TODO 8f). Stopwatch only.
+    // The student moves the marker (1 to 6), reads its distance from the start line on a close-up of the metre rule,
+    // releases the car three times and reads each time on a large stopwatch. No graph, table, reading box or working.
+    // The readings are fixed, and the practical page checks against the same numbers (tools/CORE-PRACTICALS.md,
+    // "Measure modes"): marker i is at DS[i] m and run k reads measure(DS[i], k), the Experiment's stopwatch times.
+    // A fourth release repeats run 1. &h=10|20|30 in the link sets the ramp height (20 cm if left out).
+    var MEAS=/[?&]show=measure\b/.test(location.search), mk=0, mlast=null;   // runs done at this marker, and the time on the stopwatch
+    if(MEAS){
+      EXP=true; method='sw';
+      var mh=location.search.match(/[?&]h=(10|20|30)\b/); if(mh) hgt=+mh[1];
+      ['#rm-exp','#slow','.rm-choices','.stats','#working'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+      $('#rm-mrow').hidden=false; document.documentElement.classList.add('measure');
+      pic.setAttribute('aria-label','A toy car on a wooden ramp on a bench, with a metre rule along the ramp and a marker. Below, a close-up of the rule at the marker and a stopwatch to read.');
+    }
     var a=function(){ return A[hgt]; };
     var tFor=function(d){ return Math.sqrt(2*d/a()); };
     var f2=function(n){ return (Math.round(n*100)/100).toFixed(2); };
@@ -595,6 +619,7 @@ function expKey(x, y, upLabel, downLabel){
          G1:{x0:52,x1:414,y0:196,y1:300}, G2:{x0:52,x1:414,y0:382,y1:486}}
       : {tall:false, W:860, H:384, PM:400, x0:122, y0:184, k:0.5, fs:12, TH:7, DX:10, DY:-6, gate:46, SW:{x:744,y:14,k:1},
          G1:{x0:60,x1:398,y0:238,y1:340}, G2:{x0:502,x1:840,y0:238,y1:340}}; }
+    function layM(){ var l=lay(); if(l.tall){ l.H=494; l.CU={x:10,y:192,w:410,h:150,z:39}; l.BW={x:129,y:372,k:2.2}; } else { l.CU={x:14,y:226,w:566,h:150,z:45}; l.BW={x:634,y:250,k:2.2}; } return l; }
     // the car, side on: x is its front bumper, y the road under its wheels
     function carSVG(x, y, k, braking, turn, col){
       var g='<g transform="translate('+f1(x)+' '+f1(y)+') scale('+k+')">'+ell(-42,1.5,47,4.6,'#000',' opacity=".22"');
@@ -613,15 +638,17 @@ function expKey(x, y, upLabel, downLabel){
     }
 
     function drawPic(dCar, label){
-      L=lay(); pic.setAttribute('viewBox','0 0 '+L.W+' '+L.H); pic.classList.toggle('tall', !!L.tall);
+      L=MEAS?layM():lay(); pic.setAttribute('viewBox','0 0 '+L.W+' '+L.H); pic.classList.toggle('tall', !!L.tall);
       var PM=L.PM, x0=L.x0, y0=L.y0, TH=L.TH, DX=L.DX, DY=L.DY, hpx=hgt/100*PM, ang=Math.asin(hgt/150), ca=Math.cos(ang), sa=Math.sin(ang), deg=ang*180/Math.PI;
       var top=[x0, y0-hpx], at=function(s){ return [top[0]+s*PM*ca, top[1]+s*PM*sa]; };
       var mid=function(s){ var p=at(s); return [p[0]+DX/2, p[1]+DY/2]; };   // along the middle of the board's top face, where the car runs
       var A=at(-0.15), B=at(1.5), g='', bx1=at(-0.045)[0], bt=at(-0.1)[1]+TH*ca;
       // the bench, and the distance along the ramp written under its front edge
       g+=ell(L.W/2,y0+12,L.W*0.47,5,'#000',' opacity=".12"')+box(8,y0,L.W-28,8,DX,DY,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'});
+      if(!MEAS){
       DS.concat([0]).forEach(function(s){ var x=at(s)[0]; g+=ln(x,y0+8,x,y0+13,'var(--ink-faint)',1.4)+txt(x,y0+27,s===0?'0':s.toFixed(1),{a:'middle',fs:L.fs,c:'var(--ink-soft)'}); });
       g+=txt(at(1.2)[0]+16,y0+27,L.tall?'m':'m along the ramp',{fs:L.fs,c:'var(--ink-soft)'});
+      }
       // the block under the top end, and the height of the ramp
       g+=box(A[0],bt,bx1-A[0],y0-bt,DX,DY,'var(--steel)');
       var hx=A[0]-10;
@@ -631,6 +658,10 @@ function expKey(x, y, upLabel, downLabel){
       g+=pg([A,B,[B[0]+DX,B[1]+DY],[A[0]+DX,A[1]+DY]],'var(--wood-t)');
       g+=pg([A,B,[B[0]-TH/sa,y0],[A[0]-sa*TH,A[1]+ca*TH]],'var(--wood-f)')+pg([A,[A[0]+DX,A[1]+DY],[A[0]+DX-sa*TH,A[1]+DY+ca*TH],[A[0]-sa*TH,A[1]+ca*TH]],'var(--wood-s)');
       DS.concat([0]).forEach(function(s){ var p=at(s); g+=ln(p[0],p[1],p[0]-sa*TH,p[1]+ca*TH,'#fff',2)+ln(p[0],p[1],p[0]+DX,p[1]+DY,'#fff',1.4,' opacity=".8"'); });
+      if(MEAS){ var r0=at(-0.02), r1=at(1.32), rk=0.42;
+        g+=pg([r0,r1,[r1[0]+DX*rk,r1[1]+DY*rk],[r0[0]+DX*rk,r0[1]+DY*rk]],'#fff6cf',' stroke="#b59a3a" stroke-width=".8"');
+        for(var q=0;q<=13;q++){ var pq=at(q/10); g+=ln(pq[0],pq[1],pq[0]+DX*rk*(q%2?0.5:0.8),pq[1]+DY*rk*(q%2?0.5:0.8),'#5c4a12',0.9); }
+        var rl=at(1.36); if(!L.tall) g+=txt(rl[0]+4,rl[1]+(L.tall?-8:-12),'metre rule',{fs:L.fs-0.5,c:'var(--ink-soft)',halo:1}); }
       if(!(EXP&&method==='lg')) g+=txt(at(0)[0]+2,top[1]-(L.tall?30:44),'start line',{a:'middle',fs:L.fs-0.5,c:'var(--ink-soft)',halo:1})+ln(at(0)[0]+2,top[1]-(L.tall?26:40),mid(0)[0],mid(0)[1]-1,'var(--ink-faint)',1,' stroke-dasharray="2 3"');
       // Experiment: the marker the car is timed to, or a light gate at the start line and at the marker
       if(EXP){
@@ -646,11 +677,38 @@ function expKey(x, y, upLabel, downLabel){
          (EXP&&method==='lg'?rect(-40*kk-CARD*PM/2,-47*kk-(L.tall?9:15),CARD*PM,(L.tall?10:16),'#1d2430',' rx="1"'):'')+carSVG(0,0,kk,false,dCar*PM/(9.6*kk),'var(--car)')+'</g>';
       // the timer
       var SW=L.SW, lg=EXP&&method==='lg', w=78*SW.k, hh=40*SW.k;
+      if(MEAS){ pic.innerHTML=g+measPanel(label); return; }
       if(lg) g+=rect(SW.x-8,SW.y,w+16,hh,'var(--case)',' rx="4"')+rect(SW.x-2,SW.y+6,w+4,hh-12,'var(--panel)',' rx="2"')+txt(SW.x+w/2,SW.y+hh/2+5,label,{a:'middle',fs:14*SW.k,c:'var(--ink)',w:600});
       else g+=stopwatch(SW.x,SW.y,label,SW.k);
       g+=txt(SW.x+w/2,SW.y+hh+15,lg?'light gate timer':(EXP?'stopwatch':'time'),{a:'middle',fs:L.fs-0.5,c:'var(--ink-soft)'});
       pic.innerHTML=g+drawGraphs();
     }
+
+    // ---- measure mode: a close-up of the metre rule at the marker, and a large stopwatch, where the graphs were
+    function measPanel(label){
+      var C=L.CU, B=L.BW, d=DS[mi()]*100, z=C.z, cx=C.x+C.w/2, ry=C.y+70, g='';
+      g+=rect(C.x,C.y,C.w,C.h,'var(--panel)',' stroke="var(--panel-border)" rx="10"');
+      g+=txt(cx,C.y+19,'Close-up: the metre rule at the marker (cm)',{a:'middle',fs:13,c:'var(--ink)',w:600});
+      g+='<clipPath id="rm-clip"><rect x="'+(C.x+5)+'" y="'+(C.y+26)+'" width="'+(C.w-10)+'" height="'+(C.h-48)+'"/></clipPath><g clip-path="url(#rm-clip)">';
+      // the ramp's track behind the rule, with the white mark the marker stands on
+      g+=rect(C.x,ry-34,C.w,34,'var(--wood-t)')+ln(cx,ry-34,cx,ry,'#fff',3);
+      g+=rect(C.x,ry,C.w,46,'#fff6cf',' stroke="#b59a3a" stroke-width="1.2"');
+      var half=C.w/2/z, m0=Math.ceil((d-half)*10)-1, m1=Math.floor((d+half)*10)+1;
+      for(var mm=m0; mm<=m1; mm++){
+        var x=cx+(mm/10-d)*z, len=mm%10===0?19:mm%5===0?13:8;
+        g+=ln(x,ry,x,ry+len,'#5c4a12',mm%10===0?1.5:1);
+        if(mm%10===0 && Math.abs(x-cx)<C.w/2-20) g+=txt(x,ry+37,Math.round(mm/10),{a:'middle',fs:15,c:'#3d300a',w:600});
+      }
+      // the marker: a post with a flag, standing at the mark; a dashed sight line down onto the scale
+      g+=tube(cx,ry-1,cx,ry-38,4,'var(--steel)','var(--steel-hi)')+pg([[cx,ry-40],[cx+20,ry-33],[cx,ry-26]],'var(--accent)');
+      g+=ln(cx,ry-2,cx,ry+23,'var(--accent)',1.4,' stroke-dasharray="4 3"');
+      g+='</g>';
+      g+=txt(cx,C.y+C.h-8,'The 0 mark of the rule is at the start line',{a:'middle',fs:12,c:'var(--ink-soft)'});
+      g+=stopwatch(B.x,B.y,label,B.k);
+      g+=txt(B.x+39*B.k,B.y+40*B.k+18,run?'timing run '+(mk%3+1)+' of 3':mlast==null?'stopwatch':'stopwatch: run '+((mk+2)%3+1)+' of 3',{a:'middle',fs:12.5,c:'var(--ink-soft)'});
+      return g;
+    }
+    function mi(){ return Math.min(di,DS.length-1); }
 
     // ---- graphs: distance–time (left) and velocity–time (right)
     function axes(G,xmax,ymax,xt,yt,yLab){
@@ -700,6 +758,11 @@ function expKey(x, y, upLabel, downLabel){
     }
 
     function readouts(){
+      if(MEAS){ var k=mk%3, n3=mk>0 && k===0;
+        $('#rm-note').innerHTML = run ? 'Run '+(k+1)+' of 3. The stopwatch started as the car was let go, and it stops as the front of the car passes the marker.'
+          : mlast==null ? 'The marker is at position '+(mi()+1)+'. Read its distance from the start line on the metre rule in the close-up, and write it in your table. Then press <b>Release</b>.'
+          : 'Write the <b>time</b> on the stopwatch in your table, for run '+((mk+2)%3+1)+'. '+(n3 ? 'That is three runs to this marker: work out the mean time. Then move the marker to the next position.' : 'Then press <b>Release</b> for run '+(k+1)+'.');
+        return; }
       var eq, note, tl='Time', dl='Distance', al='Speed', tv, dv, av;
       if(!EXP){
         var tt=Math.min(tFor(TRACK),t), v=a()*tt, d=0.5*a()*tt*tt;
@@ -738,11 +801,13 @@ function expKey(x, y, upLabel, downLabel){
     function drawAll(){
       var dCar, lab;
       if(!EXP){ var tt=Math.min(tFor(TRACK),t); dCar=0.5*a()*tt*tt; lab=f2(tt)+' s'; }
+      else if(MEAS && !run){ dCar=mlast==null?0:DS[mi()]; lab=f2(mlast||0)+' s'; }
       else if(run){ dCar=0.5*a()*run.t*run.t; lab=(method==='sw'?f2(run.t):f3(run.t))+' s'; }
       else{ var r=rows[rows.length-1]; dCar=r&&r.ts.length?r.d:0; lab=r&&r.ts.length?(method==='sw'?f2(r.ts[r.ts.length-1]):f3(r.ts[0]))+' s':(method==='sw'?'0.00 s':'0.000 s'); }
-      drawPic(dCar, lab); if(EXP) table(); readouts(); buttons();
+      drawPic(dCar, lab); if(EXP && !MEAS) table(); readouts(); buttons();
     }
     function buttons(){
+      if(MEAS){ goBtn.innerHTML='&#9654; Release'; goBtn.disabled=!!run; return; }
       if(!EXP) goBtn.innerHTML=running?'Pause':(t>0&&t<tFor(TRACK)?'Carry on':'&#9654; Release');
       else goBtn.innerHTML=auto?'Pause':(done()?'&#9654; Release':'&#9654; Release');
       oneBtn.disabled=EXP&&(done()||!!run);
@@ -756,6 +821,11 @@ function expKey(x, y, upLabel, downLabel){
         t=Math.min(tFor(TRACK), t+dt);
         if(t>=tFor(TRACK)-1e-9){ running=false; }
         drawAll(); if(running) raf=requestAnimationFrame(frame); return;
+      }
+      if(MEAS){
+        run.t+=dt;
+        if(run.t>=run.tt){ mlast=measure(DS[mi()], mk%3); mk++; run=null; drawAll(); return; }
+        drawAll(); raf=requestAnimationFrame(frame); return;
       }
       if(run){
         run.t+=dt;
@@ -776,6 +846,7 @@ function expKey(x, y, upLabel, downLabel){
       if(r.ts.length===reps()){ di=Math.min(DS.length, di+1); rk=0; }
     }
     goBtn.addEventListener('click',function(){
+      if(MEAS){ if(run) return; run={t:0, tt:measure(DS[mi()], mk%3)}; last=performance.now(); cancelAnimationFrame(raf); raf=requestAnimationFrame(frame); drawAll(); return; }
       if(!EXP){
         if(running){ stop(); drawAll(); return; }
         if(t>=tFor(TRACK)) t=0;
@@ -789,7 +860,7 @@ function expKey(x, y, upLabel, downLabel){
       if(!EXP||run||done()) return;
       auto=false; startRun(); last=performance.now(); cancelAnimationFrame(raf); raf=requestAnimationFrame(frame); drawAll();
     });
-    function expReset(){ stop(); rows=[]; di=0; rk=0; run=null; drawAll(); }
+    function expReset(){ stop(); rows=[]; if(!MEAS) di=0; rk=0; run=null; mk=0; mlast=null; drawAll(); }
     $('#rm-reset').addEventListener('click',function(){ if(EXP) expReset(); else { stop(); t=0; drawAll(); } });
     expBtn.addEventListener('click',function(){
       EXP=!EXP; expBtn.setAttribute('aria-pressed',String(EXP)); document.documentElement.classList.toggle('exp',EXP);
@@ -798,6 +869,7 @@ function expKey(x, y, upLabel, downLabel){
     function seg(id, fn){ var el=$('#'+id); el.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; Array.prototype.forEach.call(el.querySelectorAll('button'),function(x){ x.setAttribute('aria-pressed',String(x===b)); }); fn(b.dataset.v); }); }
     seg('rm-h',function(v){ hgt=+v; stop(); t=0; expReset(); });
     seg('rm-m',function(v){ method=v; expReset(); });
+    seg('rm-mk',function(v){ di=+v; expReset(); });
     window.addEventListener('resize',function(){ drawAll(); });
     drawAll();
   }

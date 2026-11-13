@@ -168,6 +168,8 @@
   @keyframes rowin{from{opacity:0}to{opacity:1}}
   /* ===== end of Experiment kit ===== */
 
+  /* measure mode (?show=measure): the practical page's Do Experiment tab. Nothing is said about what happened: the student writes it down. */
+  .meas-off{display:none !important;}
   /* inside a workout tab (?embed): no page heading, no outer margins */
   .embed body{background:transparent;}
   .embed .page{padding:0;max-width:none;display:flow-root;}
@@ -536,6 +538,12 @@ function expKey(x, y, upLabel, downLabel){
   }
   function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
     if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  // Measure mode (?show=measure, 13 Nov 2026): the 2.23P practical page's Do Experiment tab (TODO 8f). There are no numbers
+  // here: the student rubs a rod, brings it near and writes what they see in a table on the practical page. So the charges
+  // are hidden, nothing says what happened or why (no results table, reading boxes, charge diagram or explanation), and a
+  // dashed line marks where the hanging rod started. What the practical page checks against is outcome(test, rod):
+  // tools/CORE-PRACTICALS.md, "Measure modes". ?show=measure&test=hang|paper|water|scope shows one test (and hides the choice).
+  var MEAS=/[?&]show=measure\b/.test(location.search);
   var showQ=location.search.match(/[?&]show=(hang|paper|water|scope)\b/);
   if(showQ) testSeg.pick(showQ[1]);
   function test(){ return testSeg.value(); }
@@ -620,7 +628,7 @@ function expKey(x, y, upLabel, downLabel){
   var live=$('#ch-live'), picksG=$('#ch-picks'), picksHtml=null;
   function layout(){
     var w=svg.getBoundingClientRect().width; TALL=w>0 && w<520;
-    var vb=TALL?'0 0 430 372':'0 0 860 350';
+    var vb=TALL?(MEAS?'0 0 430 226':'0 0 430 372'):'0 0 860 350';
     if(svg.getAttribute('viewBox')!==vb){ svg.setAttribute('viewBox',vb); svg.classList.toggle('tall',TALL); }
     SC=TALL?430/600:1.16; FS=TALL?1.4:1;
   }
@@ -664,6 +672,7 @@ function expKey(x, y, upLabel, downLabel){
     var a = o*16*p.resp*Math.PI/180;   // turns about the thread
     var dx=Math.sin(a)*half, dy=Math.cos(a)*half, c=rodColour(hang()), g='';
     g+=lab(300, 30, 'hanging rod, seen from above', {c:'var(--ink-faint)'});
+    if(MEAS) g+=ln(px,py-half-12,px,py+half+12,'var(--ink-faint)',1.4,' stroke-dasharray="5 4"')+lab(px+8, py+half+14, 'start', {c:'var(--ink-faint)'});
     // the clamp stand it hangs from: its base, and the arm that reaches over the rod (the thread hangs from the end of the arm)
     g+=ell(px+122,py+22,24,4,'#000',' opacity=".1"')+rect(px+100,py-20,40,40,'var(--metal)',' rx="4"')+rect(px+102,py-18,36,8,'#fff',' rx="3" opacity=".25"')+'<circle cx="'+(px+120)+'" cy="'+py+'" r="6" fill="var(--metal-soft)" stroke="var(--ink-soft)" stroke-width="1"/>';
     // the rod's shadow on the bench below it, then the rod in its paper stirrup
@@ -805,7 +814,7 @@ function expKey(x, y, upLabel, downLabel){
     }
     g+=lab(cx1+50, BENCH-7, 'dry cloth', {c:'var(--ink-faint)'});
     if(run && !run.over && slowOn()) g+=lab(8, 16, 'slow motion', {fs:12, c:'var(--accent)'});
-    var out='<g transform="scale('+SC.toFixed(4)+')">'+g+'</g>'+chargeDiagram(r, rodQ, clothQ);
+    var out=MEAS ? '<g transform="translate('+(TALL?0:82)+' 0) scale('+SC.toFixed(4)+')">'+g+'</g>' : '<g transform="scale('+SC.toFixed(4)+')">'+g+'</g>'+chargeDiagram(r, rodQ, clothQ);
     // Predict: the question and the verdict, written beside the picture
     if(predict()){ var qx=TALL?12:712, qy=TALL?320:216, lines=wrapWords('Question '+Q.n+'. '+qShort(), TALL?56:20);
       lines.forEach(function(s,i){ out+=txt(qx, qy+i*14, s, {fs:12, c:'var(--ink)'}); });
@@ -877,7 +886,14 @@ function expKey(x, y, upLabel, downLabel){
     else why.push(scope()==='neg' ? 'The electroscope already has a negative charge, so its leaf and stem repel. A negative rod pushes more electrons down to the leaf: it rises further. A positive rod pulls electrons up to the cap: the leaf falls. So this shows which type of charge the rod has.' : (o ? 'The rod pushes or pulls electrons in the metal, so the leaf and stem get the same charge as each other. Like charges repel, so the leaf rises, whichever type of charge the rod has.' : 'No charge on the rod, so the leaf does not move.'));
 
     var PR=predict();
-    if(PR){
+    if(MEAS){
+      var what = t==='hang' ? 'did the hanging rod turn <b>towards</b> the rod in your hand, turn <b>away</b> from it, or <b>not move</b>?' : t==='paper' ? 'did the pieces of paper <b>jump up</b> to the rod, or <b>stay still</b>?'
+        : t==='water' ? 'did the stream <b>bend</b> towards the rod, or <b>fall straight down</b>?' : 'did the gold leaf <b>rise</b>, <b>fall</b>, or <b>stay</b> where it was?';
+      if(busy) note = p.rubbing ? 'Rub the rod with the dry cloth.' : p.app<1 ? 'Bring it close, without touching.' : 'Watch carefully.';
+      else if(doneNow) note='Write what you saw in your table: '+what+' Then change '+(t==='hang' ? 'the hanging rod or the rod in your hand' : 'the rod in your hand')+' and try again.';
+      else note = t==='hang' ? 'A rubbed '+NAME[hang()]+' rod hangs from a thread in a paper stirrup, so it can turn freely. Choose the rod in your hand, then press <b>'+(r==='none'?'Bring near':'Rub and bring near')+'</b> and watch the hanging rod.'
+        : 'Choose the rod in your hand, then press <b>'+(r==='none'?'Bring near':'Rub and bring near')+'</b> and watch the '+(t==='paper' ? 'pieces of paper' : t==='water' ? 'stream of water' : 'gold leaf')+'.';
+    } else if(PR){
       if(busy) note = p.rubbing ? 'Rubbing the rod with the dry cloth.' : p.app<1 ? 'Bringing the rod close, without touching.' : 'Watch what happens.';
       else if(doneNow) note=(Q.ok?'✓ <b>Correct.</b> ':'✗ <b>Not this time.</b> ')+'The '+(t==='hang' ? 'hanging rod '+seen(t, run.rod) : t==='paper' ? 'pieces of paper '+(o?'jump up to the rod':'do not move') : t==='water' ? 'stream '+seen(t, run.rod) : seen(t, run.rod).replace(/^leaf/,'gold leaf').replace(/^no change/,'gold leaf does not move'))+'. '+why[why.length-1]+' ('+Q.right+' of '+Q.tried+' right so far.) Press <b>Next question</b>.';
       else note='<b>Question '+Q.n+'.</b> '+rodWords()+' is brought near '+nearWords()+'. '+askWords()+' Click an arrow on the picture (or the ring, for no movement), then press <b>'+(r==='none'?'Bring near':'Rub and bring near')+'</b>.';
@@ -935,6 +951,13 @@ function expKey(x, y, upLabel, downLabel){
   $('#ch-reset').addEventListener('click', reset);
   $('#ch-clear').addEventListener('click', clearReadings);
   $('#ch-next').addEventListener('click', deal);
+  if(MEAS){
+    ['#ch-tab','#ch-exp','#ch-show','#ch-clear','.to-q','#ch-expbox','#ch-stats','#ch-explain'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+    document.documentElement.classList.add('measure');
+    expBtn.setAttribute('aria-pressed','true'); setExp();
+    var mt=(location.search.match(/[?&]test=(hang|paper|water|scope)\b/)||[])[1];
+    if(mt){ testSeg.pick(mt); $('#ch-test').parentNode.classList.add('meas-off'); setup(); }
+  } else
   if(/[?&]show=predict\b/.test(location.search)){ tabSeg.pick('predict'); setTab(); } else setup();
   // redraw when the picture changes between its wide and its tall shape
   if(window.ResizeObserver) new ResizeObserver(function(){ var w=svg.getBoundingClientRect().width; if((w>0 && w<520)!==TALL) draw(); }).observe(svg);

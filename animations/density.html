@@ -156,6 +156,9 @@
 
   .seg button sub,.stat sub{font-size:.75em;}
   .cgrid>[hidden]{display:none!important;}
+  /* measure mode (?show=measure): the practical page's Do Experiment tab. Nothing is read for the student. */
+  .meas-off{display:none !important;}
+  .measure #dn-blk{grid-template-columns:repeat(5,minmax(44px,1fr));}
 
   /* inside a workout tab (?embed): no page heading, no outer margins */
   .embed body{background:transparent;}
@@ -300,7 +303,13 @@
     <div>
       <svg class="view" id="dn-svg" viewBox="0 0 860 350" role="img" aria-label=""></svg>
       <div class="under">
-        <div class="btn-group">
+        <div class="cgrid" id="dn-mrow" hidden>
+          <span class="rowlab" id="dn-blklab">Block</span>
+          <div class="seg" id="dn-blk"><button type="button" data-v="0" aria-pressed="true">1</button><button type="button" data-v="1" aria-pressed="false">2</button><button type="button" data-v="2" aria-pressed="false">3</button><button type="button" data-v="3" aria-pressed="false">4</button><button type="button" data-v="4" aria-pressed="false">5</button></div>
+          <span class="rowlab" id="dn-sidelab">Ruler along the</span>
+          <div class="seg" id="dn-side"><button type="button" data-v="2" aria-pressed="true">Length</button><button type="button" data-v="3" aria-pressed="false">Width</button><button type="button" data-v="4" aria-pressed="false">Height</button></div>
+        </div>
+        <div class="btn-group" id="dn-btns">
           <button class="btn btn-primary" id="dn-play" type="button">&#9654; Play</button>
           <button class="btn" id="dn-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="dn-slow" type="button" aria-pressed="false">Slow motion</button>
@@ -583,6 +592,29 @@ function expKey(x, y, upLabel, downLabel){
   if(showQ){ partSeg.pick(showQ[1]); $('#dn-part').hidden=true; }
   else if(EMBED){ $('.side').insertBefore($('#dn-part'), $('.side').firstChild); }
 
+  // Measure mode (?show=measure, 13 Nov 2026): the 5.4 practical page's Do Experiment tab (TODO 8f). The student reads
+  // every instrument and writes the readings in a table on the practical page: the balance display and a close-up of the
+  // ruler or of the measuring cylinder's scale replace the graph, and no reading, volume or density is written out.
+  // The readings are fixed, and the practical page checks against the same numbers (listed in tools/CORE-PRACTICALS.md,
+  // "Measure modes"): the five blocks read blockRead(i) and blockMass(i), as in Experiment; the irregular object reads
+  // objMass(), V1 and the level from irrWater(); the liquid is poured to MEAS_V and the balance reads measLiqMass(i).
+  // ?show=measure&part=reg|irr|liq shows one part (and hides the Part switch). The other choices are hidden and can be
+  // set in the link: &mat=al|oak|br|my, &obj=st|pl, &meth=cyl|eur, &liq=wa|oil|sw|my.
+  var MEAS=/[?&]show=measure\b/.test(location.search);
+  var MEAS_V=[0,19,41,60,82,100], MEAS_DM=[0,0.1,-0.1,0.2,-0.2,0.1];   // liquid: volumes poured (cm³) and a small fixed error on the balance (g)
+  function measLiqMass(i){ return r1(liqMassTrue(MEAS_V[i])+MEAS_DM[i]); }
+  var blkSeg=segGroup($('#dn-blk'), function(v){ measBlock(+v); });
+  var sideSeg=segGroup($('#dn-side'), function(v){ measSide(+v); });
+  if(MEAS){
+    var qp=function(k, re){ var m=location.search.match(new RegExp('[?&]'+k+'=('+re+')\\b')); return m?m[1]:null; };
+    var mp=qp('part','reg|irr|liq');
+    if(mp){ partSeg.pick(mp); $('#dn-part').hidden=true; }
+    else if(EMBED){ svg.parentNode.insertBefore($('#dn-part'), svg); $('#dn-part').style.marginBottom='10px'; }
+    [['mat',matSeg,'al|oak|br|my'],['obj',objSeg,'st|pl'],['meth',methSeg,'cyl|eur'],['liq',liqSeg,'wa|oil|sw|my']].forEach(function(c){ var v=qp(c[0],c[2]); if(v) c[1].pick(v); });
+    expBtn.setAttribute('aria-pressed','true');
+    ['#dn-exp','#dn-slow','#dn-clear','details.working','#dn-tablewrap','#dn-stats'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+    document.documentElement.classList.add('measure');
+  }
   function part(){ return partSeg.value(); }
   function exp(){ return pressed(expBtn); }
   function slowOn(){ return pressed(slowBtn); }
@@ -618,14 +650,17 @@ function expKey(x, y, upLabel, downLabel){
   function layout(){
     narrow = window.innerWidth<=560;
     if(narrow){ W=400; H=575; SC=1; OFF={x:10,y:0}; RB={x:56,y:330,w:326,h:186, bx:10,by:310,bw:380,bh:255, k:15, hw:52}; }
-    else { W=860; H=350; SC=1.15; OFF={x:6,y:2}; RB={x:598,y:34,w:236,h:240, bx:524,by:8,bw:326,bh:334, k:17, hw:60}; }
+    else { W=860; H=350; SC=1.15; OFF={x:6,y:2}; RB={x:598,y:34,w:236,h:240, bx:524,by:8,bw:326,bh:334, k:17, hw:60};
+      if(MEAS){ RB.bx=452; RB.bw=400; } }   // measure mode: no graph, so the close-up has the room
     svg.setAttribute('viewBox','0 0 '+W+' '+H); svg.classList.toggle('tall',narrow);
   }
 
   // ---- drawing helpers
   function bench(){ return pg([[0,290],[364,290],[378,274],[14,274]],'var(--wood-t)')+pg([[364,290],[378,274],[378,282],[364,298]],'var(--wood-s)')+rect(0,290,364,8,'var(--wood-f)'); }
   // a top-pan balance as a solid object: the top of its pan is at y = 244, and its display shows the reading
+  var BAL='0.0 g';
   function balance(cx, half, reading){
+    BAL=reading;
     var g=ell(cx+3,283,half+7,4.5,'#000',' opacity=".12"');
     g+=box(cx-half,254,half*2,28,9,-5,'var(--bal-f)',{top:'var(--bal-t)',side:'var(--bal-s)'})+rect(cx-half,278,half*2,4,'#000',' opacity=".1"');
     g+=rect(cx-36,259,72,18,'#16202e',' rx="3"')+txt(cx+31,273,reading,{a:'end',fs:12.5,c:'#7dffa8',w:600});
@@ -717,7 +752,7 @@ function expKey(x, y, upLabel, downLabel){
     var x=lerp(2, x0, onPan), yb=lerp(282, 244, onPan)-Math.sin(Math.PI*onPan)*50;
     if(!(exp() && E.blk==null)) g+=block(x, yb, d, s, m);
     var l=d[0]*s, h=d[2]*s, dx=OBQ[0]*d[1]*s, dy=OBQ[1]*d[1]*s;
-    var rop=function(k){ return S===k ? Math.min(1,P*3) : (S===k+1 ? Math.max(0,1-P*3) : 0); };
+    var rop=function(k){ return S===k ? Math.min(1,P*3) : (S===k+1 && !MEAS ? Math.max(0,1-P*3) : 0); };
     if(rop(2)>0) g+=ruler([x,yb-h],[x+l,yb-h],d[0],[0,-1],rop(2));
     if(rop(3)>0) g+=ruler([x+l,yb-h],[x+l+dx,yb-h+dy],d[1],[-0.5,-0.87],rop(3));
     if(rop(4)>0) g+=ruler([x,yb],[x,yb-h],d[2],[-1,0],S===4?Math.min(1,P*3):0);
@@ -726,7 +761,7 @@ function expKey(x, y, upLabel, downLabel){
     if(S>=2 && (S>2||P>=1)) lines.push('l = '+f1(d[0])+' cm');
     if(S>=3 && (S>3||P>=1)) lines.push('w = '+f1(d[1])+' cm');
     if(S>=4 && P>=1) lines.push('h = '+f1(d[2])+' cm');
-    g+=legend(lines);
+    if(!MEAS) g+=legend(lines);
     if(exp() && E.blk!=null) g+=txt(372,18,'block '+(E.blk+1)+' of 5',{a:'end',fs:12,c:'var(--topic)',w:600});
     return g;
   }
@@ -804,22 +839,25 @@ function expKey(x, y, upLabel, downLabel){
     if(canDrag() && dep<1) g+=txt(c[0]+o.w/2+6, c[1]+4, '↕ drag', {fs:11,c:'var(--accent)',halo:1});
     var lines=[];
     if(S>=1 && (S>1 || P>=1)) lines.push('m = '+f1(objMass())+' g');
-    g+=legend(lines);
+    if(!MEAS) g+=legend(lines);
     return g;
   }
   // a close-up of the scale at the water level, read at eye level
-  function irrInset(){
-    var b=RB, w=irrWater(), e=eur(), g='';
+  function irrInset(bb){
+    var w=irrWater(), e=eur();
     var empty = e && (S<2 || (S===2 && P<0.5));
-    var lev = empty ? 0 : w.level;
+    return scaleClose(bb||RB, empty ? 0 : w.level, 'var(--water)', 'Close-up of the '+(e?'collecting cylinder':'scale'), empty, 'Nothing collected yet');
+  }
+  function scaleClose(b, lev, col, title, empty, emptyMsg){
+    var g='';
     var cy=b.by+b.bh/2+8, k=b.k, cx=b.bx+b.bw/2+28, hw=b.hw, view=Math.max(lev,6.5);
     var yOf=function(v){ return cy-(v-view)*k; };
     g+=rect(b.bx+2,b.by+2,b.bw-4,b.bh-4,'var(--panel)',' stroke="var(--panel-border)" rx="10"');
-    g+=txt(b.bx+b.bw/2,b.by+20,'Close-up of the '+(e?'collecting cylinder':'scale'),{a:'middle',fs:13,c:'var(--ink)',w:600});
+    g+=txt(b.bx+b.bw/2,b.by+20,title,{a:'middle',fs:13,c:'var(--ink)',w:600});
     g+='<clipPath id="dn-clip"><rect x="'+(b.bx+6)+'" y="'+(b.by+30)+'" width="'+(b.bw-12)+'" height="'+(b.bh-72)+'"/></clipPath><g clip-path="url(#dn-clip)">';
     if(lev>0){
       var ly=yOf(lev);
-      g+='<path d="M'+(cx-hw)+','+(ly-11)+' Q'+cx+','+(ly+11)+' '+(cx+hw)+','+(ly-11)+' L'+(cx+hw)+','+(b.by+b.bh)+' L'+(cx-hw)+','+(b.by+b.bh)+' Z" fill="var(--water)" opacity="0.8"/>';
+      g+='<path d="M'+(cx-hw)+','+(ly-11)+' Q'+cx+','+(ly+11)+' '+(cx+hw)+','+(ly-11)+' L'+(cx+hw)+','+(b.by+b.bh)+' L'+(cx-hw)+','+(b.by+b.bh)+' Z" fill="'+col+'" opacity="0.8"/>';
       g+='<path d="M'+(cx-hw)+','+(ly-11)+' Q'+cx+','+(ly+11)+' '+(cx+hw)+','+(ly-11)+'" fill="none" stroke="var(--water-ink)" stroke-width="1.5"/>';
     }
     for(var v=Math.floor(view-9); v<=Math.ceil(view+9); v++){
@@ -835,9 +873,81 @@ function expKey(x, y, upLabel, downLabel){
       g+='<path d="M'+(ex-9)+','+ey+' Q'+ex+','+(ey-8)+' '+(ex+9)+','+ey+' Q'+ex+','+(ey+8)+' '+(ex-9)+','+ey+' Z" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.3"/><circle cx="'+(ex+2)+'" cy="'+ey+'" r="3" fill="var(--ink)"/>';
     }
     g+='</g>';
-    g+=txt(b.bx+b.bw/2,b.by+b.bh-28,empty?'Nothing collected yet':'Eye level with the bottom',{a:'middle',fs:12,c:'var(--ink-soft)'});
-    g+=txt(b.bx+b.bw/2,b.by+b.bh-12,empty?'':'of the meniscus: '+Math.round(lev)+' cm³',{a:'middle',fs:12,c:'var(--ink-soft)'});
+    g+=txt(b.bx+b.bw/2,b.by+b.bh-28,empty?emptyMsg:'Eye level with the bottom',{a:'middle',fs:12,c:'var(--ink-soft)'});
+    g+=txt(b.bx+b.bw/2,b.by+b.bh-12,empty?'':'of the meniscus'+(MEAS?' (cm³)':': '+Math.round(lev)+' cm³'),{a:'middle',fs:12,c:'var(--ink-soft)'});
     return g;
+  }
+
+  // ================= MEASURE MODE: what stands in the right-hand box =================
+  // The balance's display, large, above a close-up of the ruler (regular block) or of the scale at the liquid level.
+  var STRIP=50;
+  function measBox(){ return {bx:RB.bx, by:RB.by+STRIP, bw:RB.bw, bh:RB.bh-STRIP, k:narrow?12:15, hw:RB.hw, x:RB.x, y:RB.y, w:RB.w, h:RB.h}; }
+  function balStrip(){
+    var b=RB, g=rect(b.bx+2,b.by+2,b.bw-4,STRIP-6,'var(--panel)',' stroke="var(--panel-border)" rx="10"');
+    g+=txt(b.bx+16,b.by+29,'Balance reads',{fs:13,c:'var(--ink)',w:600});
+    g+=rect(b.bx+b.bw-150,b.by+9,134,STRIP-20,'#16202e',' rx="5"')+txt(b.bx+b.bw-26,b.by+32,BAL,{a:'end',fs:20,c:'#7dffa8',w:600});
+    return g;
+  }
+  // a close-up of the ruler against the side being measured. The 0 mark is level with one end of the block; the other end
+  // is drawn exactly on the millimetre mark it reads (L, to 0.1 cm), so there is one right reading.
+  function ruleClose(b, L, name, m, show){
+    var g=rect(b.bx+2,b.by+2,b.bw-4,b.bh-4,'var(--panel)',' stroke="var(--panel-border)" rx="10"');
+    g+=txt(b.bx+b.bw/2,b.by+20,'Close-up: ruler along the '+name+' (cm)',{a:'middle',fs:13,c:'var(--ink)',w:600});
+    var up=name==='height' && !narrow;                 // the height is read on an upright ruler
+    var span=up?4:6, z=up ? Math.min(54,(b.bh-96)/(span+0.5)) : Math.min(54,(b.bw-30)/(span+0.5));
+    // u runs along the ruler from its 0 mark (cm), v across it (px, away from the block)
+    var th=up?76:64, rw=52;
+    var ox=up ? b.bx+b.bw/2+(th-rw)/2 : b.bx+(b.bw-span*z)/2-2, oy=up ? b.by+b.bh-50 : b.by+b.bh/2+6+(th-rw)/2;
+    var pt=function(u,v){ return up ? [ox+v, oy-u*z] : [ox+u*z, oy+v]; };
+    var q=function(a,b2){ return [pt(a[0],a[1]), pt(b2[0],b2[1])]; };
+    g+='<clipPath id="dn-rclip"><rect x="'+(b.bx+6)+'" y="'+(b.by+28)+'" width="'+(b.bw-12)+'" height="'+(b.bh-34)+'"/></clipPath><g clip-path="url(#dn-rclip)" opacity="'+show.toFixed(2)+'">';
+    // the block, on the far side of the ruler's edge
+    var e=' stroke="'+m.edge+'" stroke-width="1.4" stroke-linejoin="round"';
+    g+=pg([pt(0,-th),pt(L,-th),pt(L,0),pt(0,0)],m.fill,e);
+    var hi=q([0.08,-th+6],[L-0.08,-th+6]); g+=ln(hi[0][0],hi[0][1],hi[1][0],hi[1][1],'#fff',2,' stroke-linecap="round" opacity=".45"');
+    // the ruler
+    g+=pg([pt(-0.35,0),pt(span+0.2,0),pt(span+0.2,rw),pt(-0.35,rw)],'#fff6cf',' stroke="#b59a3a" stroke-width="1.2"');
+    for(var i=0;i<=span*10;i++){
+      var len=i%10===0?19:i%5===0?13:8, a=pt(i/10,0), c=pt(i/10,len);
+      g+=ln(a[0],a[1],c[0],c[1],'#5c4a12',i%10===0?1.5:1);
+      if(i%10===0){ var n=pt(i/10,up?33:36); g+=txt(n[0],n[1]+(up?5:0),i/10,{a:'middle',fs:15,c:'#3d300a',w:600}); }
+    }
+    // dashed sight lines from each end of the block across the ruler: read where the line meets the scale
+    [0,L].forEach(function(u){ var a=pt(u,-th-8), c=pt(u,22); g+=ln(a[0],a[1],c[0],c[1],'var(--accent)',1.3,' stroke-dasharray="4 3"'); });
+    g+='</g>';
+    g+=txt(b.bx+b.bw/2,b.by+b.bh-12,'Read the '+name+' to the nearest 0.1 cm',{a:'middle',fs:12,c:'var(--ink-soft)'});
+    return g;
+  }
+  function measPanel(){
+    var p=part(), b=measBox(), g=balStrip();
+    if(p==='reg'){ var d=curDims(), k=Math.max(2,S)-2; return g+ruleClose(b, d[k], ['length','width','height'][k], mat(), S>=2 ? Math.min(1,P*3) : 0); }
+    if(p==='irr') return g+irrInset(b);
+    return g+scaleClose(b, vol, liq().col, 'Close-up of the scale', vol<=0, E.rows.length?'No liquid yet':'');
+  }
+  function measBlock(i){ stop(); goal=null; E.blk=i; sideSeg.pick('2'); S=1; P=0; goal={stage:2, speed:2}; start(); }
+  function measSide(k){ stop(); goal=null; S=k; P=0; goal={stage:k, speed:2}; start(); }
+  function measNote(){
+    var p=part();
+    if(p==='reg'){
+      var k=Math.max(2,S)-2, nm=['length','width','height'][k];
+      if(S<2) return 'Putting block '+(E.blk+1)+' on the balance…';
+      return 'Block '+(E.blk+1)+' of 5 ('+mat().name.replace('mystery','a mystery material')+'). Write its <b>mass</b> from the balance in your table. Then read its <b>'+nm+'</b> on the ruler, to the nearest 0.1 cm, with your eye level with the end of the block. Do the same for the '+['width and the height','height','other blocks'][k]+'.';
+    }
+    if(p==='irr'){
+      var o=obj(), R=E.irr, e=eur();
+      if(goal) return goal.stage===1 ? 'Putting the '+o.name+' on the balance…' : goal.stage===2 ? (e?'Filling the eureka can until water runs out of the spout…':'Hanging the '+o.name+' on a thread above the water…') : 'Lowering the '+o.name+' gently into the water…';
+      if(R.m==null) return 'Press <b>Weigh it</b> to put the '+o.name+' on the balance.';
+      if(e ? !R.filled : R.v1==null) return 'Write the <b>mass</b> from the balance in your table. Then press <b>'+(e?'Fill the can':'Hang it above the water')+'</b>.';
+      if(dep<1) return e ? 'The can is full to the spout and the dripping has stopped, so an empty measuring cylinder is under the spout. <b>Drag</b> the '+o.name+' down into the water, gently (or press <b>Lower it</b>).'
+        : 'Read the water level <b>before</b> in the close-up, with your eye level with the bottom of the meniscus, and write it in your table. Then <b>drag</b> the '+o.name+' down into the water, gently (or press <b>Lower it</b>).';
+      return e ? 'The '+o.name+' is under water. Read the <b>volume of water collected</b> in the close-up and write it in your table: it is the volume of the '+o.name+'.'
+        : 'The '+o.name+' is under water and not touching the sides. Read the water level <b>after</b> in the close-up and write it in your table. The rise in the level is the volume of the '+o.name+'.';
+    }
+    var n=E.rows.length, L=liq();
+    if(goal) return 'Pouring in some '+L.name.replace('the ','')+'…';
+    if(!n) return 'Press <b>Weigh the empty cylinder</b>.';
+    if(n===1) return 'Write the mass of the <b>empty cylinder</b> from the balance in your table. Then press <b>Pour in some liquid</b>.';
+    return 'Read the <b>volume</b> in the close-up, with your eye level with the bottom of the meniscus, and the <b>total mass</b> on the balance. Write both in your table. '+(liqDone()?'That was the last reading.':'Then pour in some more.');
   }
 
   // ================= LIQUID =================
@@ -858,7 +968,7 @@ function expKey(x, y, upLabel, downLabel){
     g+='<g transform="rotate('+(pouring?-38:-8)+' '+(bx+44)+' '+(by+26)+')">'+rect(bx,by,44,50,'var(--glass-in)',' stroke="var(--glass)" stroke-width="1.8" rx="4"')+rect(bx+2,by+20,40,28,L.col,' opacity="0.8" rx="2"')+ln(bx+6,by+6,bx+6,by+44,'#fff',2,' stroke-linecap="round" opacity=".7"')+ln(bx-2,by,bx+46,by,'var(--glass)',2.6,' stroke-linecap="round"')+'</g>';
     if(pouring) g+='<path d="M'+(bx+46)+','+(by+12)+' Q'+(cx-4)+','+(by+10)+' '+(cx-2)+','+(y0-k*vol-4)+'" fill="none" stroke="'+L.col+'" stroke-width="3.5"/>';
     var lines=['V = '+Math.round(vol)+' cm³'];
-    if(onScale) g+=legend(lines);
+    if(onScale && !MEAS) g+=legend(lines);
     return g;
   }
   function liqGraph(){
@@ -883,7 +993,7 @@ function expKey(x, y, upLabel, downLabel){
     var p=part(), g='<g transform="translate('+OFF.x+' '+OFF.y+') scale('+SC+')">';
     g+= p==='reg' ? regScene() : p==='irr' ? irrScene() : liqScene();
     g+='</g>';
-    g+= p==='reg' ? regGraph() : p==='irr' ? irrInset() : liqGraph();
+    g+= MEAS ? measPanel() : p==='reg' ? regGraph() : p==='irr' ? irrInset() : liqGraph();
     svg.innerHTML=g;
     svg.classList.toggle('can-drag', canDrag());
     svg.style.cursor = canDrag() ? 'grab' : '';
@@ -895,6 +1005,7 @@ function expKey(x, y, upLabel, downLabel){
   function rho3(x){ return x.toFixed(2); }
 
   function readings(){
+    if(MEAS){ note.innerHTML=measNote(); return; }
     var p=part(), ex=exp(), eq1=$('#dn-eq1'), eq2=$('#dn-eq2'), eq3=$('#dn-eq3'), n='', st='';
     eq3.textContent='1 g/cm³ = 1000 kg/m³, because 1 m³ = 1 000 000 cm³ and 1 kg = 1000 g.';
     if(p==='reg'){
@@ -992,6 +1103,20 @@ function expKey(x, y, upLabel, downLabel){
     var p=part();
     if(!exp()) return running ? {label:'❚❚ Pause'} : {label:'▶ Play'};
     if(goal) return {label:'…', off:true};
+    if(MEAS){
+      if(p==='reg') return {label:'…', off:true};
+      if(p==='irr'){
+        var Rm=E.irr, em=eur();
+        if(Rm.m==null) return {label:'▶ Weigh it', fn:function(){ go(1, 1.6, function(){ Rm.m=objMass(); }); }};
+        if(em ? !Rm.filled : Rm.v1==null) return {label: em?'▶ Fill the can':'▶ Hang it above the water', fn:function(){ go(2, 1.6, function(){ Rm.filled=true; Rm.v1=V1; }); }};
+        if(dep<1) return {label:'▶ Lower it', fn:function(){ dep0=dep; S=3; P=0; goal={stage:3, speed:1}; start(); }};
+        return {label:'Done', off:true};
+      }
+      var nm=E.rows.length;
+      if(!nm) return {label:'▶ Weigh the empty cylinder', fn:function(){ E.rows.push({v:0, m:measLiqMass(0)}); draw(); }};
+      if(nm>=MEAS_V.length) return {label:'Done', off:true};
+      return {label:'▶ Pour in some liquid', fn:function(){ goal={pour:MEAS_V[nm], onEnd:function(){ E.rows.push({v:MEAS_V[nm], m:measLiqMass(nm)}); }}; start(); }};
+    }
     if(p==='reg'){ var k=E.rows.length; return k<5 ? {label:'▶ Measure block '+(k+1), fn:measureBlock} : {label:'Done', off:true}; }
     if(p==='irr'){
       var R=E.irr, e=eur();
@@ -1080,6 +1205,7 @@ function expKey(x, y, upLabel, downLabel){
       var i=E.rows.length, r=expReading(liqMassTrue(v), prev==null?CYL:prev, 0.1, i, 4);
       E.rows.push({v:v, m:r}); E.fresh=v; return r; }});
     jumpSeg.pick(null);
+    if(MEAS && part()==='reg'){ E.blk=0; S=2; blkSeg.pick('0'); sideSeg.pick('2'); }
     draw();
   }
   function setRows(){
@@ -1091,7 +1217,14 @@ function expKey(x, y, upLabel, downLabel){
     $('#dn-jlab').hidden=$('#dn-jump').hidden=ex;
     $('#dn-clear').hidden=!ex; $('#dn-tablewrap').hidden=!ex; $('#dn-stats').hidden=ex;
     $('#dn-slow').hidden=false;
-    svg.setAttribute('aria-label', p==='reg' ? 'A rectangular block on a top-pan balance, measured with a ruler. A graph of mass against volume is on the right.'
+    if(MEAS){
+      ['#dn-matlab','#dn-mat','#dn-objlab','#dn-obj','#dn-methlab','#dn-meth','#dn-liqlab','#dn-liq','#dn-intlab','#dn-int','#dn-jlab','#dn-jump'].forEach(function(q){ $(q).hidden=true; });
+      $('#dn-mrow').hidden=p!=='reg'; $('#dn-btns').hidden=p==='reg';
+    }
+    svg.setAttribute('aria-label', MEAS ? (p==='reg' ? 'A rectangular block on a top-pan balance, with a ruler along one side. On the right, the balance display and a close-up of the ruler to read.'
+      : p==='irr' ? 'An irregular object, a top-pan balance and '+(eur()?'a eureka can with a measuring cylinder under its spout.':'a measuring cylinder of water.')+' On the right, the balance display and a close-up of the scale to read.'
+      : 'A measuring cylinder on a top-pan balance, with liquid poured in. On the right, the balance display and a close-up of the scale to read.')
+      : p==='reg' ? 'A rectangular block on a top-pan balance, measured with a ruler. A graph of mass against volume is on the right.'
       : p==='irr' ? 'An irregular object, weighed on a balance, then lowered on a thread into '+(eur()?'a eureka can, with the water it pushes out collected in a measuring cylinder.':'a measuring cylinder of water.')+' A close-up of the scale is on the right.'
       : 'A measuring cylinder on a top-pan balance, with liquid poured in. A graph of total mass against volume is on the right.');
     if(p==='irr'){ svg.setAttribute('tabindex','0'); } else svg.removeAttribute('tabindex');
