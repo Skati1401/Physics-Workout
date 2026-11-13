@@ -28,7 +28,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 REVIEW = os.path.join(ROOT, 'tools', 'REVIEW.md')
 SNIPPET = os.path.join(ROOT, 'tools', 'review', 'snippet.html')
 LISTS = ['igcse.html', 'ial.html', 'ib.html', 'year-9.html', 'index.html',
-         'animations/igcse.html', 'animations/ial.html', 'animations/ib.html']
+         'animations/igcse.html', 'animations/ial.html', 'animations/ib.html', 'animations/extension.html']
 START, END = '<!-- pw-review -->', '<!-- /pw-review -->'
 PAGE_RE = re.compile(r'^(animations/)?[a-z0-9][a-z0-9-]*\.html$')
 META_RE = re.compile(r'\n?<meta name="pw-draft" content="[^"]*">')

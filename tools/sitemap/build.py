@@ -7,7 +7,7 @@ import os, re
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BASE = 'https://skati1401.github.io/Physics-Workout/'
 LISTS = ['index.html', 'year-9.html', 'igcse.html', 'ial.html', 'ib.html',
-         'animations/igcse.html', 'animations/ial.html', 'animations/ib.html']
+         'animations/igcse.html', 'animations/ial.html', 'animations/ib.html', 'animations/extension.html']
 
 def read(p):
     with open(os.path.join(ROOT, p), encoding='utf-8') as f:
