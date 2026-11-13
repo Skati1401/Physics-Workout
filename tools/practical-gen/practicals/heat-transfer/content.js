@@ -1,7 +1,34 @@
+/* ================= METHOD TYPE: conduction, convection or radiation =================
+   Alex, 13 Nov 2026: one choice at the top of the Method tab instead of four activities on one tab.
+   Each choice shows its method Order and an equipment Match; Radiation shows its two Orders
+   (Leslie cube, two cans) side by side. The choice is remembered in this browser. */
+const METHODS=[{k:'cond',label:'Conduction'},{k:'conv',label:'Convection'},{k:'rad',label:'Radiation'}];
+const MKEY='cp-heat-transfer-method';
+let method='cond';try{const v=localStorage.getItem(MKEY);if(METHODS.some(m=>m.k===v))method=v;}catch(e){}
+const methodGames=[];
+function methodPicker(panel){
+  const w=mk('div','method-pick');
+  w.innerHTML='<span class="method-lab" id="ml-'+panel+'">Method</span><div class="seg" role="group" aria-labelledby="ml-'+panel+'">'+
+    METHODS.map(m=>'<button type="button" data-m="'+m.k+'">'+m.label+'</button>').join('')+'</div>';
+  $('#panel-'+panel+' .acts').prepend(w);
+  w.addEventListener('click',e=>{const b=e.target.closest('button[data-m]');if(b)setMethod(b.dataset.m);});
+}
+function forMethod(body,k){body.closest('.act').dataset.m=k;}
+function setMethod(k){
+  method=k;try{localStorage.setItem(MKEY,k);}catch(e){}
+  $$('.method-pick button').forEach(b=>{const on=b.dataset.m===k;b.classList.toggle('is-on',on);b.setAttribute('aria-pressed',String(on));});
+  $$('.act[data-m],.act-pair[data-m]').forEach(a=>{a.hidden=a.dataset.m!==k;});
+  raf(()=>methodGames.forEach(g=>g&&g.reflow&&g.reflow()));
+}
+reflowers.push(()=>raf(()=>methodGames.forEach(g=>g&&g.reflow&&g.reflow())));
+const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.';
+const MATCH_INTRO='Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.';
+
 /* ================= 1. METHOD ================= */
+methodPicker('method');
 {
-  const body=act('method','Order','Comparing conductors','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
-  createReorder({host:body,steps:[
+  const body=act('method','Order','Comparing conductors',ORDER_INTRO);forMethod(body,'cond');
+  methodGames.push(createReorder({host:body,steps:[
     {id:'a',text:'Choose rods of copper, aluminium, iron and glass, all the same length and thickness.'},
     {id:'b',text:'Stick a drawing pin to each rod with the same amount of wax, the same distance from one end.'},
     {id:'c',text:'Hold the rods upright in a clamp stand.'},
@@ -10,11 +37,43 @@
     {id:'f',text:'Let the rods cool, put on fresh wax and pins, and repeat. Find the mean time for each rod.'},
     {id:'g',text:'Rank the materials: the shorter the mean time, the better the conductor.'}
   ],constraints:[['a','b'],['a','c'],['b','d'],['c','d'],['d','e'],['e','f'],['f','g']],
-  why:'The rods are prepared and clamped before heating starts, the clock starts when they go into the water, the test is repeated once they have cooled, and the ranking comes from the mean times.'});
+  why:'The rods are prepared and clamped before heating starts, the clock starts when they go into the water, the test is repeated once they have cooled, and the ranking comes from the mean times.'}));
 }
 {
-  const body=act('method','Order','Radiation from a Leslie cube','Put the steps in order. Drag the ≡ handle, or use the ▲▼ buttons.');
-  createReorder({host:body,steps:[
+  const body=act('method','Match','What each piece of equipment is for',MATCH_INTRO);forMethod(body,'cond');
+  methodGames.push(createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
+    {id:'w',l:'Wax and drawing pin',r:'Shows when that point on the rod has reached a set temperature'},
+    {id:'s',l:'Stopwatch',r:'Times how long the energy takes to reach each pin'},
+    {id:'c',l:'Clamp stand',r:'Holds the rods still, at the same depth in the water'},
+    {id:'h',l:'Beaker of hot water',r:'Heats the end of every rod from the same source, at the same temperature'}
+  ]}));
+}
+{
+  const body=act('method','Order','Follow the dye',ORDER_INTRO);forMethod(body,'conv');
+  methodGames.push(createReorder({host:body,steps:[
+    {id:'a',text:'Fill a beaker with cold water and leave it until the water is still.'},
+    {id:'b',text:'Drop one small crystal of potassium permanganate down a wide straw, so it lands on the bottom at one side.'},
+    {id:'c',text:'Stand the beaker on a tripod and gauze, with a small Bunsen flame under the crystal.'},
+    {id:'d',text:'Heat gently, and start the stopwatch.'},
+    {id:'e',text:'Every 30 seconds, mark on a sketch of the beaker where the purple dye has got to.'},
+    {id:'f',text:'Describe the path: up above the flame, across the top, down the far side, back along the bottom.'}
+  ],constraints:[['a','b'],['b','d'],['c','d'],['d','e'],['e','f']],
+  why:'The water must be still before the crystal goes in, or the dye moves for another reason. The crystal goes in down a straw so it does not colour the water on the way down, and only then does the heating start.'}));
+}
+{
+  const body=act('method','Match','What each piece of equipment is for',MATCH_INTRO);forMethod(body,'conv');
+  methodGames.push(createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
+    {id:'k',l:'Potassium permanganate crystal',r:'Colours the water so its movement can be seen'},
+    {id:'t',l:'Wide straw',r:'Puts the crystal on the bottom without colouring the water on the way'},
+    {id:'b',l:'Small Bunsen flame',r:'Heats the water gently at one point, under the crystal'},
+    {id:'g',l:'Tripod and gauze',r:'Holds the beaker steady over the flame'}
+  ]}));
+}
+/* Radiation: the two Orders side by side, one row */
+const radPair=mk('div','act-pair');radPair.dataset.m='rad';
+{
+  const body=act('method','Order','Radiation from a Leslie cube',ORDER_INTRO);
+  methodGames.push(createReorder({host:body,steps:[
     {id:'a',text:'Fill the Leslie cube with hot water from a kettle and put the lid on.'},
     {id:'b',text:'Place the infrared detector a measured distance, say 10 cm, from one face.'},
     {id:'c',text:'Record the detector reading for that face.'},
@@ -22,11 +81,11 @@
     {id:'e',text:'Record the reading, and repeat for the other two faces.'},
     {id:'f',text:'Compare the readings: the highest reading is from the best emitter.'}
   ],constraints:[['a','b'],['b','c'],['c','d'],['d','e'],['e','f']],
-  why:'The cube is filled first, so every face is at the same temperature. Only the surface facing the detector changes between readings.'});
+  why:'The cube is filled first, so every face is at the same temperature. Only the surface facing the detector changes between readings.'}));
 }
 {
-  const body=act('method','Order','Comparing absorbers: two cans','Put the steps in order. Drag the ≡ handle, or use the ▲▼ buttons.');
-  createReorder({host:body,steps:[
+  const body=act('method','Order','Comparing absorbers: two cans',ORDER_INTRO);
+  methodGames.push(createReorder({host:body,steps:[
     {id:'a',text:'Pour the same volume of cold water into a matt black can and a shiny can.'},
     {id:'b',text:'Check the water in both cans starts at the same temperature.'},
     {id:'c',text:'Stand both cans the same distance from the same radiant heater.'},
@@ -34,19 +93,24 @@
     {id:'e',text:'Stir, then read both thermometers every 2 minutes for 10 minutes.'},
     {id:'f',text:'Repeat, and compare the mean rise in temperature: the bigger rise shows the better absorber.'}
   ],constraints:[['a','b'],['b','d'],['c','d'],['d','e'],['e','f']],
-  why:'Everything except the surface is made the same before the heater goes on: the volume of water, its starting temperature and the distance from the heater. Then both cans are read at the same times.'});
+  why:'Everything except the surface is made the same before the heater goes on: the volume of water, its starting temperature and the distance from the heater. Then both cans are read at the same times.'}));
 }
 {
-  const body=act('method','Match','What each piece of equipment is for','Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.');
-  createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
-    {id:'w',l:'Wax and drawing pin',r:'Shows when that point on the rod has reached a set temperature'},
-    {id:'s',l:'Stopwatch',r:'Times how long the energy takes to reach each pin'},
-    {id:'k',l:'Potassium permanganate crystal',r:'Colours the water so its movement can be seen'},
+  const acts=$('#panel-method .acts'),list=acts.querySelectorAll(':scope>.act');
+  radPair.appendChild(list[list.length-2]);radPair.appendChild(list[list.length-1]);
+  acts.appendChild(radPair);
+}
+{
+  const body=act('method','Match','What each piece of equipment is for',MATCH_INTRO);forMethod(body,'rad');
+  methodGames.push(createMatchGame({host:body,leftTitle:'Equipment',rightTitle:'Its job',pairs:[
     {id:'l',l:'Leslie cube',r:'Gives four different surfaces all at the same temperature'},
     {id:'d',l:'Infrared detector',r:'Measures how much radiation reaches it from a surface'},
+    {id:'r',l:'Ruler',r:'Keeps the detector, or each can, the same distance from the source'},
+    {id:'h',l:'Radiant heater',r:'Shines the same radiation on both cans'},
     {id:'t',l:'Thermometer',r:'Measures how much the water in each can warms up'}
-  ]});
+  ]}));
 }
+setMethod(method);
 
 /* ================= 2. VARIABLES ================= */
 {
