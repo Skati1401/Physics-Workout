@@ -85,6 +85,13 @@ Rebuilt in one chat, straight after batch 14 (8f) added their measure modes, whi
 - **Minutes (Do route / Show route):** 5.4 about 40 / 36 (Do with the blocks; the stone takes about 6 minutes less); 1.5 about 39 / 32; 2.9 about 45 / 40 (over: Method has four activities and Graph Analysis two Calculates; cut "Which has more resistance?" or Results' "Reading the results" if it runs long); 2.23P about 30 / 27; 4.9 30 to 40 (radiation is the longest) / 30; 6.6 about 41 / 37.
 - **Seen, not changed:** in a 348 px frame (phones), `ramp-motion.html?show=measure` is 14 px wider than the frame, so it scrolls a little sideways inside it.
 
+## 5c rebuild of 7.6 (13 Nov 2026)
+
+The last page of 5c, rebuilt the same way as the twelve above (`ownTable` and `sideBySide` copied from 2.23P; store `cp-penetrating-power-v2`).
+- **Tabs:** Variables, Method, Accuracy (the old Safety tab), Do Experiment, Show Experiment, Results. The Alpha, Beta, Gamma, Background and Exam tabs went: what the radiations are, why alpha stops soon, background sources and the swallowed source are 7a's (Alpha, Beta, Gamma tab). The background correction stays here, in the Do tables.
+- **Do Experiment:** `penetrating-power.html?show=measure` (all sources) beside two tables: background counts 22, 32, 34 and their mean; counts and corrected counts for sources X and Y at 3 cm (`PP_X`, `PP_Y` in `content.js` match "Measure modes" above; checked in Playwright against the animation). Corrected counts are marked against the true mean (29.33) to within 0.5, so a student using 29 or 29.3 passes. Then two Predicts: X emits alpha and gamma, Y beta and gamma. No plot (the absorbers are categories).
+- **Minutes (Do route / Show route):** about 30 / 24.
+
 ## Starting a batch in a new chat
 
 Paste this into a new chat in the "Animated activities for kids" project:
