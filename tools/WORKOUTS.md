@@ -63,7 +63,7 @@ Stand-alone pages in `animations/` (teaching-animations skill), one copy framed 
 | 7 | 7a **40** · 7b 23 + 12 |
 | 8 | 8a 29 + 13 · 8b TA 20 |
 
-**After the repeats were cut (11 Nov 2026):** 1b 34 · 2a 23 · 2b 24 · 2d 19 · 3a 36 · 3b 19 + 12 · 4a 26 · 4b 30 · 4d 27 · 5b 20 + 10 · 6b 19 + 12 · 7a 37 · 7b 22 + 12 · 8a 24 + 13 · 8b 19; the rest unchanged. Still over 30: 1b, 1d, 3a, 7a (`TODO.md` 4b).
+**After the repeats were cut (11 Nov 2026):** 1b 34 · 2a 23 · 2b 24 · 2d 19 · 3a 36 · 3b 19 + 12 · 4a 26 · 4b 30 · 4d 27 · 5b 20 + 10 · 6b 19 + 12 · 7a 37 · 7b 22 + 12 · 8a 24 + 13 · 8b 19; the rest unchanged. Still over 30: 1b, 1d, 3a, 7a (`TODO.md` 4b). **13 Nov 2026:** the new star life cycle and red-shift animations are framed in 8a (one frame) and 8b (two frames), at 3 minutes a frame: 8a about 27, 8b about 25.
 
 Before the cuts, over the 30-minute limit: 1b, 1d, 3a, 4b, 7a (4d at it). Mostly Calculate cards (3a and 7a have 4–5 cards) and 4b's Exam explain tab. Units and Terms tabs run 10–14 min, mainly from 12–14-clue crosswords.
 
