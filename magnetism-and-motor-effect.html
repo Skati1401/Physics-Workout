@@ -45,6 +45,44 @@
 .slot.is-shown,.sort-item.is-shown,.match-card.is-shown,.reorder-row.is-shown,.calc-num-input.is-shown,.xw-cell.is-shown{border-style:dashed!important;border-color:var(--accent)!important;background:var(--accent-soft)!important;color:var(--ink)!important}
 .calc-show-row{grid-column:1/-1}
 .calc-show-row:has(> [hidden]){display:none}
+/* Draw on the diagram (14 Nov 2026, TODO 4e, 4f, 4g, 8k) */
+.dt-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.dt-prog{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft)}
+.dt-q{margin:0 0 8px}
+.dt-src{display:block;font-size:13px;color:var(--ink-soft);margin-top:3px}
+.dt-fig{border:1px solid var(--panel-border);border-radius:10px;background:var(--panel);overflow:hidden}
+.dt-svg{display:block;width:100%;max-width:720px;height:auto;margin:0 auto;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.dt-svg text{font-family:'IBM Plex Sans',sans-serif}
+.dt-notes{list-style:none;margin:8px 0 0;padding:0;font-size:14.5px}
+.dt-notes li{margin:3px 0;padding-left:2px}
+.dt-notes li.ok{color:var(--good)}
+.dt-notes li.no{color:var(--bad)}
+.dt.shake{animation:none}
+@media (prefers-reduced-motion:no-preference){.dt.shake .dt-fig{animation:shake .5s}}
+.fl{cursor:pointer;outline:none}
+.fl-hit{fill:none;stroke:transparent;stroke-width:16}
+.fl-off{fill:none;stroke:var(--ink-faint);stroke-width:1.6;stroke-dasharray:5 5}
+.fl:hover .fl-off,.fl:focus-visible .fl-off{stroke:var(--accent);stroke-width:2.2}
+.fl:focus-visible .fl-hit{stroke:var(--accent);stroke-opacity:.18}
+.fl-on{fill:none;stroke:var(--ink);stroke-width:2.4}
+.fl-head{fill:var(--ink)}
+.dt-done .fl{cursor:default}
+.dt-shown .fl-on{stroke-dasharray:7 4}
+.dt-done .fl-off{opacity:.35}
+.fm-mag{stroke:rgba(0,0,0,.35);stroke-width:1.2}
+.fm-pl{fill:#fff;font-size:18px;font-weight:700;text-anchor:middle;pointer-events:none}
+.fm-card{fill:var(--bg);stroke:var(--panel-border);stroke-width:1.5}
+.fm-wire{fill:var(--panel);stroke:var(--ink);stroke-width:2}
+.fm-x{stroke:var(--ink);stroke-width:2}
+.fm-dot{fill:var(--ink)}
+.fm-sol{fill:none;stroke:var(--ink-faint);stroke-width:1}
+.fm-turn{fill:none;stroke:#b5651d;stroke-width:2;opacity:.75}
+.fm-tag{font-size:16px;font-weight:700;fill:var(--ink)}
+.fl-pole{cursor:pointer;outline:none}
+.fl-pole rect{fill:var(--panel);stroke:var(--accent);stroke-width:2}
+.fl-pole.is-q rect{stroke-dasharray:4 3}
+.fl-pole text{font-size:18px;font-weight:700;fill:var(--ink)}
+.fl-pole:focus-visible rect{stroke-width:3.5}
 </style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
@@ -1609,22 +1647,196 @@ function lhrSVG(nLeft,into,up,arrow){
     ]});
 }
 
+/* ================= Draw on the diagram (14 Nov 2026, TODO 4e, 4f, 4g, 8k) =================
+   Exam "draw on the diagram" tasks, dealt one at a time like Draw the ray: each task names the past-paper question it is modelled
+   on, Check marks it as the mark scheme does (one note per marking point), Show answer appears after a wrong Check.
+   cfg.kind gives the drawing: init(task) → state, draw(g, task, state, api), check(task, state) → {ok, notes:[[ok, text]]}, answer(task) → state.
+   Saved: which tasks are right (1) or shown (2). */
+function createDrawTasks(cfg){
+  const host=cfg.host,tasks=cfg.tasks,K=cfg.kind,NS='http://www.w3.org/2000/svg';
+  host.classList.add('dt');
+  const top=mk('div','dt-top');host.appendChild(top);const prog=mk('span','dt-prog');top.appendChild(prog);
+  const q=mk('p','dt-q');host.appendChild(q);
+  const fig=mk('div','dt-fig');host.appendChild(fig);
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('class','dt-svg');svg.setAttribute('viewBox','0 0 '+(cfg.W||600)+' '+(cfg.H||340));fig.appendChild(svg);
+  const notes=mk('ul','dt-notes');notes.setAttribute('aria-live','polite');host.appendChild(notes);
+  let status=tasks.map(()=>0),cur=0,T=null,st=null,locked=false;
+  const b=bar(host,[{label:'Check',primary:true,fn:()=>check()},{label:'Next diagram',fn:()=>go(cur+1)},{label:'Start again',fn:()=>{status=tasks.map(()=>0);go(0);saveSoon();}}]);
+  const ans=answerBtn(b,()=>{st=K.answer(T);status[cur]=Math.max(status[cur],2);locked=true;notes.innerHTML='';b.say('Answer shown (dashed). Read it through, then press Next diagram.','');render();saveSoon();});
+  const el=(tag,at,txt)=>{const e=document.createElementNS(NS,tag);for(const k in at)if(at[k]!=null)e.setAttribute(k,at[k]);if(txt!=null)e.textContent=txt;return e;};
+  const pt=ev=>{const m=svg.getScreenCTM();if(!m)return null;const p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const r=p.matrixTransform(m.inverse());return {x:r.x,y:r.y};};
+  const api={el:el,svg:svg,pt:pt,get locked(){return locked;},shown:()=>status[cur]===2,set:s=>{if(locked)return;st=s;notes.innerHTML='';b.say('','');render();},redraw:()=>render()};
+  function render(){
+    svg.innerHTML='';const g=el('g',{class:locked?(status[cur]===2?'dt-done dt-shown':'dt-done'):''});svg.appendChild(g);K.draw(g,T,st,api);
+    prog.textContent='Diagram '+(cur+1)+' of '+tasks.length+' · '+status.filter(x=>x>0).length+' done';
+  }
+  function go(i){
+    cur=(i+tasks.length)%tasks.length;T=tasks[cur];locked=status[cur]>0;st=locked?K.answer(T):K.init(T);
+    q.innerHTML=FR(T.q)+(T.src?'<span class="dt-src">Modelled on '+T.src+'</span>':'');
+    notes.innerHTML='';ans.off();
+    b.say(status[cur]===1?'Done: this one was right.':status[cur]===2?'Answer shown.':'',status[cur]===1?'good':'');
+    svg.setAttribute('aria-label',T.aria||'The diagram');render();
+  }
+  function check(){
+    if(locked){go(cur+1);return;}
+    const r=K.check(T,st);
+    notes.innerHTML=r.notes.map(n=>'<li class="'+(n[0]?'ok':'no')+'"><span aria-hidden="true">'+(n[0]?'✓':'✗')+'</span> '+FR(n[1])+'</li>').join('');
+    if(r.ok){status[cur]=1;locked=true;b.say('Correct.','good');celebrate(b.msg);ans.off();render();}
+    else{b.say('Not yet: see the notes under the diagram.','bad');ans.on();host.classList.remove('shake');void host.offsetWidth;host.classList.add('shake');}
+    saveSoon();
+  }
+  track(host,{getState:()=>({dt:1,s:status}),
+    setState:s=>{status=(s&&s.dt===1&&Array.isArray(s.s)&&s.s.length===tasks.length)?s.s.map(x=>x===1||x===2?x:0):tasks.map(()=>0);go(0);},
+    isDone:()=>status.every(x=>x>0)});
+  go(0);
+  return {go:go};
+}
+/* Field lines (TODO 4e): every line the exam would accept, and some it would not, are drawn faintly as pencil guides.
+   Click a line to draw it in (with an arrow), again to turn its arrow round, a third time to rub it out. Each line is written
+   from N to S (the way the field points), so its own direction is the right arrow; the first click picks a direction at random.
+   A line: {l:[x0,y0,x1,y1]} straight, {c:[x0,y0,c1x,c1y,c2x,c2y,x1,y1]} curved, or {o:[cx,cy,r,cw]} a circle (cw: clockwise on the screen).
+   good: the mark scheme accepts it; why: what is wrong with it (bad lines). pos: its place across the gap (for evenly spaced lines).
+   A task: need (lines at least), even (evenly spaced), must (line numbers that must be drawn), groups (one line from each list), poles. */
+const FIELD_KIND=(function(){
+  const bez=(c,t)=>{const u=1-t;return [u*u*u*c[0]+3*u*u*t*c[2]+3*u*t*t*c[4]+t*t*t*c[6],u*u*u*c[1]+3*u*u*t*c[3]+3*u*t*t*c[5]+t*t*t*c[7]];};
+  function d(L){
+    if(L.l)return 'M'+L.l[0]+','+L.l[1]+'L'+L.l[2]+','+L.l[3];
+    if(L.c){const c=L.c;return 'M'+c[0]+','+c[1]+' C'+c[2]+','+c[3]+' '+c[4]+','+c[5]+' '+c[6]+','+c[7];}
+    const o=L.o,s=o[3]?1:0;return 'M'+(o[0]-o[2])+','+o[1]+'A'+o[2]+','+o[2]+' 0 1,'+s+' '+(o[0]+o[2])+','+o[1]+'A'+o[2]+','+o[2]+' 0 1,'+s+' '+(o[0]-o[2])+','+o[1];
+  }
+  // where the arrow goes on a line, and which way it points along the line (degrees)
+  function arrow(L){
+    if(L.l){const f=L.af||0.5;return {x:L.l[0]+(L.l[2]-L.l[0])*f,y:L.l[1]+(L.l[3]-L.l[1])*f,a:Math.atan2(L.l[3]-L.l[1],L.l[2]-L.l[0])*180/Math.PI};}
+    if(L.c){const t=L.af||0.5,p=bez(L.c,t),p2=bez(L.c,t+0.01);return {x:p[0],y:p[1],a:Math.atan2(p2[1]-p[1],p2[0]-p[0])*180/Math.PI};}
+    const o=L.o;return {x:o[0],y:o[1]-o[2],a:o[3]?0:180};
+  }
+  const dirOf=(s,f)=>s===0?0:(s===1)!==f?1:-1;    // 1: along the line (N to S), −1: against it
+  return {
+    init:t=>({on:t.lines.map(()=>0),flip:t.lines.map(()=>Math.random()<0.5),poles:(t.poles||[]).map(()=>'?')}),
+    answer:t=>({on:t.lines.map((L,i)=>L.good&&(!t.show||t.show.indexOf(i)>=0)?1:0),flip:t.lines.map(()=>false),poles:(t.poles||[]).map(p=>p.ans)}),
+    draw:function(g,t,s,api){
+      const el=api.el;
+      const base=el('g',{});base.innerHTML=t.base;g.appendChild(base);
+      t.lines.forEach((L,i)=>{
+        const dir=dirOf(s.on[i],s.flip[i]),on=dir!==0;
+        const lg=el('g',{class:'fl'+(on?' is-on':''),'data-line':i});
+        lg.appendChild(el('path',{d:d(L),class:'fl-hit'}));
+        lg.appendChild(el('path',{d:d(L),class:on?'fl-on':'fl-off'}));
+        if(on){const a=arrow(L),r=a.a+(dir<0?180:0);lg.appendChild(el('path',{d:'M7,0L-6,-6L-6,6Z',class:'fl-head',transform:'translate('+a.x.toFixed(1)+','+a.y.toFixed(1)+') rotate('+r.toFixed(1)+')'}));}
+        if(!api.locked){
+          const cyc=()=>{const n=JSON.parse(JSON.stringify(s));n.on[i]=(n.on[i]+1)%3;api.set(n);const f=api.svg.querySelector('[data-line="'+i+'"]');if(f)f.focus({preventScroll:true});};
+          lg.addEventListener('click',cyc);keyActivate(lg,cyc,'Line '+(i+1)+': '+(on?'drawn, arrow '+(dir>0?'one way':'the other way'):'not drawn')+'. Press to change.');
+        }
+        g.appendChild(lg);
+      });
+      (t.poles||[]).forEach((p,i)=>{
+        const pg=el('g',{class:'fl-pole'+(s.poles[i]==='?'?' is-q':''),'data-pole':i});
+        pg.appendChild(el('rect',{x:p.x-17,y:p.y-15,width:34,height:30,rx:6}));
+        pg.appendChild(el('text',{x:p.x,y:p.y+6,'text-anchor':'middle'},s.poles[i]));
+        if(!api.locked){
+          const cyc=()=>{const n=JSON.parse(JSON.stringify(s));n.poles[i]=n.poles[i]==='?'?'N':n.poles[i]==='N'?'S':'?';api.set(n);const f=api.svg.querySelector('[data-pole="'+i+'"]');if(f)f.focus({preventScroll:true});};
+          pg.addEventListener('click',cyc);keyActivate(pg,cyc,'Pole label: '+(s.poles[i]==='?'?'not labelled':s.poles[i])+'. Press to change.');
+        }
+        g.appendChild(pg);
+      });
+    },
+    check:function(t,s){
+      const notes=[],L=t.lines,dirs=L.map((x,i)=>dirOf(s.on[i],s.flip[i]));
+      const drawn=L.map((x,i)=>i).filter(i=>dirs[i]!==0),good=drawn.filter(i=>L[i].good),bad=drawn.filter(i=>!L[i].good);
+      bad.forEach(i=>notes.push([0,L[i].why]));
+      const need=t.need||3;let ok=!bad.length;
+      if(good.length<need){ok=false;notes.push([0,'Draw at least '+need+' field lines'+(t.needWhy?': '+t.needWhy:'.')]);}
+      (t.must||[]).forEach(i=>{if(dirs[i]===0){ok=false;notes.push([0,L[i].mustWhy||'One line the pattern needs is missing.']);}});
+      (t.groups||[]).forEach(gr=>{if(!gr.lines.some(i=>dirs[i]!==0)){ok=false;notes.push([0,gr.why]);}});
+      if(t.even&&good.length>=2){const p=good.map(i=>L[i].pos).sort((a,c)=>a-c),gap=p[1]-p[0];if(p.some((v,k)=>k&&Math.abs(v-p[k-1]-gap)>0.5)){ok=false;notes.push([0,'Space the lines evenly: equal gaps show the field is the same strength everywhere in the gap.']);}}
+      const wrongWay=good.filter(i=>dirs[i]<0);
+      if(wrongWay.length){ok=false;notes.push([0,t.arrowWhy||'At least one arrow points the wrong way: outside a magnet, field lines go from N to S.']);}
+      else if(good.length)notes.push([1,'Every arrow points the right way.']);
+      (t.poles||[]).forEach((p,i)=>{if(s.poles[i]!==p.ans){ok=false;notes.push([0,s.poles[i]==='?'?'Label the pole marked ?.':p.why]);}else notes.push([1,'The pole is labelled correctly.']);});
+      if(ok)notes.unshift([1,t.ok||'The pattern is right.']);
+      return {ok:ok,notes:notes};
+    }
+  };
+})();
+/* Draw the field (TODO 4e, 14 Nov 2026): the 4PH1 "draw / complete the field lines" questions from the IGCSE Question Index. */
+const FM={N:'#c0392b',S:'#2f6db5'};
+// a bar magnet from x0 to x1: its left and right halves, labelled (a label of '' leaves that half unlabelled)
+function fmBar(x0,y0,x1,y1,l,r){const m=(x0+x1)/2,cy=(y0+y1)/2+6;
+  return '<rect x="'+x0+'" y="'+y0+'" width="'+(m-x0)+'" height="'+(y1-y0)+'" fill="'+(l==='S'?FM.S:FM.N)+'" class="fm-mag"/>'
+    +'<rect x="'+m+'" y="'+y0+'" width="'+(x1-m)+'" height="'+(y1-y0)+'" fill="'+(r==='N'?FM.N:FM.S)+'" class="fm-mag"/>'
+    +(l?'<text x="'+((x0+m)/2)+'" y="'+cy+'" class="fm-pl">'+l+'</text>':'')+(r?'<text x="'+((m+x1)/2)+'" y="'+cy+'" class="fm-pl">'+r+'</text>':'');}
+// one magnet seen end-on (a pole face): a block with only its facing pole labelled
+function fmBlock(x0,y0,x1,y1,lab,col){return '<rect x="'+x0+'" y="'+y0+'" width="'+(x1-x0)+'" height="'+(y1-y0)+'" fill="'+(col||'#8a8f98')+'" class="fm-mag"/>'+(lab?'<text x="'+((x0+x1)/2)+'" y="'+((y0+y1)/2+6)+'" class="fm-pl">'+lab+'</text>':'');}
+const FM_WRONGWAY='At least one arrow points the wrong way: outside a magnet, field lines go from N to S.';
+const FM_UNIFORM=[110,140,170,200,230].map(y=>({l:[232,y,368,y],good:true,pos:y}))
+  .concat([{c:[232,120,280,92,320,92,368,120],why:'In a uniform field the lines are straight, not curved.'},
+           {l:[232,124,368,216],why:'The lines run straight across from one pole to the other, parallel to each other, not at a slant.'}]);
+const FIELD_TASKS_6A=[
+  {q:'Draw four field lines around the bar magnet, with arrows to show the direction of the field.',src:'4PH1/1PR Jan 2021 Q8(a) and May 2023 Q4(b)',aria:'A bar magnet, N on the left and S on the right',
+   base:fmBar(200,156,400,190,'N','S'),need:4,needWhy:'the question asks for four.',
+   lines:[{c:[200,161,120,86,480,86,400,161],good:true},{c:[200,166,50,4,550,4,400,166],good:true},
+          {c:[200,185,120,260,480,260,400,185],good:true},{c:[200,180,50,342,550,342,400,180],good:true},
+          {l:[200,173,60,173],good:true,af:0.6},{l:[545,173,400,173],good:true,af:0.4},
+          {c:[200,159,150,112,215,92,292,90],why:'A field line cannot stop in mid-air: it goes all the way from N to S.'},
+          {c:[200,158,330,10,250,150,400,162],why:'Field lines never cross or touch each other.'}],
+   ok:'Lines go from pole to pole without crossing, with loops above and below the magnet.'},
+  {q:'The diagram shows the poles of two magnets close together. Draw three field lines to show the uniform field between them.',src:'4PH1/1P Nov 2024 Q5(a) and 4PH1/1PR May 2025 Q2(a)',aria:'A north pole on the left facing a south pole on the right, with a gap between them',
+   base:fmBlock(150,90,230,250,'N',FM.N)+fmBlock(370,90,450,250,'S',FM.S),need:3,even:true,lines:FM_UNIFORM,
+   ok:'Straight, parallel, evenly spaced lines: the field has the same strength and direction everywhere in the gap.'},
+  {q:'These two magnets give a uniform field in the gap. Label the pole marked ?, then draw three field lines with arrows.',src:'4PH1/1P Jan 2021 Q7(a) and Nov 2025 Q6(a)(i)',aria:'Two magnet poles facing each other: the right-hand one is a south pole, the left-hand one is not labelled',
+   base:fmBlock(150,90,230,250,'')+fmBlock(370,90,450,250,'S',FM.S),need:3,even:true,lines:FM_UNIFORM.map(L=>Object.assign({},L)),
+   poles:[{x:190,y:170,ans:'N',why:'A uniform field comes from unlike poles facing each other, so the pole facing S is N.'}],
+   ok:'Unlike poles face each other, with straight, parallel, evenly spaced lines from N to S.'},
+  {q:'Two bar magnets are placed with their north poles facing. Complete the field pattern between them, with arrows.',src:'4PH1/1PR Jan 2022 Q3(c)',aria:'Two bar magnets end to end with their north poles facing each other across a gap',
+   base:fmBar(100,152,240,188,'S','N')+fmBar(360,152,500,188,'N','S'),need:3,
+   lines:[{c:[240,160,272,152,282,112,272,60],good:true},{c:[240,180,272,188,282,228,272,280],good:true},
+          {c:[360,160,328,152,318,112,328,60],good:true},{c:[360,180,328,188,318,228,328,280],good:true},
+          {l:[240,170,360,170],why:'Two N poles repel: no field line joins them. There is a neutral point halfway between them.'},
+          {c:[240,164,320,120,330,210,360,176],why:'Field lines never cross: the lines from each N pole bend away from the other magnet.'}],
+   groups:[{lines:[0,1],why:'Draw lines from the left-hand N pole too.'},{lines:[2,3],why:'Draw lines from the right-hand N pole too.'}],
+   arrowWhy:'At least one arrow points the wrong way: the field lines point away from both N poles.',
+   ok:'The lines bend away from each other, leaving a neutral point halfway between the poles.'}
+];
+// the field round a wire through a card, seen from above: ⊗ the current goes down into the card, ⊙ it comes up out of it
+const fmCard='<path d="M60,70 L540,70 L540,280 L60,280Z" class="fm-card"/>';
+const fmWire=(x,y,down)=>'<circle cx="'+x+'" cy="'+y+'" r="11" class="fm-wire"/>'+(down?'<path d="M'+(x-6)+','+(y-6)+'L'+(x+6)+','+(y+6)+'M'+(x+6)+','+(y-6)+'L'+(x-6)+','+(y+6)+'" class="fm-x"/>':'<circle cx="'+x+'" cy="'+y+'" r="2.8" class="fm-dot"/>');
+const FM_GRIP='At least one arrow points the wrong way. Use the right-hand grip rule: thumb along the current, fingers curl the way the field goes.';
+const FIELD_TASKS_6A_WIRE=[
+  {q:'A wire passes straight down through a card. The current in the wire is downwards (⊗, into the card). Draw three field lines on the card, with arrows.',src:'4PH1/2P Jan 2023 Q6(a)(i)',aria:'A card seen from above with a wire through its middle; the current goes down into the card',
+   base:fmCard+fmWire(300,175,true),need:3,arrowWhy:FM_GRIP,
+   lines:[{o:[300,175,34,true],good:true},{o:[300,175,66,true],good:true},{o:[300,175,104,true],good:true},
+          {o:[345,175,58,true],why:'Each circle is centred on the wire.'},{l:[300,175,470,95],why:'The field lines go round the wire, not out from it.'}],
+   ok:'Circles centred on the wire, further apart further out, clockwise for a current into the card.'},
+  {q:'The current is reversed, so it now comes up out of the card (⊙). Draw three field lines with arrows.',src:'4PH1/1PR Jan 2023 Q11(a)(ii)–(iii)',aria:'A card seen from above with a wire through its middle; the current comes up out of the card',
+   base:fmCard+fmWire(300,175,false),need:3,arrowWhy:FM_GRIP,
+   lines:[{o:[300,175,34,false],good:true},{o:[300,175,66,false],good:true},{o:[300,175,104,false],good:true},
+          {c:[300,140,380,120,420,200,330,250],why:'A field line round a wire is a circle: it joins up with itself.'},{o:[260,175,52,false],why:'Each circle is centred on the wire.'}],
+   ok:'Same circles as before, but anticlockwise now the current comes out of the card.'},
+  {q:'A flat coil passes through a card. The current comes up through the card at the left (⊙) and goes down at the right (⊗). Draw the field lines, with arrows.',src:'4PH1/2P Jan 2020 Q8(b) and Nov 2020 Q7(b)',aria:'A card with the two sides of a flat coil through it: current up on the left, down on the right',
+   base:fmCard+fmWire(220,175,false)+fmWire(380,175,true),need:4,arrowWhy:FM_GRIP,
+   lines:[{l:[300,272,300,78],good:true,mustWhy:'Draw the straight line through the middle of the coil.'},{o:[220,175,32,false],good:true},{o:[205,175,68,false],good:true},
+          {o:[380,175,32,true],good:true},{o:[395,175,68,true],good:true},
+          {o:[300,175,118,true],why:'Close to the coil, each line goes round one side of the coil only, and the middle line is straight.'},
+          {l:[80,175,520,175],why:'A field line cannot pass through the wires: the lines go round each wire.'}],
+   must:[0],groups:[{lines:[1,2],why:'Draw loops round the left-hand side of the coil.'},{lines:[3,4],why:'Draw loops round the right-hand side of the coil.'}],
+   ok:'A straight line through the middle and loops round each side, all with arrows that agree.'},
+  {q:'The current in this solenoid makes its left-hand end a north pole. Draw field lines inside and outside the solenoid, with arrows.',src:'4PH1/2P May 2021 Q4(b)(i) and Nov 2025 Q5(a)(i)',aria:'A solenoid seen from the side; its left-hand end is a north pole',
+   base:'<rect x="220" y="137" width="160" height="66" class="fm-sol"/>'+[0,1,2,3,4,5,6,7].map(k=>'<ellipse cx="'+(230+k*20)+'" cy="170" rx="7" ry="33" class="fm-turn"/>').join('')+'<text x="200" y="177" class="fm-tag" text-anchor="end">N</text><text x="400" y="177" class="fm-tag">S</text>',
+   need:4,lines:[{l:[380,158,220,158],good:true},{l:[380,182,220,182],good:true},
+          {c:[220,150,150,50,450,50,380,150],good:true},{c:[220,190,150,290,450,290,380,190],good:true},
+          {c:[220,145,178,70,236,58,262,135],why:'A field line from the N end goes all the way round to the S end, not back into the N end.'},
+          {c:[220,152,260,40,345,250,380,188],why:'Field lines never cross, and outside the solenoid they loop round it from end to end.'}],
+   groups:[{lines:[0,1],why:'Draw the field inside the solenoid too: straight, parallel lines.'},{lines:[2,3],why:'Draw loops outside the solenoid, from one end to the other.'}],
+   arrowWhy:'At least one arrow points the wrong way: outside, the field goes from N to S; inside the solenoid it goes from S back to N.',
+   ok:'Like a bar magnet outside, with straight parallel lines inside: the arrows go N to S outside and S to N inside.'}
+];
+
 /* ================= 4. FIELD PATTERNS ================= */
 {
   // Exception to 5a (Alex, 11 Nov 2026): students must recognise the field patterns and describe how to find them,
   // so this tab frames the 6.6 animation and keeps the plotting-compass Order.
   frameAct('fields','animations/magnetic-field-patterns.html','','Magnetic field patterns animation: iron filings, field lines and a plotting compass','magnetic field patterns',true);
-  createPredict({
-    host:act('fields','Predict','Making a uniform field','Which arrangement works?'),
-    q:'How should two bar magnets be set up to give a uniform field in the gap between them?',
-    options:[
-      {text:'Unlike poles facing, close together and parallel',correct:true},
-      {text:'Like poles facing, close together and parallel',why:'Like poles push the field lines apart, leaving a neutral point in the gap.'},
-      {text:'Unlike poles facing, far apart from each other',why:'In a wide gap the lines spread out and bend, so the field is not the same everywhere.'},
-      {text:'Side by side, with both N poles at one end',why:'This makes the lines loop round the outside, not run straight across a gap.'}
-    ],
-    explain:'With a N pole facing a S pole, close together and parallel, the field lines in the gap are straight, parallel and evenly spaced: the field has the same strength and direction everywhere.'
-  });
+  createDrawTasks({host:act('fields','Draw the field','Complete the field lines','Click a faint line to draw it in with an arrow. Click it again to turn the arrow round, and a third time to rub it out. Then press Check.'),tasks:FIELD_TASKS_6A,kind:FIELD_KIND});
   createSortGame({host:act('fields','Sort','True or false?','Sort each statement about magnetic field lines.'),
     cats:[cat('t','True','','t'),cat('f','False','','f')],
     items:[
@@ -1654,13 +1866,7 @@ function lhrSVG(nLeft,into,up,arrow){
 {
   frameAct('wires','animations/electromagnet-field-patterns.html','','Fields around wires and coils animation: a straight wire, a flat coil and a solenoid','fields around wires and coils',true);
   frameAct('electro','animations/electromagnets.html','','Electromagnets animation: a coil with a soft iron or steel core picking up paper clips, and a circuit breaker','electromagnets',true);
-  matchAct('wires','Field patterns','Match each current-carrying shape or change to its field pattern.','Shape or change','Field pattern',[
-    {id:'w',l:'Straight wire',r:'Circles round the wire, getting further apart further away'},
-    {id:'c',l:'Flat circular coil',r:'Loops round each side of the coil, nearly straight through its middle'},
-    {id:'s',l:'Solenoid',r:'Like a bar magnet outside, with straight parallel lines inside'},
-    {id:'r',l:'Current reversed',r:'Same shape, with every arrow pointing the other way'},
-    {id:'b',l:'Bigger current',r:'Same shape, with the lines closer together'}
-  ]);
+  createDrawTasks({host:act('wires','Draw the field','Fields of wires and coils','Click a faint line to draw it in with an arrow. Click it again to turn the arrow round, and a third time to rub it out. Then press Check.'),tasks:FIELD_TASKS_6A_WIRE,kind:FIELD_KIND});
   createSortGame({host:act('electro','Sort','Changing an electromagnet','What does each change do to the electromagnet?'),
     cats:[cat('s','Stronger field','','l'),cat('p','Poles swap ends','','n'),cat('n','No effect on the field','','a')],
     items:[
@@ -1863,7 +2069,7 @@ function pairByTitle(t1,t2){
   const a=find(t1),b=find(t2);if(!a||!b)return;
   const pair=mk('div','act-pair');a.parentNode.insertBefore(pair,a);pair.appendChild(a);pair.appendChild(b);
 }
-pairByTitle('Making a uniform field','True or false?');   // Field Patterns (Alex, 11 Nov 2026)
+pairByTitle('True or false?','Plotting the field of a bar magnet');   // Field Patterns (14 Nov 2026: the uniform-field Predict became the Draw the field card)
 function applyTabUI(tab){
   TAB_IDS.forEach(id=>{const p=byId('panel-'+id);if(p)p.hidden=(id!==tab);});
   $$('.tab-btn:not(.tab-cp)').forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('is-active',on);b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1;});
