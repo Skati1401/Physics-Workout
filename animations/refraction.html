@@ -1222,9 +1222,28 @@ function expKey(x, y, upLabel, downLabel){
     for(i=1;i<rest.length;i++) len+=Math.hypot(rest[i][0]-rest[i-1][0], rest[i][1]-rest[i-1][1]);
     Q={name:name, K:K, s:s, tr:tr, kq:kq, e:e, lines:lines, ans:lines.filter(function(c){ return c.ok; })[0].id, pick:null, phase:'ask', t:0, rest:rest, len:Math.min(len, 760), n:++qN,
        ask: typeof K.ask==='function' ? K.ask(e, s) : K.ask};
+    // TODO 8i (14 Nov 2026): every second question the student draws the ray, turning it about the point; marked by eye as the
+    // mark schemes do (bends towards or away from the normal; equal angles to ±3°; parallel to the ray going in to ±4°)
+    Q.draw = Q.n%2===0;
+    if(Q.draw){ var ca=Math.atan2(e.din[1], e.din[0]), sg=Math.random()<0.5?-1:1; Q.dang=ca+sg*(25+Math.random()*15)*D2R; }
     lastNote=''; layout();
   }
-  function qJudge(){ Q.phase='done'; Q.ok=Q.pick===Q.ans; score[1]++; if(Q.ok) score[0]++; lastNote=''; }
+  function qJudge(){ Q.phase='done'; Q.ok=Q.draw ? drawJudge() : Q.pick===Q.ans; score[1]++; if(Q.ok) score[0]++; lastNote=''; }
+  function drawAsk(s){ return s.replace(/Which line shows/g,'Draw').replace(/\?$/,'.'); }
+  // a drawn ray, as the 4PH1 mark schemes judge it by eye
+  function drawJudge(){
+    var right=Q.lines.filter(function(c){ return c.ok; })[0], e=Q.e, d=[Math.cos(Q.dang), Math.sin(Q.dang)], n=right.refl ? e.N : [-e.N[0],-e.N[1]];
+    var cs=-dot(e.N,e.din), tv=[e.din[0]+cs*e.N[0], e.din[1]+cs*e.N[1]], tl=Math.hypot(tv[0],tv[1]), tt=tl>1e-6?[tv[0]/tl,tv[1]/tl]:null;
+    var side=dot(d,n), a=deg(Math.acos(Math.max(-1,Math.min(1,side)))), nm=Q.name;
+    function no(w){ Q.drawWhy=w; return false; }
+    if(side<=0.05) return no(right.refl ? 'This light is reflected: the ray stays inside the glass, on the same side of the surface.' : 'The light goes on through the surface: draw the ray on the far side of it.');
+    if(nm==='normal') return a<=3 ? true : no('The angle of incidence is 0°, so the ray carries straight on along the normal.');
+    if(tt && right.a>0.6 && dot(d,tt)*dot(right.dir,tt)<=0) return no('The ray goes on across the normal, to the other side from the ray coming in'+(right.refl?' (like a ball bouncing off a wall)':'')+'.');
+    if(nm==='into') return a<e.i-2 && a>1 ? true : no('Going into glass the light slows down, so the ray bends towards the normal: the angle in the glass is smaller than '+d0(e.i)+'.');
+    if(nm==='below' || nm==='prismOut') return a>e.i+2 && a<89 ? true : no('Leaving the glass the light speeds up, so the ray bends away from the normal: the angle in the air is bigger than '+d0(e.i)+'.');
+    if(nm==='out') return Math.abs(a-right.a)<=4 ? true : no('The faces of the block are parallel, so the ray leaves parallel to the ray going in: '+d0(right.a)+' from the normal.');
+    return Math.abs(a-right.a)<=3 ? true : no('The angle of reflection equals the angle of incidence: '+d0(right.a)+' from the normal.');
+  }
   function partLine(pts, L){   // the first L units of a line through pts
     var out=[pts[0]], i;
     for(i=1;i<pts.length && L>0;i++){ var d=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
@@ -1255,9 +1274,18 @@ function expKey(x, y, upLabel, downLabel){
     // the lines to choose from: dashed, each with its letter at the end
     // lines next to each other are different lengths, so that their letters never touch; all are shortened together to stay on the paper
     var pks='', sc=1, rr=(PAN.tall ? 9.5 : 11)*FS, mg=rr+10*FS;
-    Q.lines.forEach(function(c){ c.L=c.odd ? 100-29*FS : 100; [[c.dir[0], e.p[0]], [c.dir[1], e.p[1]]].forEach(function(q, ax){ var lim=ax ? PH : PW;
+    if(Q.draw){   // the ray the student turns: a solid line from the point, with a handle at its end
+      var dd=[Math.cos(Q.dang), Math.sin(Q.dang)], Ld=110, k;
+      for(k=0;k<2;k++){ var lim=k?PH:PW; if(dd[k]>1e-6) Ld=Math.min(Ld,(lim-14-e.p[k])/dd[k]); if(dd[k]<-1e-6) Ld=Math.min(Ld,(14-e.p[k])/dd[k]); }
+      var de=add(e.p, dd, Math.max(40,Ld)), dcol = done ? (Q.ok ? 'var(--good)' : 'var(--bad)') : 'var(--accent)';
+      P.segs.push([e.p, de]); plBox(P, de[0]-14, de[1]-14, de[0]+14, de[1]+14);
+      pks+='<g class="pick rf-dhandle" data-pick="draw" tabindex="'+(ask?0:-1)+'" role="slider" aria-valuemin="0" aria-valuemax="359" aria-valuenow="'+Math.round(((deg(Q.dang)%360)+360)%360)+'" aria-label="The ray you are drawing: turn it with the left and right arrow keys, or drag its end">'+
+        ln(e.p[0],e.p[1],de[0],de[1],dcol,2.6)+arrowMid(e.p, de, dcol, 1)+'<circle cx="'+f1(de[0])+'" cy="'+f1(de[1])+'" r="'+(10*FS).toFixed(1)+'" fill="var(--panel)" stroke="'+dcol+'" stroke-width="2.2" style="cursor:grab"/>'+
+        '<circle class="ring" cx="'+f1(de[0])+'" cy="'+f1(de[1])+'" r="'+(14*FS).toFixed(1)+'" fill="none" stroke-width="3"/></g>';
+    }
+    if(!Q.draw) Q.lines.forEach(function(c){ c.L=c.odd ? 100-29*FS : 100; [[c.dir[0], e.p[0]], [c.dir[1], e.p[1]]].forEach(function(q, ax){ var lim=ax ? PH : PW;
       if(q[0]>1e-6) sc=Math.min(sc, (lim-mg-q[1])/(q[0]*c.L)); if(q[0]<-1e-6) sc=Math.min(sc, (mg-q[1])/(q[0]*c.L)); }); });
-    Q.lines.forEach(function(c){
+    if(!Q.draw) Q.lines.forEach(function(c){
       var L=c.L*Math.max(0.5, sc), end=add(e.p, c.dir, L);
       var sel=Q.pick===c.id, st = done ? (c.ok ? 'good' : (sel ? 'bad' : '')) : '', col = st==='good' ? 'var(--good)' : st==='bad' ? 'var(--bad)' : sel ? 'var(--accent)' : 'var(--ink-soft)';
       var fill = st==='good' ? 'var(--good-soft)' : st==='bad' ? 'var(--bad-soft)' : sel ? 'var(--accent-soft)' : 'var(--panel)', r=rr, a0=add(e.p, c.dir, 7), a1=add(e.p, c.dir, L-r);
@@ -1284,17 +1312,19 @@ function expKey(x, y, upLabel, downLabel){
     // the question, and afterwards the answer, in the panel beside the paper
     var x=PAN.x+(PAN.tall?12:4), y=PAN.y+22*FS, lh=17*FS, wrap=PAN.tall?44:30, right2=Q.lines.filter(function(c){ return c.ok; })[0];
     g+=T(x, y, 'Question '+Q.n, {fs:12.5, w:600, c:'var(--ink)'}); y+=lh+3*FS;
-    wrapLines(Q.ask, wrap).forEach(function(s){ g+=T(x, y, s, {fs:12, c:'var(--ink)'}); y+=lh; });
+    wrapLines(Q.draw ? drawAsk(Q.ask) : Q.ask, wrap).forEach(function(s){ g+=T(x, y, s, {fs:12, c:'var(--ink)'}); y+=lh; });
     y+=6*FS;
-    if(done){ wrapLines((Q.ok ? '✓ Right: ' : '✗ Not quite: ')+'line '+Q.ans+'. The ray '+right2.w+'.', wrap).forEach(function(s){ g+=T(x, y, s, {fs:12, w:600, c:Q.ok?'var(--good)':'var(--bad)'}); y+=lh; }); }
-    else wrapLines(ask ? 'Click a line'+(Q.pick ? ' (you chose '+Q.pick+')' : '')+', then press Go.' : 'The ray box is switched on…', wrap).forEach(function(s){ g+=T(x, y, s, {fs:12, c:'var(--ink-soft)'}); y+=lh; });
+    if(done){ wrapLines((Q.ok ? '✓ Right: ' : '✗ Not quite: ')+(Q.draw ? 'the ray ' : 'line '+Q.ans+'. The ray ')+right2.w+'.', wrap).forEach(function(s){ g+=T(x, y, s, {fs:12, w:600, c:Q.ok?'var(--good)':'var(--bad)'}); y+=lh; }); }
+    else wrapLines(ask ? (Q.draw ? 'Draw the ray: drag the end of the orange ray to turn it about the point (or use the arrow keys), then press Go.' : 'Click a line'+(Q.pick ? ' (you chose '+Q.pick+')' : '')+', then press Go.') : 'The ray box is switched on…', wrap).forEach(function(s){ g+=T(x, y, s, {fs:12, c:'var(--ink-soft)'}); y+=lh; });
     if(score[1]) g+=T(x, PAN.y+PAN.h-10*FS, 'Score: '+score[0]+' out of '+score[1], {fs:11.5, c:'var(--ink-soft)'});
     return g;
   }
   function qReadings(){
     var note, right=Q.lines.filter(function(c){ return c.ok; })[0], mine=Q.lines.filter(function(c){ return c.id===Q.pick; })[0];
-    if(Q.phase==='ask') note='<b>Predict.</b> '+Q.ask+' Click a dashed line on the picture'+(Q.pick ? ' (you chose <b>'+Q.pick+'</b>)' : '')+', then press <b>Go</b>.';
+    if(Q.phase==='ask') note = Q.draw ? '<b>Draw it.</b> '+drawAsk(Q.ask)+' Drag the end of the orange ray to turn it about the point where the light meets the surface (or click it and use the arrow keys), then press <b>Go</b>.'
+      : '<b>Predict.</b> '+Q.ask+' Click a dashed line on the picture'+(Q.pick ? ' (you chose <b>'+Q.pick+'</b>)' : '')+', then press <b>Go</b>.';
     else if(Q.phase==='run') note='The ray box is switched on. Watch where the light goes.';
+    else if(Q.draw) note=(Q.ok ? '<b>Right.</b> ' : '<b>Not quite.</b> '+(Q.drawWhy||'')+' ')+Q.K.why(Q.e, Q.s);
     else note=(Q.ok ? '<b>Right: line '+Q.ans+'.</b> ' : '<b>Not quite: it is line '+Q.ans+'.</b> '+(mine && mine.no ? mine.no+' ' : ''))+Q.K.why(Q.e, Q.s);
     if(note!==lastNote){ $('#rf-note').innerHTML=FR(note); lastNote=note; }
     playBtn.innerHTML='&#9654; Go'; playBtn.disabled = Q.phase!=='ask' || !Q.pick;
@@ -1566,9 +1596,18 @@ function expKey(x, y, upLabel, downLabel){
   modeSeg=segGroup($('#rf-mode'), function(){ setMode(); });
   posSeg=segGroup($('#rf-pos'), function(v){ stop(); setI(+v, true); });
   function nearPos(v){ var b=MPOS[0]; MPOS.forEach(function(p){ if(Math.abs(p-v)<Math.abs(b-v)) b=p; }); return b; }
-  function choose(t){ if(t && Q && Q.phase==='ask' && predict()){ Q.pick=t.getAttribute('data-pick'); lastNote=''; draw(); } }
+  function choose(t){ if(t && Q && Q.draw) return; if(t && Q && Q.phase==='ask' && predict()){ Q.pick=t.getAttribute('data-pick'); lastNote=''; draw(); } }
   svg.addEventListener('click', function(e){ choose(e.target.closest('.pick')); });
   svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); choose(t); } });
+  // TODO 8i: turning the drawn ray
+  function turnTo(q){ Q.dang=Math.atan2(q.y-Q.e.p[1], q.x-Q.e.p[0]); Q.pick='draw'; lastNote=''; draw(); }
+  svgDrag(svg, {ok:function(){ return predict() && Q && Q.draw && Q.phase==='ask'; },
+    hit:function(q){ return q.x>=0 && q.x<=PW && q.y>=0 && q.y<=PH && Math.hypot(q.x-Q.e.p[0], q.y-Q.e.p[1])>12; }, start:turnTo, move:turnTo,
+    end:function(){ var h=svg.querySelector('.rf-dhandle'); if(h) h.focus({preventScroll:true}); }});
+  svg.addEventListener('keydown', function(e){
+    if(!(predict() && Q && Q.draw && Q.phase==='ask')) return;
+    var k={ArrowLeft:-1, ArrowDown:-1, ArrowRight:1, ArrowUp:1}[e.key]; if(!k) return; e.preventDefault();
+    Q.dang+=k*(e.shiftKey?5:1)*D2R; Q.pick='draw'; lastNote=''; draw(); var h=svg.querySelector('.rf-dhandle'); if(h) h.focus({preventScroll:true}); });
 
   svgDrag(svg, {
     ok:function(){ return !X.busy && !predict(); },
