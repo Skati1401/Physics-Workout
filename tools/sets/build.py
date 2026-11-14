@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Build the whole-course practice sets (calculations.html, graphs.html) from the IGCSE workouts.
+"""Build the whole-course practice set calculations.html from the IGCSE workouts.
+
+graphs.html was built here too until 15 Nov 2026; it is now a hand-written generator (see tools/WORKOUTS.md, section 1).
 
 calculations.html (12 Nov 2026) is a chooser, not tabs: one row per equation (SETS[...]['rows']),
 which the student ticks before pressing Start; its page code is chooser.js and chooser.css here.
@@ -27,7 +29,6 @@ import os, re, json
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CALC = ['Calculate', 'Spot the error']
-GRAPH = ['Label the graph', 'Calculate']
 P1 = 'Forces Part 1 (Year 10)'
 P2 = 'Forces Part 2 (Year 11)'
 U2 = 'Unit 2 Electricity'
@@ -116,22 +117,6 @@ SETS = {
       '8a-orbital': ('universe-and-stars.html', 'ORBITAL SPEED'),
       '8b-equation': ('cosmology.html', 'THE RED-SHIFT EQUATION'),
     }},
-  'graphs.html': {
-    'title': 'Graphs Set', 'key': 'set-graphs-v1', 'kinds': GRAPH,
-    'tabs': [
-      {'part': P1, 'page': 'motion.html', 'src': '1a', 'section': 'DISTANCE–TIME GRAPHS', 'tab': 'stgraph', 'label': 's–t Graph'},
-      {'part': P1, 'page': 'motion.html', 'src': '1a', 'section': 'VELOCITY–TIME GRAPHS', 'tab': 'vtgraph', 'label': 'v–t Graph'},
-      {'part': P1, 'page': 'forces.html', 'src': '1b', 'section': 'WEIGHT', 'tab': 'weight', 'label': 'Force Graphs', 'titles': ['Force–acceleration graph', 'Weight–mass graph']},
-      {'part': P2, 'page': 'falling-stopping-springs.html', 'src': '1c', 'section': 'FALLING', 'tab': 'falling', 'label': 'Falling'},
-      {'part': P2, 'page': 'falling-stopping-springs.html', 'src': '1c', 'section': 'STOPPING', 'tab': 'stopping', 'label': 'Stopping'},
-      {'part': P2, 'page': 'falling-stopping-springs.html', 'src': '1c', 'section': "HOOKE'S LAW", 'tab': 'hooke', 'label': 'Hooke’s Law', 'kinds': ['Label the graph']},
-      {'part': U2, 'page': 'circuit-components.html', 'src': '2c', 'section': 'CURRENT–VOLTAGE GRAPHS', 'tab': 'iv', 'label': 'I–V Graphs'},
-      {'part': U3, 'page': 'waves.html', 'src': '3a', 'section': 'DESCRIBING WAVES', 'tab': 'describing', 'label': 'Wave Graphs', 'titles': ['Read the wave']},
-      {'part': U3, 'page': 'waves.html', 'src': '3a', 'section': 'WAVE EQUATIONS', 'tab': 'equation', 'label': 'Period from a Graph', 'titles': ['Read the period off the graph']},
-      {'part': U3, 'page': 'sound.html', 'src': '3c', 'section': 'PITCH AND LOUDNESS', 'tab': 'pitch', 'label': 'Oscilloscope', 'ta': True, 'titles': ['Read the oscilloscope']},
-      {'part': U5, 'page': 'density-pressure-state.html', 'src': '5a', 'section': 'HEATING CURVE', 'tab': 'heating', 'label': 'Heating Curve', 'ta': True},
-      {'part': U7, 'page': 'radioactivity.html', 'src': '7a', 'section': 'HALF-LIFE', 'tab': 'halflife', 'label': 'Half-Life Graph', 'titles': ['Read the half-life off the graph']},
-    ]},
 }
 
 SEC = re.compile(r'^/\* =+ (?:\d+\. )?(.+?) =+ \*/', re.M)
