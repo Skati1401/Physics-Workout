@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stellar Parallax Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation for Edexcel IAL Physics (5.6 Astrophysics, trigonometric parallax) and IB Physics E.5 (stellar parallax). Watch the Earth orbit the Sun and a nearby star move against the distant stars through a telescope, drag the star nearer or further and see the parallax angle change, with the working for the distance in metres, parsecs and light years. Questions to answer on the picture.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    /* instrument kit colours */ --cur:#7c3aed; --lead:#3a4352; --lead-hi:#7d8899; --lead-v:#8791a3; --case-f:#4a5464; --case-t:#687385; --case-s:#343c4a; --lcd:#d5dec8; --lcd-ink:#1d2a1f; --plug-r:#d94444; --plug-k:#262d3a; --insul:#262d3a;
+    --steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --wood-f:#c99e6a; --wood-t:#e3c08f; --wood-s:#9c7444; --brass:#c9a13b; --brass-hi:#f0d78a; --copper:#b8651b; --copper-hi:#e6a25c;
+    --glass:#9fb4c8; --glass-in:#f4f8fb; --rule-t:#f3e2ab; --rule-f:#d9c27e; --rule-ink:#5b4a1f; --ceramic:#e4e1d3; --thermo:#f3f6fa; --thread:#d7261e; --case:#3f4a5e;
+    --topic:#4338ca;   --topic-soft:#e0e7ff;
+    --hot:#dc2626;
+    --water:#d6e9fb;   --ice:#ffffff;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      /* instrument kit colours */ --cur:#c4a1ff; --lead:#566072; --lead-hi:#8e99ab; --lead-v:#8791a3; --case-f:#667083; --case-t:#8a94a6; --case-s:#4a5364; --lcd:#c6d0b8; --lcd-ink:#172018; --plug-r:#d95252; --plug-k:#0c1017; --insul:#0c1017;
+      --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --brass:#b8943a; --brass-hi:#e8cf86; --copper:#f0a35e; --copper-hi:#ffd0a0;
+      --glass:#7f97ad; --glass-in:#202938; --rule-t:#d9c88f; --rule-f:#b39f63; --rule-ink:#3d3214; --ceramic:#b9b6a6; --thermo:#dfe6ee; --thread:#e5392f; --case:#56617a;
+      --topic:#a5b4fc; --topic-soft:#1e1b4b;
+      --hot:#f87171;
+      --water:#1c3a5a; --ice:#c9d6e6;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    /* instrument kit colours */ --cur:#c4a1ff; --lead:#566072; --lead-hi:#8e99ab; --lead-v:#8791a3; --case-f:#667083; --case-t:#8a94a6; --case-s:#4a5364; --lcd:#c6d0b8; --lcd-ink:#172018; --plug-r:#d95252; --plug-k:#0c1017; --insul:#0c1017;
+      --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --brass:#b8943a; --brass-hi:#e8cf86; --copper:#f0a35e; --copper-hi:#ffd0a0;
+      --glass:#7f97ad; --glass-in:#202938; --rule-t:#d9c88f; --rule-f:#b39f63; --rule-ink:#3d3214; --ceramic:#b9b6a6; --thermo:#dfe6ee; --thread:#e5392f; --case:#56617a;
+    --topic:#a5b4fc; --topic-soft:#1e1b4b;
+      --hot:#f87171;
+      --water:#1c3a5a; --ice:#c9d6e6;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+  /* button rows fill their width (Alex, 2 Nov 2026) */
+  .btn-group>.btn,.exp-btns>.btn{flex:1 1 0;min-width:max-content;justify-content:center;}
+  .seg:not(.tabs){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));}
+  .seg:not(.tabs)>button{padding-inline:4px;white-space:nowrap;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 335px));touch-action:pan-y;}
+  .view.tall,.embed .view.tall{max-height:none;}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  .view.dragging,.view.dragging *{cursor:grabbing;}
+  .grab{cursor:grab;}
+  .view:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  /* mystery-beaker answer box */
+  .guess{border:1px solid var(--panel-border);border-radius:8px;padding:8px 10px;}
+  .guess-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .guess-row input{width:110px;min-height:44px;font:600 15px var(--font-mono);padding:6px 8px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);}
+  .guess-row .unit{font:13px var(--font-mono);color:var(--ink-soft);}
+  .gfb{font-size:14px;margin-top:6px;min-height:1.4em;}
+  .gfb.ok{color:var(--good);font-weight:600;} .gfb.no{color:var(--bad);font-weight:600;}
+  .seg button sub,.stat sub{font-size:.75em;}
+  .cgrid>[hidden]{display:none!important;}
+
+  .guess-row label{font:12.5px var(--font-mono);color:var(--ink-soft);}
+  .guess-row label sub{font-size:.75em;}
+  .view .pick{cursor:pointer;}
+  .view .pick:focus{outline:none;}
+  .view .pick:focus-visible .ring{stroke:var(--accent);stroke-width:3.2;}
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+
+  /* Build tab: the meters to put in, and the tab switch */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{display:inline-flex;align-items:center;gap:8px;flex:1 1 auto;min-height:44px;padding:6px 12px;border:1px dashed var(--ink-faint);border-radius:8px;background:var(--panel);color:var(--ink);font:12.5px var(--font-mono);cursor:grab;touch-action:none;user-select:none;}
+  .chip[aria-pressed="true"]{border-style:solid;border-color:var(--topic);background:var(--topic-soft);}
+  .chip-m{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.8px solid var(--ink);font-weight:700;font-size:12px;}
+  .ghost{position:fixed;left:0;top:0;z-index:20;pointer-events:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--ink);background:var(--panel);display:grid;place-items:center;font:700 14px var(--font-mono);color:var(--ink);box-shadow:var(--shadow);}
+  .btab{align-self:flex-start;}
+  .toprow{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;}
+  /* Experiment has a table as well, so its rows sit closer and its buttons are shorter */
+  @media (min-width:861px){ .side.exp{gap:8px;} .side.exp .seg button{min-height:36px;padding-block:5px;} .side.exp .note{min-height:0;font-size:14px;} }
+  /* ===== this page ===== */
+  .view{max-height:max(260px,calc(100vh - 352px));}
+  @media (min-width:861px){ .side{gap:10px;} .note{font-size:14.5px;min-height:0;} details.working summary{min-height:36px;} }
+  #px-stats{grid-template-columns:1fr 1fr;}
+  #px-stats .stat small{white-space:normal;}
+  #px-stats .stat strong{font-size:13.5px;}
+  .guess-row label{font:12.5px var(--font-mono);color:var(--ink-soft);}
+  .view .pick{cursor:pointer;}
+  .view .pick:focus{outline:none;}
+  .view .pick:focus-visible .ring{stroke:var(--accent);stroke-width:3.2;}
+  .eyebrow b.ta{font:600 10.5px var(--font-mono);border:1px solid currentColor;border-radius:4px;padding:0 4px;margin-left:5px;vertical-align:1px;}
+  .side .rtable-wrap{max-height:132px;}
+  @media (max-height:640px) and (min-width:861px){ .side{gap:9px;} .note{font-size:14px;min-height:0;} .seg button{min-height:38px;padding-block:5px;} details.working summary{min-height:36px;} }
+
+</style>
+<style id="choice-kit">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
+.seg.pick{background:var(--bg);box-shadow:inset 0 0 0 1px var(--panel-border);border-radius:8px;}
+.seg.pick.fit{width:fit-content;max-width:100%;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on){background:transparent;border-color:transparent;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on):not(:disabled):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode{display:flex;flex-wrap:nowrap;align-self:stretch;flex-grow:1;background:var(--bg);box-shadow:0 0 0 1px var(--panel-border);border-radius:11px;padding:3px;gap:3px;}
+.seg.mode>button:nth-child(n){flex:1 1 0;min-height:38px;margin-left:0;padding:6px 12px;border-radius:8px;white-space:nowrap;font:600 14.5px var(--font-body,inherit);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]){background:transparent;border-color:transparent;color:var(--ink);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode>button:nth-child(n)[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel);}
+/* Choice rows (13 Nov 2026, Alex): in a .cgrid the label sits above its group, each group is only as wide as its
+   buttons, and short groups share a row, as on dc-motor.html. The script wraps each label and its control in a .cgroup. */
+.cgrid.kit{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-start;}
+.cgrid.kit>.cgroup{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;max-width:100%;}
+/* a row of one group (e.g. Graph under the picture) keeps its label beside it, to save height */
+.cgrid.kit.one>.cgroup{flex-direction:row;align-items:center;gap:10px;}
+.cgrid.kit>.cgroup[hidden]{display:none;}
+.cgrid.kit>.cgroup>.rowlab{font:12.5px var(--font-mono,ui-monospace,monospace);color:var(--ink-soft);}
+.cgrid.kit>.cgroup>.seg{display:flex;flex-wrap:wrap;max-width:100%;}
+.cgrid.kit>.cgroup>.seg>button{flex:0 1 auto;}
+.to-q[hidden]{display:none!important;}
+.to-q:nth-child(n){border-style:dashed;border-color:var(--ink);font-weight:600;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+<!-- pw-review -->
+<script>
+  // Draft tags and Alex's reviewer button (tools/review/drafts.py writes this block; edit tools/review/snippet.html, then run drafts.py sync).
+  // A page is Draft while its row in tools/REVIEW.md is not ✅: <meta name="pw-draft"> on the page, data-draft on its list cards.
+  // ?reviewer (once, on any page) turns on reviewer mode in this browser; ?reviewer=off turns it off.
+  (function(){
+    var on = false, embed = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var m = /[?&]reviewer(?:=([^&]*))?/.exec(location.search);
+    on = !!m && m[1] !== 'off';
+    try {
+      if (m) { if (m[1] === 'off') localStorage.removeItem('pw-reviewer'); else localStorage.setItem('pw-reviewer', '1'); }
+      else on = localStorage.getItem('pw-reviewer') === '1';
+    } catch (e) {}
+    var CSS = '.pw-draft{display:inline-block;vertical-align:middle;margin-left:10px;font:600 11.5px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:0;color:var(--bad,#b42318);border:1px dashed currentColor;border-radius:5px;padding:1px 7px;white-space:nowrap}'
+      + '.act-top .pw-draft{margin-left:auto;flex:none}.act-top .pw-draft~.cp-tag,.act-top .pw-draft~.ta-tag{margin-left:0}'
+      + 'a[data-draft]{position:relative}.pw-draft.pw-corner{position:absolute;top:10px;right:10px;margin:0;background:var(--panel,#fff)}'
+      + '.pw-check{display:inline-block;vertical-align:middle;margin-left:8px;font:600 13px/1.4 "IBM Plex Sans",system-ui,sans-serif;color:#fff;background:#1a7f37;border-radius:6px;padding:4px 10px;text-decoration:none;white-space:nowrap}'
+      + '.pw-check:hover{background:#116329}.pw-check:focus-visible{outline:2px solid #1a7f37;outline-offset:2px}'
+      + '.pw-reviewer{position:fixed;left:10px;bottom:10px;z-index:9999;font:500 12px/1.4 "IBM Plex Mono",ui-monospace,monospace;background:#1d2433;color:#fff;border-radius:6px;padding:4px 9px;opacity:.85}'
+      + '.pw-reviewer a{color:#ffc83d}';
+    function tag(){ var t = document.createElement('span'); t.className = 'pw-draft'; t.title = 'Not yet checked'; t.textContent = 'Draft'; return t; }
+    function go(){
+      var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+      var meta = document.querySelector('meta[name="pw-draft"]'), h1 = document.querySelector('h1');
+      if (meta && h1 && !embed) {
+        h1.appendChild(tag());
+        if (on) {
+          var page = meta.getAttribute('content'), b = document.createElement('a');
+          b.className = 'pw-check'; b.target = '_blank'; b.rel = 'noopener'; b.textContent = '✓ Checked';
+          b.title = 'Opens a GitHub issue. Submit it and the Draft tag goes in a minute or two.';
+          b.href = 'https://github.com/Skati1401/Physics-Workout/issues/new?title=' + encodeURIComponent('Checked: ' + page)
+            + '&body=' + encodeURIComponent('Submit this issue to mark `' + page + '` as checked. The Draft tag goes in a minute or two, and the issue closes itself.');
+          h1.appendChild(b);
+        }
+      }
+      document.querySelectorAll('a[data-draft]').forEach(function(a){
+        if (a.querySelector('.pw-draft')) return;
+        var t = tag(), top = a.querySelector('.act-top');
+        if (top) top.insertBefore(t, top.querySelector('.cp-tag,.ta-tag'));
+        else { t.className += ' pw-corner'; a.appendChild(t); }
+      });
+      // No tag on a unit or theme heading (Alex, 12 Nov 2026): only the pages and their cards.
+      if (on && !embed) {
+        // Carry ?reviewer in every link to another page of the site, so reviewer mode survives
+        // browsers that clear site storage (school Chromebooks) and pages cached from before.
+        var carry = function(a){
+          try {
+            var u = new URL(a.href, location.href);
+            if (u.origin !== location.origin || !/(\.html|\/)$/.test(u.pathname) || u.searchParams.has('reviewer')) return;
+            u.searchParams.set('reviewer', ''); a.href = u.href.replace('reviewer=', 'reviewer');
+          } catch (e) {}
+        };
+        document.querySelectorAll('a[href]').forEach(carry);
+        ['click', 'auxclick', 'contextmenu'].forEach(function(ev){
+          document.addEventListener(ev, function(e){ var a = e.target.closest && e.target.closest('a[href]'); if (a) carry(a); }, true);
+        });
+        var r = document.createElement('div'); r.className = 'pw-reviewer';
+        r.innerHTML = 'Reviewer mode · <a href="' + location.pathname + '?reviewer=off">turn off</a>';
+        document.body.appendChild(r);
+      }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  })();
+</script>
+<!-- /pw-review -->
+<meta name="pw-draft" content="animations/parallax.html">
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="ial.html">&larr; IAL animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow" id="px-eye">Animations &middot; astrophysics &middot; IAL 165</div>
+      <h1>Stellar Parallax</h1>
+    </div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="px-svg" viewBox="0 0 860 350" role="img" aria-label="The Earth's orbit round the Sun seen from above, with lines of sight from the Earth in January and in July to a nearby star; beside it, the nearby star seen through a telescope against the distant stars, on a scale of angle."></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="px-play" type="button">&#9654; Play one year</button>
+          <button class="btn" id="px-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="px-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="px-new" type="button" hidden>New question</button>
+          <button class="btn to-q" type="button" data-mode="px-tab" hidden>Try the questions &rarr;</button>
+        </div>
+        <div class="sliders" id="px-sliders">
+          <div><label class="lab" for="px-d">Distance of the star<output id="px-do"></output></label><input type="range" id="px-d" min="1.3" max="10" step="0.1" value="1.3"></div>
+          <div><span class="lab">Jump to</span><div class="seg" id="px-jump" role="group" aria-label="Jump to a month"><button type="button" data-v="0">January</button><button type="button" data-v="0.25">April</button><button type="button" data-v="0.5">July</button><button type="button" data-v="0.75">October</button></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="toprow"><div class="seg tabs mode" id="px-tab" role="group" aria-label="Explore or questions"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
+        <div class="seg tabs" id="px-level" role="group" aria-label="Level"><button type="button" data-v="ial" aria-pressed="true">IAL</button><button type="button" data-v="ib" aria-pressed="false">IB</button></div></div>
+      <div class="cgrid" id="px-grid">
+        <span class="rowlab">Star</span>
+        <div class="seg" id="px-star" role="group" aria-label="Star"><button type="button" data-v="1.3" aria-pressed="true">Alpha Centauri</button><button type="button" data-v="2.6" aria-pressed="false">Sirius</button><button type="button" data-v="7.7" aria-pressed="false">Vega</button><button type="button" data-v="far" aria-pressed="false">A far star</button></div>
+      </div>
+      <p class="note" id="px-note" aria-live="polite"></p>
+      <div class="guess" id="px-guess" hidden>
+        <div class="guess-row"><label for="px-ans" id="px-anslab">Distance of the star</label><input id="px-ans" type="number" inputmode="decimal" step="any" autocomplete="off"><span class="unit" id="px-unit">pc</span></div>
+      </div>
+      <div class="stats" id="px-stats"></div>
+      <details class="working" id="px-working">
+        <summary>Show working</summary>
+        <div class="eq" id="px-eq1"></div>
+        <p class="eqnote" id="px-eq2"></p>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  var SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sci(x, dp){   // 4.97 × 10⁻¹⁹
+    if(x===0) return '0';
+    var e = Math.floor(Math.log10(Math.abs(x))), m = x/Math.pow(10,e);
+    if(+Math.abs(m).toFixed(dp)>=10){ m/=10; e++; }
+    return sn(m,dp)+' × 10'+String(e).replace(/./g,function(c){ return SUP[c]; });
+  }
+  function sn(x, dp){ var t = Math.abs(x).toFixed(dp); return (x<0 && +t!==0 ? '−' : '')+t; }   // real minus sign
+  function sig(x, n){   // n significant figures, as text, real minus sign
+    if(x===0) return '0';
+    x=+x.toPrecision(n); if(x===0) return '0';
+    var dp = Math.max(0, n-1-Math.floor(Math.log10(Math.abs(x))));
+    return sn(x, dp);
+  }
+  function grp(t){ return String(t).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }   // 12 345
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // a row of choice buttons that behaves like a radio group
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  // ---- solid kit (the same block is in roller-coaster-energy.html, heat-transfer.html, density.html and liquid-pressure.html) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
+  // the picture is wide on a laptop and tall on a phone (sizeView is the instrument kit's, as in wiens-law.html)
+  function sizeView(svg, wide, tall){
+    var w=svg.getBoundingClientRect().width, t=w>0 && w<520, L=t?tall:wide, vb='0 0 '+L.VW+' '+L.VH;
+    if(svg.getAttribute('viewBox')!==vb){ svg.setAttribute('viewBox',vb); svg.classList.toggle('tall',t); }
+    return L;
+  }
+  function svgPoint(svg, e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+  function stat(lab, val, hi){ return '<div class="stat'+(hi?' hi':'')+'"><small>'+lab+'</small><strong>'+val+'</strong></div>'; }
+
+  // ===== Stellar parallax (IAL point 165, trigonometric parallax; IB E.5, d(parsec) = 1/p(arc-second)) =====
+  // The model. The star lies in the plane of the Earth's orbit, so through the year it moves to and fro along a line
+  //   against the distant stars: its angle from the middle is θ cos(2π × time in years), where θ (IB: p) is the parallax
+  //   angle, the angle at the star between the Sun and the Earth. January and July are the two ends.
+  // The picture from above is NOT to scale (a real star is more than 200 000 times further away than the orbit is wide),
+  //   and it says so. The telescope view and every reading ARE true: the scale is in arc-seconds (IB) or 10⁻⁶ rad (IAL).
+  // Numbers. The slider gives the star's distance; the page turns it into the angle that would be measured
+  //   (p = 1 ÷ distance in pc, to 0.001 arc-second) and then works the distance out from that angle, as an astronomer does:
+  //   IAL tan θ = r/d with r = 1.50 × 10¹¹ m and θ in rad to 3 s.f.; IB d = 1/p, with 1 pc = 3.26 ly and 1 ly = 9.46 × 10¹⁵ m.
+  //   The smallest angle this telescope can measure is 1.0 × 10⁻⁷ rad (IAL) or 0.02 arc-second (IB): the "far star"
+  //   (0.010 arc-second) is beyond it.
+  // Question kinds, from Alex's IAL Past Paper Index and IB Physics Question Index (read 14 Nov 2026):
+  //   read:  the distance from the star's shift over 6 months, where the parallax angle is half the shift
+  //          (IB P3 HL May 2024 TZ1 17(a)(i), P1A May 2026 TZ3 Q40; WPH15 June 2022 18(a)(i))
+  //   conv:  IB only, the distance in light years or metres from p (P1A Nov 2025 TZ3 Q40, May 2026 TZ2 Q40, P2 HL Nov 2025 TZ1 7(b)(i))
+  //   limit: IAL only, deduce whether a star's distance can be found, given the smallest angle that can be measured
+  //          (WPH15 Jan 2022 19(a), June 2026 17(a))
+  //   twice: one star has twice (half, a third of) the parallax angle of another: where is it?
+  //          (WPH15 Jan 2026 Q4, June 2023 Q3, WPH05 Jan 2019 19(b); IB P3 HL May 2023 TZ2 16(b)(i))
+  //   The notes in Explore follow the mark schemes for "describe how trigonometric parallax is used"
+  //   (WPH15 Jan 2023 18(a)(i), Oct 2025 21(a)) and "why only nearby stars" (June 2022 18(a)(ii), June 2025 14(a)).
+  var SHOW=(location.search.match(/[?&]show=(predict)\b/)||[])[1];
+  var svg=$('#px-svg'), playBtn=$('#px-play'), resetBtn=$('#px-reset'), slowBtn=$('#px-slow'), newBtn=$('#px-new'), dIn=$('#px-d'), ansIn=$('#px-ans');
+  svg.innerHTML='<g id="px-live"></g><g id="px-picks"></g>';
+  var live=$('#px-live'), picksG=$('#px-picks'), picksHtml=null;
+  function levelGroup(el, onPick){ var sg=segGroup(el, onPick); if(PW_LEVEL && el.querySelector('[data-v="'+PW_LEVEL+'"]')) sg.pick(PW_LEVEL); return sg; }
+  var tabSeg=segGroup($('#px-tab'), function(){ setTab(); });
+  var levelSeg=levelGroup($('#px-level'), function(){ setLevel(); });
+  var starSeg=segGroup($('#px-star'), function(v){ stopRun(); if(v==='far'){ far=true; } else { far=false; dist=+v; dIn.value=dist; } ph=1; lastNote=''; draw(); });
+  $('#px-jump').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; stopRun(); ph=+b.dataset.v; lastNote=''; draw(); });
+  function predict(){ return tabSeg.value()==='predict'; }
+  function ib(){ return levelSeg.value()==='ib'; }
+  function slow(){ return pressed(slowBtn) ? 0.3 : 1; }
+
+  // ---- constants
+  var AS=4.8481e-6, RAU=1.50e11, LYPC=3.26, LYM=9.46e15, YEAR_S=8;
+  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var WINK='#e9eef8', WSOFT='#b9c4d8', SKYC='#070b16', JANC='#8fd3ff', JULC='#ffd166', XCOL='#ff9d6b', GOOD='#4ade80', BAD='#ff8a75';
+  function hash(i){ var x=Math.sin(i*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+  function rnd(list){ return list[Math.floor(Math.random()*list.length)]; }
+  function trim(x, n){ return String(+(+x).toPrecision(n)); }
+  var DEFS='<defs><radialGradient id="px-sun"><stop offset="0" stop-color="#fff8d6"/><stop offset=".45" stop-color="#ffd84a"/><stop offset="1" stop-color="#ffb21f" stop-opacity="0"/></radialGradient>'+
+    '<radialGradient id="px-st"><stop offset="0" stop-color="#fff"/><stop offset=".3" stop-color="#fff3c4"/><stop offset="1" stop-color="#fff3c4" stop-opacity="0"/></radialGradient>'+
+    '<radialGradient id="px-sx"><stop offset="0" stop-color="#fff"/><stop offset=".3" stop-color="#ffb38c"/><stop offset="1" stop-color="#ff9d6b" stop-opacity="0"/></radialGradient></defs>';
+
+  // ---- drawing helpers
+  function circ(x,y,r,fill,extra){ return '<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="'+f1(Math.max(0,r))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text inside a dark window: a dark edge, so a line passing behind never cuts a letter
+  function dtxt(x,y,s,o){ o=o||{}; if(!o.c) o.c=WINK; o.x=' paint-order="stroke" stroke="'+SKYC+'" stroke-width="3.5" stroke-linejoin="round"'; return txt(x,y,s,o); }
+  function earth(x,y,r,op){ return '<g'+(op!=null?' opacity="'+op+'"':'')+'>'+circ(x,y,r,'#3d84d6')+circ(x-r*0.25,y-r*0.3,r*0.45,'#8fc0f2',' opacity=".55"')+circ(x+r*0.3,y+r*0.2,r*0.32,'#4caf6e',' opacity=".85"')+'</g>'; }
+  function sky(W,H,n,seed){ var s='', i; for(i=0;i<n;i++) s+=circ(6+(W-12)*hash(i*5+seed),6+(H-12)*hash(i*5+seed+1),0.5+0.8*hash(i*5+seed+2),'#fff',' opacity=".45"'); return s; }
+  function win(id,W,H,inner){ return '<defs><clipPath id="'+id+'"><rect x="0" y="0" width="'+W+'" height="'+H+'" rx="10"/></clipPath></defs>'+rect(0,0,W,H,SKYC,' rx="10"')+'<g clip-path="url(#'+id+')">'+inner+'</g>'; }
+  function at(P,s){ return '<g transform="translate('+P.x+','+P.y+')">'+s+'</g>'; }
+  function starDot(x,y,k,x2,op){ return '<g'+(op!=null?' opacity="'+(+op).toFixed(2)+'"':'')+'>'+circ(x,y,13*k,'url(#'+(x2?'px-sx':'px-st')+')')+circ(x,y,3.4*k,'#fff')+'</g>'; }
+
+  // ---- state
+  var dist=1.3, far=false, ph=1, running=false, raf=0, last=0, lastNote='';   // dist in pc; ph: time in years since January (1: the year is complete)
+  var Q={n:0, tried:0, right:0, phase:'ask', kind:'', ok:false, u:0, last:'', pick:null, val:null, q:null};
+  function pOf(){ return far ? 0.010 : +(1/dist).toFixed(3); }                 // the parallax angle measured, in arc-seconds
+  function thOf(p){ return +(p*AS).toPrecision(3); }                           // the same angle in rad, to 3 s.f.
+  function dM(p){ return RAU/Math.tan(thOf(p)); }                              // IAL: distance in m from tan θ = r/d
+  function dPc(p){ return +(1/p).toPrecision(3); }                             // IB: distance in pc
+  function unitsOf(p){ return ib() ? p : p*AS*1e6; }                           // the angle in the telescope scale's units
+  function pTxt(p){ return p.toFixed(3); }
+  function symA(){ return ib() ? 'p' : 'θ'; }
+  function month(){ return MONTHS[Math.round(ph*12)%12]; }
+
+  // ---- layout
+  var LY, TALL, P, T, G;
+  function layout(){
+    var v=sizeView(svg,{VW:860,VH:350},{VW:430,VH:604}); LY=v; TALL=v.VW===430;
+    P = TALL ? {x:6,y:4,w:418,h:300} : {x:6,y:4,w:500,h:342};
+    T = TALL ? {x:6,y:312,w:418,h:236} : {x:512,y:4,w:342,h:292};
+    G = TALL ? {SX:66,cy:150,R:50,D0:84,Dk:22,RQ:30,KQ:100} : {SX:84,cy:171,R:58,D0:95,Dk:27,RQ:36,KQ:120};
+  }
+  function dpxOf(d){ return G.D0+G.Dk*(Math.max(1.3,Math.min(10,d))-1.3); }
+  function ePos(t,R){ var a=2*Math.PI*t; return [G.SX-R*Math.sin(a), G.cy-R*Math.cos(a)]; }
+
+  // ---- the view from above. o: ph, R, title, tc, tw, jan, jul (keep those lines of sight), cur (draw the Earth's line of sight now),
+  //      stars [{dpx, name, x2, op, lines, ang, grab, brk, dTxt}], rings [{dpx, letter, state}], ringsOn
+  function sight(E, S, col, w, W, op){   // from the Earth through the star and on to the distant stars
+    var k=(W+12-E[0])/(S[0]-E[0]), ex=W+12, ey=E[1]+(S[1]-E[1])*k;
+    return '<g'+(op!=null?' opacity="'+(+op).toFixed(2)+'"':'')+'>'+ln(E[0],E[1],S[0],S[1],col,w)+ln(S[0],S[1],ex,ey,col,Math.max(1,w-0.4),' stroke-dasharray="5 5" opacity=".75"')+'</g>';
+  }
+  function topHtml(o){
+    var W=P.w, H=P.h, SX=G.SX, cy=G.cy, R=o.R||G.R, s='', pk='', i, a=2*Math.PI*o.ph, E=ePos(o.ph,R), EJ=[SX,cy-R], EL=[SX,cy+R];
+    var atJan=Math.abs(Math.cos(a)-1)<0.002, atJul=Math.abs(Math.cos(a)+1)<0.002;
+    s+=sky(W,H,TALL?26:40,23);
+    for(i=0;i<10;i++) s+=circ(W-52+44*hash(i*3+5), 12+(H-24)*((i+0.5)/10)+8*hash(i*3+6)-4, 1.5+1.3*hash(i*3+7), '#fff',' opacity=".92"');
+    s+=dtxt(W-10,H-10,'distant stars',{a:'end',fs:11.5,c:WSOFT});
+    s+='<circle cx="'+SX+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+WSOFT+'" stroke-width="1.2" stroke-dasharray="4 4" opacity=".7"/>';
+    o.stars.forEach(function(st){
+      var S=[SX+st.dpx,cy], op=st.op==null?1:st.op, c1=st.x2?XCOL:JANC, c2=st.x2?XCOL:JULC;
+      if(op<=0.01) return;
+      if(!st.x2) s+=ln(SX,cy,S[0],cy,WSOFT,1.2,' opacity=".8"');
+      if(st.brk){ var bx=SX+st.dpx*0.62; s+=rect(bx-7,cy-6,14,12,SKYC)+ln(bx-7,cy+6,bx-1,cy-6,WSOFT,1.4)+ln(bx+1,cy+6,bx+7,cy-6,WSOFT,1.4); }
+      if(st.lines!==false){
+        if(o.jan) s+=sight(EJ,S,c1,1.7,W,op);
+        if(o.jul) s+=sight(EL,S,c2,1.7,W,op);
+        if(o.cur && !atJan && !atJul) s+=sight(E,S,'#fff',1.5,W,op*0.9);
+      }
+      if(st.ang && o.jan){
+        var an=Math.atan2(R,st.dpx), ra=Math.max(30,Math.min(70,14/an)), x1=S[0]-ra, x2=S[0]-ra*Math.cos(an), y2=ra*Math.sin(an);
+        s+='<path d="M'+f1(x1)+','+cy+' A'+f1(ra)+','+f1(ra)+' 0 0 1 '+f1(x2)+','+f1(cy-y2)+'" fill="none" stroke="#fff" stroke-width="1.6"/>';
+        if(o.jul) s+='<path d="M'+f1(x1)+','+cy+' A'+f1(ra)+','+f1(ra)+' 0 0 0 '+f1(x2)+','+f1(cy+y2)+'" fill="none" stroke="#fff" stroke-width="1.6"/>';
+        if(an>0.3) s+=dtxt(S[0]-(ra+13)*Math.cos(an/2), cy-(ra+13)*Math.sin(an/2)+4.5, symA(), {a:'middle',fs:14,w:700,c:'#fff'});
+        else s+=dtxt(x2-3, cy-y2-8, symA(), {a:'end',fs:14,w:700,c:'#fff'});
+      }
+    });
+    // the Sun, the radius of the orbit and the right angle
+    s+=ln(SX,cy,SX,cy-R,WSOFT,1.2,' opacity=".8"')+'<path d="M'+SX+','+(cy-8)+' h8 v8" fill="none" stroke="'+WSOFT+'" stroke-width="1.1"/>';
+    s+=circ(SX,cy,15,'url(#px-sun)')+circ(SX,cy,6.5,'#ffe27a');
+    s+=dtxt(SX-13,cy+4.5,'Sun',{a:'end',fs:12,c:WSOFT})+(o.R ? '' : dtxt(SX-6,cy-R/2+4,ib()?'1 AU':'r',{a:'end',fs:ib()?12:14,w:700,c:'#fff'}));
+    // the Earth: where it was in January and July, and where it is now
+    if(o.jan && !atJan) s+=earth(EJ[0],EJ[1],5.5,0.6)+(Math.cos(a)>0.8?'':dtxt(EJ[0]+10,EJ[1]-9,'January',{fs:12,c:JANC}));
+    if(o.jul && !atJul) s+=earth(EL[0],EL[1],5.5,0.6)+(Math.cos(a)<-0.8?'':dtxt(EL[0]+10,EL[1]+18,'July',{fs:12,c:JULC}));
+    s+=earth(E[0],E[1],7)+dtxt(E[0]+10,E[1]+(Math.cos(a)<-0.5?19:-10),(atJan||atJul?'Earth, ':'')+MONTHS[Math.round(o.ph*12)%12],{fs:12,w:600,c:atJan?JANC:atJul?JULC:'#fff'});
+    o.stars.forEach(function(st){
+      var S=[SX+st.dpx,cy], op=st.op==null?1:st.op; if(op<=0.01) return;
+      s+=starDot(S[0],S[1],1,st.x2,op);
+      if(st.grab) s+='<circle class="grab" cx="'+f1(S[0])+'" cy="'+cy+'" r="11" fill="#fff" fill-opacity="0" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3"/>'+dtxt(S[0],cy-20,'← drag →',{a:'middle',fs:11.5,c:WSOFT});
+      if(st.name && op>0.6) s+= st.above ? dtxt(S[0],cy-18,st.name,{a:'middle',fs:12.5,w:700,c:st.x2?XCOL:'#fff'}) : dtxt(S[0]+14,cy+4.5,st.name,{fs:12,c:st.x2?XCOL:WINK});
+      if(st.dTxt) s+=dtxt(SX+Math.min(st.dpx*0.5,st.brk?st.dpx*0.34:999),cy+16,st.dTxt,{a:'middle',fs:12.5,w:700,c:'#fff'});
+    });
+    (o.rings||[]).forEach(function(r,j){
+      var x=SX+r.dpx, col=r.state==='good'?GOOD:r.state==='bad'?BAD:r.state==='sel'?'#fff':WSOFT, w=r.state?2.8:1.8, inner;
+      if(r.state==='hide') return;
+      inner='<circle class="ring" cx="'+f1(x)+'" cy="'+cy+'" r="12" fill="'+SKYC+'" fill-opacity="'+(r.state==='good'||r.state==='bad'?0:0.85)+'" stroke="'+col+'" stroke-width="'+w+'"'+(r.state?'':' stroke-dasharray="4 3"')+'/>'+
+        (r.state==='good'||r.state==='bad' ? dtxt(x,cy+30,r.letter+(r.state==='good'?' ✓':' ✗'),{a:'middle',fs:12.5,w:700,c:col}) : txt(x,cy+4.5,r.letter,{a:'middle',fs:12.5,w:700,c:col}));
+      if(o.ringsOn) pk+='<g class="pick" data-pick="r:'+j+'" tabindex="0" role="button" aria-pressed="'+(r.state==='sel')+'" aria-label="Position '+r.letter+'">'+inner+'</g>'; else s+=inner;
+    });
+    s+=dtxt(12,17,o.title,{fs:11.5,w:o.tw||400,c:o.tc||WSOFT});
+    return {g:win('px-w1',W,H,s), pk:pk};
+  }
+
+  // ---- the telescope. S: the scale (scaleSpec). o: title, tc, tw, rows [{a, y, name, x2, jan, jul, cur, dim, op}], band, msg, boxes
+  function scaleSpec(kind){ var half=T.w/2-16;
+    if(kind==='e7') return {k:'e7', px:half/5.6, minor:0.5, major:1, num:1, dp:0, title:'angle on the sky (× 10⁻⁷ rad)'};
+    if(ib()) return {k:'as', px:half/0.92, minor:0.05, major:0.1, num:0.2, dp:1, title:'angle on the sky (arc-second)'};
+    return {k:'ur', px:half/0.92/(AS*1e6), minor:0.25, major:0.5, num:1, dp:0, title:'angle on the sky (× 10⁻⁶ rad)'};
+  }
+  function teleHtml(S,o){
+    var W=T.w, H=T.h, cx=W/2, s='', pk='', out='', i, marks=[];
+    s+=sky(W,H,34,57);
+    for(i=0;i<12;i++) s+=circ(10+(W-20)*hash(i*7+91), 30+(H-44)*hash(i*7+92), 1.3+1.2*hash(i*7+93), '#fff',' opacity=".9"');
+    if(o.band){ var bw=o.band*S.px; s+=rect(cx-bw,24,2*bw,H-24,BAD,' opacity=".22"')+ln(cx-bw,24,cx-bw,H,BAD,1,' stroke-dasharray="3 3"')+ln(cx+bw,24,cx+bw,H,BAD,1,' stroke-dasharray="3 3"')+dtxt(cx,40,'too small to measure',{a:'middle',fs:11.5,c:BAD}); }
+    (o.rows||[]).forEach(function(r){
+      var xJ=cx+r.a*S.px, xL=cx-r.a*S.px, y=r.y, op=r.op==null?1:r.op, sep=xJ-xL; if(op<=0.01) return;
+      s+='<g opacity="'+op.toFixed(2)+'">';
+      if(r.jan){ s+=ln(xJ,y+9,xJ,H,JANC,1.1,' stroke-dasharray="3 4" opacity=".8"')+'<circle cx="'+f1(xJ)+'" cy="'+y+'" r="7.5" fill="none" stroke="'+JANC+'" stroke-width="1.5"/>'+(xJ+66>W ? dtxt(xJ-11,y-12,'January',{a:'end',fs:11.5,c:JANC}) : dtxt(xJ+11,y-12,'January',{fs:11.5,c:JANC})); marks.push(xJ); }
+      if(r.jul){ s+=ln(xL,y+9,xL,H,JULC,1.1,' stroke-dasharray="3 4" opacity=".8"')+'<circle cx="'+f1(xL)+'" cy="'+y+'" r="7.5" fill="none" stroke="'+JULC+'" stroke-width="1.5"/>'+(xL-44<0 ? dtxt(xL+11,y-12,'July',{fs:11.5,c:JULC}) : dtxt(xL-11,y-12,'July',{a:'end',fs:11.5,c:JULC})); marks.push(xL); }
+      if(r.jan && r.jul && r.dim){
+        if(sep>46) s+=ln(xL+3,y+26,xJ-3,y+26,'#fff',1.3)+pg([[xL+1,y+26],[xL+9,y+22],[xL+9,y+30]],'#fff')+pg([[xJ-1,y+26],[xJ-9,y+22],[xJ-9,y+30]],'#fff');
+        if(sep>5) s+=dtxt(cx,y+(sep>46?43:30),r.dim,{a:'middle',fs:12.5,w:700,c:'#fff'});
+      }
+      if(r.cur!=null) s+=starDot(cx+r.a*S.px*r.cur,y,1,r.x2);
+      if(r.name) s+=dtxt(12,y+4.5,r.name,{fs:12.5,w:700,c:r.x2?XCOL:'#fff'});
+      s+='</g>';
+    });
+    if(o.msg) s+=dtxt(cx,H-16,o.msg,{a:'middle',fs:11.5,c:o.mc||WSOFT});
+    if(o.blank) s+=dtxt(cx,H*0.36,'?',{a:'middle',fs:30,w:700,c:WSOFT});
+    (o.boxes||[]).forEach(function(b,j){
+      var bw=(W-36)/2, x=12+j*(bw+12), y=H-66, col=b.state==='sel'?'#fff':WSOFT;
+      pk+='<g class="pick" data-pick="y:'+b.v+'" tabindex="0" role="button" aria-pressed="'+(b.state==='sel')+'" aria-label="'+b.lab+'"><rect class="ring" x="'+f1(x)+'" y="'+y+'" width="'+f1(bw)+'" height="40" rx="8" fill="'+SKYC+'" fill-opacity=".85" stroke="'+col+'" stroke-width="'+(b.state?2.8:1.8)+'"'+(b.state?'':' stroke-dasharray="5 4"')+'/>'+txt(x+bw/2,y+25,b.lab,{a:'middle',fs:12.5,w:700,c:col})+'</g>';
+    });
+    s+=dtxt(12,17,o.title,{fs:11.5,w:o.tw||400,c:o.tc||WSOFT});
+    // the scale of angle under the window
+    var ya=H+9, n=Math.floor((cx-8)/(S.minor*S.px)), v, X, big, num;
+    out+=ln(8,ya,W-8,ya,'var(--ink-soft)',1.5);
+    for(i=-n;i<=n;i++){ v=i*S.minor; X=cx+v*S.px; big=Math.abs(v/S.major-Math.round(v/S.major))<1e-6; num=Math.abs(v/S.num-Math.round(v/S.num))<1e-6;
+      out+=ln(X,ya,X,ya+(num?8:big?6:3.5),'var(--ink-soft)',num?1.4:1);
+      if(num) out+=txt(X,ya+21,(v<-1e-9?'−':'')+(Math.abs(v)<1e-9?'0':Math.abs(v).toFixed(S.dp)),{a:'middle',fs:11,c:'var(--ink-soft)'}); }
+    marks.forEach(function(x){ out+=pg([[x-4.5,ya-8],[x+4.5,ya-8],[x,ya-1]],'var(--ink)'); });
+    out+=txt(cx,ya+39,S.title,{a:'middle',fs:11.5});
+    return {g:win('px-w2',W,H,s)+out, pk:pk};
+  }
+
+  // ---- draw
+  function draw(){
+    layout();
+    var g=DEFS, pk='', tp, te, S;
+    if(!predict()){
+      var p=pOf(), c=Math.cos(2*Math.PI*ph), jul=ph>=0.5-1e-6;
+      tp=topHtml({ph:ph, jan:true, jul:jul, cur:true, title:TALL?'From above (not to scale)':'Seen from above the Solar System (not to scale)',
+        stars:[{dpx:far?dpxOf(10)-12:dpxOf(dist), name:far?'far star':'nearby star', ang:true, grab:!running && !far, brk:far, dTxt:'d'}]});
+      S=scaleSpec();
+      te=teleHtml(S,{title:'Through the telescope: '+month(), rows:[{a:unitsOf(p), y:Math.round(T.h*0.42), jan:true, jul:jul, cur:c, dim:'2'+symA()}],
+        msg: far ? 'The star hardly moves against the distant stars' : '', mc:BAD});
+      g+=at(P,tp.g)+at(T,te.g);
+    } else {
+      var q=Q.q, ask=Q.phase==='ask', dn=Q.phase==='done', u=ask?0:Math.min(1,Q.u), verdict=dn ? (Q.ok?'✓ Correct':'✗ Not quite') : '', vc=Q.ok?GOOD:BAD, phq=ask?1:(dn?1:u);
+      if(Q.kind==='read' || Q.kind==='conv'){
+        tp=topHtml({ph:phq, jan:true, jul:true, cur:!ask, title:dn?verdict:'From above (not to scale)', tw:dn?700:400, tc:dn?vc:WSOFT,
+          stars:[{dpx:dpxOf(1/q.p), name:'star', ang:true, dTxt:dn?'d = '+q.ansTxt:'d = ?'}]});
+        S=scaleSpec();
+        te=teleHtml(S,{title:Q.kind==='read' ? 'The star in January and in July' : 'Parallax angle '+symA()+' = '+q.pTxt, rows:[{a:unitsOf(q.p), y:Math.round(T.h*0.42), jan:true, jul:true, cur:ask?null:Math.cos(2*Math.PI*u), dim:Q.kind==='read' ? (dn?'2'+symA():'') : ''}]});
+      } else if(Q.kind==='limit'){
+        tp=topHtml({ph:phq, jan:true, jul:true, cur:!ask, title:dn?verdict:'From above (not to scale)', tw:dn?700:400, tc:dn?vc:WSOFT,
+          stars:[{dpx:dpxOf(10)-12, name:'star', ang:true, brk:true, dTxt:'d = '+q.dTxt}]});
+        S=scaleSpec('e7');
+        te=teleHtml(S,{title:ask ? 'Can the distance be found by parallax?' : dn ? (q.ok?'It can: the angle is large enough':'It cannot: the angle is too small') : 'Through the telescope', tw:dn?700:400, tc:dn?(q.ok?GOOD:BAD):WSOFT, band:q.amin, blank:ask,
+          rows: ask ? [] : [{a:q.th*1e7, y:Math.round(T.h*0.42), jan:true, jul:u>=0.5, cur:Math.cos(2*Math.PI*u), dim:dn?'2θ':''}],
+          boxes: ask ? [{v:'yes',lab:'Yes, it can',state:Q.pick==='yes'?'sel':''},{v:'no',lab:'No, it cannot',state:Q.pick==='no'?'sel':''}] : []});
+      } else {
+        tp=topHtml({ph:phq, R:G.RQ, jan:true, jul:true, cur:false, title:dn?verdict:'Where is star X? Click a ring', tw:dn?700:400, tc:dn?vc:WSOFT, ringsOn:ask,
+          stars:[{dpx:G.KQ, name:'Y', above:true, ang:false}].concat(ask ? [] : [{dpx:G.KQ*q.rings[q.ans], name:'X', above:true, x2:true, op:u}]),
+          rings:q.rings.map(function(f,j){ return {dpx:G.KQ*f, letter:'ABCD'.charAt(j), state: dn ? (j===q.ans?'good':Q.pick===j?'bad':'hide') : ask ? (Q.pick===j?'sel':'') : (j===q.ans?'hide':Q.pick===j?'sel':'')}; })});
+        S=scaleSpec();
+        te=teleHtml(S,{title:'The two stars in January and in July', rows:[{a:unitsOf(q.pY), y:Math.round(T.h*0.3), name:'Y', jan:true, jul:true, cur:ask?null:Math.cos(2*Math.PI*u)}].concat(ask ? [] : [{a:unitsOf(q.pY*q.f), y:Math.round(T.h*0.66), name:'X', x2:true, jan:true, jul:true, cur:Math.cos(2*Math.PI*u), op:u}]),
+          msg:ask?'Star X is not shown yet':''});
+      }
+      g+=at(P,tp.g)+at(T,te.g); pk+=at(P,tp.pk)+at(T,te.pk);
+    }
+    live.innerHTML=g;
+    if(pk!==picksHtml){ setKeepFocus(picksG,pk); picksHtml=pk; }
+    readings();
+  }
+
+  // ---- readings, working and the note
+  function workIal(th, viaShift){   // th in rad (3 s.f.)
+    var t=sci(th,2), d=RAU/Math.tan(th);
+    return (viaShift ? '2θ = '+sci(2*th,2)+' rad<br>θ = '+t+' rad<br>' : '')+'tan θ = [[r|d]]<br>tan('+t+') = [[1.50 × 10¹¹|d]]<br>d = [[1.50 × 10¹¹|tan('+t+')]]<br>d = <b>'+sci(d,2)+' m</b>';
+  }
+  function workIb(p, pT, viaShift, unit){
+    var d=dPc(p), ly=+(d*LYPC).toPrecision(3), s=(viaShift ? '2p = '+(2*p).toFixed(2)+' arc-second<br>p = '+pT+' arc-second<br>' : '')+'d (parsec) = [[1|p (arc-second)]]<br>d = [[1|'+pT+']]<br>d = '+(unit==='pc'?'<b>':'')+sig(d,3)+' pc'+(unit==='pc'?'</b>':'');
+    if(unit==='ly' || unit==='m') s+='<br>d = '+sig(d,3)+' × 3.26<br>d = '+(unit==='ly'?'<b>':'')+sig(ly,3)+' ly'+(unit==='ly'?'</b>':'');
+    if(unit==='m') s+='<br>d = '+sig(ly,3)+' × 9.46 × 10¹⁵<br>d = <b>'+sci(ly*LYM,2)+' m</b>';
+    return s;
+  }
+  function readings(){
+    var pr=predict(), s='', note='', guess=false, work=false, IB=ib(), p, th;
+    if(pr){
+      var q=Q.q, ask=Q.phase==='ask', dn=Q.phase==='done', lead='<b>Question '+Q.n+'.</b> ', mark=Q.ok?'✓ <b>Correct.</b> ':'✗ <b>Not quite.</b> ', tail=' Press <b>New question</b>.';
+      s=stat('Question', String(Q.n))+stat('Right first time', Q.right+' of '+Q.tried, true);
+      if(Q.kind==='read'){
+        guess=true; work=dn; $('#px-anslab').textContent='Distance of the star'; $('#px-unit').textContent=IB?'pc':'× 10¹⁶ m';
+        if(ask) note=lead+'The position of a nearby star against the distant stars is measured in January and again in July. Read the scale and work out the <b>distance of the star</b>'+(IB?' in parsec.':' (r = 1.50 × 10¹¹ m).')+' Type it in and press <b>Go</b>.';
+        else if(!dn) note='Watch the Earth go round its orbit.';
+        else { note=mark+'In 6 months the star moves through '+(IB ? (2*q.p).toFixed(2)+' arc-second' : sci(2*q.th,2)+' rad')+'. The parallax angle is <b>half</b> of this, so d = <b>'+q.ansTxt+'</b>. '+(!Q.ok && Q.val!==null && Math.abs(Q.val/(q.ans/2)-1)<0.03 ? 'You used the whole shift: the parallax angle is the angle between the Sun and the Earth as seen from the star, which is half of it. ' : '')+'Open <b>Show working</b>, or press <b>New question</b>.';
+          $('#px-eq1').innerHTML=FR(IB ? workIb(q.p,q.pTxt,true,'pc') : workIal(q.th,true)); $('#px-eq2').innerHTML=FR(IB ? 'The parallax angle p is half the angle the star moves through in 6 months.' : 'θ is in radians. For an angle this small tan θ = θ, so d = [[r|θ]] gives the same answer.'); }
+      } else if(Q.kind==='conv'){
+        guess=true; work=dn; $('#px-anslab').textContent='Distance of the star'; $('#px-unit').textContent=q.unit==='ly'?'ly':'× 10¹⁶ m';
+        if(ask) note=lead+'A star has a parallax angle of <b>'+q.pTxt+' arc-second</b>. Work out its distance in <b>'+(q.unit==='ly'?'light years':'metres')+'</b> (1 pc = 3.26 ly; 1 ly = 9.46 × 10¹⁵ m). Type it in and press <b>Go</b>.';
+        else if(!dn) note='Watch the Earth go round its orbit.';
+        else { note=mark+'d = [[1|'+q.pTxt+']] = '+sig(1/q.p,3)+' pc, which is <b>'+q.ansTxt+'</b>. '+(!Q.ok && Q.val!==null && Math.abs(Q.val/(1/q.p)-1)<0.03 ? 'Your answer is the distance in parsec: convert it. ' : '')+'Open <b>Show working</b>, or press <b>New question</b>.';
+          $('#px-eq1').innerHTML=FR(workIb(q.p,q.pTxt,false,q.unit)); $('#px-eq2').innerHTML='1 pc = 3.26 ly and 1 ly = 9.46 × 10¹⁵ m, from the data booklet.'; }
+      } else if(Q.kind==='limit'){
+        work=dn;
+        if(ask) note=lead+'The smallest parallax angle this telescope can measure is <b>'+sci(q.amin*1e-7,1)+' rad</b>. A star is <b>'+q.dTxt+'</b> from the Sun. Deduce whether its distance could be found by trigonometric parallax (r = 1.50 × 10¹¹ m). Click your answer in the telescope, then press <b>Go</b>.';
+        else if(!dn) note='Here is the star through the telescope, 6 months apart.';
+        else { note=mark+'The parallax angle of this star is <b>'+sci(q.th,2)+' rad</b>, which is '+(q.ok?'larger':'smaller')+' than the smallest angle that can be measured ('+sci(q.amin*1e-7,1)+' rad). So its distance <b>'+(q.ok?'can':'cannot')+'</b> be found by parallax. Open <b>Show working</b>, or press <b>New question</b>.';
+          $('#px-eq1').innerHTML=FR('tan θ = [[r|d]]<br>tan θ = [[1.50 × 10¹¹|'+q.dTxt.replace(' m','')+']]<br>θ = <b>'+sci(q.th,2)+' rad</b>');
+          $('#px-eq2').innerHTML=FR('Or work out the greatest distance that can be measured, d = [[r|tan θ]] with the smallest angle: '+sci(RAU/Math.tan(q.amin*1e-7),2)+' m. This star is '+(q.ok?'nearer':'further away')+' than that.'); }
+        playBtn.disabled=!ask || !Q.pick;
+      } else {
+        if(ask) note=lead+'Star Y is shown. Star X has <b>'+q.fw+'</b> the parallax angle of star Y. Click the ring that shows where star X is, then press <b>Go</b>.';
+        else if(!dn) note='Watch both stars through the telescope.';
+        else note=mark+'Star X is at <b>'+'ABCD'.charAt(q.ans)+'</b>. '+(IB ? 'd = [[1|p]], so the' : 'For these small angles θ = [[r|d]], so the')+' parallax angle is inversely proportional to the distance: '+q.fw+' the angle means <b>'+q.dw+'</b> the distance.'+(!Q.ok && Q.pick!==null && Math.abs(q.rings[Q.pick]-q.f)<0.01 ? ' A star further away has a smaller parallax angle, not a larger one.' : '')+tail;
+        playBtn.disabled=!ask || Q.pick===null;
+      }
+      if(guess){ ansIn.disabled=!ask; playBtn.disabled=!ask || ansIn.value.trim()==='' || !isFinite(+ansIn.value); }
+      playBtn.innerHTML='&#9654; Go'; resetBtn.disabled=!ask;
+    } else {
+      p=pOf(); th=thOf(p); work=true;
+      var tooSmall = IB ? p<0.02 : th<1.0e-7, jul=ph>=0.5-1e-6, full=ph>=1-1e-6, A=symA();
+      $('#px-do').textContent = far ? (IB ? '100 pc (far off the picture)' : sci(dM(p),2)+' m (far off the picture)') : (IB ? sig(dPc(p),3)+' pc' : sci(dM(p),2)+' m');
+      if(IB) s=stat('Parallax angle p', pTxt(p)+' arc-second')+stat('Moves in 6 months, 2p', pTxt(2*p)+' arc-second')+stat('Distance d', sig(dPc(p),3)+' pc', true)+stat('d in light years', sig(dPc(p)*LYPC,3)+' ly');
+      else s=stat('Parallax angle θ', sci(th,2)+' rad')+stat('Moves in 6 months, 2θ', sci(2*th,2)+' rad')+stat('Radius of orbit r', '1.50 × 10¹¹ m')+stat('Distance d', sci(dM(p),2)+' m', true);
+      if(running) note='As the Earth moves round its orbit, the nearby star seems to move against the background of distant stars. The distant stars are so far away that they do not seem to move.';
+      else if(far && (full || jul)) note='This star is much further away, so its parallax angle is much <b>smaller</b>: '+(IB ? pTxt(p)+' arc-second' : sci(th,2)+' rad')+'. That is less than the smallest angle this telescope can measure ('+(IB?'0.02 arc-second':'1.0 × 10⁻⁷ rad')+'), so the uncertainty would be too large. Parallax only works for <b>nearby</b> stars.';
+      else if(full) note='Viewed <b>6 months apart</b>, from opposite ends of a diameter of the Earth’s orbit, the star’s change in angular position against the <b>distant stars</b> is 2'+A+'. '+(IB ? 'Half of this is the parallax angle p, and d (parsec) = [[1|p (arc-second)]].' : 'r is known, so <b>trigonometry</b> gives d: tan θ = [[r|d]].')+' Drag the star.';
+      else if(jul && ph<0.5+1e-6) note='<b>July</b>, 6 months later. The Earth is at the opposite end of a diameter of its orbit. Against the distant stars the star has moved through an angle 2'+A+', so the parallax angle '+A+' is <b>half</b> of the change.';
+      else if(ph<1e-6) note='<b>January.</b> The position of the nearby star is measured against the background of distant stars. Press <b>Play one year</b>, or jump to July.';
+      else note='<b>'+month()+'.</b> From here the star is seen in the same direction as from the Sun: the middle of the scale. Its positions in January and July are the two ends of its movement.';
+      $('#px-eq1').innerHTML=FR(IB ? workIb(p,pTxt(p),false,'ly') : workIal(th,false));
+      $('#px-eq2').innerHTML=FR(IB ? 'p is the parallax angle: half the angle the star moves through in 6 months. A star 1 pc away has p = 1 arc-second. 1 pc = 3.26 ly.' : 'θ is in radians. For an angle this small tan θ = θ, so d = [[r|θ]] gives the same answer. The further the star, the smaller θ.');
+      playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play one year'; playBtn.disabled=false; resetBtn.disabled=false;
+    }
+    $('#px-guess').hidden=!guess; $('#px-working').hidden=!work;
+    $('#px-stats').innerHTML=s;
+    if(note!==lastNote){ $('#px-note').innerHTML=FR(note); lastNote=note; }
+  }
+
+  // ---- motion
+  function frame(now){
+    var dt=Math.min(0.05,(now-last)/1000); last=now;
+    if(predict()){ if(Q.phase==='run'){ Q.u+=dt/3.2; if(Q.u>=1){ Q.u=1; finish(); } } }
+    else if(running){ ph=Math.min(1,ph+dt*slow()/YEAR_S); if(ph>=1){ running=false; lastNote=''; } }
+    draw();
+    if(running || (predict() && Q.phase==='run')) raf=requestAnimationFrame(frame);
+  }
+  function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
+  function stopRun(){ running=false; cancelAnimationFrame(raf); }
+  function setDist(d){ d=Math.max(1.3,Math.min(10,Math.round(d*10)/10)); if(d===dist && !far && !running) return; stopRun(); far=false; dist=d; dIn.value=d; ph=1;
+    var hit=null; ['1.3','2.6','7.7'].forEach(function(v){ if(Math.abs(+v-d)<0.05) hit=v; }); starSeg.pick(hit); lastNote=''; draw(); }
+
+  // ---- Questions
+  function deal(){
+    stopRun(); Q.n++; Q.phase='ask'; Q.ok=false; Q.u=0; Q.pick=null; Q.val=null; ansIn.value='';
+    var IB=ib(), kinds=IB ? ['read','conv','twice'] : ['read','limit','twice'], q, key, tries=0; Q.kind=kinds[(Q.n-1)%kinds.length];
+    do {
+      if(Q.kind==='read'){
+        if(IB){ var p=rnd([0.10,0.15,0.20,0.25,0.30,0.40,0.50,0.60,0.75]); q={p:p, pTxt:p.toFixed(2), ans:1/p, ansTxt:sig(1/p,3)+' pc'}; }
+        else { var tu=rnd([0.5,0.75,1,1.25,1.5,2,2.5,3,3.5]), th=tu*1e-6; q={p:th/AS, th:th, ans:RAU/Math.tan(th)/1e16, ansTxt:sci(RAU/Math.tan(th),2)+' m'}; }
+        key='r'+q.p;
+      } else if(Q.kind==='conv'){
+        var pc=rnd([0.05,0.08,0.10,0.125,0.20,0.25,0.40,0.50]), un=rnd(['ly','m']), ly=+(dPc(pc)*LYPC).toPrecision(3);
+        q={p:pc, pTxt:String(pc).length<4 ? pc.toFixed(2) : String(pc), unit:un, ans:un==='ly' ? ly : ly*LYM/1e16, ansTxt:un==='ly' ? sig(ly,3)+' ly' : sci(ly*LYM,2)+' m'}; key='c'+pc+un;
+      } else if(Q.kind==='limit'){
+        var am=rnd([2.4,1.0,0.5]), ratio=rnd([0.6,0.75,1.4,1.8]), d=+(RAU/(ratio*am*1e-7)).toPrecision(2), t3=+Math.atan(RAU/d).toPrecision(3);
+        q={amin:am, d:d, dTxt:sci(d,1)+' m', th:t3, ok:t3>=am*1e-7}; key='l'+am+ratio;
+      } else {
+        var f=rnd([2,0.5,1/3]), rings=[0.5,1.5,2,3], pY=rnd([0.24,0.30]);
+        q={f:f, pY:pY, rings:rings, ans:rings.indexOf(f===2?0.5:f===0.5?2:3), fw:f===2?'twice':f===0.5?'half':'one third of', dw:f===2?'half':f===0.5?'twice':'three times'}; key='t'+f+pY;
+      }
+    } while(key===Q.last && ++tries<8);
+    Q.last=key; Q.q=q; lastNote=''; draw();
+  }
+  function go(){ if(Q.kind==='read' || Q.kind==='conv') Q.val=+ansIn.value; Q.phase='run'; Q.u=0; lastNote=''; loop(); }
+  function finish(){
+    var q=Q.q;
+    if(Q.kind==='read' || Q.kind==='conv') Q.ok=Math.abs(Q.val/q.ans-1)<=0.03;
+    else if(Q.kind==='limit') Q.ok=(Q.pick==='yes')===q.ok;
+    else Q.ok=Q.pick===q.ans;
+    Q.phase='done'; Q.tried++; if(Q.ok) Q.right++; lastNote='';
+  }
+  onPick(svg, function(id){
+    if(!predict() || Q.phase!=='ask') return;
+    var k=id.split(':');
+    if(k[0]==='r') Q.pick = Q.pick===+k[1] ? null : +k[1];
+    else if(k[0]==='y') Q.pick = Q.pick===k[1] ? null : k[1];
+    else return;
+    lastNote=''; draw();
+  });
+
+  // ---- drag the star (Explore)
+  (function(){
+    var on=false, ctm=null;
+    svg.addEventListener('pointerdown', function(e){
+      if(predict() || running || far || !G) return;
+      var q=svgPoint(svg,e), sx=P.x+G.SX+dpxOf(dist), sy=P.y+G.cy; if(Math.hypot(q.x-sx,q.y-sy)>24) return;
+      on=true; ctm=svg.getScreenCTM().inverse(); svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
+    });
+    svg.addEventListener('pointermove', function(e){ if(!on) return; var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; p=p.matrixTransform(ctm);
+      setDist(1.3+(p.x-P.x-G.SX-G.D0)/G.Dk); });
+    function end(){ if(!on) return; on=false; svg.classList.remove('dragging'); }
+    svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  })();
+
+  // ---- tabs, level and rows
+  function setRows(){
+    var pr=predict();
+    $('#px-grid').hidden=pr; $('#px-sliders').hidden=pr; slowBtn.hidden=pr; newBtn.hidden=!pr;
+    $('#px-eye').innerHTML = ib() ? 'Animations &middot; E.5 fusion and stars' : 'Animations &middot; astrophysics &middot; IAL 165';
+  }
+  function setTab(){ stopRun(); picksHtml=null; lastNote=''; setRows(); if(predict()){ Q.n=0; Q.tried=0; Q.right=0; deal(); } else { ansIn.value=''; ph=1; draw(); } }
+  function setLevel(){ stopRun(); picksHtml=null; lastNote=''; setRows(); if(predict()){ Q.n=0; Q.tried=0; Q.right=0; deal(); } else draw(); }
+
+  playBtn.addEventListener('click', function(){
+    if(predict()){ if(Q.phase==='ask') go(); return; }
+    if(running){ stopRun(); lastNote=''; draw(); return; }
+    if(ph>=1) ph=0; running=true; lastNote=''; loop();
+  });
+  resetBtn.addEventListener('click', function(){
+    if(predict()){ if(Q.phase!=='ask') return; Q.pick=null; ansIn.value=''; lastNote=''; draw(); return; }
+    stopRun(); far=false; dist=1.3; dIn.value=1.3; starSeg.pick('1.3'); ph=1; lastNote=''; draw();
+  });
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!pressed(slowBtn))); });
+  newBtn.addEventListener('click', function(){ deal(); });
+  dIn.addEventListener('input', function(){ setDist(+dIn.value); });
+  ansIn.addEventListener('input', function(){ readings(); });
+  ansIn.addEventListener('keydown', function(e){ if(e.key==='Enter' && !playBtn.disabled){ e.preventDefault(); playBtn.click(); } });
+
+  watchEquals($('#px-eq1'));
+  if(SHOW==='predict'){ tabSeg.pick('predict'); setTab(); }
+  else { setRows(); draw(); }
+  // redraw when the picture changes between its wide and its tall shape
+  if(window.ResizeObserver) new ResizeObserver(function(){ var w=svg.getBoundingClientRect().width; if(LY && (w>0 && w<520)!==svg.classList.contains('tall')) draw(); }).observe(svg);
+
+})();
+</script>
+<script id="choice-kit-js">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices".
+   A group of choices with one chosen gets a track round it (class pick); a .to-q button opens the questions from Explore. */
+(function(){
+  function on(b){ return b.getAttribute('aria-pressed')==='true' || b.classList.contains('is-on'); }
+  function each(sel, fn){ Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+  function mark(s){
+    if(!s.classList.contains('pick')){
+      var n=0; Array.prototype.forEach.call(s.children, function(b){ if(b.tagName==='BUTTON' && on(b)) n++; });
+      if(n===1) s.classList.add('pick');
+    }
+    if(s.classList.contains('pick') && !s.hasAttribute('data-fit')){
+      var d=getComputedStyle(s).display;
+      if(d!=='none'){ s.setAttribute('data-fit','1'); if(d.indexOf('flex')>=0) s.classList.add('fit'); }
+    }
+  }
+  each('.seg:not(.tabs):not(.mode):not(.apps)', function(s){
+    mark(s);
+    if(window.MutationObserver) new MutationObserver(function(){ mark(s); }).observe(s, {childList:true, subtree:true, attributes:true, attributeFilter:['aria-pressed','class']});
+  });
+  // Choice rows: wrap each .rowlab and the control after it in a .cgroup (label above, groups side by side).
+  // A group is hidden when everything in it is hidden, so pages that hide a row's label and control still work.
+  function shown(e){ return !e.hidden && e.style.display!=='none'; }
+  each('.cgrid:not(.kit)', function(g){
+    var kids=Array.prototype.slice.call(g.children), groups=[];
+    for(var i=0;i<kids.length;i++){
+      var w=document.createElement('div'); w.className='cgroup';
+      g.insertBefore(w, kids[i]); w.appendChild(kids[i]);
+      if(kids[i].classList.contains('rowlab') && kids[i+1]){ w.appendChild(kids[i+1]); i++; }
+      groups.push(w);
+    }
+    g.classList.add('kit'); if(groups.length===1) g.classList.add('one');
+    groups.forEach(function(w){
+      function sync(){ var any=false; Array.prototype.forEach.call(w.children, function(c){ if(shown(c)) any=true; }); w.hidden=!any; }
+      sync();
+      if(window.MutationObserver) Array.prototype.forEach.call(w.children, function(c){ new MutationObserver(sync).observe(c, {attributes:true, attributeFilter:['hidden','style']}); });
+    });
+  });
+  each('.to-q[data-mode]', function(b){
+    var seg=document.getElementById(b.getAttribute('data-mode')); if(!seg) return;
+    var bs=seg.querySelectorAll('button');
+    function sync(){ b.hidden=!on(bs[0]) || !seg.getClientRects().length; }   // hidden too when the page hides its mode switch (e.g. at a level with no questions)
+    b.addEventListener('click', function(){ bs[1].click(); bs[1].focus(); });
+    if(window.MutationObserver) new MutationObserver(sync).observe(seg, {subtree:true, attributes:true, attributeFilter:['aria-pressed']});
+    document.addEventListener('click', function(){ setTimeout(sync, 0); });
+    sync(); setTimeout(sync, 0);
+  });
+})();
+</script>
+<footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
+</body>
+</html>
