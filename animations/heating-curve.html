@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Heating Curve Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Heat ice until it becomes steam: the temperature–time graph and the particles move together.">
+<meta name="description" content="Interactive physics animation. Heat ice until it becomes steam: the temperature–time graph and the particles move together. A Questions tab asks which part of a heating or cooling curve shows melting, boiling or freezing, to read the melting point or how long it melts, or to sketch the curve.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -182,6 +182,15 @@
   .stats.four{grid-template-columns:repeat(4,minmax(0,1fr));} @media (max-width:560px){ .stats.four{grid-template-columns:repeat(2,minmax(0,1fr));} }
   .view{touch-action:pan-y;}
   .view.scrub{cursor:ew-resize;}
+  /* Questions (?show=predict) */
+  #hc-svg .pick .hit{fill:none;stroke:transparent;} #hc-svg .pick .ring{fill:none;} #hc-svg .pick.locked{cursor:default;}
+  .qbox{display:flex;flex-direction:column;gap:10px;}
+  #hc-kind{display:flex;flex-wrap:wrap;} .side>#hc-tab{align-self:stretch;} #hc-kind>button{flex:0 1 auto;padding-inline:10px;}
+  .ans{display:flex;align-items:center;gap:8px;font:600 15px var(--font-mono);color:var(--ink);flex-wrap:wrap;}
+  .ans input{font:600 16px var(--font-mono);color:var(--ink);background:var(--panel);border:2px solid var(--topic);border-radius:8px;padding:8px 10px;min-height:44px;width:7.5em;}
+  .ans input:disabled{opacity:.7;border-color:var(--panel-border);}
+  .ans.ok input{border-color:var(--good);background:var(--good-soft);opacity:1;}
+  .ans.no input{border-color:var(--bad);background:var(--bad-soft);opacity:1;}
   #hc-jump button,#hc-sub button{white-space:normal;line-height:1.2;}
 
 </style>
@@ -309,13 +318,16 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="hc-svg" viewBox="0 0 860 350" role="img" aria-label=""><g id="hc-main"></g><g id="hc-pt"></g></svg>
+      <svg class="view" id="hc-svg" viewBox="0 0 860 350" role="img" aria-label=""><g id="hc-main"></g><g id="hc-pt"></g><g id="hc-picks"></g></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="hc-play" type="button">&#9654; Play</button>
           <button class="btn" id="hc-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="hc-slow" type="button" aria-pressed="false">Slow motion</button>
           <button class="btn" id="hc-exp" type="button" aria-pressed="false" title="Take your own readings">Experiment</button>
+          <button class="btn btn-primary" id="hc-go" type="button" hidden>&#9654; Go</button>
+          <button class="btn" id="hc-new" type="button" hidden>New question</button>
+          <button class="btn to-q" type="button" data-mode="hc-tab" hidden>Try the questions &rarr;</button>
         </div>
         <div class="sliders" id="hc-sliders">
           <div><label class="lab" for="hc-e">Time <output id="hc-eo"></output></label><input type="range" id="hc-e" min="0" max="100" step="0.5" value="0"></div>
@@ -323,7 +335,13 @@
       </div>
     </div>
     <div class="side">
-      <div class="cgrid">
+      <div class="seg tabs mode" id="hc-tab" role="group" aria-label="Explore or questions"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
+      <div class="qbox" id="hc-q" hidden>
+        <div><span class="lab" id="hc-klab">Questions on</span>
+        <div class="seg" id="hc-kind" role="group" aria-labelledby="hc-klab"><button type="button" data-v="mix" aria-pressed="true">Mixed</button><button type="button" data-v="part" aria-pressed="false">Which part?</button><button type="button" data-v="read" aria-pressed="false">Read the graph</button><button type="button" data-v="sketch" aria-pressed="false">Sketch it</button></div></div>
+        <label class="ans" id="hc-ans-row"><span id="hc-ans-lab">melting point =</span><input type="text" id="hc-ans" inputmode="decimal" autocomplete="off" aria-label="Your answer"><span id="hc-ans-unit">°C</span></label>
+      </div>
+      <div class="cgrid" id="hc-cg">
         <span class="rowlab" id="hc-jlab">Jump to</span>
         <div class="seg" id="hc-jump"><button type="button" data-v="s" aria-pressed="false">Solid</button><button type="button" data-v="m" aria-pressed="false">Melting</button><button type="button" data-v="l" aria-pressed="false">Liquid</button><button type="button" data-v="b" aria-pressed="false">Boiling</button><button type="button" data-v="g" aria-pressed="false">Gas</button></div>
         <span class="rowlab" id="hc-slab" hidden>Substance</span>
@@ -733,7 +751,7 @@ function stageOf(E){return E<6.67?'s':E<26.67?'m':E<60?'l':E<90?'b':'g';}
     return g; }
   // Explore: a beaker with a loose lid on an electric hot plate
   function appHot(){
-    var cx=124, yb=283, rx=46, ry=8, yr=170, k=stageOf(E), T=Tof(E), on=auto||(E>0&&E<100), ph=performance.now()/1000, g='', lab, ys;
+    var cx=124, yb=283, rx=46, ry=8, yr=170, k=stageOf(E), T=QM&&Q ? qTemp(qt) : Tof(E), on=QM&&Q ? (qAuto && !Q.cool) : auto||(E>0&&E<100), ph=performance.now()/1000, g='', lab, ys;
     g+=bench();
     g+=ell(cx+6,BENCH-1,84,6,'#000',' opacity=".1"')+box(cx-72,293,144,24,10,-7,'var(--case-f)',{top:'var(--case-t)',side:'var(--case-s)'});
     g+=ell(cx+5,289.5,60,5.2,on?'#e5392f':'var(--steel-sh)')+(on?ell(cx+5,289.5,60,5.2,'#ffb199',' opacity=".35"'):'');
@@ -745,11 +763,13 @@ function stageOf(E){return E<6.67?'s':E<26.67?'m':E<60?'l':E<90?'b':'g';}
       for(var i=0;i<9;i++){ var o=(ph*0.9+hash(i))%1, by=yb-2-o*(yb-ys-4); if(by>ys+3) g+='<circle cx="'+f1(cx-rx+10+hash(i+20)*(rx*2-20))+'" cy="'+f1(by)+'" r="'+f1(2+hash(i+40)*2)+'" fill="var(--panel)" stroke="var(--water-ink)" stroke-width="1" opacity=".85"/>'; }
       g+=rect(cx-rx+2,yr+4,rx*2-4,ys-yr-6,'var(--ink-faint)',' opacity=".12"'); lab='boiling water'; }
     else { g+=rect(cx-rx+2,yr+4,rx*2-4,yb-yr-4,'var(--ink-faint)',' opacity=".14"'); lab='steam'; }
+    if(QM && Q) lab=qLab(k);
     g+=glass(cx,yb,rx,ry,yr);
     g+=ell(cx,yr-1,rx+5,ry+1.5,'var(--lid)',' stroke="var(--steel-sh)" stroke-width="1"');
     g+=thermo(cx+10,262,150,-40,20,140,T,{step:20,num:40,fs:11.5,from:-40})+ell(cx+10,yr-1,6,2.4,'var(--steel-sh)');
     if(k==='b'||k==='g') g+=steam(cx-rx-4,yr-4,2,ph,E>=95?0.9:0.55)+(E>=95?steam(cx+rx+12,yr-4,1,ph+0.4,0.9):'');
-    g+=txt(64,214,lab,{a:'end',fs:12.5,halo:1})+ln(67,210,cx-rx+12,k==='g'?232:Math.min(yb-14,250),'var(--ink-faint)',1);
+    var lab2=String(lab).split('|');
+    g+=(lab2.length>1 ? txt(64,207,lab2[0],{a:'end',fs:12.5,halo:1})+txt(64,221,lab2[1],{a:'end',fs:12.5,halo:1}) : txt(64,214,lab,{a:'end',fs:12.5,halo:1}))+ln(67,210,cx-rx+12,k==='g'?232:Math.min(yb-14,250),'var(--ink-faint)',1);
     g+=txt(98,62,'thermometer',{a:'end',fs:12.5,halo:1})+ln(101,58,cx+5,70,'var(--ink-faint)',1);
     g+=txt(38,298,'hot',{a:'end',fs:12.5})+txt(38,312,'plate',{a:'end',fs:12.5});
     g+=txt(190,162,'lid',{fs:12.5,halo:1})+ln(187,160,cx+rx+2,yr,'var(--ink-faint)',1);
@@ -802,6 +822,7 @@ function stageOf(E){return E<6.67?'s':E<26.67?'m':E<60?'l':E<90?'b':'g';}
            b:['Boiling','var(--ink)','some particles escape:','liquid and gas together'], g:['Gas','var(--gas)','far apart, moving quickly','in all directions']};
   function modelE(){ return exp() ? S().E(Math.min(xt,S().xMax)) : E; }
   function panelPt(L){ var x=L.P.x, y=L.P.y, w=300*L.P.k, h=w, c=CAP[stageOf(modelE())], g='';
+    if(QM && Q && Q.cool) c=({m:['Freezing','var(--ink)','particles settle into','fixed positions'], b:['Condensing','var(--ink)','particles come together:','gas and liquid together']})[stageOf(modelE())]||c;
     g+=txt(x+w/2,y-12,'Particle model',{a:'middle',fs:13.5,c:'var(--ink)',w:600});
     g+=rect(x,y,w,h,'var(--bg)',' rx="5"')+pl([[x+2,y+2],[x+2,y+h-2],[x+w-2,y+h-2],[x+w-2,y+2]],'var(--ink-faint)',2.2);
     g+=txt(x+w/2,y+h+22,c[0],{a:'middle',fs:15,c:c[1],w:700})+txt(x+w/2,y+h+40,c[2],{a:'middle',fs:12.5})+txt(x+w/2,y+h+56,c[3],{a:'middle',fs:12.5});
@@ -867,6 +888,7 @@ function stageOf(E){return E<6.67?'s':E<26.67?'m':E<60?'l':E<90?'b':'g';}
 
   // ---- drawing and wiring ----
   function draw(){
+    if(QM && Q){ qDraw(); return; }
     var L=lay(), ex=exp(), s='<g transform="translate('+L.ax+',0)">'+(ex ? (sub==='ice'?appIce():appAcid()) : appHot())+'</g>';
     if(MEAS) s+=measPanel(L); else s+=panelPt(L)+(ex?graphX(L.G):graphE(L.G));
     var vb='0 0 '+L.W+' '+L.H; if(svg.getAttribute('viewBox')!==vb) svg.setAttribute('viewBox',vb);
@@ -893,12 +915,13 @@ function stageOf(E){return E<6.67?'s':E<26.67?'m':E<60?'l':E<90?'b':'g';}
   slid.addEventListener('input', function(){ scrubTo(+slid.value); });
   // drag the dot (or press anywhere on the graph) to move through time; the Time slider does the same from the keyboard
   svg.addEventListener('pointerdown', function(e){
+    if(QM){ qDown(e); return; }
     if(exp()) return; var q=vpt(svg,e), G=lay().G;
     if(q.x<G.x-14 || q.x>G.x+G.w+14 || q.y<G.y-10 || q.y>G.y+G.h+10) return;
     dragging=true; try{ svg.setPointerCapture(e.pointerId); }catch(_){} scrubTo((q.x-G.x)/G.w*100); e.preventDefault();
   });
-  svg.addEventListener('pointermove', function(e){ if(dragging){ var q=vpt(svg,e), G=lay().G; scrubTo((q.x-G.x)/G.w*100); } });
-  ['pointerup','pointercancel'].forEach(function(n){ svg.addEventListener(n, function(){ dragging=false; }); });
+  svg.addEventListener('pointermove', function(e){ if(QM){ qMove(e); return; } if(dragging){ var q=vpt(svg,e), G=lay().G; scrubTo((q.x-G.x)/G.w*100); } });
+  ['pointerup','pointercancel'].forEach(function(n){ svg.addEventListener(n, function(){ dragging=false; if(qGrab!==null){ qGrab=null; svg.classList.remove('dragging'); } }); });
 
   playBtn.addEventListener('click', function(){
     simPaused=false; jumpSeg.pick(null);
@@ -912,10 +935,238 @@ function stageOf(E){return E<6.67?'s':E<26.67?'m':E<60?'l':E<90?'b':'g';}
   slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); });
   expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); auto=false; if(exp()) xReset(); else { E=0; slid.value=0; sim.setE(0); } setRows(); draw(); drawPt(); });
 
+
+  // ---- Questions (?show=predict; TODO 8j, 14 Nov 2026). The kinds come from the 4PH1 Paper 2 questions in the IGCSE Question Index:
+  //   Which part? the section where it melts, boils or freezes, or is all liquid, or both changes of state (Jan 2021 2PR Q1(a)(i),
+  //     Nov 2024 2P Q5(b)(i), Nov 2023 2P Q5(b)(i), Nov 2020 2PR Q6(b)(ii));
+  //   Read the graph: the melting, boiling or freezing point, or how long it melts or boils for (May 2021 2P Q5(b)(i), Jan 2021 2PR
+  //     Q1(b)(ii), May 2022 2PR Q4(b)(i));
+  //   Sketch it: drag the start, the flat part and the end to sketch a heating or cooling curve (May 2023 2P Q2(b)(iii), Jan 2022 2P
+  //     Q2(b), May 2019 2P Q9(b), May 2022 2P Q7(d), May 2024 2PR Q3(b), Jan 2020 2PR Q5(a)(i)).
+  // The substances and their temperatures are the papers' own where they give them. A question's graph never changes: Go runs it, with
+  // the beaker and the particle model following the stage, and marks the answer.
+  var QM=false, Q=null, qKind='mix', qLast='', qt=0, qAuto=false, qGrab=null, qSaved=null, ansIn=$('#hc-ans'), gPicks=$('#hc-picks');
+  var ER={s:[0,6.67], m:[6.67,26.67], l:[26.67,60], b:[60,90], g:[90,100]};
+  var SUBQ=[
+    {n:'ice', mp:0, a:[-20,-17,-10], b:[20,30], kind:'heat'}, {n:'chocolate', mp:32, a:[5], b:[45], kind:'heat'},
+    {n:'phosphorus', mp:44, a:[-40,0,10], b:[80], kind:'heat'}, {n:'gallium', mp:30, a:[10], b:[50], kind:'heat'},
+    {n:'stearic acid', mp:69, a:[20,30], b:[90], kind:'heat'}, {n:'wax', mp:55, a:[20], b:[80], kind:'heat'},
+    {n:'water', mp:0, bp:100, a:[-30,-20], b:[120,130], kind:'heat2'}, {n:'the substance', mp:34, bp:80, a:[10,20], b:[100], kind:'heat2'},
+    {n:'water', mp:0, a:[38,30], b:[-20], kind:'cool'}, {n:'gallium', mp:30, a:[80], b:[20], kind:'cool'},
+    {n:'stearic acid', mp:69, a:[90], b:[30], kind:'cool'}, {n:'wax', mp:55, a:[80], b:[30], kind:'cool'},
+    {n:'steam', bp:100, a:[130,120], b:[60], kind:'cond'}];
+  function rpick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function cap(t){ return t.charAt(0).toUpperCase()+t.slice(1); }
+  function deg(t){ return String(t).replace('-','−')+' °C'; }
+  // a curve of straight sections through the corners P, Q, R…; st is the stage on each section (s, m, l, b, g as in the Explore model)
+  function makeCurve(sb){
+    var a=rpick(sb.a), b=rpick(sb.b), pts=[], st, t=0, cool=sb.kind==='cool' || sb.kind==='cond';
+    var push=function(T){ pts.push({t:t, T:T}); };
+    push(a);
+    if(sb.kind==='heat'){ t+=rpick([2,3,4]); push(sb.mp); t+=rpick([4,5,6]); push(sb.mp); t+=rpick([3,4,5]); push(b); st=['s','m','l']; }
+    else if(sb.kind==='heat2'){ t+=rpick([2,3]); push(sb.mp); t+=rpick([3,4]); push(sb.mp); t+=rpick([4,5]); push(sb.bp); t+=rpick([6,7,8]); push(sb.bp); t+=rpick([2,3]); push(b); st=['s','m','l','b','g']; }
+    else if(sb.kind==='cool'){ t+=rpick([3,4,5]); push(sb.mp); t+=rpick([5,6,7]); push(sb.mp); t+=rpick([3,4,5]); push(b); st=['l','m','s']; }
+    else { t+=rpick([2,3]); push(sb.bp); t+=rpick([5,6,7]); push(sb.bp); t+=rpick([3,4]); push(b); st=['g','b','l']; }
+    pts.forEach(function(p,i){ p.L='PQRSTU'.charAt(i); });
+    var lo=Math.min.apply(null, pts.map(function(p){ return p.T; })), hi=Math.max.apply(null, pts.map(function(p){ return p.T; }));
+    var step=(hi-lo)>100 ? 20 : 10, yMin=Math.floor((lo-5)/step)*step, yMax=Math.ceil((hi+5)/step)*step, xMax=Math.ceil((t+1)/2)*2;
+    var yt=[]; for(var y=yMin; y<=yMax+1e-9; y+=step) yt.push(y);
+    var xt=[]; for(var x=0; x<=xMax+1e-9; x+=(xMax>16?4:2)) xt.push(x);
+    return {sb:sb, name:sb.n, pts:pts, st:st, cool:cool, a:a, b:b, tEnd:t, yMin:yMin, yMax:yMax, yStep:step, minor:step/5, xMax:xMax, yTicks:yt, xTicks:xt};
+  }
+  function segOf(q, t){ for(var i=1;i<q.pts.length;i++) if(t<=q.pts[i].t+1e-9) return i-1; return q.pts.length-2; }
+  function qTemp(t){ var q=Q, c=q.marked||!q.sk ? q : q.right, i=segOf(c,t), A=c.pts[i], B=c.pts[i+1]; return A.T+(B.T-A.T)*(t-A.t)/Math.max(1e-9,B.t-A.t); }
+  function qE(t){ var q=Q, i=segOf(q,t), A=q.pts[i], B=q.pts[i+1], f=Math.max(0,Math.min(1,(t-A.t)/Math.max(1e-9,B.t-A.t))), r=ER[q.st[i]], e=q.cool ? r[1]-f*(r[1]-r[0]) : r[0]+f*(r[1]-r[0]);
+    return Math.min(e, r[1]===100 ? 100 : r[1]-0.01); }
+  function isWater(q){ return q.name==='water' || q.name==='ice' || q.name==='steam'; }
+  // what the substance is called at each stage: ice, water and steam for water
+  function nm(q, k){ if(isWater(q)) return {s:'ice', m:q.cool ? 'water' : 'ice', l:'water', b:q.cool ? 'steam' : 'water', g:'steam'}[k]; return q.name==='the substance' ? 'substance' : q.name; }
+  function qLab(k){ var q=Q, n=nm(q,k);
+    if(isWater(q)) return {s:'ice', m:q.cool ? 'water|freezing' : 'ice|melting', l:'water', b:q.cool ? 'steam|condensing' : 'boiling|water', g:'steam'}[k];
+    return {s:'solid|'+n, m:n+'|'+(q.cool ? 'freezing' : 'melting'), l:'liquid|'+n, b:n+'|'+(q.cool ? 'condensing' : 'boiling'), g:n+'|gas'}[k]; }
+  function secName(q, i){ return q.pts[i].L+q.pts[i+1].L; }
+  function stWord(q, k){ var c=q.cool ? 'cooling' : 'warming up';
+    return 'the '+nm(q,k)+' '+{s:'is a solid, '+c, m:q.cool ? 'is freezing' : 'is melting', l:'is a liquid, '+c, b:q.cool ? 'is condensing' : 'is boiling', g:'is a gas, '+c}[k]; }
+  function genQ(kind){
+    for(var n=0;n<60;n++){
+      var sb=kind==='sketch' ? rpick(SUBQ.filter(function(x){ return x.kind==='heat' || x.kind==='cool'; })) : rpick(SUBQ), q=makeCurve(sb);
+      q.kind=kind; q.sk=kind==='sketch';
+      var plats=[]; q.st.forEach(function(k,i){ if(k==='m'||k==='b') plats.push(i); });
+      if(kind==='part'){
+        var opts=[];
+        plats.forEach(function(i){ opts.push({want:[i], ask:'where '+stWord(q,q.st[i])}); });
+        q.st.forEach(function(k,i){ if(k==='l') opts.push({want:[i], ask:'where it is all liquid'}); });
+        if(plats.length>1) opts.push({want:plats.slice(), ask:'the two parts where it changes state', two:true});
+        var o=rpick(opts); q.want=o.want; q.two=!!o.two;
+        q.ask='Click '+(q.two ? o.ask : 'the part of the graph '+o.ask)+'.';
+      } else if(kind==='read'){
+        var i=rpick(plats), k=q.st[i], what=k==='m' ? (q.cool ? 'freezing point' : 'melting point') : (q.cool ? 'boiling point' : 'boiling point');
+        if(Math.random()<0.35){ q.ask='For how many minutes does the '+nm(q,k)+' '+(k==='m' ? (q.cool?'freeze':'melt') : (q.cool?'condense':'boil'))+'?'; q.unit='min'; q.lab='time ='; q.ans=q.pts[i+1].t-q.pts[i].t; q.seg=i; q.tol=0.5; }
+        else { q.ask='What is the '+what+' of '+(isWater(q) ? nm(q,k) : 'the '+nm(q,k))+'?'; q.unit='°C'; q.lab=what+' ='; q.ans=q.pts[i].T; q.seg=i; q.tol=q.minor; }
+      } else {
+        var mp=sb.mp;
+        q.ask=cap(q.name)+' is '+(q.cool ? 'cooled' : 'heated')+' from '+deg(q.a)+' to '+deg(q.b)+'. It '+(q.cool ? 'freezes' : 'melts')+' at '+deg(mp)+'. Sketch the graph of its temperature against time.';
+        q.right={pts:q.pts}; var mid=Math.round((q.yMin+q.yMax)/2/q.minor)*q.minor;
+        q.hand=[mid, mid, mid];   // the student's start, flat part and end, all at the middle to begin with
+      }
+      q.sig=kind+q.name+q.a+q.b+(q.ask||'');
+      if(q.sig!==qLast) return q;
+    }
+    return q;
+  }
+  function qG(L){ return L.tall ? {x:62, y:676, w:346, h:190} : {x:556, y:44, w:290, h:240}; }
+  function qAxes(L){ var q=Q; return plotAxes(qG(L), {xMin:0, xMax:q.xMax, yMin:q.yMin, yMax:q.yMax, xTicks:q.xTicks, yTicks:q.yTicks, xLabel:'Time (minutes)', yLabel:'Temperature (°C)'}); }
+  function skPts(){ var q=Q, P=q.pts, h=q.hand; return [{t:P[0].t,T:h[0]},{t:P[1].t,T:h[1]},{t:P[2].t,T:h[1]},{t:P[3].t,T:h[2]}]; }
+  function qDraw(){
+    var L=lay(), q=Q, s='<g transform="translate('+L.ax+',0)">'+appHot()+'</g>'+panelPt(L), A=qAxes(L), G=qG(L), g=A.s, i;
+    // fine grid: a line every fifth of a step
+    for(var y=q.yMin; y<=q.yMax+1e-9; y+=q.minor) if(Math.abs(y/q.yStep-Math.round(y/q.yStep))>1e-6) g+=ln(G.x,A.gy(y),G.x+G.w,A.gy(y),'var(--panel-border)',0.4,' opacity=".7"');
+    for(var x=0; x<=q.xMax+1e-9; x+=1) g+=ln(A.gx(x),G.y,A.gx(x),G.y+G.h,'var(--panel-border)',0.4,' opacity=".7"');
+    var curve=function(P, col, w, extra){ return pl(P.map(function(p){ return [A.gx(p.t), A.gy(p.T)]; }), col, w, extra||''); };
+    if(q.sk){
+      if(q.marked) g+=curve(q.pts, 'var(--accent)', 2.4, ' stroke-dasharray="7 5"');
+      g+=curve(skPts(), 'var(--ink)', 2.6);
+    } else {
+      g+=curve(q.pts, 'var(--ink)', 2.6);
+      // letters in clear space: P below (heating) or above (cooling) to its right, the start of a flat part on the side the curve
+      // comes from, its end on the other side, and the last point to the right
+      q.pts.forEach(function(p,i){ var n=q.pts.length, end=i>0 && (q.st[i-1]==='m'||q.st[i-1]==='b'), dx, dy, a='middle';
+        if(i===0){ dx=10; dy=q.cool ? -8 : 17; a='start'; } else if(i===n-1){ dx=9; dy=5; a='start'; }
+        else if(end){ dx=8; dy=q.cool ? -8 : 17; } else { dx=-8; dy=q.cool ? 17 : -8; }
+        g+='<circle cx="'+f1(A.gx(p.t))+'" cy="'+f1(A.gy(p.T))+'" r="2.8" fill="var(--ink)"/>'+txt(A.gx(p.t)+dx, A.gy(p.T)+dy, p.L, {a:a, fs:13, w:700, c:'var(--ink)', halo:1}); });
+    }
+    if(qAuto || q.marked){ var src=q.sk ? q.pts : q.pts, tt=qt, j=segOf(q,tt), P0=src[j], P1=src[j+1], TT=P0.T+(P1.T-P0.T)*(tt-P0.t)/Math.max(1e-9,P1.t-P0.t);
+      g+='<circle cx="'+f1(A.gx(tt))+'" cy="'+f1(A.gy(TT))+'" r="7" fill="var(--accent)" stroke="var(--panel)" stroke-width="2"/>'; }
+    // the question or the verdict, above the graph
+    var lines=wrapLines(q.marked ? q.verdict : qShort(), L.tall ? 50 : 42), ty=L.tall ? G.y-26-(lines.length-1)*15 : 14;
+    lines.slice(0,2).forEach(function(l,k){ g+=txt(L.tall ? 12 : G.x-46, ty+k*15, l, {fs:13, w:600, c:q.marked ? (q.ok ? 'var(--good)' : 'var(--bad)') : 'var(--ink)', halo:1}); });
+    s+=g;
+    var vb='0 0 '+L.W+' '+(L.tall ? 926 : L.H); if(svg.getAttribute('viewBox')!==vb) svg.setAttribute('viewBox',vb);
+    svg.classList.toggle('tall',!!L.tall); svg.classList.remove('scrub');
+    gMain.innerHTML=s; drawPicks(); qReadings();
+  }
+  function qShort(){ var q=Q; if(q.kind==='part') return q.ask; if(q.kind==='read') return q.ask; return 'Sketch it: drag the three dots.'; }
+  function drawPicks(){
+    var q=Q, g='', L=lay(), A=qAxes(L);
+    if(q && q.kind==='part'){
+      for(var i=0;i<q.pts.length-1;i++){ var a=q.pts[i], b=q.pts[i+1], k=secName(q,i), on=q.pick.indexOf(i)>=0, want=q.want.indexOf(i)>=0;
+        var col = q.marked ? (want ? 'var(--good)' : on ? 'var(--bad)' : '') : on ? 'var(--accent)' : '';
+        var d='M'+f1(A.gx(a.t))+','+f1(A.gy(a.T))+' L'+f1(A.gx(b.t))+','+f1(A.gy(b.T));
+        g+='<g class="pick'+(q.locked?' locked':'')+'" data-pick="'+i+'" tabindex="0" role="button" aria-pressed="'+on+'" aria-label="Part '+k+(on?', chosen':'')+(q.marked && want?', a right answer':'')+'">'+
+          '<path class="hit" d="'+d+'" stroke-width="22" stroke-linecap="round"/>'+
+          (col ? '<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="7" stroke-linecap="round" opacity=".55"/>' : '')+
+          '<path class="ring" d="'+d+'" stroke-width="12" stroke-linecap="round" opacity=".45"/></g>';
+      }
+    } else if(q && q.sk){
+      var P=skPts(), names=['start','flat part','end'];
+      [[P[0]],[P[1],P[2]],[P[3]]].forEach(function(pp,i){ var t=pp.length>1 ? (pp[0].t+pp[1].t)/2 : pp[0].t, T=pp[0].T, x=A.gx(t), y=A.gy(T);
+        g+='<g class="pick'+(q.locked?' locked':'')+'" data-pick="h'+i+'" tabindex="0" role="slider" aria-label="The '+names[i]+' of your sketch" aria-valuenow="'+T+'" aria-valuetext="'+deg(T)+'">'+
+          '<circle class="hit" cx="'+f1(x)+'" cy="'+f1(y)+'" r="16" style="fill:transparent"/>'+
+          (q.locked ? '' : '<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="11" fill="var(--accent)" opacity=".22"/>')+
+          '<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="6" fill="var(--accent)" stroke="var(--panel)" stroke-width="1.6"/>'+
+          '<circle class="ring" cx="'+f1(x)+'" cy="'+f1(y)+'" r="13" stroke-width="2.5"/></g>'; });
+    }
+    setKeepFocus(gPicks, g);
+  }
+  function readAns(){ var t=ansIn.value.trim().replace(/[\s  ]/g,'').replace(/[−–]/g,'-').replace(',','.'); return t==='' || isNaN(+t) ? null : +t; }
+  function qMark(){
+    var q=Q, why='';
+    if(q.kind==='part'){
+      var got=q.pick.slice().sort(), want=q.want.slice().sort();
+      q.ok = got.join()===want.join();
+      var rightTxt=want.map(function(i){ return secName(q,i); }).join(' and ');
+      q.verdict=(q.ok?'✓ ':'✗ ')+rightTxt;
+      var expl=function(i){ var k=q.st[i]; return secName(q,i)+': '+stWord(q,k)+((k==='m'||k==='b') ? ' at '+deg(q.pts[i].T)+', so the temperature stays the same' : ', so the temperature '+(q.cool?'falls':'rises')); };
+      why = q.ok ? '✓ Correct. '+want.map(expl).join('. ')+'.' : '✗ '+got.map(expl).join('. ')+'. The answer is '+rightTxt+'.';
+      if(want.concat(got).some(function(i){ return q.st[i]==='m' || q.st[i]==='b'; }))
+        why += q.cool ? ' While it changes state, energy is given out as bonds form between the particles; their kinetic energy does not change, so the temperature stays the same.'
+                      : ' While it changes state, the energy supplied weakens and breaks the bonds between the particles; their kinetic energy does not change, so the temperature stays the same.';
+    } else if(q.kind==='read'){
+      var v=q.val; q.ok=Math.abs(v-q.ans)<=q.tol+1e-9;
+      var A=q.pts[q.seg], B=q.pts[q.seg+1];
+      if(q.unit==='min'){ q.verdict=(q.ok?'✓ ':'✗ ')+q.ans+' minutes';
+        why=(q.ok?'✓ Correct: ':'✗ Not quite: ')+'the flat part runs from '+A.L+' at '+A.t+' minutes to '+B.L+' at '+B.t+' minutes, so it lasts '+B.t+' − '+A.t+' = '+q.ans+' minutes.'; }
+      else { q.verdict=(q.ok?'✓ ':'✗ ')+q.lab.replace(' =','')+' '+deg(q.ans);
+        why=(q.ok?'✓ Correct: ':'✗ Not quite: ')+'the flat part '+A.L+B.L+' is at '+deg(q.ans)+'. The temperature stays the same while the '+nm(q,q.st[q.seg])+' changes state, so that temperature is its '+q.lab.replace(' =','')+'.';
+        if(!q.ok && (Math.abs(v-q.a)<=q.tol || Math.abs(v-q.b)<=q.tol)) why+=' '+deg(v)+' is where the graph '+(Math.abs(v-q.a)<=q.tol?'starts':'ends')+'.'; }
+    } else {
+      var h=q.hand, mp=q.sb.mp, tol=q.minor, msgs=[];
+      if(Math.abs(h[0]-q.a)>tol) msgs.push('start at '+deg(q.a)+' (yours starts at '+deg(h[0])+')');
+      if(Math.abs(h[1]-mp)>tol) msgs.push('be flat at the '+(q.cool?'freezing':'melting')+' point, '+deg(mp)+' (yours is flat at '+deg(h[1])+')');
+      if(Math.abs(h[2]-q.b)>tol) msgs.push('end at '+deg(q.b)+' (yours ends at '+deg(h[2])+')');
+      q.ok=!msgs.length;
+      q.verdict=q.ok ? '✓ Your sketch is right' : '✗ Not quite';
+      why=q.ok ? '✓ Correct: it '+(q.cool?'falls':'rises')+' to '+deg(mp)+', stays flat while the '+q.name+' '+(q.cool?'freezes':'melts')+', then '+(q.cool?'falls':'rises')+' to '+deg(q.b)+'. The dashed line is the right graph (any times would do).' :
+        '✗ Not quite: your graph should '+msgs.join('; ')+'. The dashed line is the right graph.';
+    }
+    q.why=why; q.marked=true;
+    if(q.kind==='read') $('#hc-ans-row').classList.add(q.ok?'ok':'no');
+  }
+  function qReadings(){
+    var q=Q, note;
+    if(q.marked) note=q.why;
+    else if(qAuto) note=cap(q.name)+' is '+(q.cool?'cooling':'heated')+': watch the graph, the beaker and the particles.';
+    else if(q.kind==='part') note='The graph shows the temperature of '+q.name+' as it is '+(q.cool?'cooled':'heated')+'. '+q.ask+(q.two ? ' Click both, then press <b>Go</b>.' : ' Then press <b>Go</b>.');
+    else if(q.kind==='read') note='The graph shows the temperature of '+q.name+' as it is '+(q.cool?'cooled':'heated')+'. '+q.ask+' Type your answer, then press <b>Go</b>.';
+    else note=q.ask+' Drag the three dots (or use the arrow keys): the start, the flat part and the end. Then press <b>Go</b>.';
+    noteEl.innerHTML=note;
+    $('#hc-go').innerHTML = q.marked ? '&#9654; Run again' : '&#9654; Go'; $('#hc-go').disabled=qAuto; $('#hc-new').disabled=qAuto;
+    svg.setAttribute('aria-label', 'Question. '+noteEl.textContent);
+  }
+  function newQ(){
+    qAuto=false; qt=0; qGrab=null;
+    var k=qKind==='mix' ? rpick(['part','part','read','sketch']) : qKind;
+    Q=genQ(k); qLast=Q.sig; Q.pick=[]; Q.locked=false; Q.marked=false;
+    E=qE(0); sim.setE(E);
+    ansIn.value=''; ansIn.disabled=false; $('#hc-ans-row').classList.remove('ok','no'); $('#hc-ans-row').hidden = k!=='read';
+    if(k==='read'){ $('#hc-ans-lab').textContent=Q.lab; $('#hc-ans-unit').textContent=Q.unit; }
+    gPicks.innerHTML=''; draw(); drawPt();
+  }
+  function qGo(){
+    var q=Q; if(!q || qAuto) return;
+    if(!q.locked){
+      if(q.kind==='part' && q.pick.length!==q.want.length){ noteEl.innerHTML = q.two ? 'Click <b>two</b> parts of the graph, then press <b>Go</b>.' : 'Click one part of the graph first, then press <b>Go</b>.'; return; }
+      if(q.kind==='read'){ var v=readAns(); if(v===null){ noteEl.innerHTML='Type your answer in the box first, then press <b>Go</b>.'; ansIn.focus(); return; } q.val=v; ansIn.disabled=true; }
+      q.locked=true;
+    }
+    qt=0; qAuto=true; simPaused=false; draw();
+  }
+  function setHand(i, T){ var q=Q; T=Math.round(Math.max(q.yMin, Math.min(q.yMax, T))/q.minor)*q.minor; T=+T.toFixed(1); if(q.hand[i]!==T){ q.hand[i]=T; draw(); } }
+  function nearHand(p){ var L=lay(), A=qAxes(L), P=skPts(), best=null, bd=1e9;
+    [[P[0].t],[ (P[1].t+P[2].t)/2 ],[P[3].t]].forEach(function(tt,i){ var d=Math.hypot(p.x-A.gx(tt[0]), p.y-A.gy(Q.hand[i])); if(d<bd){ bd=d; best=i; } });
+    return bd<40 ? best : null; }
+  function qDown(e){ if(!Q || !Q.sk || Q.locked) return; var p=vpt(svg,e), h=nearHand(p); if(h===null) return;
+    qGrab=h; try{ svg.setPointerCapture(e.pointerId); }catch(_){} svg.classList.add('dragging'); e.preventDefault(); qMove(e); }
+  function qMove(e){ if(qGrab===null) return; var p=vpt(svg,e), L=lay(), G=qG(L), q=Q; setHand(qGrab, q.yMin+(G.y+G.h-p.y)/G.h*(q.yMax-q.yMin)); }
+  svg.addEventListener('keydown', function(e){
+    if(!QM || !Q || !Q.sk || Q.locked) return; var t=e.target.closest && e.target.closest('.pick'); if(!t) return;
+    var i=+String(t.getAttribute('data-pick')).slice(1), d=e.key==='ArrowUp' ? 1 : e.key==='ArrowDown' ? -1 : e.key==='PageUp' ? 5 : e.key==='PageDown' ? -5 : 0;
+    if(d){ setHand(i, Q.hand[i]+d*Q.minor); e.preventDefault(); }
+  });
+  onPick(svg, function(k){ var q=Q; if(!QM || !q || q.kind!=='part' || q.locked) return; var i=+k, at=q.pick.indexOf(i);
+    if(at>=0) q.pick.splice(at,1); else { if(!q.two) q.pick=[]; else if(q.pick.length>=2) q.pick.shift(); q.pick.push(i); } drawPicks(); qReadings(); });
+  function setQM(on){
+    if(on===QM) return;
+    $('#hc-tab').querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', String((b.dataset.v==='predict')===on)); });
+    if(on){ if(exp()){ expBtn.setAttribute('aria-pressed','false'); setRows(); } qSaved={E:E}; auto=false; QM=true; }
+    else { QM=false; Q=null; qAuto=false; gPicks.innerHTML=''; }
+    [playBtn, resetBtn, expBtn, $('#hc-sliders'), statsEl, $('#hc-cg')].forEach(function(el){ el.hidden=on; });
+    $('#hc-go').hidden=!on; $('#hc-new').hidden=!on; $('#hc-q').hidden=!on;
+    if(on) newQ(); else { setRows(); E=qSaved.E; slid.value=E; sim.setE(E); draw(); drawPt(); }
+  }
+  $('#hc-tab').addEventListener('click', function(e){ var b=e.target.closest('button'); if(b) setQM(b.dataset.v==='predict'); });
+  segGroup($('#hc-kind'), function(v){ qKind=v; newQ(); });
+  $('#hc-go').addEventListener('click', qGo);
+  $('#hc-new').addEventListener('click', function(){ newQ(); if(Q.kind==='read') ansIn.focus(); });
+  ansIn.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); qGo(); } });
+
   var last=performance.now();
   function frame(now){
     var real=Math.min(0.1,(now-last)/1000), dt=real*(slowOn()?0.3:1), moved=false; last=now;
-    if(auto){
+    if(QM && qAuto){
+      moved=true; qt=Math.min(Q.tEnd, qt+dt*Q.tEnd/4.5); E=qE(qt); sim.setE(E);
+      if(qt>=Q.tEnd-1e-9){ qAuto=false; if(!Q.marked) qMark(); }
+    } else if(auto){
       moved=true;
       if(exp()){
         xt=Math.min(MEAS?mTarget:S().xMax, xt+dt*0.8);
@@ -935,6 +1186,8 @@ function stageOf(E){return E<6.67?'s':E<26.67?'m':E<60?'l':E<90?'b':'g';}
   if(MEAS) xReset();
   setRows(); if(MEAS){ $('#hc-jlab').hidden=$('#hc-jump').hidden=true; }
   sim.setE(MEAS?S().E(0):0); draw(); drawPt();
+  if(MEAS) $('#hc-tab').classList.add('meas-off');
+  else if(/[?&]show=predict\b/.test(location.search)) setQM(true);
   requestAnimationFrame(frame);
 
 })();
