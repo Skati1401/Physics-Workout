@@ -54,7 +54,8 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 - [ ] **5u** IB E.1: Geiger–Marsden–Rutherford experiment (qualitative at SL; HL adds distance of closest approach and deviations at high energy). New animation.
 - [ ] **5v** IB E.2 (HL): electron diffraction scattering experiment, position of the first minimum from the de Broglie wavelength. Animation `electron-diffraction.html` exists (also IAL 53) and needs a `?show=measure` mode.
 - [ ] **5w** IB E.3: determination of the half-life of a nuclide (count rate against time, background subtracted; HL adds λ and ln A). `random-decay.html` (Fable, 8c) is the starting point; it needs a measure mode with counts.
-- [ ] **5x** IB A.5 (HL): muon decay experiments as evidence for time dilation and length contraction. Not a school practical: a data-analysis page (counts at the mountain top and sea level), if Alex wants it.
+- [ ] **5x** IB A.5 (HL): muon decay experiments as evidence for time dilation and length contraction. A virtual experiment: a detector counts muons at the mountain top and at sea level, and the counts are compared with and without time dilation. New animation.
+- [ ] **5y** IB E.2 (HL): the photoelectric effect (stopping voltage against frequency, threshold frequency, work function and h from the graph). Animation `photoelectric.html` exists with an Experiment mode; it needs a `?show=measure` mode (added 14 Nov 2026, Alex).
 
 ## 6. Build: IAL and IB
 
