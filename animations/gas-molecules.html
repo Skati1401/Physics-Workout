@@ -764,26 +764,43 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
   }
 
   // ---- Questions: predict the reading on the pressure gauge (p₁V₁ = p₂V₂ and p₁/T₁ = p₂/T₂; c: temperatures given in °C) ----
+  // IAL and IB also deal pvt: the volume and the temperature both change (pV/T constant), as in WPH15 Jan 2022 Q13(a), Oct 2024 Q14,
+  // Jan 2026 A Q15(a) and IB P2 19 May TZ1 Q4. Their explanations follow the momentum chain of the IAL and IB mark schemes
+  // (WPH15 Jun 2021 Q11(a), Jan 2023 Q17(b), Jun 2026 A Q18(b); IB P2 May 2018 TZ2 Q2(b)(ii), May 2026 TZ2 Q2(b)).
   var QS=[{k:'pv',p:100,a:3,b:1.5},{k:'pt',p:100,a:300,b:600},{k:'pv',p:100,a:1,b:2},{k:'pt',p:200,a:400,b:300,c:1},{k:'pv',p:150,a:2,b:1},{k:'pt',p:150,a:300,b:400},{k:'pv',p:300,a:1,b:3},
-          {k:'pt',p:100,a:300,b:600,c:1},{k:'pv',p:50,a:3,b:0.5},{k:'pt',p:200,a:400,b:300},{k:'pv',p:75,a:3,b:1},{k:'pt',p:100,a:200,b:500,c:1},{k:'pv',p:250,a:1.5,b:3},{k:'pt',p:300,a:600,b:300},{k:'pt',p:150,a:300,b:400,c:1}];
+          {k:'pt',p:100,a:300,b:600,c:1},{k:'pv',p:50,a:3,b:0.5},{k:'pt',p:200,a:400,b:300},{k:'pv',p:75,a:3,b:1},{k:'pt',p:100,a:200,b:500,c:1},{k:'pv',p:250,a:1.5,b:3},{k:'pt',p:300,a:600,b:300},{k:'pt',p:150,a:300,b:400,c:1},
+          {k:'pvt',p:100,a:3,b:1.5,t1:300,t2:450,l5:1},{k:'pvt',p:200,a:1,b:2,t1:400,t2:300,l5:1},{k:'pvt',p:100,a:2,b:1,t1:300,t2:600,c:1,l5:1},{k:'pvt',p:150,a:1.5,b:3,t1:300,t2:400,c:1,l5:1}];
   var qi=Math.floor(Math.random()*QS.length);
   function tS(q,v){ return q.c ? mn(v-273)+' °C' : v+' K'; }
-  function newQ(){ qi=(qi+1)%QS.length; var q=QS[qi]; Q={q:q, ans:q.k==='pv'?q.p*q.a/q.b:q.p*q.b/q.a, pred:null, run:0, u:0}; applyQ(); qText(); drawPk(); setRows(); }
-  function qNow(){ var q=Q.q, x=q.a+(q.b-q.a)*Q.u; return {x:x, p:q.k==='pv'?q.p*q.a/x:q.p*x/q.a}; }
-  function applyQ(){ var q=Q.q, n=qNow(); sim.setN(36); sim.setSpeedFactor(1); if(q.k==='pv'){ sim.setT(300); sim.setV(n.x/3); } else { sim.setT(n.x); sim.setV(0.6); } dirty=true; }
+  function newQ(){ do{ qi=(qi+1)%QS.length; } while(QS[qi].l5 && !ks5()); var q=QS[qi]; Q={q:q, ans:q.k==='pv'?q.p*q.a/q.b:q.k==='pvt'?q.p*q.a*q.t2/(q.b*q.t1):q.p*q.b/q.a, pred:null, run:0, u:0}; applyQ(); qText(); drawPk(); setRows(); }
+  function qNow(){ var q=Q.q, x=q.a+(q.b-q.a)*Q.u;
+    if(q.k==='pvt'){ var T=q.t1+(q.t2-q.t1)*Q.u; return {x:x, T:T, p:q.p*q.a*T/(x*q.t1)}; }
+    return {x:x, p:q.k==='pv'?q.p*q.a/x:q.p*x/q.a}; }
+  function applyQ(){ var q=Q.q, n=qNow(); sim.setN(36); sim.setSpeedFactor(1); if(q.k==='pv'){ sim.setT(300); sim.setV(n.x/3); } else if(q.k==='pvt'){ sim.setT(n.T); sim.setV(n.x/3); } else { sim.setT(n.x); sim.setV(0.6); } dirty=true; }
   function qLines(){ var q=Q.q, s;
     if(q.k==='pv') s='The gas is at '+q.p+' kPa. The piston is '+(q.b<q.a?'pushed in':'pulled out')+' slowly: the volume changes from '+q.a.toFixed(1)+' m³ to '+q.b.toFixed(1)+' m³ at a constant temperature.';
+    else if(q.k==='pvt') s='The gas is at '+q.p+' kPa and '+tS(q,q.t1)+', in a volume of '+q.a.toFixed(1)+' m³. The piston is '+(q.b<q.a?'pushed in':'pulled out')+' to '+q.b.toFixed(1)+' m³ and the gas is '+(q.t2>q.t1?'heated':'cooled')+' to '+tS(q,q.t2)+'.';
     else s='The gas is at '+q.p+' kPa and '+tS(q,q.a)+'. It is '+(q.b>q.a?'heated':'cooled')+' to '+tS(q,q.b)+' at a constant volume.';
     return s; }
-  function qWhy(){ var q=Q.q;
+  // full: the whole chain for the note; otherwise a short form that fits under the gauge
+  function qWhy(full){ var q=Q.q, up=Q.ans>q.p, mo=up?'more':'less', ms=up?'increases':'decreases';
+    if(q.k==='pvt') return full ? 'The volume and the temperature both change, so use [[p₁V₁|T₁]] = [[p₂V₂|T₂]]: the pressure '+ms+'. The kelvin temperature sets the mean kinetic energy, and so the mean speed, of the molecules; the volume sets how often they collide with the walls.'
+                                : 'The volume and the temperature both change, so use the combined gas law (see the working).';
+    if(ks5()){
+      if(q.k==='pv') return full ? 'The temperature is constant, so the mean kinetic energy and the mean speed of the molecules stay the same. The volume is '+(q.b<q.a?'smaller':'bigger')+', so the molecules collide with the walls '+(q.b<q.a?'more':'less')+' often (a '+(q.b<q.a?'higher':'lower')+' rate of collisions). The rate of change of momentum at the walls '+ms+', so the force on the walls '+ms+', and the pressure (p = F/A) '+ms+'.'
+                                 : 'Same mean speed, but '+mo+' collisions per second with the walls: the rate of change of momentum, so the force and the pressure, '+ms+'.';
+      return full ? 'The temperature '+(q.b>q.a?'rises':'falls')+', so the mean kinetic energy and the mean speed of the molecules '+(q.b>q.a?'increase':'decrease')+'. Each collision with a wall gives a '+(up?'bigger':'smaller')+' change of momentum, and the collisions are '+(up?'more':'less')+' frequent. The rate of change of momentum at the walls '+ms+', so the force on the walls '+ms+', and the pressure (p = F/A) '+ms+'.'
+                  : (up?'Faster':'Slower')+' molecules: a '+(up?'bigger':'smaller')+' change of momentum per collision and '+mo+' collisions per second, so '+mo+' force and '+mo+' pressure.';
+    }
     return q.k==='pv' ? (q.b<q.a ? 'Same temperature, so the same speed, but the molecules hit the walls more often: more force, so more pressure.' : 'Same temperature, so the same speed, but the molecules hit the walls less often: less force, so less pressure.')
       : (q.b>q.a ? 'The molecules move faster, so they hit the walls more often and harder: more force, so more pressure.' : 'The molecules move more slowly, so they hit the walls less often and less hard: less force, so less pressure.'); }
   function qText(){ var q=Q.q, ok=Q.pred===Q.ans, e;
     if(Q.run<2){ byId('lw-note').innerHTML=Q.run ? 'Watch the gauge…' : '<b>Predict.</b> '+qLines()+' Where will the needle of the pressure gauge point? Click the large gauge (or use the arrow keys on it) to set your prediction, then press <b>Go</b>.'; return; }
-    if(q.k==='pv') e='p₁V₁ = p₂V₂<br>'+q.p+' × '+q.a.toFixed(1)+' = p₂ × '+q.b.toFixed(1)+'<br>'+(q.b===1?'':(q.p*q.a)+' = '+q.b.toFixed(1)+'p₂<br>p₂ = [['+(q.p*q.a)+'|'+q.b.toFixed(1)+']]<br>')+'p₂ = <b>'+Q.ans+' kPa</b>';
+    if(q.k==='pvt') e=(q.c?'T₁ = '+(q.t1-273)+' + 273<br>T₁ = '+q.t1+' K<br>T₂ = '+(q.t2-273)+' + 273<br>T₂ = '+q.t2+' K<br>':'')+'[[p₁V₁|T₁]] = [[p₂V₂|T₂]]<br>[['+q.p+' × '+q.a.toFixed(1)+'|'+q.t1+']] = [[p₂ × '+q.b.toFixed(1)+'|'+q.t2+']]<br>p₂ = [['+q.p+' × '+q.a.toFixed(1)+' × '+q.t2+'|'+q.t1+' × '+q.b.toFixed(1)+']]<br>p₂ = <b>'+Q.ans+' kPa</b>';
+    else if(q.k==='pv') e='p₁V₁ = p₂V₂<br>'+q.p+' × '+q.a.toFixed(1)+' = p₂ × '+q.b.toFixed(1)+'<br>'+(q.b===1?'':(q.p*q.a)+' = '+q.b.toFixed(1)+'p₂<br>p₂ = [['+(q.p*q.a)+'|'+q.b.toFixed(1)+']]<br>')+'p₂ = <b>'+Q.ans+' kPa</b>';
     else e=(q.c?'T₁ = '+(q.a<273?'('+mn(q.a-273)+')':q.a-273)+' + 273<br>T₁ = '+q.a+' K<br>T₂ = '+(q.b-273)+' + 273<br>T₂ = '+q.b+' K<br>':'')+'[[p₁|T₁]] = [[p₂|T₂]]<br>[['+q.p+'|'+q.a+']] = [[p₂|'+q.b+']]<br>p₂ = [['+q.p+' × '+q.b+'|'+q.a+']]<br>p₂ = <b>'+Q.ans+' kPa</b>';
     byId('lw-eq').innerHTML=FR(e);
-    byId('lw-note').innerHTML=(ok?'<b>Correct.</b> ':'<b>Not quite:</b> the needle points to '+Q.ans+' kPa. ')+qWhy()+(q.c&&!ok?' Change each temperature from °C to kelvin first.':'');
+    byId('lw-note').innerHTML=FR((ok?'<b>Correct.</b> ':'<b>Not quite:</b> the needle points to '+Q.ans+' kPa. ')+qWhy(1)+(q.c&&!ok?' Change each temperature from °C to kelvin first.':''));
   }
 
   // ---- drawing ----
@@ -804,7 +821,7 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
   function lcd(x,y,w,h,s){ return ell(x+w/2+4,y+h+2,w/2+5,4,'#000',' opacity=".09"')+rect(x,y,w,h,'var(--case-f)',' rx="7" stroke="var(--case-s)" stroke-width="1.2"')+rect(x+6,y+6,w-12,h-12,'var(--lcd)',' rx="3"')+txt(x+w-11,y+h/2+5.5,s,{a:'end',fs:15,w:600,c:'var(--lcd-ink)'}); }
   // what the gauge and the thermometer show
   function state(){
-    if(mode==='predict' && Q) return {p:qNow().p, max:500, step:50, num:100, unit:'kPa', temp:Q.q.k==='pv'?'300 K':tS(Q.q,Math.round(qNow().x)), clamp:Q.q.k==='pt'};
+    if(mode==='predict' && Q) return {p:qNow().p, max:500, step:50, num:100, unit:'kPa', temp:Q.q.k==='pv'?'300 K':tS(Q.q,Math.round(Q.q.k==='pvt'?qNow().T:qNow().x)), clamp:Q.q.k==='pt'};
     if(part==='laws') return {p:lawP(), max:500, step:50, num:100, unit:'kPa', temp:law==='boyle'?'300 K':law==='pt'?LT.value+' K':mn(LC.value)+' °C', clamp:law!=='boyle', hint:law==='boyle'};
     if(ks5()) return {p:Nn.value*1e21*KB*T.value/(V.value/100*1e-3)/1000, max:1500, step:100, num:500, unit:'kPa', temp:T.value+' K', hint:1, dots:1};
     return {p:sim.pressure(), max:40, step:5, num:10, unit:'relative', temp:T.value+' K', hint:1};
@@ -917,6 +934,7 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
     // IGCSE: 36 molecules of one gas, from 100 K. IAL / IB can go down to absolute zero.
     T.min=k5?0:100; if(+T.value<+T.min) T.value=T.min;
     if(!k5){ Nn.value=36; gas='n2'; gasSeg.pick('n2'); if(law==='abs'){ law='boyle'; lawSeg.pick('boyle'); } }
+    if(!k5 && mode==='predict' && Q && Q.q.l5) newQ();
     syncSim(); gsText(); lawText(); refresh();
   }
   [T,V,Nn].forEach(function(e){ e.addEventListener('input', function(){ syncSim(); gsText(); aria(); }); });
