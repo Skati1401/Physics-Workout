@@ -83,6 +83,26 @@
 .fl-pole.is-q rect{stroke-dasharray:4 3}
 .fl-pole text{font-size:18px;font-weight:700;fill:var(--ink)}
 .fl-pole:focus-visible rect{stroke-width:3.5}
+/* Build it on the diagram (TODO 4h) */
+.bk-solid{stroke:rgba(0,0,0,.35);stroke-width:1.2}
+.bk-empty{fill:none;stroke:var(--ink-faint);stroke-width:1.6;stroke-dasharray:5 4}
+.bk-wire{fill:none;stroke:#b5651d;stroke-width:2.6}
+.bk-lead{fill:none;stroke:var(--ink);stroke-width:2}
+.bk-cell{stroke:var(--ink);stroke-width:3}
+.bk-ac{fill:var(--panel);stroke:var(--ink);stroke-width:2}
+.bk-lamp{fill:var(--panel);stroke:var(--ink);stroke-width:2}
+.bk-glow{fill:#f7d046;opacity:.75}
+.bk-clip{fill:none;stroke:#7d8590;stroke-width:2}
+.bk-pl{fill:#fff;font-size:18px;font-weight:700;text-anchor:middle}
+.bk-small{font-size:14px;fill:var(--ink-soft);text-anchor:middle}
+.bk-tag{cursor:pointer;outline:none}
+.bk-tag rect{fill:var(--panel);stroke:var(--accent);stroke-width:2}
+.bk-tag.is-q rect{stroke-dasharray:4 3}
+.bk-tag:hover rect,.bk-tag:focus-visible rect{stroke-width:3.5}
+.bk-tlab{font-size:13px;fill:var(--ink-soft);font-family:'IBM Plex Mono',monospace}
+.bk-tval{font-size:15px;font-weight:600;fill:var(--ink)}
+.dt-done .bk-tag{cursor:default}
+.dt-shown .bk-tag rect{stroke-dasharray:7 4}
 </style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
@@ -1832,6 +1852,128 @@ const FIELD_TASKS_6A_WIRE=[
    ok:'Like a bar magnet outside, with straight parallel lines inside: the arrows go N to S outside and S to N inside.'}
 ];
 
+/* Build it on the diagram (15 Nov 2026, TODO 4h): the 4PH1 "describe the construction of an electromagnet" (6.9P) and
+   "describe the structure of a transformer" (6.17P) questions, whose marks can all come from a labelled diagram.
+   The student clicks each part's label (beside the picture) to choose it; Check marks it point by point as the mark schemes do.
+   A task: type 'em' (electromagnet) or 'tf' (transformer), q, src, start (a state to fix, or none), and for 'tf' up (step-up or not).
+   Used with createDrawTasks (W 680, H 340). Papers: IGCSE Question Index, 6.9P and 6.17P rows (May 2026 2P 3(a), May 2024 2P 6(a),
+   Jan 2022 2P 6(a), Nov 2021 2P 6(a), Nov 2020 2PR 7(a); May 2025 2PR 4(a), Jan 2017 2P 5(c), May 2022 2P 3(c), May 2023 2P 6(b), Nov 2023 2P 4(b)). */
+const BUILD_KIND=(function(){
+  const SLOTS={
+    em:[{id:'core',lab:'Core',opts:['soft iron rod','steel rod','copper rod','bar magnet','closed iron loop','no core']},
+        {id:'coil',lab:'Wire',opts:['coil round the core','one straight wire']},
+        {id:'sup',lab:'Supply',opts:['d.c. (battery)','a.c. supply','no supply']}],
+    tf:[{id:'sup',lab:'Supply',opts:['a.c. supply','d.c. (battery)']},
+        {id:'np',lab:'Primary coil',opts:['few turns','many turns']},
+        {id:'core',lab:'Core',opts:['soft iron ring','steel ring','two separate iron bars','copper ring','plastic ring']},
+        {id:'ns',lab:'Secondary coil',opts:['few turns','many turns']}]
+  };
+  const ANS={em:()=>({core:0,coil:0,sup:0}),tf:t=>({sup:0,np:t.up?0:1,core:0,ns:t.up?1:0})};
+  function check(t,s){
+    const n=[];let ok=true;const no=x=>{ok=false;n.push([0,x]);},yes=x=>n.push([1,x]);
+    const unset=SLOTS[t.type].filter(sl=>s[sl.id]<0).map(sl=>sl.lab.toLowerCase());
+    if(unset.length)no('Choose the '+(unset.length>1?unset.slice(0,-1).join(', the ')+' and the '+unset[unset.length-1]:unset[0])+': click each label marked ?.');
+    if(t.type==='em'){
+      const c=s.core,w=s.coil,p=s.sup;
+      if(w===0)yes('A coil (solenoid) of wire.');else if(w===1)no('Wind the wire into a coil (a solenoid): one straight wire makes only a weak field.');
+      if(c===0)yes('A soft iron core inside the coil.');
+      else if(c===1)no('Steel is magnetically hard: it stays magnetised when the current is switched off. Use soft iron, which loses its magnetism.');
+      else if(c===2)no('Copper is not a magnetic material, so it does not make the field stronger. Use soft iron.');
+      else if(c===3)no('A bar magnet is a permanent magnet: it cannot be switched off. The mark schemes reject it for the core.');
+      else if(c===4)no('A closed iron loop keeps the field inside the iron, so the ends attract nothing. The mark schemes reject a complete iron loop: use a straight soft iron rod.');
+      else if(c===5)no('Put a core inside the coil: a soft iron core makes the field much stronger.');
+      if(p===0)yes('A d.c. current in the coil.');
+      else if(p===1)no('With a.c. the poles swap 100 times a second. The mark schemes reject a.c.: the current is d.c.');
+      else if(p===2)no('There must be a current in the coil to make a magnetic field.');
+    }else{
+      const p=s.sup,np=s.np,ns=s.ns,c=s.core;
+      if(p===0)yes('An alternating current in the primary makes a changing magnetic field.');
+      else if(p===1)no('A steady d.c. current makes a steady magnetic field, and a field that does not change induces no voltage in the secondary.');
+      if(c===0)yes('A soft iron core links the two coils.');
+      else if(c===1)no('Steel is magnetically hard: it does not magnetise and demagnetise easily as the field keeps changing. Use soft iron.');
+      else if(c===2)no('The core must link the two coils: one continuous iron core carries the changing field from the primary to the secondary.');
+      else if(c===3)no('Copper is not a magnetic material, so it does not carry the field from one coil to the other. Use soft iron.');
+      else if(c===4)no('Plastic is not a magnetic material, so it does not carry the field from one coil to the other. Use soft iron.');
+      if(np>=0&&ns>=0){
+        if(np===ns)no('The coils have the same number of turns, so the output voltage equals the input voltage.');
+        else if((ns>np)===!!t.up)yes(t.up?'More turns on the secondary than the primary, so the voltage is stepped up.':'Fewer turns on the secondary than the primary, so the voltage is stepped down.');
+        else no(t.up?'This steps the voltage down. A step-up transformer has more turns on the secondary coil.':'This steps the voltage up. A step-down transformer has fewer turns on the secondary coil.');
+      }
+    }
+    if(ok)n.unshift([1,t.ok]);
+    return {ok:ok,notes:n};
+  }
+  function emPic(g,s,works,el){
+    const c=s.core,add=h=>{const k=el('g',{});k.innerHTML=h;g.appendChild(k);};
+    const rod=(col)=>'<rect x="130" y="150" width="200" height="40" rx="3" fill="'+col+'" class="bk-solid"/>';
+    if(c===0)add(rod('#9aa1aa'));else if(c===1)add(rod('#56636f'));else if(c===2)add(rod('#c87533'));
+    else if(c===3)add('<rect x="130" y="150" width="100" height="40" fill="#c0392b" class="bk-solid"/><rect x="230" y="150" width="100" height="40" fill="#2f6db5" class="bk-solid"/><text x="180" y="176" class="bk-pl">N</text><text x="280" y="176" class="bk-pl">S</text>');
+    else if(c===4)add('<path d="M130,150 H330 V60 H130 Z M150,170 V80 H310 V170 Z" fill="#9aa1aa" fill-rule="evenodd" class="bk-solid"/>'+rod('#9aa1aa'));
+    else add('<rect x="130" y="150" width="200" height="40" rx="3" class="bk-empty"/>');
+    if(s.coil===0)add([0,1,2,3,4,5,6,7,8].map(k=>'<ellipse cx="'+(146+k*21)+'" cy="170" rx="7" ry="30" class="bk-wire"/>').join(''));
+    else if(s.coil===1)add('<path d="M146,146 H314" class="bk-wire"/>');
+    // leads to the supply
+    add('<path d="M146,'+(s.coil===1?146:200)+' V290 H232 M314,'+(s.coil===1?146:200)+' V290 H268" class="bk-lead"/>');
+    if(s.sup===0)add('<path d="M244,276 V304 M256,282 V298" class="bk-cell"/><path d="M232,290 H244 M256,290 H268" class="bk-lead"/><text x="250" y="325" class="bk-small">d.c.</text>');
+    else if(s.sup===1)add('<circle cx="250" cy="290" r="18" class="bk-ac"/><path d="M240,290 q5,-9 10,0 t10,0" class="bk-lead"/><text x="250" y="325" class="bk-small">a.c.</text>');
+    else add('<rect x="232" y="276" width="36" height="28" rx="4" class="bk-empty"/>');
+    if(works)add([0,1,2].map(k=>'<path d="M'+(338+k*6)+','+(158+k*14)+' h22 a5,5 0 0 1 0,10 h-18 a4,4 0 0 1 0,-8 h14" class="bk-clip"/>').join(''));
+  }
+  function tfPic(g,s,t,works,el){
+    const c=s.core,add=h=>{const k=el('g',{});k.innerHTML=h;g.appendChild(k);};
+    const ring=col=>'<path d="M140,70 H340 V270 H140 Z M164,94 V246 H316 V94 Z" fill="'+col+'" fill-rule="evenodd" class="bk-solid"/>';
+    if(c===0)add(ring('#9aa1aa'));else if(c===1)add(ring('#56636f'));else if(c===3)add(ring('#c87533'));else if(c===4)add(ring('#e9dfc6'));
+    else if(c===2)add('<rect x="140" y="70" width="24" height="200" fill="#9aa1aa" class="bk-solid"/><rect x="316" y="70" width="24" height="200" fill="#9aa1aa" class="bk-solid"/>');
+    else add('<path d="M140,70 H340 V270 H140 Z M164,94 V246 H316 V94 Z" fill-rule="evenodd" class="bk-empty"/>');
+    const coil=(x,n,left)=>{if(n<0)return '';const k=n===1?10:4,y0=n===1?118:136,dy=n===1?11.5:22,yy=[];for(let i=0;i<k;i++)yy.push(y0+i*dy);
+      const e=yy.map(y=>'<ellipse cx="'+x+'" cy="'+y+'" rx="22" ry="6" class="bk-wire"/>').join('');
+      const ox=left?x-22:x+22,ex=left?60:400;
+      return e+'<path d="M'+ox+','+yy[0]+' H'+ex+' M'+ox+','+yy[k-1]+' H'+ex+'" class="bk-lead"/>';};
+    add(coil(152,s.np,true)+coil(328,s.ns,false));
+    add('<text x="152" y="58" class="bk-small">primary</text><text x="328" y="58" class="bk-small">secondary</text>');
+    // supply on the left, between the primary's two leads
+    if(s.np>=0){const y1=s.np===1?118:136,y2=s.np===1?221.5:202;add('<path d="M60,'+y1+' V152 M60,'+y2+' V188" class="bk-lead"/>');}
+    if(s.sup===0)add('<circle cx="60" cy="170" r="18" class="bk-ac"/><path d="M50,170 q5,-9 10,0 t10,0" class="bk-lead"/><text x="60" y="210" class="bk-small" dx="-30">a.c.</text>');
+    else if(s.sup===1)add('<path d="M46,164 H74 M52,176 H68" class="bk-cell"/><path d="M60,152 V164 M60,176 V188" class="bk-lead"/><text x="60" y="210" class="bk-small" dx="-30">d.c.</text>');
+    else add('<rect x="44" y="154" width="32" height="32" rx="4" class="bk-empty"/>');
+    if(s.ns>=0){const y1=s.ns===1?118:136,y2=s.ns===1?221.5:202;
+      add('<path d="M400,'+y1+' V154 M400,'+y2+' V186" class="bk-lead"/>'+(works?'<circle cx="400" cy="170" r="24" class="bk-glow"/>':'')+'<circle cx="400" cy="170" r="16" class="bk-lamp"/><path d="M389,159 L411,181 M411,159 L389,181" class="bk-lead"/>');}
+  }
+  return {
+    W:680,H:340,
+    init:t=>{const s={};SLOTS[t.type].forEach(sl=>{s[sl.id]=t.start&&t.start[sl.id]!=null?t.start[sl.id]:-1;});return s;},
+    answer:t=>ANS[t.type](t),
+    check:check,
+    draw:function(g,t,s,api){
+      const el=api.el,works=api.locked||check(t,s).ok;
+      if(t.type==='em')emPic(g,s,works&&!SLOTS.em.some(sl=>s[sl.id]<0),el);else tfPic(g,s,t,works&&!SLOTS.tf.some(sl=>s[sl.id]<0),el);
+      // on a phone the labels go under the picture, two to a row, so they stay large enough to read and press
+      const narrow=window.matchMedia('(max-width:560px)').matches,ns=SLOTS[t.type].length;
+      api.svg.setAttribute('viewBox',narrow?'0 0 440 '+(345+Math.ceil(ns/2)*64):'0 0 680 340');
+      if(!api.svg._bkMQ){api.svg._bkMQ=1;try{window.matchMedia('(max-width:560px)').addEventListener('change',()=>api.redraw());}catch(e){}}
+      SLOTS[t.type].forEach((sl,i)=>{
+        const x=narrow?10+(i%2)*215:450,y=narrow?345+Math.floor(i/2)*64:40+i*(t.type==='em'?92:72),w=narrow?205:220,v=s[sl.id];
+        const tg=el('g',{class:'bk-tag'+(v<0?' is-q':''),'data-slot':sl.id});
+        tg.appendChild(el('rect',{x:x,y:y,width:w,height:54,rx:8}));
+        tg.appendChild(el('text',{x:x+12,y:y+20,class:'bk-tlab'},sl.lab));
+        tg.appendChild(el('text',{x:x+12,y:y+42,class:'bk-tval'},v<0?'?':sl.opts[v]+(api.locked?'':'  ▸')));
+        if(!api.locked){
+          const cyc=()=>{const n=Object.assign({},s);n[sl.id]=(v+1)%sl.opts.length;api.set(n);const f=api.svg.querySelector('[data-slot="'+sl.id+'"]');if(f)f.focus({preventScroll:true});};
+          tg.addEventListener('click',cyc);keyActivate(tg,cyc,sl.lab+': '+(v<0?'not chosen':sl.opts[v])+'. Press to change.');
+        }
+        g.appendChild(tg);
+      });
+    }
+  };
+})();
+
+const BUILD_TASKS_6A=[
+  {type:'em',q:'Describe the construction of an electromagnet: build one on the diagram.',src:'4PH1/2P May 2026 Q3(a), May 2024 Q6(a) and Jan 2022 Q6(a)',aria:'An electromagnet to build: a core, the wire and a supply, each chosen from the labels on the right',
+   ok:'A coil of wire round a soft iron core, with a d.c. current in the coil: every marking point.'},
+  {type:'em',q:'A scrapyard crane must drop the scrap iron as soon as its current is switched off. This electromagnet does not work properly. Change the parts that are wrong.',src:'4PH1/2P Nov 2021 Q6(a) and 4PH1/2PR Nov 2020 Q7(a)',aria:'An electromagnet with a steel core and an a.c. supply, to be put right',
+   start:{core:1,coil:0,sup:1},ok:'Soft iron loses its magnetism when the current stops, so the scrap drops; a d.c. current keeps the poles from swapping.'}
+];
+
 /* ================= 4. FIELD PATTERNS ================= */
 {
   // Exception to 5a (Alex, 11 Nov 2026): students must recognise the field patterns and describe how to find them,
@@ -1879,6 +2021,8 @@ const FIELD_TASKS_6A_WIRE=[
       {id:'n1',text:'Thicker plastic insulation on the wire',cat:'n'},
       {id:'n2',text:'Using a longer lead from the supply',cat:'n'}
     ]});
+  // 4h (15 Nov 2026): build the electromagnet on the diagram (6.9P)
+  createDrawTasks({host:act('electro','Build it','Build an electromagnet','Click a part\'s label to change it. Then press Check.'),tasks:BUILD_TASKS_6A,kind:BUILD_KIND,W:BUILD_KIND.W,H:BUILD_KIND.H});
 }
 
 /* ================= 6. MOTOR EFFECT ================= */
@@ -2070,6 +2214,7 @@ function pairByTitle(t1,t2){
   const a=find(t1),b=find(t2);if(!a||!b)return;
   const pair=mk('div','act-pair');a.parentNode.insertBefore(pair,a);pair.appendChild(a);pair.appendChild(b);
 }
+pairByTitle('Changing an electromagnet','Build an electromagnet');   // Electromagnets (4h, 15 Nov 2026)
 pairByTitle('True or false?','Plotting the field of a bar magnet');   // Field Patterns (14 Nov 2026: the uniform-field Predict became the Draw the field card)
 function applyTabUI(tab){
   TAB_IDS.forEach(id=>{const p=byId('panel-'+id);if(p)p.hidden=(id!==tab);});

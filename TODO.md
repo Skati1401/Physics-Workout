@@ -23,8 +23,6 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 ## 4. Build: workouts (IGCSE, spec order)
 
 Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the cards to `igcse.html`, then add the unit's activities to the Calculations and Graphs sets.
-- [ ] **4h** Drawing the construction of an electromagnet or a transformer (6.9P, 6.17P): no draw task yet; lower value (split from 4g, 14 Nov 2026).
-- [ ] **4i** 6b: the microphone version of fixed explanation #1 is missing (split from 4g, 14 Nov 2026).
 
 ## 5. Build: core practicals
 
@@ -92,6 +90,8 @@ Follow-ups (moved out of the ticked batches' "Left for later" notes in the 14 No
 
 ## Done
 
+- [x] **4h** Drawing the construction of an electromagnet or a transformer (6.9P, 6.17P) (split from 4g, 14 Nov 2026). Done 15 Nov 2026: a Build it card (`BUILD_KIND` for `createDrawTasks`) on 6a Electromagnets (2 diagrams) and 6b Transformers (3 diagrams): the student chooses each part's label and Check marks it as the mark schemes do; kinds from the 6.9P and 6.17P rows of the IGCSE Question Index.
+- [x] **4i** 6b: the microphone version of fixed explanation #1 (split from 4g, 14 Nov 2026). Done 15 Nov 2026: a moving-coil microphone Order beside the dynamo Order on Generators, from 4PH1/1P May 2026 Q8(b) and 2PR May 2026 Q8(a)(i).
 - [x] **4e** 6a `magnetism-and-motor-effect.html`: no task where the student draws or completes field lines (6.6, 6.7 bar magnets and the uniform field; 6.10P wire, flat coil, solenoid). The framed animations ask for directions only and the Wires tab is a Match (14 Nov 2026 coverage check). Done 14 Nov 2026: two Draw the field cards (Field Patterns: bar magnet, uniform field, label the pole, two N poles; Wire Fields, TA: wire both ways, flat coil, solenoid), replacing the uniform-field Predict and the Field patterns Match. The microphone version of fixed explanation #1 (6b) is still missing.
 - [x] **4f** 8a `universe-and-stars.html` HR Diagram tab (8.12P, TA): only a link to the HR view of `star-life-cycle.html`; no task in the workout where the student marks or sketches the main groups (14 Nov 2026 coverage check). Done 14 Nov 2026: a Draw on the diagram card on the HR Diagram tab, six diagrams (the Sun; where it goes next; W, X, Y, Z), from 4PH1/2P Nov 2024 Q4(a), Jan 2021 Q6, May 2021 Q1(a).
 - [x] **4g** 3a `waves.html`: no task where the student marks the wavelength and amplitude on a drawn wave (3.2, 3.3); Read the wave only reads them off (14 Nov 2026 coverage check). Also not covered, lower value: drawing the construction of an electromagnet or transformer (6.9P, 6.17P). Covered elsewhere: 5.10P particles (8k), 1.21 free-body arrows (8o). The 28 fixed explanations are all covered by their workouts (Orders, word boxes, matches); only the microphone version of #1 is missing from 6b. Done 14 Nov 2026: an Arrows on a wave card on Describing Waves (amplitude and wavelength arrows, four diagrams). Not done: the electromagnet and transformer construction drawings (6.9P, 6.17P), the lower-value part of this item.

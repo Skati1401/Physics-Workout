@@ -136,6 +136,7 @@ table.units td.given b.ta{font:500 11px var(--f-mono);color:var(--accent);border
   })();
 </script>
 <!-- /pw-review -->
+<meta name="pw-draft" content="electromagnetic-induction.html">
 </head><body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -459,6 +460,40 @@ svg text{font-family:var(--f-mono)}
   .tabs::-webkit-scrollbar{display:none}
   .tab-btn{flex:0 0 auto;scroll-snap-align:start;white-space:nowrap}
 }
+/* Draw on the diagram (14 Nov 2026, TODO 4e, 4f, 4g, 8k) */
+.dt-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.dt-prog{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft)}
+.dt-q{margin:0 0 8px}
+.dt-src{display:block;font-size:13px;color:var(--ink-soft);margin-top:3px}
+.dt-fig{border:1px solid var(--panel-border);border-radius:10px;background:var(--panel);overflow:hidden}
+.dt-svg{display:block;width:100%;max-width:720px;height:auto;margin:0 auto;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.dt-svg text{font-family:'IBM Plex Sans',sans-serif}
+.dt-notes{list-style:none;margin:8px 0 0;padding:0;font-size:14.5px}
+.dt-notes li{margin:3px 0;padding-left:2px}
+.dt-notes li.ok{color:var(--good)}
+.dt-notes li.no{color:var(--bad)}
+.dt.shake{animation:none}
+@media (prefers-reduced-motion:no-preference){.dt.shake .dt-fig{animation:shake .5s}}
+/* Build it on the diagram (TODO 4h) */
+.bk-solid{stroke:rgba(0,0,0,.35);stroke-width:1.2}
+.bk-empty{fill:none;stroke:var(--ink-faint);stroke-width:1.6;stroke-dasharray:5 4}
+.bk-wire{fill:none;stroke:#b5651d;stroke-width:2.6}
+.bk-lead{fill:none;stroke:var(--ink);stroke-width:2}
+.bk-cell{stroke:var(--ink);stroke-width:3}
+.bk-ac{fill:var(--panel);stroke:var(--ink);stroke-width:2}
+.bk-lamp{fill:var(--panel);stroke:var(--ink);stroke-width:2}
+.bk-glow{fill:#f7d046;opacity:.75}
+.bk-clip{fill:none;stroke:#7d8590;stroke-width:2}
+.bk-pl{fill:#fff;font-size:18px;font-weight:700;text-anchor:middle}
+.bk-small{font-size:14px;fill:var(--ink-soft);text-anchor:middle}
+.bk-tag{cursor:pointer;outline:none}
+.bk-tag rect{fill:var(--panel);stroke:var(--accent);stroke-width:2}
+.bk-tag.is-q rect{stroke-dasharray:4 3}
+.bk-tag:hover rect,.bk-tag:focus-visible rect{stroke-width:3.5}
+.bk-tlab{font-size:13px;fill:var(--ink-soft);font-family:'IBM Plex Mono',monospace}
+.bk-tval{font-size:15px;font-weight:600;fill:var(--ink)}
+.dt-done .bk-tag{cursor:default}
+.dt-shown .bk-tag rect{stroke-dasharray:7 4}
 </style>
 <div class="page">
 <header class="page-head">
@@ -484,7 +519,7 @@ svg text{font-family:var(--f-mono)}
 <div class="acts"></div>
 </section>
 <section id="panel-generators" class="panel" role="tabpanel" aria-labelledby="tab-generators" hidden>
-<div class="panel-head"><h2>Generators</h2><div class="spec"><b>6.16</b></div></div>
+<div class="panel-head"><h2>Generators</h2><div class="spec"><b>6.15</b><b>6.16</b></div></div>
 <div class="acts"></div>
 </section>
 <section id="panel-transformers" class="panel" role="tabpanel" aria-labelledby="tab-transformers" hidden>
@@ -1556,12 +1591,180 @@ function coilTraceSVG(){
   });
   goalsAct('overview',[
     {t:'Say what induces a voltage, and what makes it bigger or reverses it',sp:'6.15'},
-    {t:'Explain how a generator or a bicycle dynamo makes electricity',sp:'6.16'},
+    {t:'Explain how a generator, a bicycle dynamo or a microphone makes electricity',sp:'6.15, 6.16'},
     {ta:1,t:'Explain how a transformer works, and use the turns ratio',sp:'6.17P, 6.19P'},
     {ta:1,t:'Explain why the National Grid steps the voltage up and down, and use V<sub>p</sub>I<sub>p</sub> = V<sub>s</sub>I<sub>s</sub>',sp:'6.18P, 6.20P'}
   ]);
   pairFirstTwo('overview');
 }
+/* ================= Draw on the diagram (14 Nov 2026, TODO 4e, 4f, 4g, 8k) =================
+   Exam "draw on the diagram" tasks, dealt one at a time like Draw the ray: each task names the past-paper question it is modelled
+   on, Check marks it as the mark scheme does (one note per marking point), Show answer appears after a wrong Check.
+   cfg.kind gives the drawing: init(task) → state, draw(g, task, state, api), check(task, state) → {ok, notes:[[ok, text]]}, answer(task) → state.
+   Saved: which tasks are right (1) or shown (2). */
+function createDrawTasks(cfg){
+  const host=cfg.host,tasks=cfg.tasks,K=cfg.kind,NS='http://www.w3.org/2000/svg';
+  host.classList.add('dt');
+  const top=mk('div','dt-top');host.appendChild(top);const prog=mk('span','dt-prog');top.appendChild(prog);
+  const q=mk('p','dt-q');host.appendChild(q);
+  const fig=mk('div','dt-fig');host.appendChild(fig);
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('class','dt-svg');svg.setAttribute('viewBox','0 0 '+(cfg.W||600)+' '+(cfg.H||340));fig.appendChild(svg);
+  const notes=mk('ul','dt-notes');notes.setAttribute('aria-live','polite');host.appendChild(notes);
+  let status=tasks.map(()=>0),cur=0,T=null,st=null,locked=false;
+  const b=bar(host,[{label:'Check',primary:true,fn:()=>check()},{label:'Next diagram',fn:()=>go(cur+1)},{label:'Start again',fn:()=>{status=tasks.map(()=>0);go(0);saveSoon();}}]);
+  const ans=answerBtn(b,()=>{st=K.answer(T);status[cur]=Math.max(status[cur],2);locked=true;notes.innerHTML='';b.say('Answer shown (dashed). Read it through, then press Next diagram.','');render();saveSoon();});
+  const el=(tag,at,txt)=>{const e=document.createElementNS(NS,tag);for(const k in at)if(at[k]!=null)e.setAttribute(k,at[k]);if(txt!=null)e.textContent=txt;return e;};
+  const pt=ev=>{const m=svg.getScreenCTM();if(!m)return null;const p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const r=p.matrixTransform(m.inverse());return {x:r.x,y:r.y};};
+  const api={el:el,svg:svg,pt:pt,get locked(){return locked;},shown:()=>status[cur]===2,set:s=>{if(locked)return;st=s;notes.innerHTML='';b.say('','');render();},redraw:()=>render()};
+  function render(){
+    svg.innerHTML='';const g=el('g',{class:locked?(status[cur]===2?'dt-done dt-shown':'dt-done'):''});svg.appendChild(g);K.draw(g,T,st,api);
+    prog.textContent='Diagram '+(cur+1)+' of '+tasks.length+' · '+status.filter(x=>x>0).length+' done';
+  }
+  function go(i){
+    cur=(i+tasks.length)%tasks.length;T=tasks[cur];locked=status[cur]>0;st=locked?K.answer(T):K.init(T);
+    q.innerHTML=FR(T.q)+(T.src?'<span class="dt-src">Modelled on '+T.src+'</span>':'');
+    notes.innerHTML='';ans.off();
+    b.say(status[cur]===1?'Done: this one was right.':status[cur]===2?'Answer shown.':'',status[cur]===1?'good':'');
+    svg.setAttribute('aria-label',T.aria||'The diagram');render();
+  }
+  function check(){
+    if(locked){go(cur+1);return;}
+    const r=K.check(T,st);
+    notes.innerHTML=r.notes.map(n=>'<li class="'+(n[0]?'ok':'no')+'"><span aria-hidden="true">'+(n[0]?'✓':'✗')+'</span> '+FR(n[1])+'</li>').join('');
+    if(r.ok){status[cur]=1;locked=true;b.say('Correct.','good');celebrate(b.msg);ans.off();render();}
+    else{b.say('Not yet: see the notes under the diagram.','bad');ans.on();host.classList.remove('shake');void host.offsetWidth;host.classList.add('shake');}
+    saveSoon();
+  }
+  track(host,{getState:()=>({dt:1,s:status}),
+    setState:s=>{status=(s&&s.dt===1&&Array.isArray(s.s)&&s.s.length===tasks.length)?s.s.map(x=>x===1||x===2?x:0):tasks.map(()=>0);go(0);},
+    isDone:()=>status.every(x=>x>0)});
+  go(0);
+  return {go:go};
+}
+/* Build it on the diagram (15 Nov 2026, TODO 4h): the 4PH1 "describe the construction of an electromagnet" (6.9P) and
+   "describe the structure of a transformer" (6.17P) questions, whose marks can all come from a labelled diagram.
+   The student clicks each part's label (beside the picture) to choose it; Check marks it point by point as the mark schemes do.
+   A task: type 'em' (electromagnet) or 'tf' (transformer), q, src, start (a state to fix, or none), and for 'tf' up (step-up or not).
+   Used with createDrawTasks (W 680, H 340). Papers: IGCSE Question Index, 6.9P and 6.17P rows (May 2026 2P 3(a), May 2024 2P 6(a),
+   Jan 2022 2P 6(a), Nov 2021 2P 6(a), Nov 2020 2PR 7(a); May 2025 2PR 4(a), Jan 2017 2P 5(c), May 2022 2P 3(c), May 2023 2P 6(b), Nov 2023 2P 4(b)). */
+const BUILD_KIND=(function(){
+  const SLOTS={
+    em:[{id:'core',lab:'Core',opts:['soft iron rod','steel rod','copper rod','bar magnet','closed iron loop','no core']},
+        {id:'coil',lab:'Wire',opts:['coil round the core','one straight wire']},
+        {id:'sup',lab:'Supply',opts:['d.c. (battery)','a.c. supply','no supply']}],
+    tf:[{id:'sup',lab:'Supply',opts:['a.c. supply','d.c. (battery)']},
+        {id:'np',lab:'Primary coil',opts:['few turns','many turns']},
+        {id:'core',lab:'Core',opts:['soft iron ring','steel ring','two separate iron bars','copper ring','plastic ring']},
+        {id:'ns',lab:'Secondary coil',opts:['few turns','many turns']}]
+  };
+  const ANS={em:()=>({core:0,coil:0,sup:0}),tf:t=>({sup:0,np:t.up?0:1,core:0,ns:t.up?1:0})};
+  function check(t,s){
+    const n=[];let ok=true;const no=x=>{ok=false;n.push([0,x]);},yes=x=>n.push([1,x]);
+    const unset=SLOTS[t.type].filter(sl=>s[sl.id]<0).map(sl=>sl.lab.toLowerCase());
+    if(unset.length)no('Choose the '+(unset.length>1?unset.slice(0,-1).join(', the ')+' and the '+unset[unset.length-1]:unset[0])+': click each label marked ?.');
+    if(t.type==='em'){
+      const c=s.core,w=s.coil,p=s.sup;
+      if(w===0)yes('A coil (solenoid) of wire.');else if(w===1)no('Wind the wire into a coil (a solenoid): one straight wire makes only a weak field.');
+      if(c===0)yes('A soft iron core inside the coil.');
+      else if(c===1)no('Steel is magnetically hard: it stays magnetised when the current is switched off. Use soft iron, which loses its magnetism.');
+      else if(c===2)no('Copper is not a magnetic material, so it does not make the field stronger. Use soft iron.');
+      else if(c===3)no('A bar magnet is a permanent magnet: it cannot be switched off. The mark schemes reject it for the core.');
+      else if(c===4)no('A closed iron loop keeps the field inside the iron, so the ends attract nothing. The mark schemes reject a complete iron loop: use a straight soft iron rod.');
+      else if(c===5)no('Put a core inside the coil: a soft iron core makes the field much stronger.');
+      if(p===0)yes('A d.c. current in the coil.');
+      else if(p===1)no('With a.c. the poles swap 100 times a second. The mark schemes reject a.c.: the current is d.c.');
+      else if(p===2)no('There must be a current in the coil to make a magnetic field.');
+    }else{
+      const p=s.sup,np=s.np,ns=s.ns,c=s.core;
+      if(p===0)yes('An alternating current in the primary makes a changing magnetic field.');
+      else if(p===1)no('A steady d.c. current makes a steady magnetic field, and a field that does not change induces no voltage in the secondary.');
+      if(c===0)yes('A soft iron core links the two coils.');
+      else if(c===1)no('Steel is magnetically hard: it does not magnetise and demagnetise easily as the field keeps changing. Use soft iron.');
+      else if(c===2)no('The core must link the two coils: one continuous iron core carries the changing field from the primary to the secondary.');
+      else if(c===3)no('Copper is not a magnetic material, so it does not carry the field from one coil to the other. Use soft iron.');
+      else if(c===4)no('Plastic is not a magnetic material, so it does not carry the field from one coil to the other. Use soft iron.');
+      if(np>=0&&ns>=0){
+        if(np===ns)no('The coils have the same number of turns, so the output voltage equals the input voltage.');
+        else if((ns>np)===!!t.up)yes(t.up?'More turns on the secondary than the primary, so the voltage is stepped up.':'Fewer turns on the secondary than the primary, so the voltage is stepped down.');
+        else no(t.up?'This steps the voltage down. A step-up transformer has more turns on the secondary coil.':'This steps the voltage up. A step-down transformer has fewer turns on the secondary coil.');
+      }
+    }
+    if(ok)n.unshift([1,t.ok]);
+    return {ok:ok,notes:n};
+  }
+  function emPic(g,s,works,el){
+    const c=s.core,add=h=>{const k=el('g',{});k.innerHTML=h;g.appendChild(k);};
+    const rod=(col)=>'<rect x="130" y="150" width="200" height="40" rx="3" fill="'+col+'" class="bk-solid"/>';
+    if(c===0)add(rod('#9aa1aa'));else if(c===1)add(rod('#56636f'));else if(c===2)add(rod('#c87533'));
+    else if(c===3)add('<rect x="130" y="150" width="100" height="40" fill="#c0392b" class="bk-solid"/><rect x="230" y="150" width="100" height="40" fill="#2f6db5" class="bk-solid"/><text x="180" y="176" class="bk-pl">N</text><text x="280" y="176" class="bk-pl">S</text>');
+    else if(c===4)add('<path d="M130,150 H330 V60 H130 Z M150,170 V80 H310 V170 Z" fill="#9aa1aa" fill-rule="evenodd" class="bk-solid"/>'+rod('#9aa1aa'));
+    else add('<rect x="130" y="150" width="200" height="40" rx="3" class="bk-empty"/>');
+    if(s.coil===0)add([0,1,2,3,4,5,6,7,8].map(k=>'<ellipse cx="'+(146+k*21)+'" cy="170" rx="7" ry="30" class="bk-wire"/>').join(''));
+    else if(s.coil===1)add('<path d="M146,146 H314" class="bk-wire"/>');
+    // leads to the supply
+    add('<path d="M146,'+(s.coil===1?146:200)+' V290 H232 M314,'+(s.coil===1?146:200)+' V290 H268" class="bk-lead"/>');
+    if(s.sup===0)add('<path d="M244,276 V304 M256,282 V298" class="bk-cell"/><path d="M232,290 H244 M256,290 H268" class="bk-lead"/><text x="250" y="325" class="bk-small">d.c.</text>');
+    else if(s.sup===1)add('<circle cx="250" cy="290" r="18" class="bk-ac"/><path d="M240,290 q5,-9 10,0 t10,0" class="bk-lead"/><text x="250" y="325" class="bk-small">a.c.</text>');
+    else add('<rect x="232" y="276" width="36" height="28" rx="4" class="bk-empty"/>');
+    if(works)add([0,1,2].map(k=>'<path d="M'+(338+k*6)+','+(158+k*14)+' h22 a5,5 0 0 1 0,10 h-18 a4,4 0 0 1 0,-8 h14" class="bk-clip"/>').join(''));
+  }
+  function tfPic(g,s,t,works,el){
+    const c=s.core,add=h=>{const k=el('g',{});k.innerHTML=h;g.appendChild(k);};
+    const ring=col=>'<path d="M140,70 H340 V270 H140 Z M164,94 V246 H316 V94 Z" fill="'+col+'" fill-rule="evenodd" class="bk-solid"/>';
+    if(c===0)add(ring('#9aa1aa'));else if(c===1)add(ring('#56636f'));else if(c===3)add(ring('#c87533'));else if(c===4)add(ring('#e9dfc6'));
+    else if(c===2)add('<rect x="140" y="70" width="24" height="200" fill="#9aa1aa" class="bk-solid"/><rect x="316" y="70" width="24" height="200" fill="#9aa1aa" class="bk-solid"/>');
+    else add('<path d="M140,70 H340 V270 H140 Z M164,94 V246 H316 V94 Z" fill-rule="evenodd" class="bk-empty"/>');
+    const coil=(x,n,left)=>{if(n<0)return '';const k=n===1?10:4,y0=n===1?118:136,dy=n===1?11.5:22,yy=[];for(let i=0;i<k;i++)yy.push(y0+i*dy);
+      const e=yy.map(y=>'<ellipse cx="'+x+'" cy="'+y+'" rx="22" ry="6" class="bk-wire"/>').join('');
+      const ox=left?x-22:x+22,ex=left?60:400;
+      return e+'<path d="M'+ox+','+yy[0]+' H'+ex+' M'+ox+','+yy[k-1]+' H'+ex+'" class="bk-lead"/>';};
+    add(coil(152,s.np,true)+coil(328,s.ns,false));
+    add('<text x="152" y="58" class="bk-small">primary</text><text x="328" y="58" class="bk-small">secondary</text>');
+    // supply on the left, between the primary's two leads
+    if(s.np>=0){const y1=s.np===1?118:136,y2=s.np===1?221.5:202;add('<path d="M60,'+y1+' V152 M60,'+y2+' V188" class="bk-lead"/>');}
+    if(s.sup===0)add('<circle cx="60" cy="170" r="18" class="bk-ac"/><path d="M50,170 q5,-9 10,0 t10,0" class="bk-lead"/><text x="60" y="210" class="bk-small" dx="-30">a.c.</text>');
+    else if(s.sup===1)add('<path d="M46,164 H74 M52,176 H68" class="bk-cell"/><path d="M60,152 V164 M60,176 V188" class="bk-lead"/><text x="60" y="210" class="bk-small" dx="-30">d.c.</text>');
+    else add('<rect x="44" y="154" width="32" height="32" rx="4" class="bk-empty"/>');
+    if(s.ns>=0){const y1=s.ns===1?118:136,y2=s.ns===1?221.5:202;
+      add('<path d="M400,'+y1+' V154 M400,'+y2+' V186" class="bk-lead"/>'+(works?'<circle cx="400" cy="170" r="24" class="bk-glow"/>':'')+'<circle cx="400" cy="170" r="16" class="bk-lamp"/><path d="M389,159 L411,181 M411,159 L389,181" class="bk-lead"/>');}
+  }
+  return {
+    W:680,H:340,
+    init:t=>{const s={};SLOTS[t.type].forEach(sl=>{s[sl.id]=t.start&&t.start[sl.id]!=null?t.start[sl.id]:-1;});return s;},
+    answer:t=>ANS[t.type](t),
+    check:check,
+    draw:function(g,t,s,api){
+      const el=api.el,works=api.locked||check(t,s).ok;
+      if(t.type==='em')emPic(g,s,works&&!SLOTS.em.some(sl=>s[sl.id]<0),el);else tfPic(g,s,t,works&&!SLOTS.tf.some(sl=>s[sl.id]<0),el);
+      // on a phone the labels go under the picture, two to a row, so they stay large enough to read and press
+      const narrow=window.matchMedia('(max-width:560px)').matches,ns=SLOTS[t.type].length;
+      api.svg.setAttribute('viewBox',narrow?'0 0 440 '+(345+Math.ceil(ns/2)*64):'0 0 680 340');
+      if(!api.svg._bkMQ){api.svg._bkMQ=1;try{window.matchMedia('(max-width:560px)').addEventListener('change',()=>api.redraw());}catch(e){}}
+      SLOTS[t.type].forEach((sl,i)=>{
+        const x=narrow?10+(i%2)*215:450,y=narrow?345+Math.floor(i/2)*64:40+i*(t.type==='em'?92:72),w=narrow?205:220,v=s[sl.id];
+        const tg=el('g',{class:'bk-tag'+(v<0?' is-q':''),'data-slot':sl.id});
+        tg.appendChild(el('rect',{x:x,y:y,width:w,height:54,rx:8}));
+        tg.appendChild(el('text',{x:x+12,y:y+20,class:'bk-tlab'},sl.lab));
+        tg.appendChild(el('text',{x:x+12,y:y+42,class:'bk-tval'},v<0?'?':sl.opts[v]+(api.locked?'':'  ▸')));
+        if(!api.locked){
+          const cyc=()=>{const n=Object.assign({},s);n[sl.id]=(v+1)%sl.opts.length;api.set(n);const f=api.svg.querySelector('[data-slot="'+sl.id+'"]');if(f)f.focus({preventScroll:true});};
+          tg.addEventListener('click',cyc);keyActivate(tg,cyc,sl.lab+': '+(v<0?'not chosen':sl.opts[v])+'. Press to change.');
+        }
+        g.appendChild(tg);
+      });
+    }
+  };
+})();
+
+const BUILD_TASKS_6B=[
+  {type:'tf',up:true,q:'Describe the structure of a step-up transformer: build one on the diagram.',src:'4PH1/2PR May 2025 Q4(a)',aria:'A transformer to build: the supply, the primary coil, the core and the secondary coil, each chosen from the labels on the right',
+   ok:'Two coils on a soft iron core, more turns on the secondary, and an a.c. supply.'},
+  {type:'tf',up:false,q:'A phone charger changes the 230 V mains to 5 V. Build its transformer.',src:'4PH0/2P Jan 2017 Q5(c) and 4PH1/2P May 2022 Q3(c)',aria:'A transformer to build for a phone charger',
+   ok:'More turns on the primary than on the secondary steps the voltage down.'},
+  {type:'tf',up:true,q:'A student connects this step-up transformer to a battery, and the lamp does not light. Change the parts that are wrong.',src:'4PH1/2P May 2023 Q6(b) and Nov 2023 Q4(b)',aria:'A transformer with a battery and two separate iron bars, to be put right',
+   start:{sup:1,np:0,core:2,ns:1},ok:'With a.c. and one soft iron core linking the coils, the changing field induces a voltage in the secondary.'}
+];
+
 /* ================= 8. INDUCTION ================= */
 {
   frameAct('induction','animations/magnet-and-coil.html?level=igcse','','Magnet and coil animation: pushing a magnet into a coil and pulling it out','magnet and coil',true);
@@ -1592,6 +1795,19 @@ function coilTraceSVG(){
     ],
     constraints:[['a','b'],['b','c'],['c','d'],['d','e']],
     why:'A changing field induces the voltage, and because the field keeps reversing, so does the voltage.'
+  });
+  // 4i (15 Nov 2026): the microphone version of fixed explanation #1, from 4PH1/1P May 2026 Q8(b) and 4PH1/2PR May 2026 Q8(a)(i)
+  createReorder({
+    host:act('generators','Order','A moving-coil microphone','A microphone has a coil fixed to a thin diaphragm, in the field of a magnet. Put the explanation in order.'),
+    steps:[
+      {id:'a',text:'Sound waves make the diaphragm vibrate.'},
+      {id:'b',text:'The coil vibrates with it, backwards and forwards in the magnet\'s field.'},
+      {id:'c',text:'The coil cuts the magnetic field lines.'},
+      {id:'d',text:'A voltage is induced across the coil.'},
+      {id:'e',text:'The coil keeps changing direction, so an alternating current flows in the circuit.'}
+    ],
+    constraints:[['a','b'],['b','c'],['c','d'],['d','e']],
+    why:'The same chain as the dynamo, started by sound instead of a wheel: the coil moves, cuts field lines, and a voltage is induced. The mark schemes want the coil cutting the field lines, not just "the coil moves".'
   });
 }
 
@@ -1633,6 +1849,8 @@ function coilTraceSVG(){
     host:act('transformers','Calculate','The turns ratio','Use [[V<sub>p</sub>|V<sub>s</sub>]] = [[N<sub>p</sub>|N<sub>s</sub>]]. Press New problems for another pair.'),
     questions:[calcFix(tr_q1,1),calcFix(tr_q2,2)]
   });
+  // 4h (15 Nov 2026): build the transformer on the diagram (6.17P)
+  createDrawTasks({host:act('transformers','Build it','Build a transformer','Click a part\'s label to change it. Then press Check.'),tasks:BUILD_TASKS_6B,kind:BUILD_KIND,W:BUILD_KIND.W,H:BUILD_KIND.H});
 }
 
 /* ================= 11. NATIONAL GRID ================= */
@@ -1773,6 +1991,8 @@ function pairByTitle(t1,t2){
   const a=find(t1),b=find(t2);if(!a||!b)return;
   const pair=mk('div','act-pair');a.parentNode.insertBefore(pair,a);pair.appendChild(a);pair.appendChild(b);
 }
+pairByTitle('A bicycle dynamo','A moving-coil microphone');   // Generators (4i, 15 Nov 2026)
+pairByTitle('How a transformer works','Build a transformer');  // Transformers (4h, 15 Nov 2026)
 function applyTabUI(tab){
   TAB_IDS.forEach(id=>{const p=byId('panel-'+id);if(p)p.hidden=(id!==tab);});
   $$('.tab-btn').forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('is-active',on);b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1;});
