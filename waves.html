@@ -40,6 +40,33 @@
 .slot.is-shown,.sort-item.is-shown,.match-card.is-shown,.reorder-row.is-shown,.calc-num-input.is-shown,.xw-cell.is-shown{border-style:dashed!important;border-color:var(--accent)!important;background:var(--accent-soft)!important;color:var(--ink)!important}
 .calc-show-row{grid-column:1/-1}
 .calc-show-row:has(> [hidden]){display:none}
+/* Draw on the diagram (14 Nov 2026, TODO 4e, 4f, 4g, 8k) */
+.dt-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.dt-prog{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft)}
+.dt-q{margin:0 0 8px}
+.dt-src{display:block;font-size:13px;color:var(--ink-soft);margin-top:3px}
+.dt-fig{border:1px solid var(--panel-border);border-radius:10px;background:var(--panel);overflow:hidden}
+.dt-svg{display:block;width:100%;max-width:640px;height:auto;margin:0 auto;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.dt-svg text{font-family:'IBM Plex Sans',sans-serif}
+.dt-notes{list-style:none;margin:8px 0 0;padding:0;font-size:14.5px}
+.dt-notes li{margin:3px 0;padding-left:2px}
+.dt-notes li.ok{color:var(--good)}
+.dt-notes li.no{color:var(--bad)}
+.dt.shake{animation:none}
+@media (prefers-reduced-motion:no-preference){.dt.shake .dt-fig{animation:shake .5s}}
+.mk-hit{fill:transparent;cursor:crosshair}
+.mk-svg:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.mk-x{stroke:var(--accent);stroke-width:3;fill:none;pointer-events:none}
+.dt-shown .mk-x{stroke-dasharray:4 3}
+.mk-lab{font-size:15px;font-weight:700;fill:var(--accent);pointer-events:none}
+.wv-rest{stroke:var(--ink-faint);stroke-width:1.4;stroke-dasharray:6 5}
+.wv-wave{fill:none;stroke:var(--ink);stroke-width:2.6}
+.wv-arrow{stroke:var(--accent);stroke-width:2.6}
+.wv-head{fill:var(--accent)}
+.dt-shown .wv-arrow{stroke-dasharray:6 4}
+.wv-end{fill:var(--accent)}
+.wv-cur{stroke:var(--accent);stroke-width:1.6;pointer-events:none}
+.wv-water{fill:rgba(80,140,220,.12)}
 </style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
@@ -1793,6 +1820,116 @@ calcAct('describing','Read the wave','The graph shows a snapshot of a wave on a 
   {q:'The wavelength of the wave is',unit:'m',answer:0.4,working:'distance for 3 waves = 1.2 m<br>λ = ?||λ = [[distance|number of waves]]<br>λ = [[1.2|3]]<br>λ = 0.4 m'}
 
   ],mgraph({pts:sinePts(0,1.2,4,0.4),xMin:0,xMax:1.2,yMin:-6,yMax:6,xTicks:[0,0.2,0.4,0.6,0.8,1.0,1.2],yTicks:[-6,-4,-2,0,2,4,6],xLabel:'Distance along the rope / m',yLabel:'Displacement / cm',label:'Displacement against distance for a wave on a rope'}).svg);
+
+/* ================= Draw on the diagram (14 Nov 2026, TODO 4e, 4f, 4g, 8k) =================
+   Exam "draw on the diagram" tasks, dealt one at a time like Draw the ray: each task names the past-paper question it is modelled
+   on, Check marks it as the mark scheme does (one note per marking point), Show answer appears after a wrong Check.
+   cfg.kind gives the drawing: init(task) → state, draw(g, task, state, api), check(task, state) → {ok, notes:[[ok, text]]}, answer(task) → state.
+   Saved: which tasks are right (1) or shown (2). */
+function createDrawTasks(cfg){
+  const host=cfg.host,tasks=cfg.tasks,K=cfg.kind,NS='http://www.w3.org/2000/svg';
+  host.classList.add('dt');
+  const top=mk('div','dt-top');host.appendChild(top);const prog=mk('span','dt-prog');top.appendChild(prog);
+  const q=mk('p','dt-q');host.appendChild(q);
+  const fig=mk('div','dt-fig');host.appendChild(fig);
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('class','dt-svg');svg.setAttribute('viewBox','0 0 '+(cfg.W||600)+' '+(cfg.H||340));fig.appendChild(svg);
+  const notes=mk('ul','dt-notes');notes.setAttribute('aria-live','polite');host.appendChild(notes);
+  let status=tasks.map(()=>0),cur=0,T=null,st=null,locked=false;
+  const b=bar(host,[{label:'Check',primary:true,fn:()=>check()},{label:'Next diagram',fn:()=>go(cur+1)},{label:'Start again',fn:()=>{status=tasks.map(()=>0);go(0);saveSoon();}}]);
+  const ans=answerBtn(b,()=>{st=K.answer(T);status[cur]=Math.max(status[cur],2);locked=true;notes.innerHTML='';b.say('Answer shown (dashed). Read it through, then press Next diagram.','');render();saveSoon();});
+  const el=(tag,at,txt)=>{const e=document.createElementNS(NS,tag);for(const k in at)if(at[k]!=null)e.setAttribute(k,at[k]);if(txt!=null)e.textContent=txt;return e;};
+  const pt=ev=>{const m=svg.getScreenCTM();if(!m)return null;const p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const r=p.matrixTransform(m.inverse());return {x:r.x,y:r.y};};
+  const api={el:el,svg:svg,pt:pt,get locked(){return locked;},shown:()=>status[cur]===2,set:s=>{if(locked)return;st=s;notes.innerHTML='';b.say('','');render();},redraw:()=>render()};
+  function render(){
+    svg.innerHTML='';const g=el('g',{class:locked?(status[cur]===2?'dt-done dt-shown':'dt-done'):''});svg.appendChild(g);K.draw(g,T,st,api);
+    prog.textContent='Diagram '+(cur+1)+' of '+tasks.length+' · '+status.filter(x=>x>0).length+' done';
+  }
+  function go(i){
+    cur=(i+tasks.length)%tasks.length;T=tasks[cur];locked=status[cur]>0;st=locked?K.answer(T):K.init(T);
+    q.innerHTML=FR(T.q)+(T.src?'<span class="dt-src">Modelled on '+T.src+'</span>':'');
+    notes.innerHTML='';ans.off();
+    b.say(status[cur]===1?'Done: this one was right.':status[cur]===2?'Answer shown.':'',status[cur]===1?'good':'');
+    svg.setAttribute('aria-label',T.aria||'The diagram');render();
+  }
+  function check(){
+    if(locked){go(cur+1);return;}
+    const r=K.check(T,st);
+    notes.innerHTML=r.notes.map(n=>'<li class="'+(n[0]?'ok':'no')+'"><span aria-hidden="true">'+(n[0]?'✓':'✗')+'</span> '+FR(n[1])+'</li>').join('');
+    if(r.ok){status[cur]=1;locked=true;b.say('Correct.','good');celebrate(b.msg);ans.off();render();}
+    else{b.say('Not yet: see the notes under the diagram.','bad');ans.on();host.classList.remove('shake');void host.offsetWidth;host.classList.add('shake');}
+    saveSoon();
+  }
+  track(host,{getState:()=>({dt:1,s:status}),
+    setState:s=>{status=(s&&s.dt===1&&Array.isArray(s.s)&&s.s.length===tasks.length)?s.s.map(x=>x===1||x===2?x:0):tasks.map(()=>0);go(0);},
+    isDone:()=>status.every(x=>x>0)});
+  go(0);
+  return {go:go};
+}
+/* Draw the arrow (TODO 4g, 14 Nov 2026): click where the arrow starts, then where it ends (or focus the diagram, move
+   the cursor with the arrow keys and press Enter for each end). A point near the wave or the rest line snaps onto it.
+   A task: w {y0, A, L, x0 (a crest), from, to}, want 'amp' or 'wl', lab (the letter by the arrow). */
+const WAVE_KIND=(function(){
+  const wy=(w,x)=>w.y0-w.A*Math.cos(2*Math.PI*(x-w.x0)/w.L);
+  function snap(w,p){let x=Math.max(w.from,Math.min(w.to,p.x)),y=p.y;
+    if(Math.abs(y-wy(w,x))<=12)y=wy(w,x);else if(Math.abs(y-w.y0)<=9)y=w.y0;
+    // a crest or trough: snap across to it too
+    const k=Math.round((x-w.x0)/(w.L/2)),xc=w.x0+k*w.L/2;if(Math.abs(x-xc)<=8&&Math.abs(y-wy(w,xc))<=12){x=xc;y=wy(w,xc);}
+    return [Math.round(x*10)/10,Math.round(y*10)/10];}
+  const crestX=(w,x)=>{const k=Math.round((x-w.x0)/(w.L/2));return {x:w.x0+k*w.L/2,top:k%2===0};};
+  return {
+    init:()=>({a:null,b:null,c:null}),
+    answer:t=>({a:t.ans[0],b:t.ans[1],c:null}),
+    draw:function(g,t,s,api){
+      const el=api.el,w=t.w;let pts='';for(let x=w.from;x<=w.to;x+=4)pts+=x+','+wy(w,x).toFixed(1)+' ';
+      if(t.water)g.appendChild(el('polygon',{points:pts+w.to+',300 '+w.from+',300',class:'wv-water'}));
+      const base=el('g',{});base.innerHTML='<line x1="'+(w.from-20)+'" y1="'+w.y0+'" x2="'+(w.to+20)+'" y2="'+w.y0+'" class="wv-rest"/><polyline points="'+pts+'" class="wv-wave"/>'+(t.base||'');g.appendChild(base);
+      g.appendChild(el('rect',{x:0,y:0,width:600,height:340,class:'mk-hit'}));
+      const end=(p,cls)=>g.appendChild(el('circle',{cx:p[0],cy:p[1],r:4.5,class:cls||'wv-end'}));
+      if(s.a&&s.b){const a=s.a,b=s.b,dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L,head=(p,sgn)=>'M'+p[0]+','+p[1]+'L'+(p[0]-sgn*(9*ux)+5*uy)+','+(p[1]-sgn*(9*uy)-5*ux)+'L'+(p[0]-sgn*(9*ux)-5*uy)+','+(p[1]-sgn*(9*uy)+5*ux)+'Z';
+        g.appendChild(el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],class:'wv-arrow'}));
+        g.appendChild(el('path',{d:head(b,1)+head(a,-1),class:'wv-head'}));
+        if(t.lab)g.appendChild(el('text',{x:(a[0]+b[0])/2+(Math.abs(dx)<Math.abs(dy)?10:0),y:(a[1]+b[1])/2+(Math.abs(dx)<Math.abs(dy)?4:-9),class:'mk-lab','text-anchor':Math.abs(dx)<Math.abs(dy)?'start':'middle'},t.lab));}
+      else if(s.a)end(s.a);
+      if(s.c&&!api.locked)g.appendChild(el('path',{d:'M'+(s.c[0]-9)+','+s.c[1]+'h18M'+s.c[0]+','+(s.c[1]-9)+'v18',class:'wv-cur'}));
+      const svg=api.svg,place=p=>{const q=snap(w,p);const n=s.a&&!s.b?{a:s.a,b:q,c:s.c}:{a:q,b:null,c:s.c};api.set(n);svg.focus({preventScroll:true});};
+      svg.setAttribute('tabindex','0');svg.classList.toggle('mk-svg',!api.locked);
+      svg.onclick=api.locked?null:ev=>{const p=api.pt(ev);if(p)place(p);};
+      svg.onkeydown=api.locked?null:ev=>{
+        if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();place({x:(s.c||[300,w.y0])[0],y:(s.c||[300,w.y0])[1]});return;}
+        const k={ArrowLeft:[-5,0],ArrowRight:[5,0],ArrowUp:[0,-5],ArrowDown:[0,5]}[ev.key];if(!k)return;ev.preventDefault();
+        const c=(s.c||[300,w.y0]).slice();c[0]+=k[0];c[1]+=k[1];const n=JSON.parse(JSON.stringify(s));n.c=snap(w,{x:c[0],y:c[1]});api.set(n);svg.focus({preventScroll:true});};
+    },
+    check:function(t,s){
+      if(!s.a||!s.b)return {ok:false,notes:[[0,'Click where your arrow starts, then where it ends.']]};
+      const w=t.w,a=s.a,b=s.b,dx=Math.abs(b[0]-a[0]),dy=Math.abs(b[1]-a[1]),notes=[];let ok=true;
+      if(t.want==='amp'){
+        if(dx>10){ok=false;notes.push([0,'The amplitude is measured straight up or down, from the rest position.']);}
+        const onRest=p=>Math.abs(p[1]-w.y0)<=8,atPeak=p=>{const c=crestX(w,p[0]);return Math.abs(p[0]-c.x)<=14&&Math.abs(p[1]-wy(w,c.x))<=10;};
+        if(!((onRest(a)&&atPeak(b))||(onRest(b)&&atPeak(a)))){ok=false;
+          notes.push([0,(atPeak(a)&&atPeak(b))?'That is from a crest to a trough: twice the amplitude. The amplitude goes from the rest position (the middle line) to a crest or a trough.':'The amplitude goes from the rest position (the middle line) to the top of a crest or the bottom of a trough.']);}
+        if(ok)notes.push([1,'From the rest position to a '+(crestX(w,onRest(a)?b[0]:a[0]).top?'crest':'trough')+': that is the amplitude.']);
+      } else {
+        if(dy>10){ok=false;notes.push([0,'The wavelength is measured along the direction the wave travels: draw the arrow across.']);}
+        const on=p=>Math.abs(p[1]-wy(w,p[0]))<=10;
+        if(!on(a)||!on(b)){ok=false;notes.push([0,'Start and end the arrow on the wave, at matching points, for example from one crest to the next.']);}
+        else if(Math.abs(dx-w.L)>10){ok=false;notes.push([0,Math.abs(dx-w.L/2)<=10?'That is half a wavelength: a crest to the next trough. A wavelength goes from one crest to the next crest.':'One wavelength is the distance from one point on the wave to the same point on the next wave, for example crest to the next crest.']);}
+        if(ok)notes.push([1,'One whole wave: from a point to the same point on the next wave. That is the wavelength.']);
+      }
+      return {ok:ok,notes:notes};
+    }
+  };
+})();
+const WAVE_TASKS_3A=[
+  {q:'The diagram shows a wave on a rope at one moment. Draw a labelled arrow to show the <b>amplitude</b> of the wave.',src:'4PH1/1PR May 2026 Q4(a)(i)',aria:'A wave on a rope with its rest position drawn as a dashed line',
+   w:{y0:170,A:70,L:200,x0:110,from:60,to:540},want:'amp',lab:'A',ans:[[110,170],[110,100]]},
+  {q:'Draw a labelled arrow to show one <b>wavelength</b> of the same wave.',src:'4PH1/1PR May 2026 Q4(a)(ii)',aria:'A wave on a rope with its rest position drawn as a dashed line',
+   w:{y0:170,A:70,L:200,x0:110,from:60,to:540},want:'wl',lab:'λ',ans:[[110,100],[310,100]]},
+  {q:'This wave has a shorter wavelength. Draw a labelled arrow to show its <b>amplitude</b>, using a trough this time.',src:'4PH1/1PR Jan 2020 Q1(a)',aria:'A wave with a shorter wavelength, its rest position drawn as a dashed line',
+   w:{y0:170,A:55,L:140,x0:90,from:55,to:545},want:'amp',lab:'A',ans:[[160,170],[160,225]]},
+  {q:'The diagram shows a cross-section of water waves. Mark one <b>wavelength</b> with an arrow labelled W.',src:'4PH0/1PR May 2016 TZ2 Q4(b)(i)',aria:'A cross-section of water waves above their rest level',
+   w:{y0:170,A:40,L:240,x0:180,from:60,to:540},want:'wl',lab:'W',ans:[[180,130],[420,130]],water:true}
+];
+createDrawTasks({host:act('describing','Draw the arrow','Arrows on a wave','Click where your arrow starts, then where it ends. Points close to the wave or the rest line snap onto it. Click again to start a new arrow. Then press Check.'),tasks:WAVE_TASKS_3A,kind:WAVE_KIND,H:280});
 
 /* ================= 4. WAVE EQUATIONS ================= */
 // New problems helper for this tab: em_sci(m,e) writes m × 10^e with superscript digits
