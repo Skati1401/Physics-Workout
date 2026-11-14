@@ -1,3 +1,56 @@
+/* IAL CP14 Investigate the relationship between pressure and volume of a gas at fixed temperature (spec points 129, 130, 131).
+   Rebuilt on the CP15 model (gamma-absorption) on 14 Nov 2026 (TODO.md 5z): 8 tabs, no Variables or Results tab, no Predicts.
+   The Do the Experiment tab frames animations/boyles-law.html?show=measure, whose fixed readings must match
+   BL_P and BL_V below (MEAS_P and MEAS_V in the animation; tools/CORE-PRACTICALS.md, "Measure modes"). */
+/* measTable: the student's own results table for Do Experiment (CP15 model; written for CP12–14, 14 Nov 2026).
+   cols: [{c, head, val:k=>number, tol, show:k=>string, given:k=>string (a printed cell instead of a box), lab:k=>aria label}].
+   Show answer is always visible (as on CP15), so a student can skip to the plot; it hides once the table is complete. */
+function measTable(body,o){
+  const wrap=mk('div','table-scroll');body.appendChild(wrap);
+  const rows=[];for(let k=0;k<o.n;k++)rows.push(k);
+  wrap.innerHTML='<table class="units res-tbl ga-tbl"><thead><tr>'+o.cols.map(c=>'<th>'+c.head+'</th>').join('')+'</tr></thead><tbody>'+
+    rows.map(k=>'<tr>'+o.cols.map(c=>c.given?'<td class="given">'+c.given(k)+'</td>':
+      '<td><input class="calc-num-input" data-c="'+c.c+'" data-k="'+k+'" inputmode="decimal" autocomplete="off" aria-label="'+c.lab(k)+'"></td>').join('')+'</tr>').join('')+'</tbody></table>';
+  const col=id=>o.cols.find(c=>c.c===id), all=()=>$$('input',wrap), inp=(c,k)=>$('input[data-c="'+c+'"][data-k="'+k+'"]',wrap);
+  const val=e=>{const t=e.value.trim().replace(/[−–]/g,'-').replace(',','.');return t===''||!/^-?(\d+\.?\d*|\.\d+)$/.test(t)?NaN:parseFloat(t);};
+  const done=()=>all().every(e=>e.disabled), changed=()=>{if(o.onChange)o.onChange();};
+  const b=bar(body,[{label:'Check table',primary:true,fn:check},{label:'Clear',fn:reset}]);
+  const ans=answerBtn(b,()=>{
+    all().forEach(e=>{if(e.disabled)return;e.value=col(e.dataset.c).show(+e.dataset.k);e.disabled=true;e.classList.add('is-shown');e.classList.remove('is-wrong');});
+    b.say('Answers shown (dashed). '+o.next,'');changed();
+  });
+  function check(){
+    let ok=0,bad=0,blank=0;
+    all().forEach(e=>{
+      if(e.disabled){ok++;return;}
+      if(e.value.trim()===''){blank++;return;}
+      const c=col(e.dataset.c),v=val(e),w=c.val(+e.dataset.k);
+      if(isFinite(v)&&Math.abs(v-w)<=c.tol+1e-9){e.disabled=true;e.classList.remove('is-wrong');e.classList.add('pop');ok++;}
+      else{bad++;e.classList.add('is-wrong');}
+    });
+    const n=all().length;
+    if(ok===n){b.say('All correct. '+o.next,'good');celebrate(b.msg);ans.off();}
+    else{b.say(ok+' of '+n+' correct'+(blank?', '+blank+' left blank':'')+'.'+(bad?' '+o.hint:''),bad?'bad':'');ans.on();}
+    changed();
+  }
+  function reset(){all().forEach(e=>{e.value='';e.disabled=false;e.classList.remove('is-wrong','is-shown','pop');});ans.on();b.say('','');changed();}
+  all().forEach(e=>e.addEventListener('input',()=>e.classList.remove('is-wrong')));
+  ans.on();
+  track(body,{reset:reset,
+    getState:()=>({v:all().map(e=>e.value),ok:all().map(e=>e.disabled),sh:all().map(e=>e.classList.contains('is-shown'))}),
+    setState:s=>{reset();all().forEach((e,i)=>{if(!s||!s.v||typeof s.v[i]!=='string')return;e.value=s.v[i];if(s.ok&&s.ok[i]){e.disabled=true;if(s.sh&&s.sh[i])e.classList.add('is-shown');}});if(done()){b.say('All correct. '+o.next,'good');ans.off();}changed();},
+    isDone:done});
+  // a checked (or shown) cell's text, for the plot's row labels
+  return {cell:(c,k)=>{const e=inp(c,k);return e&&e.disabled&&e.value.trim()!==''?e.value.trim():null;}};
+}
+/* Put the Your turn card and the framed animation in a left column, with the table on the right (as on CP15). */
+function splitDo(tab,turnTitle){
+  const fr=$('#panel-'+tab+' .anim-wrap'),tb=$('#panel-'+tab+' .ga-tbl'),yt=$('#panel-'+tab+' .act[data-title="'+turnTitle+'"]');
+  if(!fr||!tb)return;
+  const t=tb.closest('.act'),sp=mk('div','hk-split'),left=mk('div','ga-left');
+  fr.parentNode.insertBefore(sp,fr);sp.appendChild(left);if(yt)left.appendChild(yt);left.appendChild(fr);sp.appendChild(t);
+}
+
 /* ================= 1. OVERVIEW ================= */
 {
   const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
@@ -22,7 +75,6 @@
   const score=mk('span','score');b.el.insertBefore(score,b.msg);
   Object.assign(g,createBlankGame({fill:true,slots,pool,chips,msg:b,score,isCorrect:(c,s)=>c.text===s.answer}));
 }
-
 /* ================= 2. METHOD ================= */
 {
   const body=act('method','Order','Carry out the practical','Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.');
@@ -48,70 +100,62 @@
     {id:'s',l:'Safety screen and goggles',r:'Protect you if the glass tube shatters under pressure'}
   ]});
 }
-
-/* ================= EXPERIMENT ================= */
+/* ================= DO THE EXPERIMENT ================= */
+// The student reads the Bourdon gauge and the scale at the top of the oil in the animation's measure mode (?show=measure).
+// BL_P and BL_V must match MEAS_P and MEAS_V in animations/boyles-law.html.
+const BL_P=[250,225,200,175,150,125,100], BL_V=[12.2,13.2,14.8,17.2,20.0,24.0,29.8];
+const BL_IV=BL_V.map(v=>1/v);
+let blTable=null,blPlotRows=()=>{};
 {
-  act('experiment','Your turn','Take your own readings','Press Experiment, then pump to 250 kPa and release the pressure step by step, with “Wait to cool” chosen. Choose “p against 1/V”: is it a straight line through the origin? Then do it again with “Read straight away”. Which readings are off, and why? Use the gradient to find the number of molecules, N.');
+  act('do','Your turn','Take your own readings','1. Press Pump up the pressure, then read the gauge and the volume on the scale. 2. Press Let some air out and read both again, down to 100 kPa. 3. Fill in the table, then work out 1/V for each reading.');
 }
-frameAct('experiment','animations/boyles-law.html','','Boyle’s law animation: trapped air, a pressure gauge and a hand pump','Boyle’s law',false);
-
-/* ================= 3. VARIABLES ================= */
+frameAct('do','animations/boyles-law.html','measure','Boyle’s law experiment: read the pressure gauge and the volume scale','Boyle’s law',false);
 {
-  const body=act('variables','Sort','Which kind of variable is it?','Sort each card into the right bin, then press Check.');
-  createSortGame({host:body,cats:[
-    {id:'i',label:'Independent',hint:'You change it',color:'--c1',soft:'--c1-soft'},
-    {id:'d',label:'Dependent',hint:'You measure it',color:'--c2',soft:'--c2-soft'},
-    {id:'c',label:'Control',hint:'You keep it the same',color:'--c3',soft:'--c3-soft'}
-  ],items:[
-    {id:'1',text:'The pressure of the trapped air',cat:'i'},
-    {id:'2',text:'The reading you set on the pressure gauge',cat:'i'},
-    {id:'3',text:'The volume of the trapped air',cat:'d'},
-    {id:'4',text:'Where the top of the oil is on the scale',cat:'d'},
-    {id:'5',text:'The mass of air trapped in the tube',cat:'c'},
-    {id:'6',text:'The temperature of the trapped air',cat:'c'},
-    {id:'7',text:'The type of gas in the tube',cat:'c'}
+  const body=act('do','Calculate','Your results table','Write p as the gauge shows it, in kPa, and V as the scale shows it, in cm³. Give 1/V to 3 significant figures. Press Check.');
+  blTable=measTable(body,{n:BL_P.length,next:'Now plot p against 1/V below.',
+    hint:'The gauge has a mark every 5 kPa; the scale has a mark every 0.2 cm³. 1/V for 12.2 cm³ is 1 ÷ 12.2 = 0.0820 cm⁻³.',
+    onChange:()=>blPlotRows(),
+    cols:[
+      {c:'p',head:'p (kPa)',val:k=>BL_P[k],tol:0,show:k=>String(BL_P[k]),lab:k=>'Pressure, reading '+(k+1)+', kilopascals'},
+      {c:'v',head:'V (cm³)',val:k=>BL_V[k],tol:0.05,show:k=>BL_V[k].toFixed(1),lab:k=>'Volume, reading '+(k+1)+', cubic centimetres'},
+      {c:'iv',head:'1/V (cm⁻³)',val:k=>BL_IV[k],tol:0.00011,show:k=>BL_IV[k].toPrecision(3),lab:k=>'One over V, reading '+(k+1)}
+    ]});
+}
+{
+  const body=act('do','Explain','Why plot p against 1/V?','For a fixed mass of gas, pV = NkT. Divide both sides by V:');
+  body.insertAdjacentHTML('beforeend',
+    '<div class="ln-steps"><span>pV</span><span>=</span><span>NkT</span>'+
+    '<span>p</span><span>=</span><span>NkT × [[1|V]]</span></div>'.replace('[[1|V]]','1/V')+
+    '<p class="act-intro">In the order of y = mx + c:</p>'+
+    '<div class="ln-match"><span>p</span><span>=</span><span>NkT</span><span>1/V</span><span>+</span><span>0</span>'+
+    '<span>y</span><span>=</span><span>m</span><span>x</span><span>+</span><span>c</span></div>'+
+    '<p class="act-intro">At a fixed temperature NkT is constant, so p against 1/V is a straight line through the origin: Boyle’s law. Its gradient is pV = NkT, so with T known it gives N, the number of molecules.</p>');
+}
+{
+  const body=act('do','Plot','Plot your results','Plot p against 1/V from your table as small crosses. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
+  const rowT=k=>{const e=blTable&&blTable.cell('iv',k);return BL_P[k]+' kPa, '+(e?'1/V = '+e+' cm⁻³':'your 1/V');};
+  createPlot({host:body,next:' Now find N from the line of best fit below.',
+    points:BL_IV.map((x,k)=>({x:+x.toFixed(4),y:BL_P[k]})),
+    rowText:p=>rowT(BL_P.indexOf(p.y)),
+    graph:{xMin:0,xMax:0.1,yMin:0,yMax:300,xTicks:[0,0.02,0.04,0.06,0.08,0.1],yTicks:[0,50,100,150,200,250,300],minor:[0.004,10],snap:[0.002,5],xLabel:'1/V (cm⁻³)',yLabel:'p (kPa)',W:560,H:340}});
+  splitDo('do','Take your own readings');
+  blPlotRows=()=>{$$('.plot-row',body).forEach((li,k)=>{const s=li.firstElementChild;if(s)s.textContent=rowT(k);});};
+  blPlotRows();
+}
+{
+  const body=act('do','Calculate','N from your line','A good line of best fit through your points passes through (0.030, 89.1) and (0.080, 240.4). The room, and so the air, is at 20 °C. k = 1.38 × 10⁻²³ J K⁻¹. Type a power of ten as e.g. 7.48e20.');
+  createCalc({host:body,questions:[
+    {q:'What is the gradient of the line?',unit:'kPa cm³',answer:3026,working:'first point = (0.030, 89.1)<br>second point = (0.080, 240.4)<br>gradient = ?||gradient = [[change in p|change in 1/V]]<br>gradient = [[240.4 − 89.1|0.080 − 0.030]]<br>gradient = [[151.3|0.050]]<br>gradient = 3026 kPa cm³'},
+    {q:'Write the gradient, pV, in joules.',unit:'J',answer:3.026,working:'gradient = 3026 kPa cm³<br>1 kPa = 10³ Pa<br>1 cm³ = 10⁻⁶ m³<br>pV = ?||pV = 3026 × 10³ × 10⁻⁶<br>pV = 3.026 J'},
+    {q:'How many molecules of air are trapped in the tube?',unit:'molecules',answer:7.48e20,working:'pV = 3.026 J<br>T = 20 + 273 = 293 K<br>k = 1.38 × 10⁻²³ J K⁻¹<br>N = ?||pV = NkT<br>N = [[pV|kT]]<br>N = [[3.026|1.38 × 10⁻²³ × 293]]<br>N = 7.48 × 10²⁰'}
   ]});
 }
+/* ================= WATCH THE EXPERIMENT ================= */
 {
-  const body=act('variables','Predict','Why wait?','');
-  createPredict({host:body,q:'After pumping, Asma waits a minute before she reads the volume. Why?',options:[
-    {text:'Squashing the air warmed it, so it must cool first',correct:true},
-    {text:'The pressure gauge needs time to warm up before it reads',why:'A Bourdon gauge reads straight away. It is the air’s temperature that has to settle.'},
-    {text:'Some air has to leak out until the pressure is steady',why:'No air should leak: Boyle’s law needs a fixed mass of gas, so a leak would spoil the results.'},
-    {text:'Waiting makes the volume bigger, which is easier to read',why:'As the warm air cools its volume gets slightly smaller, not bigger. The point is to read it at room temperature.'}
-  ],explain:'Compressing a gas quickly does work on it and warms it. A warmer gas at the same pressure takes up more volume, so Asma waits until the air is back at room temperature: Boyle’s law needs a fixed temperature.'});
+  act('experiment','Your turn','Watch the readings','Press Experiment, then pump to 250 kPa and release the pressure step by step, with “Wait to cool” chosen. Choose “p against 1/V”: is it a straight line through the origin? Then do it again with “Read straight away”. Which readings are off, and why? Use the gradient to find the number of molecules, N.');
 }
-{
-  const body=act('variables','Predict','A new question to test','');
-  createPredict({host:body,q:'Ollie now wants to find how the volume of the trapped air depends on its temperature, at a fixed pressure. What is his independent variable?',options:[
-    {text:'The temperature of the trapped air',correct:true},
-    {text:'The pressure of the trapped air',why:'This time he keeps the pressure the same, so it is a control variable.'},
-    {text:'The volume of the trapped air',why:'The volume is what he measures, so it is the dependent variable.'},
-    {text:'The mass of air trapped in the tube',why:'The mass must stay the same, so it is a control variable.'}
-  ],explain:'The independent variable is the one he changes on purpose: the temperature. He keeps the pressure and the mass of air the same, and measures the volume.'});
-}
-
-/* ================= EXPERIMENT (continued) ================= */
-{
-  const body=act('experiment','Predict','Reading straight away','');
-  createPredict({host:body,q:'Ollie pumps up to 250 kPa and reads the volume at once. Compared with the volume at room temperature, his reading is:',options:[
-    {text:'Too big: the squashed air is still warm',correct:true},
-    {text:'Too small: the squashed air is still warm',why:'At the same pressure a warmer gas takes up more room (pV = NkT), so the volume is too big.'},
-    {text:'The same: Boyle’s law says pV is constant',why:'Boyle’s law only holds at a fixed temperature, and the air is warmer than the room.'},
-    {text:'Too small: some air escaped while pumping',why:'Nothing has leaked out here. The difference comes from the temperature of the air.'}
-  ],explain:'Compressing the air quickly warms it. From pV = NkT, at the same p a higher T gives a larger V, so his first reading is a little too big until the air cools.'});
-}
-{
-  const body=act('experiment','Predict','Letting the pressure out quickly','');
-  createPredict({host:body,q:'Rose opens the valve fully, so the pressure drops quickly from 225 kPa to 200 kPa, and reads at once. Her volume reading is:',options:[
-    {text:'A little too small: the air cooled as it expanded',correct:true},
-    {text:'A little too big: the air warmed as it expanded',why:'A gas that expands quickly does work and cools, not warms.'},
-    {text:'Exactly right, because the pressure went down',why:'The pressure is right, but the air is cooler than the room for a short time, so V is not yet at its room-temperature value.'},
-    {text:'Much too big: the oil rushes back into the reservoir',why:'The oil level only follows the air. The small error comes from the air being cooler than the room.'}
-  ],explain:'A gas that expands quickly cools a little. A cooler gas at the same pressure takes up less room, so the reading is slightly too small. Release the pressure slowly and wait before reading.'});
-}
-
-/* ================= GRAPHS ================= */
+frameAct('experiment','animations/boyles-law.html','','Boyle’s law animation: trapped air, a pressure gauge and a hand pump','Boyle’s law',false);
+/* ================= ANALYSIS ================= */
 const GP={xMin:0,xMax:40,yMin:0,yMax:300,xTicks:[0,10,20,30,40],yTicks:[0,50,100,150,200,250,300],xLabel:'V (cm³)',yLabel:'p (kPa)',W:560,H:340};
 function lab(g0,t,x,y){return '<circle cx="'+g0.gx(x)+'" cy="'+g0.gy(y)+'" r="13" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="'+g0.gx(x)+'" y="'+(g0.gy(y)+5)+'" text-anchor="middle" font-size="14" fill="var(--ink)">'+t+'</text>';}
 function iso(c,v0,v1){const p=[];for(let i=0;i<=40;i++){const v=v0+(v1-v0)*i/40;p.push([v,c/v]);}return p;}
@@ -131,24 +175,6 @@ function isoGraph(label){
     {q:'Line A is at 300 K. What is the temperature of line B?',unit:'K',answer:450,working:'pV = NkT, and N is the same, so pV ∝ T<br>line A: pV = 200 × 12 = 2400 kPa cm³<br>line B: pV = 150 × 24 = 3600 kPa cm³<br>[[T<sub>B</sub>|300]] = [[3600|2400]]<br>T<sub>B</sub> = [[3600|2400]] × 300<br>T<sub>B</sub> = 450 K'}
   ]});
 }
-{
-  const body=act('graphs','Predict','Which line is hotter?','');
-  createPredict({host:body,q:'Look at the graph above. How can you tell that line B is at the higher temperature?',options:[
-    {text:'pV is larger at every point on line B',correct:true},
-    {text:'Line B is the steeper curve near the axes',why:'Line B is further from the axes, not steeper. Compare pV at any point instead.'},
-    {text:'Line B starts at a higher pressure',why:'Both curves carry on up the p-axis as V falls. Where they start on this graph depends only on where they were drawn from.'},
-    {text:'Line B reaches a smaller volume',why:'At any pressure line B has the larger volume, not the smaller one.'}
-  ],explain:'From pV = NkT, with the same N, pV ∝ T. Every point on line B has pV = 3600 kPa cm³, and line A 2400 kPa cm³, so B is hotter. A hotter isotherm lies further from the axes.'});
-}
-{
-  const body=act('graphs','Predict','Why kelvin?','');
-  createPredict({host:body,q:'In pV = NkT, why must the temperature be in kelvin, not °C?',options:[
-    {text:'pV ∝ T only when T is measured from absolute zero',correct:true},
-    {text:'Kelvin numbers are bigger, so the answer is more precise',why:'Precision is not the reason. The equation only works when T starts from absolute zero.'},
-    {text:'Gases cannot be measured in degrees Celsius',why:'You can measure a gas’s temperature in °C; you must convert it to kelvin before using pV = NkT.'},
-    {text:'The pressure gauge is marked in kelvin',why:'The gauge is marked in kPa. The kelvin is needed because of how pV depends on T.'}
-  ],explain:'The average kinetic energy of the molecules, and so pV, is proportional to the absolute temperature. At absolute zero (0 K) pV would be zero; at 0 °C (273 K) it is not.'});
-}
 /* the same data with the axes the other way round: V against 1/p */
 const GV={xMin:0,xMax:10,yMin:0,yMax:40,xTicks:[0,2,4,6,8,10],yTicks:[0,10,20,30,40],xLabel:'1/p (10⁻³ kPa⁻¹)',yLabel:'V (cm³)',W:560,H:340};
 function vGraph(label){
@@ -167,67 +193,7 @@ function vGraph(label){
   ]});
 }
 {
-  const body=act('graphs','Predict','A steeper line','');
-  createPredict({host:body,q:'On this graph (V against 1/p), what does Q’s steeper line tell you?',options:[
-    {text:'Q has more molecules: pV = NkT is bigger',correct:true},
-    {text:'Q is at a lower temperature than P',why:'Both are at room temperature. A larger gradient means a larger pV, so more gas, not a lower temperature.'},
-    {text:'Q does not obey Boyle’s law',why:'Q is a straight line through the origin, so V ∝ 1/p: it obeys Boyle’s law.'},
-    {text:'Q is at a lower pressure for every volume',why:'Read across at any volume: Q has the smaller 1/p, so the higher pressure. That is because it holds more gas.'}
-  ],explain:'The gradient of V against 1/p is pV, which equals NkT. At the same temperature, a steeper line means more molecules (a larger mass of gas). With p up the side and 1/V along the bottom the gradient is also pV.'});
-}
-
-/* ================= 4. RESULTS ================= */
-{
-  const body=act('results','Calculate','Complete the results table','Asma’s readings are below. Work out the missing values.');
-  const tbl=mk('div','table-scroll');
-  tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>p (kPa)</th><th>V (cm³)</th><th>1/V (cm⁻³)</th><th>pV (kPa cm³)</th></tr></thead><tbody>'+
-    [[250,'9.6','0.1042','2400'],[200,'12.0','?','2400'],[150,'16.0','0.0625','?'],[125,'19.2','?','2400'],[100,'24.0','0.0417','?']].map(r=>'<tr><td>'+r.join('</td><td>')+'</td></tr>').join('')+'</tbody></table>';
-  body.appendChild(tbl);
-  createCalc({host:body,questions:[
-    {q:'1/V at 200 kPa',unit:'cm⁻³',answer:0.0833,working:'[[1|V]] = [[1|12.0]]<br>[[1|V]] = 0.0833 cm⁻³'},
-    {q:'1/V at 125 kPa',unit:'cm⁻³',answer:0.0521,working:'[[1|V]] = [[1|19.2]]<br>[[1|V]] = 0.0521 cm⁻³'},
-    {q:'pV at 150 kPa',unit:'kPa cm³',answer:2400,working:'pV = 150 × 16.0<br>pV = 2400 kPa cm³'},
-    {q:'pV at 100 kPa',unit:'kPa cm³',answer:2400,working:'pV = 100 × 24.0<br>pV = 2400 kPa cm³'}
-  ]});
-}
-{
-  const body=act('results','Plot','Plot Asma’s results','Plot p against 1/V as small crosses. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
-  createPlot({host:body,
-    points:[{x:0.1042,y:250},{x:0.0833,y:200},{x:0.0625,y:150},{x:0.0521,y:125},{x:0.0417,y:100}],
-    rowText:p=>p.y+' kPa, 1/V = '+fmt(p.x,4)+' cm⁻³',
-    graph:{xMin:0,xMax:0.12,yMin:0,yMax:300,xTicks:[0,0.02,0.04,0.06,0.08,0.1,0.12],yTicks:[0,50,100,150,200,250,300],minor:[0.004,10],snap:[0.002,5],xLabel:'1/V (cm⁻³)',yLabel:'p (kPa)',W:560,H:340}});
-}
-{
-  const body=act('results','Predict','The line of best fit','');
-  createPredict({host:body,q:'What line of best fit should Asma draw through her points on p against 1/V?',options:[
-    {text:'One straight line, close to all of the points',correct:true},
-    {text:'Short straight lines joining each point to the next',why:'Joining the dots follows every small error. A line of best fit shows the trend, so it is one line.'},
-    {text:'A smooth curve that bends to pass through every point',why:'p against 1/V should be a straight line for Boyle’s law; a curve hides that.'},
-    {text:'A straight line from the first point to the last one',why:'That uses only two of the readings. A best-fit line balances all of them.'}
-  ],explain:'Draw one thin straight line with the points scattered evenly either side of it. For Boyle’s law it should pass through (or very close to) the origin; check this once it is drawn.'});
-}
-{
-  const body=act('results','Predict','The gradient','');
-  createPredict({host:body,q:'What does the gradient of Asma’s p against 1/V graph equal?',options:[
-    {text:'pV, which equals NkT',correct:true},
-    {text:'[[p|V]], the pressure per unit volume',why:'gradient = [[change in p|change in 1/V]], which is p × V, not p divided by V.'},
-    {text:'The temperature of the air',why:'The gradient is pV = NkT. It depends on T, but it also depends on N and k.'},
-    {text:'The Boltzmann constant, k',why:'k is a fixed constant. The gradient is NkT, so it depends on how much gas there is and its temperature.'}
-  ],explain:'p = pV × [[1|V]] has the form y = mx, so the gradient is pV. From pV = NkT, gradient = NkT: with T known you can find N.'});
-}
-{
-  const body=act('results','Predict','An anomalous result','');
-  createPredict({host:body,q:'Ollie’s results are below. Which result is anomalous, and what should he do?',
-    pre:'<div class="table-scroll"><table class="units res-tbl"><thead><tr><th>p (kPa)</th><th>250</th><th>200</th><th>150</th><th>125</th><th>100</th></tr></thead><tbody><tr><th>V (cm³)</th><td>12.0</td><td>15.0</td><td>21.8</td><td>24.0</td><td>30.0</td></tr></tbody></table></div>',
-    options:[
-    {text:'150 kPa: repeat that reading, and leave it out of the line',correct:true},
-    {text:'100 kPa: it has the biggest volume, so leave it out',why:'100 × 30.0 = 3000, the same pV as the others. Being the biggest does not make it anomalous.'},
-    {text:'150 kPa: keep it, and average it in with the other results',why:'Averaging an anomalous result in drags the answer away from the true value. Repeat it, and leave it out of the line.'},
-    {text:'None: every reading counts, so use them all',why:'One reading breaks the pattern: 150 × 21.8 = 3270, while the others give 3000 kPa cm³.'}
-  ],explain:'pV should be about 3000 kPa cm³ every time, so at 150 kPa V should be about 20.0 cm³. Repeat that reading if you can, and leave it out when drawing the line of best fit.'});
-}
-{
-  const body=act('results','Predict','A line that misses the origin','');
+  const body=act('graphs','Multiple choice','A line that misses the origin','');
   createPredict({host:body,q:'Rose’s gauge reads 0 kPa when the valve is open to the air: it shows the pressure above atmospheric. She plots her gauge readings against 1/V. Her graph is:',options:[
     {text:'A straight line cutting the p-axis at about −100 kPa',correct:true},
     {text:'A straight line through the origin',why:'Every reading is about 100 kPa (atmospheric pressure) below the true pressure, so the whole line is shifted down.'},
@@ -235,8 +201,16 @@ function vGraph(label){
     {text:'A straight line cutting the p-axis at about +100 kPa',why:'Her readings are lower than the true pressure, so the line is shifted down, not up.'}
   ],explain:'Boyle’s law uses the total (absolute) pressure. True p = gauge reading + 100 kPa, so gauge reading = pV × [[1|V]] − 100: a straight line with intercept −100 kPa. Add atmospheric pressure to each reading first.'});
 }
-
-/* ================= 5. CALCULATE ================= */
+{
+  const body=act('graphs','Multiple choice','Why kelvin?','');
+  createPredict({host:body,q:'In pV = NkT, why must the temperature be in kelvin, not °C?',options:[
+    {text:'pV ∝ T only when T is measured from absolute zero',correct:true},
+    {text:'Kelvin numbers are bigger, so the answer is more precise',why:'Precision is not the reason. The equation only works when T starts from absolute zero.'},
+    {text:'Gases cannot be measured in degrees Celsius',why:'You can measure a gas’s temperature in °C; you must convert it to kelvin before using pV = NkT.'},
+    {text:'The pressure gauge is marked in kelvin',why:'The gauge is marked in kPa. The kelvin is needed because of how pV depends on T.'}
+  ],explain:'The average kinetic energy of the molecules, and so pV, is proportional to the absolute temperature. At absolute zero (0 K) pV would be zero; at 0 °C (273 K) it is not.'});
+}
+/* ================= CALCULATE ================= */
 {
   const body=act('calculate','Calculate','Boyle’s law and pV = NkT','The temperature stays the same in each question. k = 1.38 × 10⁻²³ J K⁻¹. Type a power of ten as e, so 7.4 × 10²⁰ is 7.4e20.');
   createCalc({host:body,questions:[
@@ -246,8 +220,7 @@ function vGraph(label){
     {q:'9.00 × 10²⁰ molecules of a gas are at 1.20 × 10⁵ Pa in a volume of 3.00 × 10⁻⁵ m³. What is their temperature?',unit:'K',answer:290,working:'pV = NkT<br>(1.20 × 10⁵) × (3.00 × 10⁻⁵) = 9.00 × 10²⁰ × 1.38 × 10⁻²³ × T<br>3.60 = 1.242 × 10⁻² × T<br>T = [[3.60|1.242 × 10⁻²]]<br>T = 290 K'}
   ]});
 }
-
-/* ================= 6. ACCURACY AND SAFETY ================= */
+/* ================= ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
@@ -265,16 +238,16 @@ function vGraph(label){
   ]});
 }
 {
-  const body=act('accuracy','Predict','Eye level','');
-  createPredict({host:body,q:'Why should you read the scale with your eye level with the top of the oil?',options:[
-    {text:'At an angle, the oil lines up with the wrong mark',correct:true},
-    {text:'It keeps your face safely behind the safety screen',why:'The screen protects you whatever height your eye is. Eye level is about reading the scale correctly.'},
-    {text:'It stops the oil moving while you read it',why:'Where you look from cannot move the oil. It only changes the mark the oil seems to be at.'},
-    {text:'The scale is only accurate near its middle',why:'The scale is equally accurate along its length. The problem is the angle you look from.'}
-  ],explain:'Looking at an angle makes the top of the oil appear against the wrong mark: a parallax error. Read the scale perpendicularly, with your eye level with the top of the oil.'});
+  const body=act('accuracy','Multiple choice','Reading straight away','');
+  createPredict({host:body,q:'Ollie pumps up to 250 kPa and reads the volume at once. Compared with the volume at room temperature, his reading is:',options:[
+    {text:'Too big: the squashed air is still warm',correct:true},
+    {text:'Too small: the squashed air is still warm',why:'At the same pressure a warmer gas takes up more room (pV = NkT), so the volume is too big.'},
+    {text:'The same: Boyle’s law says pV is constant',why:'Boyle’s law only holds at a fixed temperature, and the air is warmer than the room.'},
+    {text:'Too small: some air escaped while pumping',why:'Nothing has leaked out here. The difference comes from the temperature of the air.'}
+  ],explain:'Compressing the air quickly warms it. From pV = NkT, at the same p a higher T gives a larger V, so his first reading is a little too big until the air cools.'});
 }
 {
-  const body=act('accuracy','Predict','Percentage uncertainty','');
+  const body=act('accuracy','Multiple choice','Percentage uncertainty','');
   createPredict({host:body,q:'Ollie can read the volume to ±0.5 cm³. His volumes go from 12 cm³ at 250 kPa to 30 cm³ at 100 kPa. Where is the percentage uncertainty in V largest?',options:[
     {text:'At 250 kPa, where V is smallest',correct:true},
     {text:'At 100 kPa, where the volume is largest',why:'The same ±0.5 cm³ is a smaller fraction of a larger volume: 1.7% of 30 cm³.'},
@@ -282,7 +255,6 @@ function vGraph(label){
     {text:'At 175 kPa, in the middle of the range',why:'The percentage uncertainty is largest where V is smallest, which is at the highest pressure.'}
   ],explain:'percentage uncertainty = [[0.5|12]] × 100% = 4.2% at 250 kPa, but [[0.5|30]] × 100% = 1.7% at 100 kPa. The smallest volumes have the largest percentage uncertainty.'});
 }
-
 /* ================= EXAM PRACTICE ================= */
 {
   const body=act('exam','Exam style','Testing Boyle’s law','Asma traps some air above oil and records these results at room temperature, 20 °C. One reading is missing.');
