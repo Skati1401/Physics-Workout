@@ -192,6 +192,7 @@
   .toprow{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;}
   #vs-sw{min-width:11.5em;}
   #vs-tablewrap{max-height:98px;}
+  .meas-off{display:none !important;}
   /* Experiment has a table as well, so its rows sit closer and its buttons are shorter */
   @media (min-width:861px){ .side.exp{gap:8px;} .side.exp .seg button{min-height:36px;padding-block:5px;} .side.exp .note{min-height:0;font-size:14px;} }
 </style>
@@ -347,6 +348,8 @@
         <div class="seg" id="vs-liq"><button type="button" data-v="gly" aria-pressed="true">Glycerol</button><button type="button" data-v="cas" aria-pressed="false">Castor oil</button><button type="button" data-v="myst" aria-pressed="false" hidden>Mystery</button></div>
         <span class="rowlab">Temperature</span>
         <div class="seg" id="vs-temp"><button type="button" data-v="15" aria-pressed="false">15 &deg;C</button><button type="button" data-v="20" aria-pressed="true">20 &deg;C</button><button type="button" data-v="25" aria-pressed="false">25 &deg;C</button></div>
+        <span class="rowlab" id="vs-blab" hidden>Ball</span>
+        <div class="seg" id="vs-ball" hidden><button type="button" data-v="0" aria-pressed="true">Ball 1</button><button type="button" data-v="1" aria-pressed="false">Ball 2</button><button type="button" data-v="2" aria-pressed="false">Ball 3</button><button type="button" data-v="3" aria-pressed="false">Ball 4</button><button type="button" data-v="4" aria-pressed="false">Ball 5</button></div>
         <span class="rowlab" id="vs-jlab">Jump to</span>
         <div class="seg" id="vs-jump"><button type="button" data-v="rel" aria-pressed="false">Released</button><button type="button" data-v="up" aria-pressed="false">Speeding up</button><button type="button" data-v="term" aria-pressed="false">Terminal</button></div>
       </div>
@@ -775,6 +778,21 @@ function expKey(x, y, upLabel, downLabel){
   var LIQ={gly:{name:'glycerol', rho:1260, eta20:1.41, col:'rgba(96,165,250,.30)'}, cas:{name:'castor oil', rho:961, eta20:0.99, col:'rgba(234,179,8,.34)'},
            myst:{name:'the mystery liquid', rho:1100, eta20:1.2, col:'rgba(167,139,250,.32)'}};
   var MYST=[0.70,0.85,1.10,1.25,1.60,1.90];
+  // ---- measure mode (?show=measure): the "Do Experiment" tab of the CP2 practical page frames this page with ?embed&show=measure.
+  // The student chooses a ball, reads its diameter on a micrometer close-up, reads where the three bands are on close-ups of the rule,
+  // and times the ball with the stopwatch button (start at A, lap at B, stop at C). A press within MEAS_WIN seconds of the ball passing
+  // a band counts as on the band, so the readings are fixed: nothing is read, recorded or worked out for the student (no table, graph,
+  // reading boxes or working). Glycerol at 20 °C. The practical page's content.js (tools/practical-gen/practicals/viscosity/, not built
+  // yet) must check against these same numbers: MEAS_D, MEAS_BAND, MEAS_LAP and MEAS_T must match VS_D, VS_BAND, VS_LAP and VS_T.
+  // They are also listed in tools/CORE-PRACTICALS.md, "Measure modes".
+  var MEAS=/[?&]show=measure\b/.test(location.search), MEAS_WIN=0.25;
+  var MEAS_D=[3.16,4.24,5.30,6.16,6.92];                                   // micrometer, mm: the diameter of balls 1 to 5
+  var MEAS_BAND=[7.6,18.6,29.6];                                           // bands A, B, C on the rule, cm below the surface
+  var MEAS_LAP=[[4.35,4.39,4.36],[2.46,2.41,2.44],[1.54,1.57,1.55],[1.16,1.13,1.15],[0.93,0.89,0.91]];   // stopwatch lap at B (A to B), s: drops 1, 2, 3 of each ball
+  var MEAS_T=[[8.68,8.75,8.73],[4.90,4.84,4.87],[3.07,3.12,3.11],[2.31,2.26,2.30],[1.85,1.79,1.82]];     // stopwatch at C (A to C), s
+  var M={ball:0, n:[0,0,0,0,0], k:0, miss:-1, hint:''};                    // n: timings taken with each ball; k: which of the three this drop is
+  if(MEAS){ BANDS=MEAS_BAND.map(function(c){ return c/100; }); TIMED=BANDS[2]-BANDS[0]; }
+  function bandT(p,k){ return BANDS[k]/p.vt+p.tau; }                       // when the ball passes band k (it is at terminal velocity long before band A)
   var svg=$('#vs-svg'), playBtn=$('#vs-play'), swBtn=$('#vs-sw'), slowBtn=$('#vs-slow'), expBtn=$('#vs-exp'), newBtn=$('#vs-new'), rIn=$('#vs-r');
   svg.innerHTML='<defs><radialGradient id="vs-gs" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".3" style="stop-color:var(--steel-hi)"/><stop offset=".8" style="stop-color:var(--steel)"/><stop offset="1" style="stop-color:var(--steel-sh)"/></radialGradient>'+
     '<radialGradient id="vs-gb" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".35" style="stop-color:var(--accent-soft)"/><stop offset="1" style="stop-color:var(--accent)"/></radialGradient></defs><g id="vs-live"></g><g id="vs-picks"></g>';
@@ -828,7 +846,7 @@ function expKey(x, y, upLabel, downLabel){
   // ---- layout: one wide picture (cylinder, free-body diagram, graph); tall on a phone with the graph underneath
   var LY, CX, Y0, Y1, PXM, FX, FY, G, TALL, SWP;
   function layout(){
-    var v=sizeView(svg,{VW:860,VH:350},{VW:430,VH:predict()?640:690}); LY=v; TALL=v.VW===430;
+    var v=sizeView(svg,{VW:860,VH:350},{VW:430,VH:MEAS?672:predict()?640:690}); LY=v; TALL=v.VW===430;
     CX=TALL?80:92; Y0=44; Y1=324; PXM=(Y1-Y0)/DEPTH; FX=TALL?300:312; FY=160; SWP={x:TALL?196:206, y:290};
     G=TALL ? {x:56,y:410,w:352,h:200} : {x:476,y:34,w:356,h:226};
   }
@@ -921,6 +939,84 @@ function expKey(x, y, upLabel, downLabel){
     live.innerHTML=g; if(picksHtml!==''){ picksG.innerHTML=''; picksHtml=''; }
   }
 
+  // ---- measure mode: the stopwatch, and close-ups of the rule at each band and of the micrometer, where the free-body diagram and the graph were.
+  // Each band and the thimble are drawn exactly on the mark they read; the only numbers are those of the scales and the stopwatch's display.
+  function ruleCloses(x,y,w){
+    var gap=14, pw=(w-2*gap)/3, ph=118, z=44, g='', gw=Math.round(pw*0.34);   // z px per cm; gw: the part of each close-up that shows the glass
+    g+=txt(x+w/2,y+14,'Close-ups: each band against the rule (cm)',{a:'middle',fs:12.5,w:600,c:'var(--ink)'});
+    MEAS_BAND.forEach(function(c,i){
+      var px=x+i*(pw+gap), py=y+24, mid=py+ph/2, rx0=px+gw+6, k, u;
+      g+='<clipPath id="vs-rc'+i+'"><rect x="'+f1(px)+'" y="'+f1(py)+'" width="'+f1(pw)+'" height="'+ph+'"/></clipPath><g clip-path="url(#vs-rc'+i+')">';
+      g+=rect(px,py,gw,ph,'var(--glass-in)')+rect(px,py,gw,ph,LIQ.gly.col)+ln(px+gw,py,px+gw,py+ph,'var(--glass)',2.4)+ln(px+7,py,px+7,py+ph,'#fff',3,' opacity=".45"');
+      g+=rect(rx0,py-2,pw-gw-6+4,ph+4,'var(--rule-t)',' stroke="var(--rule-f)" stroke-width="1.2"');
+      for(k=Math.ceil((c-ph/2/z)*10)-1; k<=(c+ph/2/z)*10+1; k++){ if(k<0 || k>400) continue;
+        u=mid+(k/10-c)*z;
+        g+=ln(rx0,u,rx0+(k%10===0?19:k%5===0?14:9),u,'var(--rule-ink)',k%10===0?1.4:0.9);
+        if(k%10===0 && u>py+9 && u<py+ph-5) g+=txt(rx0+25,u+5,String(k/10),{fs:14.5,w:600,c:'var(--rule-ink)'}); }
+      // the rubber band round the glass, and a line from its middle across the rule's marks
+      g+=rect(px-2,mid-3,gw+5,6,'var(--bad)',' rx="2"')+ln(px-2,mid-1.6,px+gw+3,mid-1.6,'#fff',0.9,' opacity=".45"')+ln(px+gw+3,mid,rx0+24,mid,'var(--bad)',1.3);
+      g+='</g>'+rect(px,py,pw,ph,'none',' stroke="var(--panel-border)" stroke-width="1"')+txt(px+gw/2,py+ph+16,'band '+BNAME[i],{a:'middle',fs:13,w:700,c:'var(--bad)'});
+    });
+    return g;
+  }
+  function micClose(x,y,w){
+    var d=MEAS_D[M.ball], n=Math.round(d*100), s=24, cy=y+72, z0=x+96, ex=z0+d*s, P=9, MK='#17212e', g='', k, yy, v, br=7+M.ball*1.6, end=x+w-34;   // s px per mm on the sleeve; P px per 0.01 mm on the thimble
+    g+=txt(x+w/2,y+14,'Close-up: the micrometer on ball '+(M.ball+1)+' (mm)',{a:'middle',fs:12.5,w:600,c:'var(--ink)'});
+    g+='<clipPath id="vs-mclip"><rect x="'+f1(x)+'" y="'+f1(y+20)+'" width="'+f1(w)+'" height="104"/></clipPath><g clip-path="url(#vs-mclip)">';
+    // frame, anvil, the ball, spindle
+    g+=rect(x-4,cy-26,26,52,'var(--steel)')+rect(x-4,cy-26,26,7,'#fff',' opacity=".22"');
+    g+=rect(x+22,cy-7,12,14,'var(--steel-hi)',' stroke="var(--steel-sh)" stroke-width="0.8"');
+    g+='<circle cx="'+f1(x+34+br)+'" cy="'+f1(cy)+'" r="'+f1(br)+'" fill="url(#vs-gs)" stroke="var(--steel-sh)" stroke-width="0.8"/>';
+    g+=rect(x+34+2*br,cy-7,z0-24-(x+34+2*br)+1,14,'var(--steel-hi)',' stroke="var(--steel-sh)" stroke-width="0.8"');
+    // the sleeve: its datum line, a mark every millimetre above the line and every half millimetre below it, a number every 5 mm
+    g+=rect(z0-24,cy-24,ex-z0+40,48,'var(--steel-hi)',' stroke="var(--steel-sh)" stroke-width="1"')+rect(z0-24,cy-22,ex-z0+40,5,'#fff',' opacity=".5"');
+    g+=ln(z0-14,cy,ex+2,cy,MK,1.3);
+    for(k=0;k<=7;k++){ if(z0+k*s<=ex+1){ g+=ln(z0+k*s,cy,z0+k*s,cy-(k%5===0?10:8),MK,1.3); if(k%5===0) g+=txt(z0+k*s,cy-12,String(k),{a:'middle',fs:12,w:600,c:MK}); }
+      if(z0+(k+0.5)*s<=ex+1) g+=ln(z0+(k+0.5)*s,cy,z0+(k+0.5)*s,cy+8,MK,1.1); }
+    // the thimble: 50 divisions of 0.01 mm round its bevelled edge; the division on the datum line is the reading
+    g+=pg([[ex,cy-40],[ex+16,cy-50],[end,cy-50],[end,cy+50],[ex+16,cy+50],[ex,cy+40]],'var(--steel)',' stroke="var(--steel-sh)" stroke-width="1"');
+    g+=pg([[ex,cy-40],[ex+16,cy-50],[Math.min(end,ex+46),cy-50],[Math.min(end,ex+46),cy+50],[ex+16,cy+50],[ex,cy+40]],'var(--steel-hi)')+ln(ex+16,cy-50,ex+16,cy+50,'var(--steel-sh)',0.8,' opacity=".5"')+rect(ex+16,cy-46,end-16-ex,9,'#fff',' opacity=".2"')+rect(ex+16,cy+34,end-16-ex,16,'#000',' opacity=".14"');
+    for(k=-6;k<=6;k++){ v=((n+k)%50+50)%50; yy=cy-k*P; if(Math.abs(k*P)>44) continue;
+      g+=ln(ex+0.6,yy,ex+(v%5===0?15:9),yy,MK,v%5===0?1.4:1);
+      if(v%5===0) g+=txt(ex+21,yy+4.6,String(v),{fs:13.5,w:600,c:MK}); }
+    for(k=0;k<12;k++) if(ex+58+k*9<end-4) g+=ln(ex+58+k*9,cy-49,ex+52+k*9,cy+49,'var(--steel-sh)',1,' opacity=".55"');
+    g+=rect(end,cy-13,40,26,'var(--steel-sh)',' rx="2"');
+    return g+'</g>';
+  }
+  function drawMeas(){
+    var p=par(), s=X.falling||X.done ? sAt(p,t) : 0, g='', T=MEAS_T[M.ball][M.k], lap=MEAS_LAP[M.ball][M.k], tA=bandT(p,0), tC=bandT(p,2), main, void_=M.miss>=0;
+    if(X.sw===0 || (X.done && void_)) main='0.00';
+    else if(X.sw===3) main=T.toFixed(2);
+    else main=Math.max(0,Math.min(T,(t-tA)*T/(tC-tA))).toFixed(2);   // it runs at the rate that brings it to this drop's reading at band C
+    g+=cylinder(s)+txt(FX,22,'Stopwatch',{a:'middle',fs:13,c:'var(--ink)'})+stopwatch(FX-62,40,main+' s',1.6);
+    g+=txt(FX,134,'Lap time (at band B)',{a:'middle',fs:12.5,c:'var(--ink)'})+rect(FX-50,142,100,32,'var(--panel)',' rx="5" stroke="var(--case)" stroke-width="2"')+
+      txt(FX,164,X.sw>=2 && !void_ ? lap.toFixed(2)+' s' : '– –',{a:'middle',fs:17,w:600,c:'var(--ink)'});
+    g+=TALL ? ruleCloses(16,360,398)+micClose(16,536,398) : ruleCloses(410,0,400)+micClose(430,196,360);
+    live.innerHTML=g; if(picksHtml!==''){ picksG.innerHTML=''; picksHtml=''; }
+  }
+  function measNote(){
+    var note, B=function(k){ return 'band <b>'+BNAME[k]+'</b>'; };
+    if(X.falling){
+      if(M.miss>=0) note='The ball passed '+B(M.miss)+' before the stopwatch button was pressed, so this drop gives no reading.';
+      else if(X.sw===3) note='Stopped. The ball falls to the bottom.';
+      else note=(M.hint ? 'Too early: the ball has not reached '+B(X.sw)+' yet. ' : '')+(X.sw===0 ? 'The ball is falling. Press <b>Start</b> as it passes '+B(0)+'.' : X.sw===1 ? 'Timing. Press <b>Lap</b> as it passes '+B(1)+'.' : 'Press <b>Stop</b> as it passes '+B(2)+'.');
+    }
+    else if(X.done && M.miss>=0) note='No reading: the ball passed '+B(M.miss)+' before the stopwatch button was pressed. Press <b>Drop the ball</b> and time it again.';
+    else if(X.done && X.sw===3) note='Write down the lap time (A to B) and the time on the stopwatch (A to C), each to 0.01 s. That was drop '+(M.k+1)+' of ball '+(M.ball+1)+'. Time each ball three times, then choose another ball.';
+    else note='Read the diameter of the ball on the <b>micrometer</b> close-up, to 0.01 mm, and where each band is on the <b>rule</b> close-ups, to the nearest millimetre. Then press <b>Drop the ball</b> and time it with the stopwatch button: start at A, lap at B, stop at C. A press within '+MEAS_WIN.toFixed(2)+' s of the ball passing a band counts as on the band. Time each ball three times.';
+    if(note!==lastNote){ $('#vs-note').innerHTML=note; lastNote=note; }
+    playBtn.innerHTML='&#9654; Drop the ball'; playBtn.disabled=X.falling;
+    swBtn.textContent = X.sw===0 ? 'Start (ball at A)' : X.sw===1 ? 'Lap (ball at B)' : X.sw===2 ? 'Stop (ball at C)' : 'Stopped'; swBtn.disabled=!X.falling || X.sw===3 || M.miss>=0;
+    Array.prototype.forEach.call($('#vs-ball').children, function(b){ b.disabled=X.falling; });
+  }
+  function measPress(){
+    if(!X.falling || X.sw===3 || M.miss>=0) return;
+    var tb=bandT(par(),X.sw);
+    if(t<tb-MEAS_WIN){ M.hint='early'; lastNote=''; draw(); return; }
+    if(t>tb+MEAS_WIN){ M.miss=X.sw; M.hint=''; lastNote=''; draw(); return; }
+    M.hint=''; X.sw++; lastNote=''; draw();
+  }
+
   // ---- Predict: the directions of the three forces and of the resultant, picked on the diagram
   var COLS=['W','U','F'];
   function pickG(id, label, sel, st, inner, ring){
@@ -972,7 +1068,7 @@ function expKey(x, y, upLabel, downLabel){
     if(pk!==picksHtml){ setKeepFocus(picksG, pk); picksHtml=pk; }
   }
 
-  function draw(){ layout(); if(predict()) drawPredict(); else if(exp()) drawExp(); else drawExplore(); readings(); }
+  function draw(){ layout(); if(MEAS){ drawMeas(); measNote(); return; } if(predict()) drawPredict(); else if(exp()) drawExp(); else drawExplore(); readings(); }
 
   // ---- readings, working, note
   function N3(x){ return sig(x*1000,3)+' × 10⁻³'; }
@@ -1026,7 +1122,9 @@ function expKey(x, y, upLabel, downLabel){
     if(predict()){
       if(Q.phase==='run'){ Q.u=Math.min(1, Q.u+real/3.2*(slowOn()?0.3:1)); if(Q.u>=1){ Q.phase='done'; running=false; mark(); } }
     } else if(exp()){
-      if(X.falling){ t+=real; if(sAt(p,t)>=DEPTH){ landed(); } }
+      if(X.falling){ t+=real*(MEAS && (X.sw===3 || M.miss>=0) ? 6 : 1);   // measure mode: once it is timed (or missed) the ball finishes its fall quickly
+        if(MEAS && M.miss<0 && X.sw<3 && t>bandT(p,X.sw)+MEAS_WIN){ M.miss=X.sw; M.hint=''; lastNote=''; }
+        if(sAt(p,t)>=DEPTH){ landed(); } }
     } else if(running){
       var dt=real*(slowOn()?0.3:1), tm=tMaxMs(p)/1000;
       if(ph===1){ t=Math.min(tm, t+dt*tm/4.5); if(t>=tm) ph=2; }
@@ -1043,14 +1141,16 @@ function expKey(x, y, upLabel, downLabel){
 
   // ---- Experiment: dropping and timing
   function swReset(){ X.sw=0; X.tA=X.tB=X.tC=0; X.falling=false; X.done=false; X.msg=''; t=0; }
-  function drop(){ swReset(); X.falling=true; lastNote=''; loop(); swBtn.focus(); }
+  function drop(){ swReset(); if(MEAS){ M.k=M.n[M.ball]%3; M.miss=-1; M.hint=''; } X.falling=true; lastNote=''; loop(); swBtn.focus(); }
   function swPress(){
+    if(MEAS){ measPress(); return; }
     if(!X.falling || X.sw===3) return;
     if(X.sw===0){ X.tA=t; X.sw=1; } else if(X.sw===1){ X.tB=t; X.sw=2; } else { X.tC=t; X.sw=3; }
     lastNote=''; draw();
   }
   function landed(){
     X.falling=false; X.done=true; t=par().tau*8+ (DEPTH/par().vt);   // it rests on the bottom
+    if(MEAS){ if(X.sw===3 && M.miss<0) M.n[M.ball]++; lastNote=''; return; }   // the fixed readings; nothing is stored
     if(X.sw===3){
       var tac=X.tC-X.tA, tab=X.tB-X.tA, tbc=X.tC-X.tB, q={r:+rIn.value, tab:tab, tbc:tbc, tac:tac, v:TIMED/tac*100};
       X.rd.push(q);
@@ -1100,7 +1200,18 @@ function expKey(x, y, upLabel, downLabel){
   rIn.addEventListener('input', function(){ if(exp()){ if(X.falling) return; swReset(); lastNote=''; draw(); } else { t=0; ph=0; stop(); jumpSeg.pick(null); lastNote=''; draw(); } });
 
   watchEquals($('#vs-eq1')); watchEquals($('#vs-eq2'));
-  if(/[?&]show=predict\b/.test(location.search)){ tabSeg.pick('predict'); setTab(); }
+  if(MEAS){
+    liqSeg.pick('gly'); tempSeg.pick('20'); expBtn.setAttribute('aria-pressed','true'); setExp();
+    rIn.min='1'; rIn.max='4'; rIn.step='0.01'; rIn.value=String(MEAS_D[0]/2);
+    ['.toprow','#vs-liq','#vs-temp','#vs-jlab','#vs-jump','#vs-slow','#vs-exp','#vs-undo','#vs-clear','#vs-new','#vs-reset','.to-q','#vs-sliders','#vs-stats','#vs-tablewrap','#vs-working'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+    Array.prototype.forEach.call($('#vs-grid').querySelectorAll('.rowlab'), function(e){ if(e.id!=='vs-blab'){ e.classList.add('meas-off'); e.hidden=true; } });
+    $('#vs-liq').hidden=$('#vs-temp').hidden=true; $('#vs-blab').hidden=$('#vs-ball').hidden=false;
+    segGroup($('#vs-ball'), function(v){ if(X.falling) return; M.ball=+v; M.k=M.n[M.ball]%3; M.miss=-1; M.hint=''; rIn.value=String(MEAS_D[M.ball]/2); swReset(); lastNote=''; draw(); });
+    svg.setAttribute('aria-label','A steel ball falls through glycerol in a tall measuring cylinder with three rubber bands round it, beside a rule. Beside it are a stopwatch, close-ups of the rule at each band and a close-up of a micrometer on the ball, for you to read');
+    document.documentElement.classList.add('measure');
+    draw();
+  }
+  else if(/[?&]show=predict\b/.test(location.search)){ tabSeg.pick('predict'); setTab(); }
   else { setRows(); draw(); }
   // redraw when the picture changes between its wide and its tall shape
   if(window.ResizeObserver) new ResizeObserver(function(){ var w=svg.getBoundingClientRect().width; if(LY && (w>0 && w<520)!==svg.classList.contains('tall')) draw(); }).observe(svg);
