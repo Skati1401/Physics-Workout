@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Projectile Lab Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Launch up to three projectiles at once: velocity components, motion graphs, air resistance, and suvat working for the flight time, maximum height and range.">
+<meta name="description" content="Interactive physics animation. Launch up to three projectiles at once: velocity components, motion graphs, air resistance, and suvat working for the flight time, maximum height and range. Questions: put a flag where it lands, a line at its highest point, or say whether it clears a wall, then launch it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -172,6 +172,11 @@
   .hint{font-size:12.5px;color:var(--ink-faint);}
   .grab{cursor:grab;touch-action:none;}
   #pl-svg.dragging,#pl-svg.dragging *{cursor:grabbing;}
+  /* Questions (?show=predict) */
+  #pl-svg .pick{cursor:pointer;} #pl-svg .pick:focus{outline:none;} #pl-svg .pick .ring{fill:none;stroke:transparent;} #pl-svg .pick:focus-visible .ring{stroke:var(--accent);}
+  #pl-svg .pick .hit{fill:transparent;} #pl-svg .pick.locked{cursor:default;} #pl-svg.qdrag{cursor:crosshair;}
+  .qbox{display:flex;flex-direction:column;gap:10px;}
+  #pl-kind{display:flex;flex-wrap:wrap;} #pl-kind>button{flex:0 1 auto;padding-inline:10px;}
   h2{font-size:22px;}
   .eq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:10px 14px;align-items:start;}
   .eq-title{font:600 12px var(--font-mono);color:var(--ink-soft);margin:0 0 4px;}
@@ -300,7 +305,7 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="pl-svg" viewBox="0 0 640 340" role="img" aria-label="Up to three projectiles launched from the origin, drawn to scale with their paths, velocity components and markers for maximum height and range."></svg>
+      <svg class="view" id="pl-svg" viewBox="0 0 640 340" role="img" aria-label="Up to three projectiles launched from the origin, drawn to scale with their paths, velocity components and markers for maximum height and range."><g id="pl-main"></g><g id="pl-picks"></g></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="pl-play" type="button">&#9654; Launch</button>
@@ -309,6 +314,9 @@
           <button class="btn" id="pl-exp" type="button" aria-pressed="false" title="Hide the paths and theory curves, and plot the readings as the projectiles fly">Experiment</button>
           <button class="btn" id="pl-comp" type="button" aria-pressed="true">Velocity components</button>
           <button class="btn" id="pl-mark" type="button" aria-pressed="true">Max height and range</button>
+          <button class="btn btn-primary" id="pl-go" type="button" hidden>&#9654; Launch</button>
+          <button class="btn" id="pl-new" type="button" hidden>New question</button>
+          <button class="btn to-q" type="button" data-mode="pl-tab" hidden>Try the questions &rarr;</button>
         </div>
         <div class="time-row">
           <label class="lab" for="pl-time">Time <output id="pl-to"></output></label>
@@ -317,7 +325,12 @@
       </div>
     </div>
     <div class="side">
-      <div class="ctl">
+      <div class="seg tabs mode" id="pl-tab" role="group" aria-label="Explore or questions"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
+      <div class="qbox" id="pl-q" hidden>
+        <div><span class="lab" id="pl-klab">Questions on</span>
+        <div class="seg" id="pl-kind" role="group" aria-labelledby="pl-klab"><button type="button" data-v="mix" aria-pressed="true">Mixed</button><button type="button" data-v="land" aria-pressed="false">Where it lands</button><button type="button" data-v="top" aria-pressed="false">How high</button><button type="button" data-v="wall" aria-pressed="false">Over the wall?</button></div></div>
+      </div>
+      <div class="ctl" id="pl-pctl">
         <div class="row-lab" id="pl-pick-lab">Projectile</div>
         <div class="ppick" id="pl-pick" role="group" aria-labelledby="pl-pick-lab" title="Tap a projectile to choose it; tap it again to show or hide it"></div>
       </div>
@@ -537,6 +550,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function niceStep(r){ var p=Math.pow(10,Math.floor(Math.log10(r))), f=r/p; return (f<1.5?1:f<3.5?2:f<7.5?5:10)*p; }
   var frozen=null;   // the scale stays fixed while the launcher is being dragged
   function fitScene(){
+    if(QM && Q){ xMaxM=Q.xv; yMaxM=Q.yv; sc=Math.min(SW/xMaxM, SH/yMaxM); return; }
     if(frozen){ sc=frozen.sc; xMaxM=frozen.x; yMaxM=frozen.y; return; }
     var a=active(), xm=5, ym=5;
     a.forEach(function(m){ xm=Math.max(xm,m.range); ym=Math.max(ym,m.yMax,m.p.h); });
@@ -573,23 +587,24 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       g+='<circle cx="'+SX0+'" cy="'+f1(ly)+'" r="6.5" fill="var(--steel-sh)"/><circle cx="'+SX0+'" cy="'+f1(ly)+'" r="2.4" fill="var(--steel-hi)"/>';
       if(!running){
         g+='<circle cx="'+f1(bx)+'" cy="'+f1(by)+'" r="6" fill="var(--panel)" stroke="'+cs+'" stroke-width="2.4"/>';
-        if(!started && !dragging){
+        if(!started && !dragging && !QM){
           var up=Math.sin(thr)>=0;
           g+=txt(bx+11,by+(up?-7:16),'drag to aim',{fs:12,c:'var(--accent)',halo:1});
           if(!narrowQ.matches) g+=txt(SX0-13,ly-27,'drag ↕',{a:'end',fs:12,c:'var(--accent)',halo:1});
         }
       }
     }
+    if(QM && Q && Q.kind==='wall') g+=qWall();
     a.forEach(function(m){
-      var id=m.p.id, c=COL[id], n=80, full=[], done_=[];
-      for(var i=0;i<=n;i++){ var ti=m.tF*i/n, q=m.pos(ti); full.push(X(q[0]).toFixed(1)+','+Y(q[1]).toFixed(1)); }
-      if(!exp && m.tF>0) g+='<polyline points="'+full.join(' ')+'" fill="none" stroke="'+c+'" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.55"/>';
+      var id=m.p.id, c=COL[id], n=80, full=[], done_=[], tFull=QM && Q && Q.hitWall ? Math.min(m.tF, T) : m.tF;
+      for(var i=0;i<=n;i++){ var ti=tFull*i/n, q=m.pos(ti); full.push(X(q[0]).toFixed(1)+','+Y(q[1]).toFixed(1)); }
+      if(!exp && m.tF>0 && !(QM && !Q.marked)) g+='<polyline points="'+full.join(' ')+'" fill="none" stroke="'+c+'" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.55"/>';
       var tt=Math.min(t,m.tF);
       if(started && tt>0){
         for(var j=0;j<=n;j++){ var q2=m.pos(tt*j/n); done_.push(X(q2[0]).toFixed(1)+','+Y(q2[1]).toFixed(1)); }
         g+='<polyline points="'+done_.join(' ')+'" fill="none" stroke="'+c+'" stroke-width="2.5"/>';
       }
-      if(pressed($('#pl-mark')) && (!exp || done())){
+      if(pressed($('#pl-mark')) && (!exp || done()) && (!QM || (Q.marked && Q.kind!=='wall'))){
         if(m.tA>0){
           var ap=m.pos(m.tA);
           g+='<line x1="'+X(ap[0])+'" x2="'+X(ap[0])+'" y1="'+Y(ap[1])+'" y2="'+SY0+'" stroke="'+c+'" stroke-width="1" stroke-dasharray="2 3"/>';
@@ -612,12 +627,15 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       g+=txt(px+lo[0],py+lo[1],id,{a:lo[2],fs:13,w:600,c:c,halo:1});
     });
     g+=txt(VW-8,16,'g = '+grav.g+' m s⁻² ('+grav.name+')'+(drag?', drag on':''),{a:'end',fs:12.5});
-    if(running && pressed(slowBtn)) g+=txt(VW-8,33,'slow motion',{a:'end',fs:12.5,c:'var(--accent)'});
-    if(!running && ps.on){
+    if(running && pressed(slowBtn)) g+=txt(VW-8,QM?50:33,'slow motion',{a:'end',fs:12.5,c:'var(--accent)'});
+    if(!running && ps.on && !QM){
       g+='<rect class="grab" data-g="h" x="'+(SX0-30)+'" y="'+(ly-16).toFixed(1)+'" width="40" height="34" fill="transparent"/>';
       g+='<rect class="grab" data-g="th" x="'+(bx-16).toFixed(1)+'" y="'+(by-16).toFixed(1)+'" width="32" height="32" fill="transparent"/>';
     }
-    $('#pl-svg').innerHTML=g;
+    if(QM && Q) g+=qText();
+    $('#pl-main').innerHTML=g;
+    if(QM){ qPicks(); qReadings(); return; }
+    if($('#pl-picks').firstChild) $('#pl-picks').innerHTML='';
     drawGraph(1); drawGraph(2); table(); readouts();
   }
 
@@ -762,7 +780,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     if(!running) return;
     var real=Math.min(0.05,(now-last)/1000); last=now;
     t=Math.min(T, t+real*(pressed(slowBtn)?0.3:1));
-    if(t>=T) stop();
+    if(t>=T){ stop(); if(QM && Q && !Q.marked) qMark(); }
     draw(); if(running) raf=requestAnimationFrame(frame);
   }
   function run(){ if(!T) return; if(done()) t=0; started=true; running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); }
@@ -814,6 +832,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function setRange(el, v, hi){ var st=+el.step; v=Math.max(+el.min, Math.min(hi==null?+el.max:hi, +el.max, Math.round(v/st)*st)); if(+el.value!==v){ el.value=v; el.dispatchEvent(new Event('input')); } }
   function aimAt(q){ var p=PJ[sel]; return Math.atan2(Y(p.h)-q.y, q.x-SX0)*180/Math.PI; }
   svgEl.addEventListener('pointerdown',function(e){
+    if(QM){ qDown(e); return; }
     var gEl_=e.target.closest('.grab'); if(!gEl_ || running) return;
     var q=svgPt(e), p=PJ[sel];
     if(gEl_.dataset.g==='h') dragging={el:hIn, off:q.y-Y(p.h)};
@@ -823,15 +842,196 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     svgEl.classList.add('dragging'); e.preventDefault();
   });
   svgEl.addEventListener('pointermove',function(e){
+    if(QM){ qMove(e); return; }
     if(!dragging) return; var q=svgPt(e);
     if(dragging.el===hIn) setRange(hIn, (SY0-(q.y-dragging.off))/sc, Math.floor((SY0-12)/sc));   // keep the pad inside the picture
     else { var a=aimAt(q)-dragging.off; if(a>180) a-=360; if(a<-180) a+=360; a=Math.max(-90,Math.min(90,a)); setRange(thIn, a); }
   });
-  function endDrag(){ if(!dragging) return; dragging=null; frozen=null; svgEl.classList.remove('dragging'); draw(); }
+  function endDrag(){ qGrab=false; svgEl.classList.remove('dragging'); if(!dragging) return; dragging=null; frozen=null; svgEl.classList.remove('dragging'); draw(); }
   svgEl.addEventListener('pointerup',endDrag); svgEl.addEventListener('pointercancel',endDrag);
   document.addEventListener('keydown',function(e){ if(e.key===' ' && e.target===document.body){ e.preventDefault(); playBtn.click(); } });
 
+
+  // ---- Questions (?show=predict; TODO 8l, 14 Nov 2026). The kinds come from the IAL Past Paper Index (WPH11, 6PH01, 8PH0) and the IB
+  // Physics Question Index (P1 and P2, A.1):
+  //   Where it lands: off a cliff or a table, launched horizontally (WPH11 Jan 2023 Q11, 8PH0 Jun 2024 Q10(b), 6PH01 Jun 2017 Q17(b)(ii);
+  //     IB P2 May 2012 TZ1 B1, Nov 2023 TZ2 Q1(e)), or at an angle (WPH11 Jun 2023 Q14, 6PH01 Jun 2016 Q17(a)(i), 8PH0 Jun 2022 Q13(b));
+  //   How high: the maximum height (WPH11 Oct 2020 Q17(a)(ii), IB P2 Nov 2004 A2(a), Nov 2016 Q1(a));
+  //   Over the wall? whether it clears a wall, a crossbar or a net (6PH01 Jun 2015 Q18(b)(i), WPH11 Jun 2024 Q17(c); IB P2 May 2021 TZ2
+  //     Q1(b)(ii), May 2021 TZ1 Q1(c), May 2019 TZ2 Q1(b)(ii)).
+  // The student puts a flag where it will land, or a line at its highest point, or chooses clears or hits, and Launch shows it.
+  // The picture's scale is set by the question (not by the flight), so it gives nothing away.
+  var QM=false, Q=null, qKind='mix', qLast='', qSaved=null, qGrab=false;
+  function rpick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function rstep(lo, hi, st){ var n=Math.round((hi-lo)/st); return +(lo+st*Math.floor(Math.random()*(n+1))).toFixed(2); }
+  function gQ(){ return PW_LEVEL==='ib' ? 9.8 : 9.81; }
+  function snapOf(v){ var st=niceStep(v/6); return st/20; }
+  function qModel(q, g){ return model({u:q.u, th:q.th, h:q.h}); }
+  function genQ(kind){
+    var g=gQ(), saveG=grav; grav={id:'q', name:'Earth', g:g};
+    for(var n=0;n<400;n++){
+      var q={kind:kind, g:g}, m;
+      if(kind==='land'){
+        if(Math.random()<0.45){ var hu=rpick([[12,8],[12,6.5],[45,12],[20,15],[2.4,9],[1.2,2.5],[80,20],[30,10],[5,4]]); q.h=hu[0]; q.u=hu[1]; q.th=0; }
+        else { q.h=rpick([0,0,0,1.5,2]); q.u=rstep(12,30,1); q.th=rpick([20,25,30,35,40,45,50,53,55,60]); }
+        m=qModel(q); q.ans=m.range; q.R=m.range;
+        q.xv=+(m.range*(1.2+Math.random()*0.5)).toPrecision(2); q.yv=Math.max(m.yMax, q.h, 1)*(1.25+Math.random()*0.3);
+        q.snap=snapOf(Math.max(q.xv,q.yv)); q.guess=+(Math.round(q.xv*0.35/q.snap)*q.snap).toFixed(3);
+      } else if(kind==='top'){
+        q.h=rpick([0,0,1.5]); q.u=rstep(10,28,1); q.th=rpick([30,35,40,45,50,55,60,65,70]);
+        m=qModel(q); q.ans=m.yMax; q.R=m.range;
+        q.yv=+(m.yMax*(1.25+Math.random()*0.45)).toPrecision(2); q.xv=Math.max(m.range*1.08, 1);
+        q.snap=snapOf(Math.max(q.xv,q.yv)); q.guess=+(Math.round(q.yv*0.3/q.snap)*q.snap).toFixed(3);
+      } else {
+        if(Math.random()<0.35){ q.h=rpick([1,2.4,3]); q.u=rstep(6,18,1); q.th=0; q.what='net'; }
+        else { q.h=rpick([0,1,1.5,2]); q.u=rstep(12,26,1); q.th=rpick([15,20,22,25,30,35,40]); q.what=rpick(['wall','fence']); }
+        m=qModel(q); if(m.range<4) continue;
+        q.d=+(Math.round(m.range*(0.4+Math.random()*0.4)*2)/2).toFixed(1);
+        var tw=q.d/m.ux, yw=m.pos(tw)[1], over=Math.random()<0.5, gap=rstep(0.3,1.0,0.1);
+        q.H=+(Math.round((over ? yw-gap : yw+gap)*10)/10).toFixed(1); if(q.H<0.4) continue;
+        q.tw=tw; q.yw=yw; q.clears=yw>q.H; q.ans=q.clears ? 'over' : 'hit'; q.R=m.range;
+        q.xv=+(Math.max(m.range, q.d)*1.15).toPrecision(2); q.yv=Math.max(m.yMax, q.H, q.h, 1)*1.35;
+      }
+      q.sig=kind+q.u+'/'+q.th+'/'+q.h+'/'+(q.d||'');
+      if(q.sig!==qLast){ grav=saveG; return q; }
+    }
+    grav=saveG; return q;
+  }
+  function applyQ(){
+    var q=Q;
+    PJ[0]={id:'A', on:true, u:q.u, th:q.th, h:q.h}; PJ[1].on=false; PJ[2].on=false; sel=0;
+    grav={id:'q', name:'Earth', g:q.g}; drag=false;
+    stop(); started=false; t=0; rebuild();
+    q.hitWall = q.kind==='wall' && !q.clears;
+    if(q.hitWall) T=Math.min(T, q.tw);
+  }
+  function newQ(){
+    var k=qKind==='mix' ? rpick(['land','land','top','wall']) : qKind;
+    Q=genQ(k); qLast=Q.sig; Q.pick=null; Q.locked=false; Q.marked=false;
+    applyQ(); $('#pl-picks').innerHTML=''; draw();
+  }
+  function fm(x){ return n3(+x.toPrecision(3)); }
+  function qText(){
+    var q=Q, s=q.marked ? q.verdict : q.kind==='land' ? 'Where will it land? Drag the flag.' : q.kind==='top' ? 'How high will it go? Drag the line.' : 'Will it clear the '+q.what+'?';
+    return txt(VW-8, 33, s, {a:'end', fs:13, w:600, c:q.marked ? (q.ok ? 'var(--good)' : 'var(--bad)') : 'var(--ink)', halo:1});
+  }
+  function qWall(){
+    var q=Q, x=X(q.d), w=Math.max(6, 0.3*sc), top=Y(q.H), g='';
+    if(q.what==='net'){ g+=ln(x, top, x, SY0, 'var(--steel-sh)', 3)+rect(x-1, top, 2, (SY0-top), 'var(--ink-faint)', ' opacity=".5"')+ln(x-5, top, x+5, top, 'var(--ink)', 2.4); }
+    else if(q.what==='fence'){ g+=box(x-2, top, 4, SY0-top, 4, -3, 'var(--wood-f,#c99e6a)', {top:'var(--wood-t,#e3c08f)', side:'var(--wood-s,#9c7444)'})+ln(x-8, top+6, x+8, top+6, 'var(--wood-s,#9c7444)', 2); }
+    else g+=box(x-w/2, top, w, SY0-top, 6, -5, 'var(--brick-f,#b5543a)', {top:'var(--brick-t,#d27a5c)', side:'var(--brick-s,#8a3d29)'});
+    g+=txt(x+w/2+9, top+4, 'H = '+fm(q.H)+' m', {fs:12.5, c:'var(--ink)', w:600, halo:1});
+    g+=txt(X(q.d/2), SY0+GD+30, 'd = '+fm(q.d)+' m', {a:'middle', fs:12.5, c:'var(--ink)', w:600, halo:1});
+    return g;
+  }
+  function qPicks(){
+    var q=Q, g='';
+    if(q.kind==='land'){
+      var x=X(q.guess), y=SY0, on=!q.locked;
+      g+='<g class="pick'+(q.locked?' locked':'')+'" data-pick="flag" tabindex="0" role="slider" aria-label="Your landing point" aria-valuenow="'+q.guess+'" aria-valuetext="x = '+fm(q.guess)+' m">'+
+        '<rect class="hit" x="'+f1(x-18)+'" y="'+f1(y-46)+'" width="36" height="52"/>'+
+        ln(x, y, x, y-38, 'var(--ink)', 2)+pg([[x,y-38],[x+18,y-31],[x,y-24]], q.marked ? (q.ok ? 'var(--good)' : 'var(--bad)') : 'var(--accent)')+
+        '<rect class="ring" x="'+f1(x-14)+'" y="'+f1(y-44)+'" width="38" height="48" rx="6" stroke-width="2.5"/>'+
+        txt(x, y-48, 'x = '+fm(q.guess)+' m', {a:'middle', fs:12.5, c:'var(--accent)', w:600, halo:1})+(on ? txt(x, y+GD+30, '← drag →', {a:'middle', fs:11.5, c:'var(--accent)', halo:1}) : '')+'</g>';
+    } else if(q.kind==='top'){
+      var yy=Y(q.guess), x0=SX0, x1=X(q.xv)-6;
+      g+='<g class="pick'+(q.locked?' locked':'')+'" data-pick="hline" tabindex="0" role="slider" aria-label="Your highest point" aria-valuenow="'+q.guess+'" aria-valuetext="y = '+fm(q.guess)+' m">'+
+        '<rect class="hit" x="'+f1(x0)+'" y="'+f1(yy-10)+'" width="'+f1(x1-x0)+'" height="20"/>'+
+        ln(x0, yy, x1, yy, q.marked ? (q.ok ? 'var(--good)' : 'var(--bad)') : 'var(--accent)', 2, ' stroke-dasharray="7 4"')+
+        '<circle cx="'+f1(x1)+'" cy="'+f1(yy)+'" r="6" fill="var(--accent)" stroke="var(--panel)" stroke-width="1.6"/>'+
+        '<rect class="ring" x="'+f1(x1-12)+'" y="'+f1(yy-12)+'" width="24" height="24" rx="6" stroke-width="2.5"/>'+
+        txt(x1-10, yy-8, 'y = '+fm(q.guess)+' m'+(q.locked ? '' : '  ↕ drag'), {a:'end', fs:12.5, c:'var(--accent)', w:600, halo:1})+'</g>';
+    } else {
+      var xw=X(q.d), ty=Y(q.H);
+      [['over', 'clears it', ty-28], ['hit', 'hits it', Math.min(SY0-14, ty+26)]].forEach(function(o){
+        var k=o[0], on=q.pick===k, col = q.marked ? (k===q.ans ? 'var(--good)' : on ? 'var(--bad)' : '') : on ? 'var(--accent)' : '', w=86, xx=xw-w-14;
+        g+='<g class="pick'+(q.locked?' locked':'')+'" data-pick="'+k+'" tabindex="0" role="button" aria-pressed="'+on+'" aria-label="It '+o[1]+(on?', your choice':'')+(q.marked && k===q.ans?', right':'')+'">'+
+          '<rect x="'+f1(xx)+'" y="'+f1(o[2]-14)+'" width="'+w+'" height="26" rx="13" fill="var(--panel)" stroke="'+(col||'var(--ink-faint)')+'" stroke-width="'+(col?2.6:1.4)+'"'+(col?'':' stroke-dasharray="4 3"')+'/>'+
+          '<rect class="ring" x="'+f1(xx-3)+'" y="'+f1(o[2]-17)+'" width="'+(w+6)+'" height="32" rx="16" stroke-width="2.5"/>'+
+          txt(xx+w/2, o[2]+4, (q.marked && (k===q.ans||on) ? (k===q.ans?'✓ ':'✗ ') : '')+o[1], {a:'middle', fs:12.5, w:600, c:col||'var(--ink)'})+'</g>';
+      });
+    }
+    setKeepFocus($('#pl-picks'), g);
+  }
+  function qMark(){
+    var q=Q, m=M[0], why;
+    if(q.kind==='land'){
+      q.ok=Math.abs(q.guess-q.ans)<=Math.max(0.03*q.ans, q.snap/2+1e-9);
+      q.verdict=(q.ok?'✓ ':'✗ ')+'it lands '+fm(q.ans)+' m away';
+      why=(q.ok ? '✓ Correct: ' : '✗ Your flag is at '+fm(q.guess)+' m; ')+'it lands '+fm(q.ans)+' m from the launch point. '+
+        (q.th===0 ? 'Vertically it starts at rest and falls '+fm(q.h)+' m, which takes t = '+fm(m.tF)+' s; horizontally it keeps '+fm(q.u)+' m s⁻¹ all the way, so s = u<sub>x</sub>t = '+fm(q.u)+' × '+fm(m.tF)+' = '+fm(q.ans)+' m.'
+          : 'Resolve: u<sub>x</sub> = '+fm(m.ux)+' m s⁻¹ and u<sub>y</sub> = '+fm(m.uy)+' m s⁻¹. The vertical motion gives the time of flight, '+fm(m.tF)+' s; the horizontal velocity does not change, so s = u<sub>x</sub>t = '+fm(q.ans)+' m.');
+    } else if(q.kind==='top'){
+      q.ok=Math.abs(q.guess-q.ans)<=Math.max(0.03*q.ans, q.snap/2+1e-9);
+      q.verdict=(q.ok?'✓ ':'✗ ')+'highest point '+fm(q.ans)+' m';
+      var rise=q.ans-q.h;
+      why=(q.ok ? '✓ Correct: ' : '✗ Your line is at '+fm(q.guess)+' m; ')+'it rises to '+fm(q.ans)+' m above the ground. At the top v<sub>y</sub> = 0, and u<sub>y</sub> = '+fm(q.u)+' sin '+q.th+'° = '+fm(m.uy)+' m s⁻¹, so v² = u² + 2as gives a rise of [['+fm(m.uy)+'²|2 × '+q.g+']] = '+fm(rise)+' m'+(q.h>0 ? ', plus the '+fm(q.h)+' m it started at.' : '.')+' Only the vertical component matters for the height.';
+    } else {
+      q.ok=q.pick===q.ans;
+      q.verdict=(q.ok?'✓ ':'✗ ')+(q.clears ? 'it clears the '+q.what : 'it hits the '+q.what);
+      why=(q.ok?'✓ Correct: ':'✗ Not this time: ')+'it reaches the '+q.what+' after t = [[d|u<sub>x</sub>]] = [['+fm(q.d)+'|'+fm(m.ux)+']] = '+fm(q.tw)+' s, when its height is '+fm(q.yw)+' m'+
+        ', '+(q.clears ? 'above' : 'below')+' the top at '+fm(q.H)+' m, so it '+(q.clears ? 'clears it.' : 'hits it.');
+    }
+    q.why=why; q.marked=true; draw();
+  }
+  function qReadings(){
+    var q=Q, note, launch=q.th===0 ? 'horizontally at '+fm(q.u)+' m s⁻¹' : 'at '+fm(q.u)+' m s⁻¹, '+q.th+'° above the horizontal';
+    var from=q.h>0 ? 'from '+fm(q.h)+' m above the ground' : 'from the ground';
+    if(q.marked) note=q.why;
+    else if(running) note='Watch it fly: the horizontal velocity stays the same, the vertical velocity changes by '+q.g+' m s⁻¹ every second.';
+    else if(q.kind==='land') note='A ball is launched '+launch+', '+from+' (g = '+q.g+' m s⁻², no air resistance). Work out how far away it lands, and drag the flag there (or use the arrow keys). Then press <b>Launch</b>.';
+    else if(q.kind==='top') note='A ball is launched '+launch+', '+from+' (g = '+q.g+' m s⁻², no air resistance). Work out the greatest height it reaches above the ground, and drag the line there (or use the arrow keys). Then press <b>Launch</b>.';
+    else note='A ball is launched '+launch+', '+from+' (g = '+q.g+' m s⁻²). A '+q.what+' of height H = '+fm(q.H)+' m stands d = '+fm(q.d)+' m away. Does the ball clear it? Click your answer, then press <b>Launch</b>.';
+    if(note!==lastNote){ $('#pl-note').innerHTML=FR(note); lastNote=note; }
+    $('#pl-go').innerHTML = running ? '&#10074;&#10074; Pause' : (q.marked ? '&#9654; Launch again' : '&#9654; Launch');
+    $('#pl-new').disabled=running; $('#pl-working').hidden=!q.marked; $('.graphs').hidden=!q.marked;
+    if(q.marked) working();
+    if(q.marked && q.kind==='wall' && !$('#pl-eqs').querySelector('[data-w]')){ var box=$('#pl-eqs'), m=M[0];
+      box.insertAdjacentHTML('afterbegin','<div data-w="1"><div class="eq-title">Height when it reaches the '+q.what+'</div><div class="eq">'+FR('t = [[d|u<sub>x</sub>]]<br>t = [['+fm(q.d)+'|'+fm(m.ux)+']]<br>t = '+fm(q.tw)+' s<br>y = h₀ + u<sub>y</sub>t − ½gt²<br>y = '+fm(q.h)+' + '+fm(m.uy)+' × '+fm(q.tw)+' − ½ × '+q.g+' × '+fm(q.tw)+'²<br>y = <b>'+fm(q.yw)+' m</b>')+'</div></div>');
+      alignEquals(box.querySelector('[data-w] .eq')); }
+  }
+  function qGo(){
+    var q=Q; if(!q) return;
+    if(running){ stop(); draw(); return; }
+    if(!q.locked){
+      if(q.kind==='wall' && !q.pick){ $('#pl-note').innerHTML='Click <b>clears it</b> or <b>hits it</b> first, then press <b>Launch</b>.'; lastNote=''; return; }
+      q.locked=true;
+    }
+    if(done()) t=0; started=true; running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw();
+  }
+  function qSet(v){ var q=Q, top=q.kind==='top', lim=top ? q.yv : q.xv; v=Math.round(Math.max(0, Math.min(lim, v))/q.snap)*q.snap; v=+v.toFixed(3); if(v!==q.guess){ q.guess=v; draw(); } }
+  function qDown(e){ var q=Q; if(!q || q.locked || running || q.kind==='wall') return; var p=svgPt(e);
+    qGrab=true; try{ svgEl.setPointerCapture(e.pointerId); }catch(_){} svgEl.classList.add('dragging'); e.preventDefault();
+    qSet(q.kind==='top' ? (SY0-p.y)/sc : (p.x-SX0)/sc); }
+  function qMove(e){ if(!qGrab) return; var p=svgPt(e); qSet(Q.kind==='top' ? (SY0-p.y)/sc : (p.x-SX0)/sc); }
+  function setQM(on){
+    if(on===QM) return;
+    $('#pl-tab').querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', String((b.dataset.v==='predict')===on)); });
+    stop();
+    if(on){ if(expOn()) $('#pl-exp').setAttribute('aria-pressed','false'); qSaved={PJ:JSON.parse(JSON.stringify(PJ)), sel:sel, grav:grav, drag:drag}; QM=true; }
+    else { QM=false; Q=null; PJ=qSaved.PJ; sel=qSaved.sel; grav=qSaved.grav; drag=qSaved.drag; $('#pl-picks').innerHTML=''; syncSliders(); }
+    ['#pl-play','#pl-reset','#pl-exp','#pl-comp','#pl-mark','#pl-pctl','.side .sliders','.side .cgrid','.graph-row','.graphs .hint','.tbl-wrap','.time-row'].forEach(function(sel_){ var el=$(sel_); if(el) el.hidden=on; });
+    var tryRow=$('#pl-pre').parentNode; tryRow.hidden=on;
+    $('#pl-go').hidden=!on; $('#pl-new').hidden=!on; $('#pl-q').hidden=!on; $('#pl-working').hidden=on;
+    svgEl.classList.toggle('qdrag', on);
+    lastNote='';
+    if(on) newQ(); else { $('#pl-working').hidden=false; $('.graphs').hidden=false; changed(); }
+  }
+  $('#pl-tab').addEventListener('click', function(e){ var b=e.target.closest('button'); if(b) setQM(b.dataset.v==='predict'); });
+  $('#pl-kind').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return;
+    Array.prototype.forEach.call(this.children, function(x){ x.setAttribute('aria-pressed', String(x===b)); }); qKind=b.dataset.v; stop(); newQ(); });
+  $('#pl-go').addEventListener('click', qGo);
+  $('#pl-new').addEventListener('click', function(){ stop(); newQ(); });
+  svgEl.addEventListener('keydown', function(e){
+    if(!QM || !Q || Q.locked) return; var tg=e.target.closest && e.target.closest('.pick'); if(!tg) return; var k=tg.getAttribute('data-pick');
+    if(k!=='flag' && k!=='hline') return;
+    var d = (k==='flag' ? (e.key==='ArrowRight' ? 1 : e.key==='ArrowLeft' ? -1 : 0) : (e.key==='ArrowUp' ? 1 : e.key==='ArrowDown' ? -1 : 0))*(e.shiftKey ? 10 : 1);
+    if(d){ qSet(Q.guess+d*Q.snap); e.preventDefault(); }
+  });
+  onPick(svgEl, function(k){ if(!QM || !Q || Q.kind!=='wall' || Q.locked) return; Q.pick=k; qPicks(); });
+
   syncSliders(); reset();
+  if(/[?&]show=predict\b/.test(location.search)) setQM(true);
 
   // in a workout frame, tell the parent page how tall this is
   if(EMBED && window.parent!==window){
