@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shoot the Monkey Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Fire a dart rifle from the shoulder at a monkey that lets go: aimed straight at it, at any angle or horizontally, both fall ½gt², so it still hits. Set the angle yourself to see it miss.">
+<meta name="description" content="Interactive physics animation. Fire a dart rifle from the shoulder at a monkey that lets go: aimed straight at it, at any angle or horizontally, both fall ½gt², so it still hits. Set the angle yourself to see it miss, or try the questions: hit or miss, and how far the monkey falls.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -127,6 +127,11 @@
   .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
   .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;white-space:nowrap;}
   #sm-svg.dragging,#sm-svg.dragging *{cursor:grabbing;}
+  /* Questions (?show=predict) */
+  #sm-svg .pick{cursor:pointer;} #sm-svg .pick:focus{outline:none;} #sm-svg .pick .ring{fill:none;stroke:transparent;} #sm-svg .pick:focus-visible .ring{stroke:var(--accent);}
+  #sm-svg .pick .hit{fill:transparent;} #sm-svg .pick.locked{cursor:default;}
+  .qbox{display:flex;flex-direction:column;gap:10px;}
+  #sm-kind{display:flex;flex-wrap:wrap;} #sm-kind>button{flex:0 1 auto;padding-inline:10px;}
   .lab output{color:var(--ink);font-weight:600;text-align:right;}
   input[type=range]{width:100%;accent-color:var(--forces);min-height:28px;}
   .seg{display:flex;flex-wrap:wrap;gap:6px;}
@@ -287,13 +292,16 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="sm-svg" viewBox="0 0 600 330" role="img" aria-label="A zookeeper fires a dart rifle from the shoulder at a monkey hanging from a branch. When the dart is fired the monkey lets go, and both fall under gravity."></svg>
+      <svg class="view" id="sm-svg" viewBox="0 0 600 330" role="img" aria-label="A zookeeper fires a dart rifle from the shoulder at a monkey hanging from a branch. When the dart is fired the monkey lets go, and both fall under gravity."><g id="sm-main"></g><g id="sm-picks"></g></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="sm-play" type="button">&#9654; Fire</button>
           <button class="btn" id="sm-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="sm-slow" type="button" aria-pressed="false">Slow motion</button>
           <button class="btn" id="sm-strobe" type="button" aria-pressed="false" title="Show where the dart and the monkey were at equal time intervals">Strobe</button>
+          <button class="btn btn-primary" id="sm-go" type="button" hidden>&#9654; Fire</button>
+          <button class="btn" id="sm-new" type="button" hidden>New question</button>
+          <button class="btn to-q" type="button" data-mode="sm-tab" hidden>Try the questions &rarr;</button>
         </div>
         <div class="sliders">
           <div>
@@ -331,7 +339,12 @@
       </div>
     </div>
     <div class="side">
-      <div class="cgrid">
+      <div class="seg tabs mode" id="sm-tab" role="group" aria-label="Explore or questions"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
+      <div class="qbox" id="sm-q" hidden>
+        <div><span class="lab" id="sm-klab">Questions on</span>
+        <div class="seg" id="sm-kind" role="group" aria-labelledby="sm-klab"><button type="button" data-v="mix" aria-pressed="true">Mixed</button><button type="button" data-v="hit" aria-pressed="false">Hit or miss?</button><button type="button" data-v="fall" aria-pressed="false">How far does it fall?</button></div></div>
+      </div>
+      <div class="cgrid" id="sm-cg">
         <span class="rowlab">Gravity</span>
         <div class="seg" id="sm-g"></div>
         <span class="rowlab">Aim</span>
@@ -527,7 +540,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   // fit the monkey, the rifle and (up to a point) the top of the dart's path into the picture
   function scale(D,H,h0,u,th,g){
     var apex = g>0 && th>0 ? h0+Math.pow(u*Math.sin(th),2)/(2*g) : h0;
-    return Math.min((VW-X0-50)/D, 250/Math.max(H+1, Math.min(apex, 1.6*(H+1)), 3));
+    var room = QM && Q && Q.kind==='hit' ? (narrowQ.matches ? 140 : 172) : 250;   // leave the top clear for a question's answers
+    return Math.min((VW-X0-50)/D, room/Math.max(H+1, Math.min(apex, 1.6*(H+1)), 3));
   }
   function px(x){ return X0+x*P.s; }
   function py(y){ return GROUND-y*P.s; }
@@ -562,7 +576,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var bw=Math.max(2.6,0.075*k);
     g+=tube(X(sx-0.04*c),Y(SH-0.04*s),X(sx+0.3*c),Y(SH+0.3*s),bw*1.5,'var(--wood-s)','var(--wood-t)');
     g+=tube(X(sx+0.25*c),Y(SH+0.25*s),X(0),Y(P.h0-CLIFF),bw,'var(--steel-sh)','var(--steel-hi)');
-    g+=txt(fx,CLIFF>0 ? Y(SH+0.62)-6 : GROUND+GD+15,'zookeeper',{a:'middle',fs:12,halo:CLIFF>0?1:0});
+    if(CLIFF>0 && QM) g+=txt(X(0.15)+8,Y(0.9),'zookeeper',{fs:12,halo:1});   // a question prompt sits at the top left
+    else g+=txt(CLIFF>0 ? fx : Math.max(fx,36),CLIFF>0 ? Y(SH+0.62)-6 : GROUND+GD+15,'zookeeper',{a:'middle',fs:12,halo:CLIFF>0?1:0});
     return g;
   }
   function dartSVG(x, y, vx, vy, col){
@@ -585,7 +600,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     g+='<line x1="'+X0+'" y1="'+py(P.h0).toFixed(1)+'" x2="'+mx+'" y2="'+aimY.toFixed(1)+'" stroke="var(--ink-faint)" stroke-width="1.5" stroke-dasharray="6 5"/>';
     g+=txt((X0+mx)/2,(py(P.h0)+aimY)/2-10-Math.min(26,Math.abs(aimY-py(P.h0))/(mx-X0)*32),'aim line',{a:'middle',fs:12,halo:1});
     // distance and height labels
-    g+=txt((X0+mx)/2,GROUND+GD+15,'D = '+n3(P.D)+' m',{a:'middle',fs:12.5,c:'var(--ink)'});
+    var dl='D = '+n3(P.D)+' m';
+    g+=txt(Math.max((X0+mx)/2, X0+42+dl.length*3.9),GROUND+GD+15,dl,{a:'middle',fs:12.5,c:'var(--ink)'});   // clear of the zookeeper's label
     g+='<line x1="'+(mx-26)+'" x2="'+(mx-26)+'" y1="'+my0+'" y2="'+GROUND+'" stroke="var(--ink-faint)" stroke-width="1"/>';
     g+=txt(mx-31,(my0+GROUND)/2+4,'H = '+n3(P.H)+' m',{a:'end',fs:12.5,c:'var(--ink)',halo:1});
     // strobe: where the dart and monkey were at equal time steps, and how far each has fallen below its no-gravity position
@@ -631,8 +647,10 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       else g+='<text x="'+mx+'" y="'+(m.y<=0 ? py(0)-40 : py(m.y)+42)+'" text-anchor="middle" font-size="14" font-weight="600" fill="var(--bad)">miss</text>';
     }
     g+=txt(10,18,'g = '+n3(P.g)+' m s⁻² ('+grav.name+')',{fs:12.5});
-    if(running && slowOn()) g+=txt(10,35,'slow motion',{fs:12.5,c:'var(--accent)'});
-    $('#sm-svg').innerHTML=g;
+    if(running && slowOn()) g+=QM ? txt(VW-10,35,'slow motion',{a:'end',fs:12.5,c:'var(--accent)'}) : txt(10,35,'slow motion',{fs:12.5,c:'var(--accent)'});
+    if(QM && Q) g+=qOverlay();
+    $('#sm-main').innerHTML=g;
+    if(QM) qPicks(); else if($('#sm-picks').firstChild) $('#sm-picks').innerHTML='';
     readings();
   }
 
@@ -674,6 +692,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     else if(letsGo) note='Miss: the dart lands before it reaches the tree.';
     else note='Miss. The monkey held on, so it stayed at '+n3(P.H)+' m while the dart fell ½gt² below its aim line. '+(reach?'It passes '+ab(P.gap)+' the monkey.':'It lands before it gets there.')+(P.aimed?' Aiming straight at the monkey only works because the monkey falls too.':'');
     if(started && !running && !done && t>0) note='Paused. '+note;
+    if(QM && Q) note=qNote(note, done);
     if(note!==lastNote){ $('#sm-note').innerHTML=note; lastNote=note; }
     playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : (started && !done ? '&#9654; Play' : '&#9654; Fire');
   }
@@ -717,7 +736,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     if(!running) return;
     var real=Math.min(0.05,(now-last)/1000); last=now;
     t=Math.min(P.tEnd, t+real*PLAYBACK*(slowOn()?0.3:1));
-    if(t>=P.tEnd) stop();
+    if(t>=P.tEnd){ stop(); if(QM && Q && !Q.marked){ Q.marked=true; qMark(); } }
     draw(); if(running) raf=requestAnimationFrame(frame);
   }
   function run(){
@@ -757,6 +776,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function svgPt(e){ var q=svgEl.createSVGPoint(); q.x=e.clientX; q.y=e.clientY; return q.matrixTransform(svgEl.getScreenCTM().inverse()); }
   function setRange(el, v){ v=Math.max(+el.min, Math.min(+el.max, Math.round(v*2)/2)); if(+el.value!==v){ el.value=v; reset(); } }
   svgEl.addEventListener('pointerdown', function(e){
+    if(QM){ qDown(e); return; }
     var q=svgPt(e), mx=px(P.D), my=py(monkeyAt(0).y);
     var kx=px(-RL-0.12), ktop=py(CLIFF+SH+0.4), kfoot=py(CLIFF);
     if(Math.abs(q.x-mx)<26 && q.y>my-36 && q.y<my+26) drag={el:hIn, off:q.y-my, offx:q.x-mx, monkey:true};
@@ -765,6 +785,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     dragScale=P.s; svgEl.setPointerCapture(e.pointerId); svgEl.classList.add('dragging'); e.preventDefault();
   });
   svgEl.addEventListener('pointermove', function(e){
+    if(QM){ qMove(e); return; }
     if(drag){ var q=svgPt(e);
       if(drag.monkey){ var D=Math.max(+dIn.min, Math.min(+dIn.max, Math.floor((VW-40-X0)/dragScale), Math.round((q.x-drag.offx-X0)/dragScale))); if(+dIn.value!==D){ dIn.value=D; reset(); } }
       setRange(drag.el, (GROUND-(q.y-drag.off))/dragScale); return; }
@@ -773,12 +794,141 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var over=(Math.abs(q.x-mx)<26 && q.y>my-36 && q.y<my+26) || (Math.abs(q.x-kx)<30 && q.y>py(CLIFF+SH+0.4)-14 && q.y<py(CLIFF)+10);
     svgEl.style.cursor = over ? 'grab' : '';
   });
-  function endDrag(){ if(!drag) return; drag=null; dragScale=0; svgEl.classList.remove('dragging'); reset(); }
+  function endDrag(){ if(qGrab){ qGrab=false; svgEl.classList.remove('dragging'); } if(!drag) return; drag=null; dragScale=0; svgEl.classList.remove('dragging'); reset(); }
   svgEl.addEventListener('pointerup', endDrag); svgEl.addEventListener('pointercancel', endDrag);
 
   ['#sm-eq1','#sm-eq2','#sm-eq3'].forEach(function(s){ watchEquals($(s)); });
   mark(gEl,'g',grav.id);
   reset();
+  // ---- Questions (?show=predict; TODO 8l, 14 Nov 2026). From the IAL Past Paper Index: 6PH01 June 2014 Q18 (the ball fired at the falling
+  // monkey: complete the paths, the horizontal distance, how far the monkey falls before the ball meets it, projected at 20°), with the
+  // index's projectile rows (WPH11, 8PH0) for the numbers; the IB Physics Question Index has the same idea in its "both fall the same"
+  // questions (P1 HL May 2007 TZ2 Q12, Nov 2012 Q6).
+  //   Hit or miss? a dealt shot (aimed at the monkey or above or below it, a horizontal shot from a cliff, too slow; the monkey lets go or
+  //     holds on): click hits, passes above or passes below, then Fire.
+  //   How far does it fall? aimed straight at it: drag a line down the tree to where the dart meets the monkey, then Fire.
+  var QM=false, Q=null, qKind='mix', qLast='', qSaved=null, qGrab=false;
+  function rpick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function rstep(lo, hi, st){ var n=Math.round((hi-lo)/st); return +(lo+st*Math.floor(Math.random()*(n+1))).toFixed(2); }
+  function applyQ(q){
+    uIn.value=q.u; dIn.value=q.D; hIn.value=q.H; zIn.value=q.Z; grav=GRAV[0]; mark(gEl,'g',grav.id);
+    letsGo=q.go; mark(mEl,'m',q.go?'go':'hold');
+    lockBtn.setAttribute('aria-pressed','true'); stop(); started=false; t=0; setup();
+    if(q.up){ aIn.value=(Math.round((P.th*180/Math.PI+q.up)*2)/2).toFixed(1); lockBtn.setAttribute('aria-pressed','false'); setup(); }
+  }
+  function outcome(){ return P.hit ? 'hit' : (P.tHit<P.tDG && P.yd>0 && P.gap>0) ? 'above' : 'below'; }
+  function genQ(kind){
+    for(var n=0;n<300;n++){
+      var q={kind:kind, D:rstep(15,30,1), H:rstep(6,14,0.5), u:rstep(18,35,0.5), Z:0, go:true, up:0, flat:false, slow:false};
+      if(kind==='hit'){
+        var sc=rpick(['at','at','hold','above','below','flat','flatHold','slow']);
+        if(sc==='hold') q.go=false;
+        if(sc==='above') q.up=rpick([3,4,5,6]);
+        if(sc==='below') q.up=-rpick([3,4,5]);
+        if(sc==='flat' || sc==='flatHold'){ q.flat=true; q.Z=q.H-SH; if(sc==='flatHold') q.go=false; }
+        if(sc==='slow'){ q.slow=true; q.u=rstep(6,10,0.5); q.D=rstep(22,30,1); }
+        q.sc=sc;
+      }
+      applyQ(q);
+      if(q.flat && Math.abs(P.th)>0.004) continue;
+      var o=outcome();
+      if(kind==='hit'){ if(o!=='hit' && Math.abs(P.gap)<0.6 && !(q.slow)) continue; if(q.sc==='at' && o!=='hit') continue; if(q.slow && o==='hit') continue; q.ans=o; }
+      else { if(o!=='hit' || q.Z>0) continue; q.ans=0.5*P.g*P.tHit*P.tHit; if(q.ans<0.4) continue; q.guess=0; }
+      q.th=P.th*180/Math.PI;
+      q.sig=kind+q.D+'/'+q.H+'/'+q.u+'/'+q.up+q.go;
+      if(q.sig!==qLast) return q;
+    }
+    return q;
+  }
+  function newQ(){
+    var k=qKind==='mix' ? rpick(['hit','hit','fall']) : qKind;
+    Q=genQ(k); qLast=Q.sig; Q.pick=null; Q.locked=false; Q.marked=false; lastNote='';
+    applyQ(Q); $('#sm-picks').innerHTML=''; $('#sm-working').hidden=true; draw();
+  }
+  function fm(x){ return n3(+(+x).toPrecision(3)); }
+  function aimWords(q){ return q.flat ? 'horizontally, from the edge of a '+fm(q.Z)+' m wall so that the muzzle is level with the monkey' : q.up>0 ? 'at an angle '+q.up+'° above the line to the monkey' : q.up<0 ? 'at an angle '+(-q.up)+'° below the line to the monkey' : 'straight at the monkey'; }
+  function qNote(note, done){
+    var q=Q, P_=P;
+    if(q.marked) return q.kind==='fall' ? q.verdict : q.verdict+'. '+note;
+    if(started && !done) return note;
+    var set='The zookeeper fires a dart at '+fm(q.u)+' m s⁻¹ '+aimWords(q)+(q.flat ? '' : ' (θ = '+sn(q.th,1)+'°)')+'. The monkey hangs H = '+fm(q.H)+' m up, D = '+fm(q.D)+' m away, and '+(q.go ? 'lets go the moment the dart is fired.' : 'holds on to the branch.');
+    if(q.kind==='hit') return set+' Does the dart hit? Click your answer in the picture, then press <b>Fire</b>.';
+    return set+' How far has the monkey fallen when the dart reaches it? Drag the line on the tree (or use the arrow keys), then press <b>Fire</b>.';
+  }
+  function qOverlay(){
+    var q=Q, s=q.marked ? (q.ok ? '✓ ' : '✗ ')+(q.kind==='hit' ? (q.ans==='hit' ? 'it hits' : q.ans==='above' ? 'it passes above' : 'it passes below') : 'it falls '+fm(0.5*P.g*P.ttW*P.ttW)+' m') : q.kind==='hit' ? 'Hit or miss?' : 'How far does it fall?';
+    return txt(10, 40, s, {fs:13, w:600, c:q.marked ? (q.ok ? 'var(--good)' : 'var(--bad)') : 'var(--ink)', halo:1});
+  }
+  function qPicks(){
+    var q=Q, g='';
+    if(q.kind==='hit'){
+      var opts=[['hit','it hits'],['above','passes above'],['below','passes below or lands short']], x=10, y=68, tall=narrowQ.matches;
+      opts.forEach(function(o, i){ var k=o[0], on=q.pick===k, col=q.marked ? (k===q.ans ? 'var(--good)' : on ? 'var(--bad)' : '') : on ? 'var(--accent)' : '';
+        var lab=(q.marked && (k===q.ans || on) ? (k===q.ans ? '✓ ' : '✗ ') : '')+o[1], w=lab.length*7.6+22;
+        if(!tall && i>0 && x+w>VW-10){ x=10; y+=34; }
+        g+='<g class="pick'+(q.locked?' locked':'')+'" data-pick="'+k+'" tabindex="0" role="button" aria-pressed="'+on+'" aria-label="The dart '+o[1]+(on?', your choice':'')+'">'+
+          '<rect x="'+f1(x)+'" y="'+f1(y-15)+'" width="'+f1(w)+'" height="26" rx="13" fill="var(--panel)" stroke="'+(col||'var(--ink-faint)')+'" stroke-width="'+(col?2.6:1.4)+'"'+(col?'':' stroke-dasharray="4 3"')+'/>'+
+          '<rect class="ring" x="'+f1(x-3)+'" y="'+f1(y-18)+'" width="'+f1(w+6)+'" height="32" rx="16" stroke-width="2.5"/>'+
+          txt(x+w/2, y+3, lab, {a:'middle', fs:12.5, w:600, c:col||'var(--ink)'})+'</g>';
+        if(tall) y+=32; else x+=w+8; });
+    } else {
+      var mx=px(P.D), yy=py(P.H-q.guess), x0=mx-70, x1=Math.min(VW-4, mx+46), aimAt0=py(P.h0+Math.tan(P.th)*(P.D-70/P.s)), ly=aimAt0>yy ? yy-8 : yy+17;
+      g+='<g class="pick'+(q.locked?' locked':'')+'" data-pick="fall" tabindex="0" role="slider" aria-label="How far the monkey falls" aria-valuenow="'+q.guess+'" aria-valuetext="'+fm(q.guess)+' m">'+
+        '<rect class="hit" x="'+f1(x0)+'" y="'+f1(yy-10)+'" width="'+f1(x1-x0)+'" height="20"/>'+
+        ln(x0, yy, x1, yy, q.marked ? (q.ok ? 'var(--good)' : 'var(--bad)') : 'var(--accent)', 2, ' stroke-dasharray="7 4"')+
+        '<circle cx="'+f1(x0)+'" cy="'+f1(yy)+'" r="6" fill="var(--accent)" stroke="var(--panel)" stroke-width="1.6"/>'+
+        '<rect class="ring" x="'+f1(x0-12)+'" y="'+f1(yy-12)+'" width="24" height="24" rx="6" stroke-width="2.5"/>'+
+        txt(x0-4, ly, 'falls '+fm(q.guess)+' m'+(q.locked?'':' ↕'), {a:'end', fs:12.5, w:600, c:'var(--accent)', halo:1})+'</g>';
+    }
+    setKeepFocus($('#sm-picks'), g);
+  }
+  function qMark(){
+    var q=Q;
+    if(q.kind==='hit') q.ok=q.pick===q.ans;
+    else q.ok=Math.abs(q.guess-q.ans)<=Math.max(0.04*q.ans, 0.05+1e-9);
+    var shown=fm(0.5*P.g*P.ttW*P.ttW);   // worked from t to 3 significant figures, as in Show working
+    q.verdict = q.kind==='hit' ? (q.ok ? '✓ Correct' : '✗ Not this time') : (q.ok ? '✓ Correct: it falls '+shown+' m' : '✗ Your line says '+fm(q.guess)+' m; it falls '+shown+' m');
+    if(q.kind==='fall') q.verdict+='. The dart takes t = [[D|u cos θ]] = [['+fm(P.D)+'|'+fm(P.u)+' × cos '+sn(P.th*180/Math.PI,1)+'°]] = '+fm(P.ttW)+' s to reach the tree, and in that time the monkey falls ½gt² = ½ × '+n3(P.g)+' × '+fm(P.ttW)+'² = '+shown+' m. The dart falls the same distance below the aim line, so it meets the monkey.';
+    q.verdict=FR(q.verdict);
+    $('#sm-working').hidden=false; lastNote=''; draw();
+  }
+  function qGo(){
+    var q=Q; if(!q) return;
+    if(running){ stop(); draw(); return; }
+    if(!q.locked){
+      if(q.kind==='hit' && !q.pick){ $('#sm-note').innerHTML='Click <b>it hits</b>, <b>passes above</b> or <b>passes below</b> in the picture first, then press <b>Fire</b>.'; lastNote=''; return; }
+      q.locked=true; qPicks();
+    }
+    run();
+  }
+  function qSet(v){ var q=Q; v=Math.round(Math.max(0, Math.min(P.H, v))/0.05)*0.05; v=+v.toFixed(2); if(v!==q.guess){ q.guess=v; draw(); } }
+  function qDown(e){ var q=Q; if(!q || q.kind!=='fall' || q.locked || running) return; var p=svgPt(e);
+    qGrab=true; try{ svgEl.setPointerCapture(e.pointerId); }catch(_){} svgEl.classList.add('dragging'); e.preventDefault(); qSet(P.H-(GROUND-p.y)/P.s); }
+  function qMove(e){ if(!qGrab) return; var p=svgPt(e); qSet(P.H-(GROUND-p.y)/P.s); }
+  function setQM(on){
+    if(on===QM) return;
+    $('#sm-tab').querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', String((b.dataset.v==='predict')===on)); });
+    stop();
+    if(on){ qSaved={u:uIn.value, d:dIn.value, h:hIn.value, z:zIn.value, a:aIn.value, lock:locked(), go:letsGo, g:grav}; QM=true; }
+    else { QM=false; Q=null; uIn.value=qSaved.u; dIn.value=qSaved.d; hIn.value=qSaved.h; zIn.value=qSaved.z; aIn.value=qSaved.a; lockBtn.setAttribute('aria-pressed', String(qSaved.lock));
+      letsGo=qSaved.go; mark(mEl,'m',letsGo?'go':'hold'); grav=qSaved.g; mark(gEl,'g',grav.id); $('#sm-picks').innerHTML=''; }
+    ['#sm-play','#sm-reset','.sliders','#sm-cg','.stats'].forEach(function(sel_){ var el=$(sel_); if(el) el.hidden=on; });
+    $('#sm-go').hidden=!on; $('#sm-new').hidden=!on; $('#sm-q').hidden=!on; $('#sm-working').hidden=on;
+    lastNote='';
+    if(on) newQ(); else reset();
+  }
+  $('#sm-tab').addEventListener('click', function(e){ var b=e.target.closest('button'); if(b) setQM(b.dataset.v==='predict'); });
+  $('#sm-kind').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return;
+    Array.prototype.forEach.call(this.children, function(x){ x.setAttribute('aria-pressed', String(x===b)); }); qKind=b.dataset.v; stop(); newQ(); });
+  $('#sm-go').addEventListener('click', qGo);
+  $('#sm-new').addEventListener('click', function(){ stop(); newQ(); });
+  svgEl.addEventListener('keydown', function(e){
+    if(!QM || !Q || Q.locked || Q.kind!=='fall') return; var tg=e.target.closest && e.target.closest('.pick'); if(!tg) return;
+    var d = e.key==='ArrowDown' ? 1 : e.key==='ArrowUp' ? -1 : 0;
+    if(d){ qSet(Q.guess+d*(e.shiftKey ? 0.5 : 0.05)); e.preventDefault(); }
+  });
+  onPick(svgEl, function(k){ if(!QM || !Q || Q.kind!=='hit' || Q.locked) return; Q.pick=k; qPicks(); });
+  if(/[?&]show=predict\b/.test(location.search)) setQM(true);
 
   // in a workout frame, tell the parent page how tall this is
   if(EMBED && window.parent!==window){
