@@ -40,6 +40,31 @@
 .slot.is-shown,.sort-item.is-shown,.match-card.is-shown,.reorder-row.is-shown,.calc-num-input.is-shown,.xw-cell.is-shown{border-style:dashed!important;border-color:var(--accent)!important;background:var(--accent-soft)!important;color:var(--ink)!important}
 .calc-show-row{grid-column:1/-1}
 .calc-show-row:has(> [hidden]){display:none}
+/* Draw on the diagram (14 Nov 2026, TODO 4e, 4f, 4g, 8k) */
+.dt-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.dt-prog{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft)}
+.dt-q{margin:0 0 8px}
+.dt-src{display:block;font-size:13px;color:var(--ink-soft);margin-top:3px}
+.dt-fig{border:1px solid var(--panel-border);border-radius:10px;background:var(--panel);overflow:hidden}
+.dt-svg{display:block;width:100%;max-width:640px;height:auto;margin:0 auto;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.dt-svg text{font-family:'IBM Plex Sans',sans-serif}
+.dt-notes{list-style:none;margin:8px 0 0;padding:0;font-size:14.5px}
+.dt-notes li{margin:3px 0;padding-left:2px}
+.dt-notes li.ok{color:var(--good)}
+.dt-notes li.no{color:var(--bad)}
+.dt.shake{animation:none}
+@media (prefers-reduced-motion:no-preference){.dt.shake .dt-fig{animation:shake .5s}}
+.mk-hit{fill:transparent;cursor:crosshair}
+.mk-svg:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.mk-x{stroke:var(--accent);stroke-width:3;fill:none;pointer-events:none}
+.dt-shown .mk-x{stroke-dasharray:4 3}
+.mk-lab{font-size:15px;font-weight:700;fill:var(--accent);pointer-events:none}
+.pt-box{fill:none;stroke:var(--ink);stroke-width:2.4}
+.pt-lab{font-size:15px;fill:var(--ink-soft)}
+.pt-p{stroke:rgba(0,0,0,.4);stroke-width:1.2}
+.pt-s{fill:var(--solid,#7a8ca8)}.pt-l{fill:var(--liquid,#3a8fd6)}.pt-g{fill:var(--gas,#e0a03a)}
+.dt-shown .pt-p{stroke-dasharray:3 2;stroke:var(--ink)}
+.pt-cur{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:4 3;pointer-events:none}
 </style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
@@ -1742,6 +1767,133 @@ function wordBox(panel,title,parts,extras){
   });
 }
 
+/* ================= Draw on the diagram (14 Nov 2026, TODO 4e, 4f, 4g, 8k) =================
+   Exam "draw on the diagram" tasks, dealt one at a time like Draw the ray: each task names the past-paper question it is modelled
+   on, Check marks it as the mark scheme does (one note per marking point), Show answer appears after a wrong Check.
+   cfg.kind gives the drawing: init(task) → state, draw(g, task, state, api), check(task, state) → {ok, notes:[[ok, text]]}, answer(task) → state.
+   Saved: which tasks are right (1) or shown (2). */
+function createDrawTasks(cfg){
+  const host=cfg.host,tasks=cfg.tasks,K=cfg.kind,NS='http://www.w3.org/2000/svg';
+  host.classList.add('dt');
+  const top=mk('div','dt-top');host.appendChild(top);const prog=mk('span','dt-prog');top.appendChild(prog);
+  const q=mk('p','dt-q');host.appendChild(q);
+  const fig=mk('div','dt-fig');host.appendChild(fig);
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('class','dt-svg');svg.setAttribute('viewBox','0 0 '+(cfg.W||600)+' '+(cfg.H||340));fig.appendChild(svg);
+  const notes=mk('ul','dt-notes');notes.setAttribute('aria-live','polite');host.appendChild(notes);
+  let status=tasks.map(()=>0),cur=0,T=null,st=null,locked=false;
+  const b=bar(host,[{label:'Check',primary:true,fn:()=>check()},{label:'Next diagram',fn:()=>go(cur+1)},{label:'Start again',fn:()=>{status=tasks.map(()=>0);go(0);saveSoon();}}]);
+  const ans=answerBtn(b,()=>{st=K.answer(T);status[cur]=Math.max(status[cur],2);locked=true;notes.innerHTML='';b.say('Answer shown (dashed). Read it through, then press Next diagram.','');render();saveSoon();});
+  const el=(tag,at,txt)=>{const e=document.createElementNS(NS,tag);for(const k in at)if(at[k]!=null)e.setAttribute(k,at[k]);if(txt!=null)e.textContent=txt;return e;};
+  const pt=ev=>{const m=svg.getScreenCTM();if(!m)return null;const p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const r=p.matrixTransform(m.inverse());return {x:r.x,y:r.y};};
+  const api={el:el,svg:svg,pt:pt,get locked(){return locked;},shown:()=>status[cur]===2,set:s=>{if(locked)return;st=s;notes.innerHTML='';b.say('','');render();},redraw:()=>render()};
+  function render(){
+    svg.innerHTML='';const g=el('g',{class:locked?(status[cur]===2?'dt-done dt-shown':'dt-done'):''});svg.appendChild(g);K.draw(g,T,st,api);
+    prog.textContent='Diagram '+(cur+1)+' of '+tasks.length+' · '+status.filter(x=>x>0).length+' done';
+  }
+  function go(i){
+    cur=(i+tasks.length)%tasks.length;T=tasks[cur];locked=status[cur]>0;st=locked?K.answer(T):K.init(T);
+    q.innerHTML=FR(T.q)+(T.src?'<span class="dt-src">Modelled on '+T.src+'</span>':'');
+    notes.innerHTML='';ans.off();
+    b.say(status[cur]===1?'Done: this one was right.':status[cur]===2?'Answer shown.':'',status[cur]===1?'good':'');
+    svg.setAttribute('aria-label',T.aria||'The diagram');render();
+  }
+  function check(){
+    if(locked){go(cur+1);return;}
+    const r=K.check(T,st);
+    notes.innerHTML=r.notes.map(n=>'<li class="'+(n[0]?'ok':'no')+'"><span aria-hidden="true">'+(n[0]?'✓':'✗')+'</span> '+FR(n[1])+'</li>').join('');
+    if(r.ok){status[cur]=1;locked=true;b.say('Correct.','good');celebrate(b.msg);ans.off();render();}
+    else{b.say('Not yet: see the notes under the diagram.','bad');ans.on();host.classList.remove('shake');void host.offsetWidth;host.classList.add('shake');}
+    saveSoon();
+  }
+  track(host,{getState:()=>({dt:1,s:status}),
+    setState:s=>{status=(s&&s.dt===1&&Array.isArray(s.s)&&s.s.length===tasks.length)?s.s.map(x=>x===1||x===2?x:0):tasks.map(()=>0);go(0);},
+    isDone:()=>status.every(x=>x>0)});
+  go(0);
+  return {go:go};
+}
+/* Draw the particles (TODO 8k, 14 Nov 2026): click in the box to add a particle, click a particle to take it away (or focus
+   the box, move the cursor with the arrow keys and press Enter). A particle dropped against another snaps to just touch it,
+   and lines up with it if it is nearly in line, so a regular pattern is easy to draw by hand. Marked as the 4PH1 mark
+   schemes do: solid touching in a regular pattern; liquid touching (or nearly) but irregular; gas far apart. */
+const PART_KIND=(function(){
+  const R=13,BX=[110,60,490,280],D=2*R;
+  const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+  function place(ps,p){
+    p=[Math.max(BX[0]+R,Math.min(BX[2]-R,p[0])),Math.max(BX[1]+R,Math.min(BX[3]-R,p[1]))];
+    let near=null,dn=1e9;ps.forEach(q=>{const d=dist(p,q);if(d<dn){dn=d;near=q;}});
+    if(near&&dn<D*1.3){   // snap to touch the nearest one, and into line with it if nearly in line
+      let ang=Math.atan2(p[1]-near[1],p[0]-near[0]);const q90=Math.round(ang/(Math.PI/2))*(Math.PI/2);if(Math.abs(ang-q90)<0.3)ang=q90;
+      p=[near[0]+D*Math.cos(ang),near[1]+D*Math.sin(ang)];
+      // in a row: line up with the row it joined
+      ps.forEach(q=>{if(Math.abs(q[1]-p[1])<5)p[1]=q[1];if(Math.abs(q[0]-p[0])<5)p[0]=q[0];});
+      if(p[0]<BX[0]+R-0.5||p[0]>BX[2]-R+0.5||p[1]<BX[1]+R-0.5||p[1]>BX[3]-R+0.5)return null;
+    }
+    if(ps.some(q=>dist(p,q)<D-1))return null;
+    return [Math.round(p[0]*10)/10,Math.round(p[1]*10)/10];
+  }
+  const touch=(a,b)=>dist(a,b)<=D*1.12;
+  function regular(ps){ // every particle on one square grid, lined up with the first
+    const o=ps[0];return ps.every(p=>{const fx=(p[0]-o[0])/D,fy=(p[1]-o[1])/D;return Math.abs(fx-Math.round(fx))<0.12&&Math.abs(fy-Math.round(fy))<0.12;});
+  }
+  const ANS={
+    s:(()=>{const a=[];for(let r=0;r<3;r++)for(let c=0;c<6;c++)a.push([BX[0]+R+4+c*D,BX[3]-R-r*D]);return a;})(),
+    l:[[124,267],[153,266],[179,265],[207,266],[263,265],[291,265],[318,266],[346,265],[372,265],[140,244],[168,240],[194,239],[221,241],[248,242],[277,241],[304,240],[334,238],[359,241],[181,215],[262,217],[290,216]],
+    g:[[150,95],[300,130],[430,90],[200,215],[380,240],[460,190],[260,260]]
+  };
+  return {
+    init:()=>({p:[],c:null}),
+    answer:t=>({p:ANS[t.state].map(x=>x.slice()),c:null}),
+    draw:function(g,t,s,api){
+      const el=api.el,svg=api.svg;
+      const base=el('g',{});base.innerHTML='<path d="M'+(BX[0]-6)+','+(BX[1]-6)+' V'+(BX[3]+6)+' H'+(BX[2]+6)+' V'+(BX[1]-6)+'" class="pt-box"/>'+(t.lab?'<text x="300" y="315" class="pt-lab" text-anchor="middle">'+t.lab+'</text>':'');g.appendChild(base);
+      g.appendChild(el('rect',{x:BX[0],y:BX[1],width:BX[2]-BX[0],height:BX[3]-BX[1],class:'mk-hit'}));
+      s.p.forEach(p=>g.appendChild(el('circle',{cx:p[0],cy:p[1],r:R-0.5,class:'pt-p pt-'+t.state})));
+      if(s.c&&!api.locked)g.appendChild(el('circle',{cx:s.c[0],cy:s.c[1],r:R,class:'pt-cur'}));
+      const tog=pt=>{const n={p:s.p.map(x=>x.slice()),c:s.c},i=n.p.findIndex(q=>dist(q,[pt.x,pt.y])<=R);
+        if(i>=0)n.p.splice(i,1);else{if(n.p.length>=40)return;const q=place(n.p,[pt.x,pt.y]);if(!q)return;n.p.push(q);}
+        api.set(n);svg.focus({preventScroll:true});};
+      svg.setAttribute('tabindex','0');svg.classList.toggle('mk-svg',!api.locked);
+      svg.onclick=api.locked?null:ev=>{const p=api.pt(ev);if(p&&p.x>=BX[0]-4&&p.x<=BX[2]+4&&p.y>=BX[1]-4&&p.y<=BX[3]+4)tog(p);};
+      svg.onkeydown=api.locked?null:ev=>{const c=s.c||[300,170];
+        if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();tog({x:c[0],y:c[1]});return;}
+        const k={ArrowLeft:[-D/2,0],ArrowRight:[D/2,0],ArrowUp:[0,-D/2],ArrowDown:[0,D/2]}[ev.key];if(!k)return;ev.preventDefault();
+        api.set({p:s.p,c:[Math.max(BX[0]+R,Math.min(BX[2]-R,c[0]+k[0])),Math.max(BX[1]+R,Math.min(BX[3]-R,c[1]+k[1]))]});svg.focus({preventScroll:true});};
+    },
+    check:function(t,s){
+      const ps=s.p,n=ps.length,notes=[];let ok=true;
+      const nb=ps.map(p=>ps.filter(q=>q!==p&&touch(p,q)).length);
+      if(t.state==='g'){
+        if(n<4){ok=false;notes.push([0,'Draw at least four particles.']);}
+        let md=1e9;ps.forEach((p,i)=>ps.forEach((q,j)=>{if(i<j)md=Math.min(md,dist(p,q));}));
+        if(n>=2&&md<D*2.2){ok=false;notes.push([0,'In a gas the particles are far apart: no two should be touching or close together.']);}
+        if(n>14){ok=false;notes.push([0,'Too many particles for a gas: most of the box is empty space.']);}
+        if(ok)notes.push([1,'Far apart, spread out at random, with mostly empty space: a gas.']);
+      } else {
+        if(n<(t.state==='s'?12:10)){ok=false;notes.push([0,'Draw at least '+(t.state==='s'?12:10)+' particles.']);}
+        else{
+          const reg=regular(ps);
+          if(t.state==='s'){
+            if(nb.some(k=>k<2)){ok=false;notes.push([0,'In a solid every particle is touching its neighbours: close-packed, with no gaps.']);}
+            if(!reg){ok=false;notes.push([0,'In a solid the particles are in a regular pattern: neat rows and columns.']);}
+            if(ok)notes.push([1,'Touching, in a regular pattern: a solid.']);
+          } else {
+            const loose=nb.filter(k=>k<1).length;
+            if(loose>Math.floor(n/8)){ok=false;notes.push([0,'In a liquid the particles are still close together: nearly all of them touch another particle.']);}
+            if(reg){ok=false;notes.push([0,'That pattern is regular, like a solid. In a liquid the particles are arranged at random, with small gaps.']);}
+            if(ok)notes.push([1,'Close together but in a random arrangement: a liquid.']);
+          }
+        }
+      }
+      return {ok:ok,notes:notes};
+    }
+  };
+})();
+const PART_TASKS_5A=[
+  {q:'Gallium is a metal. Complete the diagram to show the arrangement of the particles in <b>solid</b> gallium.',src:'4PH1/2PR May 2024 Q3(a)',state:'s',lab:'solid',aria:'An empty box to draw particles in'},
+  {q:'Complete the diagram to show the arrangement of the particles in <b>liquid</b> nitrogen.',src:'4PH1/2P Nov 2020 Q1(a)(i) and 4PH1/2PR May 2024 Q3(a)',state:'l',lab:'liquid',aria:'An empty box to draw particles in'},
+  {q:'Complete the diagram to show the arrangement of the particles in a <b>gas</b>.',src:'4PH1/2PR Jan 2021 Q1(a)(iii)',state:'g',lab:'gas',aria:'An empty box to draw particles in'}
+];
+
 /* ================= 6. PARTICLES ================= */
 {
   const cats=[{id:'s',label:'Solid',color:'--solid',soft:'--solid-soft'},{id:'l',label:'Liquid',color:'--liquid',soft:'--liquid-soft'},{id:'g',label:'Gas',color:'--gas',soft:'--gas-soft'}];
@@ -1771,6 +1923,7 @@ function wordBox(panel,title,parts,extras){
     constraints:[['a','b'],['b','c'],['c','d'],['d','e']],
     why:'Only the fastest particles escape, so the average kinetic energy, and the temperature, of the liquid left behind falls.'
   });
+  createDrawTasks({host:act('particles','Draw on the diagram','Draw the particles','Click in the box to add a particle; click a particle to take it away. A particle dropped next to another snaps to touch it. Then press Check.'),tasks:PART_TASKS_5A,kind:PART_KIND,H:330});
 }
 
 /* ================= 7. HEATING CURVE ================= */
@@ -1938,6 +2091,7 @@ function pairByTitle(t1,t2){
   const pair=mk('div','act-pair');a.parentNode.insertBefore(pair,a);pair.appendChild(a);pair.appendChild(b);
 }
 pairByTitle('Water pressing on a dam','U-tube manometer');
+pairByTitle('Why evaporation cools a liquid','Draw the particles');   // 14 Nov 2026 (TODO 8k)
 function applyTabUI(tab){
   TAB_IDS.forEach(id=>{const p=byId('panel-'+id);if(p)p.hidden=(id!==tab);});
   $$('.tab-btn:not(.tab-cp)').forEach(b=>{const on=b.dataset.tab===tab;b.classList.toggle('is-active',on);b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1;});
