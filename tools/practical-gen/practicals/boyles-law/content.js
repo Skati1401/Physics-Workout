@@ -268,7 +268,7 @@ function vGraph(label){
   body.appendChild(mk('p','sub','(b) 3 marks'));
   body.appendChild(mk('p','','Show that Asma’s results support Boyle’s law. Write your answer, then check it.'));
   const d1=mk('details','');
-  d1.innerHTML='<summary>Check your answer</summary><div><ul><li>Work out pV for each reading: 240 × 10.0, 200 × 12.0, 120 × 20.0 and 100 × 24.0.</li><li>Each gives pV = 2400 kPa cm³.</li><li>pV is constant, so p is inversely proportional to V for this fixed mass of gas at a fixed temperature: Boyle’s law.</li></ul><p class="sub">Or: plot p against 1/V and show it is a straight line through the origin.</p></div>';
+  d1.innerHTML='<summary>Check your answer</summary><div><ul><li>Work out pV for each reading: 240 × 10.0, 200 × 12.0, 120 × 20.0 and 100 × 24.0.</li><li>Each gives pV = 2400 kPa cm³.</li><li>pV is constant, so p is inversely proportional to V for this fixed mass of gas at a fixed temperature: Boyle’s law.</li></ul><p class="sub">Or: plot p against 1/V and show it is a straight line through the origin. (A straight line that misses the origin suggests a systematic error, e.g. in reading the volume.)</p></div>';
   body.appendChild(d1);
   body.appendChild(mk('p','sub','(c) 3 marks'));
   createCalc({host:body,questions:[

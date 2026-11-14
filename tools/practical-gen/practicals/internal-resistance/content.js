@@ -2,7 +2,7 @@
    Built on the CP15 model (gamma-absorption): ε = V + Ir, so V against I is a straight line, intercept ε and gradient −r.
    The Do the Experiment tab frames animations/internal-resistance.html?show=measure, whose fixed readings must match
    IR_I and IR_V below (MEAS_I and MEAS_V in the animation; tools/CORE-PRACTICALS.md, "Measure modes").
-   Not yet checked against the WPH12 mark schemes (14 Nov 2026: written without the PC); the Build tab's tasks follow
+   Mark scheme wording checked 14 Nov 2026 (TODO 5g) against WPH12 Jan 2020 Q17(b), Oct 2021 Q17, Oct 2022 Q12, Jan 2024 Q14(b)(c); WPH13 Jun 2026 Q3(a)(b)(i); the Build tab's tasks follow
    WPH12 Oct 2022 Q12(a), Jan 2024 Q14(b) and Jun 2022 Q15(b)(ii). */
 function examPart(body,head,q,bullets){
   body.appendChild(mk('p','sub',head));
@@ -55,7 +55,7 @@ const g3=v=>String(+(+v).toPrecision(3));
     {id:'f',text:'Plot V against I and draw a line of best fit.'},
     {id:'g',text:'Read ε from the intercept on the V axis and find r from the gradient (r = −gradient).'}
   ],constraints:[['a','b'],['b','c'],['c','d'],['d','e'],['e','f'],['f','g']],
-  why:'Start with the largest resistance, so the current is small at first, and take each reading with the switch closed only briefly. The graph comes once all the readings are in.'});
+  why:'Start with the variable resistor at its largest resistance, so the current is as small as possible at first and the ammeter is protected; take each reading with the switch closed only briefly. The graph comes once all the readings are in.'});
 }
 {
   const body=act('method','Match','What each piece of equipment is for','Pair each piece of equipment with its job. Drag one card onto the other, or tap one card and then the other.');
@@ -212,7 +212,7 @@ const GV={xMin:0,xMax:2,yMin:0,yMax:10,xTicks:[0,0.5,1,1.5,2],yTicks:[0,2,4,6,8,
     {id:'1',text:'Open the switch between readings, so the cell does not run down and ε stays the same',cat:'a'},
     {id:'2',text:'Take at least six readings across the whole range of current',cat:'a'},
     {id:'3',text:'Use the line of best fit, not one pair of readings',cat:'a'},
-    {id:'4',text:'Use a voltmeter with a very high resistance, so it takes almost no current',cat:'a'},
+    {id:'4',text:'Use a voltmeter with a very high resistance, so it takes almost no current',cat:'a'}, {id:'7',text:'Repeat each reading and record every current to the same number of decimal places',cat:'a'},
     {id:'5',text:'Keep a fixed resistor in series, so the rheostat is never at zero resistance',cat:'s'},
     {id:'6',text:'Never short-circuit a battery: a large current can make the wires very hot',cat:'s'}
   ]});
@@ -244,6 +244,6 @@ const GV={xMin:0,xMax:2,yMin:0,yMax:10,xTicks:[0,0.5,1,1.5,2],yTicks:[0,2,4,6,8,
     'Decrease the resistance in steps to take at least six pairs of readings over a wide range of I.',
     'Plot V against I and draw a line of best fit.',
     'ε = the intercept on the V axis (where I = 0).',
-    'r = −gradient of the line (from ε = V + Ir, so V = −rI + ε).'
+    'r = −gradient of the line: ε = V + Ir gives V = −rI + ε, which compared with y = mx + c has gradient −r and intercept ε.'
   ]);
 }

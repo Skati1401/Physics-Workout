@@ -763,8 +763,12 @@ function expKey(x, y, upLabel, downLabel){
 
   // ===== Black body radiation curves and Wien's law: λmax T = constant (IAL 5.6 Astrophysics and Cosmology, points 161 and 163; IB B.1) =====
   // The curve is Planck's law in relative units: the peak of a 5800 K black body is 100, so the peak of any other is 100 × (T/5800)⁵.
-  // The Questions kinds (where the peak of a hotter or cooler star's curve lies; T from the peak of a given curve; λmax from T, in nm)
-  // have NOT yet been checked against the IAL and IB question indexes (13 Nov 2026: the indexes could not be opened from the chat that built this page).
+  // The Questions kinds: where the peak of a hotter or cooler star's curve lies; T from the peak of a given curve; λmax from T, in nm; and (added
+  // 14 Nov 2026, TODO 7g) λmax of a star a given number of times hotter or cooler, by proportion. Checked against the IAL Past Paper Index (WPH15
+  // Jun 2021 Q15(a), Jun 2022 Q18(b)(i), Jan 2023 Q21(a)(i), Oct 2020 Q16(b), Jan 2026 Q18(a)(ii), Oct 2025 Q7, Jan 2024 Q9 and Q18(a)) and the IB
+  // Physics Question Index (P3 Nov 2017 Q18(b), May 2018 TZ1 Q16(a)(ii), Nov 2018 Q18(a)(i), May 2024 TZ2 Q17(b); P1 Nov 2017 Q28, Nov 2023 TZ2 Q22,
+  // P1A May 2025 TZ3 Q12; P1 May 2017 TZ1 Q29). Not added: IAL questions that read the peak off a graph of intensity against frequency and use
+  // c = fλ (WPH15 Oct 2022 Q16(a), Oct 2024 Q20(a)(i), Jun 2025 Q19(a)(i)): this page has no frequency axis.
   var C2=1.4388e7, XPK=4.965114;   // hc/k in nm K; hc/(λmax k T) at the peak
   var TSUN=5800, TMIN=2500, TMAX=12000, LMAX=2000, RUN_FROM=3000, RUN_TO=7500, RUN_S=9;
   var STARS={bet:{name:'Betelgeuse', T:3500}, sun:{name:'The Sun', T:5800}, sir:{name:'Sirius', T:9900}, rig:{name:'Rigel', T:12000}};
@@ -804,7 +808,7 @@ function expKey(x, y, upLabel, downLabel){
   // Experiment: a spectrometer scans the light of a mystery star; l is where the scan has got to (nm)
   var X={T:5200, pts:[], l:0, scanning:false, done:false, marked:false, ok:false, val:null};
   // Questions
-  var KINDS=['sketch','readT','calcL'];
+  var KINDS=['sketch','readT','calcL','ratio'];
   var Q={n:0, tried:0, right:0, phase:'ask', u:0, ok:false, pick:null, val:null, q:null, lastKey:''};
 
   // ---- layout: the star seen through a telescope, beside its radiation curve; on a phone the graph goes underneath
@@ -916,11 +920,17 @@ function expKey(x, y, upLabel, downLabel){
     do {
       if(kind==='sketch'){ var TX=rnd([4500,5000,5500,6000]), hot=Math.random()<0.5; q={kind:kind, TX:TX, TY:TX+(hot?1000:-1000), hot:hot}; key=kind+TX+hot; }
       else if(kind==='readT'){ var l=rnd([300,400,500,600,700,800,1000]); q={kind:kind, l:l}; key=kind+l; }
+      else if(kind==='ratio'){ var pr=rnd(RATIO); q={kind:kind, TP:pr[0], f:pr[1], lP:+sig(lmaxOf(pr[0]),3)}; key=kind+pr[0]+'x'+pr[1]; }
       else { var Tq=rnd([3000,3600,4200,4800,5800,6400,7200,8500,9700]); q={kind:kind, T:Tq}; key=kind+Tq; }
     } while(key===Q.lastKey && ++tries<8);
     Q.lastKey=key; return q;
   }
-  function qT(q){ return q.kind==='readT' ? bK()*1e9/q.l : q.T; }   // the temperature of the star in a typed question
+  function qT(q){ return q.kind==='readT' ? bK()*1e9/q.l : q.kind==='ratio' ? q.TP*q.f : q.T; }   // the temperature of the star in a typed question
+  // ratio: star P's temperature and how many times hotter star Q is (IB P1 Nov 2017 Q28: twice; Nov 2023 TZ2 Q22: a third higher; IAL Jan 2024 Q18(a))
+  var RATIO=[[3000,2],[4000,2],[5000,2],[6000,2],[4500,4/3],[6000,4/3],[3000,1.5],[6000,1.5],[8000,0.5],[6000,0.5],[9000,0.5]];
+  function fWords(f){ return f===2 ? 'twice the surface temperature of star P' : f===0.5 ? 'half the surface temperature of star P' : f===1.5 ? '1.5 times the surface temperature of star P' : 'a surface temperature a third higher than star P’s'; }
+  function fFrac(f){ return f===2 ? '[[1|2]]' : f===0.5 ? '2' : f===1.5 ? '[[2|3]]' : '[[3|4]]'; }
+  function ratioAns(q){ return q.lP/q.f; }
   function rings(q){   // sketch: four places for the peak of star Y's curve; A and B are higher than X's peak, A and C at a shorter wavelength
     var lX=lmaxOf(q.TX), lY=lmaxOf(q.TY), lm=2*lX-lY, IX=peakI(q.TX), IY=peakI(q.TY), Im=IX*IX/IY, lo=Math.min(lY,lm), hi=Math.max(lY,lm), up=Math.max(IY,Im), dn=Math.min(IY,Im);
     return {A:[lo,up], B:[hi,up], C:[lo,dn], D:[hi,dn], ans:q.hot?'A':'D', top:up};
@@ -929,6 +939,7 @@ function expKey(x, y, upLabel, downLabel){
     var q=Q.q;
     if(q.kind==='sketch') return 'The graph shows the radiation curve of star X, a black body at '+q.TX+' K. Star Y is the same size but '+(q.hot?'hotter':'cooler')+': '+q.TY+' K. Click where the peak of star Y’s curve will be (A, B, C or D), then press <b>Go</b>.';
     if(q.kind==='readT') return 'The graph shows the radiation curve of a star. Read λ<sub>max</sub> from the graph and use '+lawName()+' to work out the temperature of its surface. Type it in and press <b>Go</b>.';
+    if(q.kind==='ratio') return 'The radiation curve of star P peaks at λ<sub>max</sub> = <b>'+q.lP+' nm</b>. Star Q has '+fWords(q.f)+'. Without working out either temperature, find λ<sub>max</sub> for star Q, <b>in nm</b>. Type it in and press <b>Go</b>.';
     return 'The surface of a star is at <b>'+q.T+' K</b>. Use '+lawName()+' to work out λ<sub>max</sub>, the wavelength at the peak of its radiation curve, <b>in nm</b>. Type it in and press <b>Go</b>.';
   }
   function drawPredict(){
@@ -951,6 +962,17 @@ function expKey(x, y, upLabel, downLabel){
           +'<circle class="ring" cx="'+f1(x)+'" cy="'+f1(y)+'" r="12" fill="var(--panel)" stroke="'+col+'" stroke-width="'+(sel||st?2.4:1.4)+'" stroke-dasharray="'+(sel||st?'none':'3 3')+'"/>'
           +'<text x="'+f1(x)+'" y="'+f1(y+4.3)+'" text-anchor="middle" font-size="12.5" font-weight="700" fill="'+col+'">'+k+'</text></g>';
       });
+      PK=null;
+    } else if(q.kind==='ratio'){
+      var TQ=qT(q), Tm=Math.max(q.TP,TQ);
+      a=ax(1.12*peakI(Tm));
+      lines=[{s:'P: λmax = '+q.lP+' nm', fs:13}, {s:'Q: '+(q.f===2?'twice as hot':q.f===0.5?'half as hot':q.f===1.5?'1.5 times as hot':'a third hotter'), fs:12, c:'var(--ink)'}].concat(dn ? verdict : [{s:'Where is Q’s peak?', fs:12}]);
+      g+=starView({T:q.TP, title:'Star P', lines:lines})+frameG(a);
+      inner+=line(q.TP,a,'var(--ink)',2.4);
+      if(Q.phase!=='ask') inner+=line(q.TP+(TQ-q.TP)*Q.u,a,'var(--accent)',2.4);
+      g+=clip(inner);
+      var lpx=lmaxOf(q.TP)*1.9; g+=txt(PX(lpx)+6,PY(inten(lpx,q.TP),a)-7,'P',{fs:13,w:700,c:'var(--ink)',halo:1});
+      if(dn){ g+=marker(TQ,a).g; var lqx=lmaxOf(TQ)*(TQ>q.TP?1.6:2.3); g+=txt(PX(lqx)+6,PY(inten(lqx,TQ),a)-7,'Q',{fs:13,w:700,c:'var(--accent)',halo:1}); }
       PK=null;
     } else {
       var Tq=qT(q), isR=q.kind==='readT';
@@ -996,6 +1018,10 @@ function expKey(x, y, upLabel, downLabel){
         var Tq=qT(q);
         note=(Q.ok?'✓ <b>Correct.</b> ':'✗ <b>Not quite.</b> ')+'The peak is at λ<sub>max</sub> = '+q.l+' nm, so T = <b>'+sig(Tq,3)+' K</b>. '+(!Q.ok && Q.val!==null && Math.abs(Q.val/(Tq/1e9)-1)<0.07 ? 'Change λ<sub>max</sub> to metres first: '+q.l+' nm = '+sci(q.l*1e-9,2)+' m. ' : '')+'The star looks '+colourWord(Tq)+'. Open <b>Show working</b>, or press <b>New question</b>.';
         $('#wl-eq1').innerHTML=FR(wienWork(Tq,'T')); $('#wl-eq3').innerHTML='Read λ<sub>max</sub> at the highest point of the curve, and change it to metres before you use it.';
+      } else if(q.kind==='ratio'){
+        var lr=ratioAns(q);
+        note=(Q.ok?'✓ <b>Correct.</b> ':'✗ <b>Not quite.</b> ')+'λ<sub>max</sub>T is constant, so λ<sub>max</sub> is inversely proportional to T: '+(q.f>1?'a hotter star peaks at a shorter wavelength':'a cooler star peaks at a longer wavelength')+'. Star Q’s peak is at <b>'+sig(lr,3)+' nm</b>. '+(!Q.ok && Q.val!==null && Math.abs(Q.val/(q.lP*q.f)-1)<0.03 ? 'You multiplied by the temperature ratio: λ<sub>max</sub> goes the other way. ' : '')+'Open <b>Show working</b>, or press <b>New question</b>.';
+        $('#wl-eq1').innerHTML=FR('λ<sub>max</sub>T = constant<br>λ<sub>Q</sub>T<sub>Q</sub> = λ<sub>P</sub>T<sub>P</sub><br>λ<sub>Q</sub> = λ<sub>P</sub> × [[T<sub>P</sub>|T<sub>Q</sub>]]<br>λ<sub>Q</sub> = '+q.lP+' × '+fFrac(q.f)+'<br>λ<sub>Q</sub> = <b>'+sig(lr,3)+' nm</b>'); $('#wl-eq3').innerHTML='No need for the constant: the ratio of the temperatures gives the ratio of the peak wavelengths, the other way up.';
       } else {
         var lq=lmaxOf(q.T), inM=Q.val!==null && Math.abs(Q.val/(lq*1e-9)-1)<0.03;
         note=(Q.ok?'✓ <b>Correct.</b> ':'✗ <b>Not quite.</b> ')+'λ<sub>max</sub> = <b>'+sig(lq,3)+' nm</b>, in the '+region(lq)+'. '+(inM ? 'Your answer is right in metres: multiply by 10⁹ to change it to nm. ' : '')+'Open <b>Show working</b>, or press <b>New question</b>.';
@@ -1074,6 +1100,7 @@ function expKey(x, y, upLabel, downLabel){
     var q=Q.q;
     if(q.kind==='sketch') Q.ok=Q.pick===rings(q).ans;
     else if(q.kind==='readT') Q.ok=Q.val!==null && Math.abs(Q.val/qT(q)-1)<=0.06;
+    else if(q.kind==='ratio') Q.ok=Q.val!==null && Math.abs(Q.val/ratioAns(q)-1)<=0.02;
     else Q.ok=Q.val!==null && Math.abs(Q.val/lmaxOf(q.T)-1)<=0.02;
     Q.tried++; if(Q.ok) Q.right++; lastNote='';
   }

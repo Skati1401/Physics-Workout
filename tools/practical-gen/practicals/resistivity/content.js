@@ -2,7 +2,7 @@
    Built on the CP15 model (gamma-absorption): R = ρL/A, so R against L is a straight line with gradient ρ/A.
    The Do the Experiment tab frames animations/resistivity.html?show=measure, whose fixed readings must match
    RS_D, RS_L, RS_V and RS_I below (MEAS_D, MEAS_L, MEAS_V and MEAS_I in the animation; tools/CORE-PRACTICALS.md, "Measure modes").
-   Not yet checked against the WPH12 mark schemes (14 Nov 2026: written without the PC); the Build tab's tasks follow
+   Mark scheme wording checked 14 Nov 2026 (TODO 5g) against WPH12 Oct 2019 Q15, Jun 2024 Q14(a)(ii); WPH13 Jan 2023 Q1(b), Oct 2023 Q2(a)(b), Jun 2024 Q4(a)(ii)(b); WPH16 Oct 2022 Q4(a); 9PH0/03 Jun 2017 Q6; the Build tab's tasks follow
    WPH12 Jan 2021 Q19(a). */
 function examPart(body,head,q,bullets){
   body.appendChild(mk('p','sub',head));
@@ -66,7 +66,7 @@ const g3=v=>String(+(+v).toPrecision(3)), g4=v=>String(+(+v).toPrecision(4));
     {id:'c',l:'Crocodile clip',r:'Makes contact with the wire at a chosen length'},
     {id:'a',l:'Ammeter',r:'Measures the current through the wire'},
     {id:'v',l:'Voltmeter',r:'Measures the potential difference across the length being tested'},
-    {id:'p',l:'Protective resistor',r:'Keeps the current small when the length is short'}
+    {id:'p',l:'Protective resistor',r:'Limits the current so the wire does not overheat'}
   ]});
 }
 {
@@ -218,7 +218,7 @@ const GR={xMin:0,xMax:1,yMin:0,yMax:12,xTicks:[0,0.2,0.4,0.6,0.8,1],yTicks:[0,2,
     {id:'1',text:'Measure the diameter in several places and at right angles, then take the mean',cat:'a'},
     {id:'2',text:'Use the gradient of R against L, not one reading',cat:'a'},
     {id:'3',text:'Use lengths spread across the whole metre rule',cat:'a'},
-    {id:'4',text:'Check the micrometer for a zero error before measuring',cat:'a'},
+    {id:'4',text:'Check and correct the micrometer for a zero error, which removes a systematic error',cat:'a'}, {id:'8',text:'Close the micrometer with its ratchet, so it is not overtightened on the wire',cat:'a'}, {id:'9',text:'Clean the wire where the clips touch it, so the contact resistance is small',cat:'a'},
     {id:'5',text:'Switch off between readings',cat:'s'},
     {id:'6',text:'Keep the current small with a protective resistor',cat:'s'},
     {id:'7',text:'Do not touch the wire while the current is on, as a short length can get hot',cat:'s'}
@@ -228,9 +228,9 @@ const GR={xMin:0,xMax:1,yMin:0,yMax:12,xTicks:[0,0.2,0.4,0.6,0.8,1],yTicks:[0,2,
   const body=act('accuracy','Multiple choice','The biggest uncertainty','The diameter is about 0.32 mm and the micrometer reads to 0.01 mm.');
   createPredict({host:body,q:'The length is read to 1 mm on lengths of 18 to 90 cm. Which measurement gives the biggest percentage uncertainty in ρ?',options:[
     {text:'The diameter, as A depends on d²',correct:true},
-    {text:'The length, as it is the largest reading',why:'1 mm in 18 cm is only about 0.6%. A large reading has a small percentage uncertainty.'},
-    {text:'The current, as it changes with L',why:'The ammeter reads to 0.001 A in about 0.2 A, which is about 0.5%. A changing reading is not the same as an uncertain one.'}
-  ],explain:'0.01 mm in 0.32 mm is about 3%, and squaring d to get A doubles it to about 6%. That is why the diameter is measured several times and averaged.'});
+    {text:'The length, as it is the largest reading',why:'Half of 1 mm in 18 cm is only about 0.3%. A large reading has a small percentage uncertainty.'},
+    {text:'The current, as it changes with L',why:'Half of 0.001 A in about 0.2 A is about 0.25%. A changing reading is not the same as an uncertain one.'}
+  ],explain:'The uncertainty in one reading is half the resolution: 0.005 mm in 0.32 mm is about 1.6%, and squaring d to get A doubles it to about 3%. That is why the diameter is measured several times and averaged.'});
 }
 
 /* ================= EXAM PRACTICE ================= */
@@ -250,19 +250,19 @@ const GR={xMin:0,xMax:1,yMin:0,yMax:12,xTicks:[0,0.2,0.4,0.6,0.8,1],yTicks:[0,2,
     {q:'Use the readings at 0.200 m and 0.800 m to calculate the resistivity of nichrome.',unit:'Ω m',answer:1.05e-6,working:'R at 0.200 m = 3.50 Ω<br>R at 0.800 m = 13.71 Ω<br>A = 6.16 × 10⁻⁸ m²<br>ρ = ?||gradient = [[13.71 − 3.50|0.800 − 0.200]]<br>gradient = [[10.21|0.600]]<br>gradient = 17.02 Ω m⁻¹<br>ρ = gradient × A<br>ρ = 17.02 × 6.16 × 10⁻⁸<br>ρ = 1.05 × 10⁻⁶ Ω m'}
   ]});
   examPart(body,'(d) 2 marks','Explain why Rose uses the gradient of a graph of R against L, rather than one value of R and L.',[
-    'The clips (and contact resistance) add a resistance that is the same at every length, so the line does not pass through the origin.',
+    'The clips and leads (contact resistance), or a zero error on a meter, add a resistance that is the same at every length, so the line does not pass through the origin.',
     'The gradient (ρ/A) does not include that extra resistance, and a line through many points averages out random errors.'
   ]);
   examPart(body,'(e) 2 marks','Explain why Rose measures the diameter at several places along the wire and at right angles.',[
     'The wire may not be uniform, or may not be perfectly round.',
-    'Taking a mean reduces the (large percentage) uncertainty in d, which is doubled in A because A ∝ d².'
+    'Repeating and taking a mean reduces the effect of random errors in d, whose percentage uncertainty is doubled in A because A ∝ d².'
   ]);
   examPart(body,'(f) 6 marks','Describe how Rose should carry out this investigation to obtain an accurate value for the resistivity of nichrome.',[
-    'Measure the diameter with a micrometer at several places and at right angles; check for zero error; find the mean and A = πd²/4.',
+    'Measure the diameter with a micrometer (using its ratchet) at several places and at right angles; check and correct for zero error; find the mean and A = πd²/4.',
     'Tape the wire to a metre rule; connect it in series with an ammeter (and a protective resistor), with a voltmeter across the length being tested.',
     'Measure L between the clips with the metre rule; record V and I; use R = V/I.',
     'Repeat for at least six lengths across the range (e.g. 0.2 m to 0.9 m).',
-    'Switch off between readings (or use a small current) so the wire does not heat up and change its resistance.',
+    'A fixed resistor limits the current and the switch is opened between readings, so the wire does not overheat and change its resistance.',
     'Plot R against L; the gradient = ρ/A, so ρ = gradient × A.'
   ]);
 }

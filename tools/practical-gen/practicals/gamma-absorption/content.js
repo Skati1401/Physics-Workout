@@ -222,7 +222,7 @@ const g3=v=>String(+(+v).toPrecision(3)), g4=v=>String(+(+v).toPrecision(4));
   ],items:[
     {id:'1',text:'Count for longer, such as 5 minutes, at each thickness',cat:'a'},
     {id:'2',text:'Repeat each count and take the mean',cat:'a'},
-    {id:'3',text:'Measure the lead’s thickness with a micrometer in several places',cat:'a'},
+    {id:'3',text:'Measure the lead’s thickness with a micrometer in several places',cat:'a'}, {id:'z1',text:'Check and correct the micrometer for a zero error, which removes a systematic error',cat:'a'}, {id:'z2',text:'Take the background count rate away from every count, so I is not overestimated',cat:'a'},
     {id:'4',text:'Fix the source and tube in holders so the distance cannot change',cat:'a'},
     {id:'5',text:'Move the source with tongs, never with your fingers',cat:'s'},
     {id:'6',text:'Keep the source in its lead box when it is not being used',cat:'s'},
@@ -260,7 +260,7 @@ const g3=v=>String(+(+v).toPrecision(3)), g4=v=>String(+(+v).toPrecision(4));
     'Measure the background count (with the source in its box) for several minutes, or repeat it, and find the count rate per minute.',
     'Place the source and GM tube in fixed holders a fixed distance apart, and keep that distance the same throughout.',
     'Count for a fixed time (e.g. 1 minute, or longer) with no lead, then with increasing thicknesses of lead between them.',
-    'Measure each thickness with a micrometer (or vernier callipers).',
+    'Measure each thickness with a micrometer (or vernier callipers) in several places and take the mean; check and correct for zero error.',
     'Repeat each count and take a mean; use long counting times because decay is random.',
     'Subtract the background count rate from each count rate to get I.',
     'Plot ln I against x; μ = −gradient (half-thickness x<sub>½</sub> = [[ln 2|μ]]).',

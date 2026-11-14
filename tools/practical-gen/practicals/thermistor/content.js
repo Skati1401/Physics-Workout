@@ -270,6 +270,8 @@ const RT=t=>5*Math.exp(3900*(1/(t+273)-1/298));
     {id:'2',text:'Put the thermometer bulb right next to the thermistor',cat:'a'},
     {id:'3',text:'Take readings over the whole range, from 0 °C to 80 °C',cat:'a'},
     {id:'4',text:'Log θ and R together with a data logger and probes',cat:'a'},
+    {id:'9',text:'Read the thermometer with your eye level with the top of the liquid',cat:'a'},
+    {id:'10',text:'Use a small current (or switch off between readings), so the current does not heat the thermistor',cat:'a'},
     {id:'5',text:'Keep the leads away from the hot gauze and Bunsen flame',cat:'s'},
     {id:'6',text:'Clamp the thermometer so the beaker cannot be knocked over',cat:'s'},
     {id:'7',text:'Keep the supply below the thermistor’s voltage rating',cat:'s'},
