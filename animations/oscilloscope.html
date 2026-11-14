@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Frequency of a Sound Wave Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. A signal generator and loudspeaker, or a tuning fork, sends sound to a microphone connected to an oscilloscope. Change the time base and Y-gain, turn the trigger on for a steady trace, and read the period and frequency. Experiment mode: measure the frequency of three mystery tuning forks and a hidden tone with two cursors.">
+<meta name="description" content="Interactive physics animation. A signal generator and loudspeaker, or a tuning fork, sends sound to a microphone connected to an oscilloscope. Change the time base and Y-gain, turn the trigger on for a steady trace, and read the period and frequency. Experiment mode: measure the frequency of three mystery tuning forks and a hidden tone with two cursors. A Questions tab deals exam-style traces: read the period and frequency, decide whether it can be heard, pick the trace of a louder or higher sound, or draw it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -184,6 +184,16 @@
   .cyc .btn{min-width:44px;justify-content:center;padding-inline:8px;}
   .cyc output{font:600 15px var(--font-mono);color:var(--ink);min-width:1.6em;text-align:center;}
   @media (max-width:420px){ .seg.six{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  /* Questions (?show=predict) */
+  #os-svg .pick{cursor:pointer;} #os-svg .pick:focus{outline:none;} #os-svg .pick .ring{fill:none;stroke:transparent;} #os-svg .pick:focus-visible .ring{stroke:var(--accent);}
+  #os-svg .pick .hit{fill:transparent;} #os-svg .pick.locked{cursor:default;}
+  #os-svg.qdraw{cursor:grab;}
+  .qbox{display:flex;flex-direction:column;gap:10px;}
+  .ans{display:flex;align-items:center;gap:8px;font:600 15px var(--font-mono);color:var(--ink);flex-wrap:wrap;}
+  .ans input{font:600 16px var(--font-mono);color:var(--ink);background:var(--panel);border:2px solid var(--topic);border-radius:8px;padding:8px 10px;min-height:44px;width:7.5em;}
+  .ans input:disabled{opacity:.7;border-color:var(--panel-border);}
+  .ans.ok input{border-color:var(--good);background:var(--good-soft);opacity:1;}
+  .ans.no input{border-color:var(--bad);background:var(--bad-soft);opacity:1;}
 </style>
 <style id="choice-kit">
 /* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
@@ -312,7 +322,7 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="os-svg" viewBox="0 0 860 322" role="img" aria-label="A sound source, a microphone and an oscilloscope"></svg>
+      <svg class="view" id="os-svg" viewBox="0 0 860 322" role="img" aria-label="A sound source, a microphone and an oscilloscope"><g id="os-main"></g><g id="os-picks"></g></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="os-play" type="button">&#9654; Play</button>
@@ -321,6 +331,9 @@
           <button class="btn" id="os-snd" type="button" aria-pressed="false" title="Play the sound through your speakers">Sound</button>
           <button class="btn" id="os-clear" type="button" hidden>Clear readings</button>
           <button class="btn" id="os-exp" type="button" aria-pressed="false" title="Measure the frequency of mystery tuning forks with two cursors">Experiment</button>
+          <button class="btn btn-primary" id="os-go" type="button" hidden>&#9654; Go</button>
+          <button class="btn" id="os-new" type="button" hidden>New question</button>
+          <button class="btn to-q" type="button" data-mode="os-mode" hidden>Try the questions &rarr;</button>
         </div>
         <div class="sliders">
           <div id="os-frow"><label class="lab" for="os-f">Signal generator frequency <output id="os-fo"></output></label><input type="range" id="os-f" min="100" max="2000" step="10" value="440"></div>
@@ -329,6 +342,14 @@
       </div>
     </div>
     <div class="side">
+      <div class="seg tabs mode" id="os-mode" role="group" aria-label="Explore or questions"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
+      <div class="qbox" id="os-q" hidden>
+        <div><span class="lab" id="os-klab">Questions on</span>
+        <div class="seg" id="os-kind" role="group" aria-labelledby="os-klab"><button type="button" data-v="mix" aria-pressed="true">Mixed</button><button type="button" data-v="read" aria-pressed="false">Read it</button><button type="button" data-v="which" aria-pressed="false">Which trace?</button><button type="button" data-v="draw" aria-pressed="false">Draw it</button></div></div>
+        <label class="ans" id="os-ans-row"><span id="os-ans-lab">f =</span><input type="text" id="os-ans" inputmode="decimal" autocomplete="off" aria-label="Your answer"><span id="os-ans-unit">Hz</span></label>
+        <div class="cgrid" id="os-hear"><span class="rowlab" id="os-hlab">Can a person hear it?</span>
+        <div class="seg" id="os-hseg" role="group" aria-labelledby="os-hlab"><button type="button" data-v="y" aria-pressed="false">Yes</button><button type="button" data-v="n" aria-pressed="false">No</button></div></div>
+      </div>
       <div class="choices">
         <div><span class="rowlab">Source</span>
         <div class="seg four" id="os-src"><button type="button" data-v="gen" aria-pressed="true">Signal generator</button><button type="button" data-v="fa" aria-pressed="false">Fork 256 Hz</button><button type="button" data-v="fb" aria-pressed="false">Fork 384 Hz</button><button type="button" data-v="fc" aria-pressed="false">Fork 512 Hz</button></div></div>
@@ -635,7 +656,8 @@ function expKey(x, y, upLabel, downLabel){
 
 
 
-  var svg=$('#os-svg'), playBtn=$('#os-play'), trigBtn=$('#os-trig'), sndBtn=$('#os-snd'), expBtn=$('#os-exp');
+  var QM=false, Q=null;   // Questions mode (see "Questions" below)
+  var svg=$('#os-svg'), gMain=$('#os-main'), gPicks=$('#os-picks'), playBtn=$('#os-play'), trigBtn=$('#os-trig'), sndBtn=$('#os-snd'), expBtn=$('#os-exp');
   var fIn=$('#os-f'), vIn=$('#os-v');
   var srcSeg=segGroup($('#os-src'), function(){ newSource(); });
   var tbSeg=segGroup($('#os-tb'), function(){ draw(); });
@@ -655,7 +677,7 @@ function expKey(x, y, upLabel, downLabel){
   // ("Measure modes") lists them and the practical page's content.js checks against the same numbers. &src=gen|fa|fb|fc fixes the source.
   var MEAS=/[?&]show=measure\b/.test(location.search);
   if(MEAS){ MYST={gen:800, fa:250, fb:400, fc:500}; XLAB={gen:'Mystery tone', fa:'Fork 1', fb:'Fork 2', fc:'Fork 3'}; }
-  function freq(){ var s=src(); if(exp()) return MYST[s]; return s==='gen' ? +fIn.value : FORK[s]; }
+  function freq(){ if(QM && Q) return Q.f; var s=src(); if(exp()) return MYST[s]; return s==='gen' ? +fIn.value : FORK[s]; }
   function srcName(){ return exp() ? XLAB[src()] : LAB[src()]; }
 
   // ---- the microphone (dragged along the bench, 10 cm to 50 cm from the source)
@@ -675,7 +697,8 @@ function expKey(x, y, upLabel, downLabel){
     var real=Math.min(0.05,(now-last)/1000); last=now;
     if(run && !run.over){
       run.t+=real; run.drift+=real*(0.37+0.21*Math.sin(run.t*1.7));
-      if(run.t>=(src()==='gen' ? T_ON : T_FORK)){ run.over=true; soundOff(); }
+      if(QM){ if(run.t>=Q_RUN){ run.over=true; soundOff(); qMark(); } }
+      else if(run.t>=(src()==='gen' ? T_ON : T_FORK)){ run.over=true; soundOff(); }
     }
     draw();
     if(run && !run.over && !run.paused) raf=requestAnimationFrame(frame);
@@ -735,7 +758,7 @@ function expKey(x, y, upLabel, downLabel){
       g+=lead(bez([gx0+gw-6,gt-2],[gx0+gw+6,gt-34],[112,CY+40],[124,CY+12],18), 'var(--lead)', 3);
       g+=shadow(gx0, gt+gh, gw)+icase(gx0, gt, gw, gh);
       g+=rect(gx0+7, gt+8, gw-14, 22, 'var(--lcd)', ' rx="3" stroke="var(--case-s)" stroke-width="1"');
-      g+=txt(gx0+gw/2, gt+24, exp() ? '? Hz' : freq()+' Hz', {a:'middle', fs:14, c:'var(--lcd-ink)', w:600});
+      g+=txt(gx0+gw/2, gt+24, QM && Q ? qGen() : exp() ? '? Hz' : freq()+' Hz', {a:'middle', fs:14, c:'var(--lcd-ink)', w:600});
       [gx0+26, gx0+gw-26].forEach(function(kx, i){ g+='<circle cx="'+kx+'" cy="'+(gt+43)+'" r="7" fill="var(--case-s)" stroke="var(--case-t)" stroke-width="1.2"/>'+ln(kx, gt+43, kx+(i?4:-3), gt+37.5, 'var(--case-t)', 1.6, ' stroke-linecap="round"'); });
       g+=T(gx0-4, gt-16*FS, narrowQ.matches ? 'generator' : 'signal generator', {fs:11.5, c:'var(--ink-soft)'});
       // the loudspeaker on its stand, seen from the side: the cone moves in and out while it plays
@@ -779,13 +802,17 @@ function expKey(x, y, upLabel, downLabel){
     g+=tube(x+8, by-2, x+8, CY+8, 4, 'var(--steel)', 'var(--steel-hi)');
     g+=rect(x-3, CY-8, 28, 16, 'var(--case)', ' rx="8"')+rect(x, CY-6.5, 22, 4, '#fff', ' rx="2" opacity=".14"')+ell(x-2, CY, 4.4, 7.6, 'var(--steel-hi)')+ell(x-2, CY, 2.6, 5.6, 'var(--steel)');
     g+=T(x+10, CY-20*FS, 'microphone', {a:'middle', fs:11.5, c:'var(--ink-soft)', halo:1});
-    g+=T(x+10, CY-36*FS, '← drag →', {a:'middle', fs:11, c:'var(--accent)'});
+    if(!QM) g+=T(x+10, CY-36*FS, '← drag →', {a:'middle', fs:11, c:'var(--accent)'});
     // how far it is from the source: a mark on the rule, and the distance
     g+=pg([[x,BT+1],[x-4.5,BT-7],[x+4.5,BT-7]],'var(--topic)');
     g+=T(Math.max(SX+28, x), BT+40*FS, dist+' cm from the source', {a:'middle', fs:11.5, c:'var(--ink-soft)'});
     return g;
   }
-  function drawScope(){
+  // the case, the screen with its grid and small marks, the settings written under it and the two knobs
+  var TBK=[0.005,0.01,0.02,0.05,0.1,0.2,0.25,0.5,1,2,5,10,20,50], YGK=[5,10,20,50];
+  function tbTxt(v){ return v<0.1 ? Math.round(v*1000)+' µs/div' : v+' ms/div'; }
+  function knobAng(list, v){ var n=list.indexOf(v); if(n<0) n=0; return -120+240*n/(list.length-1); }
+  function scopeBody(tbT, ygT, aTB, aY, kTB, kY, uTB, foot){
     var g='', W=SC.nx*SC.d, H=SC.ny*SC.d, cy=SC.y+H/2, cx0=SC.x-14, ct=SC.y-14, cw=W+28+48, ch=H+28+20, kx=SC.x+W+14+22;
     var sk=inSock();
     g+=shadow(cx0, ct+ch, cw)+(narrowQ.matches ? '' : rect(sk[0]-10, sk[1]-6, 22, 12, 'var(--plug-k)', ' rx="3"'))+icase(cx0, ct, cw, ch);
@@ -796,15 +823,35 @@ function expKey(x, y, upLabel, downLabel){
     // small ticks every 0.2 division on the centre lines, as on a real screen
     for(var k=0;k<=SC.nx*5;k++){ var xx=SC.x+k*SC.d/5; g+=ln(xx, cy-3, xx, cy+3, 'var(--screen-axis)', 0.8); }
     for(k=0;k<=SC.ny*5;k++){ var yy=SC.y+k*SC.d/5; g+=ln(scrX(5)-3, yy, scrX(5)+3, yy, 'var(--screen-axis)', 0.8); }
-    g+=txt(SC.x, SC.y+H+18, 'time base '+tb()+' ms/div', {fs:12, c:'#fff', w:600});
-    g+=txt(SC.x+W, SC.y+H+18, 'Y-gain '+yg()+' mV/div', {a:'end', fs:12, c:'#fff', w:600});
+    if(foot){   // a key to the traces, in place of the settings (the knobs show them)
+      var fx=SC.x;
+      foot.forEach(function(k){ g+=ln(fx, SC.y+H+14, fx+22, SC.y+H+14, k[0], 2, k[1] ? ' stroke-dasharray="'+k[1]+'"' : '')+txt(fx+27, SC.y+H+18, k[2], {fs:11.5, c:'#fff', w:600}); fx+=36+k[2].length*7.1; });
+    } else {
+      g+=txt(SC.x, SC.y+H+18, 'time base '+tbT, {fs:12, c:'#fff', w:600});
+      g+=txt(SC.x+W, SC.y+H+18, 'Y-gain '+ygT, {a:'end', fs:12, c:'#fff', w:600});
+    }
     // the two knobs: each turns to its setting
-    [[SC.y+62, tbSeg, 'ms/div', [0.1,0.2,0.5,1,2,5]], [SC.y+168, ySeg, 'mV/div', [5,10,20,50]]].forEach(function(K){
-      var n=K[3].indexOf(+K[1].value()), a=(-120+240*n/(K[3].length-1))*Math.PI/180;
+    [[SC.y+62, kTB, uTB||'ms/div', aTB], [SC.y+168, kY, 'mV/div', aY]].forEach(function(K){
+      var a=K[3]*Math.PI/180;
       g+='<circle cx="'+kx+'" cy="'+K[0]+'" r="14" fill="var(--case-s)" stroke="var(--case-t)" stroke-width="1.4"/><circle cx="'+kx+'" cy="'+K[0]+'" r="9" fill="var(--case-f)"/>'+
         ln(kx, K[0], kx+12*Math.sin(a), K[0]-12*Math.cos(a), '#fff', 2, ' stroke-linecap="round"');
-      g+=txt(kx, K[0]-22, K[1].value(), {a:'middle', fs:13, c:'#fff', w:700})+txt(kx, K[0]+30, K[2], {a:'middle', fs:11, c:'#fff'});
+      g+=txt(kx, K[0]-22, K[1], {a:'middle', fs:13, c:'#fff', w:700})+txt(kx, K[0]+30, K[2], {a:'middle', fs:11, c:'#fff'});
     });
+    return g;
+  }
+  // a trace drawn in divisions: amplitude A and period P (both in divisions), across a screen at (x0, y0), d units per division
+  function traceDiv(x0, y0, d, nx, ny, A, P, o){ o=o||{};
+    var pts=[], cy=y0+ny*d/2, clip=false;
+    for(var px=0; px<=nx*d+1e-9; px+=Math.max(0.5, d/40)){
+      var dv=A*Math.sin(2*Math.PI*(px/d/P+(o.ph||0)));
+      if(dv>ny/2){ dv=ny/2; clip=true; } if(dv<-ny/2){ dv=-ny/2; clip=true; }
+      pts.push((x0+px).toFixed(1)+','+(cy-dv*d).toFixed(1));
+    }
+    return {s:'<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+(o.col||'var(--trace)')+'" stroke-width="'+(o.w||1.8)+'"'+(o.dash?' stroke-dasharray="'+o.dash+'"':'')+' opacity="'+(o.op==null?1:o.op)+'" stroke-linejoin="round"/>', clip:clip};
+  }
+  function drawScope(){
+    if(QM && Q) return drawQScope();
+    var g=scopeBody(tb()+' ms/div', yg()+' mV/div', knobAng([0.1,0.2,0.5,1,2,5], tb()), knobAng(YGK, yg()), tbSeg.value(), ySeg.value()), W=SC.nx*SC.d, H=SC.ny*SC.d, cy=SC.y+H/2;
     var a=amp(), clip=false;
     function trace(ph, op){
       var pts=[], tot=SC.nx*tb();
@@ -829,18 +876,21 @@ function expKey(x, y, upLabel, downLabel){
     } else if(run && trig() && !MEAS){
       // one period marked from the start of the trace
       var per=1000/freq()/tb();
-      if(per<=SC.nx){
-        var xa=scrX(0), xb=scrX(per), ya=SC.y+SC.d*0.6;
-        g+='<path d="M'+xa+','+ya+' L'+xb.toFixed(1)+','+ya+'" stroke="var(--cursor)" stroke-width="1.4" marker-start="url(#os-ah)" marker-end="url(#os-ah)"/>';
-        g+=txt((xa+xb)/2, ya-6, 'T', {a:'middle', fs:12.5, w:600, c:'var(--cursor)'});
-      }
+      if(per<=SC.nx) g+=periodMark(per);
     }
     return g;
   }
+  function periodMark(per){
+    var xa=scrX(0), xb=scrX(per), ya=SC.y+SC.d*0.6;
+    return '<path d="M'+xa+','+ya+' L'+xb.toFixed(1)+','+ya+'" stroke="var(--cursor)" stroke-width="1.4" marker-start="url(#os-ah)" marker-end="url(#os-ah)"/>'+
+      txt((xa+xb)/2, ya-6, 'T', {a:'middle', fs:12.5, w:600, c:'var(--cursor)'});
+  }
   function draw(){
     var g='<defs><marker id="os-ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--cursor)"/></marker></defs>';
-    g+=drawBench()+drawSource()+drawAir()+drawScope()+lead(micLead(), 'var(--lead)', 3)+drawMic();
-    svg.innerHTML=g;
+    if(QM && Q && Q.kind==='which') g+=drawOptions()+drawScope()+qText();
+    else { g+=drawBench()+drawSource()+drawAir()+drawScope()+lead(micLead(), 'var(--lead)', 3)+drawMic(); if(QM && Q) g+=qText(); }
+    gMain.innerHTML=g;
+    if(QM) drawPicks(); else if(gPicks.firstChild) gPicks.innerHTML='';
     soundSet();
     readings();
   }
@@ -858,6 +908,7 @@ function expKey(x, y, upLabel, downLabel){
     draw();
   }
   function readings(){
+    if(QM){ qReadings(); return; }
     var E=exp(), f=freq(), on=run && !run.over, a=amp(), cyc=cyclesOnScreen(), per=1000/f, pdiv=per/tb();
     var note='', w1='', w2='', w3='';
     $('#os-fo').textContent=fIn.value+' Hz'; $('#os-vo').textContent=vIn.value;
@@ -918,6 +969,301 @@ function expKey(x, y, upLabel, downLabel){
     svg.setAttribute('aria-valuenow', dist); svg.setAttribute('aria-valuetext', 'microphone '+dist+' cm from the source');
   }
 
+
+  // ---- Questions (?show=predict; TODO 8h, 14 Nov 2026). The kinds come from the 4PH1 Paper 2 questions in the IGCSE Question Index:
+  //   Read the trace: the period (Nov 2023 2P Q7(b)(i), May 2022 2P Q4(c)(i), Jan 2022 2P Q6(b)(i), Nov 2025 2P Q4(b)(i)), the frequency
+  //     (Jan 2023 2P Q7(b)(i), May 2026 2P Q6(b)(ii), May 2012 2P Q2(a)(ii)), and whether a person can hear it (May 2025 2PR Q8(b),
+  //     Nov 2021 2P Q8(b)(i), Nov 2006 Q12(b), Jan 2022 2P Q6(b)(iii));
+  //   Which trace? a louder or quieter, higher or lower sound, settings unchanged (May 2014 2PR Q3(a), June 2006 Q13(b));
+  //   Draw the trace: of a quieter, lower sound and the like (May 2025 2P Q2(c)(ii), May 2023 2PR Q7(b), Jan 2021 2P Q1(c), May 2012
+  //     2P Q2(b)), or of a given frequency and amplitude at given settings (May 2024 2P Q5(c)(ii), May 2024 2PR Q9(b), Nov 2008 Q15(c)).
+  // A question's picture never changes: the trace and the settings are dealt, and Go plays the sound and marks the answer.
+  var Q_RUN=1.6, qKind='mix', qLast='', qSaved=null, ansIn=$('#os-ans');
+  function rpick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function rstep(lo, hi, st){ var n=Math.round((hi-lo)/st); return +(lo+st*Math.floor(Math.random()*(n+1))).toFixed(2); }
+  function tidy(f){ return Math.abs(f-+f.toPrecision(3))<1e-6*f && Math.abs(f*2-Math.round(f*2))<1e-6; }
+  function hz(f){ var t=String(+f.toPrecision(4)); return f>=10000 ? grp(t) : t; }
+  function msTxt(v){ return String(+v.toPrecision(3)); }
+  function secTxt(sec){ return sec<0.001 ? sci(sec, 1).replace(/\.0 ×/,' ×') : String(+sec.toPrecision(3)); }
+  function tbUnit(tbv){ return tbv<0.1 ? 'µs' : 'ms'; }
+  function tbNum(tbv){ return tbv<0.1 ? Math.round(tbv*1000) : tbv; }
+  function heardOK(f){ return f>=20 && f<=20000; }
+  // the louder/quieter and higher/lower changes: dA is +1 for a bigger amplitude, dP is +1 for a longer period (lower pitch)
+  function changeWords(dA, dP){
+    var l = dA>0 ? 'louder' : dA<0 ? 'quieter' : '', h = dP<0 ? 'higher in pitch' : dP>0 ? 'lower in pitch' : '';
+    if(l && h) return l+' and '+h;
+    return l ? l+', with the same pitch' : h+', just as loud';
+  }
+  function traceWords(dA, dP){
+    var a = dA>0 ? 'a larger amplitude' : dA<0 ? 'a smaller amplitude' : 'the same amplitude', p = dP<0 ? 'a shorter period (more cycles)' : dP>0 ? 'a longer period (fewer cycles)' : 'the same period';
+    return a+' and '+p;
+  }
+  function fA(d){ return d>0 ? 1.6 : d<0 ? 0.5 : 1; }
+  function fP(d){ return d>0 ? 2 : d<0 ? 0.5 : 1; }
+  function genRead(sub){
+    for(var n=0;n<800;n++){
+      var tbv, P, f, band='', q={kind:'read', sub:sub, yg:20, A:rstep(1.6,3.4,0.2)};
+      if(sub==='hear'){ band=rpick(['ultra','ultra','low','ok']);
+        tbv = band==='ultra' ? rpick([0.005,0.01,0.02]) : band==='low' ? rpick([10,20,50]) : rpick([0.02,0.05,10,0.1]);
+        P=rstep(2,8,0.2); }
+      else { tbv=rpick([0.1,0.2,0.25,0.5,1,2,5]); P=rstep(1.2,6,0.2); }
+      f=1000/(P*tbv);
+      if(!tidy(f)) continue;
+      var lo=1000/((P+0.1)*tbv), hi=1000/((P-0.1)*tbv);
+      if(sub==='hear'){ var h=heardOK(f);
+        if(heardOK(lo)!==h || heardOK(hi)!==h) continue;
+        if((band==='ultra' || band==='low') ? h : !h) continue; q.heard=h; }
+      else if(f<50 || f>12000) continue;
+      q.tb=tbv; q.P=P; q.f=f; q.lo=lo; q.hi=hi; q.sig=sub+tbv+'/'+P;
+      if(q.sig===qLast) continue;
+      return q;
+    }
+    return {kind:'read', sub:sub, yg:20, A:2, tb:0.5, P:1.6, f:1250, lo:1000/0.85, hi:1000/0.75, heard:true, sig:'x'};
+  }
+  function genWhich(){
+    var dA=rpick([1,-1,0]), dP=rpick([1,-1,0]); if(!dA && !dP) dP=rpick([1,-1]);
+    var all=[], i, j;
+    for(i=-1;i<=1;i++) for(j=-1;j<=1;j++) if(i||j) all.push([i,j]);
+    var key=function(c){ return c[0]+','+c[1]; }, want=[[dA,dP]], used={};
+    used[key([dA,dP])]=1;
+    [[-dA,dP],[dA,-dP],[-dA,-dP]].forEach(function(c){ if((c[0]||c[1]) && !used[key(c)] && want.length<4){ want.push(c); used[key(c)]=1; } });
+    var rest=all.filter(function(c){ return !used[key(c)]; });
+    while(want.length<4){ var c=rest.splice(Math.floor(Math.random()*rest.length),1)[0]; want.push(c); }
+    for(i=want.length-1;i>0;i--){ j=Math.floor(Math.random()*(i+1)); var t=want[i]; want[i]=want[j]; want[j]=t; }
+    var ref={A:2, P:2.5}, opts=want.map(function(c){ return {dA:c[0], dP:c[1], A:ref.A*fA(c[0]), P:ref.P*fP(c[1])}; }), ans='';
+    opts.forEach(function(o,k){ if(o.dA===dA && o.dP===dP) ans='ABCD'.charAt(k); });
+    return {kind:'which', tb:1, yg:20, dA:dA, dP:dP, ref:ref, opts:opts, ans:ans, f:1000/(ref.P*fP(dP)), A:ref.A*fA(dA), sig:'w'+dA+dP+ans};
+  }
+  function genDraw(){
+    if(Math.random()<0.5){
+      var dA=rpick([1,-1,0]), dP=rpick([1,-1,0]); if(!dA && !dP) dA=rpick([1,-1]);
+      var ref={A:2, P:2.4};
+      return {kind:'draw', qual:true, tb:1, yg:20, dA:dA, dP:dP, ref:ref, A:ref.A*fA(dA), P:ref.P*fP(dP), f:1000/(ref.P*fP(dP)), st:{A:2, P:2.4}, sig:'dq'+dA+dP};
+    }
+    for(var n=0;n<400;n++){
+      var tbv=rpick([0.25,0.5,1,2]), ygv=rpick([10,20,50]), P=rstep(2,8,0.4), f=1000/(P*tbv), A=rpick([1.5,2,2.5,3]);
+      if(Math.abs(f-Math.round(f))>1e-6 || !tidy(f)) continue;
+      var q={kind:'draw', qual:false, tb:tbv, yg:ygv, P:P, A:A, f:f, amp:A*ygv, st:{A:A<2.4 ? 3.4 : 1, P:P<5 ? 7.2 : 2}, sig:'dn'+tbv+'/'+P+'/'+A};
+      if(q.sig!==qLast) return q;
+    }
+    return {kind:'draw', qual:false, tb:0.5, yg:20, P:4, A:2, f:500, amp:40, st:{A:1, P:7.2}, sig:'dn'};
+  }
+  function newQ(){
+    stop(); soundOff(); run=null;
+    var k=qKind==='mix' ? rpick(['read','read','which','draw']) : qKind;
+    Q = k==='read' ? genRead(rpick(['T','f','f','hear'])) : k==='which' ? genWhich() : genDraw();
+    qLast=Q.sig; Q.pick=null; Q.heardPick=null; Q.locked=false; Q.marked=false;
+    ansIn.value=''; ansIn.disabled=false; $('#os-ans-row').classList.remove('ok','no');
+    Array.prototype.forEach.call($('#os-hseg').querySelectorAll('button'), function(b){ b.setAttribute('aria-pressed','false'); b.disabled=false; });
+    $('#os-hseg').classList.remove('pick','fit'); $('#os-hseg').removeAttribute('data-fit');
+    qShow(); gPicks.innerHTML=''; draw();
+  }
+  function qGen(){ return Q.kind==='draw' && !Q.qual ? hz(Q.f)+' Hz' : (Q.kind==='read' && Q.marked) ? hz(Q.f)+' Hz' : '? Hz'; }
+  // the question (or, once it is marked, the verdict) written in the picture, in the clear space above the bench
+  function qShort(){
+    var q=Q;
+    if(q.kind==='read') return q.sub==='T' ? 'Find the period T of the sound.' : q.sub==='f' ? 'Find the frequency f of the sound.' : 'Find f. Can a person hear this sound?';
+    if(q.kind==='which') return narrowQ.matches ? 'Which trace shows the new sound?' : 'The sound is made '+changeWords(q.dA,q.dP)+'. Which trace shows the new sound?';
+    return q.qual ? (narrowQ.matches ? 'Draw the trace of the new sound.' : 'Draw the new trace: the sound is made '+changeWords(q.dA,q.dP)+'.') : 'Draw the trace of a '+hz(q.f)+' Hz sound with an amplitude of '+q.amp+' mV.';
+  }
+  function qText(){
+    var tall=narrowQ.matches, s=Q.marked ? Q.verdict : qShort(), lines=wrapLines(s, tall ? 40 : 60), y=tall ? 62 : 24, g='';
+    lines.slice(0,3).forEach(function(l,i){ g+=T(10, y+i*16*FS, l, {fs:13, w:600, c: Q.marked ? (Q.ok ? 'var(--good)' : 'var(--bad)') : 'var(--ink)', halo:1}); });
+    return g;
+  }
+  function optGeom(i){
+    var tall=narrowQ.matches, d=14;
+    var xs = tall ? [56,262] : [44,256], ys = tall ? [98,222] : [64,196];
+    return {x:xs[i%2], y:ys[Math.floor(i/2)], d:d};
+  }
+  function miniScreen(o, A, P){
+    var g='', w=10*o.d, h=8*o.d, i;
+    g+=rect(o.x-3, o.y-3, w+6, h+6, '#0b0f14', ' rx="4"')+rect(o.x, o.y, w, h, 'var(--screen)');
+    for(i=1;i<10;i++) g+=ln(o.x+i*o.d, o.y, o.x+i*o.d, o.y+h, i===5 ? 'var(--screen-axis)' : 'var(--screen-grid)', 0.7);
+    for(i=1;i<8;i++) g+=ln(o.x, o.y+i*o.d, o.x+w, o.y+i*o.d, i===4 ? 'var(--screen-axis)' : 'var(--screen-grid)', 0.7);
+    return g+traceDiv(o.x, o.y, o.d, 10, 8, A, P, {w:1.6}).s;
+  }
+  function drawOptions(){
+    var g='';
+    Q.opts.forEach(function(op, i){ var o=optGeom(i);
+      g+=miniScreen(o, op.A, op.P)+T(o.x-12, o.y+62, 'ABCD'.charAt(i), {a:'end', fs:16, w:700, c:'var(--ink)'}); });
+    return g;
+  }
+  function drawPicks(){
+    var g='';
+    if(Q && Q.kind==='which'){
+      Q.opts.forEach(function(op, i){ var o=optGeom(i), k='ABCD'.charAt(i), w=10*o.d, h=8*o.d, on=Q.pick===k;
+        var col = Q.marked ? (k===Q.ans ? 'var(--good)' : on ? 'var(--bad)' : '') : on ? 'var(--accent)' : '';
+        g+='<g class="pick'+(Q.locked?' locked':'')+'" data-pick="'+k+'" tabindex="0" role="button" aria-pressed="'+on+'" aria-label="Trace '+k+(on?', your choice':'')+(Q.marked && k===Q.ans?', the right answer':'')+'">'+
+          '<rect class="hit" x="'+(o.x-24)+'" y="'+(o.y-6)+'" width="'+(w+30)+'" height="'+(h+12)+'"/>'+
+          '<rect class="ring" x="'+(o.x-7)+'" y="'+(o.y-7)+'" width="'+(w+14)+'" height="'+(h+14)+'" rx="7" stroke-width="2.5"/>'+
+          (col ? '<rect x="'+(o.x-7)+'" y="'+(o.y-7)+'" width="'+(w+14)+'" height="'+(h+14)+'" rx="7" fill="none" stroke="'+col+'" stroke-width="3.2"/>' : '')+
+          (Q.marked && (k===Q.ans || on) ? T(o.x-12, o.y+86, k===Q.ans ? '✓' : '✗', {a:'end', fs:18, w:700, c:k===Q.ans ? 'var(--good)' : 'var(--bad)'}) : '')+'</g>';
+      });
+    }
+    setKeepFocus(gPicks, g);
+  }
+  function drawQScope(){
+    var q=Q, W=SC.nx*SC.d, H=SC.ny*SC.d, foot=null;
+    var tr=function(A, P, o){ return traceDiv(SC.x, SC.y, SC.d, SC.nx, SC.ny, A, P, o).s; }, t='';
+    if(q.kind==='read'){ t+=tr(q.A, q.P); if(q.marked && q.P<=SC.nx) t+=periodMark(q.P); }
+    else if(q.kind==='which'){
+      if(run || q.marked){ t+=tr(q.ref.A, q.ref.P, {op:0.55, dash:'5 4', w:1.4})+tr(q.A, 1000/q.f/q.tb); foot=[['var(--trace)','4 3','sound 1'],['var(--trace)','','the new sound']]; }
+      else { t+=tr(q.ref.A, q.ref.P); foot=[['var(--trace)','','sound 1']]; }
+    } else {
+      foot=[];
+      if(q.qual){ t+=tr(q.ref.A, q.ref.P, {op:0.5, dash:'5 4', w:1.4}); foot.push(['var(--trace)','4 3','sound 1']); }
+      t+=tr(q.st.A, q.st.P, {w:2}); foot.push(['var(--trace)','','your trace']);
+      if(q.marked){ t+=tr(q.A, q.P, {col:'var(--cursor)', dash:'6 4', w:1.8}); foot.push(['var(--cursor)','5 3','a right answer']); }
+      var hx=SC.x+q.st.P/4*SC.d, hy=SC.y+H/2-q.st.A*SC.d;
+      if(!q.locked) t+='<circle cx="'+f1(hx)+'" cy="'+f1(hy)+'" r="12" fill="var(--accent)" opacity=".25"/>';
+      t+='<circle cx="'+f1(hx)+'" cy="'+f1(hy)+'" r="6.5" fill="var(--accent)" stroke="#fff" stroke-width="1.6"/>';
+    }
+    var g=scopeBody(tbNum(q.tb)+' '+tbUnit(q.tb)+'/div', q.yg+' mV/div', knobAng(TBK, q.tb), knobAng(YGK, q.yg), String(tbNum(q.tb)), String(q.yg), tbUnit(q.tb)+'/div', foot)+t;
+    if(q.kind==='draw' && !q.locked) g+=txt(SC.x+W-6, SC.y+15, 'drag the dot', {a:'end', fs:11.5, c:'var(--accent)', w:600, x:' paint-order="stroke" stroke="var(--screen)" stroke-width="4"'});
+    return g;
+  }
+  // the parts of the right-hand column that the question needs
+  function qShow(){
+    var r=Q && Q.kind==='read';
+    $('#os-ans-row').hidden=!r; $('#os-hear').hidden=!(r && Q.sub==='hear');
+    if(r){ $('#os-ans-lab').innerHTML = Q.sub==='T' ? 'T =' : 'f ='; $('#os-ans-unit').textContent = Q.sub==='T' ? 'ms' : 'Hz'; }
+    svg.classList.toggle('qdraw', !!(Q && Q.kind==='draw' && !Q.locked));
+  }
+  function readAns(){
+    var t=ansIn.value.trim().replace(/[\s  ]/g,'').replace(/[−–]/g,'-');
+    if(/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t=t.replace(/,/g,''); else t=t.replace(',','.');
+    return t==='' || isNaN(+t) ? null : +t;
+  }
+  function near(a, b){ return Math.abs(a-b)<=Math.max(1e-9, Math.abs(b)*0.03); }
+  function qMark(){
+    var q=Q, v=q.val, Tms=q.P*q.tb, Ts=Tms/1000, why='';
+    if(q.kind==='read'){
+      var okNum = q.sub==='T' ? Math.abs(v-Tms)<=0.1*q.tb+1e-9 : (v>=q.lo*0.99 && v<=q.hi*1.01);
+      var okH = q.sub!=='hear' || q.heardPick===(q.heard?'y':'n');
+      q.ok = okNum && okH;
+      var Ttxt = msTxt(tbNum(q.tb)*q.P)+' '+tbUnit(q.tb), one='one cycle is '+q.P+' divisions, so T = '+q.P+' × '+tbNum(q.tb)+' '+tbUnit(q.tb)+' = '+Ttxt;
+      if(q.sub==='T'){
+        q.verdict=(q.ok?'✓ ':'✗ ')+'T = '+msTxt(Tms)+' ms';
+        if(q.ok) why='✓ Correct: '+one+'.';
+        else if(near(v, q.P)) why='✗ '+q.P+' is the number of divisions for one cycle. Multiply by the time base: T = '+q.P+' × '+q.tb+' ms = '+msTxt(Tms)+' ms.';
+        else if(near(v, Ts)) why='✗ That is T in seconds. The box asks for milliseconds: T = '+msTxt(Tms)+' ms.';
+        else if(near(v/Tms, Math.round(v/Tms)) && Math.round(v/Tms)>1) why='✗ That is the time for '+Math.round(v/Tms)+' cycles. Divide by the number of cycles: '+one+'.';
+        else why='✗ Not quite: '+one+'.';
+      } else {
+        var fl=hz(q.f)+' Hz', ftxt=one+' = '+secTxt(Ts)+' s, and f = 1/T = '+fl+'.';
+        q.verdict=(q.ok?'✓ ':'✗ ')+'f = '+fl+(q.sub==='hear' ? (q.heard ? ': it can be heard' : ': it cannot be heard') : '');
+        var hearTxt = q.sub==='hear' ? ' People hear from 20 Hz to 20 000 Hz: '+fl+(q.heard ? ' is inside that range, so it can be heard.' : q.f>20000 ? ' is above it (ultrasound), so it cannot be heard.' : ' is below it, so it cannot be heard.') : '';
+        if(q.ok) why='✓ Correct: '+ftxt+hearTxt;
+        else if(!okNum && near(v, 1/(q.P*tbNum(q.tb)))) why='✗ You used T in '+tbUnit(q.tb)+'. Change T to seconds first: '+ftxt+hearTxt;
+        else if(!okNum && near(v, 1/q.P)) why='✗ You used the number of divisions as T. Multiply by the time base first: '+ftxt+hearTxt;
+        else if(!okNum && near(v, Tms)) why='✗ That is the period T. The frequency is 1/T: '+ftxt+hearTxt;
+        else if(!okNum) why='✗ Not quite: '+ftxt+hearTxt;
+        else why='✗ Your frequency is right, but check the range of human hearing.'+hearTxt;
+      }
+    } else if(q.kind==='which'){
+      q.ok = q.pick===q.ans;
+      q.verdict=(q.ok?'✓ ':'✗ ')+'Trace '+q.ans;
+      var pk=q.opts['ABCD'.indexOf(q.pick)];
+      why=(q.ok ? '✓ Correct: trace '+q.ans : '✗ Trace '+q.pick+' has '+traceWords(pk.dA, pk.dP)+'. The new sound is '+changeWords(q.dA,q.dP)+', so its trace has '+traceWords(q.dA,q.dP)+': trace '+q.ans)+
+        '. Louder means a larger amplitude (a taller trace); a higher pitch means a higher frequency, so a shorter period and more cycles on the screen. The settings are not changed, so the traces can be compared.';
+    } else {
+      var A=q.st.A, P=q.st.P, okA, okP, msgs=[];
+      if(q.qual){
+        okA = q.dA ? (Math.sign(A-q.ref.A)===q.dA && Math.abs(A-q.ref.A)>=0.3) : Math.abs(A-q.ref.A)<=0.2;
+        okP = q.dP ? (Math.sign(P-q.ref.P)===q.dP && Math.abs(P-q.ref.P)>=0.3) : Math.abs(P-q.ref.P)<=0.2;
+        if(!okA) msgs.push(q.dA>0 ? 'louder needs a larger amplitude than sound 1' : q.dA<0 ? 'quieter needs a smaller amplitude than sound 1' : 'just as loud needs the same amplitude as sound 1');
+        if(!okP) msgs.push(q.dP<0 ? 'a higher pitch needs a shorter period (more cycles) than sound 1' : q.dP>0 ? 'a lower pitch needs a longer period (fewer cycles) than sound 1' : 'the same pitch needs the same period as sound 1');
+        q.ok = okA && okP;
+        q.verdict = q.ok ? '✓ Your trace is right' : '✗ Not quite';
+        why = q.ok ? '✓ Correct: compared with sound 1, your trace has '+traceWords(q.dA,q.dP)+'. Any trace like that scores; the yellow one is one right answer.' : '✗ Not quite: '+msgs.join(', and ')+'. The yellow trace is one right answer.';
+      } else {
+        okA = Math.abs(A-q.A)<=0.2; okP = Math.abs(P-q.P)<=0.2;
+        q.ok = okA && okP;
+        var Tq=1000/q.f, pd=q.P, ad=q.A;
+        if(!okP) msgs.push('one cycle should be '+pd+' divisions across (yours is '+P+')');
+        if(!okA) msgs.push('the peaks should be '+ad+' divisions above the centre line (yours are '+A+')');
+        q.verdict = q.ok ? '✓ Your trace is right' : '✗ Not quite';
+        why = (q.ok ? '✓ Correct.' : '✗ Not quite: '+msgs.join(', and ')+'.')+' T = 1/f = 1/'+hz(q.f)+' = '+msTxt(Tq)+' ms, which is '+pd+' divisions at '+q.tb+' ms/div; '+q.amp+' mV at '+q.yg+' mV/div is '+ad+' divisions.';
+      }
+    }
+    q.why=why; q.marked=true;
+    if(q.kind==='read') $('#os-ans-row').classList.add(q.ok ? 'ok' : 'no');
+    qShow(); draw();
+  }
+  function qWorking(){
+    var q=Q, w1='', w2='', w3='';
+    if(!q.marked) return ['', '', 'The working appears after you press Go.'];
+    if(q.kind==='read'){
+      var u=tbUnit(q.tb), tn=tbNum(q.tb), Tn=+(q.P*tn).toPrecision(3), Ts=q.P*q.tb/1000;
+      w1='T = divisions for one cycle × time base<br>T = '+q.P+' × '+tn+'<br>T = '+Tn+' '+u+(q.sub==='T' ? '' : '<br>T = '+secTxt(Ts)+' s');
+      if(q.sub!=='T') w2='f = [[1|T]]<br>f = [[1|'+secTxt(Ts)+']]<br>f = <b>'+hz(q.f)+' Hz</b>';
+      w3='Count the divisions for several cycles and divide by the number of cycles: it is more accurate than measuring one.';
+    } else if(q.kind==='draw' && !q.qual){
+      var Tq=1/q.f;
+      w1='T = [[1|f]]<br>T = [[1|'+hz(q.f)+']]<br>T = '+secTxt(Tq)+' s<br>T = '+msTxt(Tq*1000)+' ms<br>divisions for one cycle = [['+msTxt(Tq*1000)+'|'+q.tb+']]<br>divisions for one cycle = <b>'+q.P+'</b>';
+      w2='divisions for the amplitude = [['+q.amp+'|'+q.yg+']]<br>divisions for the amplitude = <b>'+q.A+'</b>';
+    } else w3='Louder: a larger amplitude, so a taller trace. Higher pitch: a higher frequency, so a shorter period and more cycles across the screen.';
+    return [w1, w2, w3];
+  }
+  function qReadings(){
+    var q=Q, busy=run && !run.over, note;
+    if(!q) return;
+    if(q.marked) note=q.why;
+    else if(busy) note = q.kind==='which' ? 'The new sound plays. Watch the trace change.' : 'The loudspeaker plays the sound, and the microphone turns it into a voltage on the oscilloscope.';
+    else if(q.kind==='read') note=(q.sub==='hear' ? 'A signal generator drives a loudspeaker. ' : 'The oscilloscope shows the sound from the loudspeaker. ')+'The time base is set to <b>'+tbNum(q.tb)+' '+tbUnit(q.tb)+'/div</b>. '+
+      (q.sub==='T' ? 'Find the period T of the sound, in milliseconds.' : q.sub==='f' ? 'Find the frequency f of the sound.' : 'Find the frequency f of the sound, and decide whether a person could hear it.')+
+      ' Count the divisions for several complete cycles. Type your answer'+(q.sub==='hear' ? ', choose Yes or No,' : '')+' then press <b>Go</b>.';
+    else if(q.kind==='which') note='The oscilloscope shows sound 1. The sound is made <b>'+changeWords(q.dA,q.dP)+'</b>. The oscilloscope settings are not changed. Click the trace, A, B, C or D, that shows the new sound, then press <b>Go</b>.';
+    else if(q.qual) note='Sound 1 is shown dashed. The sound is made <b>'+changeWords(q.dA,q.dP)+'</b>; the settings are not changed. Drag the dot (or use the arrow keys) to draw the trace of the new sound, then press <b>Go</b>.';
+    else note='The time base is <b>'+q.tb+' ms/div</b> and the Y-gain is <b>'+q.yg+' mV/div</b>. Draw the trace of a <b>'+hz(q.f)+' Hz</b> sound with an amplitude of <b>'+q.amp+' mV</b>: drag the dot to the top of the first peak (or use the arrow keys), then press <b>Go</b>.';
+    var w=qWorking();
+    $('#os-eq1').innerHTML=FR(w[0]); $('#os-eq1').hidden=!w[0]; $('#os-eq2').innerHTML=FR(w[1]); $('#os-eq2').hidden=!w[1]; $('#os-eq3').innerHTML=FR(w[2]); $('#os-eq3').hidden=!w[2];
+    $('#os-note').innerHTML=FR(note);
+    $('#os-go').innerHTML = q.marked ? '&#9654; Play again' : '&#9654; Go';
+    $('#os-go').disabled=!!busy;
+    if(q.kind==='draw') svg.setAttribute('aria-valuetext', 'your trace: amplitude '+q.st.A+' divisions, period '+q.st.P+' divisions');
+  }
+  function qGo(){
+    var q=Q; if(!q || (run && !run.over)) return;
+    if(!q.locked){
+      if(q.kind==='read'){
+        var v=readAns();
+        if(v===null){ $('#os-note').innerHTML='Type your answer in the box first, then press <b>Go</b>.'; ansIn.focus(); return; }
+        if(q.sub==='hear' && !q.heardPick){ $('#os-note').innerHTML='Choose <b>Yes</b> or <b>No</b>: can a person hear the sound? Then press <b>Go</b>.'; return; }
+        q.val=v; ansIn.disabled=true; Array.prototype.forEach.call($('#os-hseg').querySelectorAll('button'), function(b){ b.disabled=true; });
+      } else if(q.kind==='which' && !q.pick){ $('#os-note').innerHTML='Click one of the traces A, B, C or D first, then press <b>Go</b>.'; return; }
+      q.locked=true; qShow(); drawPicks();
+    }
+    run={t:0, drift:0}; soundOn(); loop(); draw();
+  }
+  function setQM(on){
+    if(on===QM) return;
+    $('#os-mode').querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', String((b.dataset.v==='predict')===on)); });
+    if(on){
+      if(exp()) expBtn.click();
+      qSaved=src(); srcSeg.pick('gen'); stop(); soundOff(); run=null; QM=true;
+    } else { stop(); soundOff(); run=null; QM=false; Q=null; srcSeg.pick(qSaved||'gen'); }
+    ['#os-play','#os-reset','#os-trig','#os-exp','.choices','.sliders','#os-stats'].forEach(function(sel){ var e=$(sel); if(e) e.hidden=on; });
+    $('#os-clear').hidden = on || !exp();
+    $('#os-go').hidden=!on; $('#os-new').hidden=!on; $('#os-q').hidden=!on;
+    svg.classList.remove('qdraw');
+    if(on) newQ(); else { svg.setAttribute('aria-valuetext', 'microphone '+dist+' cm from the source'); newSource(); }
+  }
+  $('#os-mode').addEventListener('click', function(e){ var b=e.target.closest('button'); if(b) setQM(b.dataset.v==='predict'); });
+  segGroup($('#os-kind'), function(v){ qKind=v; newQ(); });
+  segGroup($('#os-hseg'), function(v){ if(Q) Q.heardPick=v; });
+  $('#os-go').addEventListener('click', qGo);
+  $('#os-new').addEventListener('click', function(){ newQ(); if(Q && Q.kind==='read') ansIn.focus(); });
+  ansIn.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); qGo(); } });
+  onPick(svg, function(k){ if(!QM || !Q || Q.kind!=='which' || Q.locked) return; Q.pick=k; drawPicks(); readings(); });
+  // Draw the trace: the dot is the top of the first peak, so it sets the amplitude (up and down) and a quarter of the period (across)
+  function setTrace(A, P){
+    var q=Q; A=Math.round(Math.max(0.2, Math.min(4, A))*5)/5; P=Math.round(Math.max(0.8, Math.min(10, P))*5)/5;
+    A=+A.toFixed(1); P=+P.toFixed(1);
+    if(A!==q.st.A || P!==q.st.P){ q.st.A=A; q.st.P=P; draw(); }
+  }
+
   // ---- buttons and sliders
   playBtn.addEventListener('click', function(){
     if(run && !run.over){ run.paused=!run.paused; if(run.paused){ stop(); soundOff(); draw(); } else { soundOn(); loop(); } return; }
@@ -946,6 +1292,12 @@ function expKey(x, y, upLabel, downLabel){
   function setCur(i, v){ v=Math.round(Math.max(0, Math.min(SC.nx, v))*10)/10; cur[i]=v; draw(); }
   svg.addEventListener('pointerdown', function(e){
     var q=svgPt(e);
+    if(QM){
+      if(!Q || Q.kind!=='draw' || Q.locked) return;
+      if(q.x<SC.x-12 || q.x>SC.x+SC.nx*SC.d+12 || q.y<SC.y-12 || q.y>SC.y+SC.ny*SC.d+12) return;
+      grab={k:'trace'}; svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
+      setTrace((SC.y+SC.ny*SC.d/2-q.y)/SC.d, 4*(q.x-SC.x)/SC.d); return;
+    }
     if(exp() && !MEAS && q.x>=SC.x-6 && q.x<=SC.x+SC.nx*SC.d+6 && q.y>=SC.y && q.y<=SC.y+SC.ny*SC.d){
       var d0=Math.abs(q.x-scrX(cur[0])), d1=Math.abs(q.x-scrX(cur[1]));
       curSel = d0<=d1 ? 0 : 1; grab={k:'cur', i:curSel};
@@ -956,12 +1308,19 @@ function expKey(x, y, upLabel, downLabel){
   });
   svg.addEventListener('pointermove', function(e){
     if(!grab) return; var q=svgPt(e);
+    if(grab.k==='trace'){ setTrace((SC.y+SC.ny*SC.d/2-q.y)/SC.d, 4*(q.x-SC.x)/SC.d); return; }
     if(grab.k==='cur') setCur(grab.i, (q.x-SC.x)/SC.d); else setDist((q.x-grab.off-SX)/PX);
   });
   function endGrab(){ if(!grab) return; grab=null; svg.classList.remove('dragging'); draw(); }
   svg.addEventListener('pointerup', endGrab); svg.addEventListener('pointercancel', endGrab);
   svg.addEventListener('keydown', function(e){
     var k=e.key, big=e.shiftKey;
+    if(QM){
+      if(!Q || Q.kind!=='draw' || Q.locked || e.target!==svg) return;
+      var dA = k==='ArrowUp' ? 0.2 : k==='ArrowDown' ? -0.2 : 0, dP = k==='ArrowRight' ? 0.2 : k==='ArrowLeft' ? -0.2 : 0;
+      if(dA || dP){ setTrace(Q.st.A+dA, Q.st.P+dP); e.preventDefault(); }
+      return;
+    }
     if(exp() && !MEAS && (k==='1' || k==='2')){ curSel=+k-1; draw(); e.preventDefault(); return; }
     if(exp() && !MEAS && (k==='ArrowLeft' || k==='ArrowRight')){ setCur(curSel, cur[curSel]+(k==='ArrowRight'?1:-1)*(big?1:0.1)); e.preventDefault(); return; }
     if(k==='ArrowUp' || k==='ArrowDown' || ((!exp() || MEAS) && (k==='ArrowLeft' || k==='ArrowRight'))){ setDist(dist+((k==='ArrowRight'||k==='ArrowUp')?1:-1)*(big?5:1)); e.preventDefault(); }
@@ -981,6 +1340,8 @@ function expKey(x, y, upLabel, downLabel){
   }
   layout();
   newSource();
+  if(MEAS) $('#os-mode').classList.add('meas-off');
+  else if(/[?&]show=predict\b/.test(location.search)) setQM(true);
 })();
 </script><script id="choice-kit-js">
 /* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices".
