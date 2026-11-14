@@ -63,9 +63,9 @@ SETS = {
       (U_2, 'series', 'Currents and voltages in series and parallel', ['I = I₁ + I₂', 'V = V₁ + V₂'], [('2b-series', 'Currents and voltages')]),
       (U_2, 'resistance', 'Resistance', ['V = IR'], [('2b-resistance', 'V = I × R')]),
       (U_3, 'wave', 'Wave speed, frequency and period', ['v = fλ', 'f = [[1|T]]'], [('3a-equation', 'v = f × λ and f = [[1|T]]')]),
-      (U_3, 'reflection', 'The law of reflection', ['i = r'], [('3b-refraction', 'The law of reflection')]),
+      (U_3, 'reflection', 'The law of reflection', ['i = r'], [('3b-reflection', 'The law of reflection')]),
       (U_3, 'refraction', 'Refractive index', ['n = [[sin i|sin r]]'], [('3b-refraction', 'n = [[sin i|sin r]]')]),
-      (U_3, 'critical', 'Critical angle', ['sin c = [[1|n]]'], [('3b-tir', 'sin c = [[1|n]]')]),
+      (U_3, 'critical', 'Critical angle', ['sin c = [[1|n]]'], [('3b-critical', 'sin c = [[1|n]]')]),
       (U_3, 'sound', 'Speed of sound and echoes', ['speed = [[distance|time]]'], [('3c-speed', 'speed = [[distance|time]]')]),
       (U_4, 'efficiency', 'Efficiency and Sankey diagrams', ['efficiency = [[useful energy output|total energy output]]'], [('4a-efficiency', 'Calculate efficiency')]),
       (U_4, 'work', 'Work done and power', ['W = Fd', 'P = [[W|t]]'], [('4c-work', 'Work done and power')]),
@@ -98,8 +98,9 @@ SETS = {
       '2b-series': ('circuits.html', 'SERIES AND PARALLEL'),
       '2b-resistance': ('circuits.html', 'RESISTANCE'),
       '3a-equation': ('waves.html', 'WAVE EQUATIONS'),
+      '3b-reflection': ('light-and-sound.html', 'REFLECTION'),
       '3b-refraction': ('light-and-sound.html', 'REFRACTION'),
-      '3b-tir': ('light-and-sound.html', 'TOTAL INTERNAL REFLECTION'),
+      '3b-critical': ('light-and-sound.html', 'TOTAL INTERNAL REFLECTION'),
       '3c-speed': ('sound.html', 'SPEED OF SOUND'),
       '4a-efficiency': ('energy-stores-efficiency.html', 'EFFICIENCY'),
       '4c-work': ('work-and-power.html', 'WORK DONE AND POWER'),
@@ -129,7 +130,10 @@ def script(src):
 def sections(js):
     ms = list(SEC.finditer(js)); out = {}
     for a, b in zip(ms, ms[1:] + [None]):
-        out[a.group(1).strip()] = js[a.end():b.start() if b else len(js)]
+        # two sections with the same name (light-and-sound.html has two "2. REFLECTION" comments, with the
+        # Draw the ray code between them) are joined, so neither half is lost
+        k = a.group(1).strip()
+        out[k] = out.get(k, '') + js[a.end():b.start() if b else len(js)]
     return out
 
 def body_css(src):
