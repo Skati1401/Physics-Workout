@@ -23,8 +23,8 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 ## 4. Build: workouts (IGCSE, spec order)
 
 Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the cards to `igcse.html`, then add the unit's activities to the Calculations and Graphs sets.
-
-
+- [ ] **4h** Drawing the construction of an electromagnet or a transformer (6.9P, 6.17P): no draw task yet; lower value (split from 4g, 14 Nov 2026).
+- [ ] **4i** 6b: the microphone version of fixed explanation #1 is missing (split from 4g, 14 Nov 2026).
 
 ## 5. Build: core practicals
 
