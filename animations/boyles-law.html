@@ -180,6 +180,7 @@
   .embed .home-link,.embed .page-head{display:none;}
   .embed .view{max-height:460px;}
   .view.tall,.embed .view.tall{max-height:none;}
+  .meas-off{display:none !important;}
 
 </style>
 <style id="choice-kit">
@@ -687,6 +688,16 @@ function expKey(x, y, upLabel, downLabel){
   function slowOn(){ return pressed(slowBtn); }
   function waitOn(){ return waitSeg.value()==='y'; }
   function step(){ return +intSeg.value(); }
+  // Measure mode (?show=measure): the "Do Experiment" tab of the CP14 practical page. The student reads the Bourdon gauge and the scale
+  // beside the tube and writes the readings in the table on the practical page; this page reads, records and explains nothing (no graph,
+  // table, reading boxes or working). The method is fixed: pump to 250 kPa, let air out 25 kPa at a time, wait for the air to cool each time.
+  // The readings are fixed, and the practical page checks against these same numbers: MEAS_P and MEAS_V must match BL_P and BL_V in
+  // tools/practical-gen/practicals/boyles-law/content.js (see tools/CORE-PRACTICALS.md, "Measure modes").
+  var MEAS=/[?&]show=measure\b/.test(location.search);
+  var MEAS_P=[250, 225, 200, 175, 150, 125, 100];              // Bourdon gauge, kPa (the needle stands on a 5 kPa mark)
+  var MEAS_V=[12.2, 13.2, 14.8, 17.2, 20.0, 24.0, 29.8];       // the top of the oil against the scale, cm³ (on a 0.2 cm³ mark)
+  // the volume the scale shows: the fixed reading for the pressure the gauge is at, once the air has settled
+  function measV(){ var k=MEAS_P.indexOf(Math.round(S.p)); return MEAS && !act && k>=0 ? MEAS_V[k] : V(); }
 
   // state: the true pressure (kPa) and how far the air is above room temperature (K)
   var S={p:100, dT:0}, act=null;        // act: what is happening now {kind:'pump'|'release'|'wait', to, t}
@@ -701,6 +712,7 @@ function expKey(x, y, upLabel, downLabel){
   function nextTarget(){ return E.rd.length ? E.rd[E.rd.length-1].p-step() : PMAX; }
   function expDone(){ return E.rd.length && E.rd[E.rd.length-1].p<=PMIN; }
   function takeReading(){
+    if(MEAS){ E.rd.push({p:S.p, V:measV(), dT:0}); E.justAdded=null; return; }   // the fixed readings
     var i=E.rd.length, prev=i ? E.rd[i-1].V : vol(PMAX,0);
     var pTrue=S.p+0.5*Math.max(-2,Math.min(2,expErr(i+3)));   // the needle is set to the mark by eye
     var v=expReading(vol(pTrue, S.dT), prev, 0.2, i, 0.5);
@@ -763,7 +775,7 @@ function expKey(x, y, upLabel, downLabel){
   function HY(){ return handleY+2; }
   function gaugePt(p, r){ var an=(225-270*p/300)*Math.PI/180; return [GC[0]+r*Math.cos(an), GC[1]-r*Math.sin(an)]; }
   function drawScene(){
-    var g='', v=V(), yb=TOP+v*PX, c, q;
+    var g='', v=MEAS ? measV() : V(), yb=TOP+v*PX, c, q;
     g+=box(6, BENCH, 412, 14, 12, -10, 'var(--wood-f)', {top:'var(--wood-t)', side:'var(--wood-s)'});
     // oil pipe from the bottom of the tube to the reservoir, behind the board
     g+=tube(70, 288, 200, 288, 9, 'var(--steel)', 'var(--steel-hi)');
@@ -802,11 +814,50 @@ function expKey(x, y, upLabel, downLabel){
     return g;
   }
 
+  // Measure mode: close-ups of the two instruments where the graph was.
+  // The scale beside the tube: a mark every 0.2 cm³ and a number every 1 cm³, zero at the sealed top, so the numbers get larger going down.
+  // The top of the oil stands at v, on the dashed line.
+  function scaleClose(x, y, w, h, v, name){
+    var z=44, cy=y+h/2, sx=x+w*0.56, g='', k;
+    g+=rect(x, y, w, h, 'var(--panel)', ' stroke="var(--panel-border)" rx="10"');
+    g+='<clipPath id="bl-sc"><rect x="'+f1(x+3)+'" y="'+f1(y+3)+'" width="'+f1(w-6)+'" height="'+f1(h-6)+'" rx="8"/></clipPath><g clip-path="url(#bl-sc)">';
+    g+=rect(x, y-4, sx-x+2, h+8, 'var(--wood)', ' opacity=".55"');
+    g+=rect(sx+4, y-4, 30, cy-y+4, 'var(--air)')+rect(sx+4, cy, 30, y+h-cy+4, 'var(--oil)')+rect(sx+8, cy, 6, y+h-cy+4, '#fff', ' opacity=".28"');
+    g+=ln(sx+3, y-4, sx+3, y+h+4, 'var(--glass)', 2.6)+ln(sx+35, y-4, sx+35, y+h+4, 'var(--glass)', 2.6);
+    for(k=Math.floor((v-h/2/z)*5); k<=Math.ceil((v+h/2/z)*5); k++){ if(k<0) continue;
+      var yy=cy+(k/5-v)*z, big=k%5===0;
+      g+=ln(sx-(big?26:14), yy, sx, yy, 'var(--ink)', big?1.7:1.1);
+      if(big && yy>y+12 && yy<y+h-8) g+=txt(sx-31, yy+5, k/5, {a:'end', fs:14.5, c:'var(--ink)', w:600}); }
+    g+=ln(x+8, cy, sx+35, cy, 'var(--accent)', 1.2, ' stroke-dasharray="4 3"');
+    g+=txt(sx+19, y+22, 'air', {a:'middle', fs:12, c:'var(--ink)'})+txt(sx+19, y+h-12, 'oil', {a:'middle', fs:12, c:'var(--ink)'})+'</g>';
+    return g+txt(x+w/2, y+h+18, name, {a:'middle', fs:12.5, c:'var(--ink)'});
+  }
+  // The Bourdon gauge: a mark every 5 kPa, a longer one every 10 kPa and a number every 50 kPa
+  function gaugeClose(cx, cy, R, p){
+    function pt(q, r){ var an=(225-270*q/300)*Math.PI/180; return [cx+r*Math.cos(an), cy-r*Math.sin(an)]; }
+    var g='<circle cx="'+f1(cx+3)+'" cy="'+f1(cy+3)+'" r="'+(R+6)+'" fill="#000" opacity=".12"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R+6)+'" fill="var(--steel)"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+(R+2.5)+'" fill="none" stroke="var(--steel-hi)" stroke-width="1.5" opacity=".8"/><circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+R+'" fill="var(--panel)" stroke="var(--steel-sh)" stroke-width="1.2"/>', q;
+    for(q=0;q<=300;q+=5){ var o=pt(q,R-5), n=pt(q, q%50===0 ? R-20 : q%10===0 ? R-14 : R-10); g+=ln(o[0],o[1],n[0],n[1],'var(--ink)', q%50===0?1.8:q%10===0?1.2:0.9);
+      if(q%50===0){ var t=pt(q,R-32); g+=txt(t[0], t[1]+5, q, {a:'middle', fs:13.5, w:600, c:'var(--ink)'}); } }
+    var nd=pt(p, R-8), bk=pt(p+200, 12);   // the tail is opposite the tip (200 kPa is half a turn)
+    g+=ln(bk[0], bk[1], nd[0], nd[1], 'var(--beta)', 2, ' stroke-linecap="round"')+'<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="5" fill="var(--beta)"/>';
+    return g+txt(cx, cy+R*0.52, 'kPa', {a:'middle', fs:13, w:600, c:'var(--ink)'})+txt(cx, cy+R+26, 'pressure gauge', {a:'middle', fs:12.5, c:'var(--ink)'});
+  }
+  function measPanel(){
+    var tall=svg.classList.contains('tall'), x=tall?16:520, w=tall?398:326, y=tall?356:12, h=tall?250:292;
+    return scaleClose(x+4, y+6, 122, h, measV(), 'scale (cm³)')+txt(x+w-96, y+22, 'Close-ups', {a:'middle', fs:12.5, w:600, c:'var(--ink)'})+gaugeClose(x+w-96, y+h/2+10, 86, S.p);
+  }
+  function measNote(){
+    if(act) return act.kind==='wait' ? 'Waiting a minute for the trapped air to return to room temperature.' : act.kind==='pump' ? 'Pumping…' : 'Opening the valve…';
+    var n=E.rd.length;
+    if(!n) return 'Press <b>Pump up the pressure</b> to pump to the highest safe pressure. Then you let air out a little at a time: '+MEAS_P.length+' readings in all.';
+    return 'Reading '+n+' of '+MEAS_P.length+'. Read the <b>pressure gauge</b> (a mark every 5 kPa) and the <b>volume of the trapped air</b>, where the top of the oil meets the scale (a mark every 0.2 cm³), and write both in your table. '+
+      (expDone() ? 'That was the last reading: now work out 1/V for each row.' : 'Then press <b>Let some air out</b>.');
+  }
   function draw(){
     layout();
     var g='<g transform="translate('+SOX+',0)">'+drawScene();
     if(act && slowOn()) g+=txt(424, 20, 'slow motion', {a:'end', fs:12, c:'var(--accent)', halo:1});
-    g+='</g>'+drawGraph();
+    g+='</g>'+(MEAS ? measPanel() : drawGraph());
     svg.innerHTML=g;
     readings();
   }
@@ -816,7 +867,7 @@ function expKey(x, y, upLabel, downLabel){
   var lastNote='';
   function readings(){
     var ex=exp(), v=V();
-    svg.setAttribute('aria-valuenow', Math.round(S.p)); svg.setAttribute('aria-valuetext', 'p = '+Math.round(S.p)+' kPa, V = '+v.toFixed(1)+' cm³');
+    if(!MEAS){ svg.setAttribute('aria-valuenow', Math.round(S.p)); svg.setAttribute('aria-valuetext', 'p = '+Math.round(S.p)+' kPa, V = '+v.toFixed(1)+' cm³'); }
     if(!ex) $('#bl-stats').innerHTML=stat('p', Math.round(S.p)+' kPa')+stat('V', v.toFixed(1)+' cm³')+stat('pV (kPa cm³)', grp(Math.round(S.p*v)), true)+stat('Air', sn(20+S.dT,1)+' °C');
     if(ex) expTable($('#bl-table'), [{label:'p (kPa)', key:'v'}, {label:'V (cm³)', key:'V', dp:1}, {label:'1/V (cm⁻³)', key:'iv', dp:4}, {label:'pV (kPa cm³)', key:'pv'}],
       E.rd.map(function(r){ return {v:r.p, V:r.V, iv:1/r.V, pv:Math.round(r.p*r.V)}; }), E.justAdded);
@@ -861,10 +912,12 @@ function expKey(x, y, upLabel, downLabel){
       else if(waitOn()) note='Done: p against 1/V is a straight line through the origin, so p ∝ [[1|V]] and pV is constant: <b>Boyle’s law</b>. Gradient = pV = '+grp(Math.round(f2.m))+' kPa cm³.';
       else { var worst=E.rd.reduce(function(m,r){ return Math.max(m, Math.abs(r.dT)); },0); note='Done, but you read straight away, before the air was back at room temperature (it warms when squashed and cools as it expands). It was up to '+sig(worst,2)+' K out, so the volumes, and pV, are off. Try <b>Wait to cool</b>.'; }
     }
+    if(MEAS) note=measNote();
     if(note!==lastNote){ $('#bl-note').innerHTML=FR(note); lastNote=note; }
 
     if(ex){ playBtn.innerHTML = expDone() ? 'Done' : (!E.rd.length ? '&#9654; Pump to '+PMAX+' kPa and read' : '&#9654; Release to '+nextTarget()+' kPa and read'); playBtn.disabled = expDone() || !!act; }
     else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
+    if(MEAS) playBtn.innerHTML = expDone() ? 'Done' : (!E.rd.length ? '&#9654; Pump up the pressure' : '&#9654; Let some air out');
     $('#bl-pump').disabled = !!act || S.p>=PMAX-1e-9; $('#bl-rel').disabled = !!act || S.p<=PMIN+1e-9;
     $('#bl-clear').disabled=!!act;
   }
@@ -949,6 +1002,13 @@ function expKey(x, y, upLabel, downLabel){
   });
 
   watchEquals($('#bl-eq1')); watchEquals($('#bl-eq2'));
+  if(MEAS){
+    expBtn.setAttribute('aria-pressed','true');
+    ['#bl-exp','#bl-slow','#bl-clear','.under .cgrid','.side .cgrid','#bl-tablewrap','#bl-stats','details.working'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+    // nothing is dragged in this mode, so the picture is a picture, not a slider
+    svg.setAttribute('role','img'); svg.removeAttribute('tabindex'); svg.removeAttribute('aria-valuemin'); svg.removeAttribute('aria-valuemax');
+    svg.setAttribute('aria-label','Boyle’s law apparatus: trapped air above oil in a glass tube beside a scale, a reservoir with a pressure gauge, and a hand pump. On the right are close-ups of the scale at the top of the oil and of the pressure gauge for you to read');
+  }
   setRows(); draw();
 })();
 </script><script id="choice-kit-js">

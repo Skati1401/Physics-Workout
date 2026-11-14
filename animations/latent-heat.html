@@ -173,6 +173,8 @@
   .embed .home-link,.embed .page-head{display:none;}
   .embed .view{max-height:460px;}
   .view.tall,.embed .view.tall{max-height:none;}
+  .meas-off{display:none !important;}
+  .side>.seg.tabs{align-self:flex-start;}
 
 </style>
 <style id="choice-kit">
@@ -685,6 +687,17 @@ function expKey(x, y, upLabel, downLabel){
   var jumpSeg=segGroup($('#lh-jump'), function(v){ stop(); t=+v; draw(); });
   var showQ=location.search.match(/[?&]show=(fus|vap)\b/);
   if(showQ){ modeSeg.pick(showQ[1]); $('#lh-mode').hidden=true; }
+  // Measure mode (?show=measure): the "Do Experiment" tab of the CP13 practical page. The student reads the joulemeter and the balances
+  // and writes the readings in the table on the practical page; this page reads, records and explains nothing (no graph, table, reading
+  // boxes or working). &part=fus|vap fixes the part and hides the Part switch. The heater runs 2 minutes at a time and stops, with a
+  // control funnel and melting ice (fusion) or a lagged beaker (vaporisation). The readings are fixed, and the practical page checks
+  // against these same numbers: MEAS_ME, MEAS_MC and MEAS_B must match LH_ME, LH_MC and LH_B in
+  // tools/practical-gen/practicals/latent-heat/content.js (see tools/CORE-PRACTICALS.md, "Measure modes").
+  var MEAS=/[?&]show=measure\b/.test(location.search), measPart=(location.search.match(/[?&]part=(fus|vap)\b/)||[])[1];
+  var MEAS_ME=[0, 15.6, 31.4, 47.1, 62.8, 78.5];           // fusion: balance under the experimental beaker, g, at 0, 2, 4, 6, 8, 10 min
+  var MEAS_MC=[0, 1.6, 3.3, 4.7, 6.4, 8.0];                // fusion: balance under the control beaker, g
+  var MEAS_B=[350.0, 345.0, 340.1, 335.0, 329.9, 325.0];   // vaporisation: balance, g
+  // the joulemeter reads 4800 J more every 2 minutes (fusion, 40 W) or 12 000 J more (vaporisation, 100 W)
   function fus(){ return modeSeg.value()==='fus'; }
   function exp(){ return pressed(expBtn); }
   function slowOn(){ return pressed(slowBtn); }
@@ -711,6 +724,10 @@ function expKey(x, y, upLabel, downLabel){
   function takeReading(){
     var i=E.rd.length, tm=nextT(), p=E.rd[i-1];
     var r={t:tm, E:Math.round(energy(tm))};
+    if(MEAS){                                                // the fixed readings
+      if(fus()){ r.me=MEAS_ME[i]; r.mc=MEAS_MC[i]; r.dm=+(r.me-r.mc).toFixed(1); } else { r.b=MEAS_B[i]; r.dm=+(BAL0-r.b).toFixed(1); }
+      E.rd.push(r); E.justAdded=null; t=tm; return;
+    }
     if(fus()){
       r.me=expReading(mExp(tm), p?p.me:0, 0.1, i, 1);
       r.mc=expReading(mCon(tm), p?p.mc:0, 0.1, i+3, 1);
@@ -879,11 +896,36 @@ function expKey(x, y, upLabel, downLabel){
     return g;
   }
 
+  // Measure mode: close-ups of the instruments where the graph was: the stopwatch, the joulemeter and the display of each balance.
+  // While the heater is on they run with the apparatus; when it stops they show the fixed readings.
+  function bigLcd(cx, top, w, text, name){
+    return shadow(cx-w/2, top+58, w)+icase(cx-w/2, top, w, 58)+rect(cx-w/2+7, top+9, w-14, 40, 'var(--lcd)', ' rx="3" stroke="var(--case-s)" stroke-width="1"')+
+      txt(cx+w/2-16, top+38, text, {a:'end', fs:24, w:600, c:'var(--lcd-ink)'})+txt(cx, top+78, name, {a:'middle', fs:12.5, c:'var(--ink)'});
+  }
+  function measPanel(){
+    var tall=svg.classList.contains('tall'), x=tall?16:520, w=tall?398:326, y=tall?356:12, g='', L=E.rd[E.rd.length-1], on=!!E.run;
+    var en=on ? Math.round(energy(t)) : L.E, sec=Math.round(t*60);
+    g+=txt(x+w/2, y+16, 'Close-ups', {a:'middle', fs:12.5, w:600, c:'var(--ink)'});
+    g+=stopwatch(x+10, y+56, Math.floor(sec/60)+':'+('0'+sec%60).slice(-2), 1.3)+txt(x+10+51, y+56+52+20, 'stopwatch', {a:'middle', fs:12.5, c:'var(--ink)'});
+    var MJ={cx:x+w-104, top:y+38, w:172, h:88};
+    g+=dmm(MJ, {text:grp(en)+' J', fs:24, tl:'var(--plug-k)', tr:'var(--plug-k)'})+txt(MJ.cx, MJ.top+MJ.h+20, 'joulemeter', {a:'middle', fs:12.5, c:'var(--ink)'});
+    var by=y+(tall?176:190);
+    if(fus()) g+=bigLcd(x+w/4-4, by, 148, (on?mExp(t):L.me).toFixed(1)+' g', 'balance, experimental')+bigLcd(x+w*3/4+2, by, 148, (on?mCon(t):L.mc).toFixed(1)+' g', 'balance, control');
+    else g+=bigLcd(x+w/2, by, 176, (on?balance(t):L.b).toFixed(1)+' g', 'balance');
+    return g;
+  }
+  function measNote(){
+    if(E.run) return 'Heater on for 2 minutes…';
+    var n=E.rd.length, F=fus();
+    return 'Reading '+n+' of '+MEAS_B.length+'. '+(n===1 ? (F ? 'The joulemeter has been reset and both beakers are empty. ' : 'The water is already boiling and the joulemeter has been reset. ') : '')+
+      'Read the <b>joulemeter</b> and '+(F ? 'the <b>balance</b> under each beaker' : 'the <b>balance</b>')+' (to 0.1 g) on the close-ups, and write them in your table. '+
+      (done() ? 'That was the last reading: now work out Δm for each row.' : 'Then press <b>Switch on for 2 minutes</b>.');
+  }
   function draw(){
     layout();
     var g='<g transform="translate('+SOX+',0)">'+(fus() ? sceneFus() : sceneVap());
     if((running||E.run) && slowOn()) g+=txt(8, fus()?106:26, 'slow motion', {fs:12, c:'var(--accent)', halo:1});
-    g+='</g>'+drawGraph();
+    g+='</g>'+(MEAS ? measPanel() : drawGraph());
     svg.innerHTML=g;
     readings();
   }
@@ -944,10 +986,12 @@ function expKey(x, y, upLabel, downLabel){
       else if(F) note='Gradient: L<sub>f</sub> = <b>'+Math.round(Lk)+' kJ kg⁻¹</b>, '+sig(off,1)+'% above 334 kJ kg⁻¹: a little of the heater’s energy warmed the funnel and the melted water instead.';
       else note='Gradient: L<sub>v</sub> = <b>'+Math.round(Lk)+' kJ kg⁻¹</b>, '+sig(off,2)+'% above 2260 kJ kg⁻¹: energy is lost from the beaker to the room, so more ΔE is counted for each gram boiled off.'+(lagSeg.value()==='n'?' Try it lagged.':'');
     }
+    if(MEAS) note=measNote();
     if(note!==lastNote){ $('#lh-note').innerHTML=FR(note); lastNote=note; }
 
     if(ex){ playBtn.innerHTML = done() ? 'Done' : (!E.rd.length ? '&#9654; Read at 0 min' : '&#9654; Run to '+nextT()+' min and read'); playBtn.disabled = done() || !!E.run; }
     else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
+    if(MEAS) playBtn.innerHTML = done() ? 'Done' : '&#9654; Switch on for 2 minutes';
     $('#lh-clear').disabled=!!E.run;
   }
 
@@ -986,7 +1030,7 @@ function expKey(x, y, upLabel, downLabel){
     E.justAdded=null; E.run={to:nextT(), rate:1.6}; loop(); draw();
   }
   function reset(){ stop(); E.run=null; t=0; drops=[]; bubbles=[]; jumpSeg.pick(null); draw(); }
-  function clearRun(){ stop(); E={rd:[], run:null, justAdded:null}; t=0; drops=[]; bubbles=[]; draw(); }
+  function clearRun(){ stop(); E={rd:[], run:null, justAdded:null}; t=0; drops=[]; bubbles=[]; if(MEAS) takeReading(); draw(); }
   function setRows(){
     var F=fus(), ex=exp();
     $('#lh-jlab').hidden=$('#lh-jump').hidden=ex;
@@ -996,6 +1040,8 @@ function expKey(x, y, upLabel, downLabel){
     $('#lh-clear').hidden=!ex; $('#lh-tablewrap').hidden=!ex; $('#lh-stats').hidden=ex;
     svg.setAttribute('aria-label', F ? 'Two funnels of crushed ice, each with an immersion heater. Only the experimental heater is switched on, through a joulemeter; the melted water drips into beakers. A graph of the readings is on the right.'
       : 'A beaker of boiling water on a balance, kept boiling by an immersion heater connected through a joulemeter. A graph of the readings is on the right.');
+    if(MEAS) svg.setAttribute('aria-label', F ? 'Two funnels of crushed ice, each with an immersion heater. Only the experimental heater is switched on, through a joulemeter; the melted water drips into a beaker on a balance under each funnel. On the right are close-ups of the stopwatch, the joulemeter and the two balances for you to read.'
+      : 'A lagged beaker of boiling water on a balance, kept boiling by an immersion heater connected through a joulemeter. On the right are close-ups of the stopwatch, the joulemeter and the balance for you to read.');
   }
   function setMode(){ setGraphButtons(); setRows(); clearRun(); }
   function setExp(){ setRows(); clearRun(); }
@@ -1010,6 +1056,12 @@ function expKey(x, y, upLabel, downLabel){
   $('#lh-clear').addEventListener('click', clearRun);
 
   watchEquals($('#lh-eq1')); watchEquals($('#lh-eq2'));
+  if(MEAS){
+    expBtn.setAttribute('aria-pressed','true');
+    if(measPart){ modeSeg.pick(measPart); $('#lh-mode').hidden=true; }
+    else if(EMBED) $('.side').insertBefore($('#lh-mode'), $('.side').firstChild);   // in a frame the heading is hidden, so the Part switch moves into the right-hand column
+    ['#lh-exp','#lh-slow','#lh-clear','.under .cgrid','.side .cgrid','#lh-tablewrap','#lh-stats','details.working'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+  }
   setMode();
 })();
 </script><script id="choice-kit-js">

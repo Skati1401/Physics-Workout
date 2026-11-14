@@ -179,6 +179,8 @@
   .embed .home-link,.embed .page-head{display:none;}
   .embed .view{max-height:460px;}
   .view.tall,.embed .view.tall{max-height:none;}
+  .meas-off{display:none !important;}
+  .side>.seg.tabs{align-self:flex-start;}
 
 </style>
 <style id="choice-kit">
@@ -700,6 +702,16 @@ function expKey(x, y, upLabel, downLabel){
   var tIn=$('#th-t'), rIn=$('#th-r');
   var showQ=location.search.match(/[?&]show=(cal|pd)\b/);
   if(showQ){ modeSeg.pick(showQ[1]); $('#th-mode').hidden=true; }
+  // Measure mode (?show=measure): the "Do Experiment" tab of the CP12 practical page. The student reads the instruments and writes the
+  // readings in the table on the practical page; this page reads, records and explains nothing (no graph, table, reading boxes or working).
+  // &part=cal|pd fixes the part and hides the Part switch. The readings are fixed, and the practical page checks against these same numbers:
+  // MEAS_TH, MEAS_R, MEAS_RV, MEAS_VR and MEAS_VT must match TH_TH, TH_R, TH_RV, TH_VR and TH_VT in
+  // tools/practical-gen/practicals/thermistor/content.js (see tools/CORE-PRACTICALS.md, "Measure modes").
+  var MEAS=/[?&]show=measure\b/.test(location.search), measPart=(location.search.match(/[?&]part=(cal|pd)\b/)||[])[1];
+  var MEAS_TH=[0, 11, 21, 30, 39.5, 50.5, 59.5, 70.5, 79];                         // Part 1: thermometer, °C (read to 0.5 °C on the close-up)
+  var MEAS_R=[16.57, 9.47, 5.97, 4.03, 2.71, 1.788, 1.286, 0.886, 0.671];          // Part 1: ohmmeter, kΩ
+  var MEAS_MYST=34, MEAS_RV=[2, 5, 8];                                             // Part 2: the beaker's temperature (°C, never shown); settings of the variable resistor, kΩ
+  var MEAS_VR=[2.21, 3.56, 4.19], MEAS_VT=[3.77, 2.42, 1.79];                      // Part 2: voltmeter across R and across the thermistor, V
   function mode(){ return modeSeg.value(); }
   function cal(){ return mode()==='cal'; }
   function exp(){ return pressed(expBtn); }
@@ -717,6 +729,7 @@ function expKey(x, y, upLabel, downLabel){
   function nextTarget(){ return E.rd.length ? E.rd.length*step() : 0; }
   function calDone(){ return E.rd.length && E.rd[E.rd.length-1].tt>=TMAX; }
   function takeReading(){
+    if(MEAS){ var k=E.rd.length; E.rd.push({tt:k*10, th:MEAS_TH[k], R:MEAS_R[k]}); E.justAdded=null; thCal=MEAS_TH[k]; return; }   // the fixed readings
     var i=E.rd.length, tt=i*step();
     var thr = i===0 ? 0 : tt+0.5*Math.max(-1, Math.min(1, expErr(i)));   // where the heating stopped, read to 0.5 °C
     var R = ohm(Rth(thr-lag(thr))*(1+0.003*expErr(i+5)));
@@ -730,6 +743,7 @@ function expKey(x, y, upLabel, downLabel){
   var M={rep:0, theta:null, read:null, checked:false};
   function newMystery(){ M.rep++; var r=rng(SEED+M.rep*7919); r(); M.theta=20+Math.floor(r()*56); M.read=null; M.checked=false; $('#th-gin').value=''; $('#th-gfb').textContent=''; $('#th-gfb').className='gfb'; }
   function readMeters(){
+    if(MEAS){ var k=MEAS_RV.indexOf(Rv()); M.read={VS:VREAD, VR:MEAS_VR[k], VT:MEAS_VT[k], R:Rv()}; return; }   // the fixed readings
     var rt=Rth(M.theta), R=Rv();
     M.read={VS:VREAD, VR:+(VREAD*R/(rt+R)).toFixed(2), VT:+(VREAD*rt/(rt+R)).toFixed(2), R:R};
   }
@@ -746,6 +760,7 @@ function expKey(x, y, upLabel, downLabel){
     var tall=svg.getBoundingClientRect().width<520 && svg.getBoundingClientRect().width>0, C=cal(), W, H;
     if(tall){ SOX=0; W=430; G={x:66, y:366, w:336, h:C?230:190}; DG=[55,636]; H=C?650:756; }
     else { SOX=36; W=860; G=C ? {x:578, y:30, w:256, h:262} : {x:578, y:28, w:256, h:150}; DG=[530,234]; H=350; }
+    if(tall && MEAS && !C){ DG=[55,524]; H=644; }   // the voltmeter close-ups are shorter than the graph, so the circuit diagram moves up
     var vb='0 0 '+W+' '+H; if(svg.getAttribute('viewBox')!==vb) svg.setAttribute('viewBox', vb);
     svg.classList.toggle('tall', tall);
   }
@@ -795,7 +810,7 @@ function expKey(x, y, upLabel, downLabel){
     g+=thermo(100, 212, 102, 0, 22, 100, Math.max(0, Math.min(100, live)), {step:10, num:20, side:-1, fs:11});
     g+=glass(cx, yb, rx, 6, 120);
     var shown = exp() && !E.heat ? (E.rd.length ? E.rd[E.rd.length-1].th : 0) : live;
-    g+=txt(112, 22, 'thermometer '+(exp()? (Math.round(shown*2)/2).toFixed(1) : shown.toFixed(1))+' °C', {fs:12.5, w:600, c:'var(--ink)', halo:1});
+    g+=txt(112, 22, MEAS ? 'thermometer' : 'thermometer '+(exp()? (Math.round(shown*2)/2).toFixed(1) : shown.toFixed(1))+' °C', {fs:12.5, w:600, c:'var(--ink)', halo:1});
     if(E.heat) g+=txt(112, 40, E.heat.stir ? 'stirring, waiting…' : 'heating…', {fs:12, c:'var(--accent)', halo:1});
     g+=txt(188, 196, 'thermistor', {fs:12, c:'var(--ink)', halo:1})+ln(186, 194, 136, 207, 'var(--ink-faint)', 1);
     // ohmmeter on the bench
@@ -898,12 +913,40 @@ function expKey(x, y, upLabel, downLabel){
     return g;
   }
 
+  // Measure mode: close-ups of the instruments where the graph was. Part 1: the thermometer (a mark every 1 °C, the thread on a mark
+  // or half-way between two) and the ohmmeter. Part 2: the two voltmeters. No reading is written anywhere else.
+  function measPanel(){
+    var tall=svg.classList.contains('tall'), x=tall?16:520, w=tall?398:326, y=tall?356:12, g='';
+    if(cal()){
+      var live=E.heat ? E.heat.cur : thCal, R=E.heat ? Rth(live) : E.rd[E.rd.length-1].R;
+      g+=thermoClose(x+6, y+6, 132, tall?250:292, clamp(live,0,100), 'th', 'thermometer (°C)');
+      var MO={cx:x+w-88, top:y+(tall?96:116), w:164, h:92};
+      g+=txt(MO.cx, y+22, 'Close-ups', {a:'middle', fs:12.5, w:600, c:'var(--ink)'});
+      g+=dmm(MO, {text:ohmTxt(R)+' kΩ', letter:'Ω', fs:25})+txt(MO.cx, MO.top+MO.h+20, 'ohmmeter', {a:'middle', fs:12.5, c:'var(--ink)'});
+    } else {
+      var mw=tall?164:138, A={cx:x+w/4-6, top:y+38, w:mw, h:84}, Bm={cx:x+w*3/4+6, top:y+38, w:mw, h:84};
+      var show=function(v){ return M.read ? v.toFixed(2)+' V' : '– – –'; };
+      g+=txt(x+w/2, y+16, 'Close-up of the voltmeters', {a:'middle', fs:12.5, w:600, c:'var(--ink)'});
+      g+=dmm(A, {text:show(M.read && M.read.VR), letter:'V', fs:24})+txt(A.cx, A.top+A.h+20, 'across R', {a:'middle', fs:12.5, c:'var(--ink)'});
+      g+=dmm(Bm, {text:show(M.read && M.read.VT), letter:'V', fs:24})+txt(Bm.cx, Bm.top+Bm.h+20, 'across R<tspan font-size="9" dy="3">T</tspan>', {a:'middle', fs:12.5, c:'var(--ink)'});
+    }
+    return g;
+  }
+  function measNote(){
+    if(cal()){
+      if(E.heat) return E.heat.stir ? 'Stirring and waiting, so that the thermistor is at the same temperature as the water and the thermometer.' : 'Heating the water…';
+      var n=E.rd.length, s='Reading '+n+' of '+MEAS_TH.length+(n===1?': ice and water':'')+'. Read the <b>thermometer</b> on the close-up to the nearest 0.5 °C and the <b>ohmmeter</b>, and write both in your table. ';
+      return s+(calDone() ? 'That was the last reading: now work out T, 1/T and ln R for each row.' : 'Then press <b>Heat the water</b>.');
+    }
+    return (M.read ? 'Write down R and the reading of each voltmeter. Then choose another setting of the variable resistor and read the voltmeters again, until you have all three.'
+      : 'The thermistor is in a beaker of water whose temperature you do not know. The variable resistor is set to '+Rv().toFixed(1)+' kΩ. Press <b>Read the voltmeters</b>.');
+  }
   function draw(){
     layout();
     var g='<defs><marker id="th-ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker></defs>';
     g+='<g transform="translate('+SOX+',0)">'+(cal() ? sceneCal() : scenePd());
     if((running||E.heat) && slowOn()) g+=txt(424, 58, 'slow motion', {a:'end', fs:12, c:'var(--accent)', halo:1});
-    g+='</g>'+drawGraph();
+    g+='</g>'+(MEAS ? measPanel() : drawGraph());
     if(!cal()){ var ex=exp(), out=outSeg.value(); g+=diagramPd(DG[0], DG[1], !ex && out==='res', !ex && out==='th'); }
     svg.innerHTML=g;
     readings();
@@ -991,12 +1034,14 @@ function expKey(x, y, upLabel, downLabel){
       else if(!M.checked) note='Find R<sub>T</sub> from the two voltmeter readings, then T from ln R<sub>T</sub> = b/T + ln R₀. Type θ in °C and press <b>Check</b>.';
       else note='The mystery beaker was at <b>'+M.theta+' °C</b>. Press <b>New mystery beaker</b> for another.';
     }
+    if(MEAS) note=measNote();
     if(note!==lastNote){ $('#th-note').innerHTML=FR(note); lastNote=note; }
 
     // buttons
     if(ex && C){ playBtn.innerHTML = calDone() ? 'Done' : (!E.rd.length ? '&#9654; Read at 0 &deg;C' : '&#9654; Heat to '+nextTarget()+' &deg;C and read'); playBtn.disabled = calDone() || !!E.heat; }
     else if(ex){ playBtn.innerHTML='&#9654; Read the voltmeters'; playBtn.disabled=false; }
     else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
+    if(MEAS && C) playBtn.innerHTML = calDone() ? 'Done' : '&#9654; Heat the water';
     $('#th-clear').disabled=!!E.heat;
     $('#th-gcheck').disabled=!M.read || M.checked; $('#th-gin').disabled=!M.read || M.checked;
   }
@@ -1023,12 +1068,12 @@ function expKey(x, y, upLabel, downLabel){
   function run(){ if(cal() && thCal>=TMAX) thCal=0; if(!cal() && thPd>=100) thPd=0; running=true; jumpSeg.pick(null); loop(); draw(); }
   function heatStep(){
     if(!E.rd.length){ takeReading(); draw(); return; }
-    var from=E.rd[E.rd.length-1].th, to=nextTarget();
+    var from=E.rd[E.rd.length-1].th, to=MEAS ? MEAS_TH[E.rd.length] : nextTarget();
     E.justAdded=null;
     E.heat={from:from, to:to, cur:from, rate:6, stir:false}; loop(); draw();
   }
   function reset(){ stop(); E.heat=null; if(cal()) thCal=0; jumpSeg.pick(null); draw(); }
-  function clearCal(){ stop(); E={rd:[], heat:null, justAdded:null}; thCal=0; draw(); }
+  function clearCal(){ stop(); E={rd:[], heat:null, justAdded:null}; thCal=0; if(MEAS) takeReading(); draw(); }
   function jumpTo(v){ stop(); if(cal()) thCal=v; else thPd=v; draw(); }
   function setJumps(){
     var js = cal() ? [0,20,40,60,80] : [0,40,100];
@@ -1043,8 +1088,11 @@ function expKey(x, y, upLabel, downLabel){
     $('#th-clear').hidden=!(ex && C); $('#th-new').hidden=!(ex && !C);
     $('#th-grow').hidden=!C; $('#th-stats').hidden=C && ex;
     $('#th-tablewrap').hidden=!(C && ex); $('#th-guess').hidden=C || !ex;
+    if(MEAS){ $('#th-vlab').hidden=$('#th-vr').hidden=C; }
     svg.setAttribute('aria-label', C ? 'A thermistor and a thermometer in a beaker of water on a tripod over a Bunsen burner, with a digital ohmmeter on the bench, and a graph of the readings on the right'
       : 'A potential divider: a 6.0 V supply, a variable resistor and a thermistor in series, with a digital voltmeter across each and the thermistor in a water bath, built on the bench; the graph and the circuit diagram are on the right');
+    if(MEAS) svg.setAttribute('aria-label', C ? 'A thermistor and a thermometer in a beaker of water on a tripod over a Bunsen burner, with a digital ohmmeter on the bench. On the right are close-ups of the thermometer and the ohmmeter for you to read'
+      : 'A potential divider: a 6.0 V supply, a variable resistor and a thermistor in series, with a digital voltmeter across each; the thermistor is in a beaker of water. On the right are close-ups of the two voltmeters for you to read, above the circuit diagram');
   }
   function setMode(){ stop(); E.heat=null; setJumps(); setGraphButtons(); setRows(); if(!cal() && exp() && M.theta===null) newMystery(); draw(); }
   function setExp(){ stop(); E.heat=null; if(exp() && !cal() && M.theta===null) newMystery(); if(cal()) thCal=0; setGraphButtons(); setRows(); draw(); }
@@ -1073,6 +1121,18 @@ function expKey(x, y, upLabel, downLabel){
   $('#th-gin').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); if(!$('#th-gcheck').disabled) check(); } });
 
   watchEquals($('#th-eq1')); watchEquals($('#th-eq2'));
+  if(MEAS){
+    expBtn.setAttribute('aria-pressed','true');
+    if(measPart){ modeSeg.pick(measPart); $('#th-mode').hidden=true; }
+    else if(EMBED) $('.side').insertBefore($('#th-mode'), $('.side').firstChild);   // in a frame the heading is hidden, so the Part switch moves into the right-hand column
+    M.theta=MEAS_MYST; rIn.value=MEAS_RV[0];
+    // the variable resistor goes only to three marked settings
+    $('.side .cgrid').insertAdjacentHTML('beforeend', '<span class="rowlab" id="th-vlab">Variable resistor</span><div class="seg" id="th-vr" role="group" aria-label="Variable resistor">'+
+      MEAS_RV.map(function(v,k){ return '<button type="button" data-v="'+v+'" aria-pressed="'+(k===0)+'">'+v.toFixed(1)+' k&Omega;</button>'; }).join('')+'</div>');
+    segGroup($('#th-vr'), function(v){ rIn.value=v; M.read=null; draw(); });
+    ['#th-exp','#th-slow','#th-clear','#th-new','#th-grow','#th-jlab','#th-jump','#th-ilab','#th-int','#th-slab','#th-stir','#th-olab','#th-out','#th-sliders','#th-tablewrap','#th-guess','#th-stats','details.working'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+    takeReading();
+  }
   setMode();
 })();
 </script><script id="choice-kit-js">
