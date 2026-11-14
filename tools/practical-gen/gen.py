@@ -6,7 +6,7 @@
     python3 tools/practical-gen/gen.py --check hookes-law  # builds, then runs node --check on the script
 
 Each practical lives in tools/practical-gen/practicals/<slug>/:
-    page.json   title, course (igcse or ial, sets the breadcrumb), unit, header links, tabs (id, label, h2 title, spec badges), store key, accent, draft
+    page.json   title, course (igcse, ial or ib, sets the breadcrumb), unit, header links, tabs (id, label, h2 title, spec badges), store key, accent, draft
     content.js  the activities, written with the engine's helpers (act, createSortGame, createPredict, ...)
 
 The template (template/) is the Unit 5 engine plus createPlot, copied from the Hooke's law page.
@@ -25,6 +25,8 @@ T = os.path.join(HERE, 'template')
 COURSES = {
     'igcse': [('index.html', 'Workouts'), ('igcse.html', 'IGCSE'), ('igcse.html#unit-cp', 'Core practicals')],
     'ial': [('index.html', 'Workouts'), ('ial.html', 'IAL'), ('ial.html#unit-cp', 'Core practicals')],
+    # IB 2025 has no prescribed practicals: the IB pages are the experiments the guide names, under "Practicals" on ib.html
+    'ib': [('index.html', 'Workouts'), ('ib.html', 'IB'), ('ib.html#unit-cp', 'Practicals')],
 }
 
 
@@ -42,6 +44,8 @@ def build(slug):
     d = os.path.join(HERE, 'practicals', slug)
     cfg = json.loads(read(d, 'page.json'))
     content = read(d, 'content.js')
+    course = cfg.get('course', 'igcse')
+    assert course in COURSES, 'unknown course %r: use one of %s' % (course, ', '.join(COURSES))
     tabs = cfg['tabs']
     ids = [t['id'] for t in tabs]
     assert len(ids) == len(set(ids)), 'duplicate tab ids'
@@ -69,7 +73,7 @@ def build(slug):
     sep = '<span class="sep" aria-hidden="true">›</span>'
     crumbs = ('<nav class="eyebrow crumbs" aria-label="Breadcrumb">'
               + ''.join('<a href="%s">%s</a>%s' % (h, t, sep) for h, t in
-                        COURSES[cfg.get('course', 'igcse')])
+                        COURSES[course])
               + '</nav>')
     ta_note = '<span class="head-note">TA = Triple Award only</span>\n' if any_ta else ''
     links = ' &middot; '.join('%s: <a href="%s">%s</a>' % (l['label'], l['href'], l['text']) for l in cfg.get('links', []))
