@@ -138,6 +138,11 @@
   .guess-row .unit{font:13px var(--font-mono);color:var(--ink-soft);}
   .guess-row label{font:12.5px var(--font-mono);color:var(--ink-soft);}
   .q-as{display:grid;gap:6px;}
+  .ovl{text-decoration:overline;}
+  #dv-eq{max-height:150px;overflow:auto;}
+  @media (max-height:670px) and (min-width:861px){ #dv-eq{max-height:132px;} }
+  @media (max-height:640px) and (min-width:861px){ #dv-eq{max-height:100px;} #dv-ask{min-height:0;} }
+  .dv-step{font:12.5px var(--font-mono);color:var(--ink-soft);}
   .q-as .btn{justify-content:flex-start;text-align:left;min-height:44px;}
   .q-as .btn.is-right{border-color:var(--good);background:var(--good-soft);}
   .q-as .btn.is-wrong{border-color:var(--bad);background:var(--bad-soft);}
@@ -325,7 +330,7 @@
     <div class="head-line">
       <h1>Gas Molecules and Pressure</h1>
       <div class="seg tabs" id="gm-level" role="group" aria-label="Level"><button type="button" data-v="igcse" aria-pressed="true">IGCSE</button><button type="button" data-v="ial" aria-pressed="false">IAL</button><button type="button" data-v="ib" aria-pressed="false">IB</button></div>
-      <div class="seg tabs" id="gm-part" role="group" aria-label="Part"><button type="button" data-v="gas" aria-pressed="true">Molecules</button><button type="button" data-v="laws" aria-pressed="false">Gas laws</button></div>
+      <div class="seg tabs" id="gm-part" role="group" aria-label="Part"><button type="button" data-v="gas" aria-pressed="true">Molecules</button><button type="button" data-v="laws" aria-pressed="false">Gas laws</button><button type="button" data-v="derive" aria-pressed="false" hidden>Derivation</button></div>
     </div>
   </header>
 
@@ -336,6 +341,8 @@
         <div class="btn-group">
           <button class="btn btn-primary" id="gm-go" type="button" hidden>&#9654; Go</button>
           <button class="btn" id="gm-new" type="button" hidden>New question</button>
+          <button class="btn btn-primary" id="dv-next" type="button" hidden>Next step &rarr;</button>
+          <button class="btn" id="dv-reset" type="button" hidden>&#8634; Start again</button>
           <button class="btn" id="gm-play" type="button">&#10074;&#10074; Pause</button>
           <button class="btn to-q" type="button" data-mode="gm-tab" hidden>Try the questions &rarr;</button>
         </div>
@@ -356,6 +363,12 @@
         <span class="rowlab" id="gs-gaslab" hidden>Gas</span>
         <div class="seg" id="gs-gas" hidden><button type="button" data-v="n2" aria-pressed="true">Nitrogen</button><button type="button" data-v="he" aria-pressed="false">Helium</button></div>
       </div>
+      <div id="dv-box" hidden>
+        <div class="dv-step" id="dv-step"></div>
+        <p class="note" id="dv-ask" aria-live="polite"></p>
+        <div class="q-as" id="dv-opts" role="group" aria-label="Choose the next line"></div>
+      </div>
+      <div class="eq" id="dv-eq" hidden></div>
       <div class="guess-row" id="q-type" hidden><label for="q-in">New temperature</label><input id="q-in" type="number" inputmode="decimal" step="any" autocomplete="off"><span class="unit">°C</span></div>
       <div class="q-as" id="q-as" role="group" aria-label="Choose two assumptions" hidden></div>
       <div class="eq live" id="lw-eq" hidden></div>
@@ -861,6 +874,110 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
       : (ok?'<b>Correct.</b> ':'<b>Not quite:</b> the needle points to '+Q.ans+' kPa. ')+qWhy(1)+(q.d?' A '+(q.b>q.a?'rise':'fall')+' of '+Math.abs(q.b-q.a)+' °C is a '+(q.b>q.a?'rise':'fall')+' of '+Math.abs(q.b-q.a)+' K, so change T₁ to kelvin first, then '+(q.b>q.a?'add '+(q.b-q.a)+' K.':'take away '+(q.a-q.b)+' K.'):q.c&&!ok?' Change each temperature from °C to kelvin first.':''));
   }
 
+  // ---- Derivation (IAL 132, IB B.3): from the momentum change of one molecule to ½m⟨c²⟩ = 3/2 kT ----
+  // The student builds the derivation one line at a time: each step asks for the next line (three choices,
+  // the wrong ones real slips: forgetting the minus sign, L instead of 2L, the mean of cₓ squared), then the line is added.
+  // IB writes v, v̄², k_B and adds p = ⅓ρv̄² (B.3); IAL writes c, ⟨c²⟩ and k.
+  var DV={i:0, tries:0, done:false, picked:-1, wrong:[]}, dvT=0;
+  function dvS(){ var ib=LEVEL==='ib', c=ib?'v':'c';
+    return {c:c, cx:c+'<sub>x</sub>', cy:c+'<sub>y</sub>', cz:c+'<sub>z</sub>', k:ib?'k<sub>B</sub>':'k',
+      m2:ib?'v̄²':'⟨c²⟩', mx2:ib?'<span class="ovl">v<sub>x</sub>²</span>':'⟨c<sub>x</sub>²⟩', my2:ib?'<span class="ovl">v<sub>y</sub>²</span>':'⟨c<sub>y</sub>²⟩', mz2:ib?'<span class="ovl">v<sub>z</sub>²</span>':'⟨c<sub>z</sub>²⟩',
+      mx:ib?'<span class="ovl">v<sub>x</sub></span>²':'⟨c<sub>x</sub>⟩²', ib:ib}; }
+  function dvSteps(){ var S=dvS(), cx=S.cx, k=S.k;
+    return [
+      {pic:'hit', ask:'A molecule of mass m moves towards wall A with velocity component '+cx+'. It bounces off elastically. What is its <b>change in momentum</b>?',
+       opts:[{t:'−2m'+cx, ok:1}, {t:'0', why:'Momentum is a vector. The molecule leaves wall A at the same speed but in the opposite direction, so its momentum changes.'}, {t:'−m'+cx, why:'Change = final − initial = (−m'+cx+') − (+m'+cx+'): the momentum reverses, so the change is twice m'+cx+'.'}],
+       line:'Δp = (−m'+cx+') − (+m'+cx+')<br>Δp = −2m'+cx, note:'By Newton’s third law the wall gets a momentum of +2m'+cx+' in each collision.'},
+      {pic:'trip', ask:'The cube has sides of length L. How long is it between one collision with wall A and the <b>next</b> one with wall A?',
+       opts:[{t:'[[2L|'+cx+']]', ok:1}, {t:'[[L|'+cx+']]', why:'That only takes it to the opposite wall. It must come back too: 2L in all.'}, {t:'[['+cx+'|2L]]', why:'Time = distance ÷ speed, so the distance 2L goes on top.'}],
+       line:'Δt = [[2L|'+cx+']]', note:'It crosses the cube and back: 2L at a speed '+cx+' along x. Collisions with the other walls do not change '+cx+'.'},
+      {pic:'force', ask:'Force = rate of change of momentum. What is the mean force of this one molecule <b>on wall A</b>?',
+       opts:[{t:'[[m'+cx+'²|L]]', ok:1}, {t:'[[2m'+cx+'²|L]]', why:'The 2 from the momentum change cancels the 2 in 2L.'}, {t:'[[m'+cx+'|L]]', why:'Δt has '+cx+' on the bottom, so dividing by Δt multiplies by '+cx+' once more: '+cx+'².'}],
+       line:'F = [[Δp|Δt]]<br>F = 2m'+cx+' × [['+cx+'|2L]]<br>F = [[m'+cx+'²|L]]', note:'The momentum given to the wall each collision, times the number of collisions per second, '+cx+'/2L.'},
+      {pic:'area', ask:'Pressure = force ÷ area. Wall A is a square of side L, and the volume of the cube is V = L³. What pressure does this molecule give?',
+       opts:[{t:'[[m'+cx+'²|V]]', ok:1}, {t:'[[m'+cx+'²|L²]]', why:'That is the force on an area L². The force was already m'+cx+'²/L, so p = m'+cx+'²/(L × L²) = m'+cx+'²/L³.'}, {t:'[[m'+cx+'²L|V]]', why:'Dividing by the area L² puts L² on the bottom with the L already there: L³ = V.'}],
+       line:'p = [[F|A]]<br>p = [[m'+cx+'²|L × L²]]<br>p = [[m'+cx+'²|V]]', note:'A = L² and V = L³.'},
+      {pic:'many', ask:'Now there are <b>N</b> molecules, all of mass m, moving with different speeds. What is the total pressure on wall A?',
+       opts:[{t:'[[Nm'+S.mx2+'|V]]', ok:1}, {t:'[[Nm'+S.mx+'|V]]', why:'Use the mean of '+cx+'², not the square of the mean '+cx+'. The mean '+cx+' is zero: as many molecules move left as right.'}, {t:'[[m'+S.mx2+'|NV]]', why:'Each molecule adds its own pressure, so the total is N times bigger, not smaller.'}],
+       line:'p = [[Nm'+S.mx2+'|V]]', note:S.mx2+' is the mean of '+cx+'² over all N molecules.'},
+      {pic:'xyz', ask:'The molecules move at random in all directions, and '+S.c+'² = '+cx+'² + '+S.cy+'² + '+S.cz+'². How is '+S.mx2+' related to '+S.m2+'?',
+       opts:[{t:S.mx2+' = [[1|3]]'+S.m2, ok:1}, {t:S.mx2+' = '+S.m2, why:cx+' is only one of the three components of the velocity.'}, {t:S.mx2+' = [[1|2]]'+S.m2, why:'There are three directions, x, y and z, not two.'}],
+       line:S.m2+' = '+S.mx2+' + '+S.my2+' + '+S.mz2+'<br>'+S.m2+' = 3'+S.mx2+'<br>'+S.mx2+' = [[1|3]]'+S.m2, note:'Random motion: no direction is special, so the three means are equal.'},
+      {pic:'many', ask:'Put '+S.mx2+' = [[1|3]]'+S.m2+' into p = [[Nm'+S.mx2+'|V]]. What do you get?',
+       opts:[{t:'pV = [[1|3]]Nm'+S.m2, ok:1}, {t:'pV = Nm'+S.m2, why:'Only a third of '+S.m2+' is along x.'}, {t:'pV = 3Nm'+S.m2, why:S.mx2+' is a third of '+S.m2+', not three times it.'}],
+       line:'p = [[Nm|V]] × [[1|3]]'+S.m2+'<br>pV = [[1|3]]Nm'+S.m2+(S.ib?'<br>ρ = [[Nm|V]]<br>p = [[1|3]]ρ'+S.m2:''),
+       note:S.ib?'Nm is the total mass, so Nm/V is the density ρ: p = ⅓ρv̄² (B.3).':'This links the pressure and volume to the motion of the molecules.'},
+      {pic:'many', ask:'For an ideal gas pV = N'+k+'T. Set the two expressions for pV equal. What is m'+S.m2+'?',
+       opts:[{t:'m'+S.m2+' = 3'+k+'T', ok:1}, {t:'m'+S.m2+' = '+k+'T', why:'Multiply both sides by 3 as well as dividing by N.'}, {t:'m'+S.m2+' = [['+k+'T|3]]', why:'The ⅓ is on the left: multiplying both sides by 3 puts the 3 with '+k+'T.'}],
+       line:'[[1|3]]Nm'+S.m2+' = N'+k+'T<br>m'+S.m2+' = 3'+k+'T', note:'N cancels.'},
+      {pic:'many', ask:'Halve both sides. What is the mean kinetic energy of a molecule?',
+       opts:[{t:'½m'+S.m2+' = [[3|2]]'+k+'T', ok:1}, {t:'½m'+S.m2+' = 3'+k+'T', why:'Halving the left means halving the right too: [[3|2]]'+k+'T.'}, {t:'½m'+S.m2+' = [[3|2]]N'+k+'T', why:'That is the total for all N molecules, the internal energy U of an ideal gas.'}],
+       line:'½m'+S.m2+' = [[3|2]]'+k+'T', note:'The mean kinetic energy of a molecule is proportional to the kelvin temperature. At absolute zero it would be zero.'}
+    ]; }
+  // the order the choices are shown in: fixed per step, so the right one is not always first
+  var DV_ORD=[[1,0,2],[2,1,0],[0,2,1],[1,2,0],[2,0,1],[0,1,2],[1,0,2],[2,1,0],[0,2,1]];
+  function dvReset(){ DV={i:0, tries:0, done:false, picked:-1, wrong:[]}; dvText(); dirty=true; }
+  function dvPick(j){ var st=dvSteps()[DV.i], o=st.opts[j]; if(DV.done) return;
+    if(o.ok){ DV.done=true; DV.picked=j; }
+    else { if(DV.wrong.indexOf(j)<0) DV.wrong.push(j); DV.tries++; if(DV.tries>=2){ DV.done=true; DV.picked=0; DV.shown=true; } }
+    DV.last=j; dvText(); dirty=true; }
+  function dvText(){
+    var steps=dvSteps(), st=steps[DV.i], n=steps.length, lines=[], i;
+    for(i=0;i<DV.i+(DV.done?1:0);i++) lines.push(steps[i].line);
+    byId('dv-step').textContent='Step '+(DV.i+1)+' of '+n;
+    var o=st.opts[DV.last], fb='';
+    if(DV.done) fb=(DV.shown?'<b>The next line is shown.</b> ':'<b>Correct.</b> ')+st.note;
+    else if(DV.tries) fb='<b>Not quite.</b> '+o.why+' Try again.';
+    byId('dv-ask').innerHTML=FR(st.ask+(fb?'<br>'+fb:''));
+    byId('dv-opts').innerHTML=DV_ORD[DV.i].map(function(j){ var op=st.opts[j], bad=DV.wrong.indexOf(j)>=0, good=DV.done && op.ok;
+      return '<button type="button" class="btn'+(good?' is-right':bad?' is-wrong':'')+'" data-dv="'+j+'"'+(DV.done||bad?' aria-disabled="true"':'')+'><span>'+(good?'✓ ':bad?'✗ ':'')+FR(op.t)+'</span></button>'; }).join('');
+    var eq=byId('dv-eq'); eq.hidden=!lines.length; eq.innerHTML=FR(lines.join('<br>')); eq.scrollTop=eq.scrollHeight;
+    var last=DV.i===n-1;
+    byId('dv-next').disabled=!DV.done; byId('dv-next').hidden=last&&DV.done; byId('dv-reset').hidden=!(last&&DV.done) && DV.i===0;
+  }
+  // the picture: a cube of gas in an oblique view, wall A (the right-hand face) shaded
+  var DVM=(function(){ var a=[], i; for(i=0;i<24;i++) a.push({u:Math.random(), v:Math.random(), w:Math.random(), du:(Math.random()<0.5?-1:1)*(0.25+Math.random()*0.5), dv:(Math.random()<0.5?-1:1)*(0.2+Math.random()*0.5), dw:(Math.random()<0.5?-1:1)*(0.2+Math.random()*0.5)}); a[0]={u:0.3,v:0.55,w:0.45,du:0.42,dv:0.16,dw:0.1}; return a; })();
+  function dvStep(dt){ DVM.forEach(function(m){ ['u','v','w'].forEach(function(c){ var d='d'+c; m[c]+=m[d]*dt; if(m[c]>1){ m[c]=2-m[c]; m[d]=-m[d]; } if(m[c]<0){ m[c]=-m[c]; m[d]=-m[d]; } }); }); }
+  function dvLay(){ return narrow() ? {W:430,H:385,x0:40,y0:118,s:170,dx:100,dy:-60} : {W:860,H:340,x0:250,y0:104,s:210,dx:130,dy:-76}; }
+  // SVG text has no <sub>: draw a subscript as a smaller, lowered tspan
+  function svgSub(t){ return String(t).replace(/<sub>([^<]*)<\/sub>/g,'<tspan font-size="0.75em" dy="3">$1</tspan><tspan dy="-3">\u200b</tspan>'); }
+  function dvDraw(L){
+    var st=dvSteps()[DV.i], pic=st.pic, x0=L.x0, y0=L.y0, s=L.s, dx=L.dx, dy=L.dy, S0=dvS(), S={}, g='', many=pic==='many'||pic==='xyz';
+    Object.keys(S0).forEach(function(k){ S[k]=typeof S0[k]==='string'?svgSub(S0[k]):S0[k]; });
+    function P(u,v,w){ return [x0+u*s+w*dx, y0+(1-v)*s+w*dy]; }
+    var A=P(1,1,0), B=P(1,1,1), C=P(1,0,1), D=P(1,0,0);
+    // back faces and the gas
+    g+=pg([P(0,1,1),P(1,1,1),P(1,0,1),P(0,0,1)],'var(--glass-in)',' stroke="var(--steel)" stroke-width="1.2"');
+    g+=pg([P(0,0,0),P(1,0,0),P(1,0,1),P(0,0,1)],'var(--glass-in)',' stroke="var(--steel)" stroke-width="1.2"');
+    g+=pg([P(0,1,0),P(0,1,1),P(0,0,1),P(0,0,0)],'var(--glass-in)',' stroke="var(--steel)" stroke-width="1.2" opacity=".9"');
+    var hot=pic==='hit'||pic==='force'||pic==='area'||pic==='trip';
+    g+=pg([A,B,C,D],hot?'var(--accent)':'var(--steel-hi)',' opacity="'+(hot?0.2:0.2)+'" stroke="'+(hot?'var(--accent)':'var(--steel)')+'" stroke-width="'+(hot?2.4:1.2)+'"');
+    var list=(many?DVM:[DVM[0]]).slice().sort(function(a,b){ return b.w-a.w; });
+    list.forEach(function(m){ var q=P(m.u,m.v,m.w), r=(many?5:7)*(1-0.25*m.w); g+='<circle cx="'+f1(q[0])+'" cy="'+f1(q[1])+'" r="'+f1(r)+'" fill="var(--gas)"'+(m===DVM[0]&&!many?' stroke="var(--ink)" stroke-width="1.4"':'')+'/>'; });
+    // the one molecule's velocity and its x component
+    if(!many){ var m=DVM[0], q=P(m.u,m.v,m.w), sgn=m.du>0?1:-1, vx=sgn*58;
+      g+=arrow(q[0],q[1]-14,q[0]+vx,q[1]-14,'var(--bad)',2.6)+txt(q[0]+vx/2,q[1]-22,S.cx,{a:'middle',fs:13,c:'var(--bad)',w:600,halo:1}); }
+    // front edges of the cube
+    g+=pl([P(0,1,0),P(1,1,0),P(1,0,0),P(0,0,0),P(0,1,0)],'var(--steel)',2)+pl([P(0,1,0),P(0,1,1),P(1,1,1),P(1,1,0)],'var(--steel)',2)+pl([P(1,0,0),P(1,0,1),P(1,1,1)],'var(--steel)',2);
+    g+=txt((P(0,0,0)[0]+P(1,0,0)[0])/2,P(0,0,0)[1]+18,'L',{a:'middle',fs:14,c:'var(--ink)',w:600})+txt(P(0,0.5,0)[0]-10,P(0,0.5,0)[1]+5,'L',{a:'end',fs:14,c:'var(--ink)',w:600})+txt((C[0]+D[0])/2+10,(C[1]+D[1])/2+14,'L',{fs:14,c:'var(--ink)',w:600});
+    var wa=P(1,0.5,1); g+=txt(wa[0]+12,wa[1]+4,'wall A',{fs:13,c:hot?'var(--accent)':'var(--ink-soft)',w:600});
+    // what each step adds to the picture
+    var mid=P(1,0.88,0.5), lx=Math.max(L.W-8, 0);
+    if(pic==='hit') g+=txt(mid[0]+14,mid[1]-6,'before: +m'+S.cx,{fs:12.5,c:'var(--ink)'})+txt(mid[0]+14,mid[1]+10,'after: −m'+S.cx,{fs:12.5,c:'var(--ink)'});
+    if(pic==='trip'){ var a0=P(0,0.18,0), a1=P(1,0.18,0), y1=a0[1];
+      g+=arrow(a0[0]+4,y1,a1[0]-4,y1,'var(--topic)',2,' stroke-dasharray="6 4"')+arrow(a1[0]-4,y1+12,a0[0]+4,y1+12,'var(--topic)',2)+txt((a0[0]+a1[0])/2,y1-8,'there and back: 2L',{a:'middle',fs:13,c:'var(--topic)',w:600,halo:1}); }
+    if(pic==='force') g+=arrow(A[0]+(B[0]-A[0])/2+4,(A[1]+D[1])/2+(B[1]-A[1])/2,A[0]+(B[0]-A[0])/2+56,(A[1]+D[1])/2+(B[1]-A[1])/2,'var(--accent)',3)+txt(A[0]+(B[0]-A[0])/2+60,(A[1]+D[1])/2+(B[1]-A[1])/2-8,'F on wall A',{fs:12.5,c:'var(--accent)',w:600,halo:1});
+    if(pic==='area') g+=txt(mid[0]+14,mid[1]+4,'area A = L²',{fs:13,c:'var(--accent)',w:600})+txt(P(0.5,0.5,0)[0],P(0.5,0.5,0)[1]+4,'V = L³',{a:'middle',fs:14,c:'var(--ink)',w:600,halo:1});
+    if(pic==='xyz'){ var ox=L.W>500?690:318, oy=L.W>500?300:345, ex=[L.W>500?64:52,0], ey=[0,-58], ez=[0.86*44,-0.5*44], tip=[ox+ex[0]+ey[0]+ez[0], oy+ex[1]+ey[1]+ez[1]];   // one molecule's velocity and its three components (z goes back, as in the cube)
+      g+=pl([[ox+ex[0],oy],[ox+ex[0]+ez[0],oy+ez[1]],[ox+ez[0],oy+ez[1]]],'var(--ink-faint)',1,' stroke-dasharray="3 3"')+pl([[ox+ex[0]+ez[0],oy+ez[1]],tip],'var(--ink-faint)',1,' stroke-dasharray="3 3"');
+      g+=arrow(ox,oy,ox+ex[0],oy,'var(--bad)',2.4)+txt(ox+ex[0]+5,oy+14,S.cx,{fs:14,c:'var(--bad)',w:600,halo:1})+arrow(ox,oy,ox,oy+ey[1],'var(--topic)',2.4)+txt(ox-6,oy+ey[1]+4,S.cy,{a:'end',fs:14,c:'var(--topic)',w:600,halo:1})+
+         arrow(ox,oy,ox+ez[0],oy+ez[1],'var(--accent)',2.4)+txt(ox+ez[0]-4,oy+ez[1]-8,S.cz,{a:'end',fs:14,c:'var(--accent)',w:600,halo:1})+arrow(ox,oy,tip[0],tip[1],'var(--ink)',2.8)+txt(tip[0]+6,tip[1]-4,S.c,{fs:15,c:'var(--ink)',w:700,halo:1})+
+         txt(ox+30,oy+36,'one molecule',{a:'middle',fs:12.5}); }
+    if(many) g+=txt(P(0,1,1)[0],P(0,1,1)[1]-10,'N molecules, each of mass m',{fs:12.5,c:'var(--ink)'});
+    else g+=txt(P(0,1,1)[0],P(0,1,1)[1]-10,'one molecule of mass m',{fs:12.5,c:'var(--ink)'});
+    return g;
+  }
+
   // ---- drawing ----
   function lay(){ var split=(part==='laws'||ks5());
     if(narrow()) return {W:430,H:split?(mode==='predict'?650:590):262,tall:1,split:split, A:{k:0.7,ox:112,oy:54,g:{x:54,y:104,r:44},th:{x:4,y:186},rod:26}, G:{x:66,y:300,w:340,h:216}, D:{x:215,y:378,r:96}, QT:{x:16,y:520,n:52}};
@@ -938,6 +1055,7 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
     return s+dot(A,+LC.value,0.4*(+LC.value+273));
   }
   function draw(){
+    if(part==='derive'){ var DL=dvLay(), vb0='0 0 '+DL.W+' '+DL.H; if(svg.getAttribute('viewBox')!==vb0) svg.setAttribute('viewBox',vb0); svg.classList.toggle('tall',DL.W<500); gMain.innerHTML=dvDraw(DL); gTop.innerHTML=''; dirty=false; return; }
     var L=lay(), st=state(), s=apparatus(L.A,st), t='';
     if(mode==='predict' && Q){
       var D=L.D, ok=qOk(), lines, col='var(--ink)', kq=Q.q.k;
@@ -967,7 +1085,13 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
 
   // ---- what shows ----
   function setRows(){
-    var k5=ks5(), g=part==='gas', pr=mode==='predict', done=pr && Q && Q.run===2;
+    var k5=ks5(), g=part==='gas', pr=mode==='predict', done=pr && Q && Q.run===2, dv=part==='derive';
+    $('#gm-part [data-v=derive]').hidden=!k5;
+    byId('dv-box').hidden=!dv; if(!dv) byId('dv-eq').hidden=true; byId('dv-next').hidden=byId('dv-next').hidden||!dv; if(!dv){ byId('dv-next').hidden=true; byId('dv-reset').hidden=true; }
+    if(dv){ ['gm-sliders','lw-eq','gs-note','lw-note','gs-stats4','gs-stats5','gs-work','gm-go','gm-new','q-type','q-as'].forEach(function(id){ byId(id).hidden=true; }); byId('gm-tab').hidden=true; byId('gs-gaslab').hidden=byId('gs-gas').hidden=true;
+      $('.to-q').hidden=true; playBtn.hidden=false; playBtn.innerHTML=sim.isPaused()?'&#9654; Play animation':'&#10074;&#10074; Pause'; dvText();
+      svg.setAttribute('aria-label','A cube of gas with sides L. '+(dvSteps()[DV.i].pic==='many'||dvSteps()[DV.i].pic==='xyz'?'N molecules move at random inside it.':'One molecule moves inside it and bounces off wall A, the right-hand face.')); dirty=true; return; }
+    if(SHOW!=='gas') byId('gm-tab').hidden=false;
     byId('gs-trow').hidden=byId('gs-vrow').hidden=!g; byId('gs-nrow').hidden=!(g&&k5);
     byId('lw-vrow').hidden=g||pr||law!=='boyle'; byId('lw-trow').hidden=g||pr||law!=='pt'; byId('lw-crow').hidden=g||pr||law!=='abs';
     byId('gm-sliders').hidden=pr;
@@ -985,9 +1109,9 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
       : 'A cylinder of gas with a piston, a pressure gauge and a thermometer, beside the graph of pressure against '+(law==='boyle'?'volume. Drag the piston, or use the arrow keys, to change the volume.':law==='pt'?'kelvin temperature.':'Celsius temperature, extended back to absolute zero.')));
     dirty=true;
   }
-  function refresh(){ if(mode==='predict' && Q) qText(); else if(part==='gas') gsText(); else lawText(); setRows(); }
+  function refresh(){ if(part==='derive'){ setRows(); return; } if(mode==='predict' && Q) qText(); else if(part==='gas') gsText(); else lawText(); setRows(); }
   var levelSeg=segGroup($('#gm-level'), function(v){ LEVEL=v; level(); });
-  var partSeg=segGroup($('#gm-part'), function(v){ part=v; if(v==='gas' && mode==='predict'){ mode='explore'; modeSeg.pick('explore'); Q=null; drawPk(); } syncSim(); refresh(); });
+  var partSeg=segGroup($('#gm-part'), function(v){ part=v; if(v==='derive'){ mode='explore'; modeSeg.pick('explore'); Q=null; drawPk(); syncSim(); refresh(); return; } if(v==='gas' && mode==='predict'){ mode='explore'; modeSeg.pick('explore'); Q=null; drawPk(); } syncSim(); refresh(); });
   var modeSeg=segGroup($('#gm-tab'), function(v){ mode=v; if(v==='predict'){ part='laws'; partSeg.pick('laws'); sim.setPaused(false); newQ(); } else { Q=null; drawPk(); } syncSim(); refresh(); });
   var gasSeg=segGroup($('#gs-gas'), function(v){ gas=v; syncSim(); refresh(); });
   var lawSeg=segGroup($('#lw-seg'), function(v){ law=v; syncSim(); refresh(); });
@@ -997,6 +1121,8 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
     T.min=k5?0:100; if(+T.value<+T.min) T.value=T.min;
     if(!k5){ Nn.value=36; gas='n2'; gasSeg.pick('n2'); if(law==='abs'){ law='boyle'; lawSeg.pick('boyle'); } }
     if(!k5 && mode==='predict' && Q && Q.q.l5) newQ();
+    if(!k5 && part==='derive'){ part='gas'; partSeg.pick('gas'); }
+    if(part==='derive') dvText();
     syncSim(); gsText(); lawText(); refresh();
   }
   [T,V,Nn].forEach(function(e){ e.addEventListener('input', function(){ syncSim(); gsText(); aria(); }); });
@@ -1009,9 +1135,13 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
     if(k>=0) Q.picks.splice(k,1); else { if(Q.picks.length>=2) Q.picks.shift(); Q.picks.push(i); }
     buildAs(); var nb=byId('q-as').querySelector('[data-as="'+i+'"]'); if(nb) nb.focus(); setRows(); });
   newBtn.addEventListener('click', function(){ newQ(); });
+  byId('dv-opts').addEventListener('click', function(e){ var b=e.target.closest('[data-dv]'); if(!b || b.getAttribute('aria-disabled')) return; var j=+b.getAttribute('data-dv'); dvPick(j);
+    var nb=byId('dv-opts').querySelector('[data-dv="'+j+'"]'); if(nb) nb.focus(); });
+  byId('dv-next').addEventListener('click', function(){ if(!DV.done) return; var n=dvSteps().length; if(DV.i<n-1){ DV={i:DV.i+1, tries:0, done:false, picked:-1, wrong:[]}; dvText(); dirty=true; byId('dv-ask').focus&&0; } });
+  byId('dv-reset').addEventListener('click', dvReset);
 
   // drag the piston (or its rod) left and right to set the volume; arrow keys on the focused picture do the same
-  function canDrag(){ return mode!=='predict' && (part==='gas' || law==='boyle'); }
+  function canDrag(){ return mode!=='predict' && part!=='derive' && (part==='gas' || law==='boyle'); }
   function setVolX(x){   // x: where the piston should be, in the gas's own units (0 to 380)
     if(part==='gas'){ var pc=clamp(Math.round(x/sim.BW*100/ +V.step)* +V.step,+V.min,+V.max); if(pc===+V.value) return; V.value=pc; syncSim(); gsText(); }
     else { var v=clamp(Math.round(x/sim.BW*3*10)/10,0.5,3); if(v===+LV.value) return; LV.value=v; syncSim(); lawText(); }
@@ -1045,7 +1175,7 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
   function frame(now){
     var real=Math.min(0.1,(now-last)/1000); last=now;
     if(Q && Q.run===1){ Q.u=Math.min(1,Q.u+real/2.6); applyQ(); if(Q.u>=1){ Q.run=2; buildAs(); qText(); drawPk(); setRows(); } }
-    if(!sim.isPaused()){ sim.step(); dirty=true; }
+    if(!sim.isPaused()){ if(part==='derive') dvStep(real); else sim.step(); dirty=true; }
     if(dirty) draw();
     if(fr++%10===0 && part==='gas' && !ks5()){ byId('gs-p').textContent=sim.pressure().toFixed(1); byId('gs-h').textContent=Math.round(sim.hitRate()); }
     requestAnimationFrame(frame);
@@ -1053,8 +1183,9 @@ const SYM=()=>LEVEL==='ib'?{k:'k<sub>B</sub>',ke:'E̅<sub>k</sub>',c2:'v̄²',cr
   var wasNarrow=narrow(); window.addEventListener('resize', function(){ if(narrow()!==wasNarrow){ wasNarrow=narrow(); drawPk(); dirty=true; } });
 
   // ?show=gas or ?show=laws opens one part (and hides the Part switch); ?show=predict opens the Questions
-  var SHOW=(location.search.match(/[?&]show=(gas|laws|predict)\b/)||[])[1];
-  if(SHOW==='gas' || SHOW==='laws'){ part=SHOW; partSeg.pick(SHOW); $('#gm-part').hidden=true; if(SHOW==='gas') $('#gm-tab').hidden=true; }
+  var SHOW=(location.search.match(/[?&]show=(gas|laws|predict|derive)\b/)||[])[1];
+  if(SHOW==='derive'){ if(LEVEL==='igcse') LEVEL='ial'; part='derive'; partSeg.pick('derive'); $('#gm-part').hidden=true; }
+  else if(SHOW==='gas' || SHOW==='laws'){ part=SHOW; partSeg.pick(SHOW); $('#gm-part').hidden=true; if(SHOW==='gas') $('#gm-tab').hidden=true; }
   else if(EMBED){ $('.side').insertBefore($('#gm-part'), $('.side').firstChild); }
   levelSeg.pick(LEVEL); sim.setT(300); sim.setV(0.6);
   level(); aria();

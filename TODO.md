@@ -59,7 +59,6 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## 6. Build: IAL and IB
 
-- [ ] **6a** IAL 132: the derivation of ½m⟨c²⟩ = 3/2 kT (an Order activity or a step-by-step reveal).
 - [ ] **6b** `ial.html` holds only Core Practicals so far; IAL workouts are still to plan.
 
 ## 7. Fable visuals (ideas, added 10 Nov 2026)
@@ -87,6 +86,7 @@ Follow-ups:
 
 ## Done
 
+- [x] **6a** IAL 132: the derivation of ½m⟨c²⟩ = 3/2 kT (an Order activity or a step-by-step reveal). Done 14 Nov 2026: a Derivation part on `animations/gas-molecules.html` at IAL and IB (`?show=derive`), built a line at a time by choosing each next line; IB also gets p = ⅓ρv̄² (B.3). Not yet checked against the IAL mark schemes' layout of the derivation (needs the PC). To review in `tools/REVIEW.md`.
 - [x] **8b+** `gas-molecules.html` Questions: the other kinds the 4PH1 papers ask (14 Nov 2026 mark-scheme check): find the new temperature from the pressures, answer in °C (Nov 2025 1P 12(c), Jan 2022 1P 11(b)(ii)); "cools by 65 °C" wording (May 2026 1PR 8(c)); and the two assumptions, fixed mass and constant volume or temperature (May 2026 1P 2(b)(ii), Jan 2021 1PR 4(c)(ii)). Done 14 Nov 2026: three new kinds dealt among the old ones at every level (typed °C answer; "cools by" / "heated by" on the gauge; choose two assumptions from five). To review in `tools/REVIEW.md`.
 - [x] **5b** Fix the 4.9 thermal energy transfer practical page `heat-transfer-practical.html` (Alex, 6 Nov 2026: needs fixing; what to fix still to agree). 13 Nov 2026: Exam tab cut to (a) and (b), now a Calculate in Results. Later on 13 Nov 2026: the 10 activities that test other spec points (4.6, 4.7, 4.8, 4.10; all in 4b) and the Insulation tab cut: 7 tabs, 24 activities. All three methods stay (the spec names them). The page still gets the 1.22-model rebuild in 5c. (The 4b Practicals tab was removed by 5a on 11 Nov 2026, at Alex's choice; 4b links to the page from its tab row.) Done 13 Nov 2026 (Alex): also the Method choice and side-by-side layout. It still needs its Do / Show Experiment tabs in 5c, after 8f adds the measure mode to `heat-transfer.html`.
 - [x] **5e** After Alex checks 1.22's new Experiment tab (students read the ruler, fill in their own table and plot it; the old run is the Show tab): use the same pattern on the other measure-and-plot practicals (5.4, 2.9, 5.14P, 3.19) (added 5 Nov 2026). The building is now in 8a, 8b, 8c and 8f (measure modes) and 5c (the pages); this item is only Alex's check, which 8f waits for (13 Nov 2026). Done 13 Nov 2026: Alex checked 1.22's Do Experiment tab (fine).
