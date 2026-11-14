@@ -40,6 +40,33 @@
 .slot.is-shown,.sort-item.is-shown,.match-card.is-shown,.reorder-row.is-shown,.calc-num-input.is-shown,.xw-cell.is-shown{border-style:dashed!important;border-color:var(--accent)!important;background:var(--accent-soft)!important;color:var(--ink)!important}
 .calc-show-row{grid-column:1/-1}
 .calc-show-row:has(> [hidden]){display:none}
+/* Draw on the diagram (14 Nov 2026, TODO 4e, 4f, 4g, 8k) */
+.dt-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.dt-prog{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft)}
+.dt-q{margin:0 0 8px}
+.dt-src{display:block;font-size:13px;color:var(--ink-soft);margin-top:3px}
+.dt-fig{border:1px solid var(--panel-border);border-radius:10px;background:var(--panel);overflow:hidden}
+.dt-svg{display:block;width:100%;max-width:640px;height:auto;margin:0 auto;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.dt-svg text{font-family:'IBM Plex Sans',sans-serif}
+.dt-notes{list-style:none;margin:8px 0 0;padding:0;font-size:14.5px}
+.dt-notes li{margin:3px 0;padding-left:2px}
+.dt-notes li.ok{color:var(--good)}
+.dt-notes li.no{color:var(--bad)}
+.dt.shake{animation:none}
+@media (prefers-reduced-motion:no-preference){.dt.shake .dt-fig{animation:shake .5s}}
+.mk-hit{fill:transparent;cursor:crosshair}
+.mk-svg:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.mk-x{stroke:var(--accent);stroke-width:3;fill:none;pointer-events:none}
+.dt-shown .mk-x{stroke-dasharray:4 3}
+.mk-lab{font-size:15px;font-weight:700;fill:var(--accent);pointer-events:none}
+.hr-bg{fill:#0f1626}
+.hr-band{fill:rgba(255,224,140,.28);stroke:rgba(255,224,140,.6);stroke-width:1}
+.hr-axis{stroke:var(--ink);stroke-width:1.6}
+.hr-tick{stroke:var(--ink);stroke-width:1.2}
+.hr-num{font-size:12.5px;fill:var(--ink-soft)}
+.hr-ax{font-size:13.5px;fill:var(--ink)}
+.hr-sun{fill:#ffd84a;stroke:#fff;stroke-width:1.5}
+.hr-in{font-size:12.5px;fill:#e8ecf5}
 </style><style>
 .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px 'IBM Plex Mono',ui-monospace,monospace;color:var(--ink-soft);text-decoration:none}
 .home-link:hover{color:var(--accent)}
@@ -1848,6 +1875,109 @@ createReorder({host:act('lifecycle','Order','A star much bigger than the Sun','P
 
 pairActs('lifecycle',1,2);
 
+/* ================= Draw on the diagram (14 Nov 2026, TODO 4e, 4f, 4g, 8k) =================
+   Exam "draw on the diagram" tasks, dealt one at a time like Draw the ray: each task names the past-paper question it is modelled
+   on, Check marks it as the mark scheme does (one note per marking point), Show answer appears after a wrong Check.
+   cfg.kind gives the drawing: init(task) → state, draw(g, task, state, api), check(task, state) → {ok, notes:[[ok, text]]}, answer(task) → state.
+   Saved: which tasks are right (1) or shown (2). */
+function createDrawTasks(cfg){
+  const host=cfg.host,tasks=cfg.tasks,K=cfg.kind,NS='http://www.w3.org/2000/svg';
+  host.classList.add('dt');
+  const top=mk('div','dt-top');host.appendChild(top);const prog=mk('span','dt-prog');top.appendChild(prog);
+  const q=mk('p','dt-q');host.appendChild(q);
+  const fig=mk('div','dt-fig');host.appendChild(fig);
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('class','dt-svg');svg.setAttribute('viewBox','0 0 '+(cfg.W||600)+' '+(cfg.H||340));fig.appendChild(svg);
+  const notes=mk('ul','dt-notes');notes.setAttribute('aria-live','polite');host.appendChild(notes);
+  let status=tasks.map(()=>0),cur=0,T=null,st=null,locked=false;
+  const b=bar(host,[{label:'Check',primary:true,fn:()=>check()},{label:'Next diagram',fn:()=>go(cur+1)},{label:'Start again',fn:()=>{status=tasks.map(()=>0);go(0);saveSoon();}}]);
+  const ans=answerBtn(b,()=>{st=K.answer(T);status[cur]=Math.max(status[cur],2);locked=true;notes.innerHTML='';b.say('Answer shown (dashed). Read it through, then press Next diagram.','');render();saveSoon();});
+  const el=(tag,at,txt)=>{const e=document.createElementNS(NS,tag);for(const k in at)if(at[k]!=null)e.setAttribute(k,at[k]);if(txt!=null)e.textContent=txt;return e;};
+  const pt=ev=>{const m=svg.getScreenCTM();if(!m)return null;const p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const r=p.matrixTransform(m.inverse());return {x:r.x,y:r.y};};
+  const api={el:el,svg:svg,pt:pt,get locked(){return locked;},shown:()=>status[cur]===2,set:s=>{if(locked)return;st=s;notes.innerHTML='';b.say('','');render();},redraw:()=>render()};
+  function render(){
+    svg.innerHTML='';const g=el('g',{class:locked?(status[cur]===2?'dt-done dt-shown':'dt-done'):''});svg.appendChild(g);K.draw(g,T,st,api);
+    prog.textContent='Diagram '+(cur+1)+' of '+tasks.length+' · '+status.filter(x=>x>0).length+' done';
+  }
+  function go(i){
+    cur=(i+tasks.length)%tasks.length;T=tasks[cur];locked=status[cur]>0;st=locked?K.answer(T):K.init(T);
+    q.innerHTML=FR(T.q)+(T.src?'<span class="dt-src">Modelled on '+T.src+'</span>':'');
+    notes.innerHTML='';ans.off();
+    b.say(status[cur]===1?'Done: this one was right.':status[cur]===2?'Answer shown.':'',status[cur]===1?'good':'');
+    svg.setAttribute('aria-label',T.aria||'The diagram');render();
+  }
+  function check(){
+    if(locked){go(cur+1);return;}
+    const r=K.check(T,st);
+    notes.innerHTML=r.notes.map(n=>'<li class="'+(n[0]?'ok':'no')+'"><span aria-hidden="true">'+(n[0]?'✓':'✗')+'</span> '+FR(n[1])+'</li>').join('');
+    if(r.ok){status[cur]=1;locked=true;b.say('Correct.','good');celebrate(b.msg);ans.off();render();}
+    else{b.say('Not yet: see the notes under the diagram.','bad');ans.on();host.classList.remove('shake');void host.offsetWidth;host.classList.add('shake');}
+    saveSoon();
+  }
+  track(host,{getState:()=>({dt:1,s:status}),
+    setState:s=>{status=(s&&s.dt===1&&Array.isArray(s.s)&&s.s.length===tasks.length)?s.s.map(x=>x===1||x===2?x:0):tasks.map(()=>0);go(0);},
+    isDone:()=>status.every(x=>x>0)});
+  go(0);
+  return {go:go};
+}
+/* Mark it on the diagram (TODO 4f): click (or use the arrow keys) to put a cross on the diagram; Check tests the
+   region the mark scheme accepts. A task: base (svg), lab (the letter written by the cross), area [x0,y0,x1,y1] where a
+   cross can go, test(x,y), why (when it misses), ans [x,y] (Show answer). */
+const MARK_KIND={
+  init:()=>({p:null}),
+  answer:t=>({p:t.ans.slice()}),
+  draw:function(g,t,s,api){
+    const el=api.el,a=t.area;
+    const base=el('g',{});base.innerHTML=t.base;g.appendChild(base);
+    const hit=el('rect',{x:a[0],y:a[1],width:a[2]-a[0],height:a[3]-a[1],class:'mk-hit'});g.appendChild(hit);
+    if(s.p){const x=s.p[0],y=s.p[1];
+      g.appendChild(el('path',{d:'M'+(x-7)+','+(y-7)+'L'+(x+7)+','+(y+7)+'M'+(x+7)+','+(y-7)+'L'+(x-7)+','+(y+7),class:'mk-x'}));
+      if(t.lab)g.appendChild(el('text',{x:x+10,y:y-8,class:'mk-lab'},t.lab));}
+    const svg=api.svg;
+    svg.onclick=api.locked?null:ev=>{const p=api.pt(ev);if(!p)return;if(p.x<a[0]||p.x>a[2]||p.y<a[1]||p.y>a[3])return;api.set({p:[Math.round(p.x),Math.round(p.y)]});};
+    svg.setAttribute('tabindex','0');
+    svg.onkeydown=api.locked?null:ev=>{const k={ArrowLeft:[-6,0],ArrowRight:[6,0],ArrowUp:[0,-6],ArrowDown:[0,6]}[ev.key];if(!k)return;ev.preventDefault();
+      const p=s.p?s.p.slice():[(a[0]+a[2])/2,(a[1]+a[3])/2];p[0]=Math.max(a[0],Math.min(a[2],p[0]+k[0]));p[1]=Math.max(a[1],Math.min(a[3],p[1]+k[1]));api.set({p:p});svg.focus({preventScroll:true});};
+    svg.classList.toggle('mk-svg',!api.locked);
+  },
+  check:function(t,s){
+    if(!s.p)return {ok:false,notes:[[0,'Click the diagram to mark your cross.']]};
+    const ok=t.test(s.p[0],s.p[1]);
+    return {ok:ok,notes:[ok?[1,t.ok]:[0,t.why]]};
+  }
+};
+/* Mark it on the HR diagram (TODO 4f, 14 Nov 2026): the 4PH1 Paper 2 "mark / circle on the HR diagram" questions from the
+   IGCSE Question Index. Absolute magnitude from −10 (top) to +15 (bottom); colour from blue (hottest, left) to red. */
+const HRD={x0:70,x1:520,yTop:30,yBot:300,
+  y:M=>30+(M+10)*10.8,                 // absolute magnitude → y
+  ms:x=>75+0.6*(x-100),                // the middle of the main sequence band at x
+  sun:[295,192]};
+function hrBase(sun){
+  const H=HRD;let s='<rect x="'+H.x0+'" y="'+H.yTop+'" width="'+(H.x1-H.x0)+'" height="'+(H.yBot-H.yTop)+'" class="hr-bg"/>';
+  s+='<path d="M100,'+(H.ms(100)-20)+' L'+H.x1+','+(H.ms(H.x1)-20)+' L'+H.x1+','+H.yBot+' L'+(H.x1-40)+','+H.yBot+' L100,'+(H.ms(100)+20)+'Z" class="hr-band"/>';
+  [-10,-5,0,5,10,15].forEach(M=>{const y=H.y(M);s+='<line x1="'+(H.x0-5)+'" y1="'+y+'" x2="'+H.x0+'" y2="'+y+'" class="hr-tick"/><text x="'+(H.x0-9)+'" y="'+(y+4)+'" class="hr-num" text-anchor="end">'+(M>0?'+':M<0?'−':'')+Math.abs(M)+'</text>';});
+  ['blue','white','yellow','orange','red'].forEach((c,i)=>{s+='<text x="'+(115+90*i)+'" y="'+(H.yBot+18)+'" class="hr-num" text-anchor="middle">'+c+'</text>';});
+  s+='<line x1="'+H.x0+'" y1="'+H.yTop+'" x2="'+H.x0+'" y2="'+H.yBot+'" class="hr-axis"/><line x1="'+H.x0+'" y1="'+H.yBot+'" x2="'+H.x1+'" y2="'+H.yBot+'" class="hr-axis"/>';
+  s+='<text transform="translate(18 165) rotate(-90)" class="hr-ax" text-anchor="middle">absolute magnitude</text><text x="295" y="'+(H.yBot+36)+'" class="hr-ax" text-anchor="middle">colour</text>';
+  if(sun)s+='<circle cx="'+H.sun[0]+'" cy="'+H.sun[1]+'" r="6" class="hr-sun"/><text x="'+(H.sun[0]+10)+'" y="'+(H.sun[1]+16)+'" class="hr-in">the Sun</text>';
+  return s;
+}
+const hrOnMS=(x,y)=>Math.abs(y-HRD.ms(x))<=24;
+const HR_AREA=[HRD.x0+2,HRD.yTop+2,HRD.x1-2,HRD.yBot-2];
+const HR_TASKS=[
+  {q:'The shaded band is the main sequence. Mark the position of the Sun with a cross.',src:'4PH1/2P Nov 2024 Q4(a)(i)',base:hrBase(false),area:HR_AREA,lab:'',
+   test:(x,y)=>x>=250&&x<=340&&hrOnMS(x,y),ans:[295,192],ok:'The Sun is a yellow main sequence star, absolute magnitude about +5.',why:'The Sun is a main sequence star with a yellow colour: on the band, in the middle of the diagram.'},
+  {q:'Put a cross where the Sun will be at the next stage of its life cycle.',src:'4PH1/2P Nov 2024 Q4(a)(ii)',base:hrBase(true),area:HR_AREA,lab:'',
+   test:(x,y)=>x>=330&&y<=HRD.y(1)&&y<HRD.ms(x)-30,ans:[440,110],ok:'Next the Sun becomes a red giant: cooler (redder) but much brighter, top right.',why:'After the main sequence the Sun becomes a red giant: cooler, so further right, and much brighter, so near the top. Top right.'},
+  {q:'Mark the position of a white dwarf with a cross and the letter W.',src:'4PH1/2P Jan 2021 Q6(a) and May 2021 Q1(a)(ii)',base:hrBase(true),area:HR_AREA,lab:'W',
+   test:(x,y)=>x<=310&&y>=HRD.y(8)&&y>HRD.ms(x)+30,ans:[150,265],ok:'A white dwarf is hot (white or blue-white) but very dim: bottom left.',why:'A white dwarf is hot, so towards the left, but very dim because it is so small: below the main sequence, bottom left (about +10 to +15).'},
+  {q:'Mark the position of a red giant with a cross and the letter X.',src:'4PH1/2P Jan 2021 Q6(b) and May 2021 Q1(a)(iii)',base:hrBase(true),area:HR_AREA,lab:'X',
+   test:(x,y)=>x>=330&&y<=HRD.y(1)&&y<HRD.ms(x)-30,ans:[440,110],ok:'A red giant is cool (orange to red) but very bright: top right.',why:'A red giant is cool, so on the right (orange to red), but very bright because it is so large: above the main sequence, top right (about 0 to −5).'},
+  {q:'Mark Y: a main sequence star much more massive than the Sun.',src:'4PH1/2P Jan 2021 Q6(c)',base:hrBase(true),area:HR_AREA,lab:'Y',
+   test:(x,y)=>hrOnMS(x,y)&&x<=HRD.sun[0]-40,ans:[160,111],ok:'A more massive main sequence star is hotter and brighter: on the band, up and to the left of the Sun.',why:'A more massive main sequence star is still on the main sequence, but hotter and brighter than the Sun: on the band, up and to the left of it.'},
+  {q:'Mark Z: a star with the same surface temperature as the Sun, but dimmer.',src:'4PH1/2P Jan 2021 Q6(d)',base:hrBase(true),area:HR_AREA,lab:'Z',
+   test:(x,y)=>Math.abs(x-HRD.sun[0])<=22&&y>=HRD.sun[1]+25,ans:[295,255],ok:'Same temperature means the same colour, so straight below the Sun.',why:'The same surface temperature means the same colour, so the same position across. Dimmer means a larger absolute magnitude: straight below the Sun.'}
+];
+
 /* ================= 7. HR DIAGRAM ================= */
 { const lk=mk('p','anim-open');lk.innerHTML='<a href="animations/star-life-cycle.html?show=hr">See a star move across the HR diagram, and mark stars on it yourself, in the star life cycle animation &rarr;</a>';$('#panel-hr .acts').appendChild(lk); }
 {
@@ -1879,6 +2009,7 @@ predictAct('hr','Absolute magnitude','Decide first, then see the answer.',{
     {text:'How hot its surface is',why:'The surface temperature is shown by the colour, along the other axis of the HR diagram.'}
   ],
   explain:'Absolute magnitude is the brightness a star would have at a standard distance (10 parsecs), so stars can be compared fairly whatever their real distance.'});
+createDrawTasks({host:act('hr','Draw on the diagram','Mark the stars on the HR diagram','Click the diagram to put your cross, or focus it and use the arrow keys. Click again to move the cross. Then press Check.'),tasks:HR_TASKS,kind:MARK_KIND});
 
 /* ================= tabs, startup ================= */
 // Two Predict activities in a row sit side by side (they stack again on narrow screens).
