@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Graphs Workout</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Edexcel IGCSE Physics graph skills practice: read values off velocity–time, decay, I–V and oscilloscope graphs, find gradients and the area under velocity–time graphs, and plot results with a line of best fit, with a new graph every question and full working."><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.anim-frame{display:block;width:100%;height:600px;border:0}
+<meta name="description" content="Edexcel IGCSE Physics graph skills practice: read values off distance–time, velocity–time, decay, I–V and oscilloscope graphs, find gradients and areas, plot results with a line or curve of best fit, sketch graphs, describe relationships, test x × y = constant and spot anomalies, with a new graph every question and full working."><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.anim-frame{display:block;width:100%;height:600px;border:0}
 .anim-open{font:600 13px 'IBM Plex Mono',ui-monospace,monospace;margin:4px 0 18px}
 .anim-open a{color:var(--accent)}
   /* link from a workout tab to its core practical page, on the heading line to the right of the title */
@@ -621,6 +621,14 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 .graph .g-ruler.is-shown{stroke-dasharray:8 5}
 .graph .bf-h{fill:var(--panel);stroke:var(--accent);stroke-width:2.5;cursor:grab}
 .graph .bf-h.on{fill:var(--accent)}
+/* 3i: the curve of best fit, the ring round an anomaly, a thinner line of best fit, choices beside a graph */
+.graph .g-curve{fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linejoin:round}
+.graph .g-curve.is-shown{stroke-dasharray:8 5}
+.graph .g-thin{stroke-width:2}
+.graph .an-ring{fill:none;stroke:var(--bad);stroke-width:2.6}
+.graph .an-ring.is-shown{stroke-dasharray:6 4}
+.gq-mc .pred-opts{margin-top:0}
+.gq-pre{margin:0 0 10px;font-weight:600}
 .dt-svg.graph{touch-action:none}
 .gq-fit .dt-svg text{font-family:var(--f-mono)}
 .gq-fit .dt-q:empty{display:none}
@@ -697,7 +705,7 @@ function answerBtn(b,fn){
 
 const track=(host,g)=>g;
 const saveSoon=()=>{};
-/* ---- createPlot: copied unchanged from hookes-law-practical.html ---- */
+/* ---- createPlot: copied from hookes-law-practical.html, plus cfg.under (what the graph already shows), cfg.after (drawn once every cross is right) and graph.tickFmt (3i) ---- */
 function createPlot(cfg){
   const host=cfg.host, pts=cfg.points, o=cfg.graph;
   const W=o.W,H=o.H,pl=o.pl||58,pr=18,pt=16,pb=50;   // graph.pl: a wider left margin, for a scale with minus signs
@@ -719,19 +727,23 @@ function createPlot(cfg){
   function next(){for(let i=0;i<pts.length;i++)if(!placed[i])return i;return -1;}
   const neg=t=>String(t).replace('-','−');   // a real minus sign on the scale
   function cross(x,y,cls){const cx=gx(x),cy=gy(y);return '<path class="'+cls+'" d="M'+(cx-6)+','+(cy-6)+' L'+(cx+6)+','+(cy+6)+' M'+(cx+6)+','+(cy-6)+' L'+(cx-6)+','+(cy+6)+'"/>';}
+  const lab=t=>o.tickFmt?o.tickFmt(t):neg(t);
   function render(){
     let s='<svg class="graph plot-svg" viewBox="0 0 '+W+' '+H+'" tabindex="0" role="application" aria-label="Graph paper: click to plot the next point, or move with the arrow keys and press Enter">';
     for(let x=o.xMin;x<=o.xMax+1e-9;x+=o.minor[0])s+='<line class="g-minor" x1="'+gx(x)+'" x2="'+gx(x)+'" y1="'+pt+'" y2="'+(H-pb)+'"/>';
     for(let y=o.yMin;y<=o.yMax+1e-9;y+=o.minor[1])s+='<line class="g-minor" y1="'+gy(y)+'" y2="'+gy(y)+'" x1="'+pl+'" x2="'+(W-pr)+'"/>';
-    o.yTicks.forEach(t=>{s+='<line class="g-grid" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+gy(t)+'" y2="'+gy(t)+'"/><text class="g-tick" x="'+(pl-8)+'" y="'+(gy(t)+5)+'" text-anchor="end">'+neg(t)+'</text>';});
-    o.xTicks.forEach(t=>{s+='<line class="g-grid" y1="'+pt+'" y2="'+(H-pb)+'" x1="'+gx(t)+'" x2="'+gx(t)+'"/><text class="g-tick" x="'+gx(t)+'" y="'+(H-pb+20)+'" text-anchor="middle">'+neg(t)+'</text>';});
+    o.yTicks.forEach(t=>{s+='<line class="g-grid" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+gy(t)+'" y2="'+gy(t)+'"/><text class="g-tick" x="'+(pl-8)+'" y="'+(gy(t)+5)+'" text-anchor="end">'+lab(t)+'</text>';});
+    o.xTicks.forEach(t=>{s+='<line class="g-grid" y1="'+pt+'" y2="'+(H-pb)+'" x1="'+gx(t)+'" x2="'+gx(t)+'"/><text class="g-tick" x="'+gx(t)+'" y="'+(H-pb+20)+'" text-anchor="middle">'+lab(t)+'</text>';});
     s+='<line class="g-axis" x1="'+pl+'" x2="'+pl+'" y1="'+pt+'" y2="'+(H-pb)+'"/><line class="g-axis" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+(H-pb)+'" y2="'+(H-pb)+'"/>';
     // a range that goes below zero (reversed readings): the axes are drawn through the origin as well
     if(o.xMin<0&&o.xMax>0)s+='<line class="g-axis g-axis0" x1="'+gx(0)+'" x2="'+gx(0)+'" y1="'+pt+'" y2="'+(H-pb)+'"/>';
     if(o.yMin<0&&o.yMax>0)s+='<line class="g-axis g-axis0" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+gy(0)+'" y2="'+gy(0)+'"/>';
     s+='<text class="g-lab" x="'+(pl+(W-pl-pr)/2)+'" y="'+(H-8)+'" text-anchor="middle">'+o.xLabel+'</text><text class="g-lab" transform="translate(16 '+(pt+(H-pt-pb)/2)+') rotate(-90)" text-anchor="middle">'+o.yLabel+'</text>';
     // cfg.join: a sketch graph, so each point is joined to the one before it once both are plotted
-    if(cfg.join)for(let i=1;i<pts.length;i++)if(placed[i-1]&&placed[i])s+='<path class="g-line g-sketch" d="M'+gx(placed[i-1].x)+','+gy(placed[i-1].y)+' L'+gx(placed[i].x)+','+gy(placed[i].y)+'"/>';
+    if(cfg.under)s+=cfg.under(gx,gy);
+    const allIn=pts.every((p,i)=>locked[i]);
+    if(allIn&&cfg.after)s+=cfg.after(gx,gy);
+    else if(cfg.join)for(let i=1;i<pts.length;i++)if(placed[i-1]&&placed[i])s+='<path class="g-line g-sketch" d="M'+gx(placed[i-1].x)+','+gy(placed[i-1].y)+' L'+gx(placed[i].x)+','+gy(placed[i].y)+'"/>';
     placed.forEach((p,i)=>{if(p)s+=cross(p.x,p.y,'pc'+(locked[i]?' ok':'')+(i===wrongIdx?' no':''));});
     if(next()>=0)s+='<circle class="pcur" cx="'+gx(cur.x)+'" cy="'+gy(cur.y)+'" r="7"/>';
     s+='</svg>';
@@ -768,7 +780,8 @@ function createPlot(cfg){
       setTimeout(()=>{if(!locked[bad])placed[bad]=null;wrongIdx=-1;render();},900);}
     else b.say(ok+' of '+pts.length+' correct so far. Plot the rest.','');
   }
-  function reset(){placed=[];locked=[];cur={x:0,y:0};wrongIdx=-1;ans.off();b.say('','');render();}
+  // the cursor starts at the origin, or the nearest point of the graph to it when the axes do not start at 0 (3i)
+  function reset(){placed=[];locked=[];cur={x:clamp(0,o.xMin,o.xMax),y:clamp(0,o.yMin,o.yMax)};wrongIdx=-1;ans.off();b.say('','');render();}
   reset();  return track(host,{reset:reset,
     getState:()=>({p:placed,l:locked}),
     setState:s=>{
@@ -1178,7 +1191,7 @@ function genSnellGrad(rnd){
 
 /* ================= plot, line of best fit, then use the line ================= */
 // parts: plot the points (createPlot), draw the line of best fit (createDrawTasks + BESTFIT), then a reading from the line
-function plotQuestion(Q,pts,o,rowText,follow){
+function plotQuestion(Q,pts,o,rowText,follow,sc){
   const fit=lsq(pts),ys=pts.map(p=>p.y),span=Math.max.apply(null,ys)-Math.min.apply(null,ys);
   const g=Object.assign({},o,{snap:o.minor.slice(),H:400});
   Q.parts=[
@@ -1186,6 +1199,8 @@ function plotQuestion(Q,pts,o,rowText,follow){
     {type:'fit',q:'Draw the line of best fit. Drag either end of the ruler (or tap where an end should go). With the keyboard: arrow keys move an end, Space swaps ends.',
       task:{q:'',o:Object.assign({},o,{H:400}),pts:pts,fit:fit,tolFit:Math.max(1.5*o.minor[1],0.04*span),aria:'Your plotted points with a ruler to place as the line of best fit'}},
     follow];
+  // sc (3i): on about half the plots, choose the scale of the vertical axis first
+  const s=sc&&sc.rnd()<0.5?scalePart(o,pts,sc.yn,sc.uy):null;if(s)Q.parts.unshift(s);
   Q.fit=fit;return Q;
 }
 // the follow-up reading uses the student's own line (or the best fit if theirs was shown): fig and answer are made when it opens
@@ -1206,7 +1221,7 @@ function genHookePlot(rnd){
   const x0=pk(rnd,[1.5,2.5,3.5,4.5,5.5]);
   const Q={title:'Plot force and extension',stem:st.n+' hangs weights on a spring and measures the extension for each force. Plot '+st.his+' results, draw the line of best fit, then use your line.'};
   return plotQuestion(Q,pts,o,p=>'force '+N(p.x)+' N, extension '+p.y.toFixed(1)+' cm',
-    readFromLine(o,pts,x0,'Use your line to find the extension for a force of '+N(x0)+' N.','extension','cm','N'));
+    readFromLine(o,pts,x0,'Use your line to find the extension for a force of '+N(x0)+' N.','extension','cm','N'),{rnd:rnd,yn:'extension',uy:'cm'});
 }
 function genIvPlot(rnd){
   const R=pk(rnd,[100,120,150,200,250]),st=person(rnd),V=[0,1,2,3,4,5,6];
@@ -1216,7 +1231,7 @@ function genIvPlot(rnd){
   const x0=pk(rnd,[1.5,2.5,3.5,4.5,5.5]);
   const Q={title:'Plot a current–voltage graph',stem:st.n+' measures the current in a resistor for different voltages across it. Plot '+st.his+' results, draw the line of best fit, then use your line.'};
   return plotQuestion(Q,pts,o,p=>N(p.x)+' V, '+N(p.y)+' mA',
-    readFromLine(o,pts,x0,'Use your line to find the current when the voltage is '+N(x0)+' V.','I','mA','V'));
+    readFromLine(o,pts,x0,'Use your line to find the current when the voltage is '+N(x0)+' V.','I','mA','V'),{rnd:rnd,yn:'current',uy:'mA'});
 }
 function genSnellPlot(rnd){
   const m=pk(rnd,SN_MAT),n=pk(rnd,m[2]),st=person(rnd),xs=[0.1,0.18,0.26,0.34,0.42,0.5,0.58];
@@ -1233,20 +1248,554 @@ function genSnellPlot(rnd){
   }});
 }
 
+
+/* ================= Graphs Workout, second release (15 Nov 2026, TODO 3i) =================
+   New kinds, taken from the IGCSE Physics Question Index (Graph task, Maths skill and Summary columns), Index part counts:
+     Sketch or complete a graph (48): decay over half-lives, an I–V line for another resistor, a v–t line for a change,
+       heating and cooling curves (TA), oscilloscope traces (TA). The student plots the corners or crests with createPlot
+       (cfg.join), and the smooth curve is drawn once every cross is right (cfg.after).
+     Describe a relationship (65): which relationship a graph shows, and what doubling x does; and testing x × y = constant
+       from two readings (createPredict for the choices, num parts for the readings).
+     Spot an anomaly (16): click the anomalous point (ANOMALY, a click kind for createDrawTasks), then suggest the correct
+       reading from the line.
+     Curves of best fit (36): a curve with five handles to drag (CURVEFIT, a kind like BESTFIT), for a decay curve and a
+       lamp's I–V curve, each followed by a reading from the student's own curve.
+     Distance–time graphs (32): read a value, how long it is stationary, average speed; speed from the gradient; plot.
+     Choose the scale (no Index rows of its own: the mark is inside the plot parts): before about half the plots.
+   Interpret a section (which part shows deceleration…) is left for later (Alex, 15 Nov 2026). */
+const raf=f=>requestAnimationFrame(f);
+/* ---- createPredict: copied unchanged from density-pressure-state.html ---- */
+function createPredict(cfg){
+  const host=cfg.host;
+  host.appendChild(mk('p','pred-q',cfg.q));
+  if(cfg.pre)host.appendChild(mk('div','',cfg.pre));
+  const opts=mk('div','pred-opts');host.appendChild(opts);
+  const out=mk('div','pred-out');out.hidden=true;host.appendChild(out);
+  const b=bar(host,[{label:'Try again',fn:reset}]);b.el.hidden=true;
+  let order,tries=0,picks=[],final=false;
+  function render(){
+    opts.innerHTML='';
+    order.forEach(i=>{
+      const o=cfg.options[i];
+      const btn=mk('button','pred-opt',FR(o.text));btn.type='button';
+      btn.addEventListener('click',()=>choose(i));
+      btn.dataset.i=i;opts.appendChild(btn);
+    });
+  }
+  // A first wrong answer lights up only that option and explains why it is wrong; the student tries again.
+  // The right answer is shown once they find it, or after a second wrong answer.
+  function choose(i){
+    if(final)return;
+    const o=cfg.options[i];picks.push(i);
+    if(!o.correct&&tries===0){
+      tries++;
+      const btn=$$('.pred-opt',opts).find(x=>+x.dataset.i===i);
+      btn.disabled=true;btn.classList.add('is-chosen','is-wrong');
+      out.innerHTML='<p><strong>Not quite.</strong> '+FR(o.why)+' Try another answer.</p>';
+      out.hidden=false;out.classList.remove('go');
+      return;
+    }
+    $$('.pred-opt',opts).forEach(btn=>{
+      btn.disabled=true;const k=cfg.options[btn.dataset.i];
+      if(k.correct){btn.classList.add('is-right');if(+btn.dataset.i===i)btn.classList.add('pop');}
+      if(+btn.dataset.i===i){btn.classList.add('is-chosen');if(!k.correct)btn.classList.add('is-wrong');}
+    });
+    final=true;
+    const right=cfg.options.find(x=>x.correct);
+    out.innerHTML='<p><strong>'+(o.correct?'That is right.':'Not quite.')+'</strong> '+FR(o.correct?cfg.explain:o.why+' '+cfg.explain)+'</p>'+(cfg.reveal||'');
+    out.hidden=false;out.classList.remove('go');b.el.hidden=false;
+    raf(()=>raf(()=>out.classList.add('go')));
+  }
+  function reset(){picks=[];final=false;tries=0;order=shuffle(cfg.options.map((o,i)=>i));out.hidden=true;out.classList.remove('go');b.el.hidden=true;render();}
+  reset();
+  return track(host,{reset:reset,
+    getState:()=>({o:order,p:picks}),
+    setState:s=>{
+      reset();
+      if(Array.isArray(s.o)&&s.o.length===order.length&&cfg.options.every((x,i)=>s.o.indexOf(i)>=0)){order=s.o.slice();render();}
+      (s.p||[]).forEach(i=>{if(cfg.options[i])choose(i);});
+    },
+    isDone:()=>final});
+}
+
+/* ---- a smooth curve through handles at equally spaced x (uniform Catmull–Rom; with equal spacing x is linear in the
+   parameter, so y is a cubic in x on each stretch and can be read at any x) ---- */
+function crSpline(xs,ys){
+  const n=xs.length,h=xs[1]-xs[0],Y=i=>i<0?2*ys[0]-ys[1]:i>=n?2*ys[n-1]-ys[n-2]:ys[i];
+  return x=>{const i=clamp(Math.floor((x-xs[0])/h),0,n-2),t=(x-xs[i])/h,p0=Y(i-1),p1=Y(i),p2=Y(i+1),p3=Y(i+2);
+    return 0.5*(2*p1+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t*t+(-p0+3*p1-3*p2+p3)*t*t*t);};
+}
+const curvePts=(f,a,b,n)=>{const o=[];for(let i=0;i<=n;i++){const x=a+(b-a)*i/n;o.push([x,f(x)]);}return o;};
+const polyl=(gx,gy,pts,cls)=>'<polyline class="'+cls+'" points="'+pts.map(p=>gx(p[0]).toFixed(1)+','+gy(p[1]).toFixed(1)).join(' ')+'"/>';
+// where a curve first falls (or rises) to y, by stepping along it
+function crossAt(f,a,b,y){const n=800,s0=Math.sign(f(a)-y);for(let i=1;i<=n;i++){const x=a+(b-a)*i/n;if(Math.sign(f(x)-y)!==s0){const x0=a+(b-a)*(i-1)/n,f0=f(x0)-y,f1=f(x)-y;return x0+(x-x0)*f0/(f0-f1);}}return null;}
+
+/* ---- the curve of best fit: a kind for createDrawTasks, like BESTFIT ----
+   Five handles at equally spaced x across the data, each dragged up or down (or moved with the arrow keys: Up and Down move
+   the chosen handle a small square, Left and Right choose another). They start in a flat row across the middle, so their
+   start gives nothing away. Marked as the mark schemes do: one smooth curve that follows the trend, with the points either
+   side: each handle must be within tolFit of the curve through the data. */
+const CURVEFIT=(function(){
+  let drag=-1;
+  return {
+    init:t=>({y:t.hx.map(()=>r6((t.o.yMin+t.o.yMax)/2)),act:0}),
+    answer:t=>({y:t.hx.map(x=>t.f(x)),act:0}),
+    draw:function(g,t,s,api){
+      const o=t.o,svg=api.svg;svg.classList.add('graph');
+      const f=crSpline(t.hx,s.y),cp=curvePts(f,t.hx[0],t.hx[t.hx.length-1],90).map(p=>[p[0],clamp(p[1],o.yMin,o.yMax)]);
+      const lg=lineGraph(Object.assign({},o,{segments:[],extra:(gx,gy)=>crosses(gx,gy,t.pts)+polyl(gx,gy,cp,'g-curve'+(api.shown()?' is-shown':''))}));
+      g.innerHTML=lg.svg.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
+      const gx=lg.gx,gy=lg.gy;
+      if(!api.locked)t.hx.forEach((x,i)=>g.insertAdjacentHTML('beforeend','<circle class="bf-h'+(i===s.act?' on':'')+'" cx="'+gx(x)+'" cy="'+gy(s.y[i])+'" r="9"/>'));
+      svg.setAttribute('tabindex','0');svg.classList.toggle('mk-svg',!api.locked);
+      const near=ev=>{const p=api.pt(ev);if(!p)return 0;let b=0,d=1e9;t.hx.forEach((x,i)=>{const dd=Math.abs(gx(x)-p.x);if(dd<d){d=dd;b=i;}});return b;};
+      const put=(i,y)=>{const n={y:s.y.slice(),act:i};n.y[i]=r6(clamp(y,o.yMin,o.yMax));api.set(n);};
+      svg.onpointerdown=api.locked?null:ev=>{drag=near(ev);try{svg.setPointerCapture(ev.pointerId);}catch(e){}const p=api.pt(ev);if(p)put(drag,lg.iy(p.y));ev.preventDefault();};
+      svg.onpointermove=api.locked?null:ev=>{if(drag<0)return;const p=api.pt(ev);if(p)put(drag,lg.iy(p.y));};
+      svg.onpointerup=svg.onpointercancel=()=>{drag=-1;};
+      svg.onclick=null;
+      svg.onkeydown=api.locked?null:ev=>{
+        const k=ev.key;
+        if(k==='ArrowLeft'||k==='ArrowRight'||k===' '||k==='Enter'){ev.preventDefault();api.set({y:s.y,act:(s.act+(k==='ArrowLeft'?-1:1)+t.hx.length)%t.hx.length});svg.focus({preventScroll:true});return;}
+        if(k==='ArrowUp'||k==='ArrowDown'){ev.preventDefault();put(s.act,s.y[s.act]+(k==='ArrowUp'?1:-1)*o.minor[1]);svg.focus({preventScroll:true});}
+      };
+    },
+    check:function(t,s){
+      const off=t.hx.map((x,i)=>s.y[i]-t.f(x)),bad=off.map(d=>Math.abs(d)>t.tolFit);
+      if(!bad.some(Boolean))return {ok:true,notes:[[1,'One smooth curve that follows the trend, with the points spread either side of it.']]};
+      const notes=[];
+      t.hx.forEach((x,i)=>{if(bad[i])notes.push([0,'Your curve is too '+(off[i]>0?'high':'low')+' at '+t.xn+' = '+N(r6(x))+' '+t.ux+'.']);});
+      notes.push([0,'A curve of best fit is one smooth curve through the middle of the points. It is not dot to dot, and it does not have to touch every point.']);
+      return {ok:false,notes:notes};
+    }
+  };
+})();
+
+/* ---- spot the anomaly: a click kind for createDrawTasks. Click a cross to ring it (click it again to take the ring off);
+   with the keyboard, Left and Right move the ring from cross to cross. ---- */
+const ANOMALY={
+  init:()=>({sel:-1}),
+  answer:t=>({sel:t.bad}),
+  draw:function(g,t,s,api){
+    const o=t.o,svg=api.svg;svg.classList.add('graph');
+    const lg=lineGraph(Object.assign({},o,{segments:[],extra:(gx,gy)=>crosses(gx,gy,t.pts)+(s.sel>=0?'<circle class="an-ring'+(api.shown()?' is-shown':'')+'" cx="'+gx(t.pts[s.sel].x)+'" cy="'+gy(t.pts[s.sel].y)+'" r="14"/>':'')}));
+    g.innerHTML=lg.svg.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
+    svg.setAttribute('tabindex','0');svg.classList.toggle('mk-svg',!api.locked);
+    svg.onpointerdown=svg.onpointermove=svg.onpointerup=svg.onpointercancel=null;
+    svg.onclick=api.locked?null:ev=>{const p=api.pt(ev);if(!p)return;let b=-1,d=26;t.pts.forEach((q,i)=>{const dd=Math.hypot(lg.gx(q.x)-p.x,lg.gy(q.y)-p.y);if(dd<d){d=dd;b=i;}});
+      if(b>=0)api.set({sel:b===s.sel?-1:b});};
+    svg.onkeydown=api.locked?null:ev=>{const k=ev.key;if(k!=='ArrowLeft'&&k!=='ArrowRight')return;ev.preventDefault();
+      const n=t.pts.length,i=s.sel<0?(k==='ArrowLeft'?n-1:0):(s.sel+(k==='ArrowLeft'?-1:1)+n)%n;api.set({sel:i});svg.focus({preventScroll:true});};
+  },
+  check:function(t,s){
+    if(s.sel<0)return {ok:false,notes:[[0,'Click the result that does not fit the pattern of the others.']]};
+    if(s.sel===t.bad)return {ok:true,notes:[[1,'This point is well away from the '+t.trend+' through the other points: it does not fit the pattern.']]};
+    return {ok:false,notes:[[0,'That point fits the pattern: it lies close to the '+t.trend+' through the others.'],[0,'An anomalous result is one that does not fit the pattern of the other results.']]};
+  }
+};
+
+/* ---- choose the scale before plotting (about half the plots): the vertical axis, from 1, 2, 5 (× 10ⁿ), with a 3 that is
+   awkward to plot, one too small to fit and one that squashes the points. Only used when the drawn scale is the right answer. ---- */
+const NICE=[];[-3,-2,-1,0,1,2,3,4].forEach(e=>[1,2,5].forEach(m=>NICE.push(+(m*Math.pow(10,e)).toPrecision(3))));
+function scalePart(o,pts,yn,uy){
+  if(o.yMin!==0)return null;
+  const step=r6(o.yTicks[1]-o.yTicks[0]),K=Math.round((o.yMax-o.yMin)/step),ymax=Math.max.apply(null,pts.map(p=>p.y));
+  const i=NICE.findIndex(s=>Math.abs(s-step)<=step*1e-9);
+  if(i<1||ymax<=K*NICE[i-1]+1e-9||ymax>K*step)return null;
+  const lo=NICE[i-1],hi=NICE[i+1],aw=+(3*Math.pow(10,Math.floor(Math.log10(step)+1e-9))).toPrecision(3);
+  const per=s=>N(s)+' '+uy+' per large square';
+  const why=s=>K*s<ymax-1e-9?'With '+per(s)+' the axis only goes up to '+N(r6(K*s))+' '+uy+', but the largest reading is '+N(ymax)+' '+uy+'.':
+    s===aw?'That fits, but a scale of 3 is hard to plot and read: each small square would be '+N(r6(s/5))+' '+uy+'. Use 1, 2 or 5 (or 10, 20, 50…).':
+    'That fits, but the points would only cover about '+Math.round(100*ymax/(K*s))+'% of the height. Choose the smallest easy scale that still fits.';
+  const opts=[{text:per(step),correct:true}];
+  [lo,hi,aw].forEach(s=>{if(s!==step&&!opts.some(x=>x.text===per(s)))opts.push({text:per(s),why:why(s)});});
+  return {type:'mc',q:'Before you plot: the grid is '+K+' large squares high, each split into 5 small squares. Which scale should go on the '+yn+' axis?',
+    pre:'<p class="gq-pre">The largest '+yn+' in the results is '+N(ymax)+' '+uy+'.</p>',options:opts,
+    explain:'With '+per(step)+' the axis goes up to '+N(r6(K*step))+' '+uy+': every point fits, they spread over as much of the grid as they can, and each small square is an easy '+N(r6(step/5))+' '+uy+'.',
+    sum:'Scale: '+per(step)};
+}
+
+/* ================= distance–time graphs (Unit 1) ================= */
+const DT_S=[
+  {k:'walk',x:[0,200,20,4],y:[0,300,50,10],ux:'s',uy:'m'},
+  {k:'cycle',x:[0,120,20,4],y:[0,600,100,20],ux:'s',uy:'m'},
+  {k:'bus',x:[0,14,2,0.4],y:[0,10,1,0.2],ux:'min',uy:'km'}];
+// three stages with corners on major gridlines: moving, stopped, moving on (or coming back part of the way)
+function dtJourney(rnd){
+  for(let k=0;k<500;k++){
+    const S=pk(rnd,DT_S),n=Math.round(S.x[1]/S.x[2]),Ds=ticks(S.y[3]*5,S.y[1],S.y[3]);
+    const L=[1+Math.floor(rnd()*3),1+Math.floor(rnd()*2),1+Math.floor(rnd()*3)];if(L[0]+L[1]+L[2]>n)continue;
+    const T=[0,L[0],L[0]+L[1],L[0]+L[1]+L[2]].map(x=>r6(x*S.x[2])),shape=pk(rnd,['msm','msm','msb']);
+    const a=pk(rnd,Ds),b=pk(rnd,Ds);
+    if(shape==='msm'&&b<=a)continue;if(shape==='msb'&&b>=a)continue;
+    const D=[0,a,a,b],pts=T.map((t,i)=>[t,D[i]]);
+    if(T[3]<S.x[1])pts.push([S.x[1],b]);
+    const sp=(i)=>{const v=Math.abs(D[i+1]-D[i])/(T[i+1]-T[i])*(S.k==='bus'?1000/60:1);return v;};
+    if(!tidy(sp(0))||!tidy(sp(2)))continue;
+    if(sp(0)>(S.k==='walk'?2.5:S.k==='cycle'?12:20)||sp(2)>(S.k==='walk'?2.5:S.k==='cycle'?12:20)||sp(0)<(S.k==='walk'?0.8:3))continue;
+    const p=person(rnd);
+    const who=S.k==='walk'?p.n+' walks to a friend’s house':S.k==='cycle'?p.n+' cycles along a straight path':'A bus travels along a straight road';
+    return {S:S,T:T,D:D,pts:pts,shape:shape,p:p,who:who,o:axes(S.x,S.y,'Time / '+(S.ux==='s'?'s':'minutes'),'Distance / '+S.uy)};
+  }
+}
+const dtStem=J=>J.who+'. The graph shows '+(J.S.k==='bus'?'its':J.p.his)+' distance from the start.';
+const dtFig=(J,extra)=>lineGraph(Object.assign({},J.o,{segments:[{pts:J.pts}],extra:extra,label:'Distance–time graph'})).svg;
+const dAt=vAt;
+function genDtRead(rnd){
+  for(let k=0;k<200;k++){
+    const J=dtJourney(rnd);if(!J)continue;const o=J.o,S=J.S,xm=S.x[3],ym=S.y[3],r=rnd();
+    if(r<0.35){
+      const cand=[];[0,2].forEach(i=>{for(let t=J.T[i]+xm;t<J.T[i+1]-1e-9;t+=xm){const tt=r6(t),d=dAt(J.pts,tt);if(onGrid(d,ym/2))cand.push([tt,r6(d)]);}});
+      if(!cand.length)continue;const c=pk(rnd,cand);
+      return {title:'Distance at a time',stem:dtStem(J),parts:[{type:'num',q:'Use the graph to find the distance from the start at t = '+N(c[0])+' '+S.ux+'.',unit:S.uy,answer:c[1],tol:ym/2,
+        fig:dtFig(J),figWork:dtFig(J,(gx,gy)=>guide(gx,gy,o,c[0],c[1],'x')+dot(gx,gy,c[0],c[1])),
+        hints:['One small square on the distance axis is '+N(ym)+' '+S.uy+'.','Go up from '+N(c[0])+' '+S.ux+' to the line, then across to the distance axis.'],
+        working:'one small square = '+N(ym)+' '+S.uy+'||at t = '+N(c[0])+' '+S.ux+', read across from the line<br>distance = '+N(c[1])+' '+S.uy}]};
+    }
+    if(r<0.65){
+      const d=r6(J.T[2]-J.T[1]);
+      return {title:'Time spent stationary',stem:dtStem(J),parts:[{type:'num',q:'For how long '+(S.k==='bus'?'is the bus':'is '+J.p.n)+' stationary?',unit:S.ux,answer:d,tol:xm/2,
+        fig:dtFig(J),figWork:dtFig(J,(gx,gy)=>'<line class="g-guide" x1="'+gx(J.T[1])+'" x2="'+gx(J.T[1])+'" y1="'+gy(J.D[1])+'" y2="'+gy(0)+'"/><line class="g-guide" x1="'+gx(J.T[2])+'" x2="'+gx(J.T[2])+'" y1="'+gy(J.D[1])+'" y2="'+gy(0)+'"/>'),
+        hints:['Stationary means the distance from the start does not change: a flat (horizontal) part of a distance–time graph.','Read the time where the flat part starts and where it ends, then subtract.'],
+        working:'flat from t = '+N(J.T[1])+' '+S.ux+'<br>to t = '+N(J.T[2])+' '+S.ux+'||time = '+N(J.T[2])+' − '+N(J.T[1])+'<br>time = '+N(d)+' '+S.ux}]};
+    }
+    if(J.shape!=='msm')continue;
+    // average speed for the whole journey: total distance over total time, both read off the graph
+    const D3=J.D[3],T3=J.T[3],bus=S.k==='bus',v=bus?D3*1000/(T3*60):D3/T3;
+    if(!tidy(v))continue;
+    return {title:'Average speed',stem:dtStem(J),parts:[{type:'num',q:'Calculate the average speed for the whole journey'+(bus?', in m/s.':'.'),unit:'m/s',answer:v,tol:v*0.02,
+      fig:dtFig(J),figWork:dtFig(J,(gx,gy)=>guide(gx,gy,o,T3,D3,'x')+dot(gx,gy,T3,D3)),
+      hints:['Read the end of the journey off the graph: the total distance, and the time it took.'].concat(bus?['Change km into m (× 1000) and minutes into s (× 60).']:[]).concat(['average speed = [[total distance|total time]]']),
+      working:(bus?'distance = '+N(D3)+' km = '+N(D3*1000)+' m<br>time = '+N(T3)+' min = '+N(T3*60)+' s':'distance = '+N(D3)+' m<br>time = '+N(T3)+' s')+'<br>average speed = ?||average speed = [[total distance|total time]]<br>average speed = [['+N(bus?D3*1000:D3)+'|'+N(bus?T3*60:T3)+']]<br>average speed = '+fmtSF(v,3)+' m/s'}]};
+  }
+}
+function genDtGrad(rnd){
+  for(let k=0;k<200;k++){
+    const J=dtJourney(rnd);if(!J)continue;const S=J.S,i=pk(rnd,[0,2]),p=[J.T[i],J.D[i]],q=[J.T[i+1],J.D[i+1]];
+    const bus=S.k==='bus',dd=Math.abs(q[1]-p[1]),dt=q[0]-p[0],v=bus?dd*1000/(dt*60):dd/dt,back=q[1]<p[1];
+    if(!tidy(v))continue;
+    const work='Read two points off the line:<br>('+N(p[0])+' '+S.ux+', '+N(p[1])+' '+S.uy+')<br>('+N(q[0])+' '+S.ux+', '+N(q[1])+' '+S.uy+')'+
+      (bus?'<br>distance = '+N(dd)+' km = '+N(r6(dd*1000))+' m<br>time = '+N(dt)+' min = '+N(r6(dt*60))+' s':'')+'<br>speed = ?||speed = gradient<br>speed = [[distance travelled|time taken]]<br>'+
+      (bus?'speed = [['+N(r6(dd*1000))+'|'+N(r6(dt*60))+']]':'speed = [['+N(Math.max(p[1],q[1]))+' − '+N(Math.min(p[1],q[1]))+'|'+N(q[0])+' − '+N(p[0])+']]<br>speed = [['+N(r6(dd))+'|'+N(r6(dt))+']]')+'<br>speed = '+fmtSF(v,3)+' m/s';
+    return {title:'Speed from the gradient',stem:dtStem(J),parts:[{type:'num',q:'Use the graph to find the speed '+(back?'on the way back ':'')+'between t = '+N(p[0])+' '+S.ux+' and t = '+N(q[0])+' '+S.ux+(bus?', in m/s.':'.'),unit:'m/s',answer:v,tol:v*0.03,abs:true,
+      fig:dtFig(J),figWork:dtFig(J,(gx,gy)=>gradTri(gx,gy,p,q,'time taken','distance travelled')),
+      hints:['Speed is the gradient of a distance–time graph.','Read the distance at '+N(p[0])+' '+S.ux+' and at '+N(q[0])+' '+S.ux+'.'].concat(bus?['Change km into m and minutes into s before you divide.']:[]),
+      working:work}]};
+  }
+}
+function genDtPlot(rnd){
+  for(let k=0;k<100;k++){
+    const st=person(rnd),v=pk(rnd,[1.2,1.4,1.5,1.6,1.8,2.0,2.5,3.0,3.5,4.0,4.5,5.0]),dt=pk(rnd,[5,10]),n=7;
+    const tM=dt*n,dM=v*tM;let ys=null;for(const s of [5,10,20,25,50]){const yM=Math.ceil(dM*1.05/s)*s;if(yM/s>=4&&yM/s<=8){ys=[0,yM,s,s/5];break;}}if(!ys)continue;
+    const ym=ys[3],xs=[0,tM+dt,dt,dt/5];
+    const pts=[];for(let i=0;i<=n-1;i++){const t=(i+1)*dt;pts.push({x:t,y:r6(Math.max(0,Math.round((v*t+pk(rnd,[-1,0,0,1])*ym)/ym)*ym))});}
+    const o=axes(xs,ys,'Time / s','Distance / m'),what=v<=2?'walks':v<=3?'jogs':'runs';
+    const Q={title:'Plot distance against time',stem:st.n+' '+what+' at a steady speed. '+cap(st.his)+' friend records how far '+st.he+' has gone every '+dt+' s. Plot the results, draw the line of best fit, then use the gradient of your line.'};
+    return plotQuestion(Q,pts,o,p=>N(p.x)+' s, '+N(p.y)+' m',{type:'num',q:'Use the gradient of your line to find '+st.n+'’s speed.',unit:'m/s',live:Q=>{
+      const L=Q.line||Q.fit,F=Q.fit,x1=xs[1]*0.2,x2=xs[1]*0.9,p=[r6(x1),L.m*x1+L.c],q=[r6(x2),L.m*x2+L.c];
+      const fig=extra=>lineGraph(Object.assign({},o,{H:400,segments:[],extra:(gx,gy)=>crosses(gx,gy,pts)+rulerSVG(gx,gy,o,L.m,L.c)+(extra?extra(gx,gy):''),label:'Your graph with your line of best fit'})).svg;
+      const f1=x=>fmtSF(x,3);
+      return {answer:L.m,tol:Math.abs(L.m)*0.04,alt:F.m,fig:fig(),figWork:fig((gx,gy)=>gradTri(gx,gy,p,q,'time taken','distance travelled')),
+        hints:['Speed is the gradient of a distance–time graph.','Use two points on your line that are far apart (not two of the plotted points).'],
+        working:'Read two points off your line:<br>('+N(p[0])+' s, '+f1(p[1])+' m)<br>('+N(q[0])+' s, '+f1(q[1])+' m)<br>speed = ?||speed = [[distance travelled|time taken]]<br>speed = [['+f1(q[1])+' − '+f1(p[1])+'|'+N(q[0])+' − '+N(p[0])+']]<br>speed = '+fmtSF(L.m,3)+' m/s'};
+    }},{yn:'distance',uy:'m',rnd:rnd});
+  }
+}
+
+/* ================= curves of best fit: decay and a lamp's I–V curve ================= */
+function curveQuestion(Q,pts,o,rowText,f,xn,ux,follow,sc){
+  const xs=pts.map(p=>p.x),a=Math.min.apply(null,xs),b=Math.max.apply(null,xs),hx=[0,1,2,3,4].map(i=>r6(a+(b-a)*i/4));
+  const span=Math.max.apply(null,pts.map(p=>p.y))-Math.min.apply(null,pts.map(p=>p.y));
+  const g=Object.assign({},o,{snap:o.minor.slice(),H:400});
+  Q.parts=[{type:'plot',q:'Plot the results on the graph.',points:pts,graph:g,rowText:rowText},
+    {type:'fit',kind:'curve',q:'Draw the curve of best fit. Drag the five handles up or down to shape your curve. With the keyboard: Left and Right choose a handle, Up and Down move it.',
+      task:{q:'',o:Object.assign({},o,{H:400}),pts:pts,hx:hx,f:f,xn:xn,ux:ux,tolFit:Math.max(1.5*o.minor[1],0.04*span),aria:'Your plotted points with a curve to shape as the curve of best fit'}},follow];
+  const s=sc&&sc.rnd()<0.5?scalePart(o,pts,sc.yn,sc.uy):null;if(s)Q.parts.unshift(s);
+  Q.f=f;return Q;
+}
+// the student's own curve (or the best one, if theirs was shown)
+const myCurve=Q=>Q.curve?crSpline(Q.curve.hx,Q.curve.y):Q.f;
+function genDecayPlot(rnd){
+  for(let k=0;k<300;k++){
+    const T=pk(rnd,[20,25,30,40,50,60,80]),st=person(rnd),dt=T/2;
+    let xs=null;for(const s of [20,40,50,100]){for(const dv of [5,4,2]){const xm=s/dv;const xM=Math.ceil(4*T/s)*s;if(onGrid(dt,xm)&&xM/s>=4&&xM/s<=8){xs=[0,xM,s,xm];break;}}if(xs)break;}
+    if(!xs)continue;
+    const A0=pk(rnd,[400,500,600,800,1000,1200]);let ys=null;for(const s of [100,200,250]){const yM=Math.ceil(A0/s)*s;if(yM/s>=4&&yM/s<=8){ys=[0,yM,s,s/5];break;}}if(!ys)continue;
+    const ym=ys[3],f=t=>A0*Math.pow(2,-t/T),pts=[];
+    for(let t=0;t<=xs[1]*0.95+1e-9&&pts.length<8;t+=dt){const y=t===0?A0:Math.round((f(t)+pk(rnd,[-0.5,0,0,0.5])*ym)/ym)*ym;pts.push({x:r6(t),y:r6(clamp(y,ym,ys[1]))});}
+    if(pts.length<6)continue;
+    const o=axes(xs,ys,'Time / s','Count rate / counts per minute');
+    const Q={title:'Plot a decay curve',stem:st.n+' measures the count rate from a radioactive source every '+N(dt)+' s, and corrects each reading for background radiation. Plot the results, draw the curve of best fit, then use your curve.'};
+    return curveQuestion(Q,pts,o,p=>N(p.x)+' s, '+N(p.y)+' counts/min',f,'t','s',{type:'num',q:'Use your curve to find the half-life of the source.',unit:'s',live:Q=>{
+      const g=myCurve(Q),y0=g(0),h=crossAt(g,0,pts[pts.length-1].x,y0/2)||T;
+      const fig=extra=>lineGraph(Object.assign({},o,{H:400,segments:[],extra:(gx,gy)=>crosses(gx,gy,pts)+polyl(gx,gy,curvePts(g,0,pts[pts.length-1].x,90),'g-curve')+(extra?extra(gx,gy):''),label:'Your graph with your curve of best fit'})).svg;
+      return {answer:h,tol:Math.max(xs[3],0.06*T),alt:T,fig:fig(),figWork:fig((gx,gy)=>guide(gx,gy,o,h,y0/2,'y')+dot(gx,gy,0,y0)+dot(gx,gy,h,y0/2)),
+        hints:['Read the count rate where your curve starts, at t = 0.','The half-life is the time for the count rate to fall to half of that.'],
+        working:'start of your curve: '+N(Math.round(y0))+' counts/min<br>half of that = '+N(Math.round(y0/2))+' counts/min||read across from '+N(Math.round(y0/2))+' to your curve, then down<br>half-life = '+N(+h.toPrecision(2))+' s'};
+    }},{rnd:rnd,yn:'count rate',uy:'counts/min'});
+  }
+}
+function genLampPlot(rnd){
+  for(let k=0;k<200;k++){
+    const S=pk(rnd,[{x:[0,12,2,0.4],y:[0,3,0.5,0.1],Im:[2.0,2.4,2.8],V:[0,0.8,2,4,6,8,10,12]},{x:[0,6,1,0.2],y:[0,0.6,0.1,0.02],Im:[0.4,0.5],V:[0,0.4,1,2,3,4,5,6]}]);
+    const Im=pk(rnd,S.Im),Vm=S.x[1],f=V=>Im*Math.pow(V/Vm,0.55),ym=S.y[3],st=person(rnd);
+    const pts=S.V.map(v=>({x:v,y:v===0?0:r6(Math.round((f(v)+pk(rnd,[-0.5,0,0,0.5])*ym)/ym)*ym)}));
+    const o=axes(S.x,S.y,'Voltage / V','Current / A');
+    const Va=r6(pk(rnd,S.V.slice(2))+S.x[2]/2);if(Va>=Vm)continue;
+    const Q={title:'Plot a lamp’s current–voltage graph',stem:st.n+' measures the current in a filament lamp for different voltages across it. Plot the results, draw the curve of best fit, then use your curve.'};
+    return curveQuestion(Q,pts,o,p=>N(p.x)+' V, '+N(p.y)+' A',f,'V','V',{type:'num',q:'Use your curve to find the current when the voltage is '+N(Va)+' V.',unit:'A',live:Q=>{
+      const g=myCurve(Q),y=g(Va);
+      const fig=extra=>lineGraph(Object.assign({},o,{H:400,segments:[],extra:(gx,gy)=>crosses(gx,gy,pts)+polyl(gx,gy,curvePts(g,0,Vm,90),'g-curve')+(extra?extra(gx,gy):''),label:'Your graph with your curve of best fit'})).svg;
+      return {answer:y,tol:ym,alt:f(Va),fig:fig(),figWork:fig((gx,gy)=>guide(gx,gy,o,Va,y,'x')+dot(gx,gy,Va,y)),
+        hints:['Go up from '+N(Va)+' V to your curve, then across.','One small square on the current axis is '+N(ym)+' A.'],
+        working:'one small square = '+N(ym)+' A||read up from '+N(Va)+' V to your curve, then across<br>I = '+N(+y.toPrecision(2))+' A'};
+    }},{rnd:rnd,yn:'current',uy:'A'});
+  }
+}
+
+/* ================= sketch or complete a graph ================= */
+// a sketch part: createPlot with cfg.join (the crosses are joined as they go), cfg.under (what the graph already shows)
+// and cfg.after (the finished curve, once every cross is right)
+function sketchPart(q,pts,o,extra){return Object.assign({type:'plot',q:q,points:pts,graph:Object.assign({},o,{snap:o.minor.slice(),H:o.H||380}),rowText:p=>p.lab,join:true},extra||{});}
+const ORD=['one','two','three','four'];
+const SKD=[{n:'technetium-99m',u:'h',ul:'hours',T:[6]},{n:'protactinium-234',u:'s',ul:'s',T:[70]},{n:'sodium-24',u:'h',ul:'hours',T:[15]},{n:'iodine-131',u:'days',ul:'days',T:[8]},{n:'radon-220',u:'s',ul:'s',T:[56]},{n:'a radioactive tracer',u:'min',ul:'minutes',T:[5,10,20,25]}];
+function genSkDecay(rnd){
+  for(let k=0;k<400;k++){
+    const D=pk(rnd,SKD),T=pk(rnd,D.T),nh=pk(rnd,[3,3,4]);
+    let xs=null;for(const s of [1,2,4,5,10,20,40,50,100]){for(const dv of [5,4,2]){const xm=s/dv;if(!onGrid(T,xm))continue;const xM=Math.ceil(nh*T/s)*s;if(xM/s>=4&&xM/s<=8){xs=[0,xM,s,xm];break;}}if(xs)break;}
+    if(!xs)continue;
+    const A0=pk(rnd,[160,320,400,800,1000,1200,1600,2000,2400,3200]);
+    let ys=null;for(const s of [20,40,50,100,200,250,400,500]){const yM=Math.ceil(A0/s)*s;if(yM/s>=4&&yM/s<=8&&onGrid(A0/Math.pow(2,nh),s/5)){ys=[0,yM,s,s/5];break;}}
+    if(!ys)continue;
+    const o=axes(xs,ys,'Time / '+D.ul,'Activity / Bq'),pts=[];
+    for(let i=0;i<=nh;i++)pts.push({x:r6(i*T),y:r6(A0/Math.pow(2,i)),lab:i===0?'at the start: '+N(A0)+' Bq':'after '+ORD[i-1]+' half-li'+(i>1?'ves':'fe')});
+    const f=t=>A0*Math.pow(2,-t/T);
+    return {title:'Sketch a decay curve',stem:cap(D.n)+' has a half-life of '+N(T)+' '+D.ul+'. A sample has an activity of '+N(A0)+' Bq at the start. Sketch a graph of its activity for the next '+N(nh*T)+' '+D.ul+'.',
+      parts:[sketchPart('Plot the activity at the start and after each half-life. Your crosses are joined as you go; the curve is drawn through them when all are right.',pts,o,
+        {after:(gx,gy)=>polyl(gx,gy,curvePts(f,0,xs[1],90),'g-line'),wrong:'The red cross is in the wrong place. After each half-life the activity halves, and the time goes up by '+N(T)+' '+D.ul+'.'})]};
+  }
+}
+function genSkIV(rnd){
+  for(let k=0;k<400;k++){
+    const RA=pk(rnd,[60,75,100,120,150,200,300]),RB=r6(RA*pk(rnd,[0.5,2,1.5,0.75,2/3]));
+    const top=Math.max(6000/RA,6000/RB);let ys=null;for(const s of [10,20,25]){const yM=Math.ceil(top*1.1/s)*s;if(yM/s>=4&&yM/s<=8){ys=[0,yM,s,s/5];break;}}if(!ys)continue;
+    const IB=[0,3,6].map(v=>1000*v/RB);if(!IB.every(i=>onGrid(i,ys[3]))||RB<40||RB>600||!Number.isInteger(RB))continue;
+    const o=axes([0,7,1,0.2],ys,'Voltage / V','Current / mA'),pts=[0,3,6].map((v,i)=>({x:v,y:r6(IB[i]),lab:'resistor B at '+v+' V'}));
+    const eA=Math.min(7,ys[1]*RA/1000);
+    return {title:'Draw the line for another resistor',stem:'The graph shows the current–voltage line for resistor A, which has a resistance of '+RA+' Ω.',
+      parts:[sketchPart('Resistor B has a resistance of '+RB+' Ω. Plot its current at 0 V, 3 V and 6 V. Your crosses are joined to make its line.',pts,o,
+        {under:(gx,gy)=>'<line class="g-dash" x1="'+gx(0)+'" y1="'+gy(0)+'" x2="'+gx(eA)+'" y2="'+gy(1000*eA/RA)+'"/><text class="g-shlab" x="'+(gx(eA)-6)+'" y="'+(gy(1000*eA/RA)+(RB>RA?-10:22))+'" text-anchor="end">A</text>',
+         wrong:'The red cross is in the wrong place. Use V = IR for resistor B, and remember the current axis is in mA (1 A = 1000 mA).'})]};
+  }
+}
+function genSkVt(rnd){
+  if(rnd()<0.25){
+    // a second train at a steady velocity that covers the same distance in the same time: its velocity is area ÷ time
+    for(let k=0;k<300;k++){
+      const J=vtJourney(rnd);if(!J||J.S.on!=='track')continue;const o=vtAxes(J.S),T3=J.T[3];
+      const area=[0,1,2].reduce((a,i)=>a+0.5*(J.P[i]+J.P[i+1])*(J.T[i+1]-J.T[i]),0),v=area/T3;
+      if(!onGrid(v,J.S.y[3])||v<=0)continue;
+      const pts=[{x:0,y:r6(v),lab:'train B at the start'},{x:T3,y:r6(v),lab:'train B at t = '+N(T3)+' s'}];
+      return {title:'A steady train covering the same distance',srcs:['4420/2H June 2007 Q1(b)(ii)'],stem:'The graph shows the velocity of train A between two stations. Train B travels the same distance in the same time, at a steady velocity.',
+        parts:[areaPart(o,J.pts.filter(p=>p[0]<=T3),[0,1,2],'Use the graph to find the distance train A travels in '+N(T3)+' s.',['Distance travelled is the area under a velocity–time graph.']),
+          sketchPart('Plot the start and the end of train B’s line. Its velocity = [[distance|time]].',pts,o,{under:(gx,gy)=>polyl(gx,gy,J.pts,'g-dash'),wrong:'Train B’s steady velocity is the distance from (a) divided by '+N(T3)+' s.'})]};
+    }
+  }
+  for(let k=0;k<400;k++){
+    const u=pk(rnd,[10,12,15,16,18,20,24,25,30]),tr=pk(rnd,[0.6,0.8,1.0,1.2]),tb=pk(rnd,ticks(1.6,4.0,0.4)),V=pk(rnd,['brake','tired','slow','both']);
+    let B;
+    if(V==='brake')B=[[0,u],[tr,u],[r6(tr+2*tb),0]];
+    else if(V==='tired')B=[[0,u],[r6(2*tr),u],[r6(2*tr+tb),0]];
+    else if(V==='both')B=[[0,u],[r6(2*tr),u],[r6(2*tr+2*tb),0]];
+    else{if(u%2)continue;B=[[0,u/2],[tr,u/2],[r6(tr+tb/2),0]];}
+    const end=Math.max(B[2][0],tr+tb);if(end>9.6)continue;
+    const xM=end<=5.6?6:end<=7.6?8:10,o=axes([0,xM,1,0.2],[0,30,5,1],'Time / s','Velocity / m/s');
+    const A=[[0,u],[tr,u],[r6(tr+tb),0],[xM,0]];
+    const what={brake:'Car B is the same car, but its brakes are worn, so the braking force is half as big. Its driver has the same reaction time.',
+      tired:'Car B is the same car, but its driver is tired, so the reaction time is twice as long. The braking force is the same.',
+      both:'Car B is the same car, but its driver has been drinking, so the reaction time is twice as long, and the road is icy, so the deceleration is half as big.',
+      slow:'Car B is the same car, going at half the speed. The reaction time and the deceleration are the same.'}[V];
+    const pts=B.map((p,i)=>({x:p[0],y:p[1],lab:['car B at t = 0','where car B’s brakes go on','where car B stops'][i]}));
+    return {title:'Draw the line for a change',srcs:V==='both'?['4420/2H June 2008 Q1(a)(iii)']:['4PH1/1P November 2020 Q2(c)'],stem:'The graph shows the velocity of car A from the moment its driver sees a hazard (t = 0) until it stops. '+what,
+      parts:[sketchPart('Plot the three corners of car B’s graph. They are joined for you.',pts,o,
+        {under:(gx,gy)=>polyl(gx,gy,A,'g-dash')+'<text class="g-shlab" x="'+(gx(tr)+6)+'" y="'+(gy(u)-8)+'">car A</text>',
+         wrong:'The red cross is in the wrong place. The flat part is the reaction time and the sloping part is the braking: half the braking force means half the deceleration, so twice as long to stop.'})]};
+  }
+}
+const SKH=[
+  {n:'ice',heat:true,mp:0,a:[-20,-16,-12,-10],b:[10,16,20,24],start:'A block of ice at {a} °C is heated steadily.',m:'Ice melts at 0 °C.',e:'the water'},
+  {n:'chocolate',heat:true,mp:32,a:[4,6,10],b:[44,46,50],start:'A bar of chocolate at {a} °C is heated steadily.',m:'Chocolate melts at 32 °C.',e:'the chocolate'},
+  {n:'phosphorus',heat:true,mp:44,a:[-40,-30,-20],b:[70,80],start:'A sample of phosphorus at {a} °C is heated steadily.',m:'Phosphorus melts at 44 °C.',e:'the phosphorus'},
+  {n:'water',heat:false,mp:0,a:[20,30,38],b:[-10,-16,-20],start:'Water at {a} °C is put in a freezer.',m:'Water freezes at 0 °C.',e:'the ice'},
+  {n:'gallium',heat:false,mp:30,a:[60,70,80],b:[10,16,20],start:'Liquid gallium at {a} °C cools in a room.',m:'Gallium freezes at 30 °C.',e:'the gallium'}];
+function genSkHeat(rnd){
+  for(let k=0;k<300;k++){
+    const S=pk(rnd,SKH),a=pk(rnd,S.a),b=pk(rnd,S.b),t1=pk(rnd,[2,3,4,5,6]),d=pk(rnd,[4,5,6,7,8]),t3=pk(rnd,[16,18,20]);if(t1+d+3>t3)continue;
+    const t2=t1+d,lo=Math.min(a,b,S.mp),hi=Math.max(a,b,S.mp);
+    let sq=10,ymn=Math.floor((lo-1)/sq)*sq,ymx=Math.ceil((hi+1)/sq)*sq;
+    if((ymx-ymn)/sq>10){sq=20;ymn=Math.floor((lo-1)/sq)*sq;ymx=Math.ceil((hi+1)/sq)*sq;}
+    const o=axes([0,20,2,0.5],[ymn,ymx,sq,sq/5],'Time / minutes','Temperature / °C'),ch=S.heat?'melt':'freeze',chd=S.heat?'melting':'freezing';
+    if(![a,b,S.mp].every(v=>onGrid(v,sq/5)))continue;
+    const pts=[{x:0,y:a,lab:'at the start'},{x:t1,y:S.mp,lab:'when it starts to '+ch},{x:t2,y:S.mp,lab:'when it has all '+(S.heat?'melted':'frozen')},{x:t3,y:b,lab:'at '+t3+' minutes'}];
+    return {title:S.heat?'Sketch a heating curve':'Sketch a cooling curve',ta:true,
+      stem:S.start.replace('{a}',N(a))+' '+S.m+' It starts to '+ch+' after '+t1+' minutes, and '+chd+' takes '+d+' minutes. After '+t3+' minutes '+S.e+' is at '+N(b)+' °C.',
+      parts:[sketchPart('Sketch the temperature–time graph: plot the temperature at the four times where the graph changes. Your crosses are joined for you.',pts,o,
+        {wrong:'The red cross is in the wrong place. While it '+(S.heat?'melts':'freezes')+' the temperature stays at '+N(S.mp)+' °C, so that part of the graph is flat.'})]};
+  }
+}
+function genSkOsc(rnd){
+  for(let k=0;k<400;k++){
+    const rel=rnd()<0.45;
+    const tbs=[0.1,0.2,0.25,0.5,1,2,5],tb=pk(rnd,tbs),g=pk(rnd,[0.5,1,2,5]);
+    let nd,a,nd0,a0,f,A,txt;
+    if(!rel){f=pk(rnd,[50,100,125,200,250,400,500,800,1000,2000]);A=pk(rnd,[1,1.5,2,3,4,5,6,8,10]);nd=r6(1000/(f*tb));a=r6(A/g);}
+    else{nd0=pk(rnd,[2,2.4,3,4,5]);a0=pk(rnd,[1,2,3,4]);const ff=pk(rnd,[2,0.5]),fa=pk(rnd,[2,0.5]);nd=r6(nd0/ff);a=r6(a0*fa);
+      txt=(fa<1?'quieter (half the amplitude)':'louder (twice the amplitude)')+' and '+(ff>1?'higher in pitch (twice the frequency)':'lower in pitch (half the frequency)');}
+    if(nd<2||nd>5||!onGrid(nd/2,0.2)||a<0.6||a>4||!onGrid(a,0.2))continue;
+    const pts=[];for(let i=0;i*nd/2<=10+1e-9&&i<5;i++)pts.push({x:r6(i*nd/2),y:i%2?-a:a,lab:(i%2?['1st','2nd'][(i-1)/2]+' trough':['1st crest (left-hand edge)','2nd crest','3rd crest'][i/2])});
+    const o=axes([0,10,1,0.2],[-4,4,1,0.2],rel?'':'Time base: '+N(tb)+' ms per division','',{tickFmt:()=>'',pl:24,H:330});
+    const tr=(n,am)=>{const c=[];for(let i=0;i<=300;i++){const x=10*i/300;c.push([x,am*Math.cos(2*Math.PI*x/n)]);}return c;};
+    const cfg={after:(gx,gy)=>polyl(gx,gy,tr(nd,a),'g-line'),wrong:'The red cross is in the wrong place. Count the divisions: one wave (crest to crest) takes the time period, and the amplitude is measured from the middle line.'};
+    if(rel){cfg.under=(gx,gy)=>polyl(gx,gy,tr(nd0,a0),'g-dash');
+      return {title:'Draw the trace for a different sound',ta:true,stem:'The dashed trace on the oscilloscope is for a sound from a loudspeaker. The settings are not changed. The loudspeaker then makes a sound that is '+txt+'.',
+        parts:[sketchPart('Plot the crests and troughs of the new trace, starting with a crest at the left-hand edge. Your crosses are joined; the trace is drawn when all are right.',pts,o,cfg)]};}
+    return {title:'Draw an oscilloscope trace',ta:true,stem:'A signal generator makes a signal of frequency '+N(f)+' Hz and amplitude '+N(A)+' V. It is shown on an oscilloscope with the time base set to '+N(tb)+' ms per division and the Y-gain set to '+N(g)+' V per division.',
+      parts:[sketchPart('Plot the crests and troughs of the trace, starting with a crest at the left-hand edge. Your crosses are joined; the trace is drawn when all are right.',pts,o,cfg)]};
+  }
+}
+
+/* ================= describe a relationship ================= */
+// k: P directly proportional, L linear but not proportional, C+ increases more and more slowly, C− decreases more and more slowly
+const REL=[
+  {k:'P',ctx:'Ali hangs weights on a spring and measures its extension.',xn:'force',yn:'extension',xl:'Force / N',yl:'Extension / cm',ux:'N',uy:'cm',x:[0,8,1,0.2],y:[0,16,2,0.4],f:x=>1.6*x,xr:[1,2,3,4,5,6,7],sp:'1.22, 1.23',u:1,src:'4PH1/2PR May 2022 Q7(a)'},
+  {k:'L',ctx:'Ali hangs weights on a spring and measures its total length.',xn:'force',yn:'length of the spring',xl:'Force / N',yl:'Length / cm',ux:'N',uy:'cm',x:[0,8,1,0.2],y:[0,24,4,0.8],f:x=>8+1.6*x,xr:[1,2,3,4,5,6,7],sp:'1.22, 1.23',u:1,src:'4PH1/2PR May 2022 Q7(a)'},
+  {k:'P',ctx:'Fatimah measures the current in a resistor for different voltages.',xn:'voltage',yn:'current',xl:'Voltage / V',yl:'Current / mA',ux:'V',uy:'mA',x:[0,8,1,0.2],y:[0,80,10,2],f:x=>9*x,xr:[1,2,3,4,5,6,7],sp:'2.9',u:2,src:'4PH1/1P May 2023 Q2(b)(i)'},
+  {k:'C+',ctx:'Fatimah measures the current in a filament lamp for different voltages.',xn:'voltage',yn:'current',xl:'Voltage / V',yl:'Current / A',ux:'V',uy:'A',x:[0,12,2,0.4],y:[0,3,0.5,0.1],f:x=>2.6*Math.pow(x/12,0.55),xr:[1,2,3,4,6,8,10,11],sp:'2.9',u:2,src:'4PH1/1P May 2023 Q2(b)(i)'},
+  {k:'C−',ctx:'Hana measures the resistance of a thermistor at different temperatures.',xn:'temperature',yn:'resistance',xl:'Temperature / °C',yl:'Resistance / Ω',ux:'°C',uy:'Ω',x:[0,100,20,4],y:[0,1600,200,40],f:x=>1500*Math.exp(-x/35),xr:[10,20,30,40,55,70,90],sp:'2.11',u:2,src:'4PH1/1P January 2022 Q7(b)(i)'},
+  {k:'C−',ctx:'Hana measures the resistance of an LDR at different light intensities.',xn:'light intensity',yn:'resistance',xl:'Light intensity / lux',yl:'Resistance / kΩ',ux:'lux',uy:'kΩ',x:[0,500,100,20],y:[0,10,2,0.4],f:x=>9.6/(1+x/60),xr:[20,60,100,150,200,300,400,480],sp:'2.11',u:2,src:'4PH1/1P January 2022 Q7(b)(i)'},
+  {k:'L',ctx:'Lucas measures the speed of sound in air at different temperatures.',xn:'temperature',yn:'speed of sound',xl:'Temperature / °C',yl:'Speed of sound / m/s',ux:'°C',uy:'m/s',x:[0,50,10,2],y:[300,370,10,2],f:x=>332+0.6*x,xr:[5,10,15,20,30,40,45],sp:'3.25P',ta:true,u:3,src:'4PH1/2PR November 2020 Q4(b)(vi)'},
+  {k:'P',ctx:'Elena changes the number of turns on the secondary coil of a transformer and measures the output voltage.',xn:'number of turns',yn:'output voltage',xl:'Number of turns on the secondary coil',yl:'Output voltage / V',ux:'turns',uy:'V',x:[0,500,100,20],y:[0,25,5,1],f:x=>0.048*x,xr:[50,100,150,200,300,400,450],sp:'6.19P',ta:true,u:6,src:'4PH1/2P May 2019 TZ1 Q2(a)(iii)'},
+  {k:'L',ctx:'Edward heats the air in a sealed flask and measures its pressure at different temperatures.',xn:'temperature',yn:'pressure',xl:'Temperature / °C',yl:'Pressure / kPa',ux:'°C',uy:'kPa',x:[0,100,20,4],y:[80,140,10,2],f:x=>100+0.366*x,xr:[10,20,30,50,70,90],sp:'5.20',u:5,src:'4PH1/1PR January 2021 Q7(a)(i)'}];
+const RELTXT={P:'increases in proportion to it',L:'increases steadily, but not in proportion',['C+']:'increases, but more and more slowly',['C−']:'decreases, more and more slowly'};
+const RELWHY=(c,k)=>({
+  'P>L':'A straight line only shows proportion if it passes through the origin. This one does not.',
+  'P>C+':'The graph is a curve, so the two are not proportional.','P>C−':'The graph slopes down, and it is a curve.',
+  'L>P':'This line does pass through the origin, so it is proportional: double one and the other doubles.',
+  'L>C+':'The graph is a curve: its gradient changes, so the increase is not steady.','L>C−':'The graph slopes down, so it does not increase at all.',
+  'C+>P':'The graph is a straight line: its gradient does not change.','C+>L':'The graph is a straight line: its gradient does not change.','C+>C−':'The graph slopes down, so it does not increase.',
+  'C−>P':'The graph slopes up: the '+c.yn+' increases.','C−>L':'The graph slopes up: the '+c.yn+' increases.','C−>C+':'The graph slopes up: the '+c.yn+' increases.'})[k];
+const RELEXP={P:'A straight line through the origin: directly proportional.',L:'A straight line that does not pass through the origin: linear, but not proportional.',['C+']:'The curve rises, but gets less steep.',['C−']:'The curve slopes down and gets less steep.'};
+function relGraph(c,o,pts,extra){return lineGraph(Object.assign({},o,{segments:[{pts:curvePts(c.f,c.x[0],c.x[1],90).filter(p=>p[1]>=o.yMin&&p[1]<=o.yMax)}],extra:(gx,gy)=>crosses(gx,gy,pts)+(extra?extra(gx,gy):''),label:'Graph of '+c.yn+' against '+c.xn})).svg;}
+function genDescribe(rnd){
+  for(let k=0;k<200;k++){
+    const c=pk(rnd,REL);if(c.ta&&st.da)continue;
+    const o=axes(c.x,c.y,c.xl,c.yl);
+    const pts=c.xr.map(x=>({x:x,y:r6(Math.round((c.f(x)+pk(rnd,[-0.5,0,0,0.5])*c.y[3])/c.y[3]*2)/2*c.y[3])}));
+    const fig=relGraph(c,o,pts);
+    // (b) double the x from a to 2a: what happens to y?
+    const as=ticks(c.x[2],c.x[1]/2,c.x[2]),a=pk(rnd,as),ya=c.f(a),yb=c.f(2*a),dbl=c.k==='P'?'d':c.k==='C−'?'down':'less';
+    const fy=y=>N(+y.toPrecision(3));
+    return {title:'Describe the relationship',ta:c.ta,sp:c.sp,unit:c.u,srcs:[c.src],stem:c.ctx+' The graph shows the results.',parts:[
+      {type:'mc',q:'Which describes the relationship between the '+c.yn+' and the '+c.xn+'?',fig:fig,
+        options:['P','L','C+','C−'].map(j=>({text:'As the '+c.xn+' increases, the '+c.yn+' '+RELTXT[j],correct:j===c.k,why:j===c.k?'':RELWHY(c,j+'>'+c.k)})),
+        explain:RELEXP[c.k],sum:'As the '+c.xn+' increases, the '+c.yn+' '+RELTXT[c.k]},
+      {type:'mc',q:'The '+c.xn+' doubles, from '+N(a)+' '+c.ux+' to '+N(2*a)+' '+c.ux+'. What happens to the '+c.yn+'?',fig:relGraph(c,o,pts,(gx,gy)=>guide(gx,gy,o,a,ya,'x')+guide(gx,gy,o,2*a,yb,'x')),
+        options:[{text:'It doubles',correct:dbl==='d',why:dbl==='down'?'The '+c.yn+' goes down.':'Read the graph: it goes from '+fy(ya)+' to '+fy(yb)+' '+c.uy+', which is less than double.'},
+          {text:'It increases, but by less than double',correct:dbl==='less',why:dbl==='d'?'Read the graph: '+fy(ya)+' to '+fy(yb)+' '+c.uy+' is exactly double, because they are proportional.':'The '+c.yn+' goes down.'},
+          {text:'It more than doubles',why:dbl==='down'?'The '+c.yn+' goes down.':'Read the graph: '+fy(ya)+' to '+fy(yb)+' '+c.uy+'.'},
+          {text:'It decreases',correct:dbl==='down',why:'The '+c.yn+' goes up as the '+c.xn+' goes up.'}],
+        explain:'From the graph: '+fy(ya)+' '+c.uy+' at '+N(a)+' '+c.ux+', and '+fy(yb)+' '+c.uy+' at '+N(2*a)+' '+c.ux+'.'+(c.k==='L'?' A line that does not start at the origin never doubles when the '+c.xn+' doubles.':c.k==='P'?' That is what directly proportional means.':''),
+        sum:dbl==='d'?'It doubles':dbl==='less'?'It increases, but by less than double':'It decreases'}]};
+  }
+}
+/* ---- test whether x × y (or x² × y) is constant, from two readings ---- */
+const PROD=[
+  {ctx:'Zahra measures the wavelength of sounds of different frequencies in air.',xn:'frequency',yn:'wavelength',xs:'f',ys:'λ',ux:'Hz',uy:'m',xl:'Frequency / Hz',yl:'Wavelength / m',x:[0,1000,200,40],y:[0,2,0.5,0.1],f:x=>320/x,from:160,xr:[200,320,400,640,800],claims:[1],sp:'3.5',u:3,src:'4PH1/2PR May 2024 Q9(c)',lab:'Is λ inversely proportional to f?'},
+  {ctx:'Nabil measures the count rate from a gamma source at different distances.',xn:'distance',yn:'count rate',xs:'d',ys:'C',ux:'cm',uy:'counts/min',xl:'Distance / cm',yl:'Count rate / counts per minute',x:[0,60,10,2],y:[0,400,50,10],f:x=>36000/(x*x),from:10,xr:[10,12,20,30,60],claims:[2,1],sp:'7.6',u:7,src:'4PH1/1P November 2020 Q10(c)'},
+  {ctx:'Poppy measures the reading on a light meter at different distances from a lamp.',xn:'distance',yn:'meter reading',xs:'d',ys:'R',ux:'cm',uy:'lux',xl:'Distance / cm',yl:'Meter reading / lux',x:[0,120,20,4],y:[0,800,100,20],f:x=>288000/(x*x),from:20,xr:[20,24,30,40,60,80,120],claims:[1,2],sp:'3.12',u:3,src:'4PH1/1P January 2023 Q9(c)(ii)'},
+  {ctx:'Henry squashes some gas at a constant temperature and measures its pressure at different volumes.',xn:'volume',yn:'pressure',xs:'V',ys:'p',ux:'cm³',uy:'kPa',xl:'Volume / cm³',yl:'Pressure / kPa',x:[0,60,10,2],y:[0,350,50,10],f:x=>6000/x,from:18,xr:[20,24,30,40,50,60],claims:[1],sp:'5.20',u:5,src:'4PH1/1PR January 2021 Q7(a)(i)'},
+  {ctx:'Julia measures the activity of a radioactive sample every few minutes.',xn:'time',yn:'activity',xs:'t',ys:'A',ux:'min',uy:'Bq',xl:'Time / minutes',yl:'Activity / Bq',x:[0,50,10,2],y:[0,800,100,20],f:x=>800*Math.pow(2,-x/10),from:0,xr:[10,20,30,40],claims:[1],never:true,sp:'7.13',u:7,src:'4PH1/1P November 2024 Q4(d)'},
+  {ctx:'Charlie measures the force between two charged balls at different distances apart.',xn:'distance',yn:'force',xs:'d',ys:'F',ux:'cm',uy:'mN',xl:'Distance / cm',yl:'Force / mN',x:[0,20,5,1],y:[0,40,10,2],f:x=>900/(x*x),from:5,xr:[5,6,10,15],claims:[2,1],sp:'2.25P',ta:true,u:2,src:'4PH1/2P May 2026 Q5(b)'}];
+function genProduct(rnd){
+  for(let k=0;k<300;k++){
+    const c=pk(rnd,PROD);if(c.ta&&st.da)continue;
+    const n=pk(rnd,c.claims),x1=pk(rnd,c.xr),x2=pk(rnd,c.xr);if(x2<=x1*1.4)continue;
+    const y1=r6(c.f(x1)),y2=r6(c.f(x2));if(!onGrid(y1,c.y[3])||!onGrid(y2,c.y[3])||y1>c.y[1])continue;
+    const P=(x,y)=>Math.pow(x,n)*y,p1=P(x1,y1),p2=P(x2,y2),same=Math.abs(p1-p2)<=0.02*p1;
+    if(!same&&Math.abs(p1-p2)<0.15*Math.max(p1,p2))continue;
+    if(same&&c.never)continue;   // activity × time is never constant, even when two readings happen to give the same value
+    const cl=(n===2?c.xs+'²':c.xs)+' × '+c.ys,o=axes(c.x,c.y,c.xl,c.yl);
+    const cp=curvePts(c.f,Math.max(c.from,c.x[0]+1e-6),c.x[1],120).filter(p=>p[1]<=c.y[1]*1.02);
+    const fig=extra=>lineGraph(Object.assign({},o,{segments:[{pts:cp}],extra:extra,label:'Graph of '+c.yn+' against '+c.xn})).svg;
+    const wk=(gx,gy)=>guide(gx,gy,o,x1,y1,'x')+guide(gx,gy,o,x2,y2,'x')+dot(gx,gy,x1,y1)+dot(gx,gy,x2,y2);
+    const unitP=(n===2?c.ux+'²':c.ux)+' '+c.uy;
+    const rd=(x,y,i)=>({type:'num',q:'Use the graph to find the '+c.yn+' when the '+c.xn+' is '+N(x)+' '+c.ux+'.',unit:c.uy,answer:y,tol:c.y[3]/2,fig:fig(),figWork:fig((gx,gy)=>guide(gx,gy,o,x,y,'x')+dot(gx,gy,x,y)),
+      hints:['One small square on the '+c.yn+' axis is '+N(c.y[3])+' '+c.uy+'.','Go up from '+N(x)+' '+c.ux+' to the curve, then across.'],working:'one small square = '+N(c.y[3])+' '+c.uy+'||read up from '+N(x)+' '+c.ux+' to the curve, then across<br>'+c.ys+' = '+N(y)+' '+c.uy});
+    const pr=(x,y,i)=>({type:'num',q:'Calculate '+cl+' for your '+(i?'second':'first')+' reading.',unit:'',answer:P(x,y),tol:P(x,y)*0.02,ecf:v=>v&&v[i]!=null?Math.pow(x,n)*v[i]:null,fig:fig(wk),figWork:fig(wk),
+      hints:[c.xs+' = '+N(x)+' '+c.ux+(n===2?', so '+c.xs+'² = '+N(x*x):'')+'.','Multiply by the '+c.yn+' you read off the graph.'],
+      working:c.xs+' = '+N(x)+' '+c.ux+'<br>'+c.ys+' = '+N(y)+' '+c.uy+'||'+cl+' = '+(n===2?N(x)+'² × '+N(y):N(x)+' × '+N(y))+'<br>'+cl+' = '+N(r6(P(x,y)))+' '+unitP});
+    return {title:'Test whether '+cl+' is constant',ta:c.ta,sp:c.sp,unit:c.u,srcs:[c.src],stem:c.ctx+' The graph shows the results. A student says that '+cl+' is constant. Use two readings from the graph to test this.',parts:[
+      rd(x1,y1,0),rd(x2,y2,1),pr(x1,y1,0),pr(x2,y2,1),
+      {type:'mc',q:'Do the results support the claim that '+cl+' is constant?',fig:fig(wk),
+        options:[{text:'Yes: the two values of '+cl+' are the same',correct:same,why:'Look again at your two values: '+N(r6(p1))+' and '+N(r6(p2))+' are not the same.'},
+          {text:'No: the two values of '+cl+' are different',correct:!same,why:'Your two values, '+N(r6(p1))+' and '+N(r6(p2))+', are the same (within reading error).'},
+          {text:'Yes: as the '+c.xn+' goes up, the '+c.yn+' goes down',why:'Many curves go down. Only equal values of '+cl+' show that the claim is right.'},
+          {text:'No: the graph is a curve, not a straight line',why:'A curve can still have '+cl+' constant. Test it with the numbers.'}],
+        explain:cl+' = '+N(r6(p1))+' and '+N(r6(p2))+' '+unitP+(same?': the same, so the claim is supported.':': different, so the claim is not supported.'),
+        sum:same?'Yes: the values are the same':'No: the values are different'}]};
+  }
+}
+
+/* ================= spot the anomaly, then the correct reading from the line ================= */
+function genAnomaly(rnd){
+  const ctx=pk(rnd,['hooke','iv','snell','decay','dt']);
+  let o,pts,f,trend='line',xn,yn,ux,uy,stem,fmtY=N,sp,u,src;
+  if(ctx==='hooke'){const k=pk(rnd,[1.2,1.6,2.0,2.4]);f=x=>k*x;o=axes([0,7,1,0.2],[0,Math.ceil((k*6+2)/2)*2,2,0.4],'Force / N','Extension / cm');xn='force';ux='N';yn='extension';uy='cm';pts=[1,2,3,4,5,6].map(x=>({x:x,y:r6(Math.round(f(x)/0.4)*0.4)}));stem=pk(rnd,SHE)+' measures the extension of a spring for different forces.';sp='1.22';u=1;src=['4PH1/1P May 2021 Q5(b)(ii)'];}
+  else if(ctx==='iv'){const R=pk(rnd,[100,125,150,200,250]);f=x=>1000*x/R;o=axes([0,7,1,0.2],[0,Math.ceil((6000/R+6)/10)*10,10,2],'Voltage / V','Current / mA');xn='voltage';ux='V';yn='current';uy='mA';pts=[1,2,3,4,5,6].map(x=>({x:x,y:r6(Math.round(f(x)/2)*2)}));stem=pk(rnd,HE)+' measures the current in a resistor for different voltages.';sp='2.9';u=2;src=['4PH0/1PR May 2014 TZ2 Q4(b)(ii)'];}
+  else if(ctx==='snell'){const n=pk(rnd,[1.4,1.5,1.6]);f=x=>n*x;o=axes([0,0.7,0.1,0.02],[0,1,0.1,0.02],'sin r','sin i',{tickFmt:t=>t.toFixed(1)});xn='sin r';ux='';yn='sin i';uy='';pts=[0.1,0.18,0.26,0.34,0.42,0.5,0.58].map(x=>({x:x,y:r6(Math.round(f(x)/0.02)*0.02)}));fmtY=f2;stem=pk(rnd,SHE)+' measures angles of incidence and refraction for a glass block, and plots sin i against sin r.';sp='3.19';u=3;src=['4PH1/2PR November 2020 Q4(b)(iii)'];}
+  else if(ctx==='decay'){const T=pk(rnd,[20,30,40]),A0=pk(rnd,[600,800,1000]);f=x=>A0*Math.pow(2,-x/T);trend='curve';o=axes([0,120,20,4],[0,1000,200,40],'Time / s','Count rate / counts per minute');xn='time';ux='s';yn='count rate';uy='counts/min';pts=[0,15,30,45,60,75,90,105].map(x=>({x:x,y:r6(Math.round(f(x)/20)*20)}));stem=pk(rnd,HE)+' measures the count rate from a radioactive source, corrected for background radiation.';sp='7.13';u=7;src=['4PH1/1P May 2023 Q1(c)(ii)'];}
+  else{const v=pk(rnd,[1.5,2,2.5]);f=x=>v*x;o=axes([0,70,10,2],[0,Math.ceil(v*60/50)*50,50,10],'Time / s','Distance / m');xn='time';ux='s';yn='distance';uy='m';pts=[10,20,30,40,50,60].map(x=>({x:x,y:r6(Math.round(f(x)/5)*5)}));stem=pk(rnd,SHE)+' walks at a steady speed and records how far she has gone every 10 s.';sp='1.3';u=1;src=['4PH0/2P January 2012 Q2(b)'];}
+  const ym=o.minor[1],bi=1+Math.floor(rnd()*(pts.length-2)),sgn=pts[bi].y+5*ym>o.yMax?-1:pts[bi].y-5*ym<o.yMin?1:pk(rnd,[-1,1]);
+  const good=pts[bi].y,shift=pk(rnd,[4,5,6])*ym*sgn;pts[bi]={x:pts[bi].x,y:r6(good+shift)};
+  const xb=pts[bi].x,yb=f(xb),cp=curvePts(f,pts[0].x,pts[pts.length-1].x,90);
+  const fig=extra=>lineGraph(Object.assign({},o,{H:400,segments:[{pts:cp,cls:'g-thin'}],extra:(gx,gy)=>crosses(gx,gy,pts)+'<circle class="an-ring" cx="'+gx(xb)+'" cy="'+gy(pts[bi].y)+'" r="14"/>'+(extra?extra(gx,gy):''),label:'The results with the '+trend+' of best fit'})).svg;
+  return {title:'Spot the anomalous result',sp:sp,unit:u,srcs:src,stem:stem+' The graph shows the results.',parts:[
+    {type:'click',q:'One result is anomalous. Click it to ring it (click it again to take the ring off; with the keyboard, Left and Right move the ring), then press Check.',
+      task:{q:'',o:Object.assign({},o,{H:400}),pts:pts,bad:bi,trend:trend,aria:'The results, plotted as crosses'}},
+    {type:'num',q:'The '+trend+' of best fit has been drawn, leaving out the anomalous result. Use it to suggest the correct '+yn+' for '+(ux?'the reading at '+N(xb)+' '+ux:yn==='sin i'?'sin r = '+f2(xb):N(xb))+'.',unit:uy,answer:yb,tol:ym,
+      fig:fig(),figWork:fig((gx,gy)=>guide(gx,gy,o,xb,yb,'x')+dot(gx,gy,xb,yb)),
+      hints:['Go up from '+(ux?N(xb)+' '+ux:f2(xb))+' to the '+trend+' (not to the ringed cross), then across.','One small square on the '+yn+' axis is '+fmtY(ym)+(uy?' '+uy:'')+'.'],
+      working:'one small square = '+fmtY(ym)+(uy?' '+uy:'')+'||read up from '+(ux?N(xb)+' '+ux:f2(xb))+' to the '+trend+', then across<br>'+yn+' = '+(uy?N(+yb.toPrecision(3))+' '+uy:f2(yb))}]};
+}
+
 /* ================= the rows of the chooser: by skill, each with its unit, spec points and the Index parts it is modelled on ================= */
-const SKILLS=[['read','Read a Value'],['grad','Gradient'],['area','Area Under a Velocity–Time Graph'],['plot','Plot and Line of Best Fit']];
+const SKILLS=[['read','Read a Value'],['grad','Gradient'],['area','Area Under a Velocity–Time Graph'],['plot','Plot and Line or Curve of Best Fit'],
+  ['sketch','Sketch or Complete a Graph'],['desc','Describe a Relationship'],['anom','Spot an Anomaly']];
 const ROWS=[
+  {id:'dt-read',skill:'read',label:'Distance–time graph: distance, time stopped, average speed',unit:1,sp:'1.3, 1.4',gen:genDtRead,src:['4PH0/2P January 2012 Q2(c)','4PH1/1P January 2020 Q5(a)(i)','4PH0/1P May 2015 TZ1 Q2(c)(ii)']},
   {id:'vt-read',skill:'read',label:'Velocity–time graph',unit:1,sp:'1.7, 1.19',gen:genVtRead,src:['4PH1/1P May 2019 TZ1 Q4(a)(i)','4420/2H June 2010 Q2(a)(i)']},
   {id:'decay',skill:'read',label:'Decay curve: half-life',unit:7,sp:'7.13',gen:genDecay,src:['4PH1/1P November 2024 Q4(c)(ii)','4PH1/1P May 2023 Q1(c)(iii)','4PH1/1PR May 2022 Q7(b)(ii)']},
   {id:'osc',skill:'read',label:'Oscilloscope trace: period and frequency',unit:3,sp:'3.6, 3.27P',ta:true,gen:genOsc,src:['4PH1/2P November 2025 Q4(b)(i)','4PH1/2P May 2026 Q6(b)(ii)']},
   {id:'iv-read',skill:'read',label:'Lamp I–V graph: current, then resistance',unit:2,sp:'2.9, 2.13',gen:genIvRead,src:['4PH1/1P May 2023 Q2(b)(iii)','4PH1/1PR May 2024 Q7(b)(ii)']},
+  {id:'dt-grad',skill:'grad',label:'Distance–time graph: speed',unit:1,sp:'1.3, 1.4',gen:genDtGrad,src:['4PH1/1P January 2020 Q5(a)(ii)','4PH1/1P January 2020 Q5(a)(iii)']},
   {id:'vt-grad',skill:'grad',label:'Velocity–time graph: acceleration',unit:1,sp:'1.8',gen:genVtGrad,src:['4PH1/1P November 2023 Q6(a)(i)','4PH1/1P May 2023 Q9(b)(ii)']},
   {id:'snell-grad',skill:'grad',label:'sin i against sin r: refractive index',unit:3,sp:'3.19',gen:genSnellGrad,src:['4PH1/1PR January 2020 Q10(b)(iv)','4PH1/1P November 2021 Q6(c)']},
   {id:'vt-area',skill:'area',label:'Distance travelled on a journey',unit:1,sp:'1.9',gen:genVtArea,src:['4PH1/1P November 2025 Q9(d)','4PH1/1P November 2023 Q6(a)(iii)']},
   {id:'stop-area',skill:'area',label:'Thinking, braking and stopping distance',unit:1,sp:'1.9, 1.19',gen:genStopArea,src:['4PH1/1P January 2023 Q5(c)','4PH1/1P November 2025 Q9(d)']},
   {id:'hooke-plot',skill:'plot',label:'Force and extension of a spring',unit:1,sp:'1.22',gen:genHookePlot,src:['4PH1/1P January 2022 Q9(b)(i)','4420/2H November 2005 Q3(b)']},
   {id:'iv-plot',skill:'plot',label:'Current–voltage graph for a resistor',unit:2,sp:'2.9',gen:genIvPlot,src:['4PH1/1PR January 2021 Q12(c)(ii)','4PH1/1PR May 2024 Q7(b)(i)']},
-  {id:'snell-plot',skill:'plot',label:'sin i against sin r',unit:3,sp:'3.19',gen:genSnellPlot,src:['4PH1/1PR January 2020 Q10(b)(ii)','4PH1/1PR January 2020 Q10(b)(iv)']}
+  {id:'snell-plot',skill:'plot',label:'sin i against sin r',unit:3,sp:'3.19',gen:genSnellPlot,src:['4PH1/1PR January 2020 Q10(b)(ii)','4PH1/1PR January 2020 Q10(b)(iv)']},
+  {id:'dt-plot',skill:'plot',label:'Distance and time: plot, then the speed',unit:1,sp:'1.3, 1.4',gen:genDtPlot,src:['4PH0/2P January 2012 Q2(b)','4PH1/1P May 2023 Q10(b)(i)']},
+  {id:'decay-plot',skill:'plot',label:'Count rate and time: curve of best fit',unit:7,sp:'7.13',gen:genDecayPlot,src:['4PH0/1P January 2014 Q12(a)(iii)','4420/2H June 2006 Q8(a)(i)','4PH1/1PR May 2024 Q8(a)(iv)']},
+  {id:'lamp-plot',skill:'plot',label:'Lamp current and voltage: curve of best fit',unit:2,sp:'2.9',gen:genLampPlot,src:['4PH0/2PR May 2016 TZ2 Q2(b)(i)','4PH1/1P May 2024 Q10(c)(iii)']},
+  {id:'sk-decay',skill:'sketch',label:'Decay over half-lives',unit:7,sp:'7.13',gen:genSkDecay,src:['4PH1/1PR May 2024 Q8(a)(iii)','4PH1/1PR May 2023 Q7(a)(ii)','4PH1/1P January 2020 Q11(a)']},
+  {id:'sk-iv',skill:'sketch',label:'I–V line for another resistor',unit:2,sp:'2.9, 2.13',gen:genSkIV,src:['4PH1/1PR May 2023 Q6(c)(i)']},
+  {id:'sk-vt',skill:'sketch',label:'Velocity–time line for a change',unit:1,sp:'1.7, 1.9, 1.20',gen:genSkVt,src:['4PH1/1P November 2020 Q2(c)','4420/2H June 2008 Q1(a)(iii)','4420/2H June 2007 Q1(b)(ii)']},
+  {id:'sk-heat',skill:'sketch',label:'Heating and cooling curves',unit:5,sp:'5.9P, 5.11P',ta:true,gen:genSkHeat,src:['4PH1/2PR May 2024 Q3(b)','4PH1/2P May 2023 Q2(b)(iii)','4PH1/2PR January 2020 Q5(a)(i)']},
+  {id:'sk-osc',skill:'sketch',label:'Oscilloscope traces',unit:3,sp:'3.26P, 3.28P',ta:true,gen:genSkOsc,src:['4PH1/2PR May 2024 Q9(b)','4PH1/2P May 2025 Q2(c)(ii)','4PH1/2P January 2021 Q1(c)']},
+  {id:'desc-rel',skill:'desc',label:'What relationship does the graph show?',unit:'1–6',sp:'1.22, 2.9, 2.11, 3.25P, 5.20, 6.19P',gen:genDescribe,src:['4PH1/2PR May 2022 Q7(a)']},
+  {id:'desc-prod',skill:'desc',label:'Test whether x × y is constant',unit:'2–7',sp:'2.25P, 3.5, 3.12, 5.20, 7.6, 7.13',gen:genProduct,src:['4PH1/2PR May 2024 Q9(c)']},
+  {id:'anomaly',skill:'anom',label:'Spot the anomaly, then the correct reading',unit:'1–7',sp:'1.3, 1.22, 2.9, 3.19, 7.13',gen:genAnomaly,src:['4PH0/1PR May 2014 TZ2 Q4(b)(ii)']}
 ];
 
 /* ================= the page: choose, then one question at a time (chooser as calculation-generator.html) ================= */
@@ -1321,14 +1870,14 @@ function next(){
   let pool=list.filter(r=>r.id!==last);if(!pool.length)pool=list;
   const row=calcPick(Math.random,pool);last=row.id;
   let Q=null;for(let k=0;k<20&&!Q;k++)Q=row.gen(calcRnd(1+Math.floor(Math.random()*2147483646)));
-  Q.row=row;Q.src=calcPick(Math.random,row.src);Q.pi=0;Q.clean=true;Q.vals=[];Q.done=false;
+  Q.row=row;Q.src=calcPick(Math.random,Q.srcs||row.src);Q.pi=0;Q.clean=true;Q.vals=[];Q.done=false;
   cur=Q;qn++;render();
 }
 function render(){
   const Q=cur,host=byId('pr-card');host.innerHTML='';
   const a=mk('article','act gq');
   a.innerHTML='<h3 class="act-title"><span class="kind">Question '+qn+'</span><span>'+Q.title+'</span>'+(Q.row.ta||Q.ta?'<b class="ta" title="Triple Award only">TA</b>':'')+'</h3>'+
-    '<p class="act-intro">'+FR(Q.stem)+'<span class="gq-src">'+Q.row.label+' · Unit '+Q.row.unit+' · '+Q.row.sp+' · like '+Q.src+'</span></p>';
+    '<p class="act-intro">'+FR(Q.stem)+'<span class="gq-src">'+Q.row.label+' · Unit '+(Q.unit||Q.row.unit)+' · '+(Q.sp||Q.row.sp)+' · like '+Q.src+'</span></p>';
   const done=mk('ol','gq-done');done.id='gq-done';a.appendChild(done);
   const body=mk('div','act-body gq-part');body.id='gq-part';a.appendChild(body);
   const nb=mk('div','bar gq-next');
@@ -1342,7 +1891,7 @@ function partLabel(i){return cur.parts.length>1?'('+LET[i]+') ':'';}
 function openPart(){
   const Q=cur,P=Q.parts[Q.pi],body=byId('gq-part');body.innerHTML='';
   body.appendChild(mk('p','gq-q','<b>'+partLabel(Q.pi)+'</b>'+FR(P.q)));
-  if(P.type==='num')openNum(P,body);else if(P.type==='plot')openPlot(P,body);else openFit(P,body);
+  if(P.type==='num')openNum(P,body);else if(P.type==='plot')openPlot(P,body);else if(P.type==='mc')openMc(P,body);else openFit(P,body);
 }
 // a part is finished: right (ok) or shown; its one-line summary stays above the next part
 function partDone(summary){
@@ -1417,30 +1966,55 @@ function openNum(P,body){
 // Plot: createPlot from hookes-law-practical.html, unchanged. The part ends once every cross is locked (right or shown).
 function openPlot(P,body){
   const Q=cur,host=mk('div','gq-plot');body.appendChild(host);
-  const api=createPlot({host:host,points:P.points,graph:P.graph,rowText:P.rowText,next:''});
-  const nb=mk('div','bar');nb.innerHTML='<button type="button" class="btn primary" id="gq-go" hidden>Next: the line of best fit &rarr;</button>';body.appendChild(nb);
+  const api=createPlot({host:host,points:P.points,graph:P.graph,rowText:P.rowText,next:'',join:P.join,under:P.under,after:P.after,wrong:P.wrong});
+  const nx=Q.parts[Q.pi+1],last=!nx;
+  const nb=mk('div','bar');nb.innerHTML='<button type="button" class="btn primary" id="gq-go" hidden>'+(nx&&nx.type==='fit'?'Next: the '+(nx.kind==='curve'?'curve':'line')+' of best fit':'Next part')+' &rarr;</button>';if(!last)body.appendChild(nb);
   let shown=false,ended=false;
   host.addEventListener('click',ev=>{
     if(ev.target.closest('.btn-show')){shown=true;Q.clean=false;}
     const look=()=>{if(host.querySelector('.fb.bad'))Q.clean=false;
-      if(!ended&&api.isDone()){ended=true;const go=byId('gq-go');go.hidden=false;go.focus({preventScroll:true});
-        go.addEventListener('click',()=>partDone(shown?'Points shown.':'✓ All points plotted.'));}};
+      if(!ended&&api.isDone()){ended=true;const sum=shown?'Points shown.':'✓ All points plotted.';if(last){partDone(sum);return;}
+        const go=byId('gq-go');go.hidden=false;go.focus({preventScroll:true});go.addEventListener('click',()=>partDone(sum));}};
     setTimeout(look,30);setTimeout(look,1000);
   });
   host.addEventListener('keydown',()=>setTimeout(()=>{if(host.querySelector('.fb.bad'))Q.clean=false;},30));
 }
-// Line of best fit: createDrawTasks (waves.html) in its single-task mode, with the BESTFIT kind. The student's line is kept for the next part.
+// Line or curve of best fit, or a click on the anomaly: createDrawTasks (waves.html) in its single-task mode, with the BESTFIT,
+// CURVEFIT or ANOMALY kind. The student's line (Q.line) or curve (Q.curve) is kept for the next part.
 function openFit(P,body){
   const Q=cur,host=mk('div','gq-fit');body.appendChild(host);
   let last=null;
-  const kind=Object.assign({},BESTFIT,{check:(t,s)=>{const r=BESTFIT.check(t,s);last=s;if(!r.ok)Q.clean=false;return r;}});
+  const K=P.type==='click'?ANOMALY:P.kind==='curve'?CURVEFIT:BESTFIT,what=P.type==='click'?['Anomaly shown.','✓ Anomaly found.']:P.kind==='curve'?['Curve of best fit shown.','✓ Curve of best fit drawn.']:['Line of best fit shown.','✓ Line of best fit drawn.'];
+  const kind=Object.assign({},K,{check:(t,s)=>{const r=K.check(t,s);last=s;if(!r.ok)Q.clean=false;return r;}});
   const nb=mk('div','bar');nb.innerHTML='<button type="button" class="btn primary" id="gq-go" hidden>Next part &rarr;</button>';
   createDrawTasks({host:host,tasks:[P.task],kind:kind,W:560,H:400,single:true,onDone:status=>{
-    if(status===2){Q.clean=false;Q.line=null;}else Q.line=lineOf(last);
+    if(status===2){Q.clean=false;Q.line=null;Q.curve=null;}
+    else if(K===BESTFIT)Q.line=lineOf(last);else if(K===CURVEFIT)Q.curve={hx:P.task.hx,y:last.y.slice()};
+    if(Q.pi===Q.parts.length-1){partDone(what[status===2?0:1]);return;}
     const go=byId('gq-go');go.hidden=false;go.focus({preventScroll:true});
-    go.addEventListener('click',()=>partDone(status===2?'Line of best fit shown.':'✓ Line of best fit drawn.'));
+    go.addEventListener('click',()=>partDone(what[status===2?0:1]));
   }});
   body.appendChild(nb);
+}
+// A choice: createPredict (density-pressure-state.html) beside the graph. A first wrong answer explains why and costs
+// "right first time"; the right answer shows once it is found, or after a second wrong answer.
+function openMc(P,body){
+  const Q=cur,split=mk('div',P.fig?'graph-split gq-split':'gq-mcwrap');body.appendChild(split);
+  if(P.fig)split.appendChild(mk('div','graph-fig gq-fig',P.fig));
+  const side=mk('div','gq-mc');split.appendChild(side);
+  const api=createPredict({host:side,q:'',options:P.options,explain:P.explain||'',pre:P.pre});
+  const q0=side.querySelector('.pred-q');if(q0)q0.remove();
+  const tb=side.querySelector('.bar');if(tb)tb.remove();   // no Try again: the part moves on
+  const nb=mk('div','bar');nb.innerHTML='<button type="button" class="btn primary" id="gq-go" hidden>Next part &rarr;</button>';side.appendChild(nb);
+  let ended=false;
+  side.addEventListener('click',()=>setTimeout(()=>{
+    if(ended)return;const s=api.getState();
+    if(s.p.length&&!P.options[s.p[0]].correct)Q.clean=false;
+    if(!api.isDone())return;
+    ended=true;const sum=(s.p.length===1?'✓ ':'Answer: ')+(P.sum||P.options.find(o=>o.correct).text);
+    if(Q.pi===Q.parts.length-1){partDone(sum);return;}
+    const go=byId('gq-go');go.hidden=false;go.focus({preventScroll:true});go.addEventListener('click',()=>partDone(sum));
+  },20));
 }
 
 /* ---- switching views ---- */
@@ -1455,6 +2029,7 @@ function showChooser(){
   window.scrollTo(0,0);byId('ch-title').focus({preventScroll:true});
 }
 byId('ch-start').addEventListener('click',startPractice);
+if(/[?&]test\b/.test(location.search))window.__gq=()=>cur;   // for the Playwright check that answers every kind
 byId('pr-back').addEventListener('click',showChooser);
 refresh();
 })();
