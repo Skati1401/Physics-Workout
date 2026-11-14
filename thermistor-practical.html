@@ -1516,6 +1516,9 @@ function createPlot(cfg){
   let placed=[],locked=[],cur={x:0,y:0},wrongIdx=-1;
   const b=bar(side,[{label:'Check plot',primary:true,fn:check},{label:'Clear',fn:reset}]);
   // what to do next, after the last point: cfg.next overrides it (e.g. when no line-of-best-fit question follows)
+  // graph.tol: how far a cross may be from the point (default half a snap step). A reading such as 41.6 g cannot sit on a
+  // snap step of a 0–140 g scale, so the student's own readings use half a small square, as an exam does (5c, 13 Nov 2026).
+  const TOL=o.tol||[o.snap[0]/2,o.snap[1]/2];
   const NEXT=cfg.next===undefined?' Now choose the line of best fit below.':cfg.next;
   const ans=answerBtn(b,()=>{pts.forEach((p,i)=>{if(!locked[i]){placed[i]={x:p.x,y:p.y};locked[i]=true;}});wrongIdx=-1;render();b.say('Points shown. Read them through, then Clear to plot them on your own.'+NEXT,'');});
   function next(){for(let i=0;i<pts.length;i++)if(!placed[i])return i;return -1;}
@@ -1563,7 +1566,7 @@ function createPlot(cfg){
   function place(){const i=next();if(i<0)return;placed[i]={x:cur.x,y:cur.y};wrongIdx=-1;render();if(next()<0)b.say('All points plotted. Press Check plot.','');}
   function check(){
     let ok=0,bad=-1;
-    pts.forEach((p,i)=>{if(!placed[i])return;if(Math.abs(placed[i].x-p.x)<=o.snap[0]/2+1e-9&&Math.abs(placed[i].y-p.y)<=o.snap[1]/2+1e-9)locked[i]=true;else if(bad<0)bad=i;});
+    pts.forEach((p,i)=>{if(!placed[i])return;if(Math.abs(placed[i].x-p.x)<=TOL[0]+1e-9&&Math.abs(placed[i].y-p.y)<=TOL[1]+1e-9)locked[i]=true;else if(bad<0)bad=i;});
     ok=locked.filter(Boolean).length;
     if(ok===pts.length){b.say('All '+pts.length+' points plotted correctly.'+NEXT,'good');wrongIdx=-1;render();return;}
     if(bad>=0){ans.on();wrongIdx=bad;render();b.say(ok+' of '+pts.length+' correct. '+(cfg.wrong||'The red cross is in the wrong place: check the scale on each axis.'),'bad');
