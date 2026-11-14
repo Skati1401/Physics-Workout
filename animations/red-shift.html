@@ -525,6 +525,18 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   //     TZ2 B3 Part 2(b)(ii)); IAL only: the distance from z and H₀ (WPH15 Jan 2021 16(a)(ii), 6PH05 Jun 2013R 16(b)(ii));
   //     the age of the universe from the gradient of v against d (9PH0/03 Jun 2019 6(c), WPH05 Jan 2017 17(c)(i),
   //     WPH15 Jan 2024 18(c), Jun 2022 12(a)).
+  // Two stars orbiting each other (TODO 7c, 14 Nov 2026), a question kind on the One galaxy Questions tab at every level:
+  //   mark with an X where star B is when its light shows the greatest red-shift at the Earth, modelled on 4PH1/2P
+  //   Nov 2023 Q8(a) (MS: "X at 3 o'clock position on orbit by eye; any indicative mark within a star's radius of the
+  //   correct position"); also the shortest wavelength (IAL WPH15 Oct 2023 21(b) asks for both extremes), the highest
+  //   frequency (IB P1A May 2026 TZ2 23, a drone flying in a circle; IB P2 Nov 2023 TZ2 8(a)(i), a turntable) and no shift
+  //   at all, where B moves across the line to the Earth (IB P2 Nov 2023 TZ2 8(a)(ii); IAL WPH15 Oct 2021 16(a)-(b), the
+  //   rotating Sun). The Earth is far away, so the line to it has the same direction from every point of the orbit.
+  //   The X sits on the orbit wherever the click is, and is marked right within 13° (a star's radius) of the answer.
+  //   Go runs the orbit once and on to the answer, with the line in B's light on a close-up wavelength scale, drawn to
+  //   the true v/c. IAL and IB add a calculation on the same picture: the longest or shortest wavelength from r and T
+  //   (v = 2πr/T, then Δλ/λ = v/c; IAL WPH15 Oct 2023 21(b), Oct 2021 16(c)), or the period from the two extreme
+  //   wavelengths, using half their difference (IAL WPH15 Jan 2025 18(b); IB P2 May 2025 TZ2 7(e)(ii)).
   var SHOW=(location.search.match(/[?&]show=(one|many|predict)\b/)||[])[1];
   var svg=$('#rs-svg'), playBtn=$('#rs-play'), rewBtn=$('#rs-rew'), resetBtn=$('#rs-reset'), slowBtn=$('#rs-slow'), expBtn=$('#rs-exp'), newBtn=$('#rs-new'), vIn=$('#rs-v'), tIn=$('#rs-t'), ansIn=$('#rs-ans');
   svg.innerHTML='<g id="rs-live"></g><g id="rs-picks"></g>';
@@ -647,6 +659,69 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     return g+specAxis(S,ya,{title:'wavelength (nm)', coarse:!S.side});
   }
 
+  // ---- two stars orbiting each other (TODO 7c). Angles in degrees on the screen (y down, so a bigger angle is clockwise);
+  //   q.phi: the direction of the Earth; q.s: +1 clockwise, -1 anticlockwise; q.b0: star B's angle when the question is dealt.
+  //   B's velocity away from the Earth is v·s·sin(θ − φ), so the greatest red-shift is at θ = φ + 90s.
+  var RAD=Math.PI/180;
+  function OR(){ return TALL ? {cx:170, cy:104, R:52, ax:345, ay:98} : {cx:450, cy:90, R:52, ax:710, ay:86}; }
+  function adeg(a){ a%=360; return a<0 ? a+360 : a; }
+  function adist(a,b){ var d=Math.abs(adeg(a)-adeg(b)); return Math.min(d,360-d); }
+  function orbAns(q){ return q.ask==='none' ? [q.phi, q.phi+180] : q.ask==='blue' || q.ask==='hif' || q.ask==='min' ? [q.phi-90*q.s] : [q.phi+90*q.s]; }
+  function recede(q,th){ return q.v*q.s*Math.sin((th-q.phi)*RAD); }   // km/s, away from the Earth
+  function starDot(x,y,r){ return circ(x,y,r+7,'#ffd27a',' opacity=".16"')+circ(x,y,r+3,'#ffe2a0',' opacity=".35"')+circ(x,y,r,'#ffeec2')+circ(x-r*0.3,y-r*0.32,r*0.42,'#fff',' opacity=".8"'); }
+  function crossX(x,y,col,w){ var k=7; return ln(x-k,y-k,x+k,y+k,col,w||3,' stroke-linecap="round"')+ln(x-k,y+k,x+k,y-k,col,w||3,' stroke-linecap="round"'); }
+  // o.th: B's angle; o.vel: velocity arrows; o.mark: the student's X; o.mk: 'good' or 'bad'; o.rings: right answers; o.los: the line to the Earth; o.r: the radius label
+  function sceneOrbit(o){
+    var q=o.q, O=OR(), W=SC.w, H=SC.h, s='', R=O.R, cx=O.cx, cy=O.cy, thA=o.th+180, i;
+    function P(th,rr){ return {x:cx+(rr||R)*Math.cos(th*RAD), y:cy+(rr||R)*Math.sin(th*RAD)}; }
+    s+=sky(W,H,TALL?16:30,23);
+    if(o.los){ var ex=Math.cos(q.phi*RAD), ey=Math.sin(q.phi*RAD); s+=ln(cx-ex*(R+30),cy-ey*(R+30),cx+ex*(R+30),cy+ey*(R+30),WSOFT,1.2,' stroke-dasharray="4 4" opacity=".7"'); }
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+WSOFT+'" stroke-width="1.3" stroke-dasharray="5 5" opacity=".8"/>';
+    s+=ln(cx-5,cy,cx+5,cy,WSOFT,1.4)+ln(cx,cy-5,cx,cy+5,WSOFT,1.4);
+    // the direction of the orbit: an arc outside it, between the two stars when the question is dealt, as far to the side
+    //   as it can be (on a phone, to the left, away from the arrow), so that its label is clear of everything else
+    var am=[90,-90,60,-60,120,-120].map(function(x){ return q.b0+x; }).reduce(function(b,x){ var f=function(a){ var c=Math.cos(a*RAD); return TALL ? -c : Math.abs(c); }; return f(x)>f(b)+1e-9 ? x : b; }), a0=am-22, a1=am+22, d='', k;
+    for(k=0;k<=12;k++){ var pp=P(a0+(a1-a0)*k/12,R+13); d+=(k?'L':'M')+f1(pp.x)+','+f1(pp.y); }
+    var tipA=q.s>0?a1:a0, tp=P(tipA,R+13), tg={x:-Math.sin(tipA*RAD)*q.s, y:Math.cos(tipA*RAD)*q.s};
+    s+='<path d="'+d+'" fill="none" stroke="'+WINK+'" stroke-width="2"/>'+pg([[tp.x+tg.x*9,tp.y+tg.y*9],[tp.x-tg.y*5,tp.y+tg.x*5],[tp.x+tg.y*5,tp.y-tg.x*5]],WINK);
+    var lp=P(am,R+30), lc=Math.cos(am*RAD), la=lc>0.35?'start':lc<-0.35?'end':'middle';
+    if(!o.vel) s+=dtxt(lp.x,lp.y-2,'direction',{a:la,fs:11.5,c:WSOFT})+dtxt(lp.x,lp.y+12,'of orbit',{a:la,fs:11.5,c:WSOFT});   // once the stars move, their arrows show the way and their names would cross these words
+    if(o.r){ var rp=P(am+180,R); s+=ln(cx,cy,rp.x,rp.y,WSOFT,1.4)+dtxt((cx+rp.x)/2+(Math.sin((am+180)*RAD)>0?8:-8),(cy+rp.y)/2-6,'r',{a:'middle',fs:13,w:700,c:WINK}); }
+    // the two stars, their names outside the orbit, and (o.vel) their velocities
+    [[thA,'star A'],[o.th,'star B']].forEach(function(st){
+      var p=P(st[0]), np=P(st[0],R+24), nc=Math.cos(st[0]*RAD), na=nc>0.4?'start':nc<-0.4?'end':'middle';
+      s+=starDot(p.x,p.y,10)+dtxt(np.x,np.y+4,st[1],{a:na,fs:11.5,w:st[1]==='star B'?700:400,c:st[1]==='star B'?WINK:WSOFT});
+      if(o.vel){ var tx=-Math.sin(st[0]*RAD)*q.s, ty=Math.cos(st[0]*RAD)*q.s; s+=arrow(p.x+tx*13,p.y+ty*13,p.x+tx*40,p.y+ty*40,VCOL,2.6); }
+    });
+    if(o.rings) o.rings.forEach(function(a){ var p=P(a); s+='<circle cx="'+f1(p.x)+'" cy="'+f1(p.y)+'" r="14" fill="none" stroke="'+GOOD+'" stroke-width="2.4" stroke-dasharray="4 3"/>'; });
+    if(o.mark!=null){ var m=P(o.mark); s+=crossX(m.x,m.y,o.mk==='good'?GOOD:o.mk==='bad'?BAD:'#fff',3.2); }
+    // the direction of the Earth: far away, so only an arrow
+    var ux=Math.cos(q.phi*RAD), uy=Math.sin(q.phi*RAD), L=34;
+    s+=arrow(O.ax-ux*L,O.ay-uy*L,O.ax+ux*L,O.ay+uy*L,WINK,3)+dtxt(O.ax,O.ay+(Math.abs(uy)>0.5?54:24),'towards Earth',{a:'middle',fs:12,w:600,c:WINK})+dtxt(O.ax,O.ay+(Math.abs(uy)>0.5?68:38),'(far away)',{a:'middle',fs:11,c:WSOFT});
+    s+=dtxt(12,17,o.title,{fs:11.5,w:o.tw||400,c:o.tc||WSOFT});
+    return win('rs-w1',W,H,s);
+  }
+  // the click area: the whole orbit and a little round it
+  function orbitPick(){ var O=OR(); return '<g class="pick orbpick" data-pick="orb" tabindex="0" role="application" aria-label="The orbit of star B. Click on the orbit, or use the arrow keys, to place your X."><rect class="ring" x="'+(O.cx-O.R-28)+'" y="'+Math.max(2,O.cy-O.R-28)+'" width="'+(2*O.R+56)+'" height="'+Math.min(SC.h-4,2*O.R+56)+'" rx="8" fill="#fff" fill-opacity="0" stroke="none"/></g>'; }
+  // a close-up of the wavelength scale round one line: the lamp's line, and the same line in the light from star B (o.dl: its shift in nm, null: not seen yet)
+  function spectraZoom(o){
+    var S=SP, h=S.h, yl=S.yl, yg=S.yg, g='', k5=ks5(), span=o.span, lo=o.l0-span, hi=o.l0+span, col=css(wrgb(o.l0)), dp=2, i, top='';
+    function X(l){ return S.x0+(l-lo)/(hi-lo)*(S.x1-S.x0); }
+    var t0=(k5 ? 'λ = ' : 'λ₀ = ')+o.l0.toFixed(dp)+' nm', has=o.dl!=null, lam=has?o.l0+o.dl:0, t1=(k5 ? (S.side ? 'λ+Δλ = ' : 'λ + Δλ = ') : 'λ = ')+(has ? lam.toFixed(dp)+' nm' : '?');
+    if(S.side){ g+=txt(6,yl+13,'Lamp in the lab',{fs:12,w:600,c:'var(--ink)'})+txt(6,yl+28,t0,{fs:12})+txt(6,yg+13,'Star B',{fs:12,w:600,c:'var(--ink)'})+txt(6,yg+28,t1,{fs:k5?11:12}); }
+    else { g+=txt(S.x0,yl-7,'Lamp in the lab',{fs:12,w:600,c:'var(--ink)'})+txt(S.x1,yl-7,t0,{a:'end',fs:12})+txt(S.x0,yg-7,'Light from star B',{fs:12,w:600,c:'var(--ink)'}); top=txt(S.x1,yg-7,t1,{a:'end',fs:12,halo:1}); }
+    function row(y,l){ var r=rect(S.x0,y,S.x1-S.x0,h,col,' stroke="var(--panel-border)" stroke-width="1"'); if(l!=null){ var x=X(l); r+=ln(x,y,x,y+h,'#05070d',3)+ln(x+2.2,y,x+2.2,y+h,'#fff',0.7,' opacity=".55"'); } return r; }
+    g+=row(yl,o.l0);
+    if(has){ g+=row(yg,lam); var xl=X(o.l0), xg=X(lam); g+=ln(xl,yl+h,xg,yg,'var(--ink)',1.5,' stroke-dasharray="3 3"'); if(S.side) g+=pg([[xg-5,yg+h+9],[xg+5,yg+h+9],[xg,yg+h+1.5]],'var(--accent)'); }
+    else g+=rect(S.x0,yg,S.x1-S.x0,h,'var(--bg)',' stroke="var(--panel-border)" stroke-width="1"')+txt((S.x0+S.x1)/2,yg+h/2+5,'?',{a:'middle',fs:15,w:700,c:'var(--ink-faint)'});
+    if(S.side){ var X0=X(o.l0); g+=pg([[X0-5,yl-9],[X0+5,yl-9],[X0,yl-1.5]],'var(--accent)'); }
+    // the scale: a mark every 0.1 nm, a number every 0.2 nm (0.5 nm on a phone)
+    var ya=yg+h+12, step=0.1, num=S.side?0.2:0.5, l, i0=Math.ceil(lo/step-1e-6), i1=Math.floor(hi/step+1e-6);
+    g+=ln(S.x0,ya,S.x1,ya,'var(--ink-soft)',1.5);
+    for(i=i0;i<=i1;i++){ l=i*step; var xx=X(l), big=Math.abs(l/num-Math.round(l/num))<1e-6; g+=ln(xx,ya,xx,ya+(big?6:3.5),'var(--ink-soft)',big?1.4:1); if(big) g+=txt(xx,ya+18,l.toFixed(1),{a:'middle',fs:11,c:'var(--ink-faint)'}); }
+    return g+top+txt((S.x0+S.x1)/2,ya+35,'wavelength (nm): a close-up round the '+o.l0.toFixed(k5?2:1)+' nm line',{a:'middle',fs:11.5});
+  }
+
   // ---- many galaxies. Positions in million light years now; a: direction in degrees
   var GAL=[{n:'Milky Way',d:0,a:0},{n:'A',d:300,a:110},{n:'B',d:400,a:40},{n:'C',d:600,a:195},{n:'D',d:800,a:-20},{n:'E',d:1000,a:150},{n:'F',d:1200,a:8}];
   GAL.forEach(function(q){ q.x=q.d*Math.cos(q.a*Math.PI/180); q.y=q.d*Math.sin(q.a*Math.PI/180); });
@@ -716,7 +791,12 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     layout();
     var g=DEFS, pk='', pr=predict(), dn=Q.phase==='done', ask=Q.phase==='ask', verdict=dn ? (Q.ok?'✓ Correct':'✗ Not quite') : '', vc=Q.ok?GOOD:BAD, f, sp, o;
     if(!many()){
-      if(pr){
+      if(pr && (Q.kind==='orbit' || Q.kind==='orbitC')){
+        var qo=Q.q, th=orbTh(), title = dn ? verdict+(Q.kind==='orbit' ? ': star B '+orbWords(qo) : '') : ask ? (Q.kind==='orbit' ? (TALL ? 'Two stars, seen from above' : 'Two stars orbiting each other, seen from above') : 'Two stars orbiting each other') : 'Star B going round its orbit';
+        g+=at(SC,sceneOrbit({q:qo, th:th, vel:!ask, mark:Q.kind==='orbit' ? Q.mark : null, mk:dn ? (Q.ok?'good':'bad') : '', rings:dn && Q.kind==='orbit' ? orbAns(qo) : null, los:dn && Q.kind==='orbit', r:Q.kind==='orbitC', title:title, tw:dn?700:400, tc:dn?vc:WSOFT}));
+        g+=spectraZoom({l0:qo.l0, span:qo.span, dl:ask ? null : qo.l0*recede(qo,th)/299792.458});
+        if(Q.kind==='orbit' && ask) pk+=at(SC,orbitPick());
+      } else if(pr){
         var q=Q.q, noLam=Q.kind==='dir' || Q.kind==='calcF', show = Q.kind==='calcL' ? !ask : true, tt = dn ? verdict+(Q.kind==='dir' ? ': it is '+dirWords(q.beta) : '') : Q.kind==='dir' ? 'Which way is the galaxy moving? Click an arrow or the ring' : 'Light from a galaxy';
         g+=at(SC,sceneOne({beta:q.beta, t:ask?TRUN:Q.t, fronts:!ask, arrow:!ask || Q.kind==='calcL', title:tt, tw:dn?700:400, tc:dn?vc:WSOFT}));
         g+=spectraOne({lines:q.lines, hi:q.l0, beta:show?q.beta:null, lam:noLam ? false : undefined, lam0:noLam ? false : undefined});
@@ -762,6 +842,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     if(pk!==picksHtml){ setKeepFocus(picksG,pk); picksHtml=pk; }
     readings();
   }
+  var OMEGA=100;   // degrees per second for star B in a question's run
+  function orbTh(){ var q=Q.q; return Q.phase==='ask' ? q.b0 : Q.phase==='done' ? q.thEnd : q.b0+q.s*OMEGA*Math.min(Q.t,q.tEnd); }
+  function orbWords(q){ return q.ask==='none' ? 'moves across the line to the Earth' : q.ask==='blue' || q.ask==='hif' ? 'moves directly towards the Earth' : 'moves directly away from the Earth'; }
   function timeText(){ return Math.abs(Tm-AGE)<0.05 ? 'Now: 13.8 billion years after the Big Bang' : Tm<AGE ? nm(Tm)+' billion years after the Big Bang' : nm(Tm)+' billion years after it (the future)'; }
   function dirWords(b){ return b>0 ? 'moving away from us' : b<0 ? 'moving towards us' : 'not moving towards or away from us'; }
   // the three things to click in a "which way" question: an arrow each way and a ring for not moving
@@ -802,6 +885,14 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var ratio=q.df/q.f, rs=String(+ratio.toPrecision(3));
     return '[[Δf|f]] = [[v|c]]<br>[['+sci(q.df,2)+'|'+sci(q.f,2)+']] = [[v|'+C3+']]<br>'+rs+' = [[v|'+C3+']]<br>v = '+rs+' × '+C3+'<br>v = <b>'+sci(ratio*C,1)+' m s⁻¹</b>';
   }
+  // the two stars (IAL and IB): the longest or shortest wavelength from r and T, or T from the two extreme wavelengths
+  function workOrb(q){
+    var l0=q.l0.toFixed(2), Ts=q.Td*86400;
+    if(q.ask==='T'){ var dl=(q.lmax-q.lmin)/2, v=+(dl/q.l0*C).toPrecision(4), T=+(2*Math.PI*q.r/v).toPrecision(4);
+      return 'Δλ = [['+q.lmax.toFixed(2)+' − '+q.lmin.toFixed(2)+'|2]]<br>Δλ = '+dl.toFixed(3)+' nm<br>[[Δλ|λ]] = [[v|c]]<br>[['+dl.toFixed(3)+'|'+l0+']] = [[v|'+C3+']]<br>v = [['+dl.toFixed(3)+'|'+l0+']] × '+C3+'<br>v = '+sci(v,3)+' m s⁻¹<br>v = [[2πr|T]]<br>'+sci(v,3)+' = [[2π × '+sci(q.r,1)+'|T]]<br>T = [[2π × '+sci(q.r,1)+'|'+sci(v,3)+']]<br>T = '+sci(T,3)+' s<br>T = [['+sci(T,3)+'|24 × 3600]]<br>T = <b>'+sig(q.ans,3)+' days</b>'; }
+    var v=+(2*Math.PI*q.r/Ts).toPrecision(4), z=+(v/C).toPrecision(4), d=z*q.l0, big=q.ask==='max';
+    return 'T = '+q.Td+' × 24 × 3600<br>T = '+sci(Ts,3)+' s<br>v = [[2πr|T]]<br>v = [[2π × '+sci(q.r,1)+'|'+sci(Ts,3)+']]<br>v = '+sci(v,3)+' m s⁻¹<br>[[Δλ|λ]] = [[v|c]]<br>[[Δλ|'+l0+']] = [['+sci(v,3)+'|'+C3+']]<br>[[Δλ|'+l0+']] = '+sci(z,3)+'<br>Δλ = '+sci(z,3)+' × '+l0+'<br>Δλ = '+d.toFixed(3)+' nm<br>'+(big ? 'λ + Δλ = '+l0+' + '+d.toFixed(3)+'<br>λ + Δλ' : 'λ − Δλ = '+l0+' − '+d.toFixed(3)+'<br>λ − Δλ')+' = <b>'+q.ans.toFixed(2)+' nm</b>';
+  }
   // IAL: from a Hubble constant in km s⁻¹ Mpc⁻¹ to s⁻¹, then the time since the galaxies were all together. first: the lines that find H
   function hubLines(H, sym, first){
     var Hs=+(H*1e3/MPCM).toPrecision(4), t=+(1/Hs).toPrecision(4), y=t/YEAR;
@@ -815,7 +906,37 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     if(pr){
       var q=Q.q, ask=Q.phase==='ask', dn=Q.phase==='done', lead='<b>Question '+Q.n+'.</b> ', mark=Q.ok?'✓ <b>Correct.</b> ':'✗ <b>Not quite.</b> ';
       s=stat('Question', String(Q.n))+stat('Right first time', Q.right+' of '+Q.tried, true);
-      if(Q.kind==='dir'){
+      if(Q.kind==='orbit'){
+        var ASKW={red:'shows the <b>greatest red-shift</b> when it is detected on the Earth', long:'has its <b>longest wavelength</b> when it is detected on the Earth', blue:'has its <b>shortest wavelength</b> when it is detected on the Earth', hif:'has its <b>highest frequency</b> when it is detected on the Earth', none:'reaches the Earth with <b>no change</b> in wavelength (the same as from a lamp in the lab)'};
+        if(ask) note=lead+'Two identical stars, A and B, orbit each other. Their light reaches the Earth, far away in the direction of the arrow. Click on the orbit to add an <b>X</b> where star B is when its light '+ASKW[q.ask]+(q.ask==='none' ? '. There are two such places: mark one' : '')+'. Then press <b>Go</b>.';
+        else if(!dn) note='Watch star B and the line in its light. The orange arrows show which way each star is moving.';
+        else { var away=q.ask==='red'||q.ask==='long', nowhere=q.ask==='none', dN=adist(Q.mark,q.phi), dF=adist(Q.mark,q.phi+180), dR=adist(Q.mark,q.phi+90*q.s), dB=adist(Q.mark,q.phi-90*q.s), why='';
+          if(!Q.ok){
+            if(!nowhere && Math.min(dN,dF)<=20) why='Your X is where star B is '+(dN<=dF?'nearest to':'furthest from')+' the Earth. There it moves across the line to the Earth, so its light is not shifted at all: a red-shift comes from moving away, not from being far away. ';
+            else if(away && dB<=20) why='Your X is where star B moves directly <b>towards</b> the Earth: that gives the shortest wavelength (a blue-shift). Look at the direction of the orbit. ';
+            else if(!away && !nowhere && dR<=20) why='Your X is where star B moves directly <b>away from</b> the Earth: that gives the longest wavelength, the greatest red-shift. ';
+            else if(nowhere && Math.min(dR,dB)<=20) why='Your X is where star B moves directly '+(dR<dB?'away from':'towards')+' the Earth: there the shift is greatest, not zero. ';
+            else why='At your X, star B is moving partly along the line to the Earth and partly across it. ';
+          }
+          note=mark+why+(nowhere ? 'Where star B moves <b>across</b> the line to the Earth (green rings), it is moving neither towards nor away from the Earth, so its light has the same wavelength as in the lab.' : away ? 'The red-shift is greatest where star B moves <b>directly away from the Earth</b> (green ring): all of its velocity is along the line to the Earth, so its wavefronts are stretched the most'+(q.ask==='long' ? ': the longest wavelength.' : '.') : 'The wavelength is shortest where star B moves <b>directly towards the Earth</b> (green ring): all of its velocity is along the line to the Earth, so its wavefronts are squashed the most'+(q.ask==='hif' ? ' and the frequency is highest.' : ': a blue-shift.'))+' Star A is always opposite, moving the other way, so its lines shift the other way. Press <b>New question</b>.'; }
+        playBtn.disabled=!ask || Q.mark==null;
+      } else if(Q.kind==='orbitC'){
+        guess=true; work=dn;
+        var big=q.ask==='max', isT=q.ask==='T', rr=sci(q.r,1)+' m';
+        $('#rs-anslab').textContent = isT ? 'Orbital period' : big ? 'Longest wavelength received' : 'Shortest wavelength received'; $('#rs-unit').textContent = isT ? 'days' : 'nm';
+        if(ask) note=lead+(isT ? 'Two identical stars, A and B, orbit each other. Each moves in a circle of radius r = <b>'+rr+'</b>. As star B goes round, a line at <b>'+q.l0.toFixed(2)+' nm</b> in the lab is received at the Earth with wavelengths from <b>'+q.lmin.toFixed(2)+' nm</b> to <b>'+q.lmax.toFixed(2)+' nm</b>. Calculate the time for one orbit, in days (c = '+C3+' m s⁻¹).' : 'Two identical stars, A and B, orbit each other once every <b>'+q.Td+' days</b>. Each moves in a circle of radius r = <b>'+rr+'</b>. A line in the spectrum is at <b>'+q.l0.toFixed(2)+' nm</b> in the lab. Calculate the '+(big?'longest':'shortest')+' wavelength of this line received at the Earth from star B (c = '+C3+' m s⁻¹).')+' Type it in and press <b>Go</b>.';
+        else if(!dn) note='Watch the line in the light from star B as the star goes round.';
+        else { var hint='';
+          if(!Q.ok && Q.val!==null){
+            if(isT && Math.abs(Q.val/(q.ans/2)-1)<=0.03) hint='Δλ is <b>half</b> the difference between the two wavelengths: from the middle of the swing to one end, where B moves directly away. Using the whole difference halves T. ';
+            else if(!isT && Math.abs(Q.val-(q.l0+(big?-1:1)*q.dl))<=0.015) hint='That is the '+(big?'shortest':'longest')+' wavelength: '+(big?'add Δλ to λ (B moving away)':'take Δλ from λ (B moving towards us)')+'. ';
+            else if(!isT && Math.abs(Q.val-q.dl)<=0.012) hint='Your answer is the change Δλ: '+(big?'add it to':'take it from')+' λ. ';
+            else if(!isT) hint='Change T into seconds before v = [[2πr|T]]. ';
+          }
+          note=mark+(isT ? 'T = <b>'+sig(q.ans,3)+' days</b>. ' : 'The '+(big?'longest':'shortest')+' wavelength is <b>'+q.ans.toFixed(2)+' nm</b>, when star B moves directly '+(big?'away from':'towards')+' the Earth. ')+hint+'Open <b>Show working</b>, or press <b>New question</b>.';
+          $('#rs-eq1').innerHTML=FR(workOrb(q));
+          $('#rs-eq2').innerHTML=isT ? 'The swing either side of '+q.l0.toFixed(2)+' nm is Δλ, so Δλ is half the difference between the longest and the shortest wavelength. The speed of B round its orbit is then 2πr divided by the time for one orbit.' : 'The speed round the orbit is v = [[2πr|T]], with T in seconds. All of it is along the line to the Earth when B moves directly '+(big?'away from':'towards')+' the Earth.'; }
+      } else if(Q.kind==='dir'){
         if(ask) note=lead+'The dark lines in the spectrum of the lamp are compared with the same lines in the light from the galaxy. Click to show how the galaxy is moving, then press <b>Go</b>.';
         else if(!dn) note='Watch the wavefronts that the galaxy sends towards the Earth.';
         else note=mark+(q.beta>0 ? 'Every line is at a <b>longer</b> wavelength than in the lab (shifted towards the red end): red-shift. The wavefronts reach us further apart, so the galaxy is moving <b>away</b>.' : q.beta<0 ? 'Every line is at a <b>shorter</b> wavelength than in the lab (shifted towards the blue end). The wavefronts reach us closer together, so the galaxy is moving <b>towards</b> us.' : 'Every line is at the same wavelength as in the lab, so the galaxy is not moving towards us or away from us.')+' Press <b>New question</b>.';
@@ -931,7 +1052,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var dt=Math.min(0.05,(now-last)/1000)*slow(); last=now;
     if(predict()){
       if(Q.phase==='run'){
-        if(!many()){ Q.t=Math.min(TRUN,Q.t+dt*1.5); if(Q.t>=TRUN) finish(); }
+        if(Q.kind==='orbit' || Q.kind==='orbitC'){ Q.t+=dt; if(Q.t>=Q.q.tEnd) finish(); }
+        else if(!many()){ Q.t=Math.min(TRUN,Q.t+dt*1.5); if(Q.t>=TRUN) finish(); }
         else { Q.u+=dt/2.2; if(Q.u>=1){ Q.u=1; finish(); } }
       }
     } else if(running){
@@ -958,10 +1080,11 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
 
   // ---- Questions
   function deal(){
-    stopRun(); Q.n++; Q.phase='ask'; Q.ok=false; Q.u=0; Q.t=0; Q.pick=null; Q.val=null; ansIn.value='';
-    var q, key, tries=0, kinds=many() ? (ks5() ? ['far','dist','double','age'] : ['far','double']) : (ks5() ? ['dir','calcV','calcL','calcF'] : ['dir','calcV','calcL']); Q.kind=kinds[(Q.n-1)%kinds.length];
+    stopRun(); Q.n++; Q.phase='ask'; Q.ok=false; Q.u=0; Q.t=0; Q.pick=null; Q.mark=null; Q.val=null; ansIn.value='';
+    var q, key, tries=0, kinds=many() ? (ks5() ? ['far','dist','double','age'] : ['far','double']) : (ks5() ? ['dir','orbit','calcV','calcL','orbitC','calcF'] : ['dir','orbit','calcV','calcL']); Q.kind=kinds[(Q.n-1)%kinds.length];
     do {
-      if(Q.kind==='dir'){ q={beta:rnd([-0.06,-0.04,-0.03,0.03,0.04,0.05,0.06,0.08,0.05,-0.05,0]), l0:486, lines:LINES}; key='d'+q.beta; }
+      if(Q.kind==='orbit' || Q.kind==='orbitC'){ q=dealOrbit(Q.kind); key=q.key; }
+      else if(Q.kind==='dir'){ q={beta:rnd([-0.06,-0.04,-0.03,0.03,0.04,0.05,0.06,0.08,0.05,-0.05,0]), l0:486, lines:LINES}; key='d'+q.beta; }
       else if(Q.kind==='calcF'){ var fl=rnd([[656,4.57e14],[600,5.00e14],[500,6.00e14],[486,6.17e14],[434,6.91e14],[410,7.32e14]]), bf=rnd([0.01,0.02,0.03,0.04,0.05,0.06,0.08]), df=+(fl[1]*bf).toPrecision(3);
         q={beta:df/fl[1], l0:fl[0], f:fl[1], df:df, lines:LINES.indexOf(fl[0])>=0 ? LINES : [fl[0]]}; key='F'+fl[0]+bf; }
       else if(Q.kind==='dist'){ var z=rnd([0.01,0.02,0.03,0.04,0.05,0.06,0.08]), Hs=rnd(['2.2','2.3','2.4']), an2=rnd([25,150,205,-30])*Math.PI/180, dm=z*C/(+Hs*1e-18);
@@ -978,10 +1101,32 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     } while(key===Q.last && ++tries<8);
     Q.last=key; Q.q=q; lastNote=''; draw();
   }
-  function go(){ if(Q.kind!=='dir' && Q.kind!=='far') Q.val=+ansIn.value; Q.phase='run'; Q.t=0; Q.u=0; lastNote=''; loop(); }
+  // two stars orbiting each other: where the Earth is (φ), which way they go (s), where B starts (b0, well away from every
+  //   answer, and with star A not on one either), and for the run the angle it ends at: once round and on to the answer
+  function dealOrbit(kind){
+    var k5=ks5(), q={phi:rnd([90,90,180,0,270]), s:rnd([-1,1]), l0:k5 ? 656.28 : 656.3}, tries=0, a, ok;
+    if(kind==='orbit'){ q.ask=rnd(k5 ? ['red','red','long','blue','hif','none'] : ['red','red','long','blue','none']); q.v=rnd([120,150,180]); q.span=0.6; }
+    else { q.ask=rnd(['max','min','T']);
+      do { q.r=rnd([1.2e10,1.5e10,2.0e10,2.4e10,3.0e10]); q.Td=rnd([4,5,6,8,10,12]); q.v=2*Math.PI*q.r/(q.Td*86400)/1000; } while((q.v<100 || q.v>330) && ++tries<40);
+      var vs=+(2*Math.PI*q.r/(q.Td*86400)).toPrecision(4), z=+(vs/C).toPrecision(4); q.dl=z*q.l0;
+      if(q.ask==='T'){ q.lmax=Math.round((q.l0+q.dl)*100)/100; q.lmin=Math.round((q.l0-q.dl)*100)/100; var dl2=(q.lmax-q.lmin)/2, v2=+(dl2/q.l0*C).toPrecision(4); q.ans=+(2*Math.PI*q.r/v2).toPrecision(4)/86400; }
+      else q.ans=Math.round((q.l0+(q.ask==='max'?1:-1)*q.dl)*100)/100;
+      q.span=q.v>230 ? 1.0 : 0.6; }
+    var ans=orbAns(q.ask==='T' ? {ask:'max', phi:q.phi, s:q.s} : q);
+    tries=0;
+    do { q.b0=rnd([30,60,120,150,210,240,300,330]); ok=ans.every(function(x){ return adist(q.b0,x)>=40 && adist(q.b0+180,x)>=25; }); } while(!ok && ++tries<40);
+    // the run: once round, then on (in the direction of the orbit) to the first answer reached
+    a=Math.min.apply(null, ans.map(function(x){ return adeg((x-q.b0)*q.s); }));
+    q.thEnd=q.b0+q.s*(360+a); q.tEnd=(360+a)/OMEGA;
+    q.key=kind+q.ask+q.phi+q.s+(q.r||'')+(q.Td||'');
+    return q;
+  }
+  function go(){ if(Q.kind!=='dir' && Q.kind!=='far' && Q.kind!=='orbit') Q.val=+ansIn.value; Q.phase='run'; Q.t=0; Q.u=0; lastNote=''; loop(); }
   function finish(){
     var q=Q.q;
-    if(Q.kind==='dir') Q.ok=Q.pick===(q.beta>0?'away':q.beta<0?'to':'still');
+    if(Q.kind==='orbit') Q.ok=Q.mark!=null && orbAns(q).some(function(x){ return adist(Q.mark,x)<=13; });
+    else if(Q.kind==='orbitC') Q.ok = q.ask==='T' ? Math.abs(Q.val/q.ans-1)<=0.03 : Math.abs(Q.val-q.ans)<=0.015;
+    else if(Q.kind==='dir') Q.ok=Q.pick===(q.beta>0?'away':q.beta<0?'to':'still');
     else if(Q.kind==='calcV' || Q.kind==='calcF') Q.ok=Math.abs(Math.abs(Q.val)/(Math.abs(q.beta)*300)-1)<=0.03;
     else if(Q.kind==='dist') Q.ok=Math.abs(Q.val/(q.dm/1e24)-1)<=0.03;
     else if(Q.kind==='age') Q.ok=Math.abs(Q.val/q.age-1)<=0.03;
@@ -999,6 +1144,14 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     else return;
     lastNote=''; draw();
   });
+
+  // ---- two stars: a click puts the X on the orbit at the click's angle; the arrow keys move it round 5° at a time
+  function orbOn(e){ return predict() && !many() && Q.kind==='orbit' && Q.phase==='ask' && e.target.closest && e.target.closest('.orbpick'); }
+  function setMarkA(a){ Q.mark=adeg(Math.round(a)); lastNote=''; draw(); }
+  svg.addEventListener('click', function(e){ if(!orbOn(e)) return; var p=svgPoint(svg,e), O=OR(); setMarkA(Math.atan2(p.y-SC.y-O.cy, p.x-SC.x-O.cx)/RAD); });
+  svg.addEventListener('keydown', function(e){ if(!orbOn(e)) return;
+    var d=e.key==='ArrowRight'||e.key==='ArrowDown' ? 5 : e.key==='ArrowLeft'||e.key==='ArrowUp' ? -5 : 0; if(!d) return;
+    e.preventDefault(); setMarkA(Q.mark==null ? 270 : Q.mark+d); });
 
   // ---- drag the velocity arrow's tip (Explore, one galaxy)
   (function(){
@@ -1044,7 +1197,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   });
   rewBtn.addEventListener('click', function(){ if(running) return; if(Tm>AGE) Tm=AGE; dir=-1; running=true; lastNote=''; loop(); });
   resetBtn.addEventListener('click', function(){
-    if(predict()){ if(Q.phase!=='ask') return; Q.pick=null; ansIn.value=''; lastNote=''; draw(); return; }
+    if(predict()){ if(Q.phase!=='ask') return; Q.pick=null; Q.mark=null; ansIn.value=''; lastNote=''; draw(); return; }
     stopRun();
     if(!many()){ vel=1.5; vIn.value=1.5; line=486; lineSeg.pick('486'); t=TRUN; }
     else { Tm=AGE; tIn.value=AGE; if(exp()) expClear(); else { from='mw'; fromSeg.pick('mw'); sel=3; } }
