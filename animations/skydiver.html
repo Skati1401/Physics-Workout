@@ -443,6 +443,10 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
      g = 9.81 (IAL) or 9.8 (IB) N kg⁻¹, the tangent to the graph, whose gradient is the acceleration, and her
      acceleration–time graph under the velocity–time graph (the papers ask for its shape and for the areas under it).
      At IAL and IB half the Predict questions ask for the arrow that shows her acceleration at P.
+     At IGCSE (14 Nov 2026, TODO 8o) the Predict also deals the two kinds 4PH0/1P Jan 2014 Q7(c)–(d) asks for: draw both
+     force arrows on her at P (click above or below the dot in each column; the lengths are compared by eye, as the mark
+     scheme does), and continue her velocity–time graph after the parachute opens (click points on the graph; marked for a
+     fall that levels off at a new, lower terminal velocity).
      Question kinds and wording checked against the papers on 11 Nov 2026: 4PH1 Jan 2022 1P Q6(b), Jan 2014 1P Q7,
      May 2019 1P Q8; WPH11 Oct 2020 Q14, June 2025 Q20; IB May 2019 TZ1 P1 Q3, May 2026 TZ2 P2 Q8. */
   function initFallingSim(){
@@ -525,6 +529,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       var F=L.F, W=m()*G(), D=drag(), R=W-D, g='', x=PRED?F.wx:F.x, y=F.y, wl=W*F.sc, dl=Math.min(D*F.sc,F.cap), eqv=function(k,val){ return (ks5()?sym(k,1)+' = ':'')+val+' N'; };
       if(PRED){
         var qa=Q && Q.kind==='acc';
+        if(Q && Q.kind==='draw') return '';
+        if(Q && Q.kind==='cont') return drawForces();
         wrapLines(qa?'At P, which arrow shows '+NAME()+'’s acceleration?':'At P, which arrow shows the air resistance on '+NAME()+'?', L.tall?30:32).forEach(function(s,i){ g+=txt(F.vx,F.ty+i*15,s,{fs:L.fs,c:'var(--ink)',w:600}); });
         if(qa){   // the arrow given is g, to compare with; her acceleration is in the readings once the question is marked
           g+=arrow(x,y,x,y+wl,'var(--ink)',4)+txt(x,y+wl+15,'g',{a:'middle',fs:L.fs,c:'var(--ink)'})+txt(x,y+wl+29,G()+' '+ms2(),{a:'middle',fs:L.fs,c:'var(--ink)',w:600});
@@ -549,8 +555,72 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var PICKS=[['none','no air resistance',0],['less','air resistance smaller than her weight',0.5],['equal','air resistance equal to her weight',1],['more','air resistance bigger than her weight',1.7]];
     // IAL and IB also ask for her acceleration at P: its direction, and its size compared with g
     var PICKS_A=[['g','acceleration downwards, equal to g',-1],['less','acceleration downwards, smaller than g',-0.5],['zero','zero acceleration',0],['up','acceleration upwards',0.7]];
+    // ---- IGCSE draw kinds (14 Nov 2026, TODO 8o): draw both forces at P; continue the graph after the parachute opens ----
+    var GX=null;
+    function TH(){ return Math.min(L.F.cap,85); }   // half the height of a column to draw an arrow in
+    function drawForces(){
+      var F=L.F, g='', W=m()*G(), wl=W*F.sc, xw=F.px[0], xa=F.px[2]+10, xs=F.px[3]+22, nl=0, text=Q.kind==='draw' ? 'At P, draw both forces on '+NAME()+': her weight and the air resistance. Click above or below the dot in each column.' : 'Her parachute opens at '+TCHUTE+' s. Continue her velocity–time graph to show how she moves after it opens: click points on the graph, then press Go.';
+      wrapLines(text, L.tall?30:32).forEach(function(s,i){ nl=i+1; g+=txt(F.vx,F.ty+i*15,s,{fs:L.fs,c:'var(--ink)',w:600}); });
+      if(Q.kind==='draw'){
+        [['dw',xw,'weight',Q.dw],['da',xa,'air resistance',Q.da]].forEach(function(c){
+          var sel=document.activeElement && document.activeElement.getAttribute && document.activeElement.getAttribute('data-col')===c[0];
+          g+='<g class="dcol" data-col="'+c[0]+'" tabindex="'+(Q.locked?-1:0)+'" role="button" aria-label="'+c[2]+' arrow: use the up and down arrow keys, or click above or below the dot">'+
+            '<rect x="'+f1(c[1]-17)+'" y="'+f1(F.y-TH())+'" width="34" height="'+f1(2*TH())+'" rx="6" fill="'+(sel?'var(--accent-soft)':'transparent')+'" stroke="var(--panel-border)" stroke-dasharray="3 3" style="cursor:'+(Q.locked?'default':'ns-resize')+'"/>'+
+            (Math.abs(c[3])>=3 ? arrow(c[1],F.y,c[1],F.y+c[3],c[0]==='dw'?'var(--ink)':'var(--accent)',4) : '')+'<circle cx="'+f1(c[1])+'" cy="'+f1(F.y)+'" r="4" fill="var(--ink)"/>'+
+            txt(c[1],F.y+TH()+16,c[2],{a:'middle',fs:10.5,c:'var(--ink-soft)'})+'</g>'; });
+        if(Q.done){ var D=Q.D; g+=txt(xs,F.y-TH()-6,'answer',{a:'middle',fs:10.5,c:'var(--good)'})+arrow(xs,F.y,xs,F.y+wl,'var(--good)',2.5)+(D*F.sc>=3?arrow(xs,F.y,xs,F.y-Math.min(D*F.sc,TH()),'var(--good)',2.5):'');
+          wrapLines((Q.pick===Q.ans?'✓ ':'✗ ')+Q.why.split('. ')[0].replace(/\.$/,'')+'.', F.vw).forEach(function(s,i){ g+=txt(F.vx,F.y+TH()+34+i*15,s,{fs:L.fs,c:Q.pick===Q.ans?'var(--good)':'var(--bad)',w:600}); }); }
+      } else if(Q.done) wrapLines((Q.pick===Q.ans?'✓ ':'✗ ')+Q.why, F.vw).forEach(function(s,i){ g+=txt(F.vx,F.ty+(nl+1)*15+i*15,s,{fs:L.fs,c:Q.pick===Q.ans?'var(--good)':'var(--bad)',w:600}); });
+      return g;
+    }
+    // marks the two new kinds, as the mark scheme does: the arrows by direction and length judged by eye; the graph by its shape
+    function gradeDraw(){
+      if(Q.kind!=='draw' && Q.kind!=='cont') return;
+      var ok, why;
+      if(Q.kind==='draw'){
+        var w=Q.dw, a=Q.da, r=w>0 ? -a/w : 0, cat=Q.p==='start'?'none':Q.ans0;
+        if(w<10){ ok=false; why='Her weight acts downwards, towards the centre of the Earth: draw it down from the dot.'; }
+        else if(cat==='none'){ ok=Math.abs(a)<8; why=ok ? WHY.start[1] : 'At the moment she jumps her speed is zero, so there is no air resistance yet: leave that column empty.'; }
+        else if(a>-8){ ok=false; why='Air resistance acts upwards, against her motion.'; }
+        else { ok = cat==='less' ? r<0.85 : cat==='equal' ? r>=0.85 && r<=1.15 : r>1.15; why=WHY[Q.p][1]+(ok?'':' Your arrows: air resistance '+(r<0.85?'shorter than':r>1.15?'longer than':'the same as')+' the weight.'); }
+      } else {
+        var gp=Q.gp, vt1=Q.v0, last=gp[gp.length-1], prev=gp[gp.length-2];
+        if(gp.length<3 || last[0]<TCHUTE+18){ ok=false; why='Draw the line all the way across, with at least three points, so it shows what happens in the end.'; }
+        else if(gp[0][1]>=vt1-1){ ok=false; why='When the parachute opens the air resistance becomes much bigger than her weight, so she slows down straight away: the line goes down.'; }
+        else if(gp.some(function(q,i){ return q[1]>(i?gp[i-1][1]:vt1)+1.5; })){ ok=false; why='She does not speed up again: her velocity falls, then stays the same.'; }
+        else if(Math.abs(last[1]-prev[1])>2){ ok=false; why='In the end the air resistance falls back to equal her weight, so her velocity becomes constant: the line levels off.'; }
+        else if(last[1]<0.8){ ok=false; why='She is still falling: her new terminal velocity is lower, but not zero.'; }
+        else if(last[1]>vt1*0.5){ ok=false; why='The open parachute gives much more air resistance, so her new terminal velocity is much lower than before.'; }
+        else { ok=true; why='The line falls steeply at first, then levels off at a new, lower terminal velocity, where the forces balance again.'; }
+      }
+      Q.pick='x'; Q.ans=ok?'x':'y'; Q.why=why;
+    }
+    // clicks and keys for the two kinds
+    function svgPt(e){ var mtx=svg.getScreenCTM(); if(!mtx) return null; var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(mtx.inverse()); }
+    function gpToggle(tt,vv){ tt=Math.round(tt); vv=Math.round(vv*2)/2; if(tt<=TCHUTE || tt>TMAX || vv<0) return;
+      var i=-1; Q.gp.forEach(function(q,k){ if(Math.abs(q[0]-tt)<=1.5 && Math.abs(q[1]-vv)<=3) i=k; });
+      if(i>=0) Q.gp.splice(i,1); else { Q.gp=Q.gp.filter(function(q){ return q[0]!==tt; }); Q.gp.push([tt,vv]); Q.gp.sort(function(a,b){ return a[0]-b[0]; }); }
+      Q.need=false; draw(); }
+    svg.addEventListener('click', function(e){
+      if(!PRED || !Q || Q.locked) return;
+      if(Q.kind==='draw'){ var c=e.target.closest('.dcol'); if(!c) return; var p=svgPt(e); if(!p) return; var F=L.F, d=Math.max(-TH(),Math.min(TH(),p.y-F.y)); if(Math.abs(d)<6) d=0;
+        Q[c.getAttribute('data-col')]=Math.round(d); Q.need=false; drawPicks(); draw(); var f=pkG.querySelector('[data-col="'+c.getAttribute('data-col')+'"]'); if(f) f.focus(); }
+      if(Q.kind==='cont' && GX && e.target.closest('.gpick')){ var q=svgPt(e); if(!q) return; gpToggle((q.x-GX.R.x0)/(GX.R.x1-GX.R.x0)*TMAX, (GX.R.y1-q.y)/(GX.R.y1-GX.R.y0)*GX.VMAX); var f2=svg.querySelector('.gpick'); if(f2) f2.focus(); }
+    });
+    svg.addEventListener('keydown', function(e){
+      if(!PRED || !Q || Q.locked) return;
+      var c=e.target.closest && e.target.closest('.dcol');
+      if(Q.kind==='draw' && c && (e.key==='ArrowUp' || e.key==='ArrowDown')){ e.preventDefault(); var k=c.getAttribute('data-col'), F=L.F; Q[k]=Math.max(-TH(),Math.min(TH(),Q[k]+(e.key==='ArrowUp'?-6:6))); drawPicks(); draw(); var f=pkG.querySelector('[data-col="'+k+'"]'); if(f) f.focus(); return; }
+      if(Q.kind==='cont' && e.target.closest && e.target.closest('.gpick')){
+        var mv={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[e.key];
+        if(!Q.cur) Q.cur=[TCHUTE+5,Q.v0];
+        if(mv){ e.preventDefault(); Q.cur=[Math.max(TCHUTE+1,Math.min(TMAX,Q.cur[0]+mv[0])),Math.max(0,Math.min(70,Q.cur[1]+mv[1]))]; draw(); }
+        else if(e.key==='Enter' || e.key===' '){ e.preventDefault(); gpToggle(Q.cur[0],Q.cur[1]); }
+        var f2=svg.querySelector('.gpick'); if(f2) f2.focus(); }
+    });
     function drawPicks(){
       if(!PRED || !Q){ pkG.innerHTML=''; return; }
+      if(Q.kind==='draw' || Q.kind==='cont'){ pkG.innerHTML=Q.kind==='draw'?drawForces():''; return; }
       var F=L.F, wl=m()*G()*F.sc, g='', qa=Q.kind==='acc', y0=qa?F.y-F.cap/2:F.y;
       (qa?PICKS_A:PICKS).forEach(function(p,i){ var x=F.px[i], len=qa?p[2]*wl:Math.min(p[2]*wl,F.cap), sel=Q.pick===p[0], col=Q.done ? (p[0]===Q.ans?'var(--good)':(sel?'var(--bad)':'var(--ink-faint)')) : (sel?'var(--accent)':'var(--ink-soft)');
         g+='<g class="pick'+(Q.locked?' off':'')+'" data-pick="'+p[0]+'" tabindex="'+(Q.locked?-1:0)+'" role="button" aria-label="Arrow '+'ABCD'.charAt(i)+': '+p[1]+(sel?' (chosen)':'')+'">'+
@@ -577,7 +647,16 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         if(low<AMIN) g+=txt(gx(lowT)+7,A.y1-5,'down to '+s3(low).replace('-','−'),{fs:10.5,c:'var(--balance)'});   // the opening parachute takes the line off the scale
         if(t>0) g+='<circle cx="'+f1(gx(t))+'" cy="'+f1(ay(accNow()))+'" r="4.5" fill="var(--balance)" stroke="var(--panel)" stroke-width="2"/>';
       }
-      if(PRED && Q) g+=pl(std.map(function(q){ return [gx(q[0]),gy(q[1])]; }),'var(--ink-faint)',2,' stroke-dasharray="6 4"');
+      if(PRED && Q) g+=pl(std.filter(function(q){ return Q.kind!=='cont' || Q.done || q[0]<=TCHUTE+1e-6; }).map(function(q){ return [gx(q[0]),gy(q[1])]; }),'var(--ink-faint)',2,' stroke-dasharray="6 4"');
+      if(PRED && Q && Q.kind==='cont'){   // her line after the parachute opens, as the student draws it
+        GX={gx:gx,gy:gy,R:R,VMAX:VMAX};
+        var c0=[gx(TCHUTE),gy(Q.v0)], cl=[c0].concat(Q.gp.map(function(q){ return [gx(q[0]),gy(q[1])]; }));
+        g+=ln(gx(TCHUTE),R.y0,gx(TCHUTE),R.y1,'var(--ink-faint)',1,' stroke-dasharray="2 3"')+txt(gx(TCHUTE)+4,R.y0+12,'parachute opens',{fs:10.5,c:'var(--ink-soft)'});
+        g+='<rect class="gpick" x="'+f1(gx(TCHUTE))+'" y="'+f1(R.y0)+'" width="'+f1(R.x1-gx(TCHUTE))+'" height="'+f1(R.y1-R.y0)+'" fill="transparent" tabindex="0" role="button" aria-label="The graph after the parachute opens: click to add a point, click a point to take it away. Or use the arrow keys and Enter." style="cursor:crosshair"/>';
+        if(cl.length>1) g+=pl(cl,'var(--accent)',2.6,Q.done?' stroke-dasharray="7 4"':'');
+        Q.gp.forEach(function(q){ g+='<circle cx="'+f1(gx(q[0]))+'" cy="'+f1(gy(q[1]))+'" r="4.5" fill="var(--accent)" pointer-events="none"/>'; });
+        if(Q.cur && !Q.locked) g+='<circle cx="'+f1(gx(Q.cur[0]))+'" cy="'+f1(gy(Q.cur[1]))+'" r="7" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="3 2" pointer-events="none"/>';
+      }
       g+=pl(pts.concat([[t,v]]).map(function(q){ return [gx(q[0]),gy(q[1])]; }),'var(--motion)',2.5);
       if(ks5() && !PRED && t>0){   // the tangent at this moment: its gradient is the acceleration
         var a=(m()*G()-drag())/m(), t0=Math.max(0,t-7), t1=Math.min(TMAX,t+7), lo, hi;
@@ -587,7 +666,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         g+=txt(R.x1,R.y0-8,'gradient of the tangent = a = '+s3(a).replace('-','−')+' '+ms2(),{a:'end',fs:L.fs,c:'var(--balance)',w:600});
       }
       if(t>0) g+='<circle cx="'+f1(gx(t))+'" cy="'+f1(gy(v))+'" r="5" fill="var(--motion)" stroke="var(--panel)" stroke-width="2"/>';
-      if(PRED && Q){ var px=gx(Q.t), py=gy(Q.v); g+='<circle cx="'+f1(px)+'" cy="'+f1(py)+'" r="7.5" fill="none" stroke="var(--ink)" stroke-width="2"/>'+txt(px+(Q.p==='term2'||Q.p==='slow'?12:-2),py+(Q.p==='start'?-14:(Q.p==='term2'?-12:22)),'P',{a:'middle',fs:14,c:'var(--ink)',w:700,halo:1}); }
+      if(PRED && Q && Q.kind!=='cont'){ var px=gx(Q.t), py=gy(Q.v); g+='<circle cx="'+f1(px)+'" cy="'+f1(py)+'" r="7.5" fill="none" stroke="var(--ink)" stroke-width="2"/>'+txt(px+(Q.p==='term2'||Q.p==='slow'?12:-2),py+(Q.p==='start'?-14:(Q.p==='term2'?-12:22)),'P',{a:'middle',fs:14,c:'var(--ink)',w:700,halo:1}); }
       return g;
     }
     function draw(){
@@ -602,6 +681,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       if(PRED && Q){
         if(Q.done) note=(Q.pick===Q.ans?'Correct. ':'Not quite. ')+Q.why+' Press New question for another point.';
         else if(running) note=N+' is falling. Watch the graph reach P.';
+        else if(Q.kind==='draw') note=N+' jumps, then opens her parachute after '+TCHUTE+' s. The dashed line is her velocity–time graph. Draw both forces on her at P: click above or below the dot in each column (the lengths matter), then press Go.'+(Q.need?' Draw the arrows first.':'');
+        else if(Q.kind==='cont') note=N+' falls at her terminal velocity, then opens her parachute at '+TCHUTE+' s. Click points on the graph to continue the line, then press Go to see what happens.'+(Q.need?' Put some points on the graph first.':'');
         else note=N+' jumps, then opens her parachute after '+TCHUTE+' s. The dashed line is her velocity–time graph. Click the arrow (A to D) that shows '+(Q.kind==='acc'?'her acceleration':'the air resistance on her')+' at point P, then press Go.'+(Q.need?' Choose an arrow first.':'');
       }
       else if(t===0) note=N+' is about to jump. Her speed is zero, so there is no air resistance: the only force on her is her weight'+(ks5()?', and her acceleration is g.':'.');
@@ -625,7 +706,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         var to=Math.min(Q.t,t+dt);
         if(chuteAt===null && Q.t>TCHUTE && to>=TCHUTE){ advance(TCHUTE); chuteAt=TCHUTE; }
         advance(to);
-        if(t>=Q.t-1e-6){ stop(); Q.done=true; drawPicks(); draw(); return; }
+        if(t>=Q.t-1e-6){ stop(); gradeDraw(); Q.done=true; drawPicks(); draw(); return; }
         draw(); raf=requestAnimationFrame(frame); return; }
       advance(Math.min(TMAX,t+dt)); draw(); if(t>=TMAX){ stop(); return; } raf=requestAnimationFrame(frame); }
     function run(){ running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw(); }
@@ -656,8 +737,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     function newQ(){
       var list=['start','mid','term1','slow','term2'].filter(function(p){ return !Q || p!==Q.p; }), p=list[Math.floor(Math.random()*list.length)];
       zero(); advance(TCHUTE); chuteAt=TCHUTE; advance(TMAX); std=pts.slice();
-      var kind=ks5() && Math.random()<0.5 ? 'acc' : 'drag', why=(kind==='acc'?WHY_A:WHY)[p];
-      goTo(p); Q={p:p, kind:kind, t:t, v:v, ans:why[0], why:why[1], pick:null, done:false, locked:false};
+      var kind=ks5() ? (Math.random()<0.5 ? 'acc' : 'drag') : ['drag','draw','cont'].filter(function(k){ return !Q || k!==Q.kind; })[Math.floor(Math.random()*2)], why=(kind==='acc'?WHY_A:WHY)[p];
+      goTo(p); Q={p:p, kind:kind, t:t, v:v, ans:why[0], ans0:why[0], why:why[1], pick:null, done:false, locked:false, dw:0, da:0, gp:[], cur:null, D:drag(), v0:0};
+      if(kind==='cont'){ zero(); advance(TCHUTE); Q.v0=v; Q.t=TMAX; Q.v=v; }
       zero(); L=lay(); drawPicks(); draw();
     }
     onPick(svg, function(id){ if(!PRED || !Q || Q.locked) return; Q.pick=id; Q.need=false; drawPicks(); draw(); });
@@ -674,8 +756,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     tabEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setTab(b.dataset.v); });
     pointsEl.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) jumpTo(b.dataset.p); });
     playBtn.addEventListener('click',function(){
-      if(PRED){ if(!Q || Q.locked) return; if(!Q.pick){ Q.need=true; draw(); return; } Q.locked=true; drawPicks();
-        if(Q.t<=0){ Q.done=true; drawPicks(); draw(); return; } run(); return; }
+      if(PRED){ if(!Q || Q.locked) return; if(Q.kind==='draw' ? Q.dw===0 && Q.da===0 : Q.kind==='cont' ? !Q.gp.length : !Q.pick){ Q.need=true; draw(); return; } Q.locked=true; drawPicks();
+        if(Q.t<=0){ gradeDraw(); Q.done=true; drawPicks(); draw(); return; } run(); return; }
       if(running){ stop(); draw(); return; } if(t>=TMAX) reset(); run(); });
     slowBtn.addEventListener('click',function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); });
     $('#fa-chute').addEventListener('click',function(){ if(chuteAt!==null||t===0) return; chuteAt=t; mark(''); if(!running && t<TMAX) run(); draw(); });
