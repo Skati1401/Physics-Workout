@@ -152,6 +152,7 @@ Students did not see that "Explore | Practise" was a choice, or that the rows of
 - **Choices that change the readings are fixed by the link** (`&part=`, `&comp=`, `&mat=`, `&h=`, `&setup=`, `&test=`) and hidden; a part or component left out of the link keeps its switch on the page.
 - **Nothing to read?** (2.23P, 6.6, convection.) The student does the step and records what they see: no charges, no table, no Compare, no arrows drawn for them, and the note asks what they saw without saying it.
 - The note says what to read, to what precision, and what to do next. It never gives a value.
+- **Marked places for a part that is dragged (14 Nov 2026).** Where the reading depends on where the student puts something (the crocodile clip in `resistivity.html`, the rheostat's slider in `internal-resistance.html`), the part goes only to a few marked places: numbered buttons, a drag that snaps to the nearest mark, and arrow keys that step from mark to mark (`setPlace`, `nearPlace`). Moving it clears the meters, so a reading always belongs to where the part now is. A micrometer close-up for copying is `micClose` in `resistivity.html` (sleeve with its datum line, thimble with 50 divisions, the reading's division drawn on the line).
 
 ## Checks before pushing
 

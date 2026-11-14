@@ -184,6 +184,7 @@
   .embed .page{padding:0;max-width:none;display:flow-root;}
   .embed .home-link,.embed .page-head{display:none;}
   .embed .view{max-height:460px;}
+  .meas-off{display:none !important;}
 
   /* Build tab: the meters to put in, and the tab switch */
   .chips{display:flex;flex-wrap:wrap;gap:6px;}
@@ -346,6 +347,8 @@
         <div class="seg" id="ir-guess" hidden><button type="button" id="ir-new">New mystery cell</button><button type="button" id="ir-reveal">Reveal it</button></div>
         <span class="rowlab" id="ir-blab" hidden>Meters</span>
         <div class="chips" id="ir-bchips" hidden><button type="button" class="chip" data-m="A" aria-pressed="false"><span class="chip-m">A</span> Ammeter</button><button type="button" class="chip" data-m="V" aria-pressed="false"><span class="chip-m">V</span> Voltmeter</button></div>
+        <span class="rowlab" id="ir-plab" hidden>Slider position</span>
+        <div class="seg" id="ir-pos" hidden><button type="button" data-v="0" aria-pressed="true">1</button><button type="button" data-v="1" aria-pressed="false">2</button><button type="button" data-v="2" aria-pressed="false">3</button><button type="button" data-v="3" aria-pressed="false">4</button><button type="button" data-v="4" aria-pressed="false">5</button><button type="button" data-v="5" aria-pressed="false">6</button><button type="button" data-v="6" aria-pressed="false">7</button></div>
         <span class="rowlab" id="ir-jlab">Jump to</span>
         <div class="seg" id="ir-jump"><button type="button" data-v="open" aria-pressed="false">Open circuit</button><button type="button" data-v="std" aria-pressed="false">R = 2.5 &Omega;</button><button type="button" data-v="short" aria-pressed="false">Short circuit</button></div>
       </div>
@@ -1148,6 +1151,18 @@ function expKey(x, y, upLabel, downLabel){
     $('#ir-jump [data-v="std"]').innerHTML='R = '+(b?'5 k&Omega;':'2.5 &Omega;');
   }
 
+  // Measure mode (?show=measure, 14 Nov 2026): the CP8 practical page's Do Experiment tab. One cell (e.m.f. 1.56 V, internal resistance 0.72 Ω,
+  // neither shown) and seven positions of the rheostat's slider. Nothing is read or worked out for the student: no graph, table, reading boxes,
+  // working or "Why plot" card, and the rheostat's resistance is not written. They read the two meters, drawn large where the graph was, and fill
+  // in the table on the practical page, which checks against these same fixed readings: MEAS_I and MEAS_V must match IR_I and IR_V in
+  // tools/practical-gen/practicals/internal-resistance/content.js (and tools/CORE-PRACTICALS.md, "Measure modes"). Taking a reading again gives the same values.
+  var MEAS=/[?&]show=measure\b/.test(location.search);
+  var MEAS_E=1.56, MEAS_r=0.72;
+  var MEAS_R=[12.5,7.1,4.4,3.0,2.4,1.7,1.1];                 // rheostat at positions 1 to 7, Ω (position 1 has the most resistance)
+  var MEAS_I=[0.12,0.20,0.30,0.42,0.50,0.64,0.86];           // ammeter, A
+  var MEAS_V=[1.48,1.42,1.34,1.26,1.20,1.10,0.94];           // voltmeter, V
+  var mPos=0, posSeg=null;
+
   // the eyebrow says which course this is for
   if(PW_LEVEL==='ib') $('#ir-eye').innerHTML='Animations &middot; B.5 current and circuits';
 
@@ -1173,7 +1188,9 @@ function expKey(x, y, upLabel, downLabel){
   // ---- the rheostat's coil runs from TX0 to TX1; R grows as the slider moves to the right
   var TX0=250, TX1=440, CY=91, BARY=57;
   function contactX(){ return TX0+(TX1-TX0)*R/RMAX; }
-  function setR(v, keepJump){ if(!exp()) swClosed=true; var st=Rstep(); v=+(Math.round(Math.max(0,Math.min(RMAX,v))/st)*st).toFixed(1); if(v===R) return; R=v; RIn.value=R; if(!keepJump) jumpSeg.pick(null); addTrace(); draw(); }
+  function setPos(k){ k=Math.max(0,Math.min(MEAS_R.length-1,k)); if(k!==mPos || R!==MEAS_R[k]){ mPos=k; R=MEAS_R[k]; RIn.value=R; X.just=null; if(posSeg) posSeg.pick(String(k)); } draw(); }
+  function nearPos(v){ var b=0; MEAS_R.forEach(function(x,k){ if(Math.abs(x-v)<Math.abs(MEAS_R[b]-v)) b=k; }); return b; }
+  function setR(v, keepJump){ if(MEAS){ setPos(nearPos(v)); return; } if(!exp()) swClosed=true; var st=Rstep(); v=+(Math.round(Math.max(0,Math.min(RMAX,v))/st)*st).toFixed(1); if(v===R) return; R=v; RIn.value=R; if(!keepJump) jumpSeg.pick(null); addTrace(); draw(); }
   svgDrag(svg, {
     ok:function(){ return X.reading===0 && !BT.on(); },
     hit:function(q){
@@ -1182,7 +1199,7 @@ function expKey(x, y, upLabel, downLabel){
     },
     move:function(q){ setR((q.x-TX0)/(TX1-TX0)*RMAX); }
   });
-  keySlider(svg, function(){ return R; }, function(v){ setR(v); }, Rstep, function(){ return big?100:1; }, 0, function(){ return RMAX; }, function(){ return X.reading===0 && !BT.on(); });
+  keySlider(svg, function(){ return R; }, function(v){ if(MEAS) setPos(v>=RMAX ? 0 : v<=0 ? MEAS_R.length-1 : mPos+(v>R?-1:1)); else setR(v); }, Rstep, function(){ return big?100:1; }, 0, function(){ return RMAX; }, function(){ return X.reading===0 && !BT.on(); });
   // ---- trace of operating points (Watch mode)
   function addTrace(){
     if(exp() || !closed()) return;
@@ -1264,12 +1281,13 @@ function expKey(x, y, upLabel, downLabel){
     for(k=TX0; k<=TX1+0.01; k+=3.2) g+=ln(k,CY-15,k,CY+15,k<=cx+0.01?'var(--copper)':'var(--steel)',2,k<=cx+0.01?'':' opacity=".55"');
     g+=rect(rhx+9,CY-12,rhw-18,4,'#fff',' opacity=".32"')+rect(rhx+9,CY+7,rhw-18,8,'#000',' opacity=".16"');
     g+=rod([[rhx+7,BARY],[rhx+rhw-7,BARY]],'var(--brass)','var(--brass-hi)',5)+box(rhx+rhw-9,48,9,66,5,-5,'var(--steel)');
+    if(MEAS) MEAS_R.forEach(function(x){ var u=TX0+(TX1-TX0)*x/RMAX; g+=ln(u,BARY+5,u,CY-16,'var(--ink-soft)',1.4); });   // the seven positions of the slider
     g+=pg([[cx-3.4,BARY+7],[cx+3.4,BARY+7],[cx+1.2,CY-14],[cx-1.2,CY-14]],'var(--steel-hi)',' stroke="var(--steel-sh)" stroke-width="0.7"');
     g+=rect(cx-10,BARY-9,20,17,'var(--topic)',' rx="3.5"')+rect(cx-8,BARY-7,16,3.5,'#fff',' rx="1.5" opacity=".35"')+rect(cx-5,BARY-15,10,7,'var(--insul)',' rx="2"');
     g+='<rect class="grab" x="'+f1(cx-14)+'" y="'+(BARY-22)+'" width="28" height="'+(CY+18-BARY+22)+'" fill="transparent"/>';
     g+=stud(rhx-1,104)+stud(rhx+rhw+5,BARY-2);
     if(X.reading===0) g+=txt(Math.max(rhx+34,Math.min(rhx+rhw-30,cx)), BARY-22, '← drag →', {a:'middle', fs:11.5, c:'var(--topic)'});
-    g+=txt(rhx+rhw/2, 18, 'rheostat, R = '+fmtR(R), {a:'middle', fs:12.5, w:600, c:'var(--ink)'});
+    g+=txt(rhx+rhw/2, 18, MEAS ? 'rheostat' : 'rheostat, R = '+fmtR(R), {a:'middle', fs:12.5, w:600, c:'var(--ink)'});
     // the cell, with the voltmeter across its terminals
     var S=source(kindNow(), B.cx, 234), tp=S.tp, tn=S.tn;
     g+=S.g+dmm(Vm,{text:showV===null?'– – –':showV.toFixed(2), unit:'V', letter:'V'});
@@ -1308,6 +1326,16 @@ function expKey(x, y, upLabel, downLabel){
     }
     return g;
   }
+  // ---- measure mode: the two meters drawn large where the graph was. Their values are never written anywhere else.
+  function measMeters(){
+    var tall=LY.VW===430, x=tall?16:520, w=tall?398:326, y=tall?384:34, mw=tall?164:138, g='';
+    var ri=X.just&&!X.reading?X.just.I:null, rv=X.just&&!X.reading?X.just.V:null;
+    var A={cx:x+w/4-6, top:y+34, w:mw, h:84}, Vm={cx:x+w*3/4+6, top:y+34, w:mw, h:84};
+    g+=txt(x+w/2,y+10,'Close-up of the meters',{a:'middle',fs:12.5,w:600,c:'var(--ink)'});
+    g+=dmm(A,{text:ri===null?'– – –':ri.toFixed(2)+' A', letter:'A', fs:24})+txt(A.cx,A.top+A.h+19,'ammeter',{a:'middle',fs:12});
+    g+=dmm(Vm,{text:rv===null?'– – –':rv.toFixed(2)+' V', letter:'V', fs:24})+txt(Vm.cx,Vm.top+Vm.h+19,'voltmeter',{a:'middle',fs:12});
+    return g;
+  }
   function graph(){
     var a=axisSpec(), g=axes(G,a), e=E(), rr=r(), fac=iFac();
     var line=function(x){ return e-x/fac*rr; };
@@ -1344,10 +1372,10 @@ function expKey(x, y, upLabel, downLabel){
   function draw(){
     if(BT && BT.on()){ BT.draw(); return; }   // the Build tab draws its own picture
     layout();
-    var g=arrowDefs()+scene()+graph()+diagram();
+    var g=arrowDefs()+scene()+(MEAS ? measMeters() : graph())+diagram();
     if(running && slowOn()) g+=txt(4, 14, 'slow motion', {fs:12, c:'var(--accent)'});
     svg.innerHTML=g;
-    svg.setAttribute('aria-valuenow', R); svg.setAttribute('aria-valuetext', 'R = '+R.toFixed(1)+' ohms');
+    svg.setAttribute('aria-valuenow', MEAS ? mPos+1 : R); svg.setAttribute('aria-valuetext', MEAS ? 'slider at position '+(mPos+1)+' of '+MEAS_R.length : 'R = '+R.toFixed(1)+' ohms');
     readings();
   }
 
@@ -1409,6 +1437,11 @@ function expKey(x, y, upLabel, downLabel){
     else if(big) note='A potato has a <b>huge r</b>, so even a tiny current gives big lost volts and V falls a long way.';
     else if(isCar()) note='A car battery has a <b>tiny r</b>, so V hardly falls even when the current is large.';
     else note='Lower R → bigger I → more lost volts Ir, so <b>V = ε − Ir falls</b>.';
+    if(MEAS){
+      if(X.reading) note='Switch closed: the meters are settling…';
+      else if(X.just) note='Switch open again. Write down the current (to 0.01 A) and the terminal p.d. (to 0.01 V). Then move the slider to another position, until you have all seven.';
+      else note='Drag the slider of the rheostat to one of its seven positions (or press a position number), then press <b>Take reading</b> and read the two meters. The switch closes only while you read, so the cell does not run down.';
+    }
     if(note!==lastNote){ $('#ir-note').innerHTML=FR(note); lastNote=note; }
 
     // buttons
@@ -1429,6 +1462,7 @@ function expKey(x, y, upLabel, downLabel){
   function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
   function stop(){ running=false; cancelAnimationFrame(raf); }
   function takeReading(){
+    if(MEAS){ X.just={R:R, I:MEAS_I[mPos], V:MEAS_V[mPos]}; return; }   // the fixed readings; nothing is stored
     var i=E()/(R+r()), v=E()-i*r(), k=X.rd.length, prev=X.rd[k-1];
     var p={R:R, I:expReading(i, prev?prev.I:0, ires(), k, 1), V:expReading(v, prev?prev.V:0, 0.01, k+3, 1)};
     X.rd.push(p); X.just=p;
@@ -1513,6 +1547,16 @@ function expKey(x, y, upLabel, downLabel){
     redraw:function(){ lastNote=''; draw(); }});
 
   watchEquals($('#ir-eq1')); watchEquals($('#ir-eq2')); alignEquals($('#ir-why1'));
+  if(MEAS){
+    myst={n:1, e:MEAS_E, r:MEAS_r, shown:false}; expBtn.setAttribute('aria-pressed','true'); setExp(); mPos=0; R=MEAS_R[0]; RIn.value=R;
+    ['#ir-btab','#ir-cell','#ir-mlab','#ir-guess','#ir-jlab','#ir-jump','#ir-slow','#ir-exp','#ir-clear','.to-q','.sliders','#ir-stats','#ir-tablewrap','details.working','details.why'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+    Array.prototype.forEach.call($('.cgrid').querySelectorAll('.rowlab'), function(e){ if(e.id!=='ir-plab') e.classList.add('meas-off'); });
+    $('#ir-plab').hidden=$('#ir-pos').hidden=false;
+    posSeg=segGroup($('#ir-pos'), function(v){ setPos(+v); });
+    svg.setAttribute('aria-label','Rheostat slider: drag it along the coil, or use the arrow keys, to move it to one of seven positions. A cell is joined to an ammeter, a switch and a rheostat, with a voltmeter across the cell\'s terminals. The two meters are shown large beside the apparatus for you to read, above the circuit diagram');
+    svg.setAttribute('aria-valuemin','1'); svg.setAttribute('aria-valuemax',String(MEAS_R.length));
+    document.documentElement.classList.add('measure');
+  }
   addTrace(); draw();
   // redraw when the picture changes between its wide and its tall shape
   if(window.ResizeObserver) new ResizeObserver(function(){ var w=svg.getBoundingClientRect().width; if(LY && (w>0 && w<520)!==svg.classList.contains('tall')) draw(); }).observe(svg);

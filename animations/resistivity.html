@@ -181,6 +181,7 @@
   .embed .page{padding:0;max-width:none;display:flow-root;}
   .embed .home-link,.embed .page-head{display:none;}
   .embed .view{max-height:460px;}
+  .meas-off{display:none !important;}
 
   /* Build tab: the meters to put in, and the tab switch */
   .chips{display:flex;flex-wrap:wrap;gap:6px;}
@@ -341,6 +342,10 @@
         <div class="seg" id="rs-d"><button type="button" data-v="0.20" aria-pressed="false">0.20 mm</button><button type="button" data-v="0.32" aria-pressed="true">0.32 mm</button><button type="button" data-v="0.45" aria-pressed="false">0.45 mm</button></div>
         <span class="rowlab" id="rs-blab" hidden>Meters</span>
         <div class="chips" id="rs-bchips" hidden><button type="button" class="chip" data-m="A" aria-pressed="false"><span class="chip-m">A</span> Ammeter</button><button type="button" class="chip" data-m="V" aria-pressed="false"><span class="chip-m">V</span> Voltmeter</button></div>
+        <span class="rowlab" id="rs-plab" hidden>Clip at mark</span>
+        <div class="seg" id="rs-place" hidden><button type="button" data-v="0" aria-pressed="true">1</button><button type="button" data-v="1" aria-pressed="false">2</button><button type="button" data-v="2" aria-pressed="false">3</button><button type="button" data-v="3" aria-pressed="false">4</button><button type="button" data-v="4" aria-pressed="false">5</button><button type="button" data-v="5" aria-pressed="false">6</button><button type="button" data-v="6" aria-pressed="false">7</button></div>
+        <span class="rowlab" id="rs-miclab" hidden>Micrometer at</span>
+        <div class="seg" id="rs-mic" hidden><button type="button" data-v="0" aria-pressed="true">Place 1</button><button type="button" data-v="1" aria-pressed="false">Place 2</button><button type="button" data-v="2" aria-pressed="false">Place 3</button></div>
         <span class="rowlab" id="rs-jlab">Jump to</span>
         <div class="seg" id="rs-jump"><button type="button" data-v="0.25" aria-pressed="false">L = 0.25 m</button><button type="button" data-v="0.5" aria-pressed="false">L = 0.50 m</button><button type="button" data-v="1" aria-pressed="false">L = 1.00 m</button></div>
       </div>
@@ -1120,6 +1125,18 @@ function expKey(x, y, upLabel, downLabel){
   function dMean(){ var m=micro(); return (m[0]+m[1]+m[2])/3; }
   if(PW_LEVEL==='ib') $('#rs-eye').innerHTML='Animations &middot; B.5 current and circuits';
 
+  // Measure mode (?show=measure, 14 Nov 2026): the CP7 practical page's Do Experiment tab. Constantan wire, 0.32 mm. Nothing is read or
+  // worked out for the student: no graph, circuit diagram, table, reading boxes or working. They read the micrometer close-up at three places
+  // along the wire, then for each of seven marks the position of the clip on the rule close-up and the two meters, and fill in the table on
+  // the practical page, which checks against these same fixed readings: MEAS_D, MEAS_L, MEAS_V and MEAS_I must match RS_D, RS_L, RS_V and RS_I
+  // in tools/practical-gen/practicals/resistivity/content.js (and tools/CORE-PRACTICALS.md, "Measure modes"). Taking a reading again gives the same values.
+  var MEAS=/[?&]show=measure\b/.test(location.search);
+  var MEAS_D=[0.32,0.31,0.33];                                    // micrometer, mm, at places 1 to 3
+  var MEAS_L=[0.18,0.28,0.40,0.48,0.64,0.78,0.90];                // clip at marks 1 to 7, m (read as 18.0 cm and so on)
+  var MEAS_V=[0.32,0.46,0.60,0.69,0.86,0.99,1.08];                // voltmeter, V
+  var MEAS_I=[0.267,0.255,0.240,0.230,0.215,0.202,0.193];         // ammeter, A
+  var mPlace=0, mMic=0, placeSeg=null, micSeg=null;
+
   // ---- layout: one wide picture (the apparatus, with the R–L graph and the circuit diagram beside it); tall on a phone, with those two underneath
   var LY=null, G, D, PX=400, R0=44, WY=222, RY=246, AW=500, B={};
   function layout(){
@@ -1199,12 +1216,19 @@ function expKey(x, y, upLabel, downLabel){
     g+='<rect class="grab" x="'+f1(xL-14)+'" y="'+(WY-36)+'" width="28" height="46" fill="transparent"/>';
     // the length between the clips, marked off below the rule
     var mx=tall?AW-190:AW-202, my=284, dy=RY+20, tx=Math.min(Math.max(xAt(0)+40,(xAt(0)+xL)/2), mx-(tall?36:64));
+    if(MEAS){   // the seven marks the clip goes to, numbered but with no lengths; nothing is read for the student
+      MEAS_L.forEach(function(l,k){ var x=xAt(l), on=k===mPlace;
+        g+=pg([[x,RY+10],[x-4.5,RY+18],[x+4.5,RY+18]],on?'var(--topic)':'var(--ink-faint)')+txt(x,RY+32,String(k+1),{a:'middle',fs:12.5,w:on?700:500,c:on?'var(--topic)':'var(--ink-soft)'}); });
+      if(!X.reading) g+=txt(xAt(0)-6,my+22,tall?'← drag the clip →':'← drag the clip to a mark →',{fs:11.5,c:'var(--topic)'});
+      g+=micrometer(mx,my,m.col)+txt(mx+66,my+38,'micrometer',{fs:12})+txt(mx+66,my+53,'at place '+(mMic+1),{fs:12});
+    } else {
     g+=ln(xAt(0),RY+11,xAt(0),dy+4,'var(--ink-faint)',1)+ln(xL,RY+11,xL,dy+4,'var(--ink-faint)',1)+ln(xAt(0),dy,xL,dy,'var(--ink-soft)',1.2);
     if(xL-xAt(0)>26) g+=tri(xAt(0),dy,180,3.2,'var(--ink-soft)')+tri(xL,dy,0,3.2,'var(--ink-soft)');
     g+=txt(tx,dy+17,'L = '+L.toFixed(2)+' m',{a:'middle',fs:13,w:600,c:'var(--ink)'});
     if(!X.reading) g+=txt(tx,dy+32,tall?'← drag →':'← drag the clip →',{a:'middle',fs:11.5,c:'var(--topic)'});
     // the micrometer that measures the wire's diameter
     g+=micrometer(mx,my,m.col)+txt(mx+66,my+38,'micrometer',{fs:12})+txt(mx+66,my+53,'d = '+(ex ? dMean().toFixed(3) : dia().toFixed(2))+' mm',{fs:13,w:600,c:'var(--ink)'});
+    }
     // current arrows: cells (+) → resistor → ammeter → flying lead → along the wire to the fixed clip → back to the cells (−)
     if(!ex || X.reading){
       g+=flowPath([[l1,1],[[[rx-2,by],[rx+rw+2,by]],0],[l2,1],[[TA.l,TA.r],0],[fly,1],[[cM,[xL,WY]],0],[[[xL,WY],[xAt(0),WY]],1],[[[xAt(0),WY],cF],0],[l0,1],[[[bx-3,by],[bx+bw+3,by]],0]], dist, 30, 4.4);
@@ -1228,6 +1252,57 @@ function expKey(x, y, upLabel, downLabel){
     if(!ex || X.reading){
       g+=flowPath([[[[xl+56,y1],[xm-20,y1]],1],[[[xm-20,y1],[xm+20,y1]],0],[[[xm+20,y1],[xr-53,y1]],1],[[[xr-53,y1],[xr-27,y1]],0],[[[xr-27,y1],[xr,y1],[xr,ym],[xc,ym],[xc,y2]],1],[[[xc,y2],[xl,y2]],1],[[[xl,y2],[xl,y1],[xl+36,y1]],1],[[[xl+36,y1],[xl+56,y1]],0]], dist*0.8, 32, 3.8);
     }
+    return g;
+  }
+  // ---- measure mode: close-ups of the rule at the clip, the micrometer and the two meters, where the graph and the diagram were.
+  // Each instrument is drawn exactly on the mark it reads, and its value is never written as text.
+  function ruleClose(x,y,w){
+    var z=50, c=L*100, mid=x+w/2, ry=y+46, rh=52, g='', u, k;                        // z px per cm; the clip stands at c cm
+    g+=txt(x+w/2,y+14,'Close-up: the clip on the rule (cm)',{a:'middle',fs:12.5,w:600,c:'var(--ink)'});
+    g+='<clipPath id="rs-rclip"><rect x="'+f1(x)+'" y="'+f1(y+20)+'" width="'+f1(w)+'" height="84"/></clipPath><g clip-path="url(#rs-rclip)">';
+    g+=rect(x-4,ry,w+8,rh,'var(--rule-t)',' stroke="var(--rule-f)" stroke-width="1.2"');
+    for(k=Math.ceil((c-w/2/z)*10)-1; k<=(c+w/2/z)*10+1; k++){ if(k<0 || k>1000) continue;
+      u=mid+(k/10-c)*z;
+      g+=ln(u,ry,u,ry+(k%10===0?19:k%5===0?14:9),'var(--rule-ink)',k%10===0?1.4:0.9);
+      if(k%10===0 && u>x+12 && u<x+w-12) g+=txt(u,ry+37,String(k/10),{a:'middle',fs:14.5,w:600,c:'var(--rule-ink)'}); }
+    // the wire lies along the rule: bright on the side that carries the current (towards 0), dull beyond the clip
+    g+=ln(x-4,ry-8,mid,ry-8,mat().col,4)+ln(x-4,ry-9,mid,ry-9,'#fff',1,' opacity=".6"')+ln(mid,ry-8,x+w+4,ry-8,mat().col,4,' opacity=".5"');
+    // the jaws of the crocodile clip, gripping the wire exactly on the mark
+    g+=pg([[mid-9,y+22],[mid+9,y+22],[mid+4.5,ry-11],[mid-4.5,ry-11]],'var(--topic)')+pg([[mid+3,y+22],[mid+9,y+22],[mid+4.5,ry-11],[mid+1.5,ry-11]],'#000',' opacity=".2"');
+    g+=pg([[mid-4.5,ry-12],[mid+4.5,ry-12],[mid+0.8,ry-4],[mid-0.8,ry-4]],'var(--steel-hi)',' stroke="var(--steel-sh)" stroke-width="0.8"');
+    g+=ln(mid,ry-4,mid,ry+24,'var(--topic)',1.3);
+    return g+'</g>';
+  }
+  function micClose(x,y,w){
+    var d=MEAS_D[mMic], n=Math.round(d*100), s=90, cy=y+70, z0=x+w*0.3, ex=z0+d*s, P=9, MK='#17212e', g='', k, yy, v;   // s px per mm on the sleeve; P px per 0.01 mm on the thimble
+    g+=txt(x+w/2,y+14,'Close-up: the micrometer (mm)',{a:'middle',fs:12.5,w:600,c:'var(--ink)'});
+    g+='<clipPath id="rs-mclip"><rect x="'+f1(x)+'" y="'+f1(y+20)+'" width="'+f1(w)+'" height="100"/></clipPath><g clip-path="url(#rs-mclip)">';
+    // frame, anvil, the wire end-on, spindle
+    g+=rect(x-4,cy-26,z0-62-x,52,'var(--steel)')+rect(x-4,cy-26,z0-62-x,7,'#fff',' opacity=".22"');
+    g+=rect(z0-66,cy-7,12,14,'var(--steel-hi)',' stroke="var(--steel-sh)" stroke-width="0.8"');
+    g+='<circle cx="'+f1(z0-50.6)+'" cy="'+f1(cy)+'" r="3.4" fill="'+mat().col+'" stroke="var(--steel-sh)" stroke-width="0.7"/>';
+    g+=rect(z0-47.2,cy-7,24,14,'var(--steel-hi)',' stroke="var(--steel-sh)" stroke-width="0.8"');
+    // the sleeve: its datum line, a mark every millimetre above the line and every half millimetre below it
+    g+=rect(z0-24,cy-19,ex-z0+40,38,'var(--steel-hi)',' stroke="var(--steel-sh)" stroke-width="1"')+rect(z0-24,cy-17,ex-z0+40,5,'#fff',' opacity=".5"');
+    g+=ln(z0-14,cy,ex+2,cy,MK,1.3);
+    for(k=0;k<=2;k++){ g+=ln(z0+k*s,cy,z0+k*s,cy-12,MK,1.3)+ln(z0+(k+0.5)*s,cy,z0+(k+0.5)*s,cy+9,MK,1.1); }
+    g+=txt(z0-5,cy-6,'0',{a:'end',fs:13.5,w:600,c:MK});
+    // the thimble: 50 divisions of 0.01 mm round its bevelled edge; the division on the datum line is the reading
+    g+=pg([[ex,cy-40],[ex+16,cy-50],[x+w-34,cy-50],[x+w-34,cy+50],[ex+16,cy+50],[ex,cy+40]],'var(--steel)',' stroke="var(--steel-sh)" stroke-width="1"');
+    g+=pg([[ex,cy-40],[ex+16,cy-50],[ex+46,cy-50],[ex+46,cy+50],[ex+16,cy+50],[ex,cy+40]],'var(--steel-hi)')+ln(ex+16,cy-50,ex+16,cy+50,'var(--steel-sh)',0.8,' opacity=".5"')+rect(ex+16,cy-46,x+w-50-ex,9,'#fff',' opacity=".2"')+rect(ex+16,cy+34,x+w-50-ex,16,'#000',' opacity=".14"');
+    for(k=-6;k<=6;k++){ v=((n+k)%50+50)%50; yy=cy-k*P; if(Math.abs(k*P)>44) continue;
+      g+=ln(ex+0.6,yy,ex+(v%5===0?15:9),yy,MK,v%5===0?1.4:1);
+      if(v%5===0) g+=txt(ex+21,yy+4.6,String(v),{fs:13.5,w:600,c:MK}); }
+    for(k=0;k<6;k++) g+=ln(ex+58+k*9,cy-49,ex+52+k*9,cy+49,'var(--steel-sh)',1,' opacity=".55"');
+    g+=rect(x+w-34,cy-13,40,26,'var(--steel-sh)',' rx="2"');
+    return g+'</g>';
+  }
+  function closeups(){
+    var tall=LY.VW===430, x=tall?16:520, w=tall?398:326, y=tall?372:2, g='', rv=X.just&&!X.reading?X.just.V:null, ri=X.just&&!X.reading?X.just.I:null;
+    var mw=tall?164:138, A={cx:x+w/4-6, top:y+262, w:mw, h:72}, Vm={cx:x+w*3/4+6, top:y+262, w:mw, h:72};
+    g+=ruleClose(x,y,w)+micClose(x,y+112,w);
+    g+=txt(x+w/2,y+250,'Close-up of the meters',{a:'middle',fs:12.5,w:600,c:'var(--ink)'});
+    g+=dmm(A,{text:ri===null?'– – –':ri.toFixed(3)+' A', letter:'A', fs:22})+dmm(Vm,{text:rv===null?'– – –':rv.toFixed(2)+' V', letter:'V', fs:22});
     return g;
   }
   function axisSpec(){
@@ -1257,10 +1332,10 @@ function expKey(x, y, upLabel, downLabel){
   function draw(){
     if(BT && BT.on()){ BT.draw(); return; }   // the Build tab draws its own picture
     layout();
-    var g=arrowDefs()+scene()+graph()+diagram();
+    var g=arrowDefs()+scene()+(MEAS ? closeups() : graph()+diagram());
     if(running && slowOn()) g+=txt(4, 14, 'slow motion', {fs:12, c:'var(--accent)'});
     svg.innerHTML=g;
-    svg.setAttribute('aria-valuenow', L); svg.setAttribute('aria-valuetext', 'L = '+L.toFixed(2)+' metres');
+    svg.setAttribute('aria-valuenow', MEAS ? mPlace+1 : L); svg.setAttribute('aria-valuetext', MEAS ? 'clip at mark '+(mPlace+1)+' of '+MEAS_L.length : 'L = '+L.toFixed(2)+' metres');
     readings();
   }
 
@@ -1298,6 +1373,11 @@ function expKey(x, y, upLabel, downLabel){
         : 'Done: R against L is a straight line with a small intercept (the clips). ρ = gradient × A = <b>'+sci(f.m*area(dMean()),2)+' Ω m</b>.';
     } else if(matSeg.value()==='cu') note='Copper has a very low resistivity: a metre of this wire is only '+sig(Rwire(1),2)+' Ω, so the clips\' resistance is a big part of the reading. That is why constantan or nichrome is used.';
     else note='Double the length → double the resistance: R ∝ L. A thinner wire has a smaller A, so a bigger R. The resistivity ρ belongs to the material, not the wire.';
+    if(MEAS){
+      if(X.reading) note='Supply on: the meters are settling…';
+      else if(X.just) note='Supply off again, so the wire stays cool. Write down the position of the clip (to the nearest millimetre), the p.d. (to 0.01 V) and the current (to 0.001 A). Then move the clip to another mark.';
+      else note='Read the <b>micrometer</b> close-up at each of the three places along the wire, to 0.01 mm. The fixed clip is at the 0 mark of the rule. Read where the moving clip is on the <b>rule</b> close-up, then press <b>Take reading</b> and read the two meters. Do this at all seven marks.';
+    }
     if(note!==lastNote){ $('#rs-note').innerHTML=FR(note); lastNote=note; }
     if(ex){ playBtn.innerHTML='&#9654; Take reading'; playBtn.disabled=X.reading>0; }
     else { playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play'; playBtn.disabled=false; }
@@ -1315,18 +1395,21 @@ function expKey(x, y, upLabel, downLabel){
   function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
   function stop(){ running=false; cancelAnimationFrame(raf); }
   function takeReading(){
+    if(MEAS){ X.just={L:L, V:MEAS_V[mPlace], I:MEAS_I[mPlace]}; return; }   // the fixed readings; nothing is stored
     var c=circuit(L), k=X.rd.length, prev=X.rd[k-1];
     var p={L:L, V:expReading(c.V, prev?prev.V:0, 0.01, k, 1), I:expReading(c.I, prev?prev.I:0, 0.001, k+2, 1)};
     X.rd.push(p); X.just=p;
   }
-  function setL(v, keep){ L=Math.round(Math.max(0.05,Math.min(1,v))*100)/100; lIn.value=L; if(!keep) jumpSeg.pick(null); draw(); }
+  function setPlace(k){ k=Math.max(0,Math.min(MEAS_L.length-1,k)); if(k!==mPlace || L!==MEAS_L[k]){ mPlace=k; L=MEAS_L[k]; X.just=null; if(placeSeg) placeSeg.pick(String(k)); } draw(); }
+  function nearPlace(v){ var b=0; MEAS_L.forEach(function(l,k){ if(Math.abs(l-v)<Math.abs(MEAS_L[b]-v)) b=k; }); return b; }
+  function setL(v, keep){ if(MEAS){ setPlace(nearPlace(v)); return; } L=Math.round(Math.max(0.05,Math.min(1,v))*100)/100; lIn.value=L; if(!keep) jumpSeg.pick(null); draw(); }
   function changed(){ stop(); X={rd:[], reading:0, just:null}; lastNote=''; draw(); }
   svgDrag(svg, {
     ok:function(){ return !X.reading && !BT.on(); },
     hit:function(q){ return Math.abs(q.x-xAt(L))<22 && q.y>WY-60 && q.y<WY+44; },
     move:function(q){ setL((q.x-R0)/PX); }
   });
-  keySlider(svg, function(){ return L; }, function(v){ setL(v); }, 0.01, 0.1, 0.05, 1, function(){ return !X.reading && !BT.on(); });
+  keySlider(svg, function(){ return L; }, function(v){ if(MEAS) setPlace(v>=1 ? MEAS_L.length-1 : v<=0.05 ? 0 : mPlace+(v>L?1:-1)); else setL(v); }, 0.01, 0.1, 0.05, 1, function(){ return !X.reading && !BT.on(); });
   function setExp(){ stop(); var on=exp(); X={rd:[], reading:0, just:null}; $('#rs-jlab').hidden=$('#rs-jump').hidden=on; $('#rs-clear').hidden=!on; $('#rs-tablewrap').hidden=!on; jumpSeg.pick(null); lastNote=''; draw(); }
 
   playBtn.addEventListener('click', function(){
@@ -1383,6 +1466,17 @@ function expKey(x, y, upLabel, downLabel){
     redraw:function(){ lastNote=''; draw(); }});
 
   watchEquals($('#rs-eq1')); watchEquals($('#rs-eq2'));
+  if(MEAS){
+    matSeg.pick('con'); dSeg.pick('0.32'); expBtn.setAttribute('aria-pressed','true'); setExp(); mPlace=0; L=MEAS_L[0];
+    ['#rs-btab','#rs-mat','#rs-d','#rs-jlab','#rs-jump','#rs-slow','#rs-exp','#rs-clear','.to-q','.sliders','#rs-stats','#rs-tablewrap','details.working'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+    Array.prototype.forEach.call($('.cgrid').querySelectorAll('.rowlab'), function(e){ if(e.id!=='rs-plab' && e.id!=='rs-miclab') e.classList.add('meas-off'); });
+    ['#rs-plab','#rs-place','#rs-miclab','#rs-mic'].forEach(function(q){ $(q).hidden=false; });
+    placeSeg=segGroup($('#rs-place'), function(v){ setPlace(+v); });
+    micSeg=segGroup($('#rs-mic'), function(v){ mMic=+v; draw(); });
+    svg.setAttribute('aria-label','Crocodile clip: drag it along the metre rule, or use the arrow keys, to move it to one of seven marks. Close-ups beside the apparatus show the clip on the rule, the micrometer on the wire, and the ammeter and voltmeter, for you to read');
+    svg.setAttribute('aria-valuemin','1'); svg.setAttribute('aria-valuemax',String(MEAS_L.length));
+    document.documentElement.classList.add('measure');
+  }
   draw();
   // redraw when the picture changes between its wide and its tall shape
   if(window.ResizeObserver) new ResizeObserver(function(){ var w=svg.getBoundingClientRect().width; if(LY && (w>0 && w<520)!==svg.classList.contains('tall')) draw(); }).observe(svg);
