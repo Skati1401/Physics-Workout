@@ -26,6 +26,11 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 
 - [ ] **4b** Bring the long IGCSE workouts under 30 minutes. After the 4c cuts (11 Nov 2026): 1b (34), 1d (37), 3a (36), 7a (37); 4b is now 30. Mostly Calculate cards. Estimates and method in `tools/WORKOUTS.md`, section 5 (added 11 Nov 2026). 13 Nov 2026 (Alex): 1b cut to about 29 (graph cards to 2 questions, F–a graph to the Force Graphs tab, two free-body pictures); 1d left as it is; 3a and 7a reworked instead of cut (spectrum Orders side by side, use-and-danger table; full decay equations, Background tab, Predict beside the Match), so 3a (~33) and 7a (~39, the full equations take longer than the old Calculate) stay over 30 at Alex's choice.
 
+- [ ] **4d** 3b `light-and-sound.html`: no draw-the-ray-diagram task for 3.16 ("draw ray diagrams to illustrate reflection and refraction"), and `refraction.html` is not framed in 3b. Found in the 14 Nov 2026 coverage check of the drawing rule (`tools/DRAWING-DIAGRAMS.md`); see also 8i.
+- [ ] **4e** 6a `magnetism-and-motor-effect.html`: no task where the student draws or completes field lines (6.6, 6.7 bar magnets and the uniform field; 6.10P wire, flat coil, solenoid). The framed animations ask for directions only and the Wires tab is a Match (14 Nov 2026 coverage check).
+- [ ] **4f** 8a `universe-and-stars.html` HR Diagram tab (8.12P, TA): only a link to the HR view of `star-life-cycle.html`; no task in the workout where the student marks or sketches the main groups (14 Nov 2026 coverage check).
+- [ ] **4g** 3a `waves.html`: no task where the student marks the wavelength and amplitude on a drawn wave (3.2, 3.3); Read the wave only reads them off (14 Nov 2026 coverage check). Also not covered, lower value: drawing the construction of an electromagnet or transformer (6.9P, 6.17P). Covered elsewhere: 5.10P particles (8k), 1.21 free-body arrows (8o). The 28 fixed explanations are all covered by their workouts (Orders, word boxes, matches); only the microphone version of #1 is missing from 6b.
+
 ## 5. Build: core practicals
 
 How to build one: `tools/CORE-PRACTICALS.md`.
