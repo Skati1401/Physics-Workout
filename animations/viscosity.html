@@ -719,11 +719,11 @@ function expKey(x, y, upLabel, downLabel){
   function gy(G,a,v){ return G.y+G.h-(v-a.y0)/(a.y1-a.y0)*G.h; }
   function axes(G,a){
     var g='', v, i;
-    for(v=a.x0, i=0; v<=a.x1+1e-9; v+=a.xs, i++){ var X=gx(G,a,v); g+=ln(X,G.y,X,G.y+G.h,'var(--panel-border)',1); if(!a.lx || i%a.lx===0) g+=txt(X, G.y+G.h+17, sn(v,a.dpx||0), {a:'middle',fs:11,c:'var(--ink-faint)'}); }
-    for(v=a.y0, i=0; v<=a.y1+1e-9; v+=a.ys, i++){ var Y=gy(G,a,v); g+=ln(G.x,Y,G.x+G.w,Y,'var(--panel-border)',1); if(!a.ly || i%a.ly===0) g+=txt(G.x-6, Y+3.5, sn(v,a.dpy||0), {a:'end',fs:11,c:'var(--ink-faint)'}); }
+    for(v=a.x0, i=0; v<=a.x1+1e-9; v+=a.xs, i++){ var X=gx(G,a,v); g+=ln(X,G.y,X,G.y+G.h,'var(--panel-border)',1); if(!a.lx || i%a.lx===0) g+=txt(X, G.y+G.h+17, sn(v,a.dpx||0), {a:'middle',fs:12,c:'var(--ink-soft)'}); }
+    for(v=a.y0, i=0; v<=a.y1+1e-9; v+=a.ys, i++){ var Y=gy(G,a,v); g+=ln(G.x,Y,G.x+G.w,Y,'var(--panel-border)',1); if(!a.ly || i%a.ly===0) g+=txt(G.x-6, Y+3.5, sn(v,a.dpy||0), {a:'end',fs:12,c:'var(--ink-soft)'}); }
     var X0 = a.x0<0 && a.x1>0 ? gx(G,a,0) : G.x, Y0 = a.y0<0 && a.y1>0 ? gy(G,a,0) : G.y+G.h;
     g+=ln(X0,G.y,X0,G.y+G.h,'var(--ink-soft)',2)+ln(G.x,Y0,G.x+G.w,Y0,'var(--ink-soft)',2);
-    g+=txt(G.x, G.y-9, a.yl, {fs:12})+txt(G.x+G.w/2, G.y+G.h+33, a.xl, {a:'middle',fs:12});
+    g+=txt(G.x, G.y-9, a.yl, {fs:12.5,c:'var(--ink)'})+txt(G.x+G.w/2, G.y+G.h+34, a.xl, {a:'middle',fs:12.5,c:'var(--ink)'});
     return g;
   }
   function inBox(a,u,v){ return u>=a.x0-1e-9 && u<=a.x1+1e-9 && v>=a.y0-1e-9 && v<=a.y1+1e-9; }
@@ -776,7 +776,8 @@ function expKey(x, y, upLabel, downLabel){
            myst:{name:'the mystery liquid', rho:1100, eta20:1.2, col:'rgba(167,139,250,.32)'}};
   var MYST=[0.70,0.85,1.10,1.25,1.60,1.90];
   var svg=$('#vs-svg'), playBtn=$('#vs-play'), swBtn=$('#vs-sw'), slowBtn=$('#vs-slow'), expBtn=$('#vs-exp'), newBtn=$('#vs-new'), rIn=$('#vs-r');
-  svg.innerHTML='<g id="vs-live"></g><g id="vs-picks"></g>';
+  svg.innerHTML='<defs><radialGradient id="vs-gs" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".3" style="stop-color:var(--steel-hi)"/><stop offset=".8" style="stop-color:var(--steel)"/><stop offset="1" style="stop-color:var(--steel-sh)"/></radialGradient>'+
+    '<radialGradient id="vs-gb" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".35" style="stop-color:var(--accent-soft)"/><stop offset="1" style="stop-color:var(--accent)"/></radialGradient></defs><g id="vs-live"></g><g id="vs-picks"></g>';
   var live=$('#vs-live'), picksG=$('#vs-picks'), picksHtml=null;
   var tabSeg=segGroup($('#vs-tab'), function(){ setTab(); });
   var levelSeg=levelGroup($('#vs-level'), function(){ setLevel(); });
@@ -828,36 +829,47 @@ function expKey(x, y, upLabel, downLabel){
   var LY, CX, Y0, Y1, PXM, FX, FY, G, TALL, SWP;
   function layout(){
     var v=sizeView(svg,{VW:860,VH:350},{VW:430,VH:predict()?640:690}); LY=v; TALL=v.VW===430;
-    CX=TALL?64:80; Y0=44; Y1=324; PXM=(Y1-Y0)/DEPTH; FX=TALL?300:304; FY=160; SWP={x:TALL?168:178, y:300};
+    CX=TALL?80:92; Y0=44; Y1=324; PXM=(Y1-Y0)/DEPTH; FX=TALL?300:312; FY=160; SWP={x:TALL?196:206, y:290};
     G=TALL ? {x:56,y:410,w:352,h:200} : {x:476,y:34,w:356,h:226};
   }
 
   // ---- the measuring cylinder, its rule and rubber bands, and the ball (at depth s metres) or a bead
   function cylinder(s, o){
-    o=o||{}; var g='', L=liq(), x=CX, rx=27, i, col=o.col||L.col;
-    g+=ell(x+4,Y1+15,42,5,'#000',' opacity=".10"')+box(x-36,Y1+7,72,7,7,-5,'var(--steel)');
-    g+=rect(x-rx,Y0,2*rx,Y1-Y0,col)+ell(x,Y1,rx,5,col)+ell(x,Y0,rx,5,'var(--panel)')+ell(x,Y0,rx,5,col)+ell(x,Y0,rx,5,'#fff',' opacity=".22"');
-    // the wooden rule behind the cylinder, read from the surface downwards
-    var rxx=x+rx+10;
-    g+=rect(rxx,Y0-8,12,Y1-Y0+14,'var(--wood-t)',' stroke="var(--wood-s)" stroke-width="1"');
-    for(i=0;i<=8;i++){ var yy=Y0+i*0.05*PXM; g+=ln(rxx,yy,rxx+(i%2?5:9),yy,'var(--ink)',1); if(i%2===0) g+=txt(rxx+16,yy+4,(i*0.05).toFixed(2)+(i===8?' m':''),{fs:11,c:'var(--ink-soft)'}); }
+    o=o||{}; var g='', L=liq(), x=CX, rx=30, ry=6, i, col=o.col||L.col, top=Y0-20, yy;
+    // the bench, and the cylinder's foot standing on it
+    g+=box(6,Y1+13,TALL?250:262,9,10,-7,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'});
+    g+=ell(x+6,Y1+11,52,6,'#000',' opacity=".12"')+cyl(x,Y1+5,Y1+9,44,6,'var(--glass)',{top:'var(--glass-in)',topx:' stroke="var(--glass)" stroke-width="1.2"',shade:0.12});
+    // the wooden rule standing beside the cylinder, read from the surface downwards: a mark every centimetre
+    if(!o.norule){ var rxx=x+rx+12;
+      g+=box(rxx,Y0-12,15,Y1-Y0+21,4,-3,'var(--rule-f)',{top:'var(--rule-t)'});
+      for(i=0;i<=40;i++){ yy=Y0+i*0.01*PXM; g+=ln(rxx,yy,rxx+(i%10===0?10:i%5===0?7:4),yy,'var(--rule-ink)',i%10?0.8:1.3); if(i%10===0) g+=txt(rxx+24,yy+4.5,(i/100).toFixed(2)+(i===40?' m':''),{fs:12,c:'var(--ink)'}); } }
+    // the back half of each rubber band, seen through the glass
+    if(!o.nobands) BANDS.forEach(function(d){ var yb=Y0+d*PXM; g+='<path d="M'+f1(x-rx-1)+','+f1(yb)+' A'+(rx+1)+','+ry+' 0 0 1 '+f1(x+rx+1)+','+f1(yb)+'" fill="none" stroke="var(--bad)" stroke-width="2" opacity=".4"/>'; });
+    // the glass and the liquid in it
+    g+=rect(x-rx,top,2*rx,Y1-top,'var(--glass-in)',' opacity=".5"');
+    g+='<path d="M'+f1(x-rx+2)+','+f1(Y0)+' L'+f1(x-rx+2)+','+f1(Y1-2)+' A'+(rx-2)+','+ry+' 0 0 0 '+f1(x+rx-2)+','+f1(Y1-2)+' L'+f1(x+rx-2)+','+f1(Y0)+' z" fill="'+col+'"/>';
+    g+=rect(x+rx*0.42,Y0,rx*0.58-2,Y1-Y0-3,'#000',' opacity=".07"');
+    g+=ell(x,Y0,rx-2,ry-1,'var(--panel)')+ell(x,Y0,rx-2,ry-1,col,' stroke="var(--glass)" stroke-width="1"')+ell(x,Y0,rx-2,ry-1,'#fff',' opacity=".28"');
     // the ball or bead
     if(s!=null){ var by=Y0+Math.max(0,Math.min(DEPTH,s))*PXM, br=o.br||(2.6+(+rIn.value-1.5)*1.6);
-      g+='<circle cx="'+f1(x)+'" cy="'+f1(by)+'" r="'+f1(br)+'" fill="'+(o.bead?'var(--accent)':'var(--steel)')+'" stroke="'+(o.bead?'var(--topic)':'var(--steel-sh)')+'" stroke-width="1"/><circle cx="'+f1(x-br*0.3)+'" cy="'+f1(by-br*0.3)+'" r="'+f1(br*0.3)+'" fill="#fff" opacity=".65"/>'; }
-    // the glass, then the rubber bands round it
-    g+=ln(x-rx,Y0-22,x-rx,Y1,'var(--ink-faint)',1.6)+ln(x+rx,Y0-22,x+rx,Y1,'var(--ink-faint)',1.6)+'<path d="M'+f1(x-rx)+','+f1(Y1)+' A'+rx+',5 0 0 0 '+f1(x+rx)+','+f1(Y1)+'" fill="none" stroke="var(--ink-faint)" stroke-width="1.6"/>';
-    g+='<ellipse cx="'+f1(x)+'" cy="'+f1(Y0-22)+'" rx="'+rx+'" ry="5" fill="none" stroke="var(--ink-faint)" stroke-width="1.6"/>'+ln(x-rx+6,Y0-12,x-rx+6,Y1-8,'#fff',2.2,' opacity=".35" stroke-linecap="round"');
-    if(!o.nobands) BANDS.forEach(function(d,i){ var yb=Y0+d*PXM;
-      g+='<path d="M'+f1(x-rx-1)+','+f1(yb)+' A'+(rx+1)+',5.5 0 0 0 '+f1(x+rx+1)+','+f1(yb)+'" fill="none" stroke="var(--bad)" stroke-width="2.6"/>'+txt(x-rx-8,yb+4.5,BNAME[i],{a:'end',fs:13,w:700,c:'var(--bad)'}); });
-    g+=txt(x+2,Y0-32,o.cap||(L.name==='the mystery liquid'?'mystery liquid':L.name)+(o.cap?'':', '+temp()+' °C'),{a:'middle',fs:12,c:'var(--ink)'});
+      g+='<circle cx="'+f1(x)+'" cy="'+f1(by)+'" r="'+f1(br)+'" fill="url(#'+(o.bead?'vs-gb':'vs-gs')+')" stroke="'+(o.bead?'var(--topic)':'var(--steel-sh)')+'" stroke-width="0.9"/>'; }
+    // the front of the glass: its sides, base and lip, with a streak of light
+    g+=ln(x-rx,top,x-rx,Y1+3,'var(--glass)',2)+ln(x+rx,top,x+rx,Y1+3,'var(--glass)',2)+'<path d="M'+f1(x-rx)+','+f1(Y1+3)+' A'+rx+','+ry+' 0 0 0 '+f1(x+rx)+','+f1(Y1+3)+'" fill="none" stroke="var(--glass)" stroke-width="2"/>';
+    g+='<ellipse cx="'+f1(x)+'" cy="'+f1(top)+'" rx="'+(rx+1.5)+'" ry="'+ry+'" fill="none" stroke="var(--glass)" stroke-width="2.4"/>';
+    g+=ln(x-rx+7,top+14,x-rx+7,Y1-10,'#fff',3.2,' opacity=".5" stroke-linecap="round"')+ln(x+rx-6,top+14,x+rx-6,Y1-10,'#fff',1.2,' opacity=".3" stroke-linecap="round"');
+    // the front half of each rubber band, and its letter
+    if(!o.nobands) BANDS.forEach(function(d,i){ var yb=Y0+d*PXM, arc=' A'+(rx+1.5)+','+(ry+0.5)+' 0 0 0 ';
+      g+='<path d="M'+f1(x-rx-1.5)+','+f1(yb)+arc+f1(x+rx+1.5)+','+f1(yb)+'" fill="none" stroke="var(--bad)" stroke-width="3.6" stroke-linecap="round"/>'+
+        '<path d="M'+f1(x-rx+4)+','+f1(yb+2.6)+arc+f1(x+rx-4)+','+f1(yb+2.6)+'" fill="none" stroke="#fff" stroke-width="0.9" opacity=".45"/>'+txt(x-rx-9,yb+5,BNAME[i],{a:'end',fs:14,w:700,c:'var(--bad)'}); });
+    g+=txt(x+2,13,o.cap||(L.name==='the mystery liquid'?'mystery liquid':L.name)+(o.cap?'':', '+temp()+' °C'),{a:'middle',fs:12,c:'var(--ink)'});
     return g;
   }
   // ---- the free-body diagram: a large sphere with its forces, drawn to scale. f = {W, U, F} as fractions of the largest arrow; F < 0 acts downwards
   function fbd(f, o){
-    o=o||{}; var g='', x=FX, y=FY, R=20, K=78, col={W:'var(--ink)', U:'var(--good)', F:'var(--accent)'};
-    g+=txt(x,22,'Free-body diagram',{a:'middle',fs:12})+'<circle cx="'+x+'" cy="'+y+'" r="'+R+'" fill="'+(o.bead?'var(--accent-soft)':'var(--steel-hi)')+'" stroke="'+(o.bead?'var(--topic)':'var(--steel-sh)')+'" stroke-width="1.6"/>';
-    function arr(k, x0, len, lab, side){ if(Math.abs(len)<0.5){ return k==='F' ? txt(x0+(side>0?10:-10), y-R-8, lab, {a:side>0?'start':'end',fs:12,c:col[k],w:600}) : ''; }
-      var up=len>0, ya=up?y-R:y+R, yb=ya-len; return arrow(x0,ya,x0,yb,col[k],3.4)+txt(x0+(side>0?9:-9), up?Math.min(yb+12,ya-6):Math.max(yb-4,ya+14), lab, {a:side>0?'start':'end',fs:12,c:col[k],w:600}); }
+    o=o||{}; var g='', x=FX, y=FY, R=22, K=78, col={W:'var(--ink)', U:'var(--good)', F:'var(--accent)'};
+    g+=txt(x,22,'Free-body diagram of the '+(o.bead?'bead':'ball'),{a:'middle',fs:13,c:'var(--ink)'})+'<circle cx="'+x+'" cy="'+y+'" r="'+R+'" fill="url(#'+(o.bead?'vs-gb':'vs-gs')+')" stroke="'+(o.bead?'var(--topic)':'var(--steel-sh)')+'" stroke-width="1.6"/>';
+    function arr(k, x0, len, lab, side){ if(Math.abs(len)<0.5){ return k==='F' ? txt(x0+(side>0?10:-10), y-R-8, lab, {a:side>0?'start':'end',fs:13,c:col[k],w:600}) : ''; }
+      var up=len>0, ya=up?y-R:y+R, yb=ya-len; return arrow(x0,ya,x0,yb,col[k],4)+txt(x0+(side>0?10:-10), up?Math.min(yb+13,ya-6):Math.max(yb-4,ya+15), lab, {a:side>0?'start':'end',fs:13,c:col[k],w:600}); }
     var fdown=f.F<0;
     g+=arr('W', fdown?x-9:x, -K*f.W, o.lab ? o.lab.W : sv('W'), fdown?-1:1);
     g+=arr('U', fdown?x:x-10, K*f.U, o.lab ? o.lab.U : sv('U'), -1);
@@ -871,7 +883,7 @@ function expKey(x, y, upLabel, downLabel){
     var tm=tMaxMs(p), vm=vMaxCm(p.vt), a={x0:0,x1:tm,xs:tm/5,dpx:0,y0:0,y1:vm,ys:vm/5,dpy:(vm/5)%1?1:0,xl:'time since release (ms)',yl:'velocity (cm/s)'}, g=axes(G,a);
     var tms=Math.min(t*1000,tm), fn=function(u){ return vAt(p,u/1000)*100; };
     if(ph>0 || t>0){ g+=curve(G,a,fn,0,tms,'var(--topic)',false,120)+pdot(G,a,tms,fn(tms)); }
-    if(ph>=2 || t*1000>=tm-1e-6){ var yv=gy(G,a,p.vt*100); g+=ln(G.x,yv,G.x+G.w,yv,'var(--accent)',1.4,' stroke-dasharray="5 4"')+txt(G.x+G.w-4,yv-6,'terminal velocity',{a:'end',fs:11.5,c:'var(--accent)'}); }
+    if(ph>=2 || t*1000>=tm-1e-6){ var yv=gy(G,a,p.vt*100); g+=ln(G.x,yv,G.x+G.w,yv,'var(--accent)',1.4,' stroke-dasharray="5 4"')+txt(G.x+G.w-4,yv-6,'terminal velocity',{a:'end',fs:12.5,c:'var(--accent)',halo:1}); }
     return g;
   }
   function drawExplore(){
@@ -894,17 +906,17 @@ function expKey(x, y, upLabel, downLabel){
   function expGraph(){
     var top=Math.max(par(3.5).vt*100, X.rd.reduce(function(m,q){ return Math.max(m,q.v); },0)), vm=vMaxCm(top/100);
     var a={x0:0,x1:14,xs:2,dpx:0,y0:0,y1:vm,ys:vm/5,dpy:(vm/5)%1?1:0,xl:'r² (mm²)',yl:'terminal velocity v (cm/s)'}, g=axes(G,a), f=fit();
-    if(!X.rd.length) g+=txt(G.x+G.w/2,G.y+G.h/2,'your readings appear here',{a:'middle',fs:11.5,c:'var(--ink-faint)'});
+    if(!X.rd.length) g+=txt(G.x+G.w/2,G.y+G.h/2,'your readings appear here',{a:'middle',fs:12.5,c:'var(--ink-soft)'});
     X.rd.forEach(function(q){ if(inBox(a,q.r*q.r,q.v)) g+=expCross(+f1(gx(G,a,q.r*q.r)), +f1(gy(G,a,q.v)), 4.5); });
-    if(f){ g+=curve(G,a,function(u){ return f.m*u+f.c; },0,14,'var(--accent)',true,40)+txt(G.x+G.w-4,G.y+12,'line of best fit',{a:'end',fs:11.5,c:'var(--accent)'}); }
+    if(f){ g+=curve(G,a,function(u){ return f.m*u+f.c; },0,14,'var(--accent)',true,40)+txt(G.x+G.w-4,G.y+12,'line of best fit',{a:'end',fs:12.5,c:'var(--accent)',halo:1}); }
     return g;
   }
   function drawExp(){
     var p=par(), s=X.falling||X.done ? sAt(p,t) : 0, g='';
-    g+=cylinder(s)+txt(FX,22,'Stopwatch',{a:'middle',fs:12})+stopwatch(FX-58,40,(X.sw===0 || (X.done && X.sw!==3) ? '0.00' : ((X.sw===3?X.tC:t)-X.tA).toFixed(2))+' s',1.5);
+    g+=cylinder(s)+txt(FX,22,'Stopwatch',{a:'middle',fs:13,c:'var(--ink)'})+stopwatch(FX-58,40,(X.sw===0 || (X.done && X.sw!==3) ? '0.00' : ((X.sw===3?X.tC:t)-X.tA).toFixed(2))+' s',1.5);
     var rows=[['A to B', X.sw>=2 ? (X.tB-X.tA).toFixed(2)+' s' : '–'], ['B to C', X.sw>=3 ? (X.tC-X.tB).toFixed(2)+' s' : '–'], ['A to C', X.sw>=3 ? (X.tC-X.tA).toFixed(2)+' s' : '–']];
-    rows.forEach(function(r,i){ g+=txt(FX-58,130+i*19,r[0],{fs:12,c:'var(--ink-soft)'})+txt(FX+58,130+i*19,r[1],{a:'end',fs:12.5,w:600,c:'var(--ink)'}); });
-    wrapLines('Press the stopwatch button as the ball passes each band. A to C is 0.200 m.',24).forEach(function(s2,i){ g+=txt(FX-58,206+i*15,s2,{fs:11.5,c:'var(--ink-soft)'}); });
+    rows.forEach(function(r,i){ g+=txt(FX-58,132+i*20,r[0],{fs:13,c:'var(--ink-soft)'})+txt(FX+58,132+i*20,r[1],{a:'end',fs:13.5,w:600,c:'var(--ink)'}); });
+    wrapLines('Press the stopwatch button as the ball passes each band. A to C is 0.200 m.',24).forEach(function(s2,i){ g+=txt(FX-58,212+i*16,s2,{fs:12,c:'var(--ink-soft)'}); });
     g+=expGraph();
     live.innerHTML=g; if(picksHtml!==''){ picksG.innerHTML=''; picksHtml=''; }
   }
@@ -918,16 +930,16 @@ function expKey(x, y, upLabel, downLabel){
     var c=qc(), A=ansOf(c), ask=Q.phase==='ask', dn=Q.phase==='done', g='', pk='', x0=FX, colx=[x0-60,x0,x0+60];
     // the object in its liquid: it moves once Go is pressed
     var s = c.up ? (c.steady ? 0.36-0.30*Q.u : 0.385-0.33*Q.u*Q.u) : (c.steady ? 0.05+0.30*Q.u : 0.012+0.33*Q.u*Q.u);
-    g+=cylinder(s, {bead:c.obj==='bead', br:5.5, nobands:true, cap:c.obj==='bead'?'oil':'glycerol', col:c.obj==='bead'?LIQ.cas.col:LIQ.gly.col});
-    if(Q.phase!=='ask'){ var yb=Y0+s*PXM; g+=arrow(CX-44,yb+(c.up?10:-10),CX-44,yb+(c.up?-12:12),'var(--ink-soft)',2.4)+txt(CX-50,yb+(c.up?-16:26),c.steady?'steady':'speeding up',{a:'middle',fs:11,c:'var(--ink-soft)'}); }
+    g+=cylinder(s, {bead:c.obj==='bead', br:6, nobands:true, norule:true, cap:c.obj==='bead'?'oil':'glycerol', col:c.obj==='bead'?LIQ.cas.col:LIQ.gly.col});
+    if(Q.phase!=='ask'){ var yb=Y0+s*PXM; g+=arrow(CX+46,yb+(c.up?11:-11),CX+46,yb+(c.up?-13:13),'var(--ink-soft)',2.6)+txt(CX+56,yb+4.5,c.steady?'steady':'speeding up',{fs:12,c:'var(--ink-soft)'}); }
     if(dn){
       // the true diagram, to scale, on the sphere
       var f = c.up ? {W:0.55, U:1, F:c.steady?-0.45:-0.15} : {W:1, U:0.16, F:c.steady?0.84:0.3};
       g+=fbd(f, {bead:c.obj==='bead'});
     } else {
-      g+=txt(x0,22,'Click each force’s arrow',{a:'middle',fs:12});
-      g+='<circle cx="'+x0+'" cy="'+FY+'" r="16" fill="'+(c.obj==='bead'?'var(--accent-soft)':'var(--steel-hi)')+'" stroke="'+(c.obj==='bead'?'var(--topic)':'var(--steel-sh)')+'" stroke-width="1.6"/>';
-      COLS.forEach(function(k,i){ g+=txt(colx[i],48,k==='W'?'weight':k==='U'?(ib()?'buoyancy':'upthrust'):'drag',{a:'middle',fs:11.5,c:'var(--ink-soft)'})+txt(colx[i],64,sv(k),{a:'middle',fs:13,w:700,c:'var(--ink)'}); });
+      g+=txt(x0,22,'Click each force’s arrow',{a:'middle',fs:13,c:'var(--ink)'});
+      g+='<circle cx="'+x0+'" cy="'+FY+'" r="18" fill="url(#'+(c.obj==='bead'?'vs-gb':'vs-gs')+')" stroke="'+(c.obj==='bead'?'var(--topic)':'var(--steel-sh)')+'" stroke-width="1.6"/>';
+      COLS.forEach(function(k,i){ g+=txt(colx[i],48,k==='W'?'weight':k==='U'?(ib()?'buoyancy':'upthrust'):'drag',{a:'middle',fs:12,c:'var(--ink-soft)'})+txt(colx[i],64,sv(k),{a:'middle',fs:14,w:700,c:'var(--ink)'}); });
     }
     // the picks: for each force an arrow up and an arrow down; then the resultant
     {
@@ -938,10 +950,10 @@ function expKey(x, y, upLabel, downLabel){
           function(col){ return arrow(x,ya,x,yb,col,sel?3.4:2.6,sel?'':' opacity=".75"'); },
           function(col,on){ return '<rect class="ring" x="'+(x-23)+'" y="'+(Math.min(ya,yb)-3)+'" width="46" height="50" rx="8" fill="var(--panel)" stroke="'+col+'" stroke-width="'+(on?2:1.2)+'" stroke-dasharray="'+(on?'none':'3 3')+'"/>'; }); }); });
       var ry=TALL?272:268, opts=[['up','↑ up'],['zero','0 zero'],['down','↓ down']];
-      g+=txt(x0,ry-12,'Resultant force on it',{a:'middle',fs:12,c:'var(--ink)'});
+      g+=txt(x0,ry-12,'Resultant force on it',{a:'middle',fs:13,c:'var(--ink)'});
       opts.forEach(function(op,i){ var x=x0-70+i*70, sel=Q.pick.R===op[0], st=dn ? (A.R===op[0] ? 'good' : (sel?'bad':'')) : '';
         pk+=pickG('R:'+op[0], 'The resultant force is '+(op[0]==='zero'?'zero':op[0]+'wards'), sel, st,
-          function(col){ return txt(x,ry+17,op[1],{a:'middle',fs:12.5,w:600,c:(sel||st)?col:'var(--ink)'}); },
+          function(col){ return txt(x,ry+17.5,op[1],{a:'middle',fs:13,w:600,c:(sel||st)?col:'var(--ink)'}); },
           function(col,on){ return '<rect class="ring" x="'+(x-32)+'" y="'+(ry-3)+'" width="64" height="32" rx="8" fill="var(--panel)" stroke="'+col+'" stroke-width="'+(on?2.2:1.2)+'" stroke-dasharray="'+(on?'none':'3 3')+'"/>'; }); });
     }
     // the question, and afterwards the verdict, where the graph is in Explore
