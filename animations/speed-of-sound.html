@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Speed of Sound in Air Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Measure the speed of sound in air three ways: a flash and bang across a field timed with a stopwatch, echoes from a wall, and two microphones with an oscilloscope. Experiment mode: take three timings at each distance and plot distance against time.">
+<meta name="description" content="Interactive physics animation. Measure the speed of sound in air three ways: a flash and bang across a field timed with a stopwatch, echoes from a wall, and two microphones with an oscilloscope. Experiment mode: take three timings at each distance and plot distance against time. A Questions tab deals exam-style measurements to work out the speed from, and asks where to stand for the most accurate result.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -185,6 +185,16 @@
   .meas-off{display:none !important;}
   .embed .side>#ss-mode{align-self:flex-start;}
   #ss-svg sub{font-size:.8em;}
+  /* Questions (?show=predict) */
+  #ss-svg .pick{cursor:pointer;} #ss-svg .pick:focus{outline:none;} #ss-svg .pick .ring{fill:none;stroke:transparent;} #ss-svg .pick:focus-visible .ring{stroke:var(--accent);}
+  #ss-svg .pick .hit{fill:transparent;} #ss-svg .pick.locked{cursor:default;}
+  .qbox{display:flex;flex-direction:column;gap:10px;}
+  #ss-kind{display:flex;flex-wrap:wrap;} #ss-kind>button{flex:0 1 auto;padding-inline:10px;}
+  .ans{display:flex;align-items:center;gap:8px;font:600 15px var(--font-mono);color:var(--ink);flex-wrap:wrap;}
+  .ans input{font:600 16px var(--font-mono);color:var(--ink);background:var(--panel);border:2px solid var(--topic);border-radius:8px;padding:8px 10px;min-height:44px;width:7.5em;}
+  .ans input:disabled{opacity:.7;border-color:var(--panel-border);}
+  .ans.ok input{border-color:var(--good);background:var(--good-soft);opacity:1;}
+  .ans.no input{border-color:var(--bad);background:var(--bad-soft);opacity:1;}
   .rtable th sub{font-size:.85em;}
 
 </style>
@@ -315,17 +325,26 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="ss-svg" viewBox="0 0 860 350" role="img" aria-label="Speed of sound"></svg>
+      <svg class="view" id="ss-svg" viewBox="0 0 860 350" role="img" aria-label="Speed of sound"><g id="ss-main"></g><g id="ss-picks"></g></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="ss-play" type="button">&#9654; Play</button>
           <button class="btn" id="ss-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="ss-slow" type="button" aria-pressed="false">Slow motion</button>
           <button class="btn" id="ss-exp" type="button" aria-pressed="false" title="Take your own timings, three at each distance, and plot them">Experiment</button>
+          <button class="btn btn-primary" id="ss-go" type="button" hidden>&#9654; Go</button>
+          <button class="btn" id="ss-new" type="button" hidden>New question</button>
+          <button class="btn to-q" type="button" data-mode="ss-tab" hidden>Try the questions &rarr;</button>
         </div>
       </div>
     </div>
     <div class="side">
+      <div class="seg tabs mode" id="ss-tab" role="group" aria-label="Explore or questions"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
+      <div class="qbox" id="ss-q" hidden>
+        <div><span class="lab" id="ss-klab">Questions on</span>
+        <div class="seg" id="ss-kind" role="group" aria-labelledby="ss-klab"><button type="button" data-v="mix" aria-pressed="true">Mixed</button><button type="button" data-v="direct" aria-pressed="false">Direct</button><button type="button" data-v="echo" aria-pressed="false">Echo</button><button type="button" data-v="mics" aria-pressed="false">Two microphones</button><button type="button" data-v="stand" aria-pressed="false">Where to stand?</button></div></div>
+        <label class="ans" id="ss-ans-row"><span>speed =</span><input type="text" id="ss-ans" inputmode="decimal" autocomplete="off" aria-label="Your answer: the speed of sound"><span>m/s</span></label>
+      </div>
       <div class="cgrid" id="ss-nrow" hidden>
         <span class="rowlab">Time</span>
         <div class="seg" id="ss-n"><button type="button" data-v="1" aria-pressed="false">1 echo</button><button type="button" data-v="20" aria-pressed="true">20 echoes</button></div>
@@ -645,7 +664,7 @@ function expKey(x, y, upLabel, downLabel){
     var m=(n*sxy-sx*sy)/d; return {m:m, c:(sy-m*sx)/n};
   }
 
-  var svg=$('#ss-svg'), playBtn=$('#ss-play'), slowBtn=$('#ss-slow'), expBtn=$('#ss-exp');
+  var svg=$('#ss-svg'), gMain=$('#ss-main'), gPicks=$('#ss-picks'), playBtn=$('#ss-play'), slowBtn=$('#ss-slow'), expBtn=$('#ss-exp');
   var modeSeg=segGroup($('#ss-mode'), function(){ setMode(); });
   var nSeg=segGroup($('#ss-n'), function(){ reset(); });
   var showQ=location.search.match(/[?&]show=(direct|echo|mics)\b/);
@@ -666,6 +685,9 @@ function expKey(x, y, upLabel, downLabel){
   }
   // in a frame the heading is hidden, so the Method switch moves to the top of the right-hand column
   if(EMBED && !$('#ss-mode').hidden) $('.side').insertBefore($('#ss-mode'), $('.side').firstChild);
+  $('.side').insertBefore($('#ss-tab'), $('.side').firstChild);   // Explore | Questions is the first thing in the right-hand column
+  var QM=false, Q=null;   // Questions mode (see "Questions" below)
+  function VS(){ return run && run.v ? run.v : V; }   // the speed of sound in this run (a question deals its own)
   function mode(){ return modeSeg.value(); }
   function exp(){ return pressed(expBtn); }
   function slowOn(){ return pressed(slowBtn); }
@@ -699,7 +721,7 @@ function expKey(x, y, upLabel, downLabel){
   var G, SW=580, FS=1, narrowQ=window.matchMedia('(max-width:560px)');
   function layout(){
     var tall=narrowQ.matches; FS=tall?1.4:1;
-    if(tall){ G={x:76, y:414, w:440, h:190}; svg.setAttribute('viewBox','0 0 580 '+(MEAS ? (mode()==='mics' ? 350 : 566) : 668)); }
+    if(tall){ G={x:76, y:414, w:440, h:190}; svg.setAttribute('viewBox','0 0 580 '+((MEAS||QM) ? (mode()==='mics' ? (QM ? 376 : 350) : (QM && Q && Q.kind==='stand') ? 380 : 566) : 668)); }
     else { G={x:662, y:40, w:180, h:222}; svg.setAttribute('viewBox','0 0 860 350'); }
   }
   if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ layout(); draw(); });
@@ -727,7 +749,7 @@ function expKey(x, y, upLabel, downLabel){
   var tA=(MA-SRC)/PXm/V;               // time for the sound to reach microphone A (s)
   // the oscilloscope's screen: beside the graph, or right across the picture in measure mode so that it can be read
   function scope(){
-    if(MEAS && mode()==='mics') return narrowQ.matches ? {x:62, y:190, w:490, h:112} : {x:96, y:190, w:700, h:112};
+    if((MEAS||QM) && mode()==='mics') return narrowQ.matches ? {x:62, y:190, w:490, h:112} : {x:96, y:190, w:700, h:112};
     return {x:150, y:190, w:300, h:112};
   }
 
@@ -775,6 +797,7 @@ function expKey(x, y, upLabel, downLabel){
   function loop(){ stop(); last=performance.now(); raf=requestAnimationFrame(frame); }
   function finish(){
     run.over=true;
+    if(run.kind==='q'){ run.still=true; if(run.again) draw(); else qMark(); return; }   // the picture goes back to the question's own
     if(run.kind==='exp'){
       var src=list(), k=dkey(d());
       if(!MEAS){ if(!src[k]) src[k]=[]; if(src[k].length<3){ src[k].push(run.reading); justAdded=+k; } }
@@ -850,7 +873,7 @@ function expKey(x, y, upLabel, downLabel){
       T((x1+x2)/2, y-6, label, {a:'middle', fs:12.5, c:'var(--topic)', w:600, halo:1});
   }
   function rowY(i){ return GY+13+[0,20,46,64][i]*FS; }   // under the ground: the tape, its numbers, the distance arrow, the names
-  function dragHint(x, y){ return (run && !run.over) ? '' : T(x, y, '← drag →', {a:'middle', fs:11, c:'var(--accent)'}); }
+  function dragHint(x, y){ return (QM || (run && !run.over)) ? '' : T(x, y, '← drag →', {a:'middle', fs:11, c:'var(--accent)'}); }
   // a small mark on the tape under whoever has been moved, so that the distance can be read
   function marker(x, y){ return pg([[x,y-1],[x-4.5,y-9],[x+4.5,y-9]],'var(--topic)'); }
   // the stopwatch above the person timing: the solid kit's, kept on the picture
@@ -864,6 +887,7 @@ function expKey(x, y, upLabel, downLabel){
     g+=T(x+w/2, y-22*FS, 'The stopwatch, close up', {a:'middle', fs:12.5, w:600, c:'var(--ink)'});
     g+=stopwatch(x, y, val, k)+(on ? '<circle cx="'+f1(x+w-20)+'" cy="'+f1(y+16)+'" r="5" fill="var(--topic)"/>' : '');
     if(run && run.kind==='exp') g+=T(x+w/2, y+40*k+22*FS, 'timing '+run.rep, {a:'middle', fs:12, c:'var(--ink-soft)'});
+    else if(run && run.kind==='q' && run.n>1) g+=T(x+w/2, y+40*k+22*FS, 'time for '+run.n+' echoes', {a:'middle', fs:12.5, c:'var(--ink)', w:600});
     return g;
   }
   function swText(t){ return t.toFixed(2)+' s'; }
@@ -871,33 +895,37 @@ function expKey(x, y, upLabel, downLabel){
   // ---- the three scenes
   function sceneDirect(){
     var g='', D=d(), sx=sophieX(), t=run ? run.t : 0, live=run && run.mode==='direct', fy=GY-5, by=fy-92*PK, top=fy-84*PK;
+    var ST=QM && Q && Q.kind==='stand', anim=live && !run.still, showS=!ST || !!Q.pick;
     g+=ground();
     g+=tapeScale(AX, PXd, 400, 100, function(v){ return v+(v===400?' m':''); }, rowY(0));
-    if(MEAS) g+=marker(sx, rowY(0)); else g+=dimArrow(AX, sx, rowY(2), 'd = '+D+' m');
+    if(MEAS) g+=marker(sx, rowY(0)); else if(!ST) g+=dimArrow(AX, sx, rowY(2), 'd = '+D+' m');
+    if(ST) Q.cands.forEach(function(c){ var x=AX+c*PXd, tt=c/VS();   // how long the sound takes to reach each place, once it has got there
+      g+=marker(x, rowY(0));
+      if(Q.marked || (anim && t>=tt)) g+=T(x, rowY(2)+4*FS, tt.toFixed(2)+' s', {a:'middle', fs:12.5, c:'var(--sound)', w:600, halo:1}); });
     // light: arrives almost at once
-    if(live && t>0){
+    if(anim && t>0){
       var fl=Math.max(0, 1-t/0.08);
       g+=ln(AX+8, by, sx-10, fy-70*PK, 'var(--light)', 1.6, ' stroke-dasharray="5 4" opacity="'+(0.35+0.65*fl)+'"');
       if(!MEAS) g+=T(6, top-74*FS, 'light arrives almost at once', {fs:11.5, c:'var(--light-ink)', halo:1});
       if(fl>0) g+='<circle cx="'+AX+'" cy="'+by+'" r="'+(6+12*(1-fl))+'" fill="var(--light)" opacity="'+fl+'"/>';
     }
-    if(live){ var r=V*t*PXd; if(r<SW+40) g+=rings(AX, by, r, 'ss-clip'); }
-    g+=person(AX, fy, {pose:'blocks', together: !live || t<0.05});
+    if(anim){ var r=VS()*t*PXd; if(r<SW+40) g+=rings(AX, by, r, 'ss-clip'); }
+    g+=person(AX, fy, {pose:'blocks', together: !anim || t<0.05});
     g+=T(AX, rowY(3), 'Ali', {a:'middle', fs:12, c:'var(--ink-soft)'});
-    g+=person(sx, fy, {girl:true, face:-1, pose:'watch'});
+    if(showS) g+=person(sx, fy, {girl:true, face:-1, pose:'watch'});
     // Sophie's stopwatch
     var shown=swText(0), on=false, say='';
-    if(live){
+    if(live && !ST){
       var el=Math.max(0, Math.min(t, run.stop)-run.start);
       shown=swText(t<run.start?0:el); on=t>=run.start && t<run.stop;
-      if(t>=run.start && t<run.start+0.25) say='sees it: start';
-      if(t>=run.stop) say='hears it: stop';
+      if(anim && t>=run.start && t<run.start+0.25) say='sees it: start';
+      if(anim && t>=run.stop) say='hears it: stop';
     } else if(MEAS && lastReading!==null) shown=swText(lastReading);
-    if(MEAS) g+=bigWatch(shown, on); else g+=watchBox(sx, top-42, shown, on);
-    if(say && !MEAS) g+=T(sx, top-54*FS, say, {a:'middle', fs:11.5, c: say.charAt(0)==='s' ? 'var(--light-ink)' : 'var(--sound)', halo:1});
-    g+=T(Math.max(AX+52*FS, sx), rowY(3), 'Sophie', {a:'middle', fs:12, c:'var(--ink-soft)'});
+    if(MEAS || (QM && !ST)) g+=bigWatch(shown, on); else if(!QM) g+=watchBox(sx, top-42, shown, on);
+    if(say && !MEAS) g+=T(sx, top-(QM ? 8 : 54*FS), say, {a:'middle', fs:11.5, c: say.charAt(0)==='s' ? 'var(--light-ink)' : 'var(--sound)', halo:1});
+    if(showS) g+=T(Math.max(AX+52*FS, sx), rowY(3), 'Sophie', {a:'middle', fs:12, c:'var(--ink-soft)'});
     g+=dragHint(sx, top-(MEAS ? 8 : 54*FS+(say?16*FS:0)));
-    g+=T(SW-6, 16*FS, 'people not to scale', {a:'end', fs:11, c:'var(--ink-faint)'});
+    if(!(QM && narrowQ.matches)) g+=T(SW-6, 16*FS, 'people not to scale', {a:'end', fs:11, c:'var(--ink-faint)'});
     return g;
   }
   // a brick wall seen from its end: the people's side is on the left; it goes back up and to the right
@@ -908,36 +936,37 @@ function expKey(x, y, upLabel, downLabel){
     return g;
   }
   function sceneEcho(){
-    var g='', D=d(), ax=aliEchoX(), sx=ax-44, t=run ? run.t : 0, live=run && run.mode==='echo', fy=GY-5, cy=fy-56*PK, top=fy-84*PK, timing=MEAS ? false : (exp() || (live && run.kind==='exp'));
+    var g='', D=d(), ax=aliEchoX(), sx=ax-44, t=run ? run.t : 0, live=run && run.mode==='echo', fy=GY-5, cy=fy-56*PK, top=fy-84*PK, timing=(MEAS||QM) ? false : (exp() || (live && run.kind==='exp'));
+    var anim=live && !run.still, ff=anim && run.kind!=='watch' && run.rate>1;
     g+=ground()+wall(WX, GY+11, 172);
     g+=T(WX+31, GY-191, 'wall', {a:'middle', fs:12, c:'var(--ink-soft)'});
     g+=tapeScale(WX-150*PXe, PXe, 150, 50, function(v){ return (150-v)+(v===0?' m':''); }, rowY(0));
     if(MEAS) g+=marker(ax, rowY(0)); else g+=dimArrow(ax, WX, rowY(2), 'd = '+D+' m');
     // claps and their echoes: each pulse goes to the wall and back (the reflected ring is centred on the mirror image)
     var together=false, k=0, label='';
-    if(live){
+    if(anim){
       for(k=0;k<run.claps;k++){
         var t0=k*run.T; if(t<t0) break;
-        var r=V*(t-t0)*PXe;
+        var r=VS()*(t-t0)*PXe;
         if(t-t0<0.05) together=true;
         if(r<(WX-ax)+SW) { g+=rings(ax, cy, r, 'ss-clipw'); if(r>WX-ax) g+=rings(2*WX-ax, cy, r, 'ss-clipw'); }
       }
       var nc=Math.min(run.claps, Math.floor(t/run.T+1e-9)+1);
-      label = run.claps>1 ? 'clap '+nc+(run.kind==='exp' ? ' of '+run.claps : '') : '';
+      label = run.claps>1 ? 'clap '+nc+(run.kind!=='watch' ? ' of '+run.claps : '') : '';
       if(label) g+=T(ax+10, top-(timing ? 52 : 8), label, {fs:12, c:'var(--sound)', halo:1});
-      if(run.kind==='exp' && run.rate>1) g+=T(6, 16*FS, 'fast forward', {fs:12, c:'var(--accent)'});
+      if(ff) g+=T(6, (QM && narrowQ.matches ? 70 : 16)*FS, 'fast forward', {fs:12, c:'var(--accent)'});
     }
     g+=person(sx, fy, {girl:true, face:1, pose:'watch'});
-    g+=person(ax, fy, {pose:'clap', face:1, together: !live || together});
+    g+=person(ax, fy, {pose:'clap', face:1, together: !anim || together});
     g+=T(ax-6, rowY(3), 'Ali', {fs:12, c:'var(--ink-soft)'});
     g+=T(sx+8, rowY(3), 'Sophie', {a:'end', fs:12, c:'var(--ink-soft)'});
     var shown=swText(0), on=false;
-    if(live && run.kind==='exp'){ var el=Math.max(0, Math.min(t, run.stop)-run.start); shown=swText(t<run.start?0:el); on=t>=run.start && t<run.stop; }
+    if(live && run.kind!=='watch'){ var el=Math.max(0, Math.min(t, run.stop)-run.start); shown=swText(t<run.start?0:el); on=t>=run.start && t<run.stop; }
     else if(MEAS && lastReading!==null) shown=swText(lastReading);
-    if(MEAS) g+=bigWatch(shown, on);
+    if(MEAS || QM) g+=bigWatch(shown, on);
     else if(timing) g+=watchBox(sx-4, top-42, shown, on);
     g+=dragHint(ax-22, top-(timing ? 52 : 8));
-    if(!(live && run.kind==='exp' && run.rate>1)) g+=T(6, 16*FS, 'people not to scale', {fs:11, c:'var(--ink-faint)'});
+    if(!ff && !QM) g+=T(6, 16*FS, 'people not to scale', {fs:11, c:'var(--ink-faint)'});
     return g;
   }
   // a microphone on a stand on the bench, pointing at the plate
@@ -962,10 +991,10 @@ function expKey(x, y, upLabel, downLabel){
     g+=txt(MA+1.5*PXm+15, BY+19, 'm', {fs:11, c:'var(--bench-ink)', w:600});
     if(!MEAS) g+=dimArrow(MA, bx, BY-74, 'd = '+sn(D,2)+' m');
     // the hammer hits a steel plate
-    var hit = live && t<0.0004, hx = hit ? SRC-9 : SRC-24;
+    var anim=live && !run.still, hit = anim && t<0.0004, hx = hit ? SRC-9 : SRC-24;
     g+=ell(SRC+2, BY-5, 9, 2.6, '#000', ' opacity=".12"')+box(SRC-5, BY-48, 5, 42, 5, -3, 'var(--steel)', {top:'var(--steel-hi)', side:'var(--steel-sh)'});
     g+=tube(hx-4, BY-22, hx-22, BY-7, 4.2, 'var(--wood-f)', 'var(--wood-t)')+box(hx-8, BY-34, 8, 15, 3, -2, 'var(--steel-sh)', {top:'var(--steel)', side:'#23262c'});
-    if(live){ var r=V*t*PXm; if(r<SW+30) g+=rings(SRC, BY-27, r, 'ss-clipm'); }
+    if(anim){ var r=VS()*t*PXm; if(r<SW+30) g+=rings(SRC, BY-27, r, 'ss-clipm'); }
     g+=mic(MA, 'A')+mic(bx, 'B');
     g+=dragHint(bx, BY-(MEAS?74:92));
     // the oscilloscope: a case with a screen, and the two inputs on top
@@ -1057,13 +1086,15 @@ function expKey(x, y, upLabel, downLabel){
       '<clipPath id="ss-clipw"><rect x="0" y="0" width="'+WX+'" height="'+(GY-16)+'"/></clipPath>'+
       '<clipPath id="ss-clipm"><rect x="0" y="0" width="'+SW+'" height="'+(BY-12)+'"/></clipPath></defs>';
     g+= m==='direct' ? sceneDirect() : m==='echo' ? sceneEcho() : sceneMics();
-    if(!MEAS) g+=drawGraph();
-    if(run && !run.over && (slowOn() || run.rate<1)){
+    if(!MEAS && !QM) g+=drawGraph();
+    if(QM && Q) g+=qText();
+    if(run && !run.over && !run.still && (slowOn() || run.rate<1)){
       var sp = run.rate<1 ? Math.round(1/run.rate)+' × slower' : '';
       if(slowOn()) sp=(sp?sp+', ':'')+'slow motion';
       if(sp && !(m==='echo' && run.rate>1)) g+=T(m==='echo' ? 6 : SW-6, (m==='echo' ? 32 : 32)*FS, sp, {a: m==='echo' ? 'start' : 'end', fs:12, c:'var(--accent)'});
     }
-    svg.innerHTML=g;
+    gMain.innerHTML=g;
+    if(QM) drawPicks(); else if(gPicks.firstChild) gPicks.innerHTML='';
     readings();
   }
 
@@ -1071,6 +1102,7 @@ function expKey(x, y, upLabel, downLabel){
   var lastNote='';
   function S(i, label, val){ $('#ss-l'+i).textContent=label; $('#ss-s'+i).textContent=val; }
   function readings(){
+    if(QM){ qReadings(); return; }
     var m=mode(), D=d(), E=exp(), U=tUnit(), busy=run && !run.over;
     $('#ss-nrow').hidden = !(m==='echo' && E);
     svg.setAttribute('aria-valuenow', D); svg.setAttribute('aria-valuetext', MEAS ? 'position '+(MD[m].indexOf(D)+1)+' of '+MD[m].length : 'd = '+dTxt(D));
@@ -1186,6 +1218,175 @@ function expKey(x, y, upLabel, downLabel){
     }
   }
 
+
+  // ---- Questions (?show=predict; TODO 8h, 14 Nov 2026). The kinds come from the 4PH1 Paper 2 questions in the IGCSE Question Index:
+  //   Direct: the speed from a distance and a stopwatch time (May 2015 1P Q13(b), Jan 2022 2PR Q3, Nov 2005 Q10(d));
+  //   Echo: one echo (Nov 2024 2P Q8(b): 65 m, 0.35 s there and back) or 20 echoes in time with the claps (May 2024 2PR Q7(b)(iv));
+  //   Two microphones: the time between the pulses read off the oscilloscope (Nov 2010 Q16(b)(i), Nov 2020 2PR Q4(a));
+  //   Where to stand? the distance that gives the most accurate speed, because of the reaction time (Jan 2022 2PR Q3(b)(iii), May 2024 2PR Q7(a)).
+  // A question deals its own measurements (and its own speed of sound, so the picture agrees with them); the picture never changes, and Go runs it.
+  var qKind='mix', qLast='', qSaved=null, ansIn=$('#ss-ans');
+  function rpick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function rstep(lo, hi, st){ var n=Math.round((hi-lo)/st); return +(lo+st*Math.floor(Math.random()*(n+1))).toFixed(2); }
+  function vTxt(v){ return String(Math.round(v)); }
+  function genQ(k){
+    var v=rpick([320,325,330,335,340,345,350]), q={kind:k}, i;
+    for(i=0;i<300;i++){
+      if(k==='direct'){ q.d=rstep(100,400,10); q.t=+(q.d/v).toFixed(2); q.ans=q.d/q.t; }
+      else if(k==='echo'){ q.n=Math.random()<0.5 ? 1 : 20; q.d=q.n>1 ? rstep(50,130,10) : rstep(40,130,5); q.t=+(2*q.d*q.n/v).toFixed(2); q.ans=2*q.d*q.n/q.t; }
+      else if(k==='mics'){ q.d=rstep(0.3,1.5,0.05); q.div=rstep(1,8.8,0.2); q.dt=q.div*TB; q.ans=q.d/(q.dt/1000); if(q.ans<315 || q.ans>365) continue;
+        q.lo=q.d/((q.div+0.1)*TB/1000); q.hi=q.d/((q.div-0.1)*TB/1000); }
+      else { q.cands=rpick([[50,150,350],[60,200,400],[40,120,300],[50,250,400],[30,100,350]]); q.ans='C'; q.v=v; }
+      q.sig=k+q.d+'/'+q.t+'/'+q.div+'/'+(q.cands||'');
+      if(q.sig!==qLast) break;
+    }
+    if(k!=='stand') q.v = k==='mics' ? q.ans : q.ans;   // the run uses the question's own speed
+    return q;
+  }
+  // the run, as a still picture before Go (finished: the stopwatch shows the reading, the traces are drawn) or played on Go
+  function qRun(still){
+    var q=Q, o={kind:'q', mode:q.kind==='stand' ? 'direct' : q.kind, t:0, v:q.v, still:still};
+    if(q.kind==='direct'){ o.tSound=q.d/q.v; o.start=0; o.stop=q.t; o.tEnd=q.t+0.35; o.rate=0.25; o.reading=q.t; }
+    else if(q.kind==='echo'){ o.T=2*q.d/q.v; o.n=q.n; o.claps=q.n>1 ? q.n+1 : 1; o.start=0; o.stop=q.t; o.tEnd=q.t+0.25; o.rate=q.n>1 ? Math.max(1, o.tEnd/3.5) : 0.5; o.reading=q.t; }
+    else if(q.kind==='mics'){ o.tB=tA+q.dt/1000; o.shown=q.dt; o.tEnd=Math.min(tA+(10*TB-0.5)/1000, o.tB+0.0012); o.rate=1/1000; }
+    else { o.start=0; o.stop=0; o.tEnd=q.cands[2]/q.v+0.3; o.rate=0.3; }
+    if(still){ o.t=o.tEnd; o.over=true; }
+    return o;
+  }
+  function newQ(){
+    stop();
+    var k=qKind==='mix' ? rpick(['direct','echo','echo','mics','stand']) : qKind;
+    Q=genQ(k); qLast=Q.sig; Q.pick=null; Q.locked=false; Q.marked=false;
+    modeSeg.pick(k==='stand' ? 'direct' : k);
+    if(k!=='stand') dv[mode()]=Q.d;
+    if(k==='echo') nSeg.pick(String(Q.n));
+    layout();
+    run=qRun(true);
+    ansIn.value=''; ansIn.disabled=false; $('#ss-ans-row').classList.remove('ok','no'); $('#ss-ans-row').hidden = k==='stand';
+    gPicks.innerHTML=''; setAria(); draw();
+  }
+  function qText(){
+    var tall=narrowQ.matches, s=Q.marked ? Q.verdict : (Q.kind==='stand' ? 'Where should Sophie stand: A, B or C?' : 'Find the speed of sound.'), g='';
+    var x=tall ? 8 : 598, y=tall ? (Q.kind==='mics' ? 350 : (Q.kind==='echo' ? 40 : 22)*FS) : 40, lines=wrapLines(s, tall ? 34 : 30);
+    lines.slice(0,3).forEach(function(l,i){ g+=T(x, y+i*17*FS, l, {fs:13.5, w:600, c:Q.marked ? (Q.ok ? 'var(--good)' : 'var(--bad)') : 'var(--ink)', halo:1}); });
+    if(Q.kind==='stand' && Q.marked && !tall){
+      var yy=y+lines.length*17+16;
+      g+=T(x, yy, 'The sound takes:', {fs:12.5, c:'var(--ink-soft)'});
+      Q.cands.forEach(function(c,i){ g+=T(x, yy+18*(i+1), 'ABC'.charAt(i)+', '+c+' m: '+(c/Q.v).toFixed(2)+' s', {fs:12.5, c:'var(--ink)', w:i===2?600:400}); });
+      g+=T(x, yy+18*4+6, 'Reaction time: about 0.2 s', {fs:12.5, c:'var(--ink-soft)'});
+    }
+    return g;
+  }
+  function drawPicks(){
+    var g='';
+    if(Q && Q.kind==='stand'){
+      var fy=GY-5;
+      Q.cands.forEach(function(c,i){ var k='ABC'.charAt(i), x=AX+c*PXd, on=Q.pick===k, top=fy-96*PK;
+        var col = Q.marked ? (k===Q.ans ? 'var(--good)' : on ? 'var(--bad)' : '') : on ? 'var(--accent)' : '';
+        g+='<g class="pick'+(Q.locked?' locked':'')+'" data-pick="'+k+'" tabindex="0" role="button" aria-pressed="'+on+'" aria-label="Place '+k+', '+c+' m from Ali'+(on?', your choice':'')+(Q.marked && k===Q.ans?', the right answer':'')+'">'+
+          '<rect class="hit" x="'+f1(x-24)+'" y="'+f1(top-26*FS)+'" width="48" height="'+f1(fy-top+26*FS+14)+'"/>'+
+          '<rect class="ring" x="'+f1(x-20)+'" y="'+f1(top-24*FS)+'" width="40" height="'+f1(fy-top+24*FS+10)+'" rx="8" stroke-width="2.5"/>'+
+          (on ? '' : '<ellipse cx="'+f1(x)+'" cy="'+f1(fy)+'" rx="15" ry="4" fill="none" stroke="var(--ink-soft)" stroke-width="1.6" stroke-dasharray="4 3"/>')+
+          (col ? '<rect x="'+f1(x-20)+'" y="'+f1(top-24*FS)+'" width="40" height="'+f1(fy-top+24*FS+10)+'" rx="8" fill="none" stroke="'+col+'" stroke-width="3"/>' : '')+
+          T(x, top-8*FS, k+(Q.marked && (k===Q.ans || on) ? (k===Q.ans ? ' ✓' : ' ✗') : ''), {a:'middle', fs:15, w:700, c:col||'var(--ink)', halo:1})+'</g>';
+      });
+    }
+    setKeepFocus(gPicks, g);
+  }
+  function readAns(){
+    var t=ansIn.value.trim().replace(/[\s  ]/g,'').replace(/[−–]/g,'-');
+    if(/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t=t.replace(/,/g,''); else t=t.replace(',','.');
+    return t==='' || isNaN(+t) ? null : +t;
+  }
+  function near(a, b){ return Math.abs(a-b)<=Math.max(0.05, Math.abs(b)*0.02); }
+  function qMark(){
+    var q=Q, v=q.val, A=vTxt(q.ans)+' m/s', why;
+    if(q.kind==='stand'){
+      q.ok=q.pick===q.ans;
+      var tA_=(q.cands[0]/q.v).toFixed(2), tC=(q.cands[2]/q.v).toFixed(2);
+      q.verdict=(q.ok?'✓ ':'✗ ')+'C, the furthest';
+      why=(q.ok ? '✓ Correct: C, the furthest place.' : '✗ The furthest place, C, gives the most accurate value.')+' Sophie’s reaction time is about 0.2 s wherever she stands. At A the sound takes only '+tA_+' s, so her reaction time is a large part of the time she measures; at C it takes '+tC+' s, so the reaction time matters much less.';
+    } else {
+      q.ok = q.kind==='mics' ? (v>=q.lo*0.99 && v<=q.hi*1.01) : near(v, q.ans);
+      q.verdict=(q.ok?'✓ ':'✗ ')+'speed = '+A;
+      if(q.kind==='direct'){
+        why = q.ok ? '✓ Correct: speed = distance ÷ time = '+q.d+' ÷ '+q.t.toFixed(2)+' = '+A+'.' :
+          near(v, q.t/q.d) ? '✗ That is time ÷ distance. Speed = distance ÷ time = '+q.d+' ÷ '+q.t.toFixed(2)+' = '+A+'.' :
+          '✗ Not quite: speed = distance ÷ time = '+q.d+' ÷ '+q.t.toFixed(2)+' = '+A+'.';
+      } else if(q.kind==='echo'){
+        var dist=2*q.d*q.n;
+        var tail = 'speed = '+dist+' ÷ '+q.t.toFixed(2)+' = '+A+'.', base = q.n>1 ? 'In '+q.t.toFixed(2)+' s the sound makes 20 trips to the wall and back: 20 × 2 × '+q.d+' = '+dist+' m, so speed = '+dist+' ÷ '+q.t.toFixed(2)+' = '+A+'.' : 'The sound goes to the wall and back: 2 × '+q.d+' = '+dist+' m, so speed = '+dist+' ÷ '+q.t.toFixed(2)+' = '+A+'.';
+        why = q.ok ? '✓ Correct. '+base :
+          near(v, q.ans/2) ? (q.n>1 ? '✗ Each echo is a trip to the wall and back, so count twice the distance to the wall. '+base : '✗ The sound goes to the wall and back, so it travels twice the distance to the wall: 2 × '+q.d+' = '+dist+' m, and '+tail) :
+          (q.n>1 && (near(v, q.ans/20) || near(v, q.ans/40))) ? '✗ That time is for 20 echoes: divide it by 20 (or count all 20 trips). '+base :
+          '✗ Not quite. '+base;
+      } else {
+        var dts=q.dt/1000, base2='The pulses are '+q.div+' divisions apart, so Δt = '+q.div+' × 0.5 ms = '+sig(q.dt,3)+' ms = '+sig(dts,3)+' s, and speed = '+sn(q.d,2)+' ÷ '+sig(dts,3)+' = '+A+'.';
+        why = q.ok ? '✓ Correct. '+base2 :
+          near(v, q.ans/1000) ? '✗ Change Δt to seconds before you divide. '+base2 :
+          near(v, q.d/q.div) ? '✗ Multiply the divisions by the time base (0.5 ms per division) to get Δt. '+base2 :
+          '✗ Not quite. '+base2;
+      }
+    }
+    q.why=why; q.marked=true;
+    if(q.kind!=='stand') $('#ss-ans-row').classList.add(q.ok ? 'ok' : 'no');
+    draw();
+  }
+  function qWorking(){
+    var q=Q;
+    if(!q.marked) return ['', '', 'The working appears after you press Go.'];
+    if(q.kind==='direct') return ['speed = [[distance|time]]<br>speed = [['+q.d+'|'+q.t.toFixed(2)+']]<br>speed = <b>'+vTxt(q.ans)+' m/s</b>', '', 'Light reaches Sophie almost at once, so the stopwatch time is the time the sound takes.'];
+    if(q.kind==='echo'){ var dist=2*q.d*q.n;
+      return [(q.n>1 ? 'distance = 20 × 2 × '+q.d : 'distance = 2 × '+q.d)+'<br>distance = '+dist+' m<br>speed = [[distance|time]]<br>speed = [['+dist+'|'+q.t.toFixed(2)+']]<br>speed = <b>'+vTxt(q.ans)+' m/s</b>', '',
+        q.n>1 ? 'Timing 20 echoes makes the reaction time at the start and the stop a much smaller part of the time measured.' : 'One echo takes under a second, which is short to time by hand: timing 20 echoes is more accurate.']; }
+    if(q.kind==='mics') return ['Δt = divisions × time base<br>Δt = '+q.div+' × 0.5<br>Δt = '+sig(q.dt,3)+' ms<br>Δt = '+sig(q.dt/1000,3)+' s', 'speed = [[distance|time]]<br>speed = [['+sn(q.d,2)+'|'+sig(q.dt/1000,3)+']]<br>speed = <b>'+vTxt(q.ans)+' m/s</b>', 'No one has to react, so there is no reaction time in this method.'];
+    return ['', '', 'Time the sound over a long distance, so the reaction time is a small part of the time measured.'];
+  }
+  function qReadings(){
+    var q=Q, busy=run && !run.still && !run.over, note;
+    if(!q) return;
+    if(q.marked) note=q.why;
+    else if(busy) note = q.kind==='mics' ? 'The hammer hits the plate; the oscilloscope starts its trace when the sound reaches microphone A.' : q.kind==='stand' ? 'Ali bangs the blocks. Watch how long the sound takes to reach each place.' : q.kind==='echo' ? (q.n>1 ? 'Ali claps in time with the echoes. Sophie times 20 echoes.' : 'Sophie starts the stopwatch at the clap and stops it at the echo.') : 'Sophie starts the stopwatch when she sees the blocks hit, and stops it when she hears the bang.';
+    else if(q.kind==='direct') note='Ali bangs two blocks together <b>'+q.d+' m</b> from Sophie. She starts her stopwatch when she sees the blocks hit and stops it when she hears the bang. The stopwatch reads <b>'+q.t.toFixed(2)+' s</b>. Calculate the speed of sound, then press <b>Go</b>.';
+    else if(q.kind==='echo') note = q.n>1 ? 'Ali stands <b>'+q.d+' m</b> from a wall and claps so that each clap is at the same moment as the echo of the one before. Sophie times <b>20 echoes</b> (from the first clap to the 21st): <b>'+q.t.toFixed(2)+' s</b>. Calculate the speed of sound, then press <b>Go</b>.'
+      : 'Ali stands <b>'+q.d+' m</b> from a large wall and claps. Sophie times from the clap to the echo: <b>'+q.t.toFixed(2)+' s</b>. Calculate the speed of sound, then press <b>Go</b>.';
+    else if(q.kind==='mics') note='Microphones A and B are <b>'+sn(q.d,2)+' m</b> apart. The oscilloscope (time base <b>0.5 ms per division</b>) shows the pulse reaching A, then B. Read the time between the pulses and calculate the speed of sound, then press <b>Go</b>.';
+    else note='Sophie will time the sound of Ali’s blocks with a stopwatch. She can stand at A, B or C. Where should she stand to get the most accurate value for the speed of sound? Click a place, then press <b>Go</b>.';
+    var w=qWorking();
+    $('#ss-eq1').innerHTML=FR(w[0]); $('#ss-eq1').hidden=!w[0]; $('#ss-eq2').innerHTML=FR(w[1]); $('#ss-eq2').hidden=!w[1]; $('#ss-eq3').innerHTML=FR(w[2]); $('#ss-eq3').hidden=!w[2];
+    note=FR(note); if(note!==lastNote){ $('#ss-note').innerHTML=note; lastNote=note; }
+    $('#ss-go').innerHTML = q.marked ? '&#9654; Run again' : '&#9654; Go'; $('#ss-go').disabled=!!busy; $('#ss-new').disabled=!!busy;
+    svg.setAttribute('aria-label', 'Question. '+$('#ss-note').textContent);
+  }
+  function qGo(){
+    var q=Q; if(!q || (run && !run.still && !run.over)) return;
+    if(!q.locked){
+      if(q.kind==='stand'){ if(!q.pick){ $('#ss-note').innerHTML='Click A, B or C first, then press <b>Go</b>.'; lastNote=''; return; } }
+      else { var v=readAns(); if(v===null){ $('#ss-note').innerHTML='Type your answer in the box first, then press <b>Go</b>.'; lastNote=''; ansIn.focus(); return; } q.val=v; ansIn.disabled=true; }
+      q.locked=true; drawPicks();
+    }
+    var again=q.marked; run=qRun(false); run.again=again;   // a second run is not marked again
+    loop(); draw();
+  }
+  function setQM(on){
+    if(on===QM) return;
+    $('#ss-tab').querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', String((b.dataset.v==='predict')===on)); });
+    stop();
+    if(on){
+      if(exp()){ expBtn.setAttribute('aria-pressed','false'); setExp(); }
+      qSaved={m:mode(), dv:{direct:dv.direct, echo:dv.echo, mics:dv.mics}, n:nSeg.value()}; QM=true;
+    } else { QM=false; Q=null; run=null; modeSeg.pick(qSaved.m); dv=qSaved.dv; nSeg.pick(qSaved.n); }
+    ['#ss-play','#ss-reset','#ss-exp','.stats'].forEach(function(sel){ var e=$(sel); if(e) e.hidden=on; });
+    $('#ss-mode').hidden = on || !!showQ; $('#ss-go').hidden=!on; $('#ss-new').hidden=!on; $('#ss-q').hidden=!on;
+    if(on) newQ(); else { layout(); setAria(); reset(); }
+  }
+  $('#ss-tab').addEventListener('click', function(e){ var b=e.target.closest('button'); if(b) setQM(b.dataset.v==='predict'); });
+  segGroup($('#ss-kind'), function(v){ qKind=v; newQ(); });
+  $('#ss-go').addEventListener('click', qGo);
+  $('#ss-new').addEventListener('click', function(){ newQ(); if(Q.kind!=='stand') ansIn.focus(); });
+  ansIn.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); qGo(); } });
+  onPick(svg, function(k){ if(!QM || !Q || Q.kind!=='stand' || Q.locked) return; Q.pick=k; dv.direct=Q.cands['ABC'.indexOf(k)]; drawPicks(); draw(); });
+
   // ---- buttons
   playBtn.addEventListener('click', function(){
     if(exp()){ if(!(run && !run.over)){ justAdded=null; run=newRun('exp'); loop(); draw(); } return; }
@@ -1212,7 +1413,7 @@ function expKey(x, y, upLabel, downLabel){
   function svgPt(e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
   var grab=null;
   svg.addEventListener('pointerdown', function(e){
-    if(run && !run.over) return;
+    if(QM || (run && !run.over)) return;
     var q=svgPt(e), ox=objX(), oy=objY();
     if(Math.abs(q.x-ox)>(mode()==='echo'?46:30) || Math.abs(q.y-oy)>(mode()==='mics'?36:70)) return;
     grab=q.x-ox; svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
@@ -1221,7 +1422,7 @@ function expKey(x, y, upLabel, downLabel){
   function endGrab(){ if(grab===null) return; grab=null; svg.classList.remove('dragging'); draw(); }
   svg.addEventListener('pointerup', endGrab); svg.addEventListener('pointercancel', endGrab);
   svg.addEventListener('keydown', function(e){
-    if(run && !run.over) return;
+    if(QM || (run && !run.over)) return;
     var L=lim(), k=e.key, v=null, D=d();
     if(MEAS){ var md=MD[mode()], pi=md.indexOf(D), far=mode()==='echo' ? -1 : 1;   // the next marked place (for the echo, right is nearer the wall)
       if(k==='ArrowRight'||k==='ArrowUp') pi+=far; else if(k==='ArrowLeft'||k==='ArrowDown') pi-=far; else return;
@@ -1242,6 +1443,8 @@ function expKey(x, y, upLabel, downLabel){
 
   watchEquals($('#ss-eq1')); watchEquals($('#ss-eq2'));
   setAria(); setExp();
+  if(MEAS) $('#ss-tab').classList.add('meas-off');
+  else if(/[?&]show=predict\b/.test(location.search)) setQM(true);
 })();
 </script><script id="choice-kit-js">
 /* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices".
