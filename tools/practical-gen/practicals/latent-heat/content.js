@@ -3,8 +3,10 @@
    melted by the room (Alex's 5.1 deck, slide 59). Vaporisation: water kept boiling on a balance (slides 60–61).
    Values from the deck: Lf = 334 kJ/kg, Lv = 2260 kJ/kg.
    Rebuilt on the CP15 model on 14 Nov 2026 (TODO.md 5z): 8 tabs, no Variables or Results tab, no Predicts.
-   The Do the Experiment tab frames animations/latent-heat.html?show=measure&part=fus, whose fixed readings must match
-   LH_ME, LH_MC and LH_B below (MEAS_ME, MEAS_MC and MEAS_B in the animation; tools/CORE-PRACTICALS.md, "Measure modes"). */
+   The Do the Experiment tab has a Part switch (Fusion | Vaporisation, 15 Nov 2026, TODO.md 5aa, Alex's decision D4): it frames
+   animations/latent-heat.html?show=measure&part=fus or &part=vap, whose fixed readings must match LH_ME, LH_MC and LH_B below
+   (MEAS_ME, MEAS_MC and MEAS_B in the animation; tools/CORE-PRACTICALS.md, "Measure modes"). Each part has its own table, card,
+   plot and Calculate. The vaporisation activities are made after the fusion ones, so saved fusion answers keep their keys. */
 const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ handle, or use the ▲▼ buttons.';
 function sTable(head,rows){
   const t=mk('div','table-scroll');
@@ -53,12 +55,27 @@ function measTable(body,o){
   // a checked (or shown) cell's text, for the plot's row labels
   return {cell:(c,k)=>{const e=inp(c,k);return e&&e.disabled&&e.value.trim()!==''?e.value.trim():null;}};
 }
-/* Put the Your turn card and the framed animation in a left column, with the table on the right (as on CP15). */
-function splitDo(tab,turnTitle){
-  const fr=$('#panel-'+tab+' .anim-wrap'),tb=$('#panel-'+tab+' .ga-tbl'),yt=$('#panel-'+tab+' .act[data-title="'+turnTitle+'"]');
-  if(!fr||!tb)return;
-  const t=tb.closest('.act'),sp=mk('div','hk-split'),left=mk('div','ga-left');
-  fr.parentNode.insertBefore(sp,fr);sp.appendChild(left);if(yt)left.appendChild(yt);left.appendChild(fr);sp.appendChild(t);
+/* Put the Your turn cards and the framed animation in a left column, with the tables on the right (as on CP15).
+   Each part has its own Your turn card and table; only the chosen part's show. */
+function splitDo(tab){
+  const P=$('#panel-'+tab),fr=$('.anim-wrap',P),tbs=$$('.ga-tbl',P).map(t=>t.closest('.act')),yts=$$('.act[data-title="Take your own readings"]',P);
+  if(!fr||!tbs.length)return;
+  const sp=mk('div','hk-split'),left=mk('div','ga-left'),right=mk('div','ga-left');
+  fr.parentNode.insertBefore(sp,fr);sp.appendChild(left);yts.forEach(y=>left.appendChild(y));left.appendChild(fr);
+  sp.appendChild(right);tbs.forEach(t=>right.appendChild(t));
+}
+
+/* ================= PART SWITCH (Do Experiment): fusion or vaporisation, remembered in this browser ================= */
+const PARTS=[{k:'fus',label:'Fusion (melting ice)'},{k:'vap',label:'Vaporisation (boiling water)'}];
+const PKEY='cp-ial13-latent-heat-part';
+let lhPart='fus';try{const v=localStorage.getItem(PKEY);if(PARTS.some(m=>m.k===v))lhPart=v;}catch(e){}
+function forPart(body,k){body.closest('.act').dataset.m=k;}
+const LH_FRAME=k=>'show=measure&part='+k;
+function setPart(k){
+  lhPart=k;try{localStorage.setItem(PKEY,k);}catch(e){}
+  $$('#panel-do .method-pick button').forEach(b=>{const on=b.dataset.m===k;b.classList.toggle('is-on',on);b.setAttribute('aria-pressed',String(on));});
+  $$('#panel-do .act[data-m]').forEach(a=>{a.hidden=a.dataset.m!==k;});
+  const f=$('#panel-do iframe.anim-frame');if(f&&!f.src.endsWith(LH_FRAME(k)))f.src='animations/latent-heat.html?embed&'+LH_FRAME(k);
 }
 
 /* ================= 1. OVERVIEW ================= */
@@ -127,15 +144,22 @@ function splitDo(tab,turnTitle){
 }
 /* ================= DO THE EXPERIMENT ================= */
 // The student reads the joulemeter and the two balances in the animation's measure mode (?show=measure&part=fus).
-// LH_ME, LH_MC and LH_B must match MEAS_ME, MEAS_MC and MEAS_B in animations/latent-heat.html (LH_B is the vaporisation balance, not used here yet).
+// LH_ME, LH_MC and LH_B must match MEAS_ME, MEAS_MC and MEAS_B in animations/latent-heat.html (LH_B is the vaporisation balance).
 const LH_T=[0,2,4,6,8,10], LH_E=[0,4800,9600,14400,19200,24000], LH_ME=[0.0,15.6,31.4,47.1,62.8,78.5], LH_MC=[0.0,1.6,3.3,4.7,6.4,8.0];
-const LH_B=[350.0,345.0,340.1,335.0,329.9,325.0];
-const LH_DM=LH_ME.map((m,k)=>+(m-LH_MC[k]).toFixed(1));
-let lhTable=null,lhPlotRows=()=>{};
+const LH_B=[350.0,345.0,340.1,335.0,329.9,325.0], LH_EV=[0,12000,24000,36000,48000,60000];
+const LH_DM=LH_ME.map((m,k)=>+(m-LH_MC[k]).toFixed(1)), LH_DV=LH_B.map(b=>+(LH_B[0]-b).toFixed(1));
+let lhTable=null,lhPlotRows=()=>{},lvTable=null,lvPlotRows=()=>{};
 {
-  act('do','Your turn','Take your own readings','1. Read the joulemeter and both balances at 0 minutes. 2. Press Switch on for 2 minutes, then read all three again; do this five times. 3. Fill in the table, then work out Δm, the mass melted by the heater alone.');
+  const w=mk('div','method-pick');
+  w.innerHTML='<span class="method-lab" id="ml-do">Part</span><div class="seg" role="group" aria-labelledby="ml-do">'+
+    PARTS.map(m=>'<button type="button" data-m="'+m.k+'">'+m.label+'</button>').join('')+'</div>';
+  $('#panel-do .acts').prepend(w);
+  w.addEventListener('click',e=>{const b=e.target.closest('button[data-m]');if(b){setPart(b.dataset.m);raf(()=>showProgress(true));}});
 }
-frameAct('do','animations/latent-heat.html','measure&part=fus','Latent heat experiment: read the joulemeter and the two balances','latent heat',false);
+{
+  const t=act('do','Your turn','Take your own readings','1. Read the joulemeter and both balances at 0 minutes. 2. Press Switch on for 2 minutes, then read all three again; do this five times. 3. Fill in the table, then work out Δm, the mass melted by the heater alone.');forPart(t,'fus');
+}
+frameAct('do','animations/latent-heat.html',LH_FRAME(lhPart).slice(5),'Latent heat experiment: read the joulemeter and the balances','latent heat',false);
 {
   const body=act('do','Calculate','Your results table','Write ΔE as the joulemeter shows it, in J, and each mass of water as its balance shows it, in g. Δm = mass under the heated funnel − mass under the control funnel. Press Check.');
   lhTable=measTable(body,{n:LH_T.length,next:'Now plot ΔE against Δm below.',
@@ -148,9 +172,10 @@ frameAct('do','animations/latent-heat.html','measure&part=fus','Latent heat expe
       {c:'mc',head:'Control funnel (g)',val:k=>LH_MC[k],tol:0.05,show:k=>LH_MC[k].toFixed(1),lab:k=>'Mass of water under the control funnel at '+LH_T[k]+' minutes, grams'},
       {c:'dm',head:'Δm (g)',val:k=>LH_DM[k],tol:0.05,show:k=>LH_DM[k].toFixed(1),lab:k=>'Mass melted by the heater at '+LH_T[k]+' minutes, grams'}
     ]});
+  forPart(body,'fus');
 }
 {
-  const body=act('do','Explain','Why plot ΔE against Δm?','The energy the heater gives the ice melts it: ΔE = LΔm. L stays the same, so:');
+  const body=act('do','Explain','Why plot ΔE against Δm?','The energy the heater gives the ice melts it: ΔE = LΔm. L stays the same, so:');forPart(body,'fus');
   body.insertAdjacentHTML('beforeend',
     '<p class="act-intro">In the order of y = mx + c:</p>'+
     '<div class="ln-match"><span>ΔE</span><span>=</span><span>L</span><span>Δm</span><span>+</span><span>0</span>'+
@@ -158,24 +183,68 @@ frameAct('do','animations/latent-heat.html','measure&part=fus','Latent heat expe
     '<p class="act-intro">So ΔE against Δm is a straight line through the origin with gradient = L<sub>f</sub>. The control funnel takes off the ice melted by the room, so Δm is the mass the heater alone melted. Using the gradient of the line, not one reading, averages out the scatter in the readings.</p>');
 }
 {
-  const body=act('do','Plot','Plot your results','Plot ΔE (in kJ) against Δm from your table as small crosses. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');
+  const body=act('do','Plot','Plot your results','Plot ΔE (in kJ) against Δm from your table as small crosses. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');forPart(body,'fus');
   const rowT=k=>{const e=lhTable&&lhTable.cell('dm',k);return (LH_E[k]/1000).toFixed(1)+' kJ, '+(e?'Δm = '+e+' g':'your Δm');};
   createPlot({host:body,next:' Now find the specific latent heat from the line of best fit below.',
     points:LH_DM.map((x,k)=>({x:x,y:LH_E[k]/1000})),
     rowText:p=>rowT(LH_E.indexOf(Math.round(p.y*1000))),
     graph:{xMin:0,xMax:80,yMin:0,yMax:28,xTicks:[0,10,20,30,40,50,60,70,80],yTicks:[0,4,8,12,16,20,24,28],minor:[2,0.8],snap:[0.5,0.4],xLabel:'Δm (g)',yLabel:'ΔE (kJ)',W:560,H:340}});
-  splitDo('do','Take your own readings');
   lhPlotRows=()=>{$$('.plot-row',body).forEach((li,k)=>{const s=li.firstElementChild;if(s)s.textContent=rowT(k);});};
   lhPlotRows();
 }
 {
-  const body=act('do','Calculate','L<sub>f</sub> from your line','A good line of best fit through your points passes through (10, 3.42) and (70, 23.82), with Δm in g and ΔE in kJ. Type a power of ten as e.g. 3.40e5.');
+  const body=act('do','Calculate','L<sub>f</sub> from your line','A good line of best fit through your points passes through (10, 3.42) and (70, 23.82), with Δm in g and ΔE in kJ. Type a power of ten as e.g. 3.40e5.');forPart(body,'fus');
   createCalc({host:body,questions:[
     {q:'What is the gradient of the line?',unit:'kJ g⁻¹',answer:0.34,working:'first point = (10, 3.42)<br>second point = (70, 23.82)<br>gradient = ?||gradient = [[change in ΔE|change in Δm]]<br>gradient = [[23.82 − 3.42|70 − 10]]<br>gradient = [[20.40|60]]<br>gradient = 0.340 kJ g⁻¹'},
     {q:'What is the specific latent heat of fusion of ice, in J kg⁻¹?',unit:'J kg⁻¹',answer:3.4e5,working:'gradient = 0.340 kJ g⁻¹<br>1 kJ = 1000 J<br>1 g = 0.001 kg<br>L<sub>f</sub> = ?||L<sub>f</sub> = [[0.340 × 1000|0.001]]<br>L<sub>f</sub> = 340 000 J kg⁻¹<br>L<sub>f</sub> = 3.40 × 10⁵ J kg⁻¹'},
     {q:'The accepted value is 3.34 × 10⁵ J kg⁻¹. What is the percentage difference of your value from it?',unit:'%',answer:1.8,working:'your value = 3.40 × 10⁵ J kg⁻¹<br>accepted = 3.34 × 10⁵ J kg⁻¹<br>difference = ?||difference = [[3.40 − 3.34|3.34]] × 100%<br>difference = [[0.06|3.34]] × 100%<br>difference = 1.8%'}
   ]});
 }
+/* ---- Vaporisation (TODO.md 5aa): the water is already boiling at 0 minutes; Δm is the mass boiled away since then.
+   Best-fit line through the six points: gradient 2.394 kJ g⁻¹, intercept 0.07 kJ, so L_v = 2.39 × 10⁶ J kg⁻¹. ---- */
+{
+  const t=act('do','Your turn','Take your own readings','1. Read the joulemeter and the balance at 0 minutes: the water is already boiling. 2. Press Switch on for 2 minutes, then read both again; do this five times. 3. Fill in the table, then work out Δm, the mass of water boiled away since 0 minutes.');forPart(t,'vap');
+}
+{
+  const body=act('do','Calculate','Your results table','Write ΔE as the joulemeter shows it, in J, and the mass on the balance as it shows it, in g. Δm = mass at 0 minutes − mass now. Press Check.');forPart(body,'vap');
+  lvTable=measTable(body,{n:LH_T.length,next:'Now plot ΔE against Δm below.',
+    hint:'The joulemeter counts the energy since it was reset. Δm is the water boiled away since 0 minutes: 350.0 − 345.0 = 5.0 g.',
+    onChange:()=>lvPlotRows(),
+    cols:[
+      {c:'t',head:'t (min)',given:k=>String(LH_T[k])},
+      {c:'e',head:'ΔE (J)',val:k=>LH_EV[k],tol:0,show:k=>String(LH_EV[k]),lab:k=>'Joulemeter reading at '+LH_T[k]+' minutes, joules'},
+      {c:'b',head:'Balance (g)',val:k=>LH_B[k],tol:0.05,show:k=>LH_B[k].toFixed(1),lab:k=>'Balance reading at '+LH_T[k]+' minutes, grams'},
+      {c:'dm',head:'Δm (g)',val:k=>LH_DV[k],tol:0.05,show:k=>LH_DV[k].toFixed(1),lab:k=>'Mass of water boiled away by '+LH_T[k]+' minutes, grams'}
+    ]});
+}
+{
+  const body=act('do','Explain','Why plot ΔE against Δm?','The energy the heater gives the boiling water turns it into steam: ΔE = LΔm. L stays the same, so:');forPart(body,'vap');
+  body.insertAdjacentHTML('beforeend',
+    '<p class="act-intro">In the order of y = mx + c:</p>'+
+    '<div class="ln-match"><span>ΔE</span><span>=</span><span>L</span><span>Δm</span><span>+</span><span>0</span>'+
+    '<span>y</span><span>=</span><span>m</span><span>x</span><span>+</span><span>c</span></div>'+
+    '<p class="act-intro">So ΔE against Δm is a straight line through the origin with gradient = L<sub>v</sub>. The water is boiling before the first reading, so the energy goes into turning water into steam, not into warming it. Using the gradient of the line, not one reading, averages out the scatter in the readings.</p>');
+}
+{
+  const body=act('do','Plot','Plot your results','Plot ΔE (in kJ) against Δm from your table as small crosses. Click the graph paper, or click it and then use the arrow keys and Enter. Click a cross to take it off.');forPart(body,'vap');
+  const rowT=k=>{const e=lvTable&&lvTable.cell('dm',k);return (LH_EV[k]/1000).toFixed(0)+' kJ, '+(e?'Δm = '+e+' g':'your Δm');};
+  createPlot({host:body,next:' Now find the specific latent heat from the line of best fit below.',
+    points:LH_DV.map((x,k)=>({x:x,y:LH_EV[k]/1000})),
+    rowText:p=>rowT(LH_EV.indexOf(Math.round(p.y*1000))),
+    graph:{xMin:0,xMax:30,yMin:0,yMax:70,xTicks:[0,5,10,15,20,25,30],yTicks:[0,10,20,30,40,50,60,70],minor:[1,2],snap:[0.5,1],xLabel:'Δm (g)',yLabel:'ΔE (kJ)',W:560,H:340}});
+  lvPlotRows=()=>{$$('.plot-row',body).forEach((li,k)=>{const s=li.firstElementChild;if(s)s.textContent=rowT(k);});};
+  lvPlotRows();
+}
+{
+  const body=act('do','Calculate','L<sub>v</sub> from your line','A good line of best fit through your points passes through (2.0, 4.86) and (24.0, 57.44), with Δm in g and ΔE in kJ. Type a power of ten as e.g. 2.39e6.');forPart(body,'vap');
+  createCalc({host:body,questions:[
+    {q:'What is the gradient of the line?',unit:'kJ g⁻¹',answer:2.39,working:'first point = (2.0, 4.86)<br>second point = (24.0, 57.44)<br>gradient = ?||gradient = [[change in ΔE|change in Δm]]<br>gradient = [[57.44 − 4.86|24.0 − 2.0]]<br>gradient = [[52.58|22.0]]<br>gradient = 2.39 kJ g⁻¹'},
+    {q:'What is the specific latent heat of vaporisation of water, in J kg⁻¹?',unit:'J kg⁻¹',answer:2.39e6,working:'gradient = 2.39 kJ g⁻¹<br>1 kJ = 1000 J<br>1 g = 0.001 kg<br>L<sub>v</sub> = ?||L<sub>v</sub> = [[2.39 × 1000|0.001]]<br>L<sub>v</sub> = 2 390 000 J kg⁻¹<br>L<sub>v</sub> = 2.39 × 10⁶ J kg⁻¹'},
+    {q:'The accepted value is 2.26 × 10⁶ J kg⁻¹. What is the percentage difference of your value from it?',unit:'%',answer:5.8,working:'your value = 2.39 × 10⁶ J kg⁻¹<br>accepted = 2.26 × 10⁶ J kg⁻¹<br>difference = ?||difference = [[2.39 − 2.26|2.26]] × 100%<br>difference = [[0.13|2.26]] × 100%<br>difference = 5.8%'}
+  ]});
+}
+splitDo('do');
+setPart(lhPart);
 /* ================= WATCH THE EXPERIMENT ================= */
 {
   act('experiment','Your turn','Watch the readings','Press Experiment in each part below. In Fusion, take readings every 2 minutes with the control, then try again with no control and with ice from the freezer. In Vaporisation, try the beaker lagged and with no lagging. Each time, compare your gradient with the accepted value: which way is it out, and why?');
