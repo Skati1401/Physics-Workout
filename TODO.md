@@ -26,7 +26,7 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the cards to `igcse.html`, then add the unit's activities to the Calculations and Graphs sets.
 
 - [x] **4j** `cosmology.html` (8b): cut the Red-shift Quick check and keep the "Are we at the centre?" Predict (Alex, 15 Nov 2026, from 3h). Done 15 Nov 2026: the Red-Shift tab is now the frame and the Sort; `STORE_KEY` is `unit8b-v5`, the Sort's saved answers carry over.
-- [ ] **4k** `magnetism-and-motor-effect.html` (6a): remove the two electromagnet Build it diagrams (6.9P); keep the transformer Build it diagrams on 6b (6.17P) (Alex, 15 Nov 2026, from 4h).
+- [x] **4k** `magnetism-and-motor-effect.html` (6a): remove the two electromagnet Build it diagrams (6.9P); keep the transformer Build it diagrams on 6b (6.17P) (Alex, 15 Nov 2026, from 4h). Done 15 Nov 2026: the card and its code are removed from 6a; 6b is unchanged.
 
 ## 5. Build: core practicals
 
