@@ -707,9 +707,9 @@ var SK=(function(){
    Copernicus's models use circles at a steady speed; Kepler's uses the real ellipses (Kepler's equation). Ptolemy's model is
    built so that it puts Mars exactly where Copernicus's does (Mars's small circle has the size of the Earth's orbit and turns
    once a year), which is why both explained the backward loop equally well.
-   Mars seen from Earth: its direction from the Earth (longitude along the ecliptic, east to the left, as when facing south)
-   over 10 months around the opposition of January 2010, with Mars's orbit tilted 1.85 degrees, which makes a loop.
-   Up and down in the sky picture is stretched 3.4 times. Orbits are not to scale (but the Earth and Mars are to scale
+   What we see from the Earth: Mars's direction from the Earth over 10 months around the opposition of January 2010 (Mars's
+   orbit tilted 1.85 degrees, which makes a loop), turned into right ascension and declination and drawn among the real
+   stars of Gemini, Cancer and Leo, looking south from the UK (east on the left), not stretched; see skyView. Orbits are not to scale (but the Earth and Mars are to scale
    with each other). "Stretched" draws Kepler's ovals more oval than they are, so the shape can be seen; the sky still uses
    the true orbits. Galileo: Jupiter's four large moons with their real periods, seen from above and as dots in a row
    through a telescope, one row a night. The Sun and the Earth are drawn with the space kit (SK, tools/space-kit/kit.js). */
@@ -820,8 +820,9 @@ var SK=(function(){
       var c=tries[i], x0=c[2]==='start'?c[0]:c[2]==='end'?c[0]-w:c[0]-w/2, b=[x0,c[1]-fs,x0+w,c[1]+3];
       if(b[0]<3||b[2]>(o.W||W)-3||b[1]<(o.top||48)||b[3]>(o.H||H)-3) continue;
       if(self.box.some(function(q){ return !(b[2]<q[0]||q[2]<b[0]||b[3]<q[1]||q[3]<b[1]); })) continue;
-      self.box.push(b); self.s+=SK.txt(c[0],c[1],text,{a:c[2],fs:fs,col:o.col,w:o.w}); return;
+      self.box.push(b); self.s+=SK.txt(c[0],c[1],text,{a:c[2],fs:fs,col:o.col,w:o.w}); return true;
     }
+    return false;
   };
   Labels.prototype.block=function(x,y,r){ this.box.push([x-r,y-r,x+r,y+r]); };
 
@@ -927,43 +928,88 @@ var SK=(function(){
   }
 
   // ---------- Mars seen from the Earth, against the stars ----------
-  var LC=geo(T0+150,false).lam+0, BC=2.4, SX=3.75, SY=13, YC=214;
-  function skyPt(g){ return [W/2-wrap180(g.lam-LC)*SX, YC-(g.bet-BC)*SY]; }
+  // What you would really see: looking south from the UK, each night when Mars is highest, with the real stars of Gemini,
+  // Cancer, Leo, Canis Minor and Hydra (J2000 right ascension in hours, declination in degrees, magnitude).
+  // Mars's ecliptic position is turned into right ascension and declination (obliquity 23.44 degrees) and drawn on a flat
+  // chart, east on the left, KS pixels per degree both ways (no stretching), so the loop has its true shape.
+  // The rooftops are scenery: the sky is not drawn to its true height above them.
+  var RA0=8.02, KS=5.1, XS=KS*15*0.94, DTOP=34, YTOP=66;
+  var STARS={castor:[7.577,31.89,1.6,'Castor'],pollux:[7.755,28.03,1.1,'Pollux'],gtau:[7.186,30.25,4.4],gth:[6.879,33.96,3.6],geps:[6.732,25.13,3.0],gmu:[6.383,22.51,2.9],
+    geta:[6.248,22.51,3.3],gups:[7.598,26.90,4.1],giota:[7.429,27.80,3.8],gdel:[7.335,21.98,3.5],gzet:[7.068,20.57,3.8],ggam:[6.628,16.40,1.9],glam:[7.301,16.54,3.6],gxi:[6.755,12.90,3.4],gkap:[7.740,24.40,3.6],
+    cbet:[8.275,9.19,3.5],cdel:[8.745,18.15,3.9],cgam:[8.721,21.47,4.7],ciota:[8.778,28.76,4.0],calp:[8.975,11.86,4.3],
+    regulus:[10.139,11.97,1.4,'Regulus'],leta:[10.122,16.76,3.5],lgam:[10.333,19.84,2.0],lzet:[10.278,23.42,3.4],lmu:[9.879,26.01,3.9],leps:[9.764,23.77,3.0],lzos:[11.235,20.52,2.6],lthe:[11.237,15.43,3.3],
+    procyon:[7.655,5.22,0.4,'Procyon'],gomeisa:[7.453,8.29,2.9],
+    hdel:[8.628,5.70,4.2],hsig:[8.645,3.34,4.4],heta:[8.720,3.40,4.3],heps:[8.780,6.42,3.4],hzet:[8.923,5.95,3.1],hthe:[9.239,2.31,3.9],hiota:[9.664,-1.14,3.9],alphard:[9.460,-8.66,2.0,'Alphard'],
+    sirius:[6.752,-16.72,-1.46,'Sirius'],mirzam:[6.378,-17.96,2.0]};
+  var CLINES=[['castor','gtau'],['gtau','geps'],['geps','gmu'],['gmu','geta'],['gtau','gth'],['gtau','giota'],['giota','gups'],['pollux','gups'],['gups','gdel'],['gdel','gzet'],['gzet','ggam'],['pollux','gkap'],['gdel','glam'],['glam','gxi'],
+    ['cbet','cdel'],['cdel','cgam'],['cgam','ciota'],['cdel','calp'],
+    ['regulus','leta'],['leta','lgam'],['lgam','lzet'],['lzet','lmu'],['lmu','leps'],['lgam','lzos'],['lzos','lthe'],['lthe','regulus'],
+    ['procyon','gomeisa'],['hdel','heps'],['heps','hzet'],['hzet','heta'],['heta','hsig'],['hsig','hdel'],['hzet','hthe'],['hthe','hiota'],['hiota','alphard'],['sirius','mirzam']];
+  var CNAMES=[[7.05,35,'Gemini'],[8.62,26.5,'Cancer'],[10.6,27.5,'Leo'],[7.45,2.2,'Canis Minor'],[9.5,-4.5,'Hydra']];
+  var BEEHIVE=[8.67,19.98];
+  function eqPt(ra,dec){ return [W/2-(ra-RA0)*XS, YTOP+(DTOP-dec)*KS]; }
+  function toEq(g){
+    var e=23.44*RAD, l=g.lam*RAD, b=g.bet*RAD, x=Math.cos(b)*Math.cos(l), y=Math.cos(b)*Math.sin(l)*Math.cos(e)-Math.sin(b)*Math.sin(e), z=Math.cos(b)*Math.sin(l)*Math.sin(e)+Math.sin(b)*Math.cos(e);
+    return [((Math.atan2(y,x)/RAD/15)+24)%24, Math.asin(z)/RAD];
+  }
+  function skyPt(g){ var q=toEq(g); return eqPt(q[0],q[1]); }
   function retro(tt,ell){ var a=geo(T0+tt-0.5,ell).lam, b=geo(T0+tt+0.5,ell).lam; return wrap180(b-a); }
+  var HZ=350;     // top of the rooftops
+  function skyline(){
+    // rooftops, a chimney and two trees along the bottom of the picture, in front of the sky
+    var d='M0 '+H+' L0 360 C0 350 8 342 16 344 C24 336 36 340 38 352 L38 366 L60 366 L60 356 L84 340 L108 356 L108 366 L126 366 L126 360 L150 360 L150 370 L172 370 L172 356 L180 356 L180 348 L188 348 L188 356 L198 344 L236 344 L254 360 L254 370 L284 370 L284 364 L360 364 L360 372 L376 372'
+      +' C376 362 384 352 394 352 C400 344 412 344 420 352 L420 '+H+' Z';
+    return '<defs><linearGradient id="ms-glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16294d" stop-opacity="0"/><stop offset="1" stop-color="#1d3a66" stop-opacity=".8"/></linearGradient></defs>'
+      +'<rect x="0" y="250" width="'+W+'" height="'+(H-250)+'" fill="url(#ms-glow)"/>'
+      +'<path d="'+d+'" fill="#020309"/>'
+      +'<rect x="212" y="355" width="8" height="7" fill="#f2c96b" opacity=".75"/><rect x="96" y="358" width="7" height="6" fill="#f2c96b" opacity=".55"/>';
+  }
   function skyView(m,tt,o){
     o=o||{};
-    var ell=m==='kepler', s=SK.sky(0,0,W,H,{seed:11,n:80});
-    s+=SK.txt(14,24,'Mars seen from Earth, against the stars',{fs:13.5,w:600});
-    s+=SK.txt(14,41,'A dot each month · up and down stretched',{fs:11.5,col:'#9aa6bd'});
-    s+=SK.txt(14,H-12,'East',{fs:12,col:'#c9d2e3'})+SK.txt(W-14,H-12,'West',{a:'end',fs:12,col:'#c9d2e3'});
-    s+=SK.txt(W/2,H-12,'← Mars’s usual way',{a:'middle',fs:11.5,col:'#ffb39c'});
-    if(o.hide){ s+=SK.txt(W/2,YC,'?',{a:'middle',fs:40,w:700,col:'#9aa6bd'}); return s; }
-    // the track, coloured where Mars goes backwards
-    var seg=[], back=null, out='';
-    for(var u=0;u<=tt+0.01;u+=2){
-      var uu=Math.min(u,tt), g=geo(T0+uu,ell), p=skyPt(g), r=retro(uu,ell)<0;
-      if(back===null) back=r;
-      if(r!==back){ seg.push(p); out+=pline(seg,{col:back?'#ffcf5a':'#ff9b7a',w:2.2,op:.95}); seg=[seg[seg.length-1]]; back=r; }
-      seg.push(p);
+    var ell=m==='kepler', s='<defs><clipPath id="ms-rclip"><rect x="0" y="0" width="'+W+'" height="'+H+'" rx="10"/></clipPath></defs>';
+    s+='<g clip-path="url(#ms-rclip)"><rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#070b16"/>';
+    for(var i=0;i<70;i++){ var hx=SK.hash(i*3+21), hy=SK.hash(i*3+22), hc=SK.hash(i*3+23); s+='<circle cx="'+f(hx*W)+'" cy="'+f(hy*HZ)+'" r="'+f(0.4+hc*0.5)+'" fill="#fff" opacity="'+(0.12+0.25*hc).toFixed(2)+'"/>'; }
+    // constellation lines, the Beehive cluster, the stars and their names
+    CLINES.forEach(function(c){ var a=STARS[c[0]], b=STARS[c[1]]; s+=line(eqPt(a[0],a[1]),eqPt(b[0],b[1]),{col:'#7f9cc9',w:.9,op:.38}); });
+    var bh=eqPt(BEEHIVE[0],BEEHIVE[1]);
+    for(var k=0;k<9;k++){ var ba=k*2.4, br=2+5*SK.hash(k+90); s+='<circle cx="'+f(bh[0]+br*Math.cos(ba))+'" cy="'+f(bh[1]+br*Math.sin(ba))+'" r=".6" fill="#dfe8ff" opacity=".6"/>'; }
+    var L=new Labels();
+    Object.keys(STARS).forEach(function(k){
+      var st=STARS[k], q=eqPt(st[0],st[1]), r=Math.max(0.7,2.9-0.55*st[2]);
+      if(st[2]<1.5) s+='<circle cx="'+f(q[0])+'" cy="'+f(q[1])+'" r="'+f(r*2.6)+'" fill="#cfe0ff" opacity=".14"/>';
+      s+='<circle cx="'+f(q[0])+'" cy="'+f(q[1])+'" r="'+f(r)+'" fill="'+(k==='pollux'?'#ffe2b8':'#f4f7ff')+'"/>';
+      if(st[2]<2.5) L.block(q[0],q[1],r+1);
+    });
+    CNAMES.forEach(function(c){ var q=eqPt(c[0],c[1]); s+='<text x="'+f(q[0])+'" y="'+f(q[1])+'" text-anchor="middle" font-size="11" font-style="italic" fill="#8ea6cf" opacity=".85" style="font-family:var(--font-body,system-ui)">'+c[2]+'</text>'; });
+    s+=skyline();
+    s+=SK.txt(14,24,'What we see from the Earth',{fs:13.5,w:600});
+    s+=SK.txt(14,41,'Looking south from the UK, each night Mars is up',{fs:11.5,col:'#9aa6bd'});
+    s+=SK.txt(10,H-10,'East',{fs:12,col:'#c9d2e3'})+SK.txt(W-10,H-10,'West',{a:'end',fs:12,col:'#c9d2e3'});
+    s+=SK.txt(W/2,H-10,'← Mars’s usual way',{a:'middle',fs:11.5,col:'#ffb39c'});
+    if(o.hide){ s+=SK.txt(W/2,190,'?',{a:'middle',fs:40,w:700,col:'#9aa6bd'})+'</g>'; return s; }
+    // where Mars has been: a dot every few nights, gold where it went backwards
+    var out='';
+    for(var u=0;u<=tt+0.01;u+=4){
+      var uu=Math.min(u,tt), p=skyPt(geo(T0+uu,ell)), r=retro(uu,ell)<0;
+      out+='<circle cx="'+f(p[0])+'" cy="'+f(p[1])+'" r="1.25" fill="'+(r?'#ffcf5a':'#ff9b7a')+'" opacity=".85"/>';
     }
-    out+=pline(seg,{col:back?'#ffcf5a':'#ff9b7a',w:2.2,op:.95});
     s+=out;
-    var L=new Labels(), cur=skyPt(geo(T0+tt,ell));
-    L.block(cur[0],cur[1],8);
-    for(var mo=0;mo*MONTH<=tt+0.01;mo++){
-      var q=skyPt(geo(T0+mo*MONTH,ell));
-      s+=circ(q[0],q[1],2.6,{fill:'#fff',col:'#fff',w:.5,op:.9});
-      L.add(q[0],q[1],3,String(mo),{fs:10,col:'#c9d2e3',top:48,H:H-26});
-    }
-    if(ell && o.ghost){
-      var gq=skyPt(geo(T0+tt,false));
-      s+=circ(gq[0],gq[1],7,{col:'#c9d2e3',w:1.2,dash:'2 3'});
-      L.block(gq[0],gq[1],7); L.add(gq[0],gq[1],7,'circles say here',{fs:10,col:'#c9d2e3',top:48,H:H-26});
-    }
-    s+=marsDisc(cur[0],cur[1],6);
+    var cur=skyPt(geo(T0+tt,ell)), gq=ell && o.ghost?skyPt(geo(T0+tt,false)):null;
+    if(gq) s+=circ(gq[0],gq[1],7,{col:'#c9d2e3',w:1.2,dash:'2 3'});
+    // Mars: a bright orange-red point of light, like a star that does not twinkle
+    s+='<circle cx="'+f(cur[0])+'" cy="'+f(cur[1])+'" r="9" fill="#ff7a59" opacity=".18"/><circle cx="'+f(cur[0])+'" cy="'+f(cur[1])+'" r="4.6" fill="#ff8a5c" opacity=".45"/><circle cx="'+f(cur[0])+'" cy="'+f(cur[1])+'" r="2.8" fill="#ffd2b8"/>';
+    L.block(cur[0],cur[1],8); if(gq) L.block(gq[0],gq[1],7);
     var rv=retro(tt,ell), lab=Math.abs(rv)<0.03?'Mars, turning':rv<0?'Mars, going backwards':'Mars';
-    L.add(cur[0],cur[1],7,lab,{fs:12,w:600,col:rv<0?'#ffcf5a':'#ffb39c',top:48,H:H-26});
-    s+=L.s;
+    [8,16,26,38].some(function(r){ return L.add(cur[0],cur[1],r,lab,{fs:12,w:600,col:rv<0?'#ffcf5a':'#ffb39c',top:48,H:HZ}); });
+    if(gq) L.add(gq[0],gq[1],7,'circles say here',{fs:10,col:'#c9d2e3',top:48,H:HZ});
+    for(var mo=0;mo*MONTH<=tt+0.01;mo++){
+      var q2=skyPt(geo(T0+mo*MONTH,ell));
+      s+=circ(q2[0],q2[1],1.9,{fill:'#fff',col:'#fff',w:.4,op:.9});
+      L.add(q2[0],q2[1],3,String(mo),{fs:10,col:'#c9d2e3',top:48,H:HZ});
+    }
+    // star names last, where there is room
+    ['sirius','procyon','pollux','castor','regulus','alphard'].forEach(function(k){ var st=STARS[k], q=eqPt(st[0],st[1]); L.add(q[0],q[1],Math.max(0.7,2.9-0.55*st[2])+1,st[3],{fs:10,col:'#aebbd4',top:48,H:HZ}); });
+    s+=L.s+'</g>';
     return s;
   }
 
