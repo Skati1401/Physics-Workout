@@ -134,7 +134,7 @@ Both model pages carry the same block of drawing code, marked `3D kit`: `scene3`
 The Year 9 space animations (8L, plan in the claude.ai project doc `claude/8l-space-workout-plan-2026-11-16.md`) share one block of drawing code, the **space kit**. Batches B to E reuse it.
 
 - **Where it is:** the master copy is `tools/space-kit/kit.js`. Each page carries an identical copy in `<script id="space-kit-js">`, just before the page's own script, so pages stay self-contained. Never edit the copy in a page: edit `kit.js`, then run `python3 tools/space-kit.py` (refreshes every page that has the block) or `python3 tools/space-kit.py new-page.html` (adds it to a new page in `animations/`).
-- **Pages that have it:** `moon-phases.html`, `seasons.html`.
+- **Pages that have it:** `moon-phases.html`, `seasons.html`, `solar-system-models.html` and `orbits.html` (batch B; the planets other than the Earth, the comet, the satellite and Jupiter's moons are drawn by those pages, not the kit).
 - **What it gives** (global `SK`; every function returns SVG markup as a string, in the caller's own units):
   - `SK.sky(x, y, w, h, {rx, seed, n})`: a dark window with fixed stars. Space stays dark in both themes, so the kit's colours are fixed, not theme tokens.
   - `SK.txt(x, y, text, {a, fs, w, col})`: light text with a dark edge for a dark window (the light panes use their own `ltxt`, dark text with a `var(--bg)` edge).
