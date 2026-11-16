@@ -120,6 +120,7 @@
   .seg button{font:12.5px var(--font-mono);padding:8px 12px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
   .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
   .seg button:disabled{opacity:.45;cursor:default;}
+  #ms-model button{padding:8px 9px;}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
   .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;}
   .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
@@ -345,7 +346,7 @@
       <div class="seg tabs mode" id="ms-mode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
       <div class="cgrid" id="ms-setup">
         <div class="rowlab" id="ms-model-lab">Model</div>
-        <div class="seg" id="ms-model" role="group" aria-labelledby="ms-model-lab"><button type="button" data-m="ptolemy" aria-pressed="true">Ptolemy</button><button type="button" data-m="copernicus" aria-pressed="false">Copernicus</button><button type="button" data-m="kepler" aria-pressed="false">Kepler</button></div>
+        <div class="seg" id="ms-model" role="group" aria-labelledby="ms-model-lab"><button type="button" data-m="simple" aria-pressed="false">No epicycles</button><button type="button" data-m="ptolemy" aria-pressed="true">Ptolemy</button><button type="button" data-m="copernicus" aria-pressed="false">Copernicus</button><button type="button" data-m="kepler" aria-pressed="false">Kepler</button></div>
         <div class="rowlab" id="ms-watch-lab">Watch</div>
         <div class="seg" id="ms-watch" role="group" aria-labelledby="ms-watch-lab"><button type="button" data-w="mars" aria-pressed="true">Mars's backward loop</button><button type="button" data-w="jupiter" aria-pressed="false">Jupiter's moons</button></div>
       </div>
@@ -701,7 +702,8 @@ var SK=(function(){
 </script>
 <script>
 /* Changing Models of the Solar System (Year 9, Exploring Science 8La; 16 Nov 2026, space batch B).
-   Three models, switchable: Ptolemy (about 150 AD, the Earth at the centre, Mars on a small circle, an epicycle, whose centre goes
+   Four choices, switchable: No epicycles (the Earth at the centre, everything on plain circles, so Mars never goes
+   backwards: why Ptolemy needed epicycles), and three models: Ptolemy (about 150 AD, the Earth at the centre, Mars on a small circle, an epicycle, whose centre goes
    round the Earth), Copernicus (1543, the Sun at the centre, circles) and Kepler (1609, the Sun at the centre, ellipses).
    The planets move with their real periods from mean elements for J2000 (t = days since 1 January 2000). Ptolemy's and
    Copernicus's models use circles at a steady speed; Kepler's uses the real ellipses (Kepler's equation). Ptolemy's model is
@@ -762,6 +764,11 @@ var SK=(function(){
     var m=v3('mars',t,ell), e=v3('earth',t,ell), x=m[0]-e[0], y=m[1]-e[1], z=m[2]-e[2];
     return {lam:Math.atan2(y,x)/RAD, bet:Math.atan2(z,Math.sqrt(x*x+y*y))/RAD};
   }
+  function mgeo(m,t){        // Mars seen from the Earth in a model: 'simple' has Mars on a plain circle round the Earth
+    if(m!=='simple') return geo(t,m==='kepler');
+    var E=EL.mars, l=E.L+360*t/E.P;
+    return {lam:l, bet:Math.asin(Math.sin(E.i*RAD)*Math.sin((l-E.node)*RAD))/RAD};
+  }
   function wrap180(x){ x=(x+540)%360; return x<0?x+360-180:x-180; }
   // the drawn position of a planet relative to the Sun, in picture units ([right, down])
   function hpos(p,t,m,st){
@@ -774,6 +781,7 @@ var SK=(function(){
 
   // ---------- the models ----------
   var MOD={
+    simple:{name:'No epicycles', full:'Earth at the centre, no epicycles', lived:'', when:'', from:'What we would see if Mars just went round the Earth in a circle. It never goes backwards, which is why Ptolemy added epicycles.', centre:'Earth', orbits:'Circles', fits:'No'},
     ptolemy:{name:'Ptolemy', full:'Claudius Ptolemy', lived:'about 100&ndash;170 AD', when:'about 150 AD', from:'A Greek astronomer who worked in Alexandria, in Egypt.', centre:'Earth', orbits:'Epicycles', fits:'No'},
     copernicus:{name:'Copernicus', full:'Nicolaus Copernicus', lived:'1473&ndash;1543', when:'1543', from:'A Polish astronomer. His book came out in the year he died.', centre:'Sun', orbits:'Circles', fits:'Yes'},
     kepler:{name:'Kepler', full:'Johannes Kepler', lived:'1571&ndash;1630', when:'1609', from:'A German astronomer. He used very careful measurements of Mars made by Tycho Brahe.', centre:'Sun', orbits:'Ellipses', fits:'Yes'},
@@ -836,19 +844,22 @@ var SK=(function(){
     var T=T0+tt, st=m==='kepler' && o.st, s=SK.sky(0,0,W,H,{seed:3}), L=new Labels(), C=[CX,CY];
     s+='<defs><clipPath id="ms-lclip"><rect x="0" y="0" width="'+W+'" height="'+H+'" rx="10"/></clipPath></defs><g clip-path="url(#ms-lclip)">';
     var P={}, sun, earth=C, defM=null;
-    if(m==='ptolemy'){
+    if(m==='ptolemy'||m==='simple'){
       var he=hpos('earth',T,m), toSun=[-he[0]/58,-he[1]/58];
       sun=[CX-he[0], CY-he[1]];
-      var hm=hpos('mars',T,m); defM=[CX+hm[0], CY+hm[1]]; P.mars=[defM[0]-he[0], defM[1]-he[1]];
+      var hm=hpos('mars',T,m); defM=[CX+hm[0], CY+hm[1]]; P.mars=m==='simple'?defM:[defM[0]-he[0], defM[1]-he[1]];
       ['jupiter','saturn'].forEach(function(p){ var h=hpos(p,T,m), k=AD[p]/EL[p].a; P[p]=[CX+h[0]+toSun[0]*k, CY+h[1]+toSun[1]*k]; P[p+'D']=[CX+h[0], CY+h[1]]; P[p+'r']=k; });
       [['mercury',20,7],['venus',36,13]].forEach(function(q){ var h=hpos(q[0],T,m), l=Math.sqrt(h[0]*h[0]+h[1]*h[1]); P[q[0]+'D']=[CX+toSun[0]*q[1], CY+toSun[1]*q[1]]; P[q[0]]=[P[q[0]+'D'][0]+h[0]/l*q[2], P[q[0]+'D'][1]+h[1]/l*q[2]]; P[q[0]+'r']=q[2]; });
       // orbits: everything goes round the Earth
       s+=circ(CX,CY,11,{op:.5,dash:'2 3'});
       s+=circ(CX,CY,20,{op:.45,dash:'3 4'})+circ(CX,CY,36,{op:.45,dash:'3 4'})+circ(CX,CY,58,{col:'#c9a640',op:.7,dash:'4 5'});
       s+=circ(CX,CY,AD.mars,{col:'#ff7a59',op:.75,dash:'5 5'})+circ(CX,CY,128,{op:.5,dash:'5 6'})+circ(CX,CY,156,{op:.5,dash:'5 6'});
-      ['mercury','venus','jupiter','saturn'].forEach(function(p){ s+=circ(P[p+'D'][0],P[p+'D'][1],P[p+'r'],{op:.45}); });
-      s+=circ(defM[0],defM[1],58,{col:'#ff7a59',w:1.6,op:.85})+line(defM,P.mars,{col:'#ff7a59',op:.8})+circ(defM[0],defM[1],2.4,{fill:'#ff7a59',col:'#ff7a59'});
-      if(o.legend) L.add(defM[0],defM[1],3,'epicycle',{fs:10,col:'#ffb39c'});
+      if(m==='simple') ['mercury','venus','jupiter','saturn'].forEach(function(p){ P[p]=P[p+'D']; });
+      else{
+        ['mercury','venus','jupiter','saturn'].forEach(function(p){ s+=circ(P[p+'D'][0],P[p+'D'][1],P[p+'r'],{op:.45}); });
+        s+=circ(defM[0],defM[1],58,{col:'#ff7a59',w:1.6,op:.85})+line(defM,P.mars,{col:'#ff7a59',op:.8})+circ(defM[0],defM[1],2.4,{fill:'#ff7a59',col:'#ff7a59'});
+        if(o.legend) L.add(defM[0],defM[1],3,'epicycle',{fs:10,col:'#ffb39c'});
+      }
     }else{
       sun=C;
       ORDER.forEach(function(p){ var h=hpos(p,T,m,st); P[p]=[CX+h[0],CY+h[1]]; });
@@ -864,21 +875,23 @@ var SK=(function(){
     }
     // the Moon and Jupiter's moons (Kepler: moons go round planets)
     var ma=moonAng(T), moon=[earth[0]+11*Math.cos(ma), earth[1]-11*Math.sin(ma)];
-    if(m!=='ptolemy') s+=circ(earth[0],earth[1],11,{op:.45,dash:'2 3'});
+    if(m!=='ptolemy'&&m!=='simple') s+=circ(earth[0],earth[1],11,{op:.45,dash:'2 3'});
     if(m==='kepler') [11,13.5,16,19.5].forEach(function(r){ s+=circ(P.jupiter[0],P.jupiter[1],r,{col:'#e6c79f',w:.8,op:.45}); });
     // the trail: where Mars has been since month 0, and a dot each month
     if(o.trail && tt>0){
       var tr=[], te=[], step=3;
       for(var u=0;u<=tt+0.01;u+=step){
         var uu=Math.min(u,tt), TT=T0+uu;
-        if(m==='ptolemy'){ var a=hpos('mars',TT,m), b=hpos('earth',TT,m); tr.push([CX+a[0]-b[0], CY+a[1]-b[1]]); }
+        if(m==='simple'){ var a0=hpos('mars',TT,m); tr.push([CX+a0[0], CY+a0[1]]); }
+        else if(m==='ptolemy'){ var a=hpos('mars',TT,m), b=hpos('earth',TT,m); tr.push([CX+a[0]-b[0], CY+a[1]-b[1]]); }
         else{ var a2=hpos('mars',TT,m,st), b2=hpos('earth',TT,m,st); tr.push([CX+a2[0],CY+a2[1]]); te.push([CX+b2[0],CY+b2[1]]); }
       }
       s+=pline(tr,{col:'#ff9b7a',w:1.6,op:.75});
       if(te.length) s+=pline(te,{col:'#7cc4ff',w:1.6,op:.7});
       for(var mo=0;mo*MONTH<=tt+0.01;mo++){
         var TM=T0+mo*MONTH, pm, pe=null;
-        if(m==='ptolemy'){ var a3=hpos('mars',TM,m), b3=hpos('earth',TM,m); pm=[CX+a3[0]-b3[0], CY+a3[1]-b3[1]]; }
+        if(m==='simple'){ var a5=hpos('mars',TM,m); pm=[CX+a5[0], CY+a5[1]]; }
+        else if(m==='ptolemy'){ var a3=hpos('mars',TM,m), b3=hpos('earth',TM,m); pm=[CX+a3[0]-b3[0], CY+a3[1]-b3[1]]; }
         else{ var a4=hpos('mars',TM,m,st), b4=hpos('earth',TM,m,st); pm=[CX+a4[0],CY+a4[1]]; pe=[CX+b4[0],CY+b4[1]]; }
         if(o.sight && !st) s+=line(pe||C,extend(pe||C,pm),{col:'#5fd3ff',w:.8,op:.22});
         s+=circ(pm[0],pm[1],2.2,{fill:'#ffb39c',col:'#ffb39c',w:.5});
@@ -888,8 +901,8 @@ var SK=(function(){
     // the line of sight from the Earth through Mars, out to the stars
     if(o.sight && !st) s+=line(earth,extend(earth,P.mars),{col:'#5fd3ff',w:1.6,dash:'5 4',op:.95});
     // the bodies
-    var Sd=function(q){ return dir(q,sun); };
-    if(m==='ptolemy'){
+    var Sd=function(q){ return dir(q,sun); }, geoC=m==='ptolemy'||m==='simple';
+    if(geoC){
       s+=SK.sun(sun[0],sun[1],10,{glow:1.8,clip:'ms-lclip'});
       s+=earthAt(CX,CY,9,Sd(C));
     }else{
@@ -902,10 +915,10 @@ var SK=(function(){
     if(m==='kepler'){ var ja=T*0.9; [11,13.5,16,19.5].forEach(function(r,i){ var an=(ja*[1,.5,.25,.11][i]+i*80)*RAD; s+=circ(P.jupiter[0]+r*Math.cos(an),P.jupiter[1]-r*Math.sin(an),1.1,{fill:'#fff',col:'#fff',w:.3}); }); }
     s+=marsDisc(P.mars[0],P.mars[1],5);
     // labels, most important first
-    L.block(sun[0],sun[1],m==='ptolemy'?10:13); L.block(earth[0],earth[1],9); L.block(P.mars[0],P.mars[1],6);
-    L.add(earth[0],earth[1],m==='ptolemy'?9:7,'Earth',{fs:12,w:600,col:'#9fd0ff'});
+    L.block(sun[0],sun[1],geoC?10:13); L.block(earth[0],earth[1],9); L.block(P.mars[0],P.mars[1],6);
+    L.add(earth[0],earth[1],geoC?9:7,'Earth',{fs:12,w:600,col:'#9fd0ff'});
     L.add(P.mars[0],P.mars[1],5,'Mars',{fs:12,w:600,col:'#ffb39c'});
-    L.add(sun[0],sun[1],m==='ptolemy'?10:13,'Sun',{fs:12,w:600,col:'#ffd84a'});
+    L.add(sun[0],sun[1],geoC?10:13,'Sun',{fs:12,w:600,col:'#ffd84a'});
     L.add(P.jupiter[0],P.jupiter[1],7.5,'Jupiter',{fs:11});
     L.add(P.saturn[0],P.saturn[1],6,'Saturn',{fs:11});
     L.add(P.venus[0],P.venus[1],4,'Venus',{fs:10.5,col:'#c9d2e3'});
@@ -914,8 +927,8 @@ var SK=(function(){
     // title
     if(o.title==='?'){ s+=SK.txt(14,24,'Whose model is this?',{fs:13.5,w:600}); s+=SK.txt(14,41,'Seen from above · not to scale',{fs:11.5,col:'#9aa6bd'}); }
     else{
-      s+=SK.txt(14,24,poss(m)+' model · '+MOD[m].when.replace('&ndash;','–'),{fs:13.5,w:600});
-      s+=SK.txt(14,41,(m==='ptolemy'?'Earth at the centre':m==='copernicus'?'Sun at the centre, circles':'Sun at the centre, ellipses')+' · not to scale',{fs:11.5,col:'#9aa6bd'});
+      s+=SK.txt(14,24,m==='simple'?'Earth at the centre, no epicycles':poss(m)+' model · '+MOD[m].when.replace('&ndash;','–'),{fs:13.5,w:600});
+      s+=SK.txt(14,41,(m==='simple'?'Everything goes round the Earth in circles':m==='ptolemy'?'Earth at the centre':m==='copernicus'?'Sun at the centre, circles':'Sun at the centre, ellipses')+' · not to scale',{fs:11.5,col:'#9aa6bd'});
     }
     if(m==='kepler' && !st && o.legend) s+=SK.txt(14,H-12,'Dotted: a circle, to compare',{fs:11,col:'#c9d2e3'});
     if(st && o.legend) s+=SK.txt(14,H-12,'Ovals stretched so you can see their shape',{fs:11,col:'#c9d2e3'});
@@ -956,11 +969,11 @@ var SK=(function(){
     return [((Math.atan2(y,x)/RAD/15)+24)%24, Math.asin(z)/RAD];
   }
   function skyPt(g){ var q=toEq(g); return eqPt(q[0],q[1]); }
-  function offReal(tt){      // degrees between Mars in the circle models and the real (ellipse) Mars
-    var a=toEq(geo(T0+tt,false)), b=toEq(geo(T0+tt,true)), d=(a[0]-b[0])*15*RAD, x=a[1]*RAD, y=b[1]*RAD;
+  function offReal(tt,m){      // degrees between Mars in a circle model and the real (ellipse) Mars
+    var a=toEq(mgeo(m||'copernicus',T0+tt)), b=toEq(geo(T0+tt,true)), d=(a[0]-b[0])*15*RAD, x=a[1]*RAD, y=b[1]*RAD;
     return Math.acos(Math.min(1,Math.sin(x)*Math.sin(y)+Math.cos(x)*Math.cos(y)*Math.cos(d)))/RAD;
   }
-  function retro(tt,ell){ var a=geo(T0+tt-0.5,ell).lam, b=geo(T0+tt+0.5,ell).lam; return wrap180(b-a); }
+  function retro(tt,m){ if(typeof m!=='string') m=m?'kepler':'copernicus'; var a=mgeo(m,T0+tt-0.5).lam, b=mgeo(m,T0+tt+0.5).lam; return wrap180(b-a); }
   var HZ=350;     // top of the rooftops
   function skyline(){
     // rooftops, a chimney and two trees along the bottom of the picture, in front of the sky
@@ -1004,21 +1017,21 @@ var SK=(function(){
     // where Mars has been: a dot every few nights, gold where it went backwards
     var out='';
     for(var u=0;u<=tt+0.01;u+=4){
-      var uu=Math.min(u,tt), p=skyPt(geo(T0+uu,ell)), r=retro(uu,ell)<0;
+      var uu=Math.min(u,tt), p=skyPt(mgeo(m,T0+uu)), r=retro(uu,m)<0;
       out+='<circle cx="'+f(p[0])+'" cy="'+f(p[1])+'" r="1.5" fill="'+(r?'#ffd76e':'#ffa585')+'"/>';
     }
     s+=out;
-    var cur=skyPt(geo(T0+tt,ell)), gq=null;
+    var cur=skyPt(mgeo(m,T0+tt)), gq=null;
     if(gq) s+=circ(gq[0],gq[1],7,{col:'#c9d2e3',w:1.2,dash:'2 3'});
     // Mars: a bright orange-red point of light, like a star that does not twinkle
     s+='<circle cx="'+f(cur[0])+'" cy="'+f(cur[1])+'" r="15" fill="#ff6a3d" opacity=".22"/><circle cx="'+f(cur[0])+'" cy="'+f(cur[1])+'" r="7" fill="#ff7a45" opacity=".6"/>'
       +'<circle cx="'+f(cur[0])+'" cy="'+f(cur[1])+'" r="4" fill="#fff1e4"/><circle cx="'+f(cur[0])+'" cy="'+f(cur[1])+'" r="12" fill="none" stroke="#ffb39c" stroke-width="1.6" opacity=".9"/>';
     L.block(cur[0],cur[1],13); if(gq) L.block(gq[0],gq[1],7);
-    var rv=retro(tt,ell), lab=Math.abs(rv)<0.03?'Mars, turning':rv<0?'Mars, going backwards':'Mars';
+    var rv=retro(tt,m), lab=Math.abs(rv)<0.03?'Mars, turning':rv<0?'Mars, going backwards':'Mars';
     [13,20,28,38].some(function(r){ return L.add(cur[0],cur[1],r,lab,{fs:12,w:600,col:rv<0?'#ffcf5a':'#ffb39c',top:64,H:HZ}); });
     if(gq) L.add(gq[0],gq[1],7,'circles say here',{fs:10,col:'#c9d2e3',top:64,H:HZ});
     for(var mo=0;mo*MONTH<=tt+0.01;mo++){
-      var q2=skyPt(geo(T0+mo*MONTH,ell));
+      var q2=skyPt(mgeo(m,T0+mo*MONTH));
       s+=circ(q2[0],q2[1],1.9,{fill:'#fff',col:'#fff',w:.4,op:.9});
       L.add(q2[0],q2[1],3,String(mo),{fs:10,col:'#c9d2e3',top:64,H:HZ});
     }
@@ -1139,13 +1152,14 @@ var SK=(function(){
     var note;
     if(watch==='mars'){
       $('ms-s-lab').textContent='Mars in our sky';
-      var rv=retro(t,model==='kepler');
+      var rv=retro(t,model);
       $('ms-s-mars').textContent=Math.abs(rv)<0.03?'Turning':rv<0?'Backwards':'Usual way';
       note=NOTE[model];
       if(Math.abs(rv)>=0.03 && rv<0) note+=' '+(model==='ptolemy'?'<b>Now</b> Mars is inside its epicycle, so it seems to go <b>backwards</b>.':'<b>Now</b> the Earth is overtaking Mars, so Mars seems to go <b>backwards</b>.');
       else if(model==='kepler' && oval==='stretch') note+=' Here the ovals are stretched so you can see their shape.';
-      var off=offReal(t);
-      note+=model==='kepler'?' Its Mars stays <b>on the real path</b> (dashed).'
+      var off=offReal(t,model);
+      if(model==='simple') note+=' Dashed: where Mars <b>really</b> was. The real Mars goes backwards; this one never does.';
+      else note+=model==='kepler'?' Its Mars stays <b>on the real path</b> (dashed).'
         :' Dashed: where Mars <b>really</b> was. Circles miss it by <b>'+(off<1?'less than 1':Math.round(off))+'°</b>.';
       $('ms-time-o').textContent=(Math.round(t/MONTH*10)/10).toFixed(1);
       $('ms-time').value=t/MONTH;
@@ -1159,11 +1173,13 @@ var SK=(function(){
     if(note!==lastNote){ $('ms-note').innerHTML=note; lastNote=note; }
   }
   var NOTE={
+    simple:'<b>No epicycles:</b> the <b>Earth is at the centre</b> and Mars goes round it in a plain <b>circle</b>.',
     ptolemy:'<b>Ptolemy:</b> the <b>Earth is at the centre</b> and everything goes round it. Mars goes round an <b>epicycle</b>, a circle whose centre goes round the Earth.',
     copernicus:'<b>Copernicus:</b> the <b>Sun is at the centre</b>. The planets, the Earth too, go round it in <b>circles</b>. Most people did not accept this at first.',
     kepler:'<b>Kepler:</b> the Sun is at the centre, the orbits are <b>elliptical</b> (oval) and moons go round planets. Mars’s orbit is only a little oval.'
   };
   var JNOTE={
+    simple:'In 1610 <b>Galileo</b> saw four tiny “stars” beside Jupiter that moved each night. They are <b>moons going round Jupiter</b>. In this model everything goes round the Earth, so this does <b>not</b> fit.',
     ptolemy:'In 1610 <b>Galileo</b> saw four tiny “stars” beside Jupiter that moved each night. They are <b>moons going round Jupiter</b>. Ptolemy said <b>everything</b> goes round the Earth, so this does <b>not</b> fit his model.',
     copernicus:'In 1610 <b>Galileo</b> saw four tiny “stars” beside Jupiter that moved each night. They are <b>moons going round Jupiter</b>, so not everything goes round the Earth. This <b>fits</b> Copernicus’s model.',
     kepler:'In 1610 <b>Galileo</b> saw four tiny “stars” beside Jupiter that moved each night. They are <b>moons going round Jupiter</b>. This <b>fits</b> Kepler’s model, in which moons go round planets.'
@@ -1184,7 +1200,7 @@ var SK=(function(){
       var adv=dt*rate*(slow?0.3:1);
       if(mars) t=Math.min(SPAN,t+adv); else tg=Math.min(end,tg+adv);
       draw();
-      if((mars?t:tg)>=end){ stopRun(); draw(); $('ms-note').innerHTML=lastNote=(mars?'Ten months. '+(model==='ptolemy'?'Mars went round its epicycle, so it seemed to go backwards for about two months.':'The Earth overtook Mars, so Mars seemed to go backwards for about two months.'):'Eight nights. The four “stars” moved from side to side of Jupiter and sometimes disappeared behind it: they go round Jupiter.'); return; }
+      if((mars?t:tg)>=end){ stopRun(); draw(); $('ms-note').innerHTML=lastNote=(mars?'Ten months. '+(model==='simple'?'Mars moved steadily the usual way and never went backwards. The real Mars did (dashed), so Ptolemy added epicycles.':model==='ptolemy'?'Mars went round its epicycle, so it seemed to go backwards for about two months.':'The Earth overtook Mars, so Mars seemed to go backwards for about two months.'):'Eight nights. The four “stars” moved from side to side of Jupiter and sometimes disappeared behind it: they go round Jupiter.'); return; }
       run.id=requestAnimationFrame(frame);
     }
     run.id=requestAnimationFrame(frame);
