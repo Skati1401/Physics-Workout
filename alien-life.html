@@ -446,7 +446,7 @@ svg.sankey{background:var(--panel)}
 .fact-card h4 small,.notes-world h4 small{font:400 12.5px var(--f-body);color:var(--ink-soft);margin-left:6px;letter-spacing:0}
 .fact-card dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:5px 12px;margin:0;padding:8px 12px 10px;font-size:14px}
 .fact-card dt{font:600 12px var(--f-mono);color:var(--w);padding-top:2px}
-.fact-card dd{margin:0}
+.fact-card dd{margin:0;font:14px/1.45 var(--f-body)}
 .notes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
 .notes-world{border:1.5px solid var(--w);border-radius:10px;overflow:hidden;background:var(--panel)}
 .notes-world .nw-body{padding:4px 12px 12px}
@@ -498,6 +498,14 @@ svg.sankey{background:var(--panel)}
 .story-fig img{display:block;width:100%;height:auto;border-radius:6px;border:1px solid var(--panel-border)}
 .story-fig figcaption{margin-top:5px;font-size:12px;line-height:1.4;color:var(--ink-soft)}
 @media (max-width:520px){.story-fig{float:none;width:100%;margin:0 0 10px}}
+.brief{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:8px 28px}
+.brief-goals{border-left:1px solid var(--panel-border);padding-left:22px}
+.brief-goals .goals{gap:5px}
+@media (max-width:900px){.brief{grid-template-columns:1fr}.brief-goals{border-left:0;padding-left:0;border-top:1px solid var(--panel-border);padding-top:8px}}
+.wr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:0 24px;align-items:start}
+.creature-more{border-style:dashed;background:var(--panel-2)}
+.creature-more dl{padding-bottom:4px}
+.creature-more .ext-links{padding:0 12px 12px}
 
 </style>
 <script>
@@ -612,10 +620,16 @@ svg.sankey{background:var(--panel)}
 <section id="panel-overview" class="panel" role="tabpanel" aria-labelledby="tab-overview">
 <div class="panel-head"><h2>Warm Up</h2></div>
 <div class="brief">
+<div class="brief-main">
 <h3>Mission briefing</h3>
 <p>You have been hired as a scientist by the International Space Agency. The agency has <strong>£10 billion</strong> to send <strong>one robotic mission</strong> to the place in our Solar System where alien life is most likely to be found.</p>
 <p>Your job: investigate the evidence, choose the destination, design the spacecraft and pitch your mission. Work through the tabs in order. Your answers are saved in this browser, and on the Sum Up tab you can copy them all to hand in.</p>
 <p><strong>Remember:</strong> no life has ever been found beyond Earth. You are looking for places where life <em>could</em> exist.</p>
+</div>
+<div class="brief-goals">
+<h3>By the end you can</h3>
+<ul class="goals"><li>Explain what a "potential biosignature" is</li><li>Find planets, moons and spacecraft in NASA&rsquo;s live Solar System</li><li>Name the three ingredients life needs</li><li>Explain how extremophiles survive, and why that matters</li><li>Compare Mars, Europa, Titan and Enceladus using evidence</li><li>Plan a &pound;10 billion mission and pitch it</li></ul>
+</div>
 </div>
 <div class="acts"></div>
 </section>
@@ -1696,8 +1710,9 @@ const modelHTML=m=>'<p><strong>A model answer</strong> (yours can be worded diff
 // Written answers. items: [{id, q, lines, min (words, default 3), choices, checks, model (bullet points), pre}]
 function createWrite(cfg){
   const host=cfg.host,st={};
+  const list=mk('div',cfg.items.length>1&&!cfg.stack?'wr-grid':'');host.appendChild(list);
   cfg.items.forEach(it=>{
-    const box=mk('div','wr-item');host.appendChild(box);
+    const box=mk('div','wr-item');list.appendChild(box);
     const qid='wq-'+it.id;
     const q=mk('p','wr-q',FR(it.q));q.id=qid;box.appendChild(q);
     const s={it:it};st[it.id]=s;
@@ -1714,7 +1729,7 @@ function createWrite(cfg){
       box.appendChild(ta);s.ta=ta;ta.addEventListener('input',()=>change(s));
     }
     const foot=mk('div','wr-foot');box.appendChild(foot);
-    if(s.ta&&it.lines!==1){s.cnt=mk('span','wr-count','');foot.appendChild(s.cnt);}
+    if(s.ta&&it.lines!==1&&(it.min||0)>=10){s.cnt=mk('span','wr-count','');foot.appendChild(s.cnt);}
     if(it.model){
       s.mb=mk('button','btn','Compare with a model answer');s.mb.type='button';s.mb.hidden=true;foot.appendChild(s.mb);
       s.md=mk('div','wr-model',modelHTML(it.model));s.md.hidden=true;box.appendChild(s.md);
@@ -1730,7 +1745,7 @@ function createWrite(cfg){
     return true;
   }
   function change(s){
-    if(s.cnt){const n=nWords(s.ta.value);s.cnt.textContent=n+(n===1?' word':' words');}
+    if(s.cnt){const n=nWords(s.ta.value);s.cnt.textContent=n+(n===1?' word':' words')+' (at least '+s.it.min+')';}
     if(s.mb){s.mb.hidden=!ok(s);if(s.mb.hidden){s.md.hidden=true;s.mb.textContent='Compare with a model answer';}}
   }
   bar(host,[{label:'Clear answers',fn:()=>{cfg.items.forEach(it=>{const s=st[it.id];if(s.ta)s.ta.value='';if(s.p)s.p.set('');if(s.cks)s.cks.forEach(i=>{i.checked=false;});change(s);});}}]);
@@ -1951,7 +1966,7 @@ function createShop(cfg){
       +'\nTotal: '+bn(total())+(ok?' (mission approved)':' (not yet approved)')
   });
 }
-function factFiles(panel){
+function factFiles(panel,into){
   const F=[
     {id:'mars',sub:'a planet',rows:[
       ['Basics','The fourth planet from the Sun. Very thin air, mostly carbon dioxide. Average temperature about −60 °C. About 7 months to reach.'],
@@ -1982,11 +1997,12 @@ function factFiles(panel){
       ['Challenges','Very far away and very cold. The ocean is under thick ice, but the plumes deliver free samples to any spacecraft that flies through.'],
       ['Missions','Cassini studied it from 2004 to 2017. No new spacecraft is on its way yet.']]}
   ];
-  const body=act(panel,'Reference','World Fact Files','');
+  const body=into||act(panel,'Read','World Fact Files','');
   const d=mk('details','facts');body.appendChild(d);
-  d.appendChild(mk('summary','','Open the fact files'));
+  d.appendChild(mk('summary','',into?'Open the World Fact Files':'Open the fact files'));
   const g=mk('div','facts-grid');d.appendChild(g);
   F.forEach(f=>g.appendChild(mk('div','fact-card world-'+f.id,'<h4>'+wName(f.id)+'<small>'+f.sub+'</small></h4><dl>'+f.rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('')+'</dl>')));
+  return d;
 }
 // Load my answers: reads a file made by "Download as a file" and puts every saved answer back,
 // so a student can carry on on another computer. Only the ALIENLIFE: line at the end of the file is read.
@@ -2065,7 +2081,7 @@ function handIn(panel){
 {
   createPredict({host:actHTML('overview','Multiple choice','The mystery rock','',
     '<div class="story"><figure class="story-fig"><a href="https://science.nasa.gov/photojournal/perseverance-finds-a-rock-with-leopard-spots/" target="_blank" rel="noopener"><img src="images/cheyava-falls.jpg" width="960" height="699" alt="Close-up of a reddish rock on Mars with white mineral veins either side and a central band covered in small pale spots with dark rims."></a><figcaption>Cheyava Falls, photographed by Perseverance on 18 July 2024. The small pale spots with dark rims in the reddish band are the "leopard spots", each only about a millimetre across. The white stripes are mineral veins. Image: NASA/JPL-Caltech/MSSS.</figcaption></figure><p>In July 2024, NASA’s <strong>Perseverance</strong> rover was driving along a dried-up river valley on Mars when it found an arrow-shaped rock covered in strange <strong>"leopard spots"</strong>. Scientists nicknamed it <strong>Cheyava Falls</strong>. The rock contains carbon-based (organic) chemicals, and the spots hold minerals that, on Earth, are often made when microbes feed on chemicals in mud.</p><p>In September 2025 NASA said the rover’s sample of this rock holds a <strong>"potential biosignature"</strong>, the closest we have ever come to finding life on Mars. <strong>The catch:</strong> the sample is still sealed inside the rover, on Mars.</p></div>'
-    +extLinks([{t:'Photo: the leopard spots',href:'https://science.nasa.gov/photojournal/perseverance-finds-a-rock-with-leopard-spots/',d:'NASA close-up of the rock, with a labelled version'},{t:'Photo: the rover beside the rock',href:'https://www.jpl.nasa.gov/images/pia26344-perseverances-selfie-with-cheyava-falls/',d:'Perseverance\u2019s selfie with Cheyava Falls'},{t:'NASA: the full story',href:'https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/',d:'what NASA announced in 2025'}])),
+    +extLinks([{t:'Photo: the rover beside the rock',href:'https://www.jpl.nasa.gov/images/pia26344-perseverances-selfie-with-cheyava-falls/',d:'Perseverance\u2019s selfie with Cheyava Falls'},{t:'NASA: the full story',href:'https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/',d:'what NASA announced in 2025'}])),
     q:'What does "potential biosignature" mean?',
     options:[
       {text:'A possible sign of life that still needs more tests',correct:true},
@@ -2073,15 +2089,14 @@ function handIn(panel){
       {text:'A fossil of a small animal found in the rock',why:'No fossil was found. The evidence is chemicals and the minerals in the spots.'},
       {text:'Living microbes found in the rock today',why:'Nothing living was found. The rock formed billions of years ago, so any life was ancient.'}],
     explain:'A biosignature is a sign that life was there. "Potential" means it could have been made by life, but scientists cannot yet rule out other, non-living causes. They need to test the sample in a lab on Earth.'});
-  {const br=$('#panel-overview .brief'),p=mk('div','');br.appendChild(p);
+  {const br=$('#panel-overview .brief-main'),p=mk('div','');br.appendChild(p);
     const lb=bar(p,[{label:'Load my answers',fn:()=>lb.say&&pickFile(lb.say)}]);lb.el.style.margin='4px 0 0';
     lb.el.insertAdjacentHTML('afterbegin','<span>Started on another computer? Load the file you downloaded there:</span>');}
-  goalsAct('overview',[{t:'Explain what a "potential biosignature" is'},{t:'Find planets, moons and spacecraft in NASA’s live Solar System'},{t:'Name the three ingredients life needs'},{t:'Explain how extremophiles survive, and why that matters'},{t:'Compare Mars, Europa, Titan and Enceladus using evidence'},{t:'Plan a £10 billion mission and pitch it'}]);
-  pairFirstTwo('overview');
-  createWrite({host:act('overview','Your view','Is it life?','There is no right answer yet. Scientists disagree too.'),items:[
+  createWrite({host:act('overview','Write','Is it life?','There is no right answer yet. Scientists disagree too.'),stack:true,items:[
     {id:'vote',q:'What do <strong>you</strong> think the spots are?',choices:['Definitely life','Maybe life','Probably not life'],ph:'Give one reason.',lines:2,min:3},
     {id:'sure',q:'What would scientists need to do to be <strong>sure</strong> the spots were made by living things?',lines:3,
       model:['Bring the sample back to Earth and test it with powerful lab instruments.','Check that non-living chemistry could not have made the spots.','Look for more, separate signs of life in other rocks.']}]});
+  pairFirstTwo('overview');
 }
 /* ================= 2. SCAVENGER HUNT (NASA Eyes) ================= */
 {
@@ -2103,9 +2118,8 @@ function handIn(panel){
   let g;const b=bar(body,[{label:'Check answers',primary:true,fn:()=>g.check()},{label:'Shuffle again',fn:()=>g.reset()}]);
   const sc=mk('span','score');b.el.insertBefore(sc,b.msg);
   g=createBlankGame({fill:true,palette:true,slots:slots,pool:pool,chips:['Planet','Moon of Jupiter','Moon of Saturn','Moon of Mars'].map((t,i)=>({id:'pm'+i,text:t})),msg:b,score:sc,isCorrect:(c,s)=>c.text===s.answer});
-  createWrite({host:act('hunt','Explore','One thing you noticed','Zoom right in on one of the moons.'),items:[
+  createWrite({host:act('hunt','Write','One thing you noticed','Zoom right in on one of the moons.'),items:[
     {id:'noticed',q:'Choose one moon. Describe one thing you noticed about it in NASA Eyes.',choices:['Europa','Titan','Enceladus'],lines:2,min:4}]});
-  pairByTitle('Planet or moon?','One thing you noticed');
   quickCheck('hunt','Spacecraft hunt',[
     {title:'Europa Clipper',ctx:'Europa Clipper launched in October 2024. On 3 December 2026 it swings back past Earth to steal a speed boost from Earth’s gravity, then heads out to Jupiter, arriving in April 2030. Search for it in NASA Eyes.',
       q:'Is it closer to Earth or to Jupiter right now?',
@@ -2135,9 +2149,14 @@ function handIn(panel){
         {text:'Both take the same time',why:'Watch again: the one closer to Saturn goes round much faster.'},
         {text:'Neither moves',why:'Speed up time: both moons orbit Saturn.'}],
       explain:'Enceladus is much closer to Saturn and goes round in about 1.4 days. Titan is further out and takes about 16 days.'}]);
-  createWrite({host:act('hunt','Explain','A message from far away',''),items:[
+  createWrite({host:act('hunt','Write','A message from far away',''),items:[
     {id:'delay',q:'A robot spacecraft a very long way from Earth gets into trouble. Why can’t mission control just steer it to safety?',lines:3,
       model:['Radio signals travel at the speed of light, which is fast but not instant.','From very far away a message can take hours or even a day to arrive, and the reply as long again.','By the time a command arrived it could be too late, so the spacecraft must make its own decisions.']}]});
+  // on screen: Explore beside the labels, the quick check, then the two written answers side by side
+  {const L=$('#panel-hunt .acts'),find=t=>$$('.act',L).find(a=>$('.act-title',a).textContent.endsWith(t));
+    const n=find('One thing you noticed'),m=find('A message from far away');L.insertBefore(n,m);}
+  pairFirstTwo('hunt');
+  pairByTitle('One thing you noticed','A message from far away');
 }
 /* ================= 3. WHAT DOES LIFE NEED? ================= */
 {
@@ -2171,7 +2190,7 @@ function handIn(panel){
     ['Conan the Bacterium','Deinococcus radiodurans',[['Where found?','In 1956, inside a tin of meat that had been blasted with radiation to kill every germ. The meat went off anyway: Conan had survived.'],['Extreme power','One of the most radiation-resistant living things known. It shrugs off about <strong>1,000 times</strong> the dose that would kill a human, and repairs its DNA fast.'],['Mind-blowing fact','Clumps of these bacteria left outside the International Space Station survived three years in space.']]],
     ['The Lake Whillans microbes','Antarctica',[['Where?','A lake of liquid water hidden under about <strong>800 m of ice</strong> in Antarctica. Completely dark and close to freezing.'],['Extreme power','In 2013 scientists drilled through the ice and found almost 4,000 kinds of microbes living there, getting energy from chemicals in the rocks.'],['Mind-blowing fact','A dark lake sealed under thick ice is a lot like the oceans hidden inside some icy moons.']]]];
   cards.appendChild(mk('div','creatures',C.map(c=>'<div class="creature"><h4>'+c[0]+'<small>'+c[1]+'</small></h4><dl>'+c[2].map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('')+'</dl></div>').join('')));
-  cards.innerHTML+=extLinks([{t:'Live Science: tardigrade facts',href:'https://www.livescience.com/57985-tardigrade-facts.html',d:'optional extra reading'}]);
+  $('.creatures',cards).insertAdjacentHTML('beforeend','<div class="creature creature-more"><h4>Want more?</h4><dl><dd>Tardigrades have survived all five mass extinctions on Earth. Read more about these tiny survivors:</dd></dl>'+extLinks([{t:'Live Science: tardigrade facts',href:'https://www.livescience.com/57985-tardigrade-facts.html',d:'optional extra reading'}])+'</div>');
   createMatchGame({host:act('extreme','Match','Who has which superpower?','Read the cards, then link each extremophile to its extreme power.'),
     leftTitle:'Extremophile',rightTitle:'Extreme power',narrowLeft:true,pairs:[
     {id:'ta',l:'Tardigrade',r:'Dries out into a dormant ball, and survived 12 days in open space'},
@@ -2182,27 +2201,29 @@ function handIn(panel){
 }
 /* ================= 5. MATCH-UP ================= */
 {
-  createPicks({host:act('matchup','Your choice','Alien world match-up','For each extremophile, choose the world where it would have the best chance of surviving, and say why. Use the World Fact Files below. There is more than one good answer, so your reason matters most. Remember: surviving one danger is not enough. It would still need water, chemicals and energy.'),
+  const mu=act('matchup','Choose','Alien world match-up','For each extremophile, choose the world where it would have the best chance of surviving, and say why. Open the World Fact Files to help you. There is more than one good answer, so your reason matters most. Remember: surviving one danger is not enough. It would still need water, chemicals and energy.');
+  createPicks({host:mu,
     rows:[
       {id:'ta',name:'Tardigrade',why:'Mars: it survives drying out, cold and radiation, and can wait, dormant, for water to come back. It would still need liquid water to be active.'},
       {id:'tw',name:'Giant tube worm',why:'Europa or Enceladus: a dark ocean that may have hot vents on its floor, like the worm’s home.'},
       {id:'s1',name:'Strain 116',why:'Enceladus: Cassini found hydrogen and carbon dioxide in its plumes, exactly what Strain 116 feeds on.'},
       {id:'co',name:'Conan the Bacterium',why:'Mars or Europa, where radiation is a big danger. But toughness alone is not enough: it could not live on the bare surface without liquid water and food.'},
       {id:'lw',name:'Lake Whillans microbes',why:'Europa (or Enceladus): dark water sealed under thick ice, just like their lake in Antarctica.'}]});
-  createWrite({host:act('matchup','Explain','Life without sunlight',''),items:[
+  createWrite({host:act('matchup','Write','Life without sunlight',''),items:[
     {id:'nosun',q:'The giant tube worms live in total darkness. Where does their energy come from? Use this to explain why a world with <strong>no sunlight</strong> might still support life.',lines:4,min:12,
       model:['Bacteria inside the worms make food from chemicals that come out of the vents (chemosynthesis).','So their energy comes from chemical reactions, not from sunlight.','A world with no sunlight could still support life if it has chemical energy, for example hot vents on the floor of an ocean under ice.']},
     {id:'fave',q:'Which extremophile would make the best alien survivor? Why?',choices:['Tardigrade','Giant tube worm','Strain 116','Conan the Bacterium','Lake Whillans microbes'],lines:2,min:4}]});
-  factFiles('matchup');
+  {const d=factFiles('matchup',mu);d.style.marginBottom='12px';mu.insertBefore(d,mu.firstChild);}
 }
 /* ================= 6. INVESTIGATE THE FOUR WORLDS ================= */
 {
-  const rd=act('worlds','Research','NASA pages','Your evidence comes from these pages. The World Fact Files at the bottom of this tab help you check.');
+  const rd=act('worlds','Research','NASA pages','Your evidence comes from these pages. The World Fact Files under them help you check.');
   rd.innerHTML+=extLinks([
     {t:'NASA: Mars',href:'https://science.nasa.gov/mars/',d:'past rivers and lakes, the search for ancient life'},
     {t:'NASA: Europa Clipper',href:'https://science.nasa.gov/mission/europa-clipper/',d:'why Europa is interesting'},
     {t:'NASA: Dragonfly',href:'https://science.nasa.gov/mission/dragonfly/',d:'the flying drone going to Titan'},
     {t:'NASA: Enceladus',href:'https://science.nasa.gov/saturn/moons/enceladus/',d:'the moon that sprays its ocean into space'}]);
+  factFiles('worlds',rd);
   createSortGame({host:act('worlds','Sort','Which world is it?','Drag each piece of evidence to the world it describes.'),
     cats:[{id:'mars',label:'Mars',hint:'the red planet',color:'--therm',soft:'--therm-soft'},
           {id:'europa',label:'Europa',hint:'icy moon',color:'--grav',soft:'--grav-soft'},
@@ -2217,26 +2238,26 @@ function handIn(panel){
       {id:'t2',text:'A thick nitrogen atmosphere, so a drone can fly there',cat:'titan'},
       {id:'n1',text:'Plumes of ocean water spray out of "tiger stripe" cracks',cat:'enceladus'},
       {id:'n2',text:'A spacecraft found hydrogen, food for microbes, in its spray',cat:'enceladus'}]});
-  createNotes({host:act('worlds','Your notes','Evidence notes','Short notes, not full sentences, from the NASA pages. For each world: is there liquid water, the right chemicals and a source of energy, and what is its biggest challenge?'),
+  createNotes({host:act('worlds','Notes','Evidence notes','Short notes, not full sentences, from the NASA pages. For each world: is there liquid water, the right chemicals and a source of energy, and what is its biggest challenge?'),
     sub:{mars:'a planet',europa:'a moon of Jupiter',titan:'a moon of Saturn',enceladus:'a moon of Saturn'},
     cols:[{id:'w',label:'Liquid water?'},{id:'c',label:'Chemistry?'},{id:'e',label:'Energy source?'},{id:'x',label:'Biggest challenge'}]});
-  createWrite({host:act('worlds','Detective','Two new facts','Pick the two worlds you think are most promising. On their NASA pages, find one fact for each that is <strong>not</strong> in the World Fact Files.'),items:[
+  createWrite({host:act('worlds','Write','Detective: two new facts','Pick the two worlds you think are most promising. On their NASA pages, find one fact for each that is <strong>not</strong> in the World Fact Files.'),items:[
     {id:'det1',q:'Detective fact 1: the world, the new fact and which NASA page it came from.',choices:WORLDS.map(w=>({id:w.id,label:w.name})),choiceLabel:'World for detective fact 1',lines:2,min:5},
     {id:'det2',q:'Detective fact 2: the world, the new fact and which NASA page it came from.',choices:WORLDS.map(w=>({id:w.id,label:w.name})),choiceLabel:'World for detective fact 2',lines:2,min:5}]});
-  factFiles('worlds');
 }
 /* ================= 7. CHOOSE YOUR WORLD ================= */
 {
-  createScores({host:act('choose','Score','Score the four worlds','Score each world from 1 (weak) to 5 (very promising). For "easy to reach and explore", 5 means easiest. These are your own judgements, so there are no official right answers.'),
+  createScores({host:act('choose','Choose','Score the four worlds','Score each world from 1 (weak) to 5 (very promising). For "easy to reach and explore", 5 means easiest. These are your own judgements, so there are no official right answers.'),
     crit:['Evidence for liquid water today','Useful chemicals for life','Possible energy sources','Protection from harsh surface conditions','Easy to reach and explore']});
-  createWrite({host:act('choose','Decide','Your destination','It does not have to be your highest scorer.'),items:[
+  createWrite({host:act('choose','Write','Your destination','It does not have to be your highest scorer.'),items:[
     {id:'dest',q:'Which world will you send your mission to? Explain your choice and give the <strong>one piece of evidence</strong> that convinced you most.',
-      choices:WORLDS.map(w=>({id:w.id,label:w.name})),choiceLabel:'Your destination',lines:4,min:12,onPick:v=>{if(ANS.setShopDest)ANS.setShopDest(v);}}]});
+      choices:WORLDS.map(w=>({id:w.id,label:w.name})),choiceLabel:'Your destination',lines:5,min:12,onPick:v=>{if(ANS.setShopDest)ANS.setShopDest(v);}}]});
+  pairFirstTwo('choose');
 }
 /* ================= 8. MISSION SHOP ================= */
 {
   createShop({host:act('shop','Design','Spend £10 billion','Choose your destination, then buy what your mission needs. You must buy a rocket, a power supply, a spacecraft type and the communication dish, plus at least 3 science instruments. Going to Europa? You also need the radiation shield. Check the "Works for" line on each item, then press Check my mission.')});
-  createWrite({host:act('shop','Design','Your spacecraft','Draw your spacecraft on paper (or in a drawing app) and label every instrument you bought. Then answer here.'),items:[
+  createWrite({host:act('shop','Write','Your spacecraft','Draw your spacecraft on paper (or in a drawing app) and label every instrument you bought. Then answer here.'),items:[
     {id:'mname',q:'Give your mission a name.',lines:1,min:1,ph:'For example: Ocean Hunter'},
     {id:'why',q:'Why did you choose these science instruments? What will each one look for?',lines:4,min:15},
     {id:'danger',q:'What is the biggest danger your spacecraft will face, and how have you reduced the risk? Think about cold, radiation, landing and the message delay.',lines:3,min:10,
@@ -2244,7 +2265,7 @@ function handIn(panel){
 }
 /* ================= 9. PITCH ================= */
 {
-  createWrite({host:act('pitch','Pitch','Pitch your mission to the agency','Choose ONE format. For A, B and D, draw your design on paper or in a drawing app, then write its words here.'),items:[
+  createWrite({host:act('pitch','Write','Pitch your mission to the agency','Choose ONE format. For A, B and D, draw your design on paper or in a drawing app, then write its words here.'),items:[
     {id:'pitch',q:'Your pitch',
       choices:[{id:'a',label:'A. Mission patch'},{id:'b',label:'B. WANTED: Life poster'},{id:'c',label:'C. Breaking news, 2040'},{id:'d',label:'D. Design an alien'}],choiceLabel:'Pitch format',
       pre:'<ul class="tips"><li><strong>A. Mission patch:</strong> a round mission badge (real missions all have one) with a short slogan, plus 3 bullet points that sell your mission.</li><li><strong>B. WANTED: Life poster:</strong> why life could be hiding on your world, the reward for finding it, and how your spacecraft will find it.</li><li><strong>C. Breaking news, 2040:</strong> a news report (about 150 words). Your spacecraft has found something exciting, but is it really proof of life? Include the scientists’ doubts.</li><li><strong>D. Design an alien:</strong> a creature or microbe that could live on your world. Label 3 features and explain how each helps it survive. Link it to a real extremophile.</li></ul>',
@@ -2253,7 +2274,7 @@ function handIn(panel){
 }
 /* ================= 10. EXTENSION: BEYOND THE SOLAR SYSTEM ================= */
 {
-  createWrite({host:actHTML('beyond','Extension','Signs of life 124 light-years away?','','<div class="story"><p><strong>K2-18 b</strong> is a planet orbiting another star, about 124 light-years away. In April 2025 a team of scientists said the James Webb Space Telescope had found hints of a gas in its atmosphere that, on Earth, is made by sea life. Other teams re-checked the data and found the evidence weak. The argument is still going on.</p></div>'
+  createWrite({host:actHTML('beyond','Write','Signs of life 124 light-years away?','','<div class="story"><p><strong>K2-18 b</strong> is a planet orbiting another star, about 124 light-years away. In April 2025 a team of scientists said the James Webb Space Telescope had found hints of a gas in its atmosphere that, on Earth, is made by sea life. Other teams re-checked the data and found the evidence weak. The argument is still going on.</p></div>'
     +extLinks([{t:'NASA Eyes on Exoplanets',href:'https://eyes.nasa.gov/apps/exo/',d:'explore planets around other stars'}])),items:[
     {id:'k2',q:'Find K2-18 b. Why is it so much harder to be sure about life on a planet this far away than on Mars?',lines:3,min:10,
       model:['It is about 124 light-years away, so no spacecraft can ever visit it.','Scientists can only study the starlight that passes through its atmosphere.','The signal is very weak, and the gas might be made without life, so different teams disagree.']},
@@ -2271,9 +2292,10 @@ function handIn(panel){
     explain:'Organic molecules are ingredients for life, not proof of it. Scientists need several separate lines of evidence before they could say they had found life.'});
   wordBox('sumup','Searching for life',['Living things that survive in very harsh places are called ',['s1','extremophiles'],'. Some microbes make food from chemicals instead of sunlight: this is called ',['s2','chemosynthesis'],'. Scientists look for liquid ',['s3','water'],', the right chemicals and a source of ',['s4','energy'],'. A possible sign of life that still needs more tests is called a potential ',['s5','biosignature'],'.'],['photosynthesis','gravity','planet']);
   pairFirstTwo('sumup');
-  createWrite({host:act('sumup','Your view','Is it life? Again',''),items:[
+  createWrite({host:act('sumup','Write','Is it life? Again',''),items:[
     {id:'again',q:'Look back at your vote on the mystery rock in the Warm Up. Has your opinion changed? Why?',pre:'',lines:3,min:6}]});
   handIn('sumup');
+  pairByTitle('Is it life? Again','Copy my answers');
   reflowers.push(t=>{if(t!=='sumup'||!ANS.vote||!ANS.again)return;const c=ANS.vote.choiceLabel();
     const r=ANS.vote.text();ANS.again.setPre(c?'Your Warm Up vote: <strong>'+esc(c)+'</strong>.'+(r?' Your reason: “'+esc(r)+'”':''):'You have not voted yet: it is on the Warm Up tab.');});
   reflowers.push(t=>{if(t==='shop'&&ANS.dest&&ANS.setShopDest)ANS.setShopDest(ANS.dest.choice());});
