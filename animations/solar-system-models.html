@@ -437,37 +437,110 @@ var SK=(function(){
 
   // ---------- day and night on any sphere ----------
   // S: direction to the Sun, [right, down, towards the viewer]. Returns the outline of the dark part, or null when it is all lit.
-  function nightPts(x,y,r,S,N){
-    S=norm(S); N=N||48;
+  function nightPts(x,y,r,S,N,ro){
+    S=norm(S); N=N||48; ro=ro||r;
     var sd=Math.sqrt(S[0]*S[0]+S[1]*S[1]), pts=[], i, t;
     if(sd<1e-6){
       if(S[2]>0) return null;
-      for(i=0;i<2*N;i++){ t=Math.PI*i/N; pts.push([x+r*Math.cos(t), y+r*Math.sin(t)]); }
+      for(i=0;i<2*N;i++){ t=Math.PI*i/N; pts.push([x+ro*Math.cos(t), y+ro*Math.sin(t)]); }
       return pts;
     }
     var d=[S[0]/sd,S[1]/sd], e=[-d[1],d[0]], k=S[2];
     for(i=0;i<=N;i++){ t=Math.PI*i/N; pts.push([x+r*(Math.cos(t)*e[0]-Math.sin(t)*k*d[0]), y+r*(Math.cos(t)*e[1]-Math.sin(t)*k*d[1])]); }   // the terminator
-    for(i=1;i<N;i++){ t=Math.PI*i/N; pts.push([x+r*(-Math.cos(t)*e[0]-Math.sin(t)*d[0]), y+r*(-Math.cos(t)*e[1]-Math.sin(t)*d[1])]); }   // the dark edge
+    for(i=(ro>r?0:1);i<=(ro>r?N:N-1);i++){ t=Math.PI*i/N; pts.push([x+ro*(-Math.cos(t)*e[0]-Math.sin(t)*d[0]), y+ro*(-Math.cos(t)*e[1]-Math.sin(t)*d[1])]); }   // the dark edge
     return pts;
   }
-  // o.fill, o.op
+  // o.fill, o.op; o.soft: blur the line between day and night by this fraction of r (draw it inside a clip to the disc)
   function shade(x,y,r,S,o){
     o=o||{};
-    var p=nightPts(x,y,r,S);
-    if(!p) return '';
-    return '<path d="'+poly(p)+'" fill="'+(o.fill||'#04060c')+'" opacity="'+(o.op==null?0.8:o.op)+'"/>';
+    var soft=o.soft&&r>=10?o.soft:0, pts=nightPts(x,y,r,S,48,soft?r*1.35:r), defs='', fl='';
+    if(!pts) return '';
+    if(soft){ var id=nid('blur'); fl=' filter="url(#'+id+')"'; defs='<defs><filter id="'+id+'" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="'+f(r*soft)+'"/></filter></defs>'; }
+    return defs+'<path d="'+poly(pts)+'" fill="'+(o.fill||'#04060c')+'" opacity="'+(o.op==null?0.8:o.op)+'"'+fl+'/>';
+  }
+  // a smooth closed curve through points (Catmull-Rom)
+  function smooth(P){
+    var n=P.length, d='M'+f(P[0][0])+' '+f(P[0][1]);
+    for(var i=0;i<n;i++){
+      var p0=P[(i-1+n)%n], p1=P[i], p2=P[(i+1)%n], p3=P[(i+2)%n];
+      d+=' C'+f(p1[0]+(p2[0]-p0[0])/6)+' '+f(p1[1]+(p2[1]-p0[1])/6)+' '+f(p2[0]-(p3[0]-p1[0])/6)+' '+f(p2[1]-(p3[1]-p1[1])/6)+' '+f(p2[0])+' '+f(p2[1]);
+    }
+    return d+' Z';
+  }
+  // a gradient centre moved towards the Sun, so the bright side of a ball faces the light
+  function litCentre(S,dflt){
+    if(!S) return dflt;
+    var n=norm(S), k=0.3*(1-Math.max(0,n[2])*0.5);
+    return [0.5+k*n[0], 0.5+k*n[1]];
   }
 
   // ---------- the Moon ----------
   // S: direction to the Sun from the Moon, in picture terms. o.night darkness of the unlit part (default .93),
-  // o.rim draw a faint edge so a new moon can still be found (default true)
-  var CRATERS=[[-0.32,-0.22,0.24,0.5],[0.22,-0.38,0.16,0.42],[0.3,0.12,0.2,0.45],[-0.1,0.3,0.17,0.4],[-0.5,0.18,0.1,0.35],[0.05,-0.05,0.12,0.3],[0.55,-0.1,0.08,0.3],[-0.25,0.58,0.08,0.3]];
+  // o.rim draw a faint edge so a new moon can still be found (default true).
+  // The face is the near side seen from the Earth (north up): the dark seas (maria) where they really are, craters
+  // drawn on the ball (squashed near the edge) and shadowed on the side the light comes from, Tycho's bright rays
+  // at full moon, a soft line between day and night.
+  // Maria: [longitude, latitude, angular radius, seed] in degrees (east = right).
+  var MARIA=[[-16,33,17,1],[-30,40,10,2],[18,28,10,3],[31,8,12,4],[24,14,7,5],[58,17,7,6],[51,-6,9,7],[34,-15,6,8],[-17,-20,10,9],[-38,-24,6,10],
+    [-57,20,14,11],[-50,0,13,12],[-62,34,9,13],[-40,8,9,14],[-30,-8,7,15],[-5,58,6,16],[15,57,6,17],[-25,55,6,18],[35,55,5,19],[2,4,5,20]];
+  // Craters: [longitude, latitude, angular radius, bright], bright = a young crater with a light floor (Tycho, Copernicus, Aristarchus, Kepler)
+  var MCRAT=[[-11,-43,3.3,1],[-20,10,3.2,1],[-47,24,1.5,1],[-38,8,1.6,1],[-2,-60,5,0],[20,-50,4.5,0],[40,-30,3.5,0],[-5,-30,3,0],[60,-40,4,0],
+    [-60,-10,3.5,0],[10,-20,3,0],[45,40,3.5,0],[-10,50,3.2,0],[70,5,4,0],[-75,-30,4,0],[25,-65,4,0],[-35,-50,3.5,0],[8,72,4,0],[-50,60,3.5,0],[65,-55,3.5,0]];
+  function mPt(lon,lat){ var l=lon*Math.PI/180, p=lat*Math.PI/180; return [Math.cos(p)*Math.sin(l), -Math.sin(p), Math.cos(p)*Math.cos(l)]; }
+  // a point a great-circle angle rho from the centre C, in direction t (east, then north)
+  function mOff(lon,lat,rho,t){
+    var l=lon*Math.PI/180, p=lat*Math.PI/180, C=mPt(lon,lat), E=[Math.cos(l),0,-Math.sin(l)], N=[-Math.sin(p)*Math.sin(l),-Math.cos(p),-Math.sin(p)*Math.cos(l)];
+    var cr=Math.cos(rho), sr=Math.sin(rho), ct=Math.cos(t), st=Math.sin(t);
+    return [C[0]*cr+(E[0]*ct+N[0]*st)*sr, C[1]*cr+(E[1]*ct+N[1]*st)*sr, C[2]*cr+(E[2]*ct+N[2]*st)*sr];
+  }
   function moon(x,y,r,S,o){
     o=o||{};
-    var g=nid('moon'), s='<defs><radialGradient id="'+g+'" cx=".42" cy=".4" r=".7"><stop offset="0" stop-color="#eeebe4"/><stop offset=".6" stop-color="#cfcbc2"/><stop offset="1" stop-color="#a19d94"/></radialGradient></defs>';
-    s+='<circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+f(r)+'" fill="url(#'+g+')"/>';
-    if(r>=6) CRATERS.forEach(function(c){ s+='<ellipse cx="'+f(x+c[0]*r)+'" cy="'+f(y+c[1]*r)+'" rx="'+f(c[2]*r)+'" ry="'+f(c[2]*r*0.86)+'" fill="#8f8a80" opacity="'+c[3]+'"/>'; });
-    s+=shade(x,y,r,S,{fill:'#0b0e16',op:o.night==null?0.93:o.night});
+    var g=nid('moon'), Sn=norm(S), lc=litCentre(S,[.42,.4]);
+    var s='<defs><radialGradient id="'+g+'g" cx="'+lc[0].toFixed(3)+'" cy="'+lc[1].toFixed(3)+'" r=".75"><stop offset="0" stop-color="#f4f1e8"/><stop offset=".55" stop-color="#dcd7cb"/><stop offset="1" stop-color="#aaa598"/></radialGradient>'
+      +'<radialGradient id="'+g+'l" cx=".5" cy=".5" r=".5"><stop offset=".7" stop-color="#5e5a52" stop-opacity="0"/><stop offset="1" stop-color="#5e5a52" stop-opacity=".28"/></radialGradient>'
+      +'<clipPath id="'+g+'c"><circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+f(r)+'"/></clipPath></defs>';
+    s+='<circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+f(r)+'" fill="url(#'+g+'g)"/><g clip-path="url(#'+g+'c)">';
+    if(r>=4){
+      // the seas: soft dark patches with wobbly edges, foreshortened towards the edge
+      var sea='';
+      MARIA.forEach(function(m){
+        var pts=[], n=r>=20?14:9;
+        for(var i=0;i<n;i++){
+          var t=2*Math.PI*i/n, w=1+0.22*(hash(m[3]*17+i)-0.5)*2, P=mOff(m[0],m[1],m[2]*w*Math.PI/180,t);
+          if(P[2]<0){ var L=Math.sqrt(P[0]*P[0]+P[1]*P[1])||1; P=[P[0]/L,P[1]/L,0]; }
+          pts.push([x+r*P[0], y+r*P[1]]);
+        }
+        sea+='<path d="'+smooth(pts)+'"/>';
+      });
+      s+='<g fill="#8f9093" opacity=".62">'+sea+'</g>';
+    }
+    if(r>=8){
+      // craters: a darker bowl, the lit far wall, a light rim; the shadow falls on the side towards the Sun
+      var sx=Sn[0], sy=Sn[1], small=r<30;
+      MCRAT.forEach(function(c,i){
+        if(small && !c[3] && i%2) return;
+        var C=mPt(c[0],c[1]); if(C[2]<0.08) return;
+        var q=[x+r*C[0], y+r*C[1]], R=r*Math.sin(c[2]*Math.PI/180)*(small?1.5:1), rot=Math.atan2(C[1],C[0])*180/Math.PI;
+        if(R<0.8) return;
+        var ry=R*C[2], tf=' transform="rotate('+f(rot)+' '+f(q[0])+' '+f(q[1])+')"';
+        var ox=-sx*R*0.28, oy=-sy*R*0.28;   // the lit inner wall is on the side away from the Sun
+        s+='<ellipse cx="'+f(q[0])+'" cy="'+f(q[1])+'" rx="'+f(ry)+'" ry="'+f(R)+'" fill="'+(c[3]?'#b9b4a8':'#a7a296')+'" stroke="#f3f0e7" stroke-width="'+f(Math.max(0.5,R*0.14))+'" stroke-opacity=".7"'+tf+'/>';
+        s+='<ellipse cx="'+f(q[0]+ox)+'" cy="'+f(q[1]+oy)+'" rx="'+f(ry*0.72)+'" ry="'+f(R*0.72)+'" fill="'+(c[3]?'#f1eee5':'#c9c4b8')+'"'+tf.replace(f(q[0])+' '+f(q[1]),f(q[0]+ox)+' '+f(q[1]+oy))+'/>';
+      });
+      // Tycho's rays, which stand out at full moon
+      var full=Math.max(0,Sn[2]);
+      if(full>0.3 && r>=20){
+        var T=mPt(-11,-43), tq=[x+r*T[0], y+r*T[1]], ray='';
+        for(var k=0;k<9;k++){
+          var ang=2*Math.PI*k/9+hash(k+40), len=r*(0.35+0.45*hash(k+60));
+          ray+='<line x1="'+f(tq[0])+'" y1="'+f(tq[1])+'" x2="'+f(tq[0]+Math.cos(ang)*len)+'" y2="'+f(tq[1]+Math.sin(ang)*len*0.8)+'"/>';
+        }
+        s+='<g stroke="#fbfaf5" stroke-width="'+f(r*0.018)+'" stroke-linecap="round" opacity="'+(0.45*(full-0.3)/0.7).toFixed(2)+'">'+ray+'</g>';
+      }
+    }
+    s+='<circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+f(r)+'" fill="url(#'+g+'l)"/>';
+    s+=shade(x,y,r,S,{fill:'#0b0e16',op:o.night==null?0.93:o.night,soft:0.035});
+    s+='</g>';
     if(o.rim!==false) s+='<circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+f(r)+'" fill="none" stroke="#5b6478" stroke-width="'+f(Math.max(0.8,r*0.02))+'" opacity=".7"/>';
     return s;
   }
@@ -494,6 +567,19 @@ var SK=(function(){
     [[83,-35],[82,-20],[76,-19],[70,-22],[65,-38],[60,-43],[65,-52],[70,-54],[76,-68],[79,-70],[82,-60]],
     [[-66,0],[-70,30],[-67,60],[-66,90],[-66,120],[-68,150],[-72,170],[-78,-165],[-75,-140],[-73,-110],[-72,-80],[-64,-58],[-70,-60],[-77,-45],[-72,-15]]
   ];
+  // Dry land drawn tan on top of the green: the Sahara and Arabia, central Asia, Australia, the south-west USA, the Kalahari.
+  var DESERT=[
+    [[30,-8],[32,8],[30,20],[31,29],[29,34],[30,46],[24,55],[18,52],[15,43],[17,33],[15,22],[16,8],[17,-4],[20,-15],[26,-13]],
+    [[46,52],[47,64],[46,80],[45,95],[43,108],[39,103],[38,90],[40,74],[37,60]],
+    [[-19,121],[-20,133],[-24,140],[-30,138],[-31,127],[-27,117],[-22,116]],
+    [[38,-118],[37,-109],[31,-104],[29,-111],[33,-116]],
+    [[-21,17],[-20,24],[-26,26],[-28,19]]
+  ];
+  // the sea ice round the North Pole
+  var SEAICE=[[[84,-180],[82,-140],[85,-100],[81,-60],[83,-20],[81,20],[84,60],[81,100],[84,140],[82,170]]];
+  // Cartoon clouds: bands drawn along a latitude [lat, lon from, lon to, width in degrees, wave], so they turn with the Earth.
+  var CLOUDS=[[52,-50,-15,5,4],[47,-170,-140,4,3],[58,10,40,4,3],[45,140,175,4.5,4],[-48,-30,10,5,3],[-52,60,110,5,4],[-45,150,-170,4.5,3],
+    [7,-35,-10,3,2],[5,85,110,3,2],[9,-130,-105,3,2],[-8,160,180,3,2],[30,-75,-55,3.5,3],[-30,-95,-80,3.5,3],[63,-160,-130,3.5,2],[-62,-120,-80,4,2]];
   // The frame of a globe. o.N: the direction of the North Pole, o.ref: the direction of longitude 0 before spinning
   // (default: towards the viewer), o.spin: how far it has turned, in degrees (the land moves east as spin grows).
   function frame(o){
@@ -545,23 +631,46 @@ var SK=(function(){
   // o.equator a faint equator; o.pins [{lat, lon, col}] places marked on the surface.
   function earth(x,y,r,o){
     o=o||{};
-    var F=frame(o), g=nid('earth'), s='';
-    s+='<defs><radialGradient id="'+g+'o" cx=".42" cy=".38" r=".72"><stop offset="0" stop-color="#4f8fe0"/><stop offset=".7" stop-color="#2a63b8"/><stop offset="1" stop-color="#1a4588"/></radialGradient>'
+    var F=frame(o), g=nid('earth'), s='', lc=litCentre(o.S,[.42,.38]), w=f(Math.max(0.4,r*0.008));
+    s+='<defs><radialGradient id="'+g+'o" cx="'+lc[0].toFixed(3)+'" cy="'+lc[1].toFixed(3)+'" r=".75"><stop offset="0" stop-color="#5ea6ef"/><stop offset=".6" stop-color="#2f6fc4"/><stop offset="1" stop-color="#1b4a92"/></radialGradient>'
+      +'<radialGradient id="'+g+'h" cx=".5" cy=".5" r=".5"><stop offset=".78" stop-color="#bfe3ff" stop-opacity="0"/><stop offset="1" stop-color="#bfe3ff" stop-opacity=".42"/></radialGradient>'
       +'<clipPath id="'+g+'c"><circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+f(r)+'"/></clipPath></defs>';
+    if(r>=10) s+='<circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+f(r*1.06)+'" fill="none" stroke="#7ec4ff" stroke-width="'+f(r*0.07)+'" opacity=".22"/>';   // the thin blue air
     s+='<circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+f(r)+'" fill="url(#'+g+'o)"/><g clip-path="url(#'+g+'c)">';
-    function land(list,fill,stroke){
+    function land(list,fill,stroke,round,op){
       list.forEach(function(L){
         var Ps=L.map(function(q){ return surf(F,q[0],q[1]); });
         if(!Ps.some(function(P){ return P[2]>0; })) return;
-        s+='<path d="'+poly(Ps.map(function(P){ return proj(x,y,r,P,true); }))+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="'+f(Math.max(0.4,r*0.008))+'" stroke-linejoin="round"/>';
+        var pts=Ps.map(function(P){ return proj(x,y,r,P,true); });
+        s+='<path d="'+(round?smooth(pts):poly(pts))+'" fill="'+fill+'"'+(stroke?' stroke="'+stroke+'" stroke-width="'+w+'" stroke-linejoin="round"':'')+(op?' opacity="'+op+'"':'')+'/>';
       });
     }
-    land(LAND,'#5f9d48','#3f7a35');
-    land(ICE,'#eef3f6','#c9d6de');
+    land(LAND,'#68a94e','#4a8a3a');
+    if(r>=10) land(DESERT,'#cdb875',null,true,.85);
+    land(ICE,'#f1f6f9','#cfdbe3');
+    if(r>=10) land(SEAICE,'#eef4f8',null,true,.9);
+    if(r>=14){
+      // clouds: soft white bands that turn with the Earth (front side only)
+      var cl='';
+      CLOUDS.forEach(function(c,i){
+        var run=[], n=16, sw=f(r*c[3]*Math.PI/180);
+        function out(){ if(run.length>1) cl+='<polyline points="'+run.join(' ')+'" stroke-width="'+sw+'"/>'; run=[]; }
+        var span=((c[2]-c[1])+360)%360;
+        for(var k=0;k<=n;k++){
+          var lon=c[1]+span*k/n, lat=c[0]+c[4]*Math.sin(k*1.3+i);
+          var P=surf(F,lat,lon);
+          if(P[2]<0.05){ out(); continue; }
+          var q=proj(x,y,r,P); run.push(f(q[0])+','+f(q[1]));
+        }
+        out();
+      });
+      s+='<g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" opacity=".55">'+cl+'</g>';
+    }
     if(o.equator) s+=latLine(x,y,r,F,0,{col:'#ffffff',w:1,dash:'3 4',op:.55});
     (o.lats||[]).forEach(function(L){ s+=latLine(x,y,r,F,L.lat,{S:L.split===false?null:o.S,col:L.col,day:L.day,night:L.night,w:L.w,dash:L.dash,op:L.op}); });
-    if(o.S) s+=shade(x,y,r,o.S,{fill:'#030612',op:o.night==null?0.62:o.night});
-    s+='</g><circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+f(r)+'" fill="none" stroke="#9fd0ff" stroke-width="'+f(Math.max(1,r*0.035))+'" opacity=".45"/>';
+    s+='<circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+f(r)+'" fill="url(#'+g+'h)"/>';   // haze at the edge
+    if(o.S) s+=shade(x,y,r,o.S,{fill:'#030612',op:o.night==null?0.62:o.night,soft:0.04});
+    s+='</g><circle cx="'+f(x)+'" cy="'+f(y)+'" r="'+f(r)+'" fill="none" stroke="#9fd0ff" stroke-width="'+f(Math.max(1,r*0.03))+'" opacity=".4"/>';
     (o.pins||[]).forEach(function(p){
       var P=surf(F,p.lat,p.lon); if(P[2]<-0.02) return;
       var q=proj(x,y,r,P), pr=Math.max(3,r*0.06);
