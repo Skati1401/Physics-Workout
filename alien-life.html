@@ -1983,6 +1983,31 @@ function factFiles(panel){
   const g=mk('div','facts-grid');d.appendChild(g);
   F.forEach(f=>g.appendChild(mk('div','fact-card world-'+f.id,'<h4>'+wName(f.id)+'<small>'+f.sub+'</small></h4><dl>'+f.rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('')+'</dl>')));
 }
+// Load my answers: reads a file made by "Download as a file" and puts every saved answer back,
+// so a student can carry on on another computer. Only the ALIENLIFE: line at the end of the file is read.
+const HANDIN={};
+function pickFile(say){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.txt,text/plain';inp.style.display='none';document.body.appendChild(inp);
+  inp.addEventListener('change',()=>{
+    const f=inp.files&&inp.files[0];inp.remove();if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{
+      let o=null;
+      try{const m=/ALIENLIFE:([A-Za-z0-9+\/=]+)/.exec(String(r.result));if(m)o=JSON.parse(decodeURIComponent(escape(atob(m[1]))));}catch(e){o=null;}
+      if(!o||o.k!==STORE_KEY||!o.v||typeof o.v!=='object'){say('That file has no saved answers in it. Choose the file you made with Download as a file.','bad');return;}
+      let n=0;
+      games.forEach(g=>{const st=o.v[g.key];if(st&&typeof st==='object'){try{g.setState(st);n++;}catch(e){console.error(e);}}});
+      if(o.n&&HANDIN.setName)HANDIN.setName(o.n);
+      writeSave();showProgress(true);
+      const t=TAB_IDS.indexOf(o.tab)>=0?o.tab:activeTab;
+      say('Loaded your answers'+(o.t?' from '+new Date(o.t).toLocaleDateString('en-GB',{day:'numeric',month:'long'}):'')+'. '+($('#tabs-done')?$('#tabs-done').textContent+'.':''),'good');
+      if(t!==activeTab)setTimeout(()=>applyTabUI(t),1200);
+    };
+    r.onerror=()=>say('That file could not be read.','bad');
+    r.readAsText(f);
+  });
+  inp.click();
+}
 // Hand in: every answer on the page as plain text, to copy or download. The name stays in this browser only.
 function handIn(panel){
   const body=act(panel,'Hand in','Copy my answers','Put your name in, then copy your answers and paste them where your teacher asks (for example Teams or Google Classroom), or download them as a file.');
@@ -1992,9 +2017,11 @@ function handIn(panel){
   const nm=document.createElement('input');nm.type='text';nm.id='hand-name';nm.className='wr-in';nm.autocomplete='name';body.appendChild(nm);
   try{nm.value=localStorage.getItem(NK)||'';}catch(e){}
   nm.addEventListener('input',()=>{try{localStorage.setItem(NK,nm.value);}catch(e){}});
-  const b=bar(body,[{label:'Copy my answers',primary:true,fn:copy},{label:'Download as a file',fn:download},{label:'Show what will be copied',fn:()=>{pre.hidden=!pre.hidden;if(!pre.hidden)pre.textContent=text();}}]);
+  const b=bar(body,[{label:'Copy my answers',primary:true,fn:copy},{label:'Download as a file',fn:download},{label:'Load my answers',fn:()=>pickFile(b.say)},{label:'Show what will be copied',fn:()=>{pre.hidden=!pre.hidden;if(!pre.hidden)pre.textContent=text();}}]);
+  body.appendChild(mk('p','real-note','Moving to another computer? Download your answers as a file, then open this page on the other computer and press <strong>Load my answers</strong> to carry on where you left off.'));
+  HANDIN.setName=v=>{nm.value=v;try{localStorage.setItem(NK,v);}catch(e){}};
   const pre=mk('pre');pre.hidden=true;body.appendChild(pre);
-  function text(){
+  function text(withData){
     writeSave();
     const L=['Mission: Find Alien Life Workout','Name: '+(nm.value.trim()||'(no name)'),'Date: '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}),$('#tabs-done')?$('#tabs-done').textContent:'',''];
     TAB_IDS.forEach(t=>{
@@ -2008,6 +2035,12 @@ function handIn(panel){
       });
       L.push('');
     });
+    if(withData){
+      const o={k:STORE_KEY,t:new Date().toISOString(),n:nm.value.trim(),tab:activeTab,v:{}};
+      games.forEach(g=>{try{o.v[g.key]=g.getState();}catch(e){}});
+      L.push('==== Saved answers: keep this part. Load my answers reads it to carry on on another computer ====');
+      L.push('ALIENLIFE:'+btoa(unescape(encodeURIComponent(JSON.stringify(o)))));
+    }
     return L.join('\n');
   }
   function copy(){
@@ -2017,9 +2050,9 @@ function handIn(panel){
     try{navigator.clipboard.writeText(t).then(()=>b.say('Copied. Now paste it where your teacher asks.','good'),fall);}catch(e){fall();}
   }
   function download(){
-    try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text()],{type:'text/plain'}));
+    try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text(true)],{type:'text/plain'}));
       a.download='alien-life-answers'+(nm.value.trim()?'-'+nm.value.trim().replace(/[^A-Za-z0-9]+/g,'-'):'')+'.txt';
-      document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);b.say('Downloaded.','good');}catch(e){b.say('Download did not work. Use Copy my answers instead.','bad');}
+      document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);b.say('Downloaded. Keep the file: Load my answers can read it on another computer.','good');}catch(e){b.say('Download did not work. Use Copy my answers instead.','bad');}
   }
 }
 
@@ -2027,7 +2060,7 @@ function handIn(panel){
 {
   createPredict({host:actHTML('overview','Multiple choice','The mystery rock','',
     '<div class="story"><p>In July 2024, NASA’s <strong>Perseverance</strong> rover was driving along a dried-up river valley on Mars when it found an arrow-shaped rock covered in strange <strong>"leopard spots"</strong>. Scientists nicknamed it <strong>Cheyava Falls</strong>. The rock contains carbon-based (organic) chemicals, and the spots hold minerals that, on Earth, are often made when microbes feed on chemicals in mud.</p><p>In September 2025 NASA said the rover’s sample of this rock holds a <strong>"potential biosignature"</strong>, the closest we have ever come to finding life on Mars. <strong>The catch:</strong> the sample is still sealed inside the rover, on Mars.</p></div>'
-    +extLinks([{t:'NASA: the full story',href:'https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/',d:'photos of the rock'}])),
+    +extLinks([{t:'Photo: the leopard spots',href:'https://science.nasa.gov/photojournal/perseverance-finds-a-rock-with-leopard-spots/',d:'NASA close-up of the rock, with a labelled version'},{t:'Photo: the rover beside the rock',href:'https://www.jpl.nasa.gov/images/pia26344-perseverances-selfie-with-cheyava-falls/',d:'Perseverance\u2019s selfie with Cheyava Falls'},{t:'NASA: the full story',href:'https://www.nasa.gov/news-release/nasa-says-mars-rover-discovered-potential-biosignature-last-year/',d:'what NASA announced in 2025'}])),
     q:'What does "potential biosignature" mean?',
     options:[
       {text:'A possible sign of life that still needs more tests',correct:true},
@@ -2035,6 +2068,9 @@ function handIn(panel){
       {text:'A fossil of a small animal found in the rock',why:'No fossil was found. The evidence is chemicals and the minerals in the spots.'},
       {text:'Living microbes found in the rock today',why:'Nothing living was found. The rock formed billions of years ago, so any life was ancient.'}],
     explain:'A biosignature is a sign that life was there. "Potential" means it could have been made by life, but scientists cannot yet rule out other, non-living causes. They need to test the sample in a lab on Earth.'});
+  {const br=$('#panel-overview .brief'),p=mk('div','');br.appendChild(p);
+    const lb=bar(p,[{label:'Load my answers',fn:()=>lb.say&&pickFile(lb.say)}]);lb.el.style.margin='4px 0 0';
+    lb.el.insertAdjacentHTML('afterbegin','<span>Started on another computer? Load the file you downloaded there:</span>');}
   goalsAct('overview',[{t:'Explain what a "potential biosignature" is'},{t:'Find planets, moons and spacecraft in NASA’s live Solar System'},{t:'Name the three ingredients life needs'},{t:'Explain how extremophiles survive, and why that matters'},{t:'Compare Mars, Europa, Titan and Enceladus using evidence'},{t:'Plan a £10 billion mission and pitch it'}]);
   pairFirstTwo('overview');
   createWrite({host:act('overview','Your view','Is it life?','There is no right answer yet. Scientists disagree too.'),items:[
