@@ -193,6 +193,10 @@
   :root[data-theme="dark"]{ --topic:#86a9ff; --topic-soft:#1a2b55; }
   #wp-stats{grid-template-columns:repeat(4,minmax(0,1fr));}
   #wp-world button{padding:8px 10px;}
+  .wp-row.is-click{cursor:pointer;}
+  .wp-row.is-click:hover .wp-hit{stroke:var(--topic);stroke-width:1.2;}
+  .wp-row:focus{outline:none;}
+  .wp-row.is-click:focus-visible .wp-hit{stroke:var(--topic);stroke-width:2.5;}
 </style>
 <style id="choice-kit">
 /* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
@@ -823,13 +827,14 @@ var SK=(function(){
       gChart.innerHTML=s; return;
     }
     W.forEach(function(w,i){
-      var y=top+i*rh, wt=weight(i,mass), len=bw*wt/max, on=i===wi;
-      if(on) s+='<rect x="'+(x0+6)+'" y="'+(y-3)+'" width="'+(cw-12)+'" height="'+(rh-2)+'" rx="6" fill="var(--topic-soft)"/>';
+      var y=top+i*rh, wt=weight(i,mass), len=bw*wt/max, on=i===wi, ex=mode==='explore';
+      s+='<g class="wp-row'+(ex?' is-click':'')+'" data-i="'+i+'"'+(ex?' tabindex="0" role="button" aria-pressed="'+on+'" aria-label="Go to '+w.n+'"':'')+'>';
+      s+='<rect class="wp-hit" x="'+(x0+6)+'" y="'+(y-3)+'" width="'+(cw-12)+'" height="'+(rh-2)+'" rx="6" fill="'+(on?'var(--topic-soft)':'transparent')+'"/>';
       s+='<text x="'+(bx-8)+'" y="'+(y+16)+'" text-anchor="end" font-size="12.5" fill="var(--ink)"'+(on?' font-weight="600"':'')+'>'+w.n+'</text>';
       s+='<rect x="'+bx+'" y="'+(y+4)+'" width="'+f(Math.max(1,len))+'" height="16" rx="3" fill="'+w.gr+'" stroke="'+w.gs+'"/>';
-      s+='<text x="'+f(bx+len+6)+'" y="'+(y+16)+'" font-size="12" fill="var(--ink-soft)"'+(on?' font-weight="600"':'')+'>'+num(wt)+' N</text>';
+      s+='<text x="'+f(bx+len+6)+'" y="'+(y+16)+'" font-size="12" fill="var(--ink-soft)"'+(on?' font-weight="600"':'')+'>'+num(wt)+' N</text></g>';
     });
-    s+='<text x="'+(x0+14)+'" y="'+(SH-12)+'" font-size="11.5" fill="var(--ink-faint)">mass '+num(mass)+' kg on every world</text>';
+    s+='<text x="'+(x0+14)+'" y="'+(SH-12)+'" font-size="11.5" fill="var(--ink-faint)">mass '+num(mass)+' kg '+(mode==='explore'?'everywhere · click a world':'on every world')+'</text>';
     gChart.innerHTML=s;
   }
   function readings(){
@@ -849,6 +854,15 @@ var SK=(function(){
     b.addEventListener('click',function(){ if(mode!=='explore') return; stopRun(); hold=false; wi=i; peak=null; draw(); });
     $('wp-world').appendChild(b);
   });
+  // click (or Enter/Space on) a row of the bar chart to go to that world
+  function rowPick(e){
+    if(mode!=='explore') return;
+    var r=e.target.closest && e.target.closest('.wp-row'); if(!r) return;
+    if(e.type==='keydown'){ if(e.key!=='Enter' && e.key!==' ') return; e.preventDefault(); }
+    var i=+r.getAttribute('data-i'); stopRun(); hold=false; wi=i; peak=null; draw();
+    var n=gChart.querySelector('.wp-row[data-i="'+i+'"]'); if(n && e.type==='keydown') n.focus();
+  }
+  gChart.addEventListener('click',rowPick); gChart.addEventListener('keydown',rowPick);
   $('wp-mass').addEventListener('input',function(){ stopRun(); hold=false; mass=+this.value; draw(); });
 
   // ---------- Jump ----------
