@@ -23,7 +23,7 @@
     --font-display:'Big Shoulders',system-ui,sans-serif;
     --font-body:'IBM Plex Sans',system-ui,sans-serif;
     --font-mono:'IBM Plex Mono',ui-monospace,monospace;
-    /* solid kit colours */ --glass:#9fb4c8; --glass-in:#f4f8fb; --thermo:#f3f6fa; --thread:#d7261e; --steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --wood-f:#c99e6a; --wood-t:#e3c08f; --wood-s:#9c7444; --case:#3f4a5e; --tray:#dfe4ec; --tray-in:#f6f8fb;
+    /* solid kit colours */ --glass:#9fb4c8; --glass-in:#f4f8fb; --thermo:#f3f6fa; --thread:#d7261e; --steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --wood-f:#c99e6a; --wood-t:#e3c08f; --wood-s:#9c7444; --case:#3f4a5e; --tray:#dfe4ec; --tray-in:#f6f8fb; --lcd:#d5dec8; --lcd-ink:#1d2a1f; --cable:#3a4352;
     color-scheme:light;
   }
   @media (prefers-color-scheme: dark){
@@ -38,7 +38,7 @@
       --topic:#a3d65c; --topic-soft:#1f2e12;
       --alpha:#ff7a7a; --beta:#7da3ff; --gamma:#c39bff;
       --lead:#a7aebb; --alu:#7d8592;
-      /* solid kit colours */ --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f; --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --case:#56617a; --tray:#3a4558; --tray-in:#161c27;
+      /* solid kit colours */ --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f; --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --case:#56617a; --tray:#3a4558; --tray-in:#161c27; --lcd:#c6d0b8; --lcd-ink:#172018; --cable:#8e99ab;
     color-scheme:dark;
     }
   }
@@ -53,7 +53,7 @@
     --topic:#a3d65c; --topic-soft:#1f2e12;
     --alpha:#ff7a7a; --beta:#7da3ff; --gamma:#c39bff;
     --lead:#a7aebb; --alu:#7d8592;
-    /* solid kit colours */ --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f; --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --case:#56617a; --tray:#3a4558; --tray-in:#161c27;
+    /* solid kit colours */ --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f; --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --case:#56617a; --tray:#3a4558; --tray-in:#161c27; --lcd:#c6d0b8; --lcd-ink:#172018; --cable:#8e99ab;
     color-scheme:dark;
   }
 
@@ -159,6 +159,8 @@
     .rg.pop{transform-box:fill-box;transform-origin:center;animation:rgpop .5s ease-out;}
     @keyframes rgpop{0%{transform:scale(2.4);stroke:var(--accent);stroke-width:2.5px;opacity:1}100%{transform:scale(1);opacity:1}} }
   .view.tall{max-height:none;}
+  .btn[aria-disabled="true"]{opacity:.45;cursor:default;}
+  .meas-off{display:none!important;}   /* measure mode (?show=measure): parts of the page it does not use */
 </style>
 <style id="choice-kit">
 /* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
@@ -459,6 +461,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     ba:{name:'barium-137m', th:153}
   };
   var LN2 = Math.log(2), RUN_HL = 5, REAL_SECS = 16;   // a run is 5 half-lives, played over about 16 s
+  var MEAS=/[?&]show=measure\b/.test(location.search);   // the practical page's Do Experiment mode: see "Measure mode" below
   var svg=$('#rd-svg'), gridG=$('#rd-grid'), graphG=$('#rd-graph'), playBtn=$('#rd-play'), slowBtn=$('#rd-slow'), expBtn=$('#rd-exp');
   var levelSeg=segGroup($('#rd-level'), function(){ layout(); draw(); });
   var isoSeg=segGroup($('#rd-iso'), function(){ reset(); });
@@ -493,7 +496,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     }
     buildGrid();
   }
-  if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ layout(); draw(); });
+  if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ if(MEAS) return; layout(); draw(); });
 
   // ---- the nuclei: a decayed one keeps a faint ring where it was; the coloured dot fades out (opacity only)
   function buildGrid(){
@@ -688,13 +691,147 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     jumpedTo=k; jumpSeg.pick(String(k)); draw();
   }
 
-  playBtn.addEventListener('click', function(){ if(running){ stop(); draw(); } else run(); });
+
+  // ---- Measure mode (?show=measure, 16 Nov 2026, TODO.md 5w): the half-life experiment for a practical page's Do Experiment tab.
+  // A sample in front of a GM tube, a counter that counts for 10 s at fixed times and a stopwatch held at the start of each count;
+  // the background is counted separately, with the sample shut in its lead box. The student reads the counter and the stopwatch:
+  // no nuclei, graph, reading boxes, working or level switch, and the note never gives a value. The level comes from ?level=
+  // (IGCSE if left out) and fixes the sample and its readings. The readings are fixed, not random: the practical page's content.js
+  // (to come: tools/practical-gen/practicals/half-life/) must check against these same numbers, MEAS_SET here = HL_SET there.
+  // They are listed, with the model behind them, in tools/CORE-PRACTICALS.md, "Measure modes".
+  //   bgT, bg: the background count lasts bgT seconds and gives bg counts.   every: seconds between the starts of the 10 s counts.
+  //   c: the counter's reading after each 10 s count (background included), the first one starting at 0 s.
+  var MEAS_SET={
+    igcse:{name:'X', bgT:60,  bg:30,  every:20, c:[409,325,251,209,161,131,101,85,71,54]},   // half-life 60 s
+    ial:  {name:'Y', bgT:300, bg:120, every:30, c:[610,455,321,251,184,138,103,78]},         // decay constant 0.0100 s⁻¹ (half-life 69.3 s)
+    ib:   {name:'Z', bgT:120, bg:72,  every:40, c:[480,337,250,180,121,91,67,47,36]}         // half-life 80 s (decay constant 0.00866 s⁻¹)
+  };
+  var MEAS_COUNT=10;                                   // each count of the sample lasts 10 s
+  var MS=MEAS_SET[PW_LEVEL||'igcse'], M={};            // M: where the run has got to
+  function measReset(){ cancelAnimationFrame(raf); M={i:-1, phase:'idle', shown:0, secs:0, clock:0, away:true, bgDone:M.bgDone||false, last:null}; }
+  function measBusy(){ return M.phase==='count' || M.phase==='wait' || M.phase==='bg'; }
+  function measDoneRun(){ return M.i>=MS.c.length-1 && !measBusy(); }
+  function mmss(s){ s=Math.floor(s+1e-6); return Math.floor(s/60)+':'+('0'+s%60).slice(-2); }
+  function minsText(s){ return s%60 ? s+' s' : (s===60 ? '1 minute' : s/60+' minutes'); }
+  var ML={};
+  function measLayout(){
+    var tall=svg.getBoundingClientRect().width<520;
+    ML = tall ? {tall:1, W:430, H:392, SX:172, CY:258, BENCH:326, TL:84, bx:14, cx:10, cy:14, cw:196, ch:104, sx:246, sy:26, sk:1.75}
+              : {tall:0, W:860, H:312, SX:226, CY:184, BENCH:262, TL:108, bx:26, cx:452, cy:22, cw:190, ch:110, sx:684, sy:40, sk:2};
+    var vb='0 0 '+ML.W+' '+ML.H; if(svg.getAttribute('viewBox')!==vb) svg.setAttribute('viewBox', vb);
+    svg.classList.toggle('tall', !!ML.tall);
+  }
+  function measCounter(){
+    var x=ML.cx, y=ML.cy, w=ML.cw, h=ML.ch, g='';
+    g+=ell(x+w/2+6, y+h+7, w/2, 5, '#000', ' opacity=".12"');
+    g+=box(x, y, w, h, 10, -7, 'var(--case)');
+    g+=rect(x+12, y+12, w-24, 46, 'var(--lcd)', ' rx="4"')+rect(x+12, y+12, w-24, 46, 'none', ' rx="4" stroke="#000" stroke-opacity=".35" stroke-width="1.5"');
+    g+=txt(x+w-22, y+48, String(M.shown), {a:'end', fs:34, w:600, c:'var(--lcd-ink)'});
+    g+=txt(x+20, y+28, 'counts', {fs:11, c:'var(--lcd-ink)'});
+    g+=rect(x+w-84, y+68, 72, 28, 'var(--lcd)', ' rx="3"')+txt(x+w-18, y+88, M.secs+' s', {a:'end', fs:17, w:600, c:'var(--lcd-ink)'});
+    g+=txt(x+14, y+87, 'timer', {fs:12, c:'#fff'});
+    g+='<circle cx="'+(x+66)+'" cy="'+(y+83)+'" r="5" fill="'+(M.phase==='count'||M.phase==='bg' ? 'var(--accent)' : 'var(--steel-sh)')+'"/>';
+    return g;
+  }
+  function measDraw(){
+    measLayout();
+    var g='', SX=ML.SX, CY=ML.CY, BENCH=ML.BENCH, TL=ML.TL, bt=BENCH-9, tx=SX+34, j;
+    g+=box(6, BENCH, ML.W-28, ML.H-BENCH+4, 16, -14, 'var(--wood-f)', {top:'var(--wood-t)', side:'var(--wood-s)'});
+    // the lead box the sample is kept in: lid on while the sample is inside, lid beside it while the sample is out
+    var lx=ML.bx, lw=62, lh=40, ly=bt-lh;
+    g+=ell(lx+lw/2+5, bt+1, lw/2+6, 5, '#000', ' opacity=".14"');
+    g+=box(lx, ly, lw, lh, 10, -7, 'var(--lead)', M.away ? null : {top:'var(--tray-in)'});
+    if(M.away) g+=box(lx-3, ly-7, lw+6, 7, 10, -7, 'var(--lead)')+rect(lx+lw/2-7, ly-12, 14, 5, 'var(--steel-sh)', ' rx="2"');
+    else if(!ML.tall) g+=box(lx+lw+16, bt-7, lw-8, 7, 8, -6, 'var(--lead)');
+    g+=txt(lx+lw/2+2, ly-(M.away?22:14), 'lead box', {a:'middle', fs:12.5, c:'var(--ink)', halo:1});
+    if(M.away) g+=txt(lx+lw/2+2, ly+lh/2+5, 'sample '+MS.name, {a:'middle', fs:12, c:'#fff', w:600});
+    // sample holder: a block on a stand with a rod; the sample sits in the end of the rod, facing the tube's window
+    var hx=SX-74, hw=52;
+    g+=ell(hx+hw/2+4, bt+1, 30, 5, '#000', ' opacity=".14"');
+    g+=rect(hx+hw/2-5, CY+22, 10, bt-CY-24, 'var(--steel)')+rect(hx+hw/2-5, CY+22, 3, bt-CY-24, 'var(--steel-hi)')+box(hx+hw/2-20, bt-6, 40, 6, 6, -4, 'var(--steel-sh)');
+    g+=box(hx, CY-24, hw, 48, 10, -7, 'var(--steel-sh)');
+    g+=tube(hx+hw-6, CY, SX-5, CY, 11, 'var(--steel)', 'var(--steel-hi)');
+    if(!M.away) g+=rect(SX-7, CY-7, 8, 14, 'var(--topic)', ' rx="1.5"');
+    else g+=rect(SX-7, CY-7, 8, 14, 'none', ' rx="1.5" stroke="var(--ink-faint)" stroke-width="1.2" stroke-dasharray="2.5 2"');
+    g+=txt(SX+2, CY-48, M.away ? 'holder' : 'sample '+MS.name, {a:'end', fs:12.5, c:'var(--ink)', halo:1})+txt(SX+2, CY-33, M.away ? '(empty)' : 'in its holder', {a:'end', fs:12.5, c:'var(--ink)', halo:1});
+    // GM tube on a stand and its cable to the counter
+    var cab=[], p0=[tx+TL-2,CY], p3=ML.tall ? [ML.cx+ML.cw-34, ML.cy+ML.ch-1] : [ML.cx+1, ML.cy+ML.ch-22];
+    var p1=ML.tall ? [Math.min(ML.W-6, p0[0]+60), CY-30] : [p0[0]+60, CY], p2=ML.tall ? [p3[0], p3[1]+70] : [p3[0]-70, p3[1]];
+    for(j=0;j<=20;j++){ var u=j/20, v=1-u; cab.push([v*v*v*p0[0]+3*v*v*u*p1[0]+3*v*u*u*p2[0]+u*u*u*p3[0], v*v*v*p0[1]+3*v*v*u*p1[1]+3*v*u*u*p2[1]+u*u*u*p3[1]]); }
+    g+=pl(cab, 'var(--cable)', 3.2);
+    g+=ell(tx+TL/2+4, bt+1, 30, 5, '#000', ' opacity=".14"');
+    g+=rect(tx+TL/2-4, CY+10, 8, bt-CY-12, 'var(--steel)')+rect(tx+TL/2-4, CY+10, 2.6, bt-CY-12, 'var(--steel-hi)')+box(tx+TL/2-20, bt-6, 40, 6, 6, -4, 'var(--steel-sh)');
+    g+=rect(tx+2, CY-11, TL-2, 22, 'var(--steel)', ' rx="5"')+rect(tx+6, CY-8, TL-12, 4.5, 'var(--steel-hi)', ' rx="2" opacity=".85"')+rect(tx+TL-14, CY-11, 14, 22, 'var(--steel-sh)', ' rx="4"');
+    g+=ell(tx+2, CY, 3.6, 11, 'var(--glass-in)', ' stroke="var(--steel-sh)" stroke-width="1.6"');
+    g+=rect(tx+TL/2-9, CY+7, 18, 9, 'var(--steel-sh)', ' rx="2"');
+    g+=txt(tx+TL/2+10, CY-22, 'GM tube', {a:'middle', fs:12.5, c:'var(--ink)', halo:1});
+    // the counter with its own timer, and the stopwatch (held at the moment each count starts)
+    g+=measCounter();
+    var fast = M.phase==='bg' ? Math.round(MS.bgT/MEAS_BG_REAL) : Math.round(MEAS_COUNT/MEAS_COUNT_REAL);
+    g+=txt(ML.cx+ML.cw/2, ML.cy+ML.ch+20, M.phase==='count'||M.phase==='bg' ? 'counter: shown '+fast+' × faster' : 'counter', {a:'middle', fs:11.5, c:M.phase==='count'||M.phase==='bg'?'var(--accent)':'var(--ink-soft)', halo:1});
+    g+=stopwatch(ML.sx, ML.sy, mmss(M.clock), ML.sk);
+    g+=txt(ML.sx+39*ML.sk, ML.sy+40*ML.sk+20, M.phase==='wait' ? 'stopwatch: running' : 'stopwatch', {a:'middle', fs:11.5, c:M.phase==='wait'?'var(--accent)':'var(--ink-soft)', halo:1});
+    if(M.i>=0 && M.phase!=='wait') g+=txt(ML.sx+39*ML.sk, ML.sy+40*ML.sk+35, 'held when the count started', {a:'middle', fs:11.5, c:'var(--ink-soft)', halo:1});
+    svg.innerHTML=g;
+    measNote();
+  }
+  function measNote(){
+    var note, n=MS.c.length, bgT=minsText(MS.bgT);
+    if(M.phase==='bg') note='Counting the background for '+bgT+'. Sample '+MS.name+' is shut in its lead box, so these counts do not come from the sample.';
+    else if(M.phase==='wait') note='The stopwatch keeps running. The next count starts '+MS.every+' s after the last one started.';
+    else if(M.phase==='count') note='Counting for '+MEAS_COUNT+' s. The stopwatch is held at the time this count started.';
+    else if(M.last==='bg') note='<b>Write down</b> the background count and how long the counter ran (its timer). '+(M.i<0 ? 'Then <b>put in the sample</b>: the stopwatch starts and the first count begins at once.' : 'You now have every reading: work out the count rate from the sample alone at each time.');
+    else if(M.i<0) note='Sample '+MS.name+' is shut in its lead box. <b>Count the background</b> first. Then put the sample in front of the GM tube: the counter counts for '+MEAS_COUNT+' s every '+MS.every+' s.';
+    else if(M.i<n-1) note='<b>Write down</b> the time on the stopwatch (when this count started) and the count. Reading '+(M.i+1)+' of '+n+'. Then <b>take the next count</b>.';
+    else note='<b>Write down</b> the time and the count. That was the last reading, and the sample is back in its lead box. '+(M.bgDone ? 'Now take the background away from each reading.' : 'You still need the background: <b>count the background</b> now.');
+    if(note!==lastNote){ $('#rd-note').innerHTML=note; lastNote=note; }
+    playBtn.innerHTML = M.i<0 ? '&#9654; Put in the sample' : (measDoneRun() ? 'All counts taken' : '&#9654; Take the next count');
+    // while a count runs the buttons are only marked as disabled (aria-disabled), so a keyboard user keeps their place
+    playBtn.disabled = measDoneRun(); playBtn.setAttribute('aria-disabled', String(measBusy()));
+    $('#rd-bg').disabled = !measBusy() && M.i>=0 && !measDoneRun(); $('#rd-bg').setAttribute('aria-disabled', String(measBusy()));
+  }
+  var MEAS_COUNT_REAL=2, MEAS_BG_REAL=4, MEAS_WAIT_REAL=0.9;   // seconds on screen for a 10 s count, a background count and the wait between counts
+  function measAnim(real, each, end){
+    var t0=performance.now();
+    (function f(now){ var u=Math.min(1,(now-t0)/1000/real); each(u); if(u<1){ measDraw(); raf=requestAnimationFrame(f); } else { end(); measDraw(); } })(t0);
+  }
+  function measCount(){
+    var i=M.i, target=MS.c[i];
+    M.phase='count'; M.clock=i*MS.every; M.last=null;
+    measAnim(MEAS_COUNT_REAL, function(u){ M.shown=Math.floor(target*u); M.secs=Math.floor(MEAS_COUNT*u); },
+      function(){ M.shown=target; M.secs=MEAS_COUNT; M.phase='read'; M.last='c'; if(i>=MS.c.length-1) M.away=true; });
+  }
+  function measMain(){
+    if(measBusy() || measDoneRun()) return;
+    if(M.i<0){ M.i=0; M.away=false; M.shown=0; M.secs=0; M.clock=0; measCount(); return; }
+    var from=M.i*MS.every+MEAS_COUNT, to=(M.i+1)*MS.every;
+    M.phase='wait'; M.last=null;
+    measAnim(MEAS_WAIT_REAL, function(u){ M.clock=from+(to-from)*u; }, function(){ M.i++; M.shown=0; M.secs=0; measCount(); });
+  }
+  function measBg(){
+    if(measBusy() || (M.i>=0 && !measDoneRun())) return;
+    M.phase='bg'; M.last=null; M.away=true;
+    measAnim(MEAS_BG_REAL, function(u){ M.shown=Math.floor(MS.bg*u); M.secs=Math.floor(MS.bgT*u); },
+      function(){ M.shown=MS.bg; M.secs=MS.bgT; M.phase='read'; M.last='bg'; M.bgDone=true; });
+  }
+  function measInit(){
+    Array.prototype.forEach.call(document.querySelectorAll('#rd-slow,#rd-exp,.toprow,.side .cgrid,.side .stats,.side details.working'), function(e){ e.classList.add('meas-off'); });
+    var b=document.createElement('button'); b.className='btn'; b.id='rd-bg'; b.type='button'; b.textContent='Count the background';
+    playBtn.parentNode.insertBefore(b, $('#rd-reset'));
+    b.addEventListener('click', measBg);
+    svg.setAttribute('aria-label', 'A radioactive sample in a holder in front of a GM tube, a lead box, a counter with a timer and a stopwatch');
+    gridG.innerHTML=''; graphG.innerHTML='';
+    M.bgDone=false; measReset(); measDraw();
+    window.addEventListener('resize', function(){ if(!measBusy()) measDraw(); });
+  }
+
+  playBtn.addEventListener('click', function(){ if(MEAS){ measMain(); return; } if(running){ stop(); draw(); } else run(); });
   slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
   expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); reset(); });
-  $('#rd-reset').addEventListener('click', reset);
+  $('#rd-reset').addEventListener('click', function(){ if(MEAS){ M.bgDone=false; measReset(); measDraw(); return; } reset(); });
 
   watchEquals($('#rd-eq1')); watchEquals($('#rd-eq2'));
-  layout(); reset();
+  if(MEAS) measInit(); else { layout(); reset(); }
 })();
 </script><script id="choice-kit-js">
 /* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices".
