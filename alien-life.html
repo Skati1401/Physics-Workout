@@ -526,6 +526,14 @@ svg.sankey{background:var(--panel)}
 .creature-photo figcaption{padding:6px 12px 7px;font-size:13px;line-height:1.35;color:var(--ink-soft);background:var(--panel-2)}
 .creature-photo .credit{display:block;font-size:11px;color:var(--ink-faint);margin-top:2px}
 .creature-photo .credit a{color:inherit}
+.research dl{margin:0}
+.research dt{font:600 12px var(--f-mono);color:var(--accent);margin-top:10px}
+.research dt:first-child{margin-top:0}
+.research dd{margin:2px 0 0;font-size:14.5px}
+.research ul{margin:2px 0 0;padding-left:18px}
+.research .missing{color:var(--ink-faint);font-style:italic}
+.go-tab{font:600 13px var(--f-body);color:var(--accent);background:none;border:0;padding:4px 2px;min-height:32px;cursor:pointer;text-decoration:underline}
+.go-tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 </style>
 <script>
@@ -1892,6 +1900,7 @@ function createPicks(cfg){
   host.appendChild(rev);
   const cmp=b.el.querySelector('.btn');
   const done=()=>cfg.rows.every(r=>rows[r.id].p.get()&&nWords(rows[r.id].inp.value)>=2);
+  ANS.picks=()=>cfg.rows.map(r=>({name:plain(r.name),w:rows[r.id].p.get(),t:rows[r.id].inp.value.trim()}));
   function upd(){const d=done();cmp.hidden=!d;if(!d){rev.hidden=true;cmp.textContent='Compare with a scientist';}}
   upd();
   return track(host,{
@@ -1915,6 +1924,7 @@ function createNotes(cfg){
     });
   });
   bar(host,[{label:'Clear answers',fn:()=>{Object.keys(inp).forEach(k=>{inp[k].value='';});}}]);
+  ANS.notes=wid=>cfg.cols.map(c=>({label:c.label,t:inp[wid+'|'+c.id].value.trim()}));
   return track(host,{
     getState:()=>{const o={};Object.keys(inp).forEach(k=>{o[k]=inp[k].value;});return o;},
     setState:o=>{Object.keys(inp).forEach(k=>{if(o&&typeof o[k]==='string')inp[k].value=o[k];});},
@@ -1946,6 +1956,7 @@ function createScores(cfg){
   bar(host,[{label:'Clear scores',fn:()=>{Object.keys(sel).forEach(k=>{sel[k].value='';});upd();}}]);
   const tot=id=>cfg.crit.reduce((a,c,ci)=>a+(+sel[ci+'|'+id].value||0),0);
   const done=()=>Object.keys(sel).every(k=>sel[k].value);
+  ANS.scores=()=>done()?{max:cfg.crit.length*5,w:WORLDS.map(w=>({id:w.id,name:w.name,t:tot(w.id)}))}:null;
   function top(){const m=Math.max.apply(null,WORLDS.map(w=>tot(w.id)));return WORLDS.filter(w=>tot(w.id)===m);}
   function upd(){
     const d=done(),tp=d?top():[];
@@ -2385,12 +2396,47 @@ function handIn(panel){
 }
 /* ================= 9. PITCH ================= */
 {
+  /* Your research so far: a read-only summary of earlier answers about the chosen world (not saved, so it uses no save key) */
+  const rsBox=act('pitch','Your research','Your research so far','This comes from your earlier answers about your chosen world. Pick the best of it for your pitch and put it in your own words. To change an answer, go back to its tab.');
+  const rs=mk('div','research');rsBox.appendChild(rs);
+  rs.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(!b)return;applyTabUI(b.dataset.go);window.scrollTo(0,0);});
+  const go=(t,l)=>' <button type="button" class="go-tab" data-go="'+t+'">'+l+' &rarr;</button>';
+  const miss=(t,l,txt)=>'<span class="missing">'+(txt||'Not answered yet.')+'</span>'+go(t,l);
+  const q=t=>'“'+esc(t)+'”';
+  reflowers.push(t=>{
+    if(t!=='pitch')return;
+    const wid=ANS.dest?ANS.dest.choice():'',w=WORLDS.find(x=>x.id===wid);
+    if(!w){rs.innerHTML='<p>'+miss('choose','Choose','You have not chosen your destination yet.')+'</p>';return;}
+    const row=(dt,dd)=>'<dt>'+dt+'</dt><dd>'+dd+'</dd>';
+    let h='';
+    const dr=ANS.dest.text();
+    h+=row('Destination','<strong>'+esc(w.name)+'</strong>'+(dr?'. Your reason: '+q(dr):'. '+miss('choose','Choose','No reason written yet.')));
+    const mn=ANS.mname?ANS.mname.text():'';
+    h+=row('Mission name',mn?'<strong>'+esc(mn)+'</strong>':miss('shop','Mission Shop'));
+    const nt=ANS.notes?ANS.notes(wid):[];
+    const nb=nt.some(n=>!n.t);
+    h+=row('Evidence notes on '+esc(w.name),'<ul>'+nt.map(n=>'<li><strong>'+esc(n.label.replace(/\?$/,''))+':</strong> '+(n.t?esc(n.t):'<span class="missing">blank</span>')+'</li>').join('')+'</ul>'+(nb?go('worlds','Four Worlds'):''));
+    const det=['det1','det2'].map(k=>ANS[k]).filter(a=>a&&a.choice()===wid&&a.text());
+    if(det.length)h+=row('Detective facts','<ul>'+det.map(a=>'<li>'+esc(a.text())+'</li>').join('')+'</ul>');
+    const sc=ANS.scores?ANS.scores():null;
+    if(sc){const me=sc.w.find(x=>x.id===wid),oth=sc.w.filter(x=>x.id!==wid).sort((a,b)=>b.t-a.t);
+      h+=row('Your scores','<strong>'+esc(w.name)+' '+me.t+'</strong> out of '+sc.max+'. '+oth.map(x=>esc(x.name)+' '+x.t).join(', ')+'.');}
+    else h+=row('Your scores',miss('choose','Choose','Score table not finished yet.'));
+    const dg=ANS.danger?ANS.danger.text():'';
+    h+=row('Biggest danger',dg?q(dg):miss('shop','Mission Shop'));
+    const ins=ANS.why?ANS.why.text():'';
+    h+=row('Your instruments',ins?q(ins):miss('shop','Mission Shop'));
+    const pk=ANS.picks?ANS.picks().filter(p=>p.w===wid):[];
+    h+=row('Extremophiles you matched to '+esc(w.name),pk.length?'<ul>'+pk.map(p=>'<li><strong>'+esc(p.name)+'</strong>'+(p.t?': '+esc(p.t):'')+'</li>').join('')+'</ul>':'<span class="missing">None.</span> Useful for D: look at the Match-Up tab.');
+    rs.innerHTML='<dl>'+h+'</dl>';
+  });
   createWrite({host:act('pitch','Write','Pitch your mission to the agency','Choose ONE format. For A, B and D, draw your design on paper or in a drawing app, then write its words here.'),items:[
     {id:'pitch',q:'Your pitch',
       choices:[{id:'a',label:'A. Mission patch'},{id:'b',label:'B. WANTED: Life poster'},{id:'c',label:'C. Breaking news, 2040'},{id:'d',label:'D. Design an alien'}],choiceLabel:'Pitch format',
       pre:'<ul class="tips"><li><strong>A. Mission patch:</strong> a round mission badge (real missions all have one) showing your spacecraft and your world, with a short slogan, plus 3 bullet points that sell your mission.</li><li><strong>B. WANTED: Life poster:</strong> why life could be hiding on your world, the reward for finding it, and how your spacecraft will find it.</li><li><strong>C. Breaking news, 2040:</strong> a news report (about 150 words). Your spacecraft has found something exciting, but is it really proof of life? Include the scientists’ doubts.</li><li><strong>D. Design an alien:</strong> a creature or microbe that could live on your world. Label 3 features and explain how each helps it survive. Link it to a real extremophile.</li></ul>',
       checks:['My chosen world and mission name','At least <strong>three</strong> pieces of evidence from my research','The biggest challenge the mission faces','Why my world is a better choice than at least one other world'],needChecks:true,
       lines:10,min:40}]});
+  pairFirstTwo('pitch');
 }
 /* ================= 10. EXTENSION: BEYOND THE SOLAR SYSTEM ================= */
 {
