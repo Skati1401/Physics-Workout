@@ -22,7 +22,7 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the cards to `igcse.html`, then add the unit's activities to the Calculations and Graphs sets.
 
-- [ ] **4p** Year 9 Space workout page `space.html` with the 8 tabs, framing the animations; card on `year-9.html` (after 4m to 4o; added 16 Nov 2026).
+- [x] **4p** Year 9 Space workout page `space.html` with the 8 tabs, framing the animations; card on `year-9.html` (after 4m to 4o; added 16 Nov 2026). Done 16 Nov 2026, Draft (🔍 in `tools/REVIEW.md`); decisions in the claude.ai project doc `claude/8l-batch-e-2026-11-16.md`.
 
 ## 5. Build: core practicals
 
