@@ -385,6 +385,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
   var SUP = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
   function sup(n){ return String(n).replace(/\d/g,function(c){ return SUP[c]; }); }
+  function FR(t){ return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>'); }
   function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
   function ease(s){ s=clamp(s,0,1); return s<.5?2*s*s:1-Math.pow(-2*s+2,2)/2; }
 
@@ -417,8 +418,19 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     '6-8':'bm','7-7':'s','27-33':'bm*','28-32*':'g','28-32':'s','38-52':'bm','39-51':'bm','40-50':'s','53-78':'bm','54-77':'s',
     '95-146':'a','93-144':'a','55-82':'bm*','56-81*':'g','56-81':'s','43-56*':'g','43-56':'bm','44-55':'s',
     '9-9':'bp','8-10':'s','6-5':'bp','5-6':'s','11-11':'bp','10-12':'s','7-6':'bp','6-7':'s','8-7':'bp','7-8':'s',
+    '90-142':'a','88-140':'bm','89-139':'bm','90-138':'a','88-136':'a','86-134':'a',
     '3-7':'n','3-6':'bm','4-5':'s','2-3':'n','2-2':'s','4-9':'n','4-8':'bm','6-6':'s','8-8':'s','26-30':'s'
   };
+  // Decay chains for "how many α and β⁻?" (IGCSE 4PH1 May 2022 1P Q5(b)(ii), May 2019 1P Q3(c)(ii); IAL 9PH0/02 Oct 2020 Q16(a)(i),
+  // June 2019 Q4, June 2024 Q3; IB P1 18 May TZ2 Q25, 25 May TZ1 Q37) and sequences for "where does it end?" (IB P1A 25 May TZ3 Q35,
+  // P1 15 Nov Q27, P1 22 May TZ1 Q27, P1 04 May TZ1 Q32, P2 21 May TZ2 Q4(c); IGCSE 4420/2H June 2008 Q13(c)(ii)).
+  var CHAINS = [ [[90,142],[86,134]], [[92,146],[82,124]], [[88,138],[82,124]], [[82,128],[82,124]], [[92,142],[86,136]], [[92,146],[92,142]] ];
+  var SEQS = [ [[90,142],['a','bm']], [[92,146],['a','bm','bm']], [[83,127],['bm','a']], [[92,146],['a','bm']], [[88,138],['a','a']],
+    [[3,7],['n','bm']], [[90,144],['bm','bm','a']], [[15,15],['bp','a']], [[11,11],['bp','bp']], [[84,126],['a','bm']] ];
+  function realChain(p,t){ var st={Z:p.Z,N:p.N,ex:false}, out=[];
+    for(var i=0;i<20 && !(st.Z===t.Z&&st.N===t.N);i++){ var r=real(st); if(!r||r==='s') return null; var k=r.replace('*',''); out.push(k); st=after(st,k); }
+    return out; }
+  function isLand(q){ return q && (q.kind==='land'||q.kind==='multi'); }
   function real(st){ return REAL[st.Z+'-'+st.N+(st.ex?'*':'')]||null; }
   var PRESETS = [
     {id:'u',Z:92,N:146,t:'U-238',title:'uranium-238'},
@@ -472,6 +484,39 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   var REV = [0,150,950,1150,1150,1300,1300];   // when each part of the equation appears (ms after the press)
   function drawEq(L){
     var o='', x=L.ex, y=L.ey;
+    if(Q && Q.kind==='count'){
+      var p0=Q.p, t0=Q.t, xx=x;
+      o+=nucSvg(xx+numW(p0.Z+p0.N),y,p0.Z+p0.N,p0.Z,sym(p0.Z),'var(--ink)',1); xx+=numW(p0.Z+p0.N)+6+sym(p0.Z).length*14.9+10;
+      o+=arrow(xx+6,y-4,xx+38,y-4,'var(--ink)',2); xx+=48;
+      o+=nucSvg(xx+numW(t0.Z+t0.N),y,t0.Z+t0.N,t0.Z,sym(t0.Z),'var(--ink)',1); xx+=numW(t0.Z+t0.N)+6+sym(t0.Z).length*14.9+10;
+      var showA = Q.done && !anim ? Q.na : '?', showB = Q.done && !anim ? Q.nb : '?';
+      o+=txt(xx+6,y+2,'+',{fs:22,c:'var(--ink)'}); xx+=26; o+=txt(xx,y+2,String(showA),{fs:20,c:'var(--accent)',w:700}); xx+=String(showA).length*12.4+4;
+      o+=nucSvg(xx+8,y,4,2,'α','var(--alpha)',1); xx+=8+6+15+10;
+      o+=txt(xx+6,y+2,'+',{fs:22,c:'var(--ink)'}); xx+=26; o+=txt(xx,y+2,String(showB),{fs:20,c:'var(--accent)',w:700}); xx+=String(showB).length*12.4+4;
+      o+=nucSvg(xx+16,y,0,'−1','β⁻','var(--beta)',1);
+      if(!Q.done || anim){
+        [['a','α particles',Q.pick.a],['b','β⁻ particles',Q.pick.b]].forEach(function(r,i){
+          var yy=L.by-18+i*34, bx=L.bx;
+          o+=txt(bx,yy+18,r[1]+':',{fs:13.5,c:'var(--ink)'});
+          ['-','+'].forEach(function(sg,j){ var px=bx+130+j*84, pk=r[0]+sg;
+            var g='<rect class="pk-ring" x="'+px+'" y="'+yy+'" width="34" height="27" rx="7" fill="var(--panel)" stroke="var(--panel-border)"/>'+txt(px+17,yy+19,sg==='-'?'−':'+',{a:'middle',fs:17,c:'var(--ink)',w:700});
+            o+= (!Q.done && !anim) ? '<g class="pick" data-pick="'+pk+'" tabindex="0" role="button" aria-label="'+(sg==='-'?'fewer ':'more ')+r[1]+'">'+g+'</g>' : g; });
+          o+=txt(bx+130+34+25,yy+19,String(r[2]),{a:'middle',fs:16,c:'var(--accent)',w:700});
+        });
+      } else {
+        var dA=(p0.Z+p0.N)-(t0.Z+t0.N);
+        o+=txt(L.bx,L.by,'Mass numbers:   '+(p0.Z+p0.N)+' = '+(t0.Z+t0.N)+' + '+Q.na+' × 4 + '+Q.nb+' × 0 ✓',{fs:14,c:'var(--topic)',w:600,x:' xml:space="preserve"'});
+        o+=txt(L.bx,L.by+24,'Atomic numbers: '+p0.Z+' = '+t0.Z+' + '+Q.na+' × 2 + '+Q.nb+' × (−1) ✓',{fs:14,c:'var(--topic)',w:600,x:' xml:space="preserve"'});
+      }
+      return o;
+    }
+    if(Q && Q.kind==='multi' && (!Q.done || !last)){
+      var pm=Q.p;
+      o+=nucSvg(x+numW(pm.Z+pm.N),y,pm.Z+pm.N,pm.Z,sym(pm.Z),'var(--ink)',1);
+      o+=arrow(x+numW(pm.Z+pm.N)+50,y-4,x+numW(pm.Z+pm.N)+82,y-4,'var(--ink)',2)+txt(x+numW(pm.Z+pm.N)+92,y+2,'?',{fs:24,c:'var(--accent)',w:700});
+      o+=txt(L.bx,L.by,'Gives out: '+Q.seq.map(function(k){ return D[k].s; }).join(', then '),{fs:14,c:'var(--ink)',w:600});
+      return o;
+    }
     if(!last){
       var p=cur;
       o+=nucSvg(x+numW(p.Z+p.N),y,p.Z+p.N,p.Z,sym(p.Z),'var(--ink)',1);
@@ -536,6 +581,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     o+=ln(X(0),Y(0),X(Math.min(ZMAX,NMAX)),Y(Math.min(ZMAX,NMAX)),'var(--ink-faint)',1,' stroke-dasharray="4 3"');
     o+=txt(X(52),Y(40),'N = Z',{fs:11,c:'var(--ink-faint)'});
     o+=rect(X(view.z),Y(view.n+K),K/ZMAX*w,K/NMAX*h,'none',' stroke="var(--accent)" stroke-width="1.5"');
+    if(Q && Q.kind==='count') o+=circ(X(Q.t.Z),Y(Q.t.N),4.5,'none',' stroke="var(--ink)" stroke-width="1.5"');
     var p=nucPos(); o+=circ(X(p.Z),Y(p.N),3.5,'var(--nuc)');
     o+=txt(x0+w/2,y0+h+15,'Z',{a:'middle',fs:11,c:'var(--ink-faint)'})+txt(x0-8,y0+h/2+4,'N',{a:'middle',fs:11,c:'var(--ink-faint)'});
     o+=txt(x0,y0+h+15,'0',{fs:11,c:'var(--ink-faint)'})+txt(x0+w,y0+h+15,String(ZMAX),{a:'end',fs:11,c:'var(--ink-faint)'})+txt(x0-3,y0+9,String(NMAX),{a:'end',fs:11,c:'var(--ink-faint)'});
@@ -593,7 +639,11 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
           g+=txt(b2.x+15,b2.y-10,lab(Q.q.Z,Q.q.N,false),{fs:12.5,c:'var(--ink-soft)',halo:1});
         }
       }
-      if(Q.kind==='land'){
+      if(Q.kind==='count' && !(cur.Z===Q.t.Z && cur.N===Q.t.N)){
+        var tx2=cx(L,Q.t.Z), ty2=cy(L,Q.t.N);
+        g+=circ(tx2,ty2,12.5,'none',' stroke="var(--ink-soft)" stroke-width="1.6" stroke-dasharray="4 3"')+txt(tx2+15,ty2-10,lab(Q.t.Z,Q.t.N,false),{fs:12.5,c:'var(--ink-soft)',halo:1});
+      }
+      if(isLand(Q)){
         if(Q.cursor && !Q.done) g+=rect(cx(L,Q.cursor.Z)-C/2+2,cy(L,Q.cursor.N)-C/2+2,C-4,C-4,'none',' stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"');
         if(Q.pick){
           var px=cx(L,Q.pick.Z), py=cy(L,Q.pick.N), right=Q.done && Q.pick.Z===Q.q.Z && Q.pick.N===Q.q.N;
@@ -641,23 +691,24 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   }
 
   // ---- running a decay ----
-  function run(k, onEnd){
+  function runSeq(ks, done){ if(!ks.length){ if(done) done(); return; } run(ks[0], function(){ runSeq(ks.slice(1), done); }, true); }
+  function run(k, onEnd, fast){
     var from={Z:cur.Z,N:cur.N,ex:cur.ex}, to=after(cur,k);
     if(REAL[from.Z+'-'+from.N+(from.ex?'*':'')]==='bm*' && k==='bm') to.ex=true;
     last={from:from,k:k}; hist.push({from:from,to:to,k:k});
     viewFrom={z:view.z,n:view.n}; viewTo=nearEdge(to,view)?centreOn(to):{z:view.z,n:view.n};
-    anim={k:k,from:from,to:to,t:0,t0:performance.now(),onEnd:onEnd}; eqT=0;
+    anim={k:k,from:from,to:to,t:0,t0:performance.now(),onEnd:onEnd,fast:!!fast}; eqT=0;
     sync();
     requestAnimationFrame(tick);
   }
   function tick(now){
     if(!anim) return;
-    var sp = slow ? 0.3 : 1;
+    var sp = (slow ? 0.3 : 1)*(anim.fast ? 2.2 : 1);
     anim.t=(now-anim.t0)*sp; eqT=anim.t;
     var s=ease((anim.t-250)/700); view={z:viewFrom.z+(viewTo.z-viewFrom.z)*s, n:viewFrom.n+(viewTo.n-viewFrom.n)*s};
     if(anim.t>=2000){
       cur={Z:anim.to.Z,N:anim.to.N,ex:anim.to.ex}; view=viewTo; var cb=anim.onEnd; anim=null; eqT=Infinity;
-      if(cb) cb(); sync(); draw(); return;
+      if(cb) cb(); if(anim) return; sync(); draw(); return;
     }
     draw(); requestAnimationFrame(tick);
   }
@@ -705,10 +756,10 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var st = anim ? anim.from : cur;
     $('#nd-A').textContent=st.Z+st.N; $('#nd-Z').textContent=st.Z; $('#nd-N').textContent=st.N;
     $('#nd-r-box').hidden = level!=='ib'; $('#nd-r').textContent=(st.N/st.Z).toFixed(2);
-    var go=$('#nd-go'); var goOk = Q && !Q.done && !anim && (Q.kind==='land'?!!Q.pick:!!Q.pick);
+    var go=$('#nd-go'); var goOk = Q && !Q.done && !anim && (Q.kind==='count' ? true : !!Q.pick);
     go.setAttribute('aria-disabled', String(!goOk));
-    svg.classList.toggle('pickable', !!(Q && Q.kind==='land' && !Q.done && !anim));
-    if(Q && Q.kind==='land' && !Q.done && !anim){ svg.setAttribute('tabindex','0'); svg.setAttribute('role','application');
+    svg.classList.toggle('pickable', !!(isLand(Q) && !Q.done && !anim));
+    if(isLand(Q) && !Q.done && !anim){ svg.setAttribute('tabindex','0'); svg.setAttribute('role','application');
       svg.setAttribute('aria-label','Chart of N against Z. Arrow keys move the cursor, Enter chooses the square. Cursor at Z = '+Q.cursor.Z+', N = '+Q.cursor.N+'.'); }
     else { svg.removeAttribute('tabindex'); svg.setAttribute('role','img'); svg.setAttribute('aria-label','A chart of neutron number against proton number with a nucleus on it, beside its nuclear equation'); }
     if(anim) return;
@@ -724,8 +775,12 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     } else if(Q){
       if(!Q.done) note.innerHTML=Q.prompt;
       else note.innerHTML=(Q.right?'<b>Correct.</b> ':'<b style="color:var(--bad)">Not quite.</b> ')+Q.after;
-      w.innerHTML = Q.done ? workFor({from:Q.p,to:Q.q,k:Q.k}) : '<p class="eqnote">The working appears after Go.</p>';
+      w.innerHTML = Q.done ? (Q.kind==='land'||Q.kind==='which' ? workFor({from:Q.p,to:Q.q,k:Q.k}) : hist.map(workFor).join('')+(Q.kind==='count'?FR(countWork()):'')) : '<p class="eqnote">The working appears after Go.</p>';
     }
+  }
+  function countWork(){
+    var p=Q.p, t=Q.t, A1=p.Z+p.N, A2=t.Z+t.N;
+    return '<div class="eq">Mass number falls by '+A1+' − '+A2+' = '+(A1-A2)+'<br>Number of α = [['+(A1-A2)+'|4]] = '+Q.na+'<br>Z after the α alone = '+p.Z+' − '+Q.na+' × 2 = '+(p.Z-2*Q.na)+'<br>Number of β⁻ = '+t.Z+' − '+(p.Z-2*Q.na)+' = '+Q.nb+'</div>';
   }
   function nucHtml(A,Z,s){ return '<span class="nuc"><span>'+A+'</span><span>'+Z+'</span></span>'+s; }
   function workFor(h){
@@ -763,8 +818,27 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     });
     return out;
   }
+  var lastKinds=[];
   function newQ(){
     anim=null;
+    var r=Math.random(), want = r<0.3?'land':r<0.5?'which':r<0.75?'multi':'count';
+    if(want==='multi'){
+      var ks=kinds(), opts=SEQS.filter(function(sq){ return sq[1].every(function(k){ return ks.indexOf(k)>=0; }); });
+      var sq=opts[Math.floor(Math.random()*opts.length)], p={Z:sq[0][0],N:sq[0][1],ex:false}, f=p;
+      sq[1].forEach(function(k){ f=after(f,k); });
+      Q={kind:'multi',p:p,q:f,seq:sq[1],pick:null,done:false,cursor:{Z:p.Z,N:p.N}};
+      cur={Z:p.Z,N:p.N,ex:false}; hist=[]; last=null; view=centreOn(cur);
+      Q.prompt='<b>Predict.</b> '+cap(nm(p.Z,p.N,false))+' ('+lab(p.Z,p.N,false)+') gives out '+sq[1].map(function(k,i){ return (i?(i===sq[1].length-1?', then ':', then '):'')+'<span class="'+D[k].cls+'">'+D[k].name.replace(/ \(a positron\)/,'')+'</span>'; }).join('')+'. Click the square where it ends up, then press Go.';
+      sync(); draw(); return;
+    }
+    if(want==='count'){
+      var c=CHAINS[Math.floor(Math.random()*CHAINS.length)], p2={Z:c[0][0],N:c[0][1],ex:false}, t2={Z:c[1][0],N:c[1][1],ex:false};
+      var na=((p2.Z+p2.N)-(t2.Z+t2.N))/4, nb=2*na-(p2.Z-t2.Z);
+      Q={kind:'count',p:p2,t:t2,na:na,nb:nb,chain:realChain(p2,t2),pick:{a:0,b:0},done:false};
+      cur={Z:p2.Z,N:p2.N,ex:false}; hist=[]; last=null; view=centreOn(cur);
+      Q.prompt='<b>How many?</b> '+cap(nm(p2.Z,p2.N,false))+' ('+lab(p2.Z,p2.N,false)+') decays to '+nm(t2.Z,t2.N,false)+' ('+lab(t2.Z,t2.N,false)+') by a series of <span class="ta">α</span> and <span class="tb">β⁻</span> emissions. Set how many of each beside the equation, then press Go.';
+      sync(); draw(); return;
+    }
     var pool=qPool();
     if(!qOrder.length){ qOrder=pool.slice(); for(var i=qOrder.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), t=qOrder[i]; qOrder[i]=qOrder[j]; qOrder[j]=t; } }
     var it=qOrder.pop();
@@ -784,6 +858,23 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
   function goQ(){
     if(!Q||Q.done||anim||!Q.pick) return;
+    if(Q.kind==='multi' || Q.kind==='count'){
+      var right2, why='';
+      if(Q.kind==='multi'){
+        right2 = Q.pick.Z===Q.q.Z && Q.pick.N===Q.q.N;
+        var zs2=[Q.p.Z], ns2=[Q.p.N], st=Q.p; Q.seq.forEach(function(k){ st=after(st,k); zs2.push(st.Z); ns2.push(st.N); });
+        why='Z goes '+zs2.join(' → ')+' and N goes '+ns2.join(' → ')+'. It ends as '+lab(Q.q.Z,Q.q.N,false)+(Q.q.Z===Q.p.Z?', an isotope of the nucleus it started as (same Z, different N).':'.');
+      } else {
+        right2 = Q.pick.a===Q.na && Q.pick.b===Q.nb;
+        var A1=Q.p.Z+Q.p.N, A2=Q.t.Z+Q.t.N, z1=Q.p.Z-2*Q.na;
+        why=(right2?'':'You set '+Q.pick.a+' α and '+Q.pick.b+' β⁻. ')+'The mass number falls by '+(A1-A2)+', and only α changes it (by 4 each), so '+Q.na+' α. Those take Z down by '+(2*Q.na)+' to '+z1+'; '+(Q.nb?lab(Q.t.Z,Q.t.N,false)+' has Z = '+Q.t.Z+', so '+Q.nb+' β⁻, each raising Z by 1.':'that is already Z = '+Q.t.Z+', so no β⁻.');
+      }
+      Q.right=right2; score.t++; if(right2) score.r++;
+      Q.after=why+' Press New question for another.';
+      hist=[]; cur={Z:Q.p.Z,N:Q.p.N,ex:false}; Q.done=true;
+      runSeq(Q.kind==='multi'?Q.seq.slice():(Q.chain||[]).slice(), function(){ sync(); draw(); });
+      return;
+    }
     var right = Q.kind==='land' ? (Q.pick.Z===Q.q.Z && Q.pick.N===Q.q.N) : Q.pick===Q.k;
     var wrongWhy='';
     if(!right){
@@ -800,6 +891,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     Q.done=true;   // the equation shows in full while the nucleus moves
     run(Q.k);
   }
+  function stepCount(pk){ var f=pk.charAt(0), d=pk.charAt(1)==='+'?1:-1; Q.pick[f]=clamp(Q.pick[f]+d,0,12); sync(); draw(); }
   function moveWords(k){ return {a:'2 down and 2 left',bm:'1 down and 1 right',bp:'1 up and 1 left',g:'nowhere',n:'1 straight down'}[k]; }
   $('#nd-go').addEventListener('click', goQ);
   $('#nd-new').addEventListener('click', function(){ if(!anim) newQ(); });
@@ -808,7 +900,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     if(!Q||Q.done||anim) return;
     var t=e.target.closest('.pick');
     if(t && Q.kind==='which'){ Q.pick=t.getAttribute('data-pick'); sync(); draw(); return; }
-    if(Q.kind!=='land') return;
+    if(t && Q.kind==='count'){ stepCount(t.getAttribute('data-pick')); return; }
+    if(!isLand(Q)) return;
     var L=lay(), p=svgPoint(e), gw=K*C;
     if(p.x<L.gx||p.x>L.gx+gw||p.y<L.gy||p.y>L.gy+gw) return;
     var Z=Math.round(view.z+(p.x-L.gx)/C-0.5), N=Math.round(view.n+(K-0.5)-(p.y-L.gy)/C);
@@ -818,8 +911,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   svg.addEventListener('keydown', function(e){
     if(!Q||Q.done||anim) return;
     var t=e.target.closest && e.target.closest('.pick');
-    if(t && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); Q.pick=t.getAttribute('data-pick'); sync(); draw(); return; }
-    if(Q.kind!=='land' || e.target!==svg) return;
+    if(t && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); if(Q.kind==='count') stepCount(t.getAttribute('data-pick')); else { Q.pick=t.getAttribute('data-pick'); sync(); draw(); } return; }
+    if(!isLand(Q) || e.target!==svg) return;
     var m={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[e.key];
     if(m){ e.preventDefault(); var c={Z:clamp(Q.cursor.Z+m[0],Math.ceil(view.z),Math.floor(view.z)+K-1),N:clamp(Q.cursor.N+m[1],Math.ceil(view.n),Math.floor(view.n)+K-1)};
       if(okSt(c.Z,c.N)) Q.cursor=c; sync(); draw(); return; }
