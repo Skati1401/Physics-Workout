@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decay on the N–Z Chart Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation. Make a nucleus give out alpha, beta, gamma or a neutron and watch it move on a chart of neutron number against proton number while its balanced nuclear equation builds beside it. Questions: click where the new nucleus lands, or which radiation it gave out. IAL and IB: beta-plus and the neutrino.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#4d7c0f;   --topic-soft:#e6f3d3;
+    --alpha:#d23b3b;   --beta:#2f62d6;   --gamma:#8a3fd1;
+    --lead:#5b6270;    --alu:#c4cad3;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    /* solid kit colours */ --glass:#9fb4c8; --glass-in:#f4f8fb; --thermo:#f3f6fa; --thread:#d7261e; --steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --wood-f:#c99e6a; --wood-t:#e3c08f; --wood-s:#9c7444; --case:#3f4a5e; --tray:#dfe4ec; --tray-in:#f6f8fb; --lcd:#d5dec8; --lcd-ink:#1d2a1f; --cable:#3a4352;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#a3d65c; --topic-soft:#1f2e12;
+      --alpha:#ff7a7a; --beta:#7da3ff; --gamma:#c39bff;
+      --lead:#a7aebb; --alu:#7d8592;
+      /* solid kit colours */ --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f; --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --case:#56617a; --tray:#3a4558; --tray-in:#161c27; --lcd:#c6d0b8; --lcd-ink:#172018; --cable:#8e99ab;
+    color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#a3d65c; --topic-soft:#1f2e12;
+    --alpha:#ff7a7a; --beta:#7da3ff; --gamma:#c39bff;
+    --lead:#a7aebb; --alu:#7d8592;
+    /* solid kit colours */ --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f; --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --case:#56617a; --tray:#3a4558; --tray-in:#161c27; --lcd:#c6d0b8; --lcd-ink:#172018; --cable:#8e99ab;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,410px);gap:18px 24px;align-items:start;padding:18px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 300px));}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px 24px;}
+  .side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:6px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:8px 11px;min-height:44px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
+  .note b{color:var(--topic);}
+  .ta{color:var(--alpha);font-weight:600;} .tb{color:var(--beta);font-weight:600;} .tg{color:var(--gamma);font-weight:600;}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .eq{font-size:12px;padding:6px 8px;} .note{font-size:14px;} }
+
+  /* ===== Experiment kit (tools/experiment-kit/kit.css) ===== */
+  .exp-btns{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  .rtable{width:100%;border-collapse:collapse;font:12.5px var(--font-mono);}
+  .rtable th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:11px;color:var(--ink-faint);text-align:right;padding:4px 6px;border-bottom:1px solid var(--panel-border);}
+  .rtable td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--panel-border);color:var(--ink);}
+  .rtable tr.new td{background:var(--cs, var(--accent-soft));}
+  .rtable-wrap{max-height:150px;overflow:auto;border:1px solid var(--panel-border);border-radius:8px;}
+  @media (prefers-reduced-motion: no-preference){ .rtable tr.new td{animation:rowin .35s ease-out;} }
+  @keyframes rowin{from{opacity:0}to{opacity:1}}
+  /* ===== end of Experiment kit ===== */
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+  .embed .view{max-height:460px;}
+  .toprow{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;}
+  @media (prefers-reduced-motion: no-preference){ .nu{transition:opacity .35s ease-out;}
+    .rg.pop{transform-box:fill-box;transform-origin:center;animation:rgpop .5s ease-out;}
+    @keyframes rgpop{0%{transform:scale(2.4);stroke:var(--accent);stroke-width:2.5px;opacity:1}100%{transform:scale(1);opacity:1}} }
+  .view.tall{max-height:none;}
+  .btn[aria-disabled="true"]{opacity:.45;cursor:default;}
+  .meas-off{display:none!important;}   /* measure mode (?show=measure): parts of the page it does not use */
+  /* decay on the N–Z chart: colours for the two radiations the shared tokens lack, and the nucleus */
+  :root{ --pos:#0e8a8a; --neu:#6b7280; --nuc:#b45309; --nuc-hi:#f6c48f; --nuc-ink:#fff; --band:#d9efc0; }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --pos:#4fd1c5; --neu:#a3abb8; --nuc:#f59e0b; --nuc-hi:#fde4b4; --nuc-ink:#1d2433; --band:#24391a; } }
+  :root[data-theme="dark"]{ --pos:#4fd1c5; --neu:#a3abb8; --nuc:#f59e0b; --nuc-hi:#fde4b4; --nuc-ink:#1d2433; --band:#24391a; }
+  .tp{color:var(--pos);font-weight:600;} .tn{color:var(--neu);font-weight:600;}
+  .dbtns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .dbtns .rowlab{margin-right:2px;}
+  .btn .dot{width:12px;height:12px;border-radius:50%;flex:none;}
+  .btn.dec{font-size:15px;min-width:64px;justify-content:center;}
+  .nuc{display:inline-flex;flex-direction:column;align-items:flex-end;vertical-align:middle;font-size:.72em;line-height:1.05;margin-right:1px;}
+  .eqline{font-family:var(--font-mono);font-size:16px;line-height:2;}
+  .view.pickable{cursor:crosshair;}
+  .view .pick{cursor:pointer;}
+  .view .pick:focus{outline:none;}
+  .view .pick:focus-visible .pk-ring{stroke:var(--accent);stroke-width:3;}
+  .score{font:600 13px var(--font-mono);color:var(--ink-soft);}
+</style>
+<style id="choice-kit">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
+.seg.pick{background:var(--bg);box-shadow:inset 0 0 0 1px var(--panel-border);border-radius:8px;}
+.seg.pick.fit{width:fit-content;max-width:100%;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on){background:transparent;border-color:transparent;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on):not(:disabled):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode{display:flex;flex-wrap:nowrap;align-self:stretch;flex-grow:1;background:var(--bg);box-shadow:0 0 0 1px var(--panel-border);border-radius:11px;padding:3px;gap:3px;}
+.seg.mode>button:nth-child(n){flex:1 1 0;min-height:38px;margin-left:0;padding:6px 12px;border-radius:8px;white-space:nowrap;font:600 14.5px var(--font-body,inherit);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]){background:transparent;border-color:transparent;color:var(--ink);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode>button:nth-child(n)[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel);}
+/* Choice rows (13 Nov 2026, Alex): in a .cgrid the label sits above its group, each group is only as wide as its
+   buttons, and short groups share a row, as on dc-motor.html. The script wraps each label and its control in a .cgroup. */
+.cgrid.kit{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-start;}
+.cgrid.kit>.cgroup{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;max-width:100%;}
+/* a row of one group (e.g. Graph under the picture) keeps its label beside it, to save height */
+.cgrid.kit.one>.cgroup{flex-direction:row;align-items:center;gap:10px;}
+.cgrid.kit>.cgroup[hidden]{display:none;}
+.cgrid.kit>.cgroup>.rowlab{font:12.5px var(--font-mono,ui-monospace,monospace);color:var(--ink-soft);}
+.cgrid.kit>.cgroup>.seg{display:flex;flex-wrap:wrap;max-width:100%;}
+.cgrid.kit>.cgroup>.seg>button{flex:0 1 auto;}
+.to-q[hidden]{display:none!important;}
+.to-q:nth-child(n){border-style:dashed;border-color:var(--ink);font-weight:600;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+<!-- pw-review -->
+<script>
+  // Draft tags and Alex's reviewer button (tools/review/drafts.py writes this block; edit tools/review/snippet.html, then run drafts.py sync).
+  // A page is Draft while its row in tools/REVIEW.md is not ✅: <meta name="pw-draft"> on the page, data-draft on its list cards.
+  // ?reviewer (once, on any page) turns on reviewer mode in this browser; ?reviewer=off turns it off.
+  (function(){
+    var on = false, embed = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var m = /[?&]reviewer(?:=([^&]*))?/.exec(location.search);
+    on = !!m && m[1] !== 'off';
+    try {
+      if (m) { if (m[1] === 'off') localStorage.removeItem('pw-reviewer'); else localStorage.setItem('pw-reviewer', '1'); }
+      else on = localStorage.getItem('pw-reviewer') === '1';
+    } catch (e) {}
+    var CSS = '.pw-draft{display:inline-block;vertical-align:middle;margin-left:10px;font:600 11.5px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:0;color:var(--bad,#b42318);border:1px dashed currentColor;border-radius:5px;padding:1px 7px;white-space:nowrap}'
+      + '.act-top .pw-draft{margin-left:auto;flex:none}.act-top .pw-draft~.cp-tag,.act-top .pw-draft~.ta-tag{margin-left:0}'
+      + 'a[data-draft]{position:relative}.pw-draft.pw-corner{position:absolute;top:10px;right:10px;margin:0;background:var(--panel,#fff)}'
+      + '.pw-check{display:inline-block;vertical-align:middle;margin-left:8px;font:600 13px/1.4 "IBM Plex Sans",system-ui,sans-serif;color:#fff;background:#1a7f37;border-radius:6px;padding:4px 10px;text-decoration:none;white-space:nowrap}'
+      + '.pw-check:hover{background:#116329}.pw-check:focus-visible{outline:2px solid #1a7f37;outline-offset:2px}'
+      + '.pw-reviewer{position:fixed;left:10px;bottom:10px;z-index:9999;font:500 12px/1.4 "IBM Plex Mono",ui-monospace,monospace;background:#1d2433;color:#fff;border-radius:6px;padding:4px 9px;opacity:.85}'
+      + '.pw-reviewer a{color:#ffc83d}';
+    function tag(){ var t = document.createElement('span'); t.className = 'pw-draft'; t.title = 'Not yet checked'; t.textContent = 'Draft'; return t; }
+    function go(){
+      var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+      var meta = document.querySelector('meta[name="pw-draft"]'), h1 = document.querySelector('h1');
+      if (meta && h1 && !embed) {
+        h1.appendChild(tag());
+        if (on) {
+          var page = meta.getAttribute('content'), b = document.createElement('a');
+          b.className = 'pw-check'; b.target = '_blank'; b.rel = 'noopener'; b.textContent = '✓ Checked';
+          b.title = 'Opens a GitHub issue. Submit it and the Draft tag goes in a minute or two.';
+          b.href = 'https://github.com/Skati1401/Physics-Workout/issues/new?title=' + encodeURIComponent('Checked: ' + page)
+            + '&body=' + encodeURIComponent('Submit this issue to mark `' + page + '` as checked. The Draft tag goes in a minute or two, and the issue closes itself.');
+          h1.appendChild(b);
+        }
+      }
+      document.querySelectorAll('a[data-draft]').forEach(function(a){
+        if (a.querySelector('.pw-draft')) return;
+        var t = tag(), top = a.querySelector('.act-top');
+        if (top) top.insertBefore(t, top.querySelector('.cp-tag,.ta-tag'));
+        else { t.className += ' pw-corner'; a.appendChild(t); }
+      });
+      // No tag on a unit or theme heading (Alex, 12 Nov 2026): only the pages and their cards.
+      if (on && !embed) {
+        // Carry ?reviewer in every link to another page of the site, so reviewer mode survives
+        // browsers that clear site storage (school Chromebooks) and pages cached from before.
+        var carry = function(a){
+          try {
+            var u = new URL(a.href, location.href);
+            if (u.origin !== location.origin || !/(\.html|\/)$/.test(u.pathname) || u.searchParams.has('reviewer')) return;
+            u.searchParams.set('reviewer', ''); a.href = u.href.replace('reviewer=', 'reviewer');
+          } catch (e) {}
+        };
+        document.querySelectorAll('a[href]').forEach(carry);
+        ['click', 'auxclick', 'contextmenu'].forEach(function(ev){
+          document.addEventListener(ev, function(e){ var a = e.target.closest && e.target.closest('a[href]'); if (a) carry(a); }, true);
+        });
+        var r = document.createElement('div'); r.className = 'pw-reviewer';
+        r.innerHTML = 'Reviewer mode · <a href="' + location.pathname + '?reviewer=off">turn off</a>';
+        document.body.appendChild(r);
+      }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  })();
+</script>
+<!-- /pw-review -->
+<meta name="pw-draft" content="animations/decay-chart.html">
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">Animations &middot; radioactivity</div>
+      <h1>Decay on the N–Z Chart</h1>
+    </div>
+    <div class="seg tabs" id="nd-level" role="group" aria-label="Level"><button type="button" data-v="igcse" aria-pressed="true">IGCSE</button><button type="button" data-v="ial" aria-pressed="false">IAL</button><button type="button" data-v="ib" aria-pressed="false">IB</button></div>
+  </header>
+
+  <section class="card stage">
+    <div>
+      <svg class="view" id="nd-svg" viewBox="0 0 860 366" role="img" aria-label="A chart of neutron number against proton number with a nucleus on it, beside its nuclear equation"></svg>
+      <div class="under">
+        <div class="dbtns" id="nd-dec">
+          <span class="rowlab">Give out</span>
+          <button class="btn dec" type="button" data-d="a" aria-label="Alpha particle"><span class="dot" style="background:var(--alpha)"></span>&alpha;</button>
+          <button class="btn dec" type="button" data-d="bm" aria-label="Beta-minus particle"><span class="dot" style="background:var(--beta)"></span>&beta;&#8315;</button>
+          <button class="btn dec" type="button" data-d="bp" aria-label="Beta-plus particle (positron)" hidden><span class="dot" style="background:var(--pos)"></span>&beta;&#8314;</button>
+          <button class="btn dec" type="button" data-d="g" aria-label="Gamma ray"><span class="dot" style="background:var(--gamma)"></span>&gamma;</button>
+          <button class="btn dec" type="button" data-d="n" aria-label="Neutron"><span class="dot" style="background:var(--neu)"></span>neutron</button>
+          <button class="btn" type="button" id="nd-real" title="Make it decay the way this nucleus really does">Next real decay</button>
+        </div>
+        <div class="btn-group" id="nd-qbtns" hidden>
+          <button class="btn btn-primary" id="nd-go" type="button" aria-disabled="true">&#9654; Go</button>
+          <button class="btn" id="nd-new" type="button">New question</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn" id="nd-undo" type="button">&#8630; Undo</button>
+          <button class="btn" id="nd-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="nd-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn to-q" type="button" data-mode="nd-mode" hidden>Try the questions &rarr;</button>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="seg tabs mode" id="nd-mode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="q" aria-pressed="false">Questions</button></div>
+      <div class="cgrid" id="nd-startrow">
+        <span class="rowlab">Start with</span>
+        <div class="seg" id="nd-start"></div>
+      </div>
+      <p class="note" id="nd-note" aria-live="polite"></p>
+      <div class="stats" id="nd-stats">
+        <div class="stat"><small>Mass number A</small><strong id="nd-A">238</strong></div>
+        <div class="stat"><small>Proton number Z</small><strong id="nd-Z">92</strong></div>
+        <div class="stat"><small>Neutron number N</small><strong id="nd-N">146</strong></div>
+        <div class="stat hi" id="nd-r-box" hidden><small>N/Z</small><strong id="nd-r">1.59</strong></div>
+        <div class="stat hi" id="nd-sc-box" hidden><small>Score</small><strong id="nd-sc" aria-live="polite">0 / 0</strong></div>
+      </div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div id="nd-work"></div>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  if(!lv && /ial\.html/.test(hl.getAttribute('href'))){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  /* Decay on the N–Z chart (17 Nov 2026). A nucleus sits on a chart of neutron number N (up) against proton number Z
+     (across). Each emission moves it: alpha 2 down and 2 left (Z − 2, N − 2), beta-minus 1 down and 1 right (Z + 1, N − 1),
+     beta-plus 1 up and 1 left (Z − 1, N + 1; IAL and IB only), neutron 1 straight down (N − 1; IGCSE 7.7 only), gamma no move.
+     The balanced equation builds beside it. Any move can be tried on any nucleus in Explore; "Next real decay" and the
+     Questions use only real decays (REAL below). The band of stability is drawn from the semi-empirical line
+     Z = A / (1.98 + 0.0155 A^(2/3)), widening with Z: a guide to where stable nuclei lie, not a table of them.
+     Specs: IGCSE 7.7, 7.8; IAL 139; IB E.3 (SL decay equations with ν and ν̄; HL N/Z ratio and stability). */
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(s){ return document.querySelector(s); }
+  function f1(n){ return (+n).toFixed(1); }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.op!=null?' opacity="'+o.op+'"':'')+(o.x||'')+'>'+s+'</text>'; }
+  function circ(x,y,r,fill,extra){ return '<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="'+f1(r)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  var SUP = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function sup(n){ return String(n).replace(/\d/g,function(c){ return SUP[c]; }); }
+  function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
+  function ease(s){ s=clamp(s,0,1); return s<.5?2*s*s:1-Math.pow(-2*s+2,2)/2; }
+
+  var SYM = ' H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm'.split(' ');
+  var NAME = ',hydrogen,helium,lithium,beryllium,boron,carbon,nitrogen,oxygen,fluorine,neon,sodium,magnesium,aluminium,silicon,phosphorus,sulfur,chlorine,argon,potassium,calcium,scandium,titanium,vanadium,chromium,manganese,iron,cobalt,nickel,copper,zinc,gallium,germanium,arsenic,selenium,bromine,krypton,rubidium,strontium,yttrium,zirconium,niobium,molybdenum,technetium,ruthenium,rhodium,palladium,silver,cadmium,indium,tin,antimony,tellurium,iodine,xenon,caesium,barium,lanthanum,cerium,praseodymium,neodymium,promethium,samarium,europium,gadolinium,terbium,dysprosium,holmium,erbium,thulium,ytterbium,lutetium,hafnium,tantalum,tungsten,rhenium,osmium,iridium,platinum,gold,mercury,thallium,lead,bismuth,polonium,astatine,radon,francium,radium,actinium,thorium,protactinium,uranium,neptunium,plutonium,americium,curium,berkelium,californium,einsteinium,fermium'.split(',');
+  var ZMAX = 100, NMAX = 160;
+  function sym(Z){ return SYM[Z]||'?'; }
+  function nm(Z,N,ex){ return (NAME[Z]||'element '+Z)+'-'+(Z+N)+(ex?((Z===43||Z===56)?'m':' (excited)'):''); }
+  function lab(Z,N,ex){ return sup(Z+N)+sym(Z)+(ex?'*':''); }
+
+  // The band of stability: N on the stable line for each Z, and the band's half-width.
+  var NST = [], WB = [];
+  for(var z=0; z<=ZMAX; z++){ var A=2*z+1; for(var i=0;i<30;i++) A = z*(1.98+0.0155*Math.pow(A,2/3)); NST[z]=z===0?0:A-z; WB[z]=0.8+0.035*z; }
+  function inBand(Z,N){ return Z>=1 && Math.abs(N-NST[Z])<=WB[Z]; }
+
+  // The radiations. dz, dn: the move on the chart; A, Z: the particle's numbers in the equation.
+  var D = {
+    a: {dz:-2,dn:-2,A:4,Z:2,s:'α',col:'var(--alpha)',cls:'ta',name:'an alpha particle',short:'alpha'},
+    bm:{dz:1,dn:-1,A:0,Z:-1,s:'β⁻',col:'var(--beta)',cls:'tb',name:'a beta-minus particle',short:'beta-minus'},
+    bp:{dz:-1,dn:1,A:0,Z:1,s:'β⁺',col:'var(--pos)',cls:'tp',name:'a beta-plus particle (a positron)',short:'beta-plus'},
+    g: {dz:0,dn:0,A:0,Z:0,s:'γ',col:'var(--gamma)',cls:'tg',name:'a gamma ray',short:'gamma'},
+    n: {dz:0,dn:-1,A:1,Z:0,s:'n',col:'var(--neu)',cls:'tn',name:'a neutron',short:'neutron'}
+  };
+  function kinds(){ return level==='igcse' ? ['a','bm','g','n'] : ['a','bm','bp','g']; }
+
+  // How each nucleus here really decays ('s' = stable). "Z-N" (+ "*" for the excited state). bm* leaves the daughter excited.
+  var REAL = {
+    '92-146':'a','90-144':'bm','91-143':'bm','92-142':'a','90-140':'a','88-138':'a','86-136':'a','84-134':'a','82-132':'bm','83-131':'bm',
+    '84-130':'a','82-128':'bm','83-127':'bm','84-126':'a','82-124':'s',
+    '6-8':'bm','7-7':'s','27-33':'bm*','28-32*':'g','28-32':'s','38-52':'bm','39-51':'bm','40-50':'s','53-78':'bm','54-77':'s',
+    '95-146':'a','93-144':'a','55-82':'bm*','56-81*':'g','56-81':'s','43-56*':'g','43-56':'bm','44-55':'s',
+    '9-9':'bp','8-10':'s','6-5':'bp','5-6':'s','11-11':'bp','10-12':'s','7-6':'bp','6-7':'s','8-7':'bp','7-8':'s',
+    '3-7':'n','3-6':'bm','4-5':'s','2-3':'n','2-2':'s','4-9':'n','4-8':'bm','6-6':'s','8-8':'s','26-30':'s'
+  };
+  function real(st){ return REAL[st.Z+'-'+st.N+(st.ex?'*':'')]||null; }
+  var PRESETS = [
+    {id:'u',Z:92,N:146,t:'U-238',title:'uranium-238'},
+    {id:'ra',Z:88,N:138,t:'Ra-226',title:'radium-226'},
+    {id:'c',Z:6,N:8,t:'C-14',title:'carbon-14'},
+    {id:'co',Z:27,N:33,t:'Co-60',title:'cobalt-60'},
+    {id:'li',Z:3,N:7,t:'Li-10',title:'lithium-10 (gives out a neutron)',lv:'igcse'},
+    {id:'f',Z:9,N:9,t:'F-18',title:'fluorine-18 (gives out a positron)',lv:'ks5'}
+  ];
+
+  var level = PW_LEVEL||'igcse', mode = /[?&]show=predict\b/.test(location.search) ? 'q' : 'explore';
+  var start = PRESETS[0], cur, hist, last = null, slow = false, anim = null, eqT = Infinity;
+  var view = {z:0,n:0}, viewFrom = null, viewTo = null;
+  var Q = null, score = {r:0,t:0}, qOrder = [], wide = true;
+  var svg = $('#nd-svg');
+
+  function okSt(Z,N){ return Z>=1 && N>=0 && Z<=ZMAX && N<=NMAX; }
+  function after(st,k){ var d=D[k]; return {Z:st.Z+d.dz, N:st.N+d.dn, ex:false}; }
+
+  // ---- layout: one wide picture, or a tall one under 520 px ----
+  var K = 11, C = 29;
+  function lay(){
+    return wide ? {W:860,H:366,gx:60,gy:6,ex:432,ey:50,bx:432,by:100,kx:432,ky:172,ix:650,iy:178,iw:190,ih:150}
+                : {W:430,H:744,gx:56,gy:6,ex:24,ey:404,bx:24,by:452,kx:24,ky:526,ix:228,iy:538,iw:186,ih:150};
+  }
+  function centreOn(st){ return {z:clamp(st.Z-(K-1)/2,0,ZMAX-K+1), n:clamp(st.N-(K-1)/2,0,NMAX-K+1)}; }
+  function nearEdge(st,v){ return st.Z<v.z+2 || st.Z>v.z+K-3 || st.N<v.n+2 || st.N>v.n+K-3; }
+  function cx(L,Z){ return L.gx+(Z-view.z+0.5)*C; }
+  function cy(L,N){ return L.gy+(K-0.5-(N-view.n))*C; }
+
+  // a nuclide in nuclear notation: A over Z, right-aligned at x, the symbol after it
+  function nucSvg(x,y,A,Zs,s,col,op,extra){
+    var fsS=24, fsN=13, w = s.length*fsS*0.62;
+    return '<g opacity="'+op+'">'+txt(x,y-15,A,{a:'end',fs:fsN,c:'var(--ink)'})+txt(x,y+4,Zs,{a:'end',fs:fsN,c:'var(--ink)'})+
+      txt(x+3,y+2,s,{fs:fsS,c:col||'var(--ink)',w:600})+(extra||'')+'</g>';
+  }
+  function zs(z){ return z<0 ? '−'+(-z) : String(z); }
+  function numW(v){ return String(v).length*13*0.62; }
+
+  // the equation for one step: parent → daughter + particle (+ ν or ν̄ at IAL and IB)
+  function eqParts(p,k){
+    var d=D[k], q=after(p,k), parts=[], ks5=level!=='igcse';
+    parts.push({A:p.Z+p.N,Z:p.Z,s:sym(p.Z)+(k==='g'?'*':''),col:'var(--ink)'});
+    parts.push({arrow:1});
+    parts.push({A:q.Z+q.N,Z:q.Z,s:sym(q.Z),col:'var(--ink)'});
+    parts.push({plus:1});
+    parts.push({A:d.A,Z:d.Z,s:d.s,col:d.col});
+    if(ks5 && (k==='bm'||k==='bp')){ parts.push({plus:1}); parts.push({A:0,Z:0,s:'ν',bar:k==='bm',col:'var(--ink-soft)'}); }
+    return parts;
+  }
+  var REV = [0,150,950,1150,1150,1300,1300];   // when each part of the equation appears (ms after the press)
+  function drawEq(L){
+    var o='', x=L.ex, y=L.ey;
+    if(!last){
+      var p=cur;
+      o+=nucSvg(x+numW(p.Z+p.N),y,p.Z+p.N,p.Z,sym(p.Z),'var(--ink)',1);
+      o+=txt(L.ex,L.by,mode==='q'?'':'Press a button under the chart.',{fs:13,c:'var(--ink-faint)'});
+      return o;
+    }
+    var parts=eqParts(last.from,last.k);
+    parts.forEach(function(pt,i){
+      var op = eqT>=REV[i]?1:0;
+      if(Q && !Q.done){
+        if((Q.kind==='land' && i===2) || (Q.kind==='which' && i===4)){ o+=txt(x+4,y+2,'?',{fs:24,c:'var(--accent)',w:700}); x+=30; return; }
+        if(Q.kind==='which' && i>=5) return;   // the neutrino would give the answer away
+      }
+      if(pt.arrow){ o+=arrow(x+6,y-4,x+38,y-4,'var(--ink)',2,' opacity="'+op+'"'); x+=48; return; }
+      if(pt.plus){ o+=txt(x+6,y+2,'+',{fs:22,c:'var(--ink)',op:op}); x+=28; return; }
+      var nw=Math.max(numW(pt.A),numW(zs(pt.Z)));
+      var bar = pt.bar ? ln(x+nw+4,y-18,x+nw+15,y-18,'var(--ink-soft)',1.6) : '';
+      o+=nucSvg(x+nw,y,pt.A,zs(pt.Z),pt.s,pt.col,op,bar);
+      x+=nw+6+pt.s.length*24*0.62+10;
+    });
+    // the balance lines: notice that mass and atomic numbers balance
+    var p=last.from, q=after(p,last.k), d=D[last.k], nu=(level!=='igcse' && (last.k==='bm'||last.k==='bp'));
+    var hideQ = Q && !Q.done;
+    if(!hideQ){
+      var m1='Mass numbers:   '+(p.Z+p.N)+' = '+(q.Z+q.N)+' + '+d.A+(nu?' + 0':''), m2='Atomic numbers: '+p.Z+' = '+q.Z+' + '+(d.Z<0?'(−'+(-d.Z)+')':d.Z)+(nu?' + 0':'');
+      o+=txt(L.bx,L.by,m1+' ✓',{fs:14,c:'var(--topic)',w:600,op:eqT>=1500?1:0,x:' xml:space="preserve"'});
+      o+=txt(L.bx,L.by+24,m2+' ✓',{fs:14,c:'var(--topic)',w:600,op:eqT>=1800?1:0,x:' xml:space="preserve"'});
+    }
+    return o;
+  }
+
+  // the key: band of stability and the radiations (in a "which" question, the radiations are clicked)
+  function drawKey(L){
+    var o='', x=L.kx, y=L.ky, pickable = Q && Q.kind==='which' && !Q.done && !anim;
+    o+=rect(x,y-11,16,14,'var(--band)',' stroke="var(--topic)" stroke-width="1"')+txt(x+24,y,'Band of stability',{fs:12.5,c:'var(--ink-soft)'});
+    var ks=kinds(); y+=26;
+    if(Q && Q.kind==='which') o+=txt(x,y,Q.done?'Which did it give out?':'Click what it gave out:',{fs:12.5,c:'var(--accent)',w:600});
+    else o+=txt(x,y,'Gives out:',{fs:12.5,c:'var(--ink-soft)'});
+    y+=8;
+    ks.forEach(function(k,i){
+      var d=D[k], yy=y+i*31, chosen = Q && Q.kind==='which' && Q.pick===k;
+      var ring='var(--panel-border)', fill='var(--panel)';
+      if(Q && Q.kind==='which' && Q.done){ if(k===Q.k){ ring='var(--good)'; fill='var(--good-soft)'; } else if(chosen){ ring='var(--bad)'; fill='var(--bad-soft)'; } }
+      else if(chosen){ ring='var(--accent)'; fill='var(--accent-soft)'; }
+      var full = {a:'alpha  α',bm:'beta-minus  β⁻',bp:'beta-plus  β⁺',g:'gamma  γ',n:'neutron  n'}[k];
+      var g='<rect class="pk-ring" x="'+x+'" y="'+yy+'" width="168" height="27" rx="7" fill="'+fill+'" stroke="'+ring+'" stroke-width="'+(chosen||((Q&&Q.done)&&k===Q.k)?2:1)+'"/>'+
+        circ(x+15,yy+13.5,6,d.col)+txt(x+28,yy+18,full,{fs:12.5,c:'var(--ink)',x:' xml:space="preserve"'});
+      if(Q && Q.kind==='which' && Q.done && (k===Q.k||chosen)) g+=txt(x+156,yy+18,k===Q.k?'✓':'✗',{a:'middle',fs:14,c:k===Q.k?'var(--good)':'var(--bad)',w:700});
+      o+= pickable ? '<g class="pick" data-pick="'+k+'" tabindex="0" role="button" aria-label="'+d.short+'">'+g+'</g>' : g;
+    });
+    return o;
+  }
+
+  // the whole chart, small, with the window that the big chart shows
+  function drawInset(L){
+    var o='', x0=L.ix, y0=L.iy, w=L.iw, h=L.ih;
+    function X(Z){ return x0+Z/ZMAX*w; } function Y(N){ return y0+h-N/NMAX*h; }
+    o+=txt(x0,y0-8,'Whole chart',{fs:12,c:'var(--ink-soft)'});
+    o+=rect(x0,y0,w,h,'var(--bg)',' stroke="var(--panel-border)"');
+    var up=[],dn=[]; for(var z=1;z<=ZMAX;z++){ up.push(f1(X(z))+','+f1(Y(Math.min(NMAX,NST[z]+WB[z])))); dn.unshift(f1(X(z))+','+f1(Y(Math.max(0,NST[z]-WB[z])))); }
+    o+='<polygon points="'+up.concat(dn).join(' ')+'" fill="var(--band)" stroke="var(--topic)" stroke-width="1"/>';
+    o+=ln(X(0),Y(0),X(Math.min(ZMAX,NMAX)),Y(Math.min(ZMAX,NMAX)),'var(--ink-faint)',1,' stroke-dasharray="4 3"');
+    o+=txt(X(52),Y(40),'N = Z',{fs:11,c:'var(--ink-faint)'});
+    o+=rect(X(view.z),Y(view.n+K),K/ZMAX*w,K/NMAX*h,'none',' stroke="var(--accent)" stroke-width="1.5"');
+    var p=nucPos(); o+=circ(X(p.Z),Y(p.N),3.5,'var(--nuc)');
+    o+=txt(x0+w/2,y0+h+15,'Z',{a:'middle',fs:11,c:'var(--ink-faint)'})+txt(x0-8,y0+h/2+4,'N',{a:'middle',fs:11,c:'var(--ink-faint)'});
+    o+=txt(x0,y0+h+15,'0',{fs:11,c:'var(--ink-faint)'})+txt(x0+w,y0+h+15,String(ZMAX),{a:'end',fs:11,c:'var(--ink-faint)'})+txt(x0-3,y0+9,String(NMAX),{a:'end',fs:11,c:'var(--ink-faint)'});
+    return o;
+  }
+
+  function nucPos(){
+    if(!anim) return {Z:cur.Z,N:cur.N};
+    var s=ease((anim.t-250)/700);
+    return {Z:anim.from.Z+(anim.to.Z-anim.from.Z)*s, N:anim.from.N+(anim.to.N-anim.from.N)*s};
+  }
+
+  function ball(x,y,label){
+    return circ(x,y,12.5,'var(--nuc)')+'<ellipse cx="'+f1(x-4)+'" cy="'+f1(y-5)+'" rx="5" ry="3.2" fill="var(--nuc-hi)" opacity=".75"/>'+
+      txt(x,y+4,label,{a:'middle',fs:11.5,c:'var(--nuc-ink)',w:700});
+  }
+
+  function draw(){
+    var L=lay(), o='';
+    svg.setAttribute('viewBox','0 0 '+L.W+' '+L.H);
+    svg.classList.toggle('tall',!wide);
+    var gw=K*C;
+    o+='<defs><clipPath id="nd-clip"><rect x="'+L.gx+'" y="'+L.gy+'" width="'+gw+'" height="'+gw+'"/></clipPath>'+
+      '<clipPath id="nd-clipx"><rect x="'+(L.gx-2)+'" y="'+(L.gy+gw)+'" width="'+(gw+4)+'" height="40"/></clipPath>'+
+      '<clipPath id="nd-clipy"><rect x="0" y="'+(L.gy-2)+'" width="'+L.gx+'" height="'+(gw+4)+'"/></clipPath></defs>';
+    o+=rect(L.gx,L.gy,gw,gw,'var(--panel)',' stroke="var(--panel-border)"');
+    // cells, band, grid lines (clipped to the window)
+    var g='';
+    var z0=Math.floor(view.z)-1, n0=Math.floor(view.n)-1;
+    for(var z=z0; z<=z0+K+2; z++) for(var n=n0; n<=n0+K+2; n++){
+      if(z<0||n<0) continue;
+      var x=cx(L,z)-C/2, y=cy(L,n)-C/2;
+      if(inBand(z,n)) g+=rect(x,y,C,C,'var(--band)');
+    }
+    for(var zz=z0; zz<=z0+K+2; zz++){ var xx=cx(L,zz)-C/2; g+=ln(xx,L.gy,xx,L.gy+gw,'var(--panel-border)',1); }
+    for(var nn=n0; nn<=n0+K+2; nn++){ var yy=cy(L,nn)+C/2; g+=ln(L.gx,yy,L.gx+gw,yy,'var(--panel-border)',1); }
+    if(view.z<=0.01) g+=rect(L.gx,L.gy,C*0.5,gw,'none');
+    // the trail of earlier positions
+    hist.forEach(function(h,i){
+      if(h.k==='g') return;
+      var a={x:cx(L,h.from.Z),y:cy(L,h.from.N)}, b={x:cx(L,h.to.Z),y:cy(L,h.to.N)}, dl=Math.hypot(b.x-a.x,b.y-a.y)||1;
+      var ux=(b.x-a.x)/dl, uy=(b.y-a.y)/dl;
+      if(!(anim && i===hist.length-1)) g+=arrow(a.x+ux*8,a.y+uy*8,b.x-ux*13,b.y-uy*13,D[h.k].col,2.4);
+      g+=circ(a.x,a.y,6,'var(--panel)',' stroke="var(--ink-faint)" stroke-width="1.5"');
+    });
+    if(hist.length && (hist[0].from.Z!==cur.Z || hist[0].from.N!==cur.N || anim)) g+=txt(cx(L,hist[0].from.Z)+9,cy(L,hist[0].from.N)-8,lab(hist[0].from.Z,hist[0].from.N,hist[0].from.ex),{fs:11.5,c:'var(--ink-soft)',halo:1});
+    // a question: the square chosen, the cursor, the ghost of the daughter
+    if(Q){
+      if(Q.kind==='which'){
+        var a2={x:cx(L,Q.p.Z),y:cy(L,Q.p.N)}, b2={x:cx(L,Q.q.Z),y:cy(L,Q.q.N)};
+        if(!Q.done && (Q.q.Z!==Q.p.Z||Q.q.N!==Q.p.N)){
+          var dl2=Math.hypot(b2.x-a2.x,b2.y-a2.y), ux2=(b2.x-a2.x)/dl2, uy2=(b2.y-a2.y)/dl2;
+          g+=arrow(a2.x+ux2*14,a2.y+uy2*14,b2.x-ux2*14,b2.y-uy2*14,'var(--ink-faint)',2,' stroke-dasharray="5 4"');
+          g+=circ(b2.x,b2.y,12.5,'none',' stroke="var(--ink-soft)" stroke-width="1.6" stroke-dasharray="4 3"');
+          g+=txt(b2.x+15,b2.y-10,lab(Q.q.Z,Q.q.N,false),{fs:12.5,c:'var(--ink-soft)',halo:1});
+        }
+      }
+      if(Q.kind==='land'){
+        if(Q.cursor && !Q.done) g+=rect(cx(L,Q.cursor.Z)-C/2+2,cy(L,Q.cursor.N)-C/2+2,C-4,C-4,'none',' stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"');
+        if(Q.pick){
+          var px=cx(L,Q.pick.Z), py=cy(L,Q.pick.N), right=Q.done && Q.pick.Z===Q.q.Z && Q.pick.N===Q.q.N;
+          var col=Q.done?(right?'var(--good)':'var(--bad)'):'var(--accent)';
+          g+=rect(px-C/2+1.5,py-C/2+1.5,C-3,C-3,Q.done?(right?'var(--good-soft)':'var(--bad-soft)'):'var(--accent-soft)',' stroke="'+col+'" stroke-width="2.4"');
+          if(!Q.done) g+=txt(px,py+5,'?',{a:'middle',fs:15,c:col,w:700});
+          else if(!right) g+=txt(px,py+5,'✗',{a:'middle',fs:15,c:col,w:700});
+        }
+        if(Q.done) g+=rect(cx(L,Q.q.Z)-C/2+1.5,cy(L,Q.q.N)-C/2+1.5,C-3,C-3,'none',' stroke="var(--good)" stroke-width="2.6"');
+      }
+    }
+    // the nucleus and what it gives out
+    var p=nucPos(), nx=cx(L,p.Z), ny=cy(L,p.N);
+    if(anim){
+      var t=anim.t, k=anim.k, d=D[k], s=clamp(t/900,0,1), op=t<600?1:clamp(1-(t-600)/300,0,1);
+      var sx=cx(L,anim.from.Z), sy=cy(L,anim.from.N), ex=sx+s*92, ey=sy-s*58;
+      if(k==='g'){
+        var wv=''; for(var j=0;j<=30;j++){ var f=j/30, xx2=sx+(ex-sx)*f*1.0+0, yy2=sy+(ey-sy)*f; var nx2=-(ey-sy), ny2=(ex-sx), nl=Math.hypot(nx2,ny2)||1; var amp=4*Math.sin(f*Math.PI*6); wv+=(j?' L':'M')+f1(xx2+nx2/nl*amp)+','+f1(yy2+ny2/nl*amp); }
+        g+='<path d="'+wv+'" fill="none" stroke="'+d.col+'" stroke-width="2.4" opacity="'+op+'"/>';
+        if(t<500) g+=circ(sx,sy,15+t/40,'none',' stroke="var(--gamma)" stroke-width="2" opacity="'+f1(1-t/500)+'"');
+      } else if(k==='a'){
+        [[-3.5,-3.5,'var(--alpha)'],[3.5,3.5,'var(--alpha)'],[3.5,-3.5,'var(--neu)'],[-3.5,3.5,'var(--neu)']].forEach(function(c){ g+=circ(ex+c[0],ey+c[1],4.2,c[2],' opacity="'+op+'"'); });
+      } else {
+        g+=circ(ex,ey,k==='n'?5.5:4,d.col,' opacity="'+op+'"');
+        if(k!=='n') g+=txt(ex+8,ey-6,k==='bm'?'e⁻':'e⁺',{fs:12,c:d.col,w:600,op:op});
+      }
+    }
+    var lbl = anim ? (anim.t<600?anim.from:anim.to) : cur;
+    g+=ball(nx,ny,sym(lbl.Z));
+    var lx = nx>L.gx+gw-70 ? nx-16 : nx+16, la = nx>L.gx+gw-70 ? 'end' : 'start';
+    g+=txt(lx,ny-13,lab(lbl.Z,lbl.N,lbl.ex),{a:la,fs:13,c:'var(--ink)',w:600,halo:1});
+    o+='<g clip-path="url(#nd-clip)">'+g+'</g>';
+    // axes
+    var ax='';
+    for(var tz=Math.floor(view.z); tz<=view.z+K; tz++){ var tx=cx(L,tz); if(tx<L.gx||tx>L.gx+gw) continue; ax+=txt(tx,L.gy+gw+15,String(tz),{a:'middle',fs:11,c:'var(--ink-soft)'}); }
+    var ay='';
+    for(var tn=Math.floor(view.n); tn<=view.n+K; tn++){ var ty=cy(L,tn); if(ty<L.gy||ty>L.gy+gw) continue; ay+=txt(L.gx-5,ty+4,String(tn),{a:'end',fs:11,c:'var(--ink-soft)'}); }
+    o+='<g clip-path="url(#nd-clipx)">'+ax+'</g><g clip-path="url(#nd-clipy)">'+ay+'</g>';
+    o+=txt(L.gx+gw/2,L.gy+gw+33,'proton number Z →',{a:'middle',fs:12.5,c:'var(--ink)'});
+    o+=txt(0,0,'neutron number N →',{a:'middle',fs:12.5,c:'var(--ink)',x:' transform="translate('+(L.gx-36)+','+(L.gy+gw/2)+') rotate(-90)"'});
+    o+=drawEq(L)+drawKey(L)+drawInset(L);
+    var f=document.activeElement, keep = f && svg.contains(f) ? f.getAttribute('data-pick') : null;
+    svg.innerHTML=o;
+    if(keep){ var el=svg.querySelector('.pick[data-pick="'+keep+'"]'); if(el) el.focus(); }
+  }
+
+  // ---- running a decay ----
+  function run(k, onEnd){
+    var from={Z:cur.Z,N:cur.N,ex:cur.ex}, to=after(cur,k);
+    if(REAL[from.Z+'-'+from.N+(from.ex?'*':'')]==='bm*' && k==='bm') to.ex=true;
+    last={from:from,k:k}; hist.push({from:from,to:to,k:k});
+    viewFrom={z:view.z,n:view.n}; viewTo=nearEdge(to,view)?centreOn(to):{z:view.z,n:view.n};
+    anim={k:k,from:from,to:to,t:0,t0:performance.now(),onEnd:onEnd}; eqT=0;
+    sync();
+    requestAnimationFrame(tick);
+  }
+  function tick(now){
+    if(!anim) return;
+    var sp = slow ? 0.3 : 1;
+    anim.t=(now-anim.t0)*sp; eqT=anim.t;
+    var s=ease((anim.t-250)/700); view={z:viewFrom.z+(viewTo.z-viewFrom.z)*s, n:viewFrom.n+(viewTo.n-viewFrom.n)*s};
+    if(anim.t>=2000){
+      cur={Z:anim.to.Z,N:anim.to.N,ex:anim.to.ex}; view=viewTo; var cb=anim.onEnd; anim=null; eqT=Infinity;
+      if(cb) cb(); sync(); draw(); return;
+    }
+    draw(); requestAnimationFrame(tick);
+  }
+
+  function noteFor(h){
+    var d=D[h.k], p=h.from, q=h.to, ks5=level!=='igcse', s='';
+    var P=lab(p.Z,p.N,p.ex), Qn=lab(q.Z,q.N,false);
+    if(h.k==='a') s='<b>Alpha emission.</b> '+P+' gave out <span class="ta">an alpha particle</span>: 2 protons and 2 neutrons. Z falls by 2 and N falls by 2, so the nucleus moves <b>2 squares down and 2 to the left</b>. The mass number falls by 4. It is now '+NAME[q.Z]+', '+Qn+'.';
+    if(h.k==='bm') s='<b>Beta-minus emission.</b> In '+P+' a neutron changed into a proton and an electron, and the electron left as <span class="tb">a beta particle</span>'+(ks5?' (with an antineutrino)':'')+'. Z rises by 1 and N falls by 1: <b>1 square down and 1 to the right</b>. The mass number stays the same. It is now '+NAME[q.Z]+', '+Qn+'.';
+    if(h.k==='bp') s='<b>Beta-plus emission.</b> In '+P+' a proton changed into a neutron, and <span class="tp">a positron</span> left (with a neutrino). Z falls by 1 and N rises by 1: <b>1 square up and 1 to the left</b>. The mass number stays the same. It is now '+NAME[q.Z]+', '+Qn+'.';
+    if(h.k==='g') s='<b>Gamma emission.</b> '+P+' gave out <span class="tg">a gamma ray</span>: energy, not a particle. Z and N do not change, so the nucleus <b>stays on the same square</b>: same element, same mass number. It just has less energy.';
+    if(h.k==='n') s='<b>Neutron emission.</b> '+P+' gave out <span class="tn">a neutron</span>. N falls by 1 and Z stays the same: <b>1 square straight down</b>. The mass number falls by 1, but it is still '+NAME[q.Z]+': an isotope with one neutron fewer, '+Qn+'.';
+    return s;
+  }
+  function bandNote(st){
+    if(st.Z>82) return 'No nucleus past lead (Z = 82) is truly stable.';
+    if(inBand(st.Z,st.N)) return '';
+    var rich = st.N>NST[st.Z];
+    return 'It is off the band: '+(rich?'too many neutrons for its protons':'too few neutrons for its protons')+(level!=='igcse'?(rich?', so it is likely to decay by β⁻.':', so it is likely to decay by β⁺.'):'.');
+  }
+  function realNote(st){
+    var r=real(st); if(!r) return '';
+    var nm2=nm(st.Z,st.N,st.ex);
+    if(r==='s') return 'Real '+nm2+' is stable.';
+    var k=r.replace('*','');
+    if(k==='bp' && level==='igcse') return 'Real '+nm2+' gives out a positron (β⁺), which is not in IGCSE.';
+    return 'Real '+nm2+' gives out '+D[k].name+': try Next real decay.';
+  }
+
+  // ---- what the right-hand column says ----
+  function sync(){
+    var ks=kinds(), ks5=level!=='igcse';
+    Array.prototype.forEach.call(document.querySelectorAll('#nd-dec .dec'), function(b){
+      var k=b.getAttribute('data-d'); b.hidden = ks.indexOf(k)<0;
+      var t=after(cur,k); b.disabled = !!anim || !okSt(t.Z,t.N);
+    });
+    var r=real(cur), rk=r&&r!=='s'?r.replace('*',''):null;
+    $('#nd-real').disabled = !!anim || !rk || ks.indexOf(rk)<0;
+    $('#nd-undo').disabled = !!anim || !hist.length || mode==='q';
+    $('#nd-reset').disabled = !!anim;
+    $('#nd-dec').hidden = mode==='q'; $('#nd-qbtns').hidden = mode!=='q';
+    $('#nd-undo').hidden = mode==='q'; $('#nd-reset').hidden = mode==='q';
+    $('#nd-startrow').hidden = mode==='q';
+    $('#nd-sc-box').hidden = mode!=='q'; $('#nd-sc').textContent=score.r+' / '+score.t;
+    var st = anim ? anim.from : cur;
+    $('#nd-A').textContent=st.Z+st.N; $('#nd-Z').textContent=st.Z; $('#nd-N').textContent=st.N;
+    $('#nd-r-box').hidden = level!=='ib'; $('#nd-r').textContent=(st.N/st.Z).toFixed(2);
+    var go=$('#nd-go'); var goOk = Q && !Q.done && !anim && (Q.kind==='land'?!!Q.pick:!!Q.pick);
+    go.setAttribute('aria-disabled', String(!goOk));
+    svg.classList.toggle('pickable', !!(Q && Q.kind==='land' && !Q.done && !anim));
+    if(Q && Q.kind==='land' && !Q.done && !anim){ svg.setAttribute('tabindex','0'); svg.setAttribute('role','application');
+      svg.setAttribute('aria-label','Chart of N against Z. Arrow keys move the cursor, Enter chooses the square. Cursor at Z = '+Q.cursor.Z+', N = '+Q.cursor.N+'.'); }
+    else { svg.removeAttribute('tabindex'); svg.setAttribute('role','img'); svg.setAttribute('aria-label','A chart of neutron number against proton number with a nucleus on it, beside its nuclear equation'); }
+    if(anim) return;
+    // note and working
+    var note=$('#nd-note'), w=$('#nd-work');
+    if(mode==='explore'){
+      if(!hist.length){
+        note.innerHTML='This is '+nm(cur.Z,cur.N,cur.ex)+': '+cur.Z+' protons and '+cur.N+' neutrons. Press a button under the chart to make it give out '+(ks5?'α, β⁻, β⁺ or γ':'α, β⁻, γ or a neutron')+'. Watch where it moves and how the equation balances. '+realNote(cur);
+      } else {
+        var h=hist[hist.length-1]; note.innerHTML=noteFor(h)+' '+[bandNote(cur),realNote(cur)].filter(Boolean).join(' ');
+      }
+      w.innerHTML = hist.length ? hist.map(function(h){ return workFor(h); }).join('') : '<p class="eqnote">Each decay you make is written out here, with its mass and atomic numbers balanced.</p>';
+    } else if(Q){
+      if(!Q.done) note.innerHTML=Q.prompt;
+      else note.innerHTML=(Q.right?'<b>Correct.</b> ':'<b style="color:var(--bad)">Not quite.</b> ')+Q.after;
+      w.innerHTML = Q.done ? workFor({from:Q.p,to:Q.q,k:Q.k}) : '<p class="eqnote">The working appears after Go.</p>';
+    }
+  }
+  function nucHtml(A,Z,s){ return '<span class="nuc"><span>'+A+'</span><span>'+Z+'</span></span>'+s; }
+  function workFor(h){
+    var d=D[h.k], p=h.from, q=h.to, nu=(level!=='igcse' && (h.k==='bm'||h.k==='bp'));
+    var e=nucHtml(p.Z+p.N,p.Z,sym(p.Z)+(h.k==='g'?'*':''))+' → '+nucHtml(q.Z+q.N,q.Z,sym(q.Z))+' + <span class="'+d.cls+'">'+nucHtml(d.A,zs(d.Z),d.s)+'</span>'+(nu?' + '+nucHtml(0,0,h.k==='bm'?'ν̄':'ν'):'');
+    return '<div class="eq"><div class="eqline">'+e+'</div>Mass numbers: '+(p.Z+p.N)+' = '+(q.Z+q.N)+' + '+d.A+(nu?' + 0':'')+'<br>Atomic numbers: '+p.Z+' = '+q.Z+' + '+(d.Z<0?'(−'+(-d.Z)+')':d.Z)+(nu?' + 0':'')+'</div>';
+  }
+
+  // ---- Explore ----
+  var startSeg=$('#nd-start');
+  function buildStart(){
+    var ks5=level!=='igcse';
+    startSeg.innerHTML=PRESETS.filter(function(p){ return !p.lv || (p.lv==='ks5')===ks5; }).map(function(p){
+      return '<button type="button" data-v="'+p.id+'" title="'+p.title+'" aria-pressed="'+(p===start)+'">'+p.t+'</button>'; }).join('');
+    if(!startSeg.querySelector('[aria-pressed="true"]')){ start=PRESETS[0]; startSeg.querySelector('button').setAttribute('aria-pressed','true'); }
+  }
+  startSeg.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||anim) return;
+    start=PRESETS.filter(function(p){ return p.id===b.dataset.v; })[0];
+    Array.prototype.forEach.call(startSeg.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); });
+    reset(); });
+  function reset(){ anim=null; cur={Z:start.Z,N:start.N,ex:false}; hist=[]; last=null; eqT=Infinity; view=centreOn(cur); sync(); draw(); }
+  $('#nd-dec').addEventListener('click', function(e){ var b=e.target.closest('.dec'); if(!b||b.disabled||anim) return; run(b.getAttribute('data-d')); });
+  $('#nd-real').addEventListener('click', function(){ if(anim) return; var r=real(cur); if(!r||r==='s') return; run(r.replace('*','')); });
+  $('#nd-undo').addEventListener('click', function(){ if(anim||!hist.length) return; var h=hist.pop(); cur={Z:h.from.Z,N:h.from.N,ex:h.from.ex};
+    last = hist.length ? {from:hist[hist.length-1].from,k:hist[hist.length-1].k} : null; if(nearEdge(cur,view)) view=centreOn(cur); sync(); draw(); });
+  $('#nd-reset').addEventListener('click', function(){ if(!anim) reset(); });
+  $('#nd-slow').addEventListener('click', function(){ slow=!slow; this.setAttribute('aria-pressed',String(slow)); });
+
+  // ---- Questions ----
+  function qPool(){
+    var ks=kinds(), out=[];
+    Object.keys(REAL).forEach(function(key){
+      var r=REAL[key]; if(r==='s') return; var k=r.replace('*',''); if(ks.indexOf(k)<0) return;
+      var m=/^(\d+)-(\d+)(\*?)$/.exec(key); out.push({Z:+m[1],N:+m[2],ex:!!m[3],k:k,r:r});
+    });
+    return out;
+  }
+  function newQ(){
+    anim=null;
+    var pool=qPool();
+    if(!qOrder.length){ qOrder=pool.slice(); for(var i=qOrder.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), t=qOrder[i]; qOrder[i]=qOrder[j]; qOrder[j]=t; } }
+    var it=qOrder.pop();
+    var p={Z:it.Z,N:it.N,ex:it.ex}, q=after(p,it.k); if(it.r==='bm*') q.ex=true;
+    var kind = (it.k==='g' || Math.random()<0.55) ? 'land' : 'which';
+    Q={kind:kind,p:p,q:q,k:it.k,pick:null,done:false,cursor:{Z:p.Z,N:p.N}};
+    cur={Z:p.Z,N:p.N,ex:p.ex}; hist=[]; view=centreOn(cur);
+    var P=nm(p.Z,p.N,p.ex)+' ('+lab(p.Z,p.N,p.ex)+')';
+    last={from:p,k:it.k};
+    if(kind==='land'){
+      Q.prompt='<b>Predict.</b> '+cap(P)+' gives out <span class="'+D[it.k].cls+'">'+D[it.k].name+'</span>. Click the square where the new nucleus will be, then press Go.';
+    } else {
+      Q.prompt='<b>Which radiation?</b> '+cap(P)+' changes into '+nm(q.Z,q.N,false)+' ('+lab(q.Z,q.N,false)+'). What did it give out? Click it in the key, then press Go.';
+    }
+    sync(); draw();
+  }
+  function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+  function goQ(){
+    if(!Q||Q.done||anim||!Q.pick) return;
+    var right = Q.kind==='land' ? (Q.pick.Z===Q.q.Z && Q.pick.N===Q.q.N) : Q.pick===Q.k;
+    var wrongWhy='';
+    if(!right){
+      if(Q.kind==='land'){
+        var dz=Q.pick.Z-Q.p.Z, dn=Q.pick.N-Q.p.N, hit=null;
+        Object.keys(D).forEach(function(k){ if(D[k].dz===dz && D[k].dn===dn) hit=k; });
+        wrongWhy = hit ? 'The square you chose is where '+D[hit].name+' would take it. ' : '';
+        if(Q.k==='g') wrongWhy+='A gamma ray is only energy, so Z and N do not change. ';
+      } else wrongWhy='Giving out '+D[Q.pick].name+' would move it '+moveWords(Q.pick)+', not '+moveWords(Q.k)+'. ';
+    }
+    Q.right=right; score.t++; if(right) score.r++;
+    Q.after=wrongWhy+noteFor({from:Q.p,to:Q.q,k:Q.k}).replace(/^<b>[^<]*<\/b> /,'')+' Press New question for another.';
+    hist=[]; cur={Z:Q.p.Z,N:Q.p.N,ex:Q.p.ex};
+    Q.done=true;   // the equation shows in full while the nucleus moves
+    run(Q.k);
+  }
+  function moveWords(k){ return {a:'2 down and 2 left',bm:'1 down and 1 right',bp:'1 up and 1 left',g:'nowhere',n:'1 straight down'}[k]; }
+  $('#nd-go').addEventListener('click', goQ);
+  $('#nd-new').addEventListener('click', function(){ if(!anim) newQ(); });
+  function svgPoint(e){ var pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+  svg.addEventListener('click', function(e){
+    if(!Q||Q.done||anim) return;
+    var t=e.target.closest('.pick');
+    if(t && Q.kind==='which'){ Q.pick=t.getAttribute('data-pick'); sync(); draw(); return; }
+    if(Q.kind!=='land') return;
+    var L=lay(), p=svgPoint(e), gw=K*C;
+    if(p.x<L.gx||p.x>L.gx+gw||p.y<L.gy||p.y>L.gy+gw) return;
+    var Z=Math.round(view.z+(p.x-L.gx)/C-0.5), N=Math.round(view.n+(K-0.5)-(p.y-L.gy)/C);
+    if(!okSt(Z,N)) return;
+    Q.pick={Z:Z,N:N}; Q.cursor={Z:Z,N:N}; sync(); draw();
+  });
+  svg.addEventListener('keydown', function(e){
+    if(!Q||Q.done||anim) return;
+    var t=e.target.closest && e.target.closest('.pick');
+    if(t && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); Q.pick=t.getAttribute('data-pick'); sync(); draw(); return; }
+    if(Q.kind!=='land' || e.target!==svg) return;
+    var m={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[e.key];
+    if(m){ e.preventDefault(); var c={Z:clamp(Q.cursor.Z+m[0],Math.ceil(view.z),Math.floor(view.z)+K-1),N:clamp(Q.cursor.N+m[1],Math.ceil(view.n),Math.floor(view.n)+K-1)};
+      if(okSt(c.Z,c.N)) Q.cursor=c; sync(); draw(); return; }
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); Q.pick={Z:Q.cursor.Z,N:Q.cursor.N}; sync(); draw(); }
+  });
+
+  // ---- mode and level ----
+  function setMode(m){
+    mode=m; Array.prototype.forEach.call(document.querySelectorAll('#nd-mode button'),function(b){ b.setAttribute('aria-pressed',String(b.dataset.v===m)); });
+    if(m==='q'){ score={r:0,t:0}; qOrder=[]; newQ(); } else { Q=null; reset(); }
+  }
+  $('#nd-mode').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||anim) return; setMode(b.dataset.v); });
+  function setLevel(v){
+    level=v; Array.prototype.forEach.call(document.querySelectorAll('#nd-level button'),function(b){ b.setAttribute('aria-pressed',String(b.dataset.v===v)); });
+    buildStart(); setMode(mode);
+  }
+  $('#nd-level').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||anim) return; setLevel(b.dataset.v); });
+
+  function fit(){ var w=svg.getBoundingClientRect().width||860; var nw = w>=520; if(nw!==wide){ wide=nw; draw(); } }
+  window.addEventListener('resize', fit);
+  setLevel(level);
+  fit();
+})();
+</script>
+<script id="choice-kit-js">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices".
+   A group of choices with one chosen gets a track round it (class pick); a .to-q button opens the questions from Explore. */
+(function(){
+  function on(b){ return b.getAttribute('aria-pressed')==='true' || b.classList.contains('is-on'); }
+  function each(sel, fn){ Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+  function mark(s){
+    if(!s.classList.contains('pick')){
+      var n=0; Array.prototype.forEach.call(s.children, function(b){ if(b.tagName==='BUTTON' && on(b)) n++; });
+      if(n===1) s.classList.add('pick');
+    }
+    if(s.classList.contains('pick') && !s.hasAttribute('data-fit')){
+      var d=getComputedStyle(s).display;
+      if(d!=='none'){ s.setAttribute('data-fit','1'); if(d.indexOf('flex')>=0) s.classList.add('fit'); }
+    }
+  }
+  each('.seg:not(.tabs):not(.mode):not(.apps)', function(s){
+    mark(s);
+    if(window.MutationObserver) new MutationObserver(function(){ mark(s); }).observe(s, {childList:true, subtree:true, attributes:true, attributeFilter:['aria-pressed','class']});
+  });
+  // Choice rows: wrap each .rowlab and the control after it in a .cgroup (label above, groups side by side).
+  // A group is hidden when everything in it is hidden, so pages that hide a row's label and control still work.
+  function shown(e){ return !e.hidden && e.style.display!=='none'; }
+  each('.cgrid:not(.kit)', function(g){
+    var kids=Array.prototype.slice.call(g.children), groups=[];
+    for(var i=0;i<kids.length;i++){
+      var w=document.createElement('div'); w.className='cgroup';
+      g.insertBefore(w, kids[i]); w.appendChild(kids[i]);
+      if(kids[i].classList.contains('rowlab') && kids[i+1]){ w.appendChild(kids[i+1]); i++; }
+      groups.push(w);
+    }
+    g.classList.add('kit'); if(groups.length===1) g.classList.add('one');
+    groups.forEach(function(w){
+      function sync(){ var any=false; Array.prototype.forEach.call(w.children, function(c){ if(shown(c)) any=true; }); w.hidden=!any; }
+      sync();
+      if(window.MutationObserver) Array.prototype.forEach.call(w.children, function(c){ new MutationObserver(sync).observe(c, {attributes:true, attributeFilter:['hidden','style']}); });
+    });
+  });
+  each('.to-q[data-mode]', function(b){
+    var seg=document.getElementById(b.getAttribute('data-mode')); if(!seg) return;
+    var bs=seg.querySelectorAll('button');
+    function sync(){ b.hidden=!on(bs[0]) || !seg.getClientRects().length; }   // hidden too when the page hides its mode switch (e.g. at a level with no questions)
+    b.addEventListener('click', function(){ bs[1].click(); bs[1].focus(); });
+    if(window.MutationObserver) new MutationObserver(sync).observe(seg, {subtree:true, attributes:true, attributeFilter:['aria-pressed']});
+    document.addEventListener('click', function(){ setTimeout(sync, 0); });
+    sync(); setTimeout(sync, 0);
+  });
+})();
+</script>
+<footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
+</body>
+</html>

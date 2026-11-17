@@ -14,6 +14,8 @@ Items from the claude.ai PPT-review projects go here, one line each: deck, slide
 
 **Animation ideas from the reviews.** "Link" lines: the page exists, so put its link (Copperplate hyperlink, `?level=` for the course) on the slide. "Build" lines: build the page with the `teaching-animations` skill, add its card to the course list, then link it on the slide and tick the line. Each PPT review checks these lines before suggesting new ideas.
 
+- [ ] **2a** Link: the radioactivity deck, Lesson 3 (the effect of each decay on the numbers, taught with still pictures and the valley-of-stability chart): put a link to `animations/decay-chart.html?level=igcse` (or the deck's course) on that slide. The page was built 17 Nov 2026 (Draft, 🔍 in `tools/REVIEW.md`) from the review's Build idea: a nucleus on the N–Z chart, the student picks α, β⁻, γ or neutron emission (IAL and IB: α, β⁻, β⁺, γ), the nucleus moves and the balanced equation builds beside it, with Explore and Questions. Not yet framed in 7a Decay Equations.
+
 ## 3. Alex to review
 
 - [ ] **3j** Graphs Workout, third release (left from 3i, 15 Nov 2026): **tangent** to a curve (4 Index parts: v–t, cooling curves; a ruler kind like BESTFIT turned about the point, then the gradient); **interpret a section** (109 parts, 56 in Unit 1: which part shows deceleration, which feature gives distance, match graphs to motion; Alex: not in release 2); **explain the shape** using forces (19 parts); **intercept / extrapolate** (12 parts: absolute zero from p–T, the container mass from mass–volume); the contexts not yet in: cooling (read, gradient), p–T and absolute zero, thermistor and LDR (plot, read), mass–volume. Take each from the IGCSE Question Index, never from memory.
