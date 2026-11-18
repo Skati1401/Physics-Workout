@@ -330,6 +330,10 @@
     </div>
     <div class="side">
       <div class="seg tabs mode" id="nd-mode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="q" aria-pressed="false">Questions</button></div>
+      <div class="cgrid" id="nd-setrow" hidden>
+        <span class="rowlab">Questions</span>
+        <div class="seg" id="nd-set"><button type="button" data-v="simple" aria-pressed="true" title="One decay at a time: where it lands, or which radiation">Simple</button><button type="button" data-v="chain" aria-pressed="false" title="Two or more decays in a row: plot the path, where it ends, how many α and β⁻">Chains</button></div>
+      </div>
       <div class="cgrid" id="nd-startrow">
         <span class="rowlab">Start with</span>
         <div class="seg" id="nd-start"></div>
@@ -431,6 +435,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     for(var i=0;i<20 && !(st.Z===t.Z&&st.N===t.N);i++){ var r=real(st); if(!r||r==='s') return null; var k=r.replace('*',''); out.push(k); st=after(st,k); }
     return out; }
   function isLand(q){ return q && (q.kind==='land'||q.kind==='multi'); }
+  function isGrid(q){ return q && (isLand(q)||q.kind==='path'); }
   function real(st){ return REAL[st.Z+'-'+st.N+(st.ex?'*':'')]||null; }
   var PRESETS = [
     {id:'u',Z:92,N:146,t:'U-238',title:'uranium-238'},
@@ -445,6 +450,12 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   var start = PRESETS[0], cur, hist, last = null, slow = false, anim = null, eqT = Infinity;
   var view = {z:0,n:0}, viewFrom = null, viewTo = null;
   var Q = null, score = {r:0,t:0}, qOrder = [], wide = true;
+  // Question sets (18 Nov 2026, Alex): Simple (one decay: land, which) or Chains (plot the path, where does it end, how many).
+  // IAL deals chains only (its papers ask only "how many" and "where does it end"), so its switch is hidden and it has no path kind.
+  // ?set=simple|chain fixes the set and hides the switch (the 7a workout frames each set in its own tab).
+  var SET_LOCK = (location.search.match(/[?&]set=(simple|chain)\b/)||[])[1]||null, userSet = SET_LOCK||'simple', chainOrder = [];
+  function qset(){ return SET_LOCK || (level==='ial' ? 'chain' : userSet); }
+  function chainKinds(){ return level==='ial' ? ['multi','count'] : ['path','multi','count']; }
   var svg = $('#nd-svg');
 
   function okSt(Z,N){ return Z>=1 && N>=0 && Z<=ZMAX && N<=NMAX; }
@@ -508,6 +519,13 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         o+=txt(L.bx,L.by,'Mass numbers:   '+(p0.Z+p0.N)+' = '+(t0.Z+t0.N)+' + '+Q.na+' × 4 + '+Q.nb+' × 0 ✓',{fs:14,c:'var(--topic)',w:600,x:' xml:space="preserve"'});
         o+=txt(L.bx,L.by+24,'Atomic numbers: '+p0.Z+' = '+t0.Z+' + '+Q.na+' × 2 + '+Q.nb+' × (−1) ✓',{fs:14,c:'var(--topic)',w:600,x:' xml:space="preserve"'});
       }
+      return o;
+    }
+    if(Q && Q.kind==='path' && (!Q.done || !last)){
+      var pp=Q.p;
+      o+=nucSvg(x+numW(pp.Z+pp.N),y,pp.Z+pp.N,pp.Z,sym(pp.Z),'var(--ink)',1);
+      o+=txt(L.bx,L.by,'Gives out: '+Q.seq.map(function(k){ return D[k].s; }).join(', then '),{fs:14,c:'var(--ink)',w:600});
+      o+=txt(L.bx,L.by+24,'Squares placed: '+Q.picks.length+' of '+Q.seq.length,{fs:13,c:Q.picks.length===Q.seq.length?'var(--accent)':'var(--ink-soft)'});
       return o;
     }
     if(Q && Q.kind==='multi' && (!Q.done || !last)){
@@ -643,6 +661,19 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         var tx2=cx(L,Q.t.Z), ty2=cy(L,Q.t.N);
         g+=circ(tx2,ty2,12.5,'none',' stroke="var(--ink-soft)" stroke-width="1.6" stroke-dasharray="4 3"')+txt(tx2+15,ty2-10,lab(Q.t.Z,Q.t.N,false),{fs:12.5,c:'var(--ink-soft)',halo:1});
       }
+      if(Q.kind==='path'){
+        var prev=Q.p;
+        Q.picks.forEach(function(pk,i){
+          var a3={x:cx(L,prev.Z),y:cy(L,prev.N)}, b3={x:cx(L,pk.Z),y:cy(L,pk.N)}, ok=Q.done?Q.marks[i]:null;
+          var col=Q.done?(ok?'var(--good)':'var(--bad)'):'var(--accent)';
+          var dl3=Math.hypot(b3.x-a3.x,b3.y-a3.y);
+          if(dl3>1){ var ux3=(b3.x-a3.x)/dl3, uy3=(b3.y-a3.y)/dl3; g+=arrow(a3.x+ux3*10,a3.y+uy3*10,b3.x-ux3*13,b3.y-uy3*13,col,2.2,' stroke-dasharray="6 4"'); }
+          g+=rect(b3.x-C/2+1.5,b3.y-C/2+1.5,C-3,C-3,Q.done?(ok?'var(--good-soft)':'var(--bad-soft)'):'var(--accent-soft)',' stroke="'+col+'" stroke-width="2.2" opacity="'+(Q.done?0.85:1)+'"');
+          g+=txt(b3.x,b3.y+5,Q.done?(ok?'✓':'✗'):String(i+1),{a:'middle',fs:14,c:col,w:700});
+          prev=pk;
+        });
+        if(Q.cursor && !Q.done && Q.picks.length<Q.seq.length) g+=rect(cx(L,Q.cursor.Z)-C/2+2,cy(L,Q.cursor.N)-C/2+2,C-4,C-4,'none',' stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"');
+      }
       if(isLand(Q)){
         if(Q.cursor && !Q.done) g+=rect(cx(L,Q.cursor.Z)-C/2+2,cy(L,Q.cursor.N)-C/2+2,C-4,C-4,'none',' stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"');
         if(Q.pick){
@@ -747,20 +778,23 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     });
     var r=real(cur), rk=r&&r!=='s'?r.replace('*',''):null;
     $('#nd-real').disabled = !!anim || !rk || ks.indexOf(rk)<0;
-    $('#nd-undo').disabled = !!anim || !hist.length || mode==='q';
+    var pathQ = mode==='q' && Q && Q.kind==='path';
+    $('#nd-undo').disabled = !!anim || (pathQ ? (Q.done || !Q.picks.length) : (!hist.length || mode==='q'));
     $('#nd-reset').disabled = !!anim;
     $('#nd-dec').hidden = mode==='q'; $('#nd-qbtns').hidden = mode!=='q';
-    $('#nd-undo').hidden = mode==='q'; $('#nd-reset').hidden = mode==='q';
+    $('#nd-undo').hidden = mode==='q' && !pathQ; $('#nd-reset').hidden = mode==='q';
+    $('#nd-setrow').hidden = mode!=='q' || !!SET_LOCK || level==='ial';
+    Array.prototype.forEach.call(document.querySelectorAll('#nd-set button'),function(b){ b.setAttribute('aria-pressed',String(b.dataset.v===qset())); });
     $('#nd-startrow').hidden = mode==='q';
     $('#nd-sc-box').hidden = mode!=='q'; $('#nd-sc').textContent=score.r+' / '+score.t;
     var st = anim ? anim.from : cur;
     $('#nd-A').textContent=st.Z+st.N; $('#nd-Z').textContent=st.Z; $('#nd-N').textContent=st.N;
     $('#nd-r-box').hidden = level!=='ib'; $('#nd-r').textContent=(st.N/st.Z).toFixed(2);
-    var go=$('#nd-go'); var goOk = Q && !Q.done && !anim && (Q.kind==='count' ? true : !!Q.pick);
+    var go=$('#nd-go'); var goOk = Q && !Q.done && !anim && (Q.kind==='count' ? true : Q.kind==='path' ? Q.picks.length===Q.seq.length : !!Q.pick);
     go.setAttribute('aria-disabled', String(!goOk));
-    svg.classList.toggle('pickable', !!(isLand(Q) && !Q.done && !anim));
-    if(isLand(Q) && !Q.done && !anim){ svg.setAttribute('tabindex','0'); svg.setAttribute('role','application');
-      svg.setAttribute('aria-label','Chart of N against Z. Arrow keys move the cursor, Enter chooses the square. Cursor at Z = '+Q.cursor.Z+', N = '+Q.cursor.N+'.'); }
+    svg.classList.toggle('pickable', !!(isGrid(Q) && !Q.done && !anim));
+    if(isGrid(Q) && !Q.done && !anim){ svg.setAttribute('tabindex','0'); svg.setAttribute('role','application');
+      svg.setAttribute('aria-label','Chart of N against Z. Arrow keys move the cursor, Enter chooses the square'+(Q.kind==='path'?', Backspace takes the last square away':'')+'. Cursor at Z = '+Q.cursor.Z+', N = '+Q.cursor.N+'.'); }
     else { svg.removeAttribute('tabindex'); svg.setAttribute('role','img'); svg.setAttribute('aria-label','A chart of neutron number against proton number with a nucleus on it, beside its nuclear equation'); }
     if(anim) return;
     // note and working
@@ -804,7 +838,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function reset(){ anim=null; cur={Z:start.Z,N:start.N,ex:false}; hist=[]; last=null; eqT=Infinity; view=centreOn(cur); sync(); draw(); }
   $('#nd-dec').addEventListener('click', function(e){ var b=e.target.closest('.dec'); if(!b||b.disabled||anim) return; run(b.getAttribute('data-d')); });
   $('#nd-real').addEventListener('click', function(){ if(anim) return; var r=real(cur); if(!r||r==='s') return; run(r.replace('*','')); });
-  $('#nd-undo').addEventListener('click', function(){ if(anim||!hist.length) return; var h=hist.pop(); cur={Z:h.from.Z,N:h.from.N,ex:h.from.ex};
+  $('#nd-undo').addEventListener('click', function(){
+    if(mode==='q' && Q && Q.kind==='path'){ if(anim||Q.done||!Q.picks.length) return; Q.picks.pop(); sync(); draw(); return; }
+    if(anim||!hist.length) return; var h=hist.pop(); cur={Z:h.from.Z,N:h.from.N,ex:h.from.ex};
     last = hist.length ? {from:hist[hist.length-1].from,k:hist[hist.length-1].k} : null; if(nearEdge(cur,view)) view=centreOn(cur); sync(); draw(); });
   $('#nd-reset').addEventListener('click', function(){ if(!anim) reset(); });
   $('#nd-slow').addEventListener('click', function(){ slow=!slow; this.setAttribute('aria-pressed',String(slow)); });
@@ -821,7 +857,22 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   var lastKinds=[];
   function newQ(){
     anim=null;
-    var r=Math.random(), want = r<0.3?'land':r<0.5?'which':r<0.75?'multi':'count';
+    var want = null;
+    if(qset()==='chain'){
+      if(!chainOrder.length){ chainOrder=chainKinds().slice(); for(var ci=chainOrder.length-1;ci>0;ci--){ var cj=Math.floor(Math.random()*(ci+1)), ct=chainOrder[ci]; chainOrder[ci]=chainOrder[cj]; chainOrder[cj]=ct; }
+        if(score.t===0 && chainOrder.indexOf('path')>=0){ chainOrder.splice(chainOrder.indexOf('path'),1); chainOrder.push('path'); } }   // the first chain question is always a path
+      want=chainOrder.pop();
+    }
+    if(want==='path'){
+      var ksP=kinds(), optsP=SEQS.filter(function(sq){ return sq[1].every(function(k){ return ksP.indexOf(k)>=0; }); });
+      if(Q && Q.kind==='path' && optsP.length>1) optsP=optsP.filter(function(sq){ return !(sq[0][0]===Q.p.Z && sq[0][1]===Q.p.N && sq[1].join()===Q.seq.join()); });
+      var sqP=optsP[Math.floor(Math.random()*optsP.length)], pP={Z:sqP[0][0],N:sqP[0][1],ex:false}, fP=pP;
+      sqP[1].forEach(function(k){ fP=after(fP,k); });
+      Q={kind:'path',p:pP,q:fP,seq:sqP[1],picks:[],done:false,cursor:{Z:pP.Z,N:pP.N}};
+      cur={Z:pP.Z,N:pP.N,ex:false}; hist=[]; last=null; view=centreOn(cur);
+      Q.prompt='<b>Plot the path.</b> '+cap(nm(pP.Z,pP.N,false))+' ('+lab(pP.Z,pP.N,false)+') gives out '+sqP[1].map(function(k,i){ return (i?', then ':'')+'<span class="'+D[k].cls+'">'+D[k].name.replace(/ \(a positron\)/,'')+'</span>'; }).join('')+'. Click the square for each new nucleus in turn ('+sqP[1].length+' squares), then press Go. Undo takes the last square away.';
+      sync(); draw(); return;
+    }
     if(want==='multi'){
       var ks=kinds(), opts=SEQS.filter(function(sq){ return sq[1].every(function(k){ return ks.indexOf(k)>=0; }); });
       var sq=opts[Math.floor(Math.random()*opts.length)], p={Z:sq[0][0],N:sq[0][1],ex:false}, f=p;
@@ -857,7 +908,25 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   }
   function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
   function goQ(){
-    if(!Q||Q.done||anim||!Q.pick) return;
+    if(!Q||Q.done||anim) return;
+    if(Q.kind==='path'){
+      if(Q.picks.length!==Q.seq.length) return;
+      var prevP=Q.p, stP=Q.p, lines=[]; Q.marks=[];
+      Q.seq.forEach(function(k,i){
+        var pk=Q.picks[i], dz=pk.Z-prevP.Z, dn=pk.N-prevP.N, d=D[k], ok=(dz===d.dz && dn===d.dn);
+        Q.marks.push(ok); stP=after(stP,k);
+        if(!ok) lines.push('Step '+(i+1)+': '+d.short+' moves it '+moveWords(k)+', but you moved it '+moveText(dz,dn)+'.');
+        prevP=pk;
+      });
+      var allOk=Q.marks.every(Boolean), endOk=Q.picks[Q.picks.length-1].Z===Q.q.Z && Q.picks[Q.picks.length-1].N===Q.q.N;
+      var zsP=[Q.p.Z], nsP=[Q.p.N], s2=Q.p; Q.seq.forEach(function(k){ s2=after(s2,k); zsP.push(s2.Z); nsP.push(s2.N); });
+      Q.right=allOk; score.t++; if(allOk) score.r++;
+      Q.after=(lines.length?lines.join(' ')+(Q.marks.some(Boolean)?' The steps marked ✓ were the right move from the square before.':'')+' ':'Every step is the right move. ')+'Z goes '+zsP.join(' → ')+' and N goes '+nsP.join(' → ')+', so it ends as '+lab(Q.q.Z,Q.q.N,false)+(Q.q.Z===Q.p.Z?', an isotope of the nucleus it started as':'')+(allOk||!endOk?'.':' (your last square is right, but not every step).')+' Watch the real path. Press New question for another.';
+      hist=[]; cur={Z:Q.p.Z,N:Q.p.N,ex:false}; Q.done=true;
+      runSeq(Q.seq.slice(), function(){ sync(); draw(); });
+      return;
+    }
+    if(!Q.pick) return;
     if(Q.kind==='multi' || Q.kind==='count'){
       var right2, why='';
       if(Q.kind==='multi'){
@@ -892,6 +961,11 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     run(Q.k);
   }
   function stepCount(pk){ var f=pk.charAt(0), d=pk.charAt(1)==='+'?1:-1; Q.pick[f]=clamp(Q.pick[f]+d,0,12); sync(); draw(); }
+  function moveText(dz,dn){
+    if(!dz && !dn) return 'nowhere';
+    var v=dn<0?(-dn)+' down':dn>0?dn+' up':'', h=dz<0?(-dz)+' left':dz>0?dz+' right':'';
+    return [v,h].filter(Boolean).join(' and ');
+  }
   function moveWords(k){ return {a:'2 down and 2 left',bm:'1 down and 1 right',bp:'1 up and 1 left',g:'nowhere',n:'1 straight down'}[k]; }
   $('#nd-go').addEventListener('click', goQ);
   $('#nd-new').addEventListener('click', function(){ if(!anim) newQ(); });
@@ -901,29 +975,41 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var t=e.target.closest('.pick');
     if(t && Q.kind==='which'){ Q.pick=t.getAttribute('data-pick'); sync(); draw(); return; }
     if(t && Q.kind==='count'){ stepCount(t.getAttribute('data-pick')); return; }
-    if(!isLand(Q)) return;
+    if(!isGrid(Q)) return;
     var L=lay(), p=svgPoint(e), gw=K*C;
     if(p.x<L.gx||p.x>L.gx+gw||p.y<L.gy||p.y>L.gy+gw) return;
     var Z=Math.round(view.z+(p.x-L.gx)/C-0.5), N=Math.round(view.n+(K-0.5)-(p.y-L.gy)/C);
     if(!okSt(Z,N)) return;
-    Q.pick={Z:Z,N:N}; Q.cursor={Z:Z,N:N}; sync(); draw();
+    choose(Z,N);
   });
+  function choose(Z,N){
+    Q.cursor={Z:Z,N:N};
+    if(Q.kind==='path'){
+      var lp=Q.picks[Q.picks.length-1];
+      if(lp && lp.Z===Z && lp.N===N) Q.picks.pop();        // click the last square again to take it away
+      else if(Q.picks.length<Q.seq.length) Q.picks.push({Z:Z,N:N});
+    } else Q.pick={Z:Z,N:N};
+    sync(); draw();
+  }
   svg.addEventListener('keydown', function(e){
     if(!Q||Q.done||anim) return;
     var t=e.target.closest && e.target.closest('.pick');
     if(t && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); if(Q.kind==='count') stepCount(t.getAttribute('data-pick')); else { Q.pick=t.getAttribute('data-pick'); sync(); draw(); } return; }
-    if(!isLand(Q) || e.target!==svg) return;
+    if(!isGrid(Q) || e.target!==svg) return;
+    if(Q.kind==='path' && e.key==='Backspace'){ e.preventDefault(); if(Q.picks.length){ Q.picks.pop(); sync(); draw(); } return; }
     var m={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[e.key];
     if(m){ e.preventDefault(); var c={Z:clamp(Q.cursor.Z+m[0],Math.ceil(view.z),Math.floor(view.z)+K-1),N:clamp(Q.cursor.N+m[1],Math.ceil(view.n),Math.floor(view.n)+K-1)};
       if(okSt(c.Z,c.N)) Q.cursor=c; sync(); draw(); return; }
-    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); Q.pick={Z:Q.cursor.Z,N:Q.cursor.N}; sync(); draw(); }
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); choose(Q.cursor.Z,Q.cursor.N); }
   });
 
   // ---- mode and level ----
   function setMode(m){
     mode=m; Array.prototype.forEach.call(document.querySelectorAll('#nd-mode button'),function(b){ b.setAttribute('aria-pressed',String(b.dataset.v===m)); });
-    if(m==='q'){ score={r:0,t:0}; qOrder=[]; newQ(); } else { Q=null; reset(); }
+    if(m==='q'){ score={r:0,t:0}; qOrder=[]; chainOrder=[]; newQ(); } else { Q=null; reset(); }
   }
+  $('#nd-set').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||anim||mode!=='q') return;
+    userSet=b.dataset.v; score={r:0,t:0}; qOrder=[]; chainOrder=[]; newQ(); });
   $('#nd-mode').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||anim) return; setMode(b.dataset.v); });
   function setLevel(v){
     level=v; Array.prototype.forEach.call(document.querySelectorAll('#nd-level button'),function(b){ b.setAttribute('aria-pressed',String(b.dataset.v===v)); });
