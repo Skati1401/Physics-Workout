@@ -619,7 +619,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     cs.filter(ok).forEach(function(x){ g+=txt(X(x),99,'C',{a:'middle',fs:13,w:700,c:'var(--ink)'}); });
     rs.filter(ok).forEach(function(x){ g+=txt(X(x),99,'R',{a:'middle',fs:13,w:700,c:'var(--ink-soft)'}); });
     cs=cs.filter(function(x){ return x<=XL; });
-    if(cs.length>1){ w=X(cs[0])-X(cs[1]); g+=dblArrow(X(cs[1]),44,X(cs[0]),44,'var(--ink-soft)',1.6)+txt((X(cs[0])+X(cs[1]))/2,39,w>150?'one wavelength, λ':'λ',{a:'middle',fs:12.5,c:'var(--ink)'}); }
+    if(cs.length>1){ w=X(cs[0])-X(cs[1]); g+=dblArrow(X(cs[1]),44,X(cs[0]),44,'var(--ink-soft)',1.6)+txt((X(cs[0])+X(cs[1]))/2,39,w>150?'one wavelength, λ':'λ',{a:'middle',fs:12.5,c:'var(--ink)',halo:1}); }
     return g;
   }
 
@@ -629,7 +629,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var R=LY.GX, k=pr&&Q?Q.kind:'', done=pr&&Q.phase==='done', A=W.A*100, lam=W.v/W.f, g, cr, tr, xa, xb, y0=R.y-6, w, x, xP=pr?Q.xP:S.xP;
     var ax=axes(R,{x0:0,x1:XL,xs:0.5,xm:0.1,ym:16,ys:5,yn:10,xl:ks5()?'distance / m':'distance along the spring / m',yl:'displacement / cm'});
     g=ax.html+txt(R.x,R.y-33,ks5()?'Displacement against distance, at this instant':'The wave at this instant',{fs:12,w:600,c:'var(--ink)'});
-    if(!pr && S.prs && ks5() && W.type==='L') g+=curveX(ax,function(x){ var ph=T-x/W.v; return ph<=0?0:A*Math.cos(2*PI*W.f*ph); },'var(--qcol)',1.6,' stroke-dasharray="5 4"');
+    if(!pr && S.prs && ks5() && W.type==='L') g+=curveX(ax,function(x){ var ph=T-x/W.v; return ph<=0?0:A*Math.cos(2*PI*W.f*ph); },'var(--vc)',1.8,' stroke-dasharray="5 4"');
     g+=curveX(ax,function(x){ return psi(x,T,W)*100; },'var(--ink)',2);
     if(!pr){
       cr=feats(W,T,PI/2).filter(function(x){ return x<=XL; });
@@ -673,7 +673,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     g+='<circle cx="'+f1(kx)+'" cy="'+(y+26)+'" r="5" fill="var(--pcol)"/>'+txt(kx+12,y+30,'coil P',{fs:12});
     if(ks5()) g+='<circle cx="'+f1(kx+70)+'" cy="'+(y+26)+'" r="5" fill="var(--qcol)"/>'+txt(kx+82,y+30,'coil Q',{fs:12});
     g+=arrow(kx-6,y+50,kx+28,y+50,'var(--ink-soft)',2)+txt(kx+36,y+54,'energy transfer',{fs:12});
-    if(S.prs && ks5() && W.type==='L') g+=ln(kx-6,y+72,kx+28,y+72,'var(--qcol)',1.8,' stroke-dasharray="5 4"')+txt(kx+36,y+76,'pressure change',{fs:12});
+    if(S.prs && ks5() && W.type==='L') g+=ln(kx-6,y+72,kx+28,y+72,'var(--vc)',1.8,' stroke-dasharray="5 4"')+txt(kx+36,y+76,'pressure change',{fs:12});
     return g;
   }
   function promptSVG(){
@@ -786,8 +786,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     fIn.disabled=aIn.disabled=E.on&&!po;
     if(pr){ working.hidden=!(Q&&Q.phase==='done'&&Q.work); if(!working.hidden){ $('#tw-eq1').innerHTML=FR(Q.work); $('#tw-eq2').hidden=$('#tw-eq3').hidden=true; $('#tw-eq4').textContent=''; }
       if(Q&&Q.phase==='ask') note.innerHTML=Q.text+(Q.kind==='read'?' Type your answer, then press Go.':' Then press Go.'); draw(); return; }
-    if(po){ var I=polI(PO.src,PO.n,PO.ang);
-      statsEl.innerHTML=stat('Angle of the filter',Math.round(PO.ang)+'°')+stat('Sensor reading',Math.round(I)+' lx',1)+stat('Of the greatest reading',Math.round(I)+'%');
+    if(po){ polStats();
       working.hidden=true;
       note.innerHTML=E.on?'Experiment: press Play (or turn the filter yourself) and the reading is plotted every 10°.':
         PO.src==='lamp'&&PO.n===1?'Light from the lamp is <b>unpolarised</b>: it oscillates in every plane that contains its direction of travel. The filter lets through the oscillations in one plane only, so turning it does not change the reading.':
@@ -799,7 +798,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var hideV=E.on&&!E.done, lamT=hideV?'?':sig(lam,3)+' m', vT=hideV?'?':sig(E.on?E.v:W.v,3)+' '+u;
     s=stat('Frequency, f',sig(W.f,3)+' Hz')+stat('Period, T',sig(1/W.f,3)+' s')+stat('Wavelength, λ',lamT,1)+stat('Wave speed, v',vT,1);
     if(k5){ dx=S.xQ-S.xP; dphi=2*PI*Math.abs(dx)/lam; frac=((dphi*180/PI)%360+360)%360; if(Math.abs(frac-360)<0.05) frac=0;
-      s+=stat('Distance, P to Q',sig(Math.abs(dx),3)+' m')+stat('Phase difference',hideV?'?':sig(dphi,3)+' rad'); }
+      s+=stat('Distance, P to Q',sig(Math.abs(dx),3)+' m')+stat('Phase difference',hideV?'?':sig(frac*PI/180,3)+' rad'); }
     statsEl.innerHTML=s;
     if(E.on){ expTable(); $('#tw-eq3').hidden=true;
       if(E.done){ var a=E.rows[0], b=E.rows[E.rows.length-1];
@@ -810,15 +809,18 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         note.innerHTML='Experiment: press Play. The hand shakes at five frequencies in turn. Each time, the distance across several whole waves is measured on the rule to find the wavelength.'; }
       draw(); return; }
     $('#tw-eq1').innerHTML=FR('f = [[1|T]]<br>'+sig(W.f,3)+' = [[1|T]]<br>T = [[1|'+sig(W.f,3)+']]<br>T = '+sig(1/W.f,3)+' s');
-    $('#tw-eq2').innerHTML=FR('v = f'+(k5?'':' × ')+'λ<br>'+sig(W.v,3)+' = '+sig(W.f,3)+' × λ<br>λ = [[v|f]]<br>λ = [[v|f]]'.replace(/\[\[v\|f\]\]$/,'[['+sig(W.v,3)+'|'+sig(W.f,3)+']]')+'<br>λ = '+sig(lam,3)+' m');
+    $('#tw-eq2').innerHTML=FR('v = f'+(k5?'':' × ')+'λ<br>'+sig(W.v,3)+' = '+sig(W.f,3)+' × λ<br>λ = [['+sig(W.v,3)+'|'+sig(W.f,3)+']]'+'<br>λ = '+sig(lam,3)+' m');
     $('#tw-eq3').hidden=!k5;
-    if(k5) $('#tw-eq3').innerHTML=FR('phase difference = [[distance P to Q|λ]] × 2π<br>phase difference = [['+sig(Math.abs(dx),3)+'|'+sig(lam,3)+']] × 2π<br>phase difference = '+sig(dphi,3)+' rad');
+    if(k5) $('#tw-eq3').innerHTML=FR('phase difference = [[distance P to Q|λ]] × 2π<br>phase difference = [['+sig(Math.abs(dx),3)+'|'+sig(lam,3)+']] × 2π<br>phase difference = '+sig(dphi,3)+' rad'+(dphi>=2*PI-1e-6?'<br>phase difference = '+sig(frac*PI/180,3)+' rad (whole cycles taken away)':''));
     $('#tw-eq4').textContent=(k5?(frac<1||frac>359?'P and Q are in phase: a whole number of wavelengths apart. ':Math.abs(frac-180)<1?'P and Q are in antiphase: an odd number of half wavelengths apart. ':''):'')+'The spring sets the wave speed and the hand sets the frequency, so the wavelength is v divided by f.';
     note.innerHTML=(S.type==='T'?'Each coil '+vib()+' <b>at right angles</b> to the direction the wave travels: a <b>transverse</b> wave. The wave transfers energy along the spring, but coil P only '+vib()+' about its own place.':
       'Each coil '+vib()+' <b>parallel</b> to the direction the wave travels: a <b>longitudinal</b> wave. '+(S.prs&&k5?'The pressure is greatest at the centre of a compression (C), where the displacement is zero, and least at the centre of a rarefaction (R).':'The coils crowd together in a compression (C) and spread out in a rarefaction (R).'))+
       (limited?' The amplitude is kept to '+S.A+' cm here: any larger and the coils would hit each other.':'')+(k5?'':' Drag P along the spring.');
     draw();
   }
+  // the readings and the slider while the filter turns (the note stays put, so a screen reader is not read it every frame)
+  function polStats(){ var I=polI(PO.src,PO.n,PO.ang); $('#tw-go').textContent=Math.round(PO.ang)+'°'; gIn.value=PO.ang;
+    statsEl.innerHTML=stat('Angle of the filter',Math.round(PO.ang)+'°')+stat('Sensor reading',Math.round(I)+' lx',1)+stat('Of the greatest reading',Math.round(I)+'%'); }
   function expTable(){ var k5=ks5(), h='<table class="rtable"><thead><tr><th>f / Hz</th><th>waves</th><th>distance / m</th><th>λ / m</th><th>'+(k5?'1/f / s':'f × λ')+'</th></tr></thead><tbody>';
     E.rows.forEach(function(r){ h+='<tr><td>'+r.f.toFixed(2)+'</td><td>'+r.n+'</td><td>'+r.d.toFixed(2)+'</td><td>'+sig(r.lam,3)+'</td><td>'+sig(k5?1/r.f:r.f*r.lam,3)+'</td></tr>'; });
     $('#tw-table').innerHTML=h+'</tbody></table>'; }
@@ -834,7 +836,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var dt=Math.min(0.05,(now-last)/1000)*(pressed(slowBtn)?0.25:1), go=false; last=now;
     if(predict()){ if(!Q || Q.phase!=='run') return; Q.el=Math.min(Q.dur,Q.el+dt*Q.rate); Q.step(Q.el); if(Q.el>=Q.dur){ finishQ(); return; } go=true; }
     else if(pol()){ PO.ang=Math.min(PO.end,PO.ang+dt*30); var r=Math.round(PO.ang); if(E.on && r%10===0 && Math.abs(PO.ang-r)<0.8){ var keep=PO.ang; PO.ang=r; logPol(); PO.ang=keep; }
-      if(PO.ang>=PO.end){ PO.ang=PO.end>=360?0:PO.end; running=false; logPol(); refresh(); return; } go=true; $('#tw-go').textContent=Math.round(PO.ang)+'°'; }
+      if(PO.ang>=PO.end){ PO.ang=PO.end>=360?0:PO.end; running=false; logPol(); refresh(); return; } go=true; polStats(); }
     else if(E.run){ if(E.hold>0){ E.hold-=dt; if(E.hold<=0){ E.i++; if(E.i>=FE.length){ E.run=false; E.done=true; E.meas=null; var sx=0, sy=0; E.rows.forEach(function(r){ if(ks5()){ sx+=1/(r.f*r.f); sy+=r.lam/r.f; } else { sx+=1; sy+=r.f*r.lam; } }); E.v=sy/sx; refresh(); return; } expRun(); } }
       else { t+=dt; if(t>=E.tEnd){ t=E.tEnd; measure(); E.hold=1.2; refresh(); } } go=true; }
     else { t+=dt; if(stepTo!=null && t>=stepTo){ t=stepTo; stop(); refresh(); return; } if(t>=60){ stop(); refresh(); return; } go=running; }
