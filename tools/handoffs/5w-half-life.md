@@ -1,6 +1,6 @@
 # 5w Half-life: hand-off from part 1 (the animation) to part 2 (the practical pages)
 
-Written 16 Nov 2026 after part 1; copied into the repo 20 Nov 2026 so a batch run on Alex's PC can read it, with Alex's decisions on the open points (bottom). Part 1 is done and live (commit `299cfe5`). Part 2, the practical pages built with `gen.py`, is the batch.
+Written 16 Nov 2026 after part 1; copied into the repo 20 Nov 2026 so a batch run on Alex's PC can read it, with Alex's decisions on the open points (bottom). Part 1 is done and live (commit `299cfe5`). Part 2, the practical pages built with `gen.py`, is the batch. **Part 2 done, 20 Nov 2026:** `half-life-practical.html` (IGCSE), `half-life-ial-practical.html` and `half-life-ib-practical.html`; the choices made are in `tools/REVIEW.md`.
 
 ## Links
 
