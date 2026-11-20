@@ -25,9 +25,13 @@ To change something on every practical page (a bug fix, a new factory), edit `te
 
 `check.py` answers every graded activity on a built page in Playwright and reports what the page says, then checks every tab for sideways scroll at 380px and each framed animation's height. It opens every Extra practice block first, and prints the core route with an estimated time per activity (Predict 0.75 min, Sort/Match/Order 1.75, 1 per Calculate question or Spot the error example, Plot 2.5, Your turn 5, Exam style 1 per mark). Run `python3 -m http.server 8765` in the repo root first, then `python3 tools/practical-gen/check.py hookes-law-practical.html` (add `--shots DIR` for screenshots).
 
+## kits.py: the drawing kits' master copies
+
+`tools/<kit>/kit.js` holds the master copy of each shared drawing kit (solid, instrument, circuit helpers, circuit board, graph helper, bench helpers, solid people, 3D, bench, Experiment). `python3 tools/kits.py` writes each into every page that carries its markers; `--check` reports pages out of step, `--list` which page has which kit. Details: "Kit master copies" in `tools/ANIMATION-STYLE.md`.
+
 ## experiment-kit: Experiment mode for animation pages
 
-- `kit.js`: copy into the animation page's script.
+- `kit.js`: the master copy. `python3 tools/kits.py` copies it into every animation page that carries it; for a new page, paste it in once, then edit only the master.
   - `expRun`: step the independent variable up one interval at a time, then optionally back down.
   - `expReading`: readings on the instrument's resolution, with a small fixed error that never makes a reading go the wrong way.
   - `expTable`: the results table.

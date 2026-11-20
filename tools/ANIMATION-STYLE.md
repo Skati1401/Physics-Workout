@@ -30,9 +30,33 @@ Another chat may be pushing to the repo: `git pull --rebase` before every push, 
 - **Numbers in the reading boxes sit level (Alex, 10 Nov 2026).** `.stat` is a column (`display:flex;flex-direction:column;justify-content:space-between`), so the number is on the bottom line of every box whether its label takes one line or two. Every animation page has this; keep it when a page is rebuilt.
 - Everything in `CLAUDE.md` still holds: fits one laptop screen, buttons under the picture, drag the objects, Experiment toggle, dark mode, reduced motion, no capitals-only text.
 
+## Kit master copies (20 Nov 2026)
+
+Every shared drawing kit has one master copy, and pages carry a copy written by a script, so a chat never reads kit code in a page.
+
+| Kit | Master copy | Pages |
+|---|---|---|
+| solid kit | `tools/solid-kit/kit.js` | 47 |
+| instrument kit | `tools/instrument-kit/kit.js` | 18 |
+| circuit helpers | `tools/circuit-helpers/kit.js` | 5 |
+| circuit board kit | `tools/circuit-board-kit/kit.js` | 6 |
+| graph helper | `tools/graph-helper/kit.js` | 3 |
+| bench helpers | `tools/bench-helpers/kit.js` | 4 |
+| solid people | `tools/solid-people/kit.js` | 3 |
+| 3D kit (parts `tri`, `flowMarks`, `scene3`, `rig3`, `endOn`, `keyRows`) | `tools/3d-kit/kit.js` | 6 |
+| bench kit | `tools/bench-kit/kit.js` | 3 |
+| Experiment kit | `tools/experiment-kit/kit.js` | 24 |
+
+- **To change a kit:** edit its master, run `python3 tools/kits.py` (or `python3 tools/kits.py solid-kit` for one kit), then `tools/anim-check.py` on a few of the pages it lists. `python3 tools/kits.py --check` says whether any page is out of step; `--list` says which pages carry which kit.
+- **In a page** the kit sits between `// ---- solid kit (master: tools/solid-kit/kit.js; copied by tools/kits.py, do not edit here) ----` and `// ---- end of solid kit ----`, inside the page's main script, where it always was (the kits use the page's own helpers, so they stay inside its function). Never edit between the markers: the next run of the script overwrites it.
+- **A new page:** copy the two marker lines from a page that has the kit, put them where the kit's functions go, and run the script.
+- **Options in the start marker:** `parts: tri flowMarks scene3` copies only those parts (a master is cut into parts by `//@part` lines); `renames: arrow=solidArrow txt=ktxt` renames the kit's functions where the page already had its own of that name (`newtons-laws.html`, `inclined-plane.html`, `free-body-diagrams.html`).
+- **Old copies not kept in step** (they differ from the master, so the script leaves them alone; bring one onto the master only with a check of the page): the cut-down solid kits in `electromagnets.html`, `electromagnet-field-patterns.html` and `magnetic-field-patterns.html`; the circuit helpers in `viscosity.html`, `wiens-law.html` (larger axis text) and `thermistor.html` (a short copy); the Experiment kit in `magnetic-field-patterns.html` (only `expErr`); the Experiment kit's CSS in every page (many small variants). `poleRect` and `wireEnd` stay in each 3D-kit page.
+- The space kit and the Choice kit keep their own scripts, `tools/space-kit.py` and `tools/choice-kit.py`.
+
 ## The 3D kit
 
-Both model pages carry the same block of drawing code, marked `3D kit`: `scene3` (camera, back-to-front sorting, `seg`, `tube`, `box`, `poly`, `head`), `rig3` (magnet, coil, split ring or slip rings, brushes, circuit, cell or meter), `endOn`, `flowMarks`, `tri`, `keyRows`, `poleRect`, `wireEnd`. Copy the block into another page and call what you need; pages stay self-contained. A fix to the kit goes into every page that has it (search for `3D kit`).
+Both model pages carry the same block of drawing code, marked `3D kit`: `scene3` (camera, back-to-front sorting, `seg`, `tube`, `box`, `poly`, `head`), `rig3` (magnet, coil, split ring or slip rings, brushes, circuit, cell or meter), `endOn`, `flowMarks`, `tri`, `keyRows`, `poleRect`, `wireEnd`. Copy the block into another page and call what you need; pages stay self-contained. Its master copy is in `tools/` and `tools/kits.py` copies it into the pages (see "Kit master copies").
 
 - Axes: X right, Y away from you, Z up. The camera looks from the front, 14° from the right and 30° from above, so the poles never hide the coil.
 - Colour tokens the kit needs (copy all three theme blocks from `dc-motor.html`): `--north-f/-t/-s`, `--south-f/-t/-s`, `--copper-hi`, `--coilb`, `--coilb-hi`, `--cur`, `--insul`, `--brush-t/-f/-s`.
@@ -40,7 +64,7 @@ Both model pages carry the same block of drawing code, marked `3D kit`: `scene3`
 
 ## The bench kit and the Predict tab (batch 3, 10 Nov 2026)
 
-`magnet-and-coil.html`, `transformer.html` and `national-grid.html` carry a second small block, marked `bench kit`, for apparatus that is not the motor rig: `caseBox` and `meterBox` (a solid bench meter with a scale, a needle and terminals on top or on its left side; `meterGeom`, `meterPt` and `meterWedge` give its geometry), `pl`, `pg`, `pathLen`, `wrapLines`, `onPick` and `setKeepFocus`. They also carry only part of the 3D kit (`tri`, `flowMarks`, `scene3`). A fix goes into every page that has the block.
+`magnet-and-coil.html`, `transformer.html` and `national-grid.html` carry a second small block, marked `bench kit`, for apparatus that is not the motor rig: `caseBox` and `meterBox` (a solid bench meter with a scale, a needle and terminals on top or on its left side; `meterGeom`, `meterPt` and `meterWedge` give its geometry), `pl`, `pg`, `pathLen`, `wrapLines`, `onPick` and `setKeepFocus`. They also carry only part of the 3D kit (`tri`, `flowMarks`, `scene3`). Its master copy is in `tools/` and `tools/kits.py` copies it into the pages (see "Kit master copies").
 
 - **Predict is a tab beside Explore** at the top of the right-hand column, and its button says **Questions** ("Explore | Questions", then the level switch if the page has one; see "Choices" below). In the code and in `?show=predict` it is still `predict`. In Predict the setup controls are hidden, a question is dealt, and the buttons under the picture are Go (or Switch on) and New question.
 - **The things to click are in the picture**, each a `<g class="pick" data-pick="…" tabindex="0" role="button">` with a `.ring` shape for the keyboard focus outline; `onPick(svg, fn)` handles click, Enter and Space. Draw them in their own group and redraw it with `setKeepFocus`, only when the question changes, so a redraw of the moving picture never drops the focus.
@@ -60,7 +84,7 @@ Both model pages carry the same block of drawing code, marked `3D kit`: `scene3`
 
 ## The solid kit (batch 9, 10 Nov 2026)
 
-`roller-coaster-energy.html`, `heat-transfer.html`, `density.html`, `liquid-pressure.html`, `reaction-time.html`, `viscosity.html` (11 Nov 2026; built from the `resistivity.html` shell, so it also carries the instrument kit and the circuit helpers for their graph and layout functions), the four batch 7 pages (see "The instrument kit") and the other four batch 5 pages (`stopping-distance.html`, `momentum-collision.html`, `seesaw-moments.html`, `hookes-law.html`) carry one identical block, marked `solid kit`, for bench apparatus that needs no camera: everything is drawn straight on, with depth going up and to the right. A fix goes into every page that has the block.
+`roller-coaster-energy.html`, `heat-transfer.html`, `density.html`, `liquid-pressure.html`, `reaction-time.html`, `viscosity.html` (11 Nov 2026; built from the `resistivity.html` shell, so it also carries the instrument kit and the circuit helpers for their graph and layout functions), the four batch 7 pages (see "The instrument kit") and the other four batch 5 pages (`stopping-distance.html`, `momentum-collision.html`, `seesaw-moments.html`, `hookes-law.html`) carry one identical block, marked `solid kit`, for bench apparatus that needs no camera: everything is drawn straight on, with depth going up and to the right. Its master copy is in `tools/` and `tools/kits.py` copies it into the pages (see "Kit master copies").
 
 - `box(x, y, w, h, dx, dy, col)`: a solid block with a lit top, a plain front and a darker side (benches, bases, bars of a chart). `tube` is a round bar with a streak of light, `cyl` an upright cylinder (a can), `ell`, `pg`, `pl`, `ln`, `rect` the plain shapes, `arrow` a solid arrow.
 - `thermo(x, yb, y0, t0, y1, t1, T, o)`: a glass thermometer whose scale can be read: ticks and numbers stand beside the stem, in clear space. Give it enough length for about 2 px per degree, and repeat the reading as text only where the scale is too coarse to read to the precision asked for.
@@ -89,7 +113,7 @@ Both model pages carry the same block of drawing code, marked `3D kit`: `scene3`
 
 ## The instrument kit (batch 7, 10 Nov 2026)
 
-`resistivity.html`, `internal-resistance.html`, `photoelectric.html` and `electron-diffraction.html` carry one identical block, marked `instrument kit`, straight after the solid kit (which it needs). The three batch 6 circuit pages carry it too (and the solid kit). It is for pictures of circuits on a bench, drawn straight on. A fix goes into every page that has the block. Batch 6 (the circuit pages) can copy it.
+`resistivity.html`, `internal-resistance.html`, `photoelectric.html` and `electron-diffraction.html` carry one identical block, marked `instrument kit`, straight after the solid kit (which it needs). The three batch 6 circuit pages carry it too (and the solid kit). It is for pictures of circuits on a bench, drawn straight on. Its master copy is in `tools/` and `tools/kits.py` copies it into the pages (see "Kit master copies"). Batch 6 (the circuit pages) can copy it.
 
 - `dmm(M, o)`: a **digital meter** with a reading on its display (`o.text`, `o.unit`), a letter on the case (A, V) and a terminal on each side; `dmmGeom(M)` gives where the leads plug in. Digital, because these practicals read to 0.001 A and 0.01 V, which a needle cannot show. `M.posts = [x1, x2]` puts the terminals on top instead (a supply standing under what it feeds, as in `electron-diffraction.html`). The same function draws a supply: leave out the letter and colour the terminals with `o.tl` and `o.tr`.
 - `lead(points)`: an insulated lead. `hang(a, b, sag)` and `bez(a, c1, c2, b)` give the points of a lead that hangs or curves, so the current arrows can follow it. A voltmeter's leads are the lighter `--lead-v` and carry no arrows.
@@ -103,7 +127,7 @@ Both model pages carry the same block of drawing code, marked `3D kit`: `scene3`
 
 ## The circuit board kit and the Build tab (batch 6, 11 Nov 2026)
 
-`series-parallel.html`, `iv-characteristics.html`, `potential-divider.html`, `resistivity.html`, `internal-resistance.html` and `thermistor.html` (14 Nov 2026) carry one identical block, marked `circuit board kit`, after the solid kit, the instrument kit and the circuit helpers (which it needs; all three pages carry those too). A fix goes into all six; the block's own first line still names the first five, so that its copies stay byte for byte the same. `thermistor.html` carries only the circuit helpers the kit draws with (`wire`, `jdot`, the symbols and `arrowDefs`), because it has graph functions of its own called `gx`, `gy` and `curve`. `electrostatic-charging.html` has none of the kits: it keeps its own 600 × 300 scene inside a scaled group, with its own `bar()` for a rod.
+`series-parallel.html`, `iv-characteristics.html`, `potential-divider.html`, `resistivity.html`, `internal-resistance.html` and `thermistor.html` (14 Nov 2026) carry one identical block, marked `circuit board kit`, after the solid kit, the instrument kit and the circuit helpers (which it needs; all three pages carry those too). Its master copy is in `tools/` and `tools/kits.py` copies it into the pages (see "Kit master copies"). `thermistor.html` carries only the circuit helpers the kit draws with (`wire`, `jdot`, the symbols and `arrowDefs`), because it has graph functions of its own called `gx`, `gy` and `curve`. `electrostatic-charging.html` has none of the kits: it keeps its own 600 × 300 scene inside a scaled group, with its own `bar()` for a rod.
 
 - **One circuit, drawn twice from the same data.** A circuit is `{cell, nodes, edges, vslots, dots}` in its own units (about 400 × 280). An edge is a wire or a component (`res`, `lamp`, `diode`, `var`, `ldr`, `therm`, or `custom` with its own `bench()` and `diag()`), with its path; a wire may have a `slot` where a meter can go in series, and each `vslot` is a place for a meter across a component. `kBench(P, st, T)` draws it built on the bench (seen from in front and above: every part has a top face, a darker front edge and a soft shadow, and can lie along the wire either way) and `kDiagram(P, st, T)` draws the circuit diagram. `T = {x, y, sx, sy}` places the circuit's units in the picture, so the bench and the diagram match part for part.
 - **State** `st`: `placed` (slot: 'A' or 'V'), `cur` and `dist` (current and arrow distance per edge), `text` (meter readings), `glow`, `psu` (the supply's display), `rev` (battery turned round), `slots` (true: empty slots are drawn and can be pressed), `kind(e)` and `name(e)` (what a part is drawn as and labelled), `hi` (ring colours after marking).
