@@ -27,6 +27,7 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 - [x] **4p** Year 9 Space workout page `space.html` with the 8 tabs, framing the animations; card on `year-9.html` (after 4m to 4o; added 16 Nov 2026). Done 16 Nov 2026, Draft (🔍 in `tools/REVIEW.md`); decisions in the claude.ai project doc `claude/8l-batch-e-2026-11-16.md`.
 - [ ] **4q** Engine fix for every workout: on a phone, a done tab's ✓ (its absolutely placed screen-reader label) widens the swiping tab row and the page scrolls sideways (energy.html 703 px wide at 380 px once tabs are ticked). Fix: `.tab-btn{position:relative}`, as in `space.html` (found 16 Nov 2026).
 - [ ] **4r** IGCSE Unit 8: reuse three Year 9 8L animations in 8a `universe-and-stars.html` (which frames only `star-life-cycle.html` so far), each with a card on `animations/igcse.html` under Unit 8 and `?level=igcse`: `animations/orbits.html` in Gravity and Orbits (8.4, 8.5; it has no v = 2πr/T, 8.6), `animations/weight-on-planets.html` in Gravity and Orbits (8.3; W = mg, 1.18), `animations/zoom-out.html` in The Universe (8.2; its light-year work is beyond 4PH1). They were pitched at Year 9: check the wording and Questions are at IGCSE level, or give them an IGCSE level, before framing (Alex, 16 Nov 2026; do when Unit 8 is taught).
+- [ ] **4s** 3a `waves.html`: frame `animations/travelling-waves.html?level=igcse` (7i, 19 Nov 2026) on the Describing Waves tab (IGCSE 3.2 to 3.6), as the other workouts frame their animations (left from 7i, added 20 Nov 2026).
 
 ## 5. Build: core practicals
 
@@ -61,6 +62,7 @@ Drawing and animation jobs worth running on Claude Fable, which draws SVG scenes
 - [ ] **7j** IAL levels on two Year 9 8L animations (IAL 5.6 is in Unit 5, first in Alex's IAL order): `animations/orbits.html` with F = Gm₁m₂/r² and gravity as the centripetal force (154, 156, 160), and `animations/weight-on-planets.html` with g = F/m and g = Gm/r² from each planet's mass and radius (155, 157). Add a level switch that leaves the Year 9 view unchanged, and cards on `animations/ial.html` under Unit 5. IB D.1 (Kepler's laws, g = GM/r², v<sub>orbital</sub> = √(GM/r)) is not taught, so an IB level is only a nice-to-have; if it is cheap, `solar-system-models.html` fits D.1 Kepler's laws too. Take the question kinds from the IAL Past Paper Index (Alex, 16 Nov 2026).
 - [ ] **7e** HR diagrams of star clusters, young against old (IAL WPH15 Jan 2025 4, Jan 2022 11, Jan 2024 8) (from 7a, 14 Nov 2026).
 - [ ] **7f** Standard candles (IAL 164, 166): no animation yet. Not in IB 2025 (E.5 has parallax and stellar radii; Cepheids are not required) (spec check, 15 Nov 2026). Parallax (165) is done: `parallax.html`, 14 Nov 2026 (from 7a).
+- [ ] **7k** `travelling-waves.html`: a phase question on the Questions tab (`?show=predict`) at IAL and IB (phase difference between two points on the wave, in degrees or radians, from the distance and the wavelength), with kinds from the IAL Past Paper Index and the IB Physics Question Index (left from 7i, added 20 Nov 2026).
 
 ## 8. Animation batches: review every animation against the motor and generator model (Alex, 10 Nov 2026)
 
