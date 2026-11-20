@@ -388,6 +388,8 @@
         <div class="seg" id="si-w"><button type="button" data-v="narrow" aria-pressed="true" aria-label="Very narrow slits: every maximum is equally bright">Very narrow</button><button type="button" data-v="real" aria-pressed="false" aria-label="Wider slits, with a width you can set">Wider</button></div>
         <span class="rowlab" id="si-lpmlab" hidden>Lines per mm</span>
         <div class="seg" id="si-lpm" hidden><button type="button" data-v="100" aria-pressed="false">100</button><button type="button" data-v="300" aria-pressed="true">300</button><button type="button" data-v="600" aria-pressed="false">600</button></div>
+        <span class="rowlab" id="si-lightlab" hidden>Light</span>
+        <div class="seg" id="si-light" hidden><button type="button" data-v="laser" aria-pressed="true">Laser</button><button type="button" data-v="white" aria-pressed="false">White light</button></div>
         <span class="rowlab" id="si-spotlab" hidden>Bright spot to read</span>
         <div class="seg" id="si-spot" hidden><button type="button" data-v="-3" aria-pressed="false">3 left</button><button type="button" data-v="-2" aria-pressed="false">2 left</button><button type="button" data-v="-1" aria-pressed="false">1 left</button><button type="button" data-v="0" aria-pressed="false">Centre</button><button type="button" data-v="1" aria-pressed="false">1 right</button><button type="button" data-v="2" aria-pressed="false">2 right</button><button type="button" data-v="3" aria-pressed="false">3 right</button></div>
         <span class="rowlab" id="si-jlab">Jump P to</span>
@@ -562,10 +564,10 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   var svg=$('#si-svg'), art=$('#si-art'), live=$('#si-live'), picksG=$('#si-picks'), hP=$('#si-hP'), hP2=$('#si-hP2'), hS=$('#si-hS'), hM=$('#si-hM'), hD=$('#si-hD');
   var playBtn=$('#si-play'), resetBtn=$('#si-reset'), slowBtn=$('#si-slow'), expBtn=$('#si-exp'), newBtn=$('#si-new');
   var lamIn=$('#si-lam'), dIn=$('#si-d'), DIn=$('#si-D'), bIn=$('#si-b'), ansIn=$('#si-ans'), note=$('#si-note'), statsEl=$('#si-stats'), working=$('#si-working');
-  var S={lam:650,d:0.25,D:2,b:0.05,N:2,real:false,lpm:300}, yP=0, MEAS=/[?&]show=measure\b/.test(location.search), M={spot:null}, SLITS_LABEL=svg.getAttribute('aria-label');
+  var S={lam:650,d:0.25,D:2,b:0.05,N:2,real:false,lpm:300,white:false}, yP=0, MEAS=/[?&]show=measure\b/.test(location.search), M={spot:null}, SLITS_LABEL=svg.getAttribute('aria-label');
   var running=false, raf=0, last=0, TALL=false, LY=null, drag=null, dragOff=null, noteKey='';
   var E={on:false,run:false,done:false,pts:[],lam:633,meas:null,gp:[],k:1,wait:0}, Q=null, qn=0, GEN={};
-  var partSeg=segGroup($('#si-part'), function(){ setPart(); modeChanged(); }), lpmSeg=segGroup($('#si-lpm'), function(v){ S.lpm=+v; changed(); });
+  var partSeg=segGroup($('#si-part'), function(){ setPart(); modeChanged(); }), lpmSeg=segGroup($('#si-lpm'), function(v){ S.lpm=+v; changed(); }), lightSeg=segGroup($('#si-light'), function(v){ S.white=v==='white'; yP=0; changed(); });
   var spotSeg=segGroup($('#si-spot'), function(v){ M.spot=+v; yP=M.spot===0?0:(M.spot<0?-1:1)*xr(MP,Math.abs(M.spot),M.spot<0?-1:1); refresh(); });
   var levelSeg=segGroup($('#si-level'), function(){ modeChanged(); }), tabSeg=segGroup($('#si-tab'), function(){ modeChanged(); });
   var nSeg=segGroup($('#si-n'), function(v){ S.N=+v; changed(); }), wSeg=segGroup($('#si-w'), function(v){ S.real=v==='real'; changed(); });
@@ -589,7 +591,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   }
   function inten(P,y){ var a=amp(P,y).a; return a*a; }
   function peak(P){ return P.N*P.N; }
-  function CP(){ if(GT()) return MEAS ? MP : predict()&&Q ? (Q.Sd||Q.S) : {lam:E.on?E.lam:S.lam,lpm:S.lpm,D:S.D};
+  function CP(){ if(GT()) return MEAS ? MP : predict()&&Q ? (Q.Sd||Q.S) : S.white&&!E.on ? {lam:550,lpm:S.lpm,D:S.D,white:true} : {lam:E.on?E.lam:S.lam,lpm:S.lpm,D:S.D};
     return predict()&&Q ? (Q.Sd||Q.S) : (E.on ? {lam:E.lam,d:S.d,D:S.D,b:S.b,N:2,real:false} : S); }
   function CY(){ return predict() ? (Q?Q.y:null) : MEAS&&M.spot==null ? null : yP; }
   function rgb(lam){ var r=0,g=0,b=0,f=1;
@@ -798,9 +800,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     $('#si-lamo').textContent=S.lam+' nm'; $('#si-do').textContent=S.d.toFixed(2)+' mm'; $('#si-Do').textContent=S.D.toFixed(1)+' m'; $('#si-bo').textContent=S.b.toFixed(2)+' mm';
     $('#si-dl').textContent='Slit separation, '+SP(); $('#si-bl').textContent='Slit width'+(k?', b':'');
     $('#si-eye').innerHTML='Animations &middot; waves &middot; '+(g?(k?'IB C.3 (HL)':'IAL 51, core practical 6'):(k?'IB C.3':'IAL 39, 40, 50'));
-    $('#si-Do').previousSibling.textContent=g?'Grating to screen, D':'Slits to screen, D'; lpmSeg.pick(String(S.lpm));
+    $('#si-Do').previousSibling.textContent=g?'Grating to screen, D':'Slits to screen, D'; lpmSeg.pick(String(S.lpm)); lightSeg.pick(S.white?'white':'laser');
     expBtn.title=g?'Measure each order on the screen and find the wavelength of a laser with no label':'Scan a light sensor across the screen and find the wavelength of a laser with no label';
-    [['#si-nlab',ex&&!E.on&&sl],['#si-n',ex&&!E.on&&sl],['#si-wlab',ex&&!E.on&&S.N>1&&sl],['#si-w',ex&&!E.on&&S.N>1&&sl],['#si-jlab',ex&&!E.on],['#si-jump',ex&&!E.on],['#si-lambox',ex&&!E.on],['#si-dbox',ex&&S.N>1&&sl],['#si-Dbox',ex],
+    [['#si-nlab',ex&&!E.on&&sl],['#si-n',ex&&!E.on&&sl],['#si-wlab',ex&&!E.on&&S.N>1&&sl],['#si-w',ex&&!E.on&&S.N>1&&sl],['#si-jlab',ex&&!E.on],['#si-jump',ex&&!E.on],['#si-lambox',ex&&!E.on&&!(g&&S.white)],['#si-lightlab',ex&&g&&!MEAS&&!E.on],['#si-light',ex&&g&&!MEAS&&!E.on],['#si-dbox',ex&&S.N>1&&sl],['#si-Dbox',ex],
      ['#si-lpmlab',ex&&g&&!MEAS],['#si-lpm',ex&&g&&!MEAS],['#si-spotlab',MEAS],['#si-spot',MEAS],['#si-bbox',ex&&!E.on&&wide(S)&&sl],['#si-exp',ex],['#si-reset',ex],['#si-new',pr],['#si-guess',!!typed],['#si-sliders',ex],['#si-stats',ex]].forEach(function(p){ $(p[0]).hidden=!p[1]; });
     Array.prototype.forEach.call($('#si-jump').querySelectorAll('button'), function(b){ var v=b.dataset.v; b.hidden=g ? v==='m1' : v==='n3' || (S.N===1 && (v==='n1'||v==='n2')); });
     playBtn.innerHTML=pr?'&#9654; Go':(running||E.run?'&#10074;&#10074; Pause':'&#9654; Play'); playBtn.disabled=pr&&(!Q||Q.phase!=='ask');
@@ -922,8 +924,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       q.work='first minimum at '+y1+' mm from the centre<br>θ = [['+sci(y1*1e-3,1)+'|'+D.toFixed(1)+']]<br>θ = '+sig(y1*1e-3/D,3)+' rad<br>θ = [[λ|b]]<br>'+sig(y1*1e-3/D,3)+' = [['+sci(lam*1e-9,2)+'|b]]<br>b = [['+sci(lam*1e-9,2)+'|'+sig(y1*1e-3/D,3)+']]<br>b = '+sci(P.b*1e-3,2)+' m<br>b = '+sig(P.b,2)+' mm';
       q.why='The first minimum of a single slit is at the angle θ = λ/b, and for small angles θ is the distance from the centre divided by D.'; q.span=[0,y1]; }
     q.ans='The answer is '+sig(q.answer,2)+' mm.'; q.dur=0; return q; };
-  function kinds(){ return GT()?['mark','calc','orders','path','graph']:ib()?['mark','phase','change','calc','draw','env']:['mark','phase','change','calc','draw']; }
-  function newQ(){ var ks=kinds(), k=ks[qn%ks.length]; qn++; cancelAnimationFrame(raf); Q=(GT()?GG:GEN)[k](); Q.kind=k; Q.phase='ask'; Q.el=0; working.open=false;
+  function kinds(){ return GT()?['mark','calc','orders','path','graph','white']:ib()?['mark','phase','change','calc','draw','env']:['mark','phase','change','calc','draw']; }
+  function newQ(){ var ks=kinds(), k=ks[qn%ks.length]; qn++; cancelAnimationFrame(raf); Q=(GT()?GG:GEN)[k](); Q.kind=Q.kind||k; Q.phase='ask'; Q.el=0; working.open=false;
     ansIn.value=''; ansIn.disabled=false; if(Q.unit) $('#si-ansu').textContent=Q.unit; refresh(); drawPicks(); }
   function go(){
     if(!Q || Q.phase!=='ask') return; var k=Q.kind, v;
@@ -959,8 +961,17 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
        path    the path difference at an order, for neighbouring slits or slits two apart (IB P2 HL May 2021 TZ2 Q8(a);
                WPH12 Oct 2025 Q16(a)(ii)).
        graph   the wavelength or the lines per mm from the gradient of sin(theta) against n (IB P2 HL May 2021 TZ2 Q8(b);
-               8PH0/01 Oct 2020 Q15(b); WPH13 Jan 2025 Q4(a)). */
-  var XM=100, GQ={py:96,ph:66}, GD={bx:70,yc:110,k:0.75}, GG={}, MP={lam:633,lpm:300,D:1};
+               8PH0/01 Oct 2020 Q15(b); WPH13 Jan 2025 Q4(a)).
+       white   white light (below): click where the violet or the red end of the first order is (WPH12 June 2024 Q12(a), Jan 2022 Q14(c);
+               IB P1 HL May 2023 TZ1 Q28), the angle between the two ends of an order (IB P2 HL May 2026 TZ3 Q5(a)), or the highest
+               order that holds the whole visible spectrum (IB P2 HL May 2026 TZ3 Q5(b)).
+     White light (20 Nov 2026, TODO.md 7l): the Light choice (Laser | White light, ?light=white). A parameter set with white:true is
+     drawn as the visible spectrum, 400 nm (violet) to 700 nm (red): a white central maximum, where the path difference is zero for
+     every wavelength, and each order spread into a spectrum from sin(theta) = n 400/d to n 700/d, violet nearest the centre.
+     Order n and order n + 1 overlap when n 700 > (n + 1) 400, which is every n from 2 up. The screen strip adds the orders
+     (mix-blend-mode: screen); under it each order is drawn again on its own row, so the overlap can be seen. The Experiment
+     always uses its laser. */
+  var XM=100, GQ={py:96,ph:66}, GD={bx:70,yc:110,k:0.75}, GG={}, MP={lam:633,lpm:300,D:1}, VL=400, RL=700, WLS=[400,450,500,550,600,650,700], WROW={y:99,h:15,n:5};
   function GT(){ return partSeg.value()==='grating'; }
   function gd(P){ return 1e6/P.lpm; }                                                   // slit spacing in nm
   function gsin(P,x){ var D=P.D*100; return x/Math.sqrt(D*D+x*x); }
@@ -968,7 +979,32 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function gmax(P){ return Math.ceil(gd(P)/P.lam-1e-9)-1; }                              // highest order: sin(theta) is less than 1
   function gpos(P,n){ var s=n*P.lam/gd(P); return Math.abs(s)<1?P.D*100*s/Math.sqrt(1-s*s):null; }   // cm from the centre
   function gon(P){ var n=0; while(n<gmax(P) && gpos(P,n+1)<=XM) n++; return n; }         // highest order that lands on the screen
-  function gcol(P){ return P.mute?'#aab2c3':shade(rgb(P.lam),1); }
+  function gcol(P){ return P.white?'#fff':P.mute?'#aab2c3':shade(rgb(P.lam),1); }
+  // white light: one wavelength of it, the highest order with any visible light, the orders to draw, the wavelengths that are bright at x
+  function wl(P,l){ return cp(P,{lam:l,white:false}); }
+  function wmax(P){ return gmax(wl(P,VL)); }
+  function wshow(P){ return Math.min(P.show==null?20:P.show,wmax(P)); }
+  function wcol(l){ return shade(rgb(l),1); }
+  function wfan(n){ return Math.abs(n)<=3?WLS:[400,550,700]; }
+  function wend(P,n){ return Math.min(RL,gd(P)*XM/Math.sqrt(P.D*P.D*1e4+XM*XM)/n); }      // the longest wavelength of order n that lands on the screen
+  function won(P){ var n=0; while(n<wmax(P) && wend(P,n+1)>=VL+2) n++; return n; }                  // the highest order with any light on the screen
+  function wAt(P,x){ var pd=gd(P)*Math.abs(gsin(P,x)), a=[], n; for(n=Math.max(1,Math.ceil(pd/RL-1e-9));n*VL<=pd+1e-9;n++) a.push({n:n,lam:pd/n}); return a; }
+  function cname(l){ return l<450?'violet':l<495?'blue':l<570?'green':l<590?'yellow':l<620?'orange':'red'; }
+  // one order's spectrum as a bar on the screen's scale, on both sides of the centre
+  function wBar(P,n,y,h,id,extra){
+    var le=wend(P,n), x0, x1, i, l, s, w; if(le<VL+2) return '';
+    x0=gpos(wl(P,VL),n); x1=gpos(wl(P,le),n); w=Math.max(1.4,gx(x1)-gx(x0)); s='<linearGradient id="'+id+'" x1="0" x2="1" y1="0" y2="0">';
+    for(i=0;i<=10;i++){ l=VL+(le-VL)*i/10; s+='<stop offset="'+clamp((gpos(wl(P,l),n)-x0)/(x1-x0),0,1).toFixed(4)+'" stop-color="'+wcol(l)+'"/>'; }
+    return s+'</linearGradient>'+rect(gx(x0),y,w,h,'url(#'+id+')',extra||'')+rect(gx(x0),y,w,h,'url(#'+id+')',' transform="translate('+f1(2*gx(0))+',0) scale(-1,1)"'+(extra||''));
+  }
+  function wRows(P){
+    var T=Math.min(wshow(P),won(P)), N=Math.min(T,WROW.n), g='', n, y, b=WROW.y+N*WROW.h;
+    if(N<1) return '';
+    g+=txt(GR.x,93,'Each order on its own row',{fs:11.5,w:600,c:INK})+ln(gx(0),WROW.y,gx(0),b,'var(--ink-faint)',1,' stroke-dasharray="2 3"');
+    for(n=1;n<=N;n++){ y=WROW.y+(n-1)*WROW.h; g+=rect(GR.x,y+1.5,GR.w,WROW.h-3,'var(--panel-border)',' opacity=".45"')+txt(GR.x-6,y+11.5,'n = '+n,{a:'end',fs:11})+wBar(P,n,y+1.5,WROW.h-3,'si-spr'+n); }
+    if(T>N) g+=txt(GR.x,b+14,'Higher orders (to n = '+T+') overlap more and more.',{fs:11});
+    return g;
+  }
   function gshow(P){ return P.show==null?gmax(P):Math.min(P.show,gmax(P)); }
   function xr(P,n,side){ return Math.round((gpos(P,n)+(hash(n*7+side*3+11)-0.5)*0.3)*10)/10; }
   function gNX(P){ return clamp(gmax(P),3,8); }
@@ -983,10 +1019,13 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     g+=rect(XS-4,116,MPX*3+10,10,'var(--rule-t)',' stroke="var(--rule-f)" stroke-width="1"');
     for(i=0;i<=30;i++){ x=XS+MPX*i/10; g+=ln(x,116,x,i%10===0?124:i%5===0?122:119.5,'var(--rule-ink)',i%10===0?1.3:0.8); }
     if(!pr) for(i=0;i<=3;i++) g+=txt(XS+MPX*i,139,i+(i===3?' m':''),{a:'middle',fs:11});
-    g+=tube(49,104,49,82,5,'var(--steel-sh)','var(--steel-hi)')+box(20,59,58,22,6,-4,'var(--case-f)')+ell(81,68,2.6,5,col)+txt(49,48,'laser',{a:'middle',fs:12});
-    g+=rect(84,66.8,XS-86,2.4,col,' opacity=".9"');
+    g+=tube(49,104,49,82,5,'var(--steel-sh)','var(--steel-hi)')+box(20,59,58,22,6,-4,'var(--case-f)')+ell(81,68,2.6,5,col)+txt(49,48,P.white?'white light':'laser',{a:'middle',fs:12});
+    g+=rect(84,66.8,XS-86,2.4,col,P.white?' stroke="var(--ink-faint)" stroke-width=".7"':' opacity=".9"');
     g+=tube(sx,104,sx,92,5,'var(--steel-sh)','var(--steel-hi)')+pg([[cx-26,98],[cx-26,54],[cx+26,38],[cx+26,82]],'#1a1e26',' stroke="var(--steel-hi)" stroke-width="1.5"');
-    for(n=-N;n<=N;n++){ p=gpos(P,n); if(p==null||Math.abs(p)>XM) continue; g+=ln(XS+3,68,cx+p*ux,68+p*uy,col,n===0?1.6:1.1,' opacity="'+(n===0?0.8:0.5)+'"')+ell(cx+p*ux,68+p*uy,2,3.4,col); }
+    if(P.white){ N=Math.min(wshow(P),6);
+      for(n=-N;n<=N;n++){ if(n===0){ g+=ln(XS+3,68,cx,68,'var(--ink-faint)',2.6)+ln(XS+3,68,cx,68,'#fff',1.5)+ell(cx,68,2,3.4,'#fff'); continue; }
+        wfan(n).forEach(function(l){ p=gpos(wl(P,l),n); if(p==null||Math.abs(p)>XM) return; g+=ln(XS+3,68,cx+p*ux,68+p*uy,wcol(l),1,' opacity=".6"')+ell(cx+p*ux,68+p*uy,1.6,3,wcol(l)); }); } }
+    else for(n=-N;n<=N;n++){ p=gpos(P,n); if(p==null||Math.abs(p)>XM) continue; g+=ln(XS+3,68,cx+p*ux,68+p*uy,col,n===0?1.6:1.1,' opacity="'+(n===0?0.8:0.5)+'"')+ell(cx+p*ux,68+p*uy,2,3.4,col); }
     g+=tube(XS,104,XS,92,5,'var(--steel-sh)','var(--steel-hi)')+box(XS-3,46,5,46,6,-4,'var(--case-s)')+txt(XS,P.hideN?34:20,'grating',{a:'middle',fs:12})+(P.hideN?'':txt(XS,35,Math.round(P.lpm)+' lines/mm',{a:'middle',fs:11.5}));
     return g+txt(cx,28,pr||MEAS?'screen':'↔ screen',{a:'middle',fs:12});
   }
@@ -996,13 +1035,15 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     g+=txt(4,12,'Seen from above (to scale)',{fs:12,w:600,c:INK})+txt(sx+8,28,'screen',{fs:12});
     g+=dblArrow(GD.bx+3,24,sx-3,24,'var(--ink-faint)',1.2)+txt((GD.bx+sx)/2,28,'D',{a:'middle',fs:13,halo:1,c:INK});
     g+=ln(GD.bx,GD.yc,sx,GD.yc,'var(--ink-faint)',1,' stroke-dasharray="5 4"');
-    for(n=-N;n<=N;n++){ s=n*P.lam/gd(P); c=Math.sqrt(1-s*s); p=gpos(P,n);
-      if(Math.abs(p)<=XM) g+=ln(GD.bx,GD.yc,sx,GD.yc-p*GD.k,col,n===0?2.2:1.5,' opacity=".85"');
-      else { L=Math.min((414-GD.bx)/c,78/Math.abs(s)); g+=ln(GD.bx,GD.yc,GD.bx+L*c,GD.yc-L*s,col,1.3,' opacity=".55" stroke-dasharray="3 3"'); } }
-    for(n=0;n<=N;n++){ p=gpos(P,n); if(p>XM) break; py=p*GD.k; if(py-last<13) continue; last=py;
+    function beam(n,lam,bc,w){ s=n*lam/gd(P); if(Math.abs(s)>=1) return; c=Math.sqrt(1-s*s); p=P.D*100*s/c;
+      if(Math.abs(p)<=XM) g+=ln(GD.bx,GD.yc,sx,GD.yc-p*GD.k,bc,w,' opacity=".85"');
+      else { L=Math.min((414-GD.bx)/c,78/Math.abs(s)); g+=ln(GD.bx,GD.yc,GD.bx+L*c,GD.yc-L*s,bc,Math.min(w,1.3),' opacity=".55" stroke-dasharray="3 3"'); } }
+    if(P.white){ N=Math.min(wshow(P),won(P)+1,8); for(n=-N;n<=N;n++){ if(n===0) g+=ln(GD.bx,GD.yc,sx,GD.yc,'var(--ink-faint)',3.4)+ln(GD.bx,GD.yc,sx,GD.yc,'#fff',2); else wfan(n).forEach(function(l){ beam(n,l,wcol(l),1.2); }); } }
+    else for(n=-N;n<=N;n++) beam(n,P.lam,col,n===0?2.2:1.5);
+    for(n=0;n<=N;n++){ p=gpos(P,n); if(p==null||p>XM) break; py=p*GD.k; if(py-last<13) continue; last=py;
       g+=txt(sx+8,GD.yc-py+4,'n = '+n,{fs:11.5}); if(n>0) g+=txt(sx+8,GD.yc+py+4,'n = '+n,{fs:11.5}); }
     g+=ln(GD.bx,34,GD.bx,186,INK,5,' stroke-dasharray="2.5 2"')+ln(sx,GD.yc-XM*GD.k,sx,GD.yc+XM*GD.k,INK,3);
-    g+=rect(8,GD.yc-1.5,GD.bx-12,3,col)+arrow(8,GD.yc,GD.bx-4,GD.yc,col,1.8)+txt(4,GD.yc-10,'laser',{fs:11.5})+txt(GD.bx-6,48,'grating',{a:'end',fs:11.5});
+    g+=(P.white?rect(8,GD.yc-2.2,GD.bx-14,4.4,'#fff',' stroke="var(--ink-faint)" stroke-width=".8"')+arrow(GD.bx-20,GD.yc,GD.bx-4,GD.yc,'var(--ink-soft)',1.6):rect(8,GD.yc-1.5,GD.bx-12,3,col)+arrow(8,GD.yc,GD.bx-4,GD.yc,col,1.8))+(P.white?txt(4,GD.yc-10,'white',{fs:11.5})+txt(4,GD.yc+19,'light',{fs:11.5}):txt(4,GD.yc-10,'laser',{fs:11.5}))+txt(GD.bx-6,48,'grating',{a:'end',fs:11.5});
     return g;
   }
   function gDiagLive(P,y){
@@ -1018,6 +1059,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function gStrip(P,hide){
     var g=rect(GR.x-1,GR.sy-1,GR.w+2,GR.sh+2,'#0b0e14',' rx="2"'), n, p, v, N=gshow(P), col=gcol(P), cy=GR.sy+GR.sh/2;
     if(hide) g+=txt(GR.x+GR.w/2,GR.sy+17,'?',{a:'middle',fs:15,c:'#cfd6e2',w:700});
+    else if(P.white){ g+=ell(gx(0),cy,4.4,9.5,'#fff',' opacity=".35"')+ell(gx(0),cy,2.3,6.5,'#fff');
+      for(n=1;n<=wshow(P);n++) g+=wBar(P,n,GR.sy+3,GR.sh-6,'si-sps'+n,' opacity="'+f1(Math.max(0.4,1-0.1*(n-1)))+'" style="mix-blend-mode:screen"'); }
     else for(n=-N;n<=N;n++){ p=gpos(P,n); if(p!=null&&Math.abs(p)<=XM) g+=ell(gx(p),cy,4.4,9.5,col,' opacity=".35"')+ell(gx(p),cy,2.3,6.5,col)+ell(gx(p),cy,0.9,3.5,'#fff',' opacity=".8"'); }
     for(v=-XM;v<=XM;v+=10) g+=ln(gx(v),GR.sy+GR.sh+2,gx(v),GR.sy+GR.sh+(v%50===0?9:5.5),'var(--ink-soft)',v%50===0?1.3:0.8);
     for(v=-XM;v<=XM;v+=50) g+=txt(gx(v),GR.sy+GR.sh+21,MEAS?String(v+XM):sn(v,0),{a:'middle',fs:11});
@@ -1054,8 +1097,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     [[20,30],[38,66],[74,102],[110,122]].forEach(function(e){ g+=ln(X,e[0],X,e[1],INK,5); });
     g+=dblArrow(X-13,A,X-13,B,'var(--ink-faint)',1.2)+txt(X-22,(A+B)/2+4,'d',{a:'end',fs:13,c:INK});
     g+=txt(WR.x+4,48,'path difference',{fs:12,w:600,c:'var(--accent)'})+txt(WR.x+4,66,'= d sin θ',{fs:12.5,c:INK});
-    if(!hide) g+=txt(WR.x+4,84,'= '+(m<0.005?'0':sig(m,3)+' λ'),{fs:12.5,w:700,c:'var(--accent)'});
-    return g+txt(WR.x+4,114,'laser light →',{fs:11.5});
+    if(!hide) g+=txt(WR.x+4,84,'= '+(P.white?Math.round(gd(P)*Math.abs(s))+' nm':m<0.005?'0':sig(m,3)+' λ'),{fs:12.5,w:700,c:'var(--accent)'});
+    return g+txt(WR.x+4,114,P.white?'white light →':'laser light →',{fs:11.5});
   }
   function linesSVG(s){ var g=''; wrapLines(s,52).forEach(function(l,i){ g+=txt(8,34+i*17,l,{fs:12.5,w:i===0?600:400,c:INK}); }); return g; }
 
@@ -1063,6 +1106,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var P=CP(), pr=predict(), k=pr&&Q?Q.kind:'', ask=pr&&Q&&Q.phase!=='done', gg='', NX=gNX(P), g1=P.lam/gd(P), n;
     gg+=gStrip(P,(k==='graph'||k==='orders')&&ask);
     if(MEAS){ if(M.spot!=null) gg+=gRuleClose(P,M.spot); }
+    else if(P.white){ if(!ask) gg+=wRows(P); }
     else if(!pr||k==='graph'){ gg+=gAxes(NX);
       if(!E.on){ gg+=gLine(g1,NX,INK)+(pr?'':txt(GR.x+8,GQ.py+15,'gradient = λ/d = '+sig(g1,3),{fs:12,c:INK,halo:1}));
         for(n=1;n<=Math.min(gmax(P),NX);n++) gg+=dot(gqx(n,NX),gqy(n*g1),pr||n<=gon(P)?'var(--topic)':'var(--panel)');
@@ -1078,7 +1122,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     if(k==='mark'){ c=Q.choice; if(done) [-1,1].forEach(function(sg){ gl+=rect(gx(sg*Q.target-Q.tol),GR.sy-4,gx(Q.tol)-gx(-Q.tol),GR.sh+8,'none',' stroke="var(--good)" stroke-width="2" stroke-dasharray="4 3" rx="3"'); });
       if(c!=null && ask) gl+=ln(gx(c),GR.sy-5,gx(c),GR.sy+GR.sh+5,'#fff',2.2)+'<path d="M'+f1(gx(c)-6)+','+(GR.sy-11)+' h12 l-6,8 z" fill="var(--accent)" stroke="var(--panel)" stroke-width="1"/>'; }
     if(y!=null && !MEAS) gl+=ln(gx(y),GR.sy,gx(y),GR.sy+GR.sh,'#fff',1.3,' stroke-dasharray="3 3" opacity=".85"');
-    if(y!=null && !pr && !E.on && !MEAS){ n=Math.round(Math.abs(gm(P,y))); if(n>=1 && n<=Math.min(gmax(P),NX) && Math.abs(Math.abs(gm(P,y))-n)<0.02) gl+='<circle cx="'+f1(gqx(n,NX))+'" cy="'+f1(gqy(n*P.lam/gd(P)))+'" r="8" fill="none" stroke="var(--topic)" stroke-width="2"/>'; }
+    if(P.white && y!=null && !ask && Math.abs(y)>0.5 && Math.min(wshow(P),won(P))>=1) gl+=ln(gx(y),WROW.y-2,gx(y),WROW.y+Math.min(wshow(P),won(P),WROW.n)*WROW.h+2,'var(--topic)',1.4,' stroke-dasharray="3 3"');
+    if(y!=null && !pr && !E.on && !MEAS && !P.white){ n=Math.round(Math.abs(gm(P,y))); if(n>=1 && n<=Math.min(gmax(P),NX) && Math.abs(Math.abs(gm(P,y))-n)<0.02) gl+='<circle cx="'+f1(gqx(n,NX))+'" cy="'+f1(gqy(n*P.lam/gd(P)))+'" r="8" fill="none" stroke="var(--topic)" stroke-width="2"/>'; }
     w=MEAS?linesSVG(M.spot==null?'Choose a bright spot with the buttons. Its place on the two metre rules is then shown close up.':'Read where the centre of the spot is on the metre rules, to the nearest 0.1 cm. Then choose another spot.'):
       pr&&(ask||y==null)?promptSVG():E.on&&!E.done?linesSVG('The close-up of the grating is hidden until the readings are complete.'):y!=null?gCloseUp(P,y,false):'';
     live.innerHTML=at(LY.Dg,gDiagLive(P,y))+at(LY.G,gl)+at(LY.W,w);
@@ -1096,6 +1141,19 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         key='gd'+M2.lam+E.gp.length; nt='The graph of sin θ against n is a straight line through the origin with gradient λ/d = <b>'+sig(M2.g,3)+'</b>, so the wavelength of this laser is about <b>'+Math.round(M2.lam)+' nm</b>.'+(E.gp.length<2?' Only one order landed on the screen, so the line rests on one point: use a grating with fewer lines per mm, or move the screen closer, to get more.':' Try another grating or screen distance: the readings change, the wavelength does not.'); }
       else { e1='λ = ?'; key='ge'+E.run+on; nt=E.run?'For each order, the distance between the two maxima is measured on the metre rules and halved to give x. Then tan θ = x/D gives θ, and sin θ is plotted against n.':
         on<1?'No first-order maximum lands on the screen. Move the screen closer or use a grating with fewer lines per mm.':'Experiment: this laser has no label. Press Play to measure each order that lands on the screen. The graph of sin θ against n will give the wavelength.'; }
+    }
+    else if(P.white){
+      var pd=d*s, ws=wAt(P,y), V=wl(P,VL), Rd=wl(P,RL), tv=deg(Math.asin(VL/d)), tr=deg(Math.asin(RL/d)), cen=Math.abs(y)<0.15, hi=wmax(P), ful=Math.min(hi,Math.ceil(d/RL-1e-9)-1), col2=function(w){ return '<b>'+Math.round(w.lam)+' nm</b> ('+cname(w.lam)+') in the '+ordW(w.n)+' order'; };
+      h=stat('Position of P, x',sn(y,1)+' cm')+stat('Angle to P, θ',sig(deg(th),3)+'°')+stat('Path difference, d sin θ',Math.round(pd)+' nm',1)+stat('Slit spacing, d',sci(d*1e-9,2)+' m')+stat('Orders at P',cen?'0':!ws.length?'none':ws.length>3?ws[0].n+' to '+ws[ws.length-1].n:ws.map(function(w){ return w.n; }).join(', '),1)+stat('First order, θ',sig(tv,3)+'° to '+sig(tr,3)+'°');
+      e1='d = [[1|number of lines per metre]]<br>d = [[1|'+sci(P.lpm*1e3,2)+']]<br>d = '+dT+' m';
+      e2='nλ = d sin θ<br>1 × '+sci(VL*1e-9,2)+' = '+dT+' × sin θ<br>sin θ = [['+sci(VL*1e-9,2)+'|'+dT+']]<br>sin θ = '+sig(VL/d,4)+'<br>θ = '+sig(tv,3)+'°';
+      e3='nλ = d sin θ<br>1 × '+sci(RL*1e-9,2)+' = '+dT+' × sin θ<br>sin θ = [['+sci(RL*1e-9,2)+'|'+dT+']]<br>sin θ = '+sig(RL/d,4)+'<br>θ = '+sig(tr,3)+'°';
+      e4='This working is for the first order: the violet end (400 nm), then the red end (700 nm). Order n runs from d sin θ = n × 400 nm to n × 700 nm. The second order ends at 1400 nm and the third begins at 1200 nm, so they overlap, and so does every order after them. The first and second do not: 700 nm is less than 800 nm. The whole visible spectrum appears up to order '+ful+' with this grating (n cannot be more than d/700 nm = '+sig(d/RL,3)+').'+(ib()?' (HL)':'');
+      key=['w',cen?'c':ws.map(function(w){ return w.n; }).join('+'),Math.round(pd),P.lpm].join();
+      nt=cen?'P is at the <b>central maximum</b> (n = 0). The path difference is zero for <b>every</b> wavelength, so every colour has a maximum here and together they give <b>white</b>.':
+        !ws.length?(pd<VL?'P is between the white central maximum and the first-order spectrum.':'P is in a gap between two orders.')+' Here d sin θ = '+Math.round(pd)+' nm, which is not a whole number of wavelengths for any wavelength from 400 nm to 700 nm, so no colour has a maximum: the screen is dark.':
+        ws.length===1?'P is in the <b>'+ordW(ws[0].n)+' order spectrum</b>. Here d sin θ = '+Math.round(pd)+' nm, so light of wavelength '+col2(ws[0]).replace(' in the '+ordW(ws[0].n)+' order','')+' has its maximum at P. Each wavelength has its maximum at a different angle, so the order is spread into a spectrum. <b>Violet</b> has the shortest wavelength, so the smallest sin θ = nλ/d: it is nearest the centre, and red is furthest out.':
+        'The <b>orders overlap</b> at P. Here d sin θ = '+Math.round(pd)+' nm, so '+(ws.length>3?'the orders from n = '+ws[0].n+' to n = '+ws[ws.length-1].n+' each have a wavelength with a maximum here, from '+col2(ws[0])+' to '+col2(ws[ws.length-1]):ws.map(col2).join(ws.length===2?' and ':', '))+(ws.length>3?'.':' have a maximum at the same place.')+' The colours seen here are a mixture.';
     }
     else {
       var k=clamp(n,1,Math.max(1,nm)), sk=k*P.lam/d, thk=deg(Math.asin(sk)), xk=gpos(P,k), at=Math.abs(m-n)<0.02&&n<=nm, near=Math.abs(m-n)>0.006?'very nearly ':'';
@@ -1121,7 +1179,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     if(yP>=tx-1e-9){ yP=+tx.toFixed(2); c={n:E.k,w2:+(xr(P,E.k,1)+xr(P,E.k,-1)).toFixed(1)}; c.x=c.w2/2; c.th=Math.atan(c.x/(P.D*100)); c.s=Math.sin(c.th); E.gp.push(c); E.wait=0.7; }
   }
   function gMeasure(){ var a=0, b=0; E.gp.forEach(function(c){ a+=c.n*c.s; b+=c.n*c.n; }); E.meas={g:a/b,lam:a/b*gd(CP())}; }
-  function gSetP(v,mag){ var P=CP(), n=Math.round(gm(P,v)), p=Math.abs(n)<=gmax(P)?gpos(P,n):null; if(p!=null && Math.abs(p)<=XM && Math.abs(v-p)<mag) v=p; return v; }
+  function gSetP(v,mag){ var P=CP(); if(P.white) return Math.abs(v)<mag?0:v; var n=Math.round(gm(P,v)), p=Math.abs(n)<=gmax(P)?gpos(P,n):null; if(p!=null && Math.abs(p)<=XM && Math.abs(v-p)<mag) v=p; return v; }
 
   // the grating questions
   function gset(P){ return 'A laser shines light of wavelength '+P.lam+' nm at right angles onto a diffraction grating with '+P.lpm+' lines per mm.'; }
@@ -1185,6 +1243,30 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       'd = [[λ|gradient]]<br>d = [['+sci(P.lam*1e-9,2)+'|'+sig(g,2)+']]<br>d = '+sci(d*1e-9,3)+' m<br>lines per metre = [[1|d]]<br>lines per metre = '+sci(P.lpm*1e3,2)+'<br>lines per mm = '+P.lpm);
     q.why='nλ = d sin θ rearranges to sin θ = (λ/d) × n, so the graph is a straight line through the origin with gradient λ/d. Use a large triangle, as marked.';
     q.step=function(f){ if(f>=1) q.S=cp(P,{show:0}); }; return q; };
+  GG.white=function(){
+    var v=pk(['end','end','width','full']), q={y:null,dur:0}, P, d, n, x;
+    if(v==='end'){ var red=Math.random()<0.5, B={lam:550,lpm:pk([300,400]),D:pk([1,1.5])}, xb=gpos(B,1), xa=gpos(wl(B,red?RL:VL),1), nm=red?'red':'violet';
+      q.kind='mark'; q.choice=null; q.S=cp(B,{show:1}); q.y=+xb.toFixed(2); q.target=xa; q.tol=Math.max(3,0.15*xa);
+      q.text=HL()+'Green light of wavelength 550 nm passes through a diffraction grating. A first-order maximum is at P, '+sig(xb,3)+' cm from the central maximum. The green light is replaced by a parallel beam of white light (400 nm to 700 nm). Click on the screen where the '+nm+' end of the first-order spectrum will be, or use the arrow keys.';
+      q.pic='Click on the screen where the '+nm+' end of the first-order spectrum will be.';
+      q.ans='The '+nm+' end of the first-order spectrum is '+sig(xa,3)+' cm from the centre.';
+      q.why=function(ch){ return (q.ok?'':(Math.abs(ch)-xb)*(xa-xb)<=0?'The '+nm+' end is on the other side of the green. ':'That is the right side of the green but not the right distance. ')+(red?'Red light has the longest wavelength in the visible spectrum, so it needs the largest path difference for its first order: sin θ = λ/d is largest, and red is furthest from the central maximum.':'Violet light has the shortest wavelength in the visible spectrum, so it needs the smallest path difference for its first order: sin θ = λ/d is smallest, and violet is nearest the central maximum.')+' The central maximum is white, because the path difference there is zero for every wavelength. '+q.ans; };
+      q.step=function(f){ if(f>=1){ q.Sd=cp(B,{white:true,show:1}); q.y=+xa.toFixed(2); } }; return q; }
+    P={lam:550,lpm:pk(v==='full'?[200,300,400,500,600]:[300,400,500,600]),D:1,white:true}; d=gd(P);
+    if(v==='width'){ n=P.lpm===600?1:pk([1,2]); var sv=n*VL/d, sr=n*RL/d, tv=deg(Math.asin(sv)), tr=deg(Math.asin(sr));
+      q.unit='°'; q.answer=tr-tv; q.ans='The answer is '+sig(tr-tv,3)+'°.'; q.S=cp(P,{show:n});
+      q.text=HL()+'A parallel beam of white light, with wavelengths from 400 nm (violet) to 700 nm (red), passes at right angles through a diffraction grating with '+P.lpm+' lines per mm. Find the angle between the violet end and the red end of the '+ordW(n)+' order spectrum.';
+      q.pic='Find the angle between the two ends of the '+ordW(n)+' order spectrum.';
+      q.work='d = [[1|'+sci(P.lpm*1e3,2)+']]<br>d = '+sci(d*1e-9,3)+' m<br>nλ = d sin θ<br>violet: sin θ = [['+n+' × '+sci(VL*1e-9,2)+'|'+sci(d*1e-9,3)+']]<br>sin θ = '+sig(sv,4)+'<br>θ = '+sig(tv,4)+'°<br>red: sin θ = [['+n+' × '+sci(RL*1e-9,2)+'|'+sci(d*1e-9,3)+']]<br>sin θ = '+sig(sr,4)+'<br>θ = '+sig(tr,4)+'°<br>angle between = '+sig(tr,4)+' − '+sig(tv,4)+'<br>angle between = '+sig(tr-tv,3)+'°';
+      q.why='Use nλ = d sin θ twice, once for each end of the spectrum, and subtract the two angles. Violet has the shorter wavelength, so the smaller angle.';
+      x=gpos(wl(P,550),n); q.step=function(f){ if(f>=1 && x!=null && x<=XM) q.y=+x.toFixed(2); }; return q; }
+    var r=d/RL, top=Math.ceil(r-1e-9)-1;
+    q.unit='(order n)'; q.answer=top; q.ans='The answer is '+top+'.'; q.S=cp(P,{show:0}); q.dur=1.2;
+    q.text=HL()+'A parallel beam of white light, with wavelengths from 400 nm (violet) to 700 nm (red), passes at right angles through a diffraction grating with '+P.lpm+' lines per mm. What is the highest order in which the whole visible spectrum is produced?';
+    q.pic='What is the highest order with the whole visible spectrum?';
+    q.work='d = [[1|'+sci(P.lpm*1e3,2)+']]<br>d = '+sci(d*1e-9,3)+' m<br>nλ = d sin θ<br>largest sin θ = 1<br>largest n = [[d|λ]]<br>[[d|λ]] = [['+sci(d*1e-9,3)+'|'+sci(RL*1e-9,2)+']]<br>[[d|λ]] = '+sig(r,3)+'<br>highest order = '+top;
+    q.why='Red light has the longest wavelength, so the largest angle in every order: it is the first to be lost. Use the red wavelength, 700 nm, and round down. '+(wmax(P)>top?'Order '+(top+1)+' has its violet end but not its red end.':'')+' (The dashed beams miss this flat screen.)';
+    q.step=function(f){ q.Sd=cp(P,{show:Math.round(f*Math.min(wmax(P),top+1))}); }; return q; };
 
   // ---------- wiring ----------
   function setPart(){ var g=GT(); YM=g?XM:30; yP=0; $('#si-h1').textContent=g?'Diffraction Grating':'Double-Slit Interference'; document.title=(g?'Diffraction Grating':'Double-Slit Interference')+' Animation';
@@ -1229,11 +1311,12 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   ansIn.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); go(); } });
   working.addEventListener('toggle', function(){ if(working.open && !predict()) info(); });
   ['#si-eq1','#si-eq2','#si-eq3'].forEach(function(s){ watchEquals($(s)); });
-  // start-up: ?level=ial or ib, ?show=predict or exp, ?slits=1 (IB: also 3, 4, 6), ?part=grating, ?show=measure (the grating's measure mode)
+  // start-up: ?level=ial or ib, ?show=predict or exp, ?slits=1 (IB: also 3, 4, 6), ?part=grating, ?light=white (the grating in white light), ?show=measure (the grating's measure mode)
   var qs=location.search, lv=PW_LEVEL==='ib'||PW_LEVEL==='ial'?PW_LEVEL:'', ns=(qs.match(/[?&]slits=([12346])\b/)||[])[1];
   if(!lv){ try{ if(localStorage.getItem('pw-symbols')==='ib') lv='ib'; }catch(e){} }
   levelSeg.pick(lv||'ial');
   if(ns){ S.N=+ns; }
+  if(/[?&]light=white\b/.test(qs) && !MEAS){ S.white=true; }
   if(MEAS || /[?&]part=grating\b/.test(qs)){ partSeg.pick('grating'); }
   setPart();
   if(/[?&]show=exp\b/.test(qs)){ E.on=true; expBtn.setAttribute('aria-pressed','true'); if(GT()){ S.D=MP.D; S.lpm=MP.lpm; E.lam=MP.lam; } }
