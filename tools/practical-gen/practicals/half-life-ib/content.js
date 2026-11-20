@@ -360,13 +360,38 @@ const GL={xMin:0,xMax:240,yMin:1,yMax:5,xTicks:[0,40,80,120,160,200,240],yTicks:
     'Read off the time for the count rate to halve from several places on the curve, and take the mean.',
     'Safety: handle the sample with tongs (or keep it at arm’s length), keep it in its lead box when not in use, never point it at anyone.'
   ]);
-  body.appendChild(mk('p','sub','(i) HL, 2 marks'));
-  createCalc({host:body,questions:[
+  // (i) and (j) sit in their own box, so the SL | HL switch can hide them and an SL student can still finish the tab
+  const hlx=mk('div','act-body hl-only');body.appendChild(hlx);
+  hlx.appendChild(mk('p','sub','(i) HL, 2 marks'));
+  createCalc({host:hlx,questions:[
     {q:'Calculate the decay constant of the sample. Use a half-life of 50 s.',unit:'s⁻¹',answer:0.0139,working:'T<sub>½</sub> = 50 s<br>λ = ?||T<sub>½</sub> = [[ln 2|λ]]<br>50 = [[0.6931|λ]]<br>λ = [[0.6931|50]]<br>λ = 0.0139 s⁻¹'}
   ]});
-  examPart(body,'(j) HL, 3 marks','Explain how Leon could use a straight-line graph of his results to find the decay constant.',[
+  examPart(hlx,'(j) HL, 3 marks','Explain how Leon could use a straight-line graph of his results to find the decay constant.',[
     'Plot ln (corrected count rate) against t.',
     'The count rate is proportional to N, and N = N<sub>0</sub>e<sup>−λt</sup>, so ln (count rate) = ln (initial count rate) − λt: a straight line.',
     'λ = −gradient of the line of best fit. The line uses every reading, so the random scatter is averaged out.'
   ]);
 }
+
+/* ================= SL | HL switch (Alex, 20 Nov 2026) =================
+   SL hides every HL card (titles starting "HL:") and the HL exam parts, so an SL student can tick every tab: the engine
+   does not count an activity that is hidden inside its tab. ?level=sl or ?level=hl in the link sets it; otherwise the
+   choice is remembered in this browser. HL (everything shown) is the default. */
+{
+  const KEY='ib-e3-half-life-level';
+  const parts=$$('.act').filter(a=>/^HL:/.test(a.dataset.title||'')).concat($$('.hl-only'));
+  const sw=mk('div','seg lvl-seg');sw.setAttribute('role','group');sw.setAttribute('aria-label','Level: SL or HL');
+  ['SL','HL'].forEach(v=>{const b=mk('button','',v);b.type='button';b.dataset.v=v.toLowerCase();sw.appendChild(b);});
+  const h1=$('.page-head h1');h1.insertAdjacentElement('afterend',sw);
+  function setLevel(v,save){
+    parts.forEach(e=>{e.hidden=(v==='sl');});
+    $$('button',sw).forEach(b=>{const on=b.dataset.v===v;b.classList.toggle('is-on',on);b.setAttribute('aria-pressed',String(on));});
+    if(save){try{localStorage.setItem(KEY,v);}catch(e){}}
+    if(saveReady)showProgress(false);
+  }
+  sw.addEventListener('click',e=>{const b=e.target.closest('button');if(b)setLevel(b.dataset.v,true);});
+  let v=(location.search.match(/[?&]level=(sl|hl)\b/i)||[])[1];
+  if(v)v=v.toLowerCase();else{try{v=localStorage.getItem(KEY);}catch(e){}}
+  setLevel(v==='sl'?'sl':'hl',false);
+}
+
