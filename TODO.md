@@ -72,7 +72,7 @@ Each batch is one new chat. Alex calls a batch up by number, in any order: "Do a
 
 Follow-ups (moved out of the ticked batches' "Left for later" notes in the 14 Nov 2026 audit, so they are not lost):
 
-- [ ] **8p** `refraction.html`: add IAL and IB levels (IAL 45 to 48: n₁ sin θ₁ = n₂ sin θ₂, n = c/v, critical angle, TIR; IB C.3), with cards on the IAL and IB lists (Alex, 15 Nov 2026: IB waves are taught, and the IAL levels are a small extra).
+- [x] **8p** `refraction.html`: add IAL and IB levels (IAL 45 to 48: n₁ sin θ₁ = n₂ sin θ₂, n = c/v, critical angle, TIR; IB C.3), with cards on the IAL and IB lists (Alex, 15 Nov 2026: IB waves are taught, and the IAL levels are a small extra). Done 21 Nov 2026: an IGCSE | IAL | IB switch on the title line (hidden in frames, measure mode and the dispersion view). IAL and IB add Around the block: Air | Water (n = 1.33), the working in each data booklet's form (IAL n₁ sin θ₁ = n₂ sin θ₂, n = c/v, sin C = 1/n or n₁ sin C = n₂ sin 90°; IB n₁/n₂ = sin θ₂/sin θ₁ = v₂/v₁), the speed in glass, and three questions in water (into glass from water, below and above the 62.5° critical angle). IGCSE view unchanged. Cards on `animations/ial.html` (Unit 2) and `animations/ib.html` (Theme C). Question kinds written from the specs, not the question indexes (school account).
 
 ## Done
 
