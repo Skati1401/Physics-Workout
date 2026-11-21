@@ -6,7 +6,11 @@
    no A = λN, so no fraction detected is needed. IB symbols: T½, λ; count rates in s⁻¹.
    The Do the Experiment tab frames animations/random-decay.html?show=measure&level=ib, whose fixed readings (MEAS_SET.ib)
    must match HL_SET below (tools/CORE-PRACTICALS.md, "Measure modes"; the IGCSE and IAL pages are practicals/half-life and
-   practicals/half-life-ial). Question kinds modelled on the parts listed in tools/handoffs/5w-half-life.md; no past-paper data. */
+   practicals/half-life-ial). Question kinds modelled on the parts listed in tools/handoffs/5w-half-life.md; no past-paper data. 
+   Mark scheme wording check (TODO 5ad, 21 Nov 2026, school account): against P2 SL May 2022 TZ2 Q5(a) (background count rate is
+   subtracted from each reading) and P3 SL Nov 2023 TZ2 Q2 (the curve levels off because background radiation is present; read the
+   background, then the half-life). Exam (a), (d), (f) already matched; one card reworded. P2 HL May 2021 TZ1 Q7(c) (compare
+   methods for a short and a very long half-life) has no part on this page. */
 function examPart(body,head,q,bullets){
   body.appendChild(mk('p','sub',head));
   body.appendChild(mk('p','',FR(q)));
@@ -306,7 +310,7 @@ const GL={xMin:0,xMax:240,yMin:1,yMax:5,xTicks:[0,40,80,120,160,200,240],yTicks:
     {id:'s',label:'Keeps people safe',hint:'Cuts the dose people receive',color:'--c3',soft:'--c3-soft'}
   ],items:[
     {id:'1',text:'Count the background for a long time, such as 2 minutes or more',cat:'a'},
-    {id:'2',text:'Subtract the background count rate from every count rate',cat:'a'},
+    {id:'2',text:'Subtract the background count rate from each reading',cat:'a'},
     {id:'3',text:'Fix the sample and the tube in holders so the distance cannot change',cat:'a'},
     {id:'4',text:'Put the sample close to the tube, so each count is large compared with background',cat:'a'},
     {id:'5',text:'Read the half-life at several places on the curve and take the mean',cat:'a'},

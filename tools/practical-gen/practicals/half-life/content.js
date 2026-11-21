@@ -5,7 +5,11 @@
    The Do the Experiment tab frames animations/random-decay.html?show=measure&level=igcse, whose fixed readings (MEAS_SET.igcse)
    must match HL_SET below (tools/CORE-PRACTICALS.md, "Measure modes"; the IAL and IB pages are practicals/half-life-ial and
    practicals/half-life-ib). Question kinds modelled on the parts listed in tools/handoffs/5w-half-life.md; no past-paper data.
-   What half-life means, and half-life calculations without a graph, are in the 7a workout (Half-Life tab). */
+   What half-life means, and half-life calculations without a graph, are in the 7a workout (Half-Life tab). 
+   Mark scheme wording check (TODO 5ad, 21 Nov 2026, school account): against Phy 14 Jan P1 Q11(b)(ii), 12(a) (remove the source,
+   measure the background count rate, measure for a long time or repeat, subtract from each reading), Phy 16 Jan P2 Q6 (background
+   subtracted; readings often because the activity changes quickly, short half-life, more points), Phy 23 May P1 Q1(c) (halving
+   seen, any indication that decay is random) and Phy 24 Nov P1 Q4(c) (lines drawn on the graph). */
 function resTable(head,rows){
   const t=mk('div','table-scroll');
   t.innerHTML='<table class="units res-tbl"><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+
@@ -114,11 +118,11 @@ const decayPts=(a,h,xMax,floor)=>{const p=[];for(let i=0;i<=80;i++){const x=xMax
 {
   const body=act('variables','Multiple choice','How often to count','');
   createPredict({host:body,q:'The half-life of the sample is about a minute. Why does Sofia take a count every 20 s, and not every 2 minutes?',options:[
-    {text:'To get enough points for a curve',correct:true},
+    {text:'The activity changes quickly, so she needs more points for an accurate curve',correct:true},
     {text:'The counter switches itself off after 20 s',why:'The counter runs for as long as it is left on. The reason is the number of points on the graph.'},
     {text:'Counting more often slows down the decay',why:'Nothing she does changes how fast the sample decays. The reason is the number of points on the graph.'},
     {text:'The background changes every 20 seconds',why:'The background stays about the same all the time. The reason is the number of points on the graph.'}
-  ],explain:'In 2 minutes the count rate falls to about a quarter, so counts every 2 minutes would give only two or three points before the sample was almost gone. A count every 20 s gives about ten points, enough to draw a smooth curve and read the half-life from it.'});
+  ],explain:'The sample has a short half-life, so its activity changes quickly: in 2 minutes the count rate falls to about a quarter, and counts every 2 minutes would give only two or three points before the sample was almost gone. A count every 20 s gives more points to plot, so the curve is smoother and more accurate, and the half-life can be read from it.'});
 }
 
 /* ================= METHOD ================= */
@@ -157,7 +161,8 @@ const decayPts=(a,h,xMax,floor)=>{const p=[];for(let i=0;i<=80;i++){const x=xMax
     {id:'1',text:'Handle the sample with tongs, at arm’s length',cat:'s'},
     {id:'2',text:'Point the sample away from people',cat:'s'},
     {id:'3',text:'Keep the sample in its lead-lined box when it is not being counted',cat:'s'},
-    {id:'4',text:'Measure the background and take it away from every count',cat:'a'},
+    {id:'4',text:'Measure the background count rate (with the source removed) and subtract it from each reading',cat:'a'},
+    {id:'8',text:'Measure the background for a long time, or repeat it',cat:'a'},
     {id:'5',text:'Keep the sample and the GM tube the same distance apart',cat:'a'},
     {id:'6',text:'Start each count at exactly the planned time',cat:'a'},
     {id:'7',text:'Draw a smooth curve of best fit, not a line from point to point',cat:'a'}
