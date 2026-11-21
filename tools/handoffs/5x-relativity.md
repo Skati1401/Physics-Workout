@@ -1,6 +1,6 @@
 # 5x Relativity: hand-off from the animation (Fable, 21 Nov 2026) to the page (Opus)
 
-The animation is built and live: `animations/time-dilation.html`. What is left of `TODO.md` 5x is **the A.5 page that frames it**, with Questions and Exam tabs. 5ae (the space–time diagram explorer) is a separate build; its links are at the end.
+The animation is built and live: `animations/time-dilation.html`. **The page is built too (21 Nov 2026, Opus): `relativity.html`**, A.5 Relativity Workout (see `tools/PAGE-NOTES.md`); what is left is the mark scheme check of its model answers (`TODO.md` 5af). 5ae (the space–time diagram explorer) is a separate build; its links are at the end.
 
 ## Links
 
