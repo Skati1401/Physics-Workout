@@ -153,7 +153,7 @@ methodPicker('method');
 }
 /* ================= 2. VARIABLES ================= */
 {
-  const body=act('variables','Sort','Which kind of variable is it?','Charlie measures five blocks of the same metal, all of different sizes, and plots mass against volume. Sort each card into the right bin, then press Check.');
+  const body=act('variables','Sort','Which kind of variable is it?','Oskar measures five blocks of the same metal, all of different sizes, and plots mass against volume. Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
     {id:'i',label:'Independent',hint:'You change it',color:'--c1',soft:'--c1-soft'},
     {id:'d',label:'Dependent',hint:'You measure it',color:'--c2',soft:'--c2-soft'},
@@ -169,7 +169,7 @@ methodPicker('method');
 }
 {
   const body=act('variables','Multiple choice','A new question to test','');
-  createPredict({host:body,q:'Zahra wants to find out how the density of salt water changes as she dissolves more salt in it. What is her independent variable?',options:[
+  createPredict({host:body,q:'Freya wants to find out how the density of salt water changes as she dissolves more salt in it. What is her independent variable?',options:[
     {text:'The mass of salt she dissolves',correct:true},
     {text:'The density of the salt water',why:'That is what she works out each time, so it is the dependent variable.'},
     {text:'The volume of water she uses',why:'She should use the same volume of water each time, so it is a control variable.'},
@@ -178,7 +178,7 @@ methodPicker('method');
 }
 {
   const body=act('variables','Multiple choice','Zeroing the balance','');
-  createPredict({host:body,q:'Before he starts, Charlie checks the empty balance reads 0.0 g. Why?',options:[
+  createPredict({host:body,q:'Before he starts, Oskar checks the empty balance reads 0.0 g. Why?',options:[
     {text:'So the reading is the mass of the block alone',correct:true},
     {text:'So the balance can measure heavier blocks',why:'Zeroing does not change how much the balance can hold. It removes a zero error.'},
     {text:'So the reading is given to more decimal places',why:'The balance always reads to 0.1 g. Zeroing makes the reading start from 0.'},
@@ -206,7 +206,7 @@ methodPicker('method');
 }
 {
   const body=act('accuracy','Multiple choice','Reading from above','');
-  createPredict({host:body,q:'Charlie reads the measuring cylinder looking down from above the water level. How does this affect his reading?',options:[
+  createPredict({host:body,q:'Oskar reads the measuring cylinder looking down from above the water level. How does this affect his reading?',options:[
     {text:'His reading is higher than the true level',correct:true},
     {text:'His reading is lower than the true level',why:'Looking down, his line of sight meets the scale above the meniscus, so he reads too high.'},
     {text:'It makes no difference at all to the reading',why:'The scale is in front of the water, so where his eye is changes which mark lines up: this is a parallax error.'},
@@ -215,7 +215,7 @@ methodPicker('method');
 }
 {
   const body=act('accuracy','Multiple choice','Air bubbles','');
-  createPredict({host:body,q:'Air bubbles stick to Ananya’s stone under the water. How does this affect her value for its density?',options:[
+  createPredict({host:body,q:'Air bubbles stick to Kavya’s stone under the water. How does this affect her value for its density?',options:[
     {text:'Too small: the bubbles add to V₂',correct:true},
     {text:'Too big: the bubbles add to V₂',why:'A bigger V₂ gives a bigger volume, and dividing by a bigger volume gives a smaller density.'},
     {text:'No change: air has almost no mass',why:'The mass is fine, but the bubbles push the water up too, so the volume comes out too big.'},
@@ -344,7 +344,7 @@ frameAct('experiment','animations/density.html','','Measuring density animation:
 }
 {
   const body=act('experiment','Predict','Waiting for the drips to stop','');
-  createPredict({host:body,q:'Ananya fills a eureka can until water runs out of the spout. She puts the empty cylinder under the spout before the dripping stops. What goes wrong?',options:[
+  createPredict({host:body,q:'Kavya fills a eureka can until water runs out of the spout. She puts the empty cylinder under the spout before the dripping stops. What goes wrong?',options:[
     {text:'The extra drips add to the volume she collects',correct:true},
     {text:'The stone will not sink to the bottom of the can',why:'The drips do not affect the stone. They would end up in her measuring cylinder.'},
     {text:'The water in the can is at the wrong temperature',why:'Temperature is not the problem. Any water still dripping would be collected too.'},
@@ -353,7 +353,7 @@ frameAct('experiment','animations/density.html','','Measuring density animation:
 }
 {
   const body=act('experiment','Multiple choice','The liquid graph','');
-  createPredict({host:body,q:'Charlie plots the total mass of the cylinder and liquid against the volume of liquid. Why does his line not go through the origin?',options:[
+  createPredict({host:body,q:'Oskar plots the total mass of the cylinder and liquid against the volume of liquid. Why does his line not go through the origin?',options:[
     {text:'The mass includes the empty cylinder',correct:true},
     {text:'The liquid gets denser as he adds more',why:'The density stays the same: the points still lie on a straight line.'},
     {text:'He did not zero the balance at the start',why:'Even with a zeroed balance, the empty cylinder has mass, and it is in every reading.'},
@@ -362,10 +362,10 @@ frameAct('experiment','animations/density.html','','Measuring density animation:
 }
 
 /* ================= 4. RESULTS ================= */
-// Zahra's five blocks of PVC plastic (density 1.40 g/cm³), measured with a ruler and a balance.
+// Freya's five blocks of PVC plastic (density 1.40 g/cm³), measured with a ruler and a balance.
 const RB=[['A',2.0,2.0,2.0,8.0,11.0],['B',4.0,2.0,2.0,16.0,22.5],['C',4.0,3.0,2.0,null,33.5],['D',4.0,4.0,2.0,32.0,45.0],['E',5.0,4.0,2.0,40.0,56.0]];
 {
-  const body=act('results','Calculate','Complete Zahra’s results','Zahra measured five blocks of the same plastic. One volume is missing.');
+  const body=act('results','Calculate','Complete Freya’s results','Freya measured five blocks of the same plastic. One volume is missing.');
   const t=mk('div','table-scroll');
   t.innerHTML='<table class="units res-tbl"><thead><tr><th>Block</th><th>Length (cm)</th><th>Width (cm)</th><th>Height (cm)</th><th>Volume (cm³)</th><th>Mass (g)</th></tr></thead><tbody>'+
     RB.map(r=>'<tr><th>'+r[0]+'</th><td>'+r[1].toFixed(1)+'</td><td>'+r[2].toFixed(1)+'</td><td>'+r[3].toFixed(1)+'</td><td>'+(r[4]==null?'<b>?</b>':r[4].toFixed(1))+'</td><td>'+r[5].toFixed(1)+'</td></tr>').join('')+'</tbody></table>';
@@ -377,7 +377,7 @@ const RB=[['A',2.0,2.0,2.0,8.0,11.0],['B',4.0,2.0,2.0,16.0,22.5],['C',4.0,3.0,2.
 }
 {
   const body=act('results','Multiple choice','The line of best fit','');
-  createPredict({host:body,q:'What line of best fit should Zahra draw through her points?',options:[
+  createPredict({host:body,q:'What line of best fit should Freya draw through her points?',options:[
     {text:'One straight line through the origin',correct:true},
     {text:'Lines joining each point to the next',why:'A line of best fit is one smooth line that follows the trend, not dot-to-dot.'},
     {text:'A smooth curve that bends near the top',why:'The points lie on a straight line, so a curve does not fit them.'},
@@ -386,7 +386,7 @@ const RB=[['A',2.0,2.0,2.0,8.0,11.0],['B',4.0,2.0,2.0,16.0,22.5],['C',4.0,3.0,2.
 }
 {
   const body=act('results','Multiple choice','What the gradient shows','');
-  createPredict({host:body,q:'Zahra works out the gradient of her line of best fit. What does it tell her?',options:[
+  createPredict({host:body,q:'Freya works out the gradient of her line of best fit. What does it tell her?',options:[
     {text:'The density of the plastic',correct:true},
     {text:'The mass of the largest block',why:'The gradient is the mass for each 1 cm³, not the mass of one block.'},
     {text:'The volume of each 1 g of plastic',why:'That would be volume divided by mass. With mass up the side, the gradient is mass divided by volume.'},
@@ -395,7 +395,7 @@ const RB=[['A',2.0,2.0,2.0,8.0,11.0],['B',4.0,2.0,2.0,16.0,22.5],['C',4.0,3.0,2.
 }
 {
   const body=act('results','Multiple choice','An anomalous result','');
-  createPredict({host:body,q:'Charlie’s blocks are made of another plastic. Which block gives an anomalous result, and what should he do about it?',
+  createPredict({host:body,q:'Oskar’s blocks are made of another plastic. Which block gives an anomalous result, and what should he do about it?',
     pre:'<div class="table-scroll"><table class="units res-tbl"><thead><tr><th>Block</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th></tr></thead><tbody><tr><th>Volume (cm³)</th><td>8.0</td><td>16.0</td><td>24.0</td><td>32.0</td><td>40.0</td></tr><tr><th>Mass (g)</th><td>9.6</td><td>19.3</td><td>24.5</td><td>38.3</td><td>48.0</td></tr></tbody></table></div>',
     options:[
     {text:'C: measure it again, and leave it out of the line',correct:true},
@@ -436,7 +436,7 @@ function massGraph(){
 }
 {
   const body=act('graphs','Multiple choice','Same mass, different volume','');
-  createPredict({host:body,q:'Ananya has 80 g of P and 80 g of Q. Which takes up more space?',options:[
+  createPredict({host:body,q:'Kavya has 80 g of P and 80 g of Q. Which takes up more space?',options:[
     {text:'Q: it is the less dense material',correct:true},
     {text:'P: its line on the graph is steeper',why:'Steeper means denser, so 80 g of P is packed into a smaller volume (10 cm³).'},
     {text:'Neither: the masses are the same',why:'Equal masses do not mean equal volumes; that depends on the density.'},

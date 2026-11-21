@@ -63,7 +63,7 @@ const dp=(v,n)=>Number(v).toFixed(n);
 }
 {
   const body=act('variables','Multiple choice','Why crushed ice?','');
-  createPredict({host:body,q:'Why should Ruby use crushed ice rather than a few large ice cubes?',options:[
+  createPredict({host:body,q:'Why should Tanvi use crushed ice rather than a few large ice cubes?',options:[
     {text:'It packs round the bulb, so it reads the ice temperature',correct:true},
     {text:'Crushed ice melts at a lower temperature than ice cubes',why:'Ice melts at 0 °C however big the pieces are. Crushing it only helps the thermometer and the heating.'},
     {text:'Crushed ice has a bigger mass, so it takes longer to melt',why:'Crushing does not change the mass. The same mass of ice needs the same energy to melt.'},
@@ -198,7 +198,7 @@ frameAct('experiment','animations/heating-curve.html','','Heating curve animatio
 }
 {
   const body=act('experiment','Predict','Melting point or freezing point?','');
-  createPredict({host:body,q:'Yassin also heats some solid stearic acid until it melts. At what temperature is the flat part of that heating curve?',options:[
+  createPredict({host:body,q:'Hafiz also heats some solid stearic acid until it melts. At what temperature is the flat part of that heating curve?',options:[
     {text:'69 °C: its melting and freezing points are equal',correct:true},
     {text:'Above 69 °C: melting needs a higher temperature',why:'A pure substance melts and freezes at the same temperature. Only the direction of the energy transfer is different.'},
     {text:'Below 69 °C: solids melt before they get that hot',why:'The solid has to warm all the way up to its melting point before it starts to melt.'},
@@ -214,7 +214,7 @@ function iceTable(){
   return t;
 }
 {
-  const body=act('results','Calculate','Read Sophie’s results','Sophie heated crushed ice and read the thermometer every minute. Use her table to answer.');
+  const body=act('results','Calculate','Read Priya’s results','Priya heated crushed ice and read the thermometer every minute. Use her table to answer.');
   body.appendChild(iceTable());
   createCalc({host:body,questions:[
     {q:'By how much did the temperature rise in the first 2 minutes?',unit:'°C',answer:8,working:'temperature rise = final temperature − starting temperature<br>temperature rise = 0 − (−8)<br>temperature rise = 8 °C'},
@@ -223,7 +223,7 @@ function iceTable(){
 }
 {
   const body=act('results','Multiple choice','The line of best fit','');
-  createPredict({host:body,q:'What line should Sophie draw through her plotted points?',options:[
+  createPredict({host:body,q:'What line should Priya draw through her plotted points?',options:[
     {text:'Straight lines: rising, flat at 0 °C, then rising',correct:true},
     {text:'One smooth curve from the first point to the last one',why:'A smooth curve would cut the corners and hide the flat part, which is the whole point of the graph.'},
     {text:'One straight line of best fit through all of the points',why:'The points are not on one straight line. Forcing one through them hides the constant temperature while melting.'},
@@ -232,7 +232,7 @@ function iceTable(){
 }
 {
   const body=act('results','Multiple choice','An anomalous result','');
-  createPredict({host:body,q:'Yassin’s results are below. Which reading is anomalous, and what is the most likely cause?',
+  createPredict({host:body,q:'Hafiz’s results are below. Which reading is anomalous, and what is the most likely cause?',
     pre:'<div class="table-scroll"><table class="units res-tbl"><thead><tr><th>Time (min)</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody><tr><th>Temperature (°C)</th><td>−6</td><td>−2</td><td>0</td><td>0</td><td>3</td><td>0</td><td>2</td></tr></tbody></table></div>',
     options:[
     {text:'4 min: the bulb may have touched the hot glass',correct:true},
@@ -261,7 +261,7 @@ function waxGraph(){
     graph:{xMin:0,xMax:20,yMin:-10,yMax:25,xTicks:[0,2,4,6,8,10,12,14,16,18,20],yTicks:[-10,-5,0,5,10,15,20,25],minor:[1,5],snap:[1,5],xLabel:'time (min)',yLabel:'temperature (°C)',W:560,H:340}});
 }
 {
-  const body=act('graphs','Calculate','Read the graph','Ruby heats a solid wax gently and records its temperature. Read your answers off the graph.');
+  const body=act('graphs','Calculate','Read the graph','Tanvi heats a solid wax gently and records its temperature. Read your answers off the graph.');
   const split=mk('div','graph-split');body.appendChild(split);
   split.appendChild(mk('div','graph-box',waxGraph()));
   const side=mk('div','graph-side');split.appendChild(side);
@@ -281,7 +281,7 @@ function waxGraph(){
 }
 {
   const body=act('graphs','Predict','Twice as much wax','');
-  createPredict({host:body,q:'Ruby repeats the test with twice the mass of wax, heated in the same way. How does the flat part of her graph change?',options:[
+  createPredict({host:body,q:'Tanvi repeats the test with twice the mass of wax, heated in the same way. How does the flat part of her graph change?',options:[
     {text:'Same temperature, lasts about twice as long',correct:true},
     {text:'It moves up to a higher temperature',why:'The melting point belongs to the substance. More wax melts at the same 55 °C.'},
     {text:'It lasts the same time at the same temperature',why:'Twice the mass needs twice the energy to melt, and the heater supplies energy at the same rate, so it takes longer.'},
@@ -290,7 +290,7 @@ function waxGraph(){
 }
 {
   const body=act('graphs','Predict','A different substance','');
-  createPredict({host:body,q:'Ruby repeats the test with the same mass of a different solid, which melts at 80 °C, heated in the same way. How is the flat part of her graph different?',options:[
+  createPredict({host:body,q:'Tanvi repeats the test with the same mass of a different solid, which melts at 80 °C, heated in the same way. How is the flat part of her graph different?',options:[
     {text:'It is at 80 °C instead of 55 °C',correct:true},
     {text:'It is still at 55 °C, the melting point',why:'55 °C is the melting point of the wax. Each substance has its own melting point.'},
     {text:'There is no flat part for this solid',why:'Every pure solid has a flat part while it melts, at its own melting point.'},
@@ -299,7 +299,7 @@ function waxGraph(){
 }
 const GX={xMin:0,xMax:24,yMin:-20,yMax:100,xTicks:[0,4,8,12,16,20,24],yTicks:[-20,0,20,40,60,80,100],xLabel:'time (min)',yLabel:'temperature (°C)',W:560,H:340,pl:64};
 {
-  const body=act('graphs','Calculate','Melting and boiling','Charlie heats a solid, substance X, at a steady rate until it has all boiled away. Read your answers off the graph.');
+  const body=act('graphs','Calculate','Melting and boiling','Oskar heats a solid, substance X, at a steady rate until it has all boiled away. Read your answers off the graph.');
   const split=mk('div','graph-split');body.appendChild(split);
   const g0=lineGraph(Object.assign({points:[[0,0]]},GX));
   split.appendChild(mk('div','graph-box',lineGraph(Object.assign({label:'Temperature against time for substance X: rising, flat at −5 °C, rising, flat at 60 °C, then rising',
@@ -316,7 +316,7 @@ function coolGraph(){
   return lineGraph(Object.assign({label:'Temperature against time for cooling stearic acid',points:P},GC)).svg;
 }
 {
-  const body=act('graphs','Calculate','A cooling curve','Yassin melts some stearic acid, then lets it cool in its boiling tube. Read your answers off his graph.');
+  const body=act('graphs','Calculate','A cooling curve','Hafiz melts some stearic acid, then lets it cool in its boiling tube. Read your answers off his graph.');
   const split=mk('div','graph-split');body.appendChild(split);
   split.appendChild(mk('div','graph-box',coolGraph()));
   const side=mk('div','graph-side');split.appendChild(side);

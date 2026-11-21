@@ -70,7 +70,7 @@ function obsTable(body,o){
 
 /* ================= VARIABLES ================= */
 {
-  const body=act('variables','Sort','Which kind of variable is it?','Rose finds the critical angle of a semicircular glass block. Sort each card into the right bin, then press Check.');
+  const body=act('variables','Sort','Which kind of variable is it?','Astrid finds the critical angle of a semicircular glass block. Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
     {id:'i',label:'Independent',hint:'You change it',color:'--c1',soft:'--c1-soft'},
     {id:'d',label:'Dependent',hint:'You measure or observe it',color:'--c2',soft:'--c2-soft'},
@@ -86,7 +86,7 @@ function obsTable(body,o){
 }
 {
   const body=act('variables','Multiple choice','A new question to test','');
-  createPredict({host:body,q:'Rose wants to find out whether the critical angle is different for red light and violet light. What is her independent variable?',options:[
+  createPredict({host:body,q:'Astrid wants to find out whether the critical angle is different for red light and violet light. What is her independent variable?',options:[
     {text:'The colour of the light',correct:true},
     {text:'The critical angle of the glass',why:'The critical angle is what she finds for each colour, so it is the dependent variable.'},
     {text:'The angle of incidence in the glass',why:'She turns the ray box to find the critical angle, but what she chooses to change between tests is the colour.'},
@@ -145,7 +145,7 @@ function obsTable(body,o){
 }
 {
   const body=act('accuracy','Multiple choice','Measured from the surface','');
-  createPredict({host:body,q:'Sophie measures 50° between the ray in the glass and the flat face. What is the angle of incidence?',options:[
+  createPredict({host:body,q:'Priya measures 50° between the ray in the glass and the flat face. What is the angle of incidence?',options:[
     {text:'40°, because it is measured from the normal',correct:true},
     {text:'50°, because that is the angle she measured',why:'She measured from the surface. Angles of incidence are measured from the normal.'},
     {text:'130°, the angle on the other side of the ray',why:'An angle of incidence is never more than 90°.'},
@@ -224,7 +224,7 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
 }
 {
   const body=act('experiment','Predict','The ray stops coming out','');
-  createPredict({host:body,q:'Lucas makes the angle of incidence smaller at the first face of the 60° prism. Below about 28°, no light comes out of the second face. Why?',options:[
+  createPredict({host:body,q:'Aarav makes the angle of incidence smaller at the first face of the 60° prism. Below about 28°, no light comes out of the second face. Why?',options:[
     {text:'Its angle at the second face is above c',correct:true},
     {text:'The glass absorbs light at small angles',why:'Glass absorbs very little light. The light is still there: it reflects inside the prism.'},
     {text:'It reflects off the first face instead',why:'Most of the light still goes in at the first face. The change is at the second face.'},
@@ -253,7 +253,7 @@ frameAct('experiment','animations/refraction.html','','Refraction of light anima
 }
 {
   const body=act('results','Predict','Red and violet light','');
-  createPredict({host:body,q:'Rose aims red light, then violet light, at the flat face of the semicircular block, both at 41.5° in the glass. For red light (n = 1.49) a ray leaves the flat face. What happens to the violet light (n = 1.53)?',options:[
+  createPredict({host:body,q:'Astrid aims red light, then violet light, at the flat face of the semicircular block, both at 41.5° in the glass. For red light (n = 1.49) a ray leaves the flat face. What happens to the violet light (n = 1.53)?',options:[
     {text:'Total internal reflection: its c is smaller',correct:true},
     {text:'It leaves the flat face, bent less than red',why:'Violet has the bigger refractive index, so it is bent more, not less, and its critical angle is smaller.'},
     {text:'It leaves at the same angle as the red light',why:'Different refractive indices mean different angles, and here different critical angles.'},

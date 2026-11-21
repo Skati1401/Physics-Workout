@@ -89,7 +89,7 @@ const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ ha
 }
 {
   const body=act('variables','Multiple choice','A new question to test','');
-  createPredict({host:body,q:'Aidan wants to find out whether thicker lagging gives a value of c closer to the accepted value. What is his independent variable?',options:[
+  createPredict({host:body,q:'Lars wants to find out whether thicker lagging gives a value of c closer to the accepted value. What is his independent variable?',options:[
     {text:'The thickness of the lagging',correct:true},
     {text:'The energy the heater supplies',why:'He should supply the same energy each time, so it is a control variable.'},
     {text:'The value of c he calculates',why:'That is what he works out from each test, so it is the dependent variable.'},
@@ -150,7 +150,7 @@ setMethod(method);
 }
 {
   const body=act('accuracy','Multiple choice','Why is the value too high?','');
-  createPredict({host:body,q:'Charlotte’s value for aluminium is 993 J/kg °C. The accepted value is 900 J/kg °C. What is the most likely reason?',options:[
+  createPredict({host:body,q:'Zofia’s value for aluminium is 993 J/kg °C. The accepted value is 900 J/kg °C. What is the most likely reason?',options:[
     {text:'Energy also heated the thermometer and surroundings',correct:true},
     {text:'The joulemeter counted less energy than was supplied',why:'Less energy counted would make ΔQ too small, and her value of c lower, not higher.'},
     {text:'Her block had less mass than the 1.00 kg she used',why:'A smaller block would warm up more, so ΔT would be bigger. With 1.00 kg in the calculation, her value of c would come out too low, not too high.'},
@@ -159,7 +159,7 @@ setMethod(method);
 }
 {
   const body=act('accuracy','Multiple choice','Repeat it?','');
-  createPredict({host:body,q:'Charlotte repeats her experiment three times and finds the mean value of c. Will the mean be closer to the accepted 900 J/kg °C?',options:[
+  createPredict({host:body,q:'Zofia repeats her experiment three times and finds the mean value of c. Will the mean be closer to the accepted 900 J/kg °C?',options:[
     {text:'No: every repeat loses the same energy',correct:true},
     {text:'Yes: repeating always removes the errors',why:'Repeating averages out random errors, but energy lost to the surroundings makes every value too high.'},
     {text:'Yes: the block warms up more each time',why:'She starts from the same temperature each time. The losses are the same in every repeat.'},
@@ -226,7 +226,7 @@ frameAct('do','animations/specific-heat.html','measure&mat=al&lag=on','Specific 
 frameAct('experiment','animations/specific-heat.html','','Specific heat capacity animation: heating a block with an immersion heater','specific heat capacity',false);
 {
   const body=act('experiment','Predict','Without the lagging','');
-  createPredict({host:body,q:'The lagged aluminium block gives c = 944 J/kg °C. Charlotte heats the same block for the same time with no lagging. What value of c will she get?',options:[
+  createPredict({host:body,q:'The lagged aluminium block gives c = 944 J/kg °C. Zofia heats the same block for the same time with no lagging. What value of c will she get?',options:[
     {text:'Higher than 944, further from 900',correct:true},
     {text:'Lower than 944, closer to 900',why:'Without lagging more energy escapes, so the block warms less. A smaller ΔT gives a bigger c.'},
     {text:'Exactly 944 again: c belongs to aluminium',why:'The real c does not change, but her measured value does, because more energy escapes.'},
@@ -242,7 +242,7 @@ function shTable(){
   return t;
 }
 {
-  const body=act('results','Calculate','Work out c from Charlotte’s results','Charlotte’s aluminium block has a mass of 1.00 kg. She switched the heater off at 10 minutes and kept reading the thermometer.');
+  const body=act('results','Calculate','Work out c from Zofia’s results','Zofia’s aluminium block has a mass of 1.00 kg. She switched the heater off at 10 minutes and kept reading the thermometer.');
   body.appendChild(shTable());
   createCalc({host:body,questions:[
     {q:'Use the joulemeter reading at the end and the rise from the start to the maximum temperature to find c.',unit:'J/kg °C',answer:993,working:'ΔQ = 28 800 J<br>ΔT = 49.0 − 20.0<br>ΔT = 29.0 °C<br>ΔQ = m × c × ΔT<br>28 800 = 1.00 × c × 29.0<br>28 800 = 29.0 × c<br>c = [[28 800|29.0]]<br>c = 993 J/kg °C'},
@@ -251,7 +251,7 @@ function shTable(){
 }
 {
   const body=act('results','Multiple choice','The line of best fit','');
-  createPredict({host:body,q:'What line of best fit should Charlotte draw through her points from 2 to 10 minutes?',options:[
+  createPredict({host:body,q:'What line of best fit should Zofia draw through her points from 2 to 10 minutes?',options:[
     {text:'One straight line close to all of the points',correct:true},
     {text:'Short straight lines that join each point to the next',why:'Joining the dots follows every small reading error. A line of best fit shows the trend.'},
     {text:'A curve that passes exactly through every point',why:'These points lie close to a straight line, because the energy goes in at a steady rate. A curve hides that.'},
@@ -260,7 +260,7 @@ function shTable(){
 }
 {
   const body=act('results','Multiple choice','An anomalous result','');
-  createPredict({host:body,q:'Aidan heats some water in a lagged beaker. Which reading is anomalous, and what should he do?',
+  createPredict({host:body,q:'Lars heats some water in a lagged beaker. Which reading is anomalous, and what should he do?',
     pre:'<div class="table-scroll"><table class="units res-tbl"><thead><tr><th>Time (min)</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead><tbody><tr><th>Temperature (°C)</th><td>20.0</td><td>21.5</td><td>23.0</td><td>26.5</td><td>26.0</td><td>27.5</td></tr></tbody></table></div>',
     options:[
     {text:'3 min: repeat it, and leave it out of the line',correct:true},
@@ -315,7 +315,7 @@ function energyGraph(){
 }
 {
   const body=act('graphs','Multiple choice','Is steeper always bigger c?','');
-  createPredict({host:body,q:'Camila says, “On these graphs, the steeper line always has the bigger specific heat capacity.” Is she right?',options:[
+  createPredict({host:body,q:'Ines says, “On these graphs, the steeper line always has the bigger specific heat capacity.” Is she right?',options:[
     {text:'Only when energy is plotted up the side',correct:true},
     {text:'Yes, on every graph like these',why:'Look at the first graph: with rise in temperature up the side, the steepest line (A) is iron, the smallest c.'},
     {text:'Only when the rise is plotted up the side',why:'With the rise up the side, a steeper line means more degrees for each kilojoule, so a smaller c.'},

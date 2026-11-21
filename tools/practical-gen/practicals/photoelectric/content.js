@@ -243,9 +243,9 @@ const GT={xMin:0,xMax:16,yMin:0,yMax:3,xTicks:[0,2,4,6,8,10,12,14,16],yTicks:[0,
        return {q:`Light of wavelength ${lam} nm falls on ${m[0]} (Φ = ${m[1].toFixed(2)} eV). What is E<sub>max</sub> of the photoelectrons, in eV?`,unit:'eV',answer:Em,
          hints:['Find f from c = fλ, with λ in metres.','E = hf in J, then divide by 1.60 × 10⁻¹⁹ for eV.','E<sub>max</sub> = hf − Φ, both in eV.'],
          working:`λ = ${lam} nm = ${sf(lam*1e-9)} m<br>Φ = ${m[1].toFixed(2)} eV<br>E<sub>max</sub> = ?||c = fλ<br>3.00 × 10⁸ = f × ${sf(lam*1e-9)}<br>f = [[3.00 × 10⁸|${sf(lam*1e-9)}]]<br>f = ${sf(f)} Hz<br>E = hf<br>E = 6.63 × 10⁻³⁴ × ${sf(f)}<br>E = ${sf(J)} J<br>E = [[${sf(J)}|1.60 × 10⁻¹⁹]] = ${eV.toFixed(2)} eV<br>E<sub>max</sub> = hf − Φ<br>E<sub>max</sub> = ${eV.toFixed(2)} − ${m[1].toFixed(2)}<br>E<sub>max</sub> = ${Em.toFixed(2)} eV`};})},
-    {q:'Jessica measures a stopping voltage of 1.20 V when light of frequency 8.00 × 10¹⁴ Hz falls on a metal. What is the work function of the metal, in eV?',unit:'eV',answer:2.12,working:'f = 8.00 × 10¹⁴ Hz<br>V<sub>s</sub> = 1.20 V<br>Φ = ?||E = hf<br>E = 6.63 × 10⁻³⁴ × 8.00 × 10¹⁴<br>E = 5.30 × 10⁻¹⁹ J<br>E = [[5.30 × 10⁻¹⁹|1.60 × 10⁻¹⁹]] = 3.32 eV<br>eV<sub>s</sub> = E<sub>max</sub><br>E<sub>max</sub> = 1.20 eV<br>E<sub>max</sub> = hf − Φ<br>1.20 = 3.32 − Φ<br>Φ = 3.32 − 1.20<br>Φ = 2.12 eV',
+    {q:'Clara measures a stopping voltage of 1.20 V when light of frequency 8.00 × 10¹⁴ Hz falls on a metal. What is the work function of the metal, in eV?',unit:'eV',answer:2.12,working:'f = 8.00 × 10¹⁴ Hz<br>V<sub>s</sub> = 1.20 V<br>Φ = ?||E = hf<br>E = 6.63 × 10⁻³⁴ × 8.00 × 10¹⁴<br>E = 5.30 × 10⁻¹⁹ J<br>E = [[5.30 × 10⁻¹⁹|1.60 × 10⁻¹⁹]] = 3.32 eV<br>eV<sub>s</sub> = E<sub>max</sub><br>E<sub>max</sub> = 1.20 eV<br>E<sub>max</sub> = hf − Φ<br>1.20 = 3.32 − Φ<br>Φ = 3.32 − 1.20<br>Φ = 2.12 eV',
      hints:['A stopping voltage of V<sub>s</sub> volts means E<sub>max</sub> = V<sub>s</sub> electronvolts.','Find hf in eV, then Φ = hf − E<sub>max</sub>.'],
-     make:retry(rnd=>{const who=calcPick(rnd,['Jessica','Elliot','Gabriel','Malik','Rayan','Victor']),f=calcPick(rnd,[7.00,7.50,8.00,8.50,9.00,10.0,11.0]),Vs=calcPick(rnd,[0.40,0.65,0.80,1.05,1.20,1.45,1.80]),J=+(H*f*1e14).toPrecision(3),eV=+(J/E).toFixed(2),phi=+(eV-Vs).toFixed(2);
+     make:retry(rnd=>{const who=calcPick(rnd,['Clara','Nikolai','Takumi','Imran','Tariq','Paolo']),f=calcPick(rnd,[7.00,7.50,8.00,8.50,9.00,10.0,11.0]),Vs=calcPick(rnd,[0.40,0.65,0.80,1.05,1.20,1.45,1.80]),J=+(H*f*1e14).toPrecision(3),eV=+(J/E).toFixed(2),phi=+(eV-Vs).toFixed(2);
        if(phi<1.8)return null;
        return {q:`${who} measures a stopping voltage of ${Vs.toFixed(2)} V when light of frequency ${f.toFixed(2)} × 10¹⁴ Hz falls on a metal. What is the work function of the metal, in eV?`,unit:'eV',answer:phi,
          hints:['A stopping voltage of V<sub>s</sub> volts means E<sub>max</sub> = V<sub>s</sub> electronvolts.','Find hf in eV, then Φ = hf − E<sub>max</sub>.'],
@@ -284,9 +284,9 @@ const GT={xMin:0,xMax:16,yMin:0,yMax:3,xTicks:[0,2,4,6,8,10,12,14,16],yTicks:[0,
 
 /* ================= EXAM PRACTICE ================= */
 // Original question in the IB guide's terms and command terms (state, calculate, show that, determine, explain, outline, describe).
-// Rayan's metal: Φ = 2.00 eV; V_s = 1243.1/λ − 2.00 (h, c and e as above).
+// Tariq's metal: Φ = 2.00 eV; V_s = 1243.1/λ − 2.00 (h, c and e as above).
 {
-  const body=act('exam','Exam style','The photoelectric effect','Rayan shines light from a mercury lamp through a filter onto a metal plate in a vacuum photocell. For each filter he raises the reverse voltage until the current is zero and records the stopping voltage, V<sub>s</sub>. One reading is missing. '+CONSTS);
+  const body=act('exam','Exam style','The photoelectric effect','Tariq shines light from a mercury lamp through a filter onto a metal plate in a vacuum photocell. For each filter he raises the reverse voltage until the current is zero and records the stopping voltage, V<sub>s</sub>. One reading is missing. '+CONSTS);
   body.appendChild(resTable(['λ (nm)','546','436','405','365'],[['V<sub>s</sub> (V)','0.28','0.85',null,'1.41']]));
   examPart(body,'(a) 1 mark','State what is meant by the threshold frequency.',[
     'The minimum frequency of light (photons) that releases photoelectrons from the metal surface.'
@@ -303,7 +303,7 @@ const GT={xMin:0,xMax:16,yMin:0,yMax:3,xTicks:[0,2,4,6,8,10,12,14,16],yTicks:[0,
   createCalc({host:body,questions:[
     {q:'Determine the missing stopping voltage for the 405 nm filter.',unit:'V',answer:1.07,working:'λ = 405 nm = 4.05 × 10⁻⁷ m<br>Φ = 2.00 eV<br>V<sub>s</sub> = ?||E = [[hc|λ]]<br>E = [[6.63 × 10⁻³⁴ × 3.00 × 10⁸|4.05 × 10⁻⁷]]<br>E = 4.91 × 10⁻¹⁹ J<br>E = [[4.91 × 10⁻¹⁹|1.60 × 10⁻¹⁹]] = 3.07 eV<br>E<sub>max</sub> = hf − Φ<br>E<sub>max</sub> = 3.07 − 2.00<br>E<sub>max</sub> = 1.07 eV<br>V<sub>s</sub> = 1.07 V'}
   ]});
-  examPart(body,'(e) 3 marks','Rayan plots V<sub>s</sub> against f. Explain why the graph is a straight line, and how he can find the Planck constant and the work function from it.',[
+  examPart(body,'(e) 3 marks','Tariq plots V<sub>s</sub> against f. Explain why the graph is a straight line, and how he can find the Planck constant and the work function from it.',[
     'eV<sub>s</sub> = E<sub>max</sub> = hf − Φ, so V<sub>s</sub> = [[h|e]]f − [[Φ|e]].',
     'This has the form y = mx + c, so V<sub>s</sub> against f is a straight line.',
     'h = e × gradient.',
@@ -319,7 +319,7 @@ const GT={xMin:0,xMax:16,yMin:0,yMax:3,xTicks:[0,2,4,6,8,10,12,14,16],yTicks:[0,
     'Wave theory: dim light should need time to build up energy; in fact electrons are released at once, with no delay.',
     'Each photon transfers all its energy, hf, to one electron, so light behaves as particles (photons).'
   ]);
-  examPart(body,'(h) 6 marks','Describe how Rayan could use this apparatus to determine the Planck constant. Include one safety precaution.',[
+  examPart(body,'(h) 6 marks','Describe how Tariq could use this apparatus to determine the Planck constant. Include one safety precaution.',[
     'Join the collector to the negative terminal of a variable d.c. supply, with a (micro)ammeter in series and a voltmeter across the photocell.',
     'Use a filter to give light of one known wavelength; darken the room.',
     'Increase the reverse voltage from zero until the current just becomes zero; record this as V<sub>s</sub>.',

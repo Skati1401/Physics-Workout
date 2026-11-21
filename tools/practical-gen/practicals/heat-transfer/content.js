@@ -187,7 +187,7 @@ pairLast('rad');
 }
 /* ================= 2. VARIABLES ================= */
 {
-  const body=act('variables','Sort','Comparing conductors: which variable?','Elena compares how well four rods conduct. Sort each variable, then press Check.');
+  const body=act('variables','Sort','Comparing conductors: which variable?','Marta compares how well four rods conduct. Sort each variable, then press Check.');
   createSortGame({host:body,cats:[
     {id:'i',label:'Independent',hint:'What she changes',color:'--c1',soft:'--c1-soft'},
     {id:'d',label:'Dependent',hint:'What she measures',color:'--c2',soft:'--c2-soft'},
@@ -213,7 +213,7 @@ pairLast('rad');
 }
 {
   const body=act('variables','Multiple choice','The same amount of wax','');
-  createPredict({host:body,q:'Why does Aidan use the same amount of wax on every pin?',options:[
+  createPredict({host:body,q:'Why does Lars use the same amount of wax on every pin?',options:[
     {text:'More wax takes more energy to melt',correct:true},
     {text:'More wax would make the rod conduct better',why:'The wax is outside the rod. It does not change how well the rod itself conducts.'},
     {text:'Wax is a good conductor of thermal energy',why:'Wax is a poor conductor. The point is that a bigger lump needs more energy before it melts.'},
@@ -251,7 +251,7 @@ pairLast('rad');
 }
 {
   const body=act('accuracy','Multiple choice','Timing the pins','');
-  createPredict({host:body,q:'Aidan’s copper and aluminium pins drop only 8 s apart. How can he be more confident which conducts better?',options:[
+  createPredict({host:body,q:'Lars’s copper and aluminium pins drop only 8 s apart. How can he be more confident which conducts better?',options:[
     {text:'Repeat the test and compare the mean times',correct:true},
     {text:'Use a stopwatch that reads to 0.01 s instead',why:'His reaction time is far bigger than 0.01 s. Repeats give a more reliable comparison.'},
     {text:'Put more wax on the aluminium pin to slow it',why:'That would change a control variable, so the test would not be fair.'},
@@ -391,7 +391,7 @@ frameAct('experiment','animations/heat-transfer.html',method,'Thermal energy tra
 }
 {
   const body=act('experiment','Multiple choice','Bar chart or line graph?','');forMethod(body,'cond');
-  createPredict({host:body,q:'Aidan wants to show his times on a graph. Why should he draw a bar chart, not a line graph?',options:[
+  createPredict({host:body,q:'Lars wants to show his times on a graph. Why should he draw a bar chart, not a line graph?',options:[
     {text:'The rod material is a categoric variable',correct:true},
     {text:'The times are too far apart to join up',why:'The spread of the times does not matter. A line needs values in between to join.'},
     {text:'A bar chart is easier to draw neatly',why:'It is not about neatness. There is nothing between copper and iron to join with a line.'},
@@ -412,7 +412,7 @@ frameAct('experiment','animations/heat-transfer.html',method,'Thermal energy tra
 }
 {
   const body=act('experiment','Predict','Heating at the top','');forMethod(body,'conv');
-  createPredict({host:body,q:'Aidan heats the water near the top of the beaker instead. What happens to the dye at the bottom?',options:[
+  createPredict({host:body,q:'Lars heats the water near the top of the beaker instead. What happens to the dye at the bottom?',options:[
     {text:'It stays near the bottom',correct:true},
     {text:'It rises quickly to the heater',why:'Only warm, less dense water rises. The water at the bottom stays cold and dense.'},
     {text:'It sinks into the glass of the beaker',why:'The dye stays in the water. With no current to carry it, it only spreads slowly.'},
@@ -422,7 +422,7 @@ frameAct('experiment','animations/heat-transfer.html',method,'Thermal energy tra
 {const p=pairIn('experiment');p.dataset.m='conv';}
 {
   const body=act('experiment','Predict','A hotter cube','');forMethod(body,'rad');
-  createPredict({host:body,q:'Elena refills the Leslie cube with hotter water. What happens to the reading from the matt black face?',options:[
+  createPredict({host:body,q:'Marta refills the Leslie cube with hotter water. What happens to the reading from the matt black face?',options:[
     {text:'It goes up',correct:true},
     {text:'It goes down',why:'A hotter object emits more infrared, not less.'},
     {text:'It stays the same',why:'The surface is the same, but the amount emitted also depends on its temperature.'},
@@ -440,7 +440,7 @@ function cansTable(rows,miss){
   return t;
 }
 {
-  const body=act('results','Calculate','Elena’s two cans','Elena put a matt black can and a shiny can of cold water, each with the same volume, the same distance from a radiant heater.');
+  const body=act('results','Calculate','Marta’s two cans','Marta put a matt black can and a shiny can of cold water, each with the same volume, the same distance from a radiant heater.');
   body.appendChild(cansTable(CANS));
   createCalc({host:body,questions:[
     {q:'By how much did the water in the matt black can warm up in 10 minutes?',unit:'°C',answer:16.5,working:'rise = final temperature − starting temperature<br>rise = 36.5 − 20.0<br>rise = 16.5 °C'},
@@ -460,7 +460,7 @@ function cansTable(rows,miss){
 }
 {
   const body=act('results','Multiple choice','An anomalous result','');
-  createPredict({host:body,q:'Aidan’s shiny can gave these readings. Which one is anomalous?',
+  createPredict({host:body,q:'Lars’s shiny can gave these readings. Which one is anomalous?',
     pre:'<div class="table-scroll"><table class="units res-tbl"><thead><tr><th>Time (min)</th><th>0</th><th>2</th><th>4</th><th>6</th><th>8</th><th>10</th></tr></thead><tbody><tr><th>Shiny can (°C)</th><td>20.0</td><td>21.0</td><td>22.0</td><td>25.5</td><td>24.0</td><td>25.0</td></tr></tbody></table></div>',
     options:[
     {text:'6 min',correct:true},
@@ -469,22 +469,22 @@ function cansTable(rows,miss){
     {text:'None of them',why:'At 6 minutes it jumps 3.5 °C, then falls at 8 minutes. That breaks the steady pattern.'}
   ],explain:'The shiny can warms by about 1.0 °C every 2 minutes, so at 6 minutes it should be about 23.0 °C. Perhaps the thermometer was read at the wrong angle or touched the side. Repeat the reading if you can, and leave it out of the line of best fit.'});
 }
-pairIn('results'); /* Elena’s Calculate and the Plot first, then the two Predicts side by side (Alex, 13 Nov 2026) */
+pairIn('results'); /* Marta’s Calculate and the Plot first, then the two Predicts side by side (Alex, 13 Nov 2026) */
 
 {
-  const body=act('results','Calculate','Charlotte’s cooling cans','Charlotte fills a matt black can and a shiny can with the same volume of hot water. She reads the temperature of each every 2 minutes. One reading is missing.');
+  const body=act('results','Calculate','Zofia’s cooling cans','Zofia fills a matt black can and a shiny can with the same volume of hot water. She reads the temperature of each every 2 minutes. One reading is missing.');
   const tbl=mk('div','table-scroll');
   tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Time (min)</th><th>0</th><th>2</th><th>4</th><th>6</th><th>8</th><th>10</th></tr></thead><tbody><tr><th>Matt black can (°C)</th><td>80.0</td><td>75.5</td><td>71.5</td><td>68.0</td><td>65.0</td><td>62.5</td></tr><tr><th>Shiny can (°C)</th><td>80.0</td><td>78.0</td><td>76.0</td><td><b>?</b></td><td>72.5</td><td>71.0</td></tr></tbody></table>';
   body.appendChild(tbl);
   createCalc({host:body,questions:[
-    {q:'Charlotte forgot to write down the temperature of the shiny can at 6 minutes. Predict the missing reading.',unit:'°C',answer:74.2,working:'From 4 to 8 minutes it falls 3.5 °C, about 1.75 °C in each 2 minutes.<br>temperature at 6 min = 76.0 − 1.75<br>temperature at 6 min = 74.25 °C (74.0 °C to 74.5 °C is fine)'},
+    {q:'Zofia forgot to write down the temperature of the shiny can at 6 minutes. Predict the missing reading.',unit:'°C',answer:74.2,working:'From 4 to 8 minutes it falls 3.5 °C, about 1.75 °C in each 2 minutes.<br>temperature at 6 min = 76.0 − 1.75<br>temperature at 6 min = 74.25 °C (74.0 °C to 74.5 °C is fine)'},
     {q:'Calculate the fall in temperature of the matt black can in 10 minutes.',unit:'°C',answer:17.5,working:'fall = 80.0 − 62.5<br>fall = 17.5 °C'},
     {q:'Calculate the fall in temperature of the shiny can in 10 minutes.',unit:'°C',answer:9,working:'fall = 80.0 − 71.0<br>fall = 9.0 °C'}
   ]});
 }
 { /* The two Calculates side by side at the top, each half width (Alex, 13 Nov 2026) */
   const acts=$('#panel-results .acts'),by=t=>[...acts.querySelectorAll('.act')].find(x=>x.dataset.title===t);
-  const e=by('Elena’s two cans'),c=by('Charlotte’s cooling cans'),pair=mk('div','act-pair');
+  const e=by('Marta’s two cans'),c=by('Zofia’s cooling cans'),pair=mk('div','act-pair');
   acts.insertBefore(pair,e);pair.appendChild(e);pair.appendChild(c);
 }
 

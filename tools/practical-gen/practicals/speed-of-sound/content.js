@@ -49,7 +49,7 @@ const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ ha
 
 /* ================= VARIABLES ================= */
 {
-  const body=act('variables','Sort','Which kind of variable is it?','Charlie times a sound over several distances and plots a distance–time graph. Sort each card into the right bin, then press Check.');
+  const body=act('variables','Sort','Which kind of variable is it?','Oskar times a sound over several distances and plots a distance–time graph. Sort each card into the right bin, then press Check.');
   createSortGame({host:body,cats:[
     {id:'i',label:'Independent',hint:'You change it',color:'--c1',soft:'--c1-soft'},
     {id:'d',label:'Dependent',hint:'You measure it',color:'--c2',soft:'--c2-soft'},
@@ -65,9 +65,9 @@ const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ ha
 }
 {
   const body=act('variables','Multiple choice','Why so far apart?','');
-  createPredict({host:body,q:'Why do Ali and Sophie stand at least 100 m apart, rather than 10 m?',options:[
+  createPredict({host:body,q:'Why do Arjun and Priya stand at least 100 m apart, rather than 10 m?',options:[
     {text:'So reaction time is a small part of the time',correct:true},
-    {text:'So the sound is loud enough for Sophie to hear',why:'The sound is louder when she is closer, not further away.'},
+    {text:'So the sound is loud enough for Priya to hear',why:'The sound is louder when she is closer, not further away.'},
     {text:'So the light has time to arrive before the sound',why:'Light arrives almost instantly at any distance. The problem is timing by hand.'},
     {text:'So the sound has time to reach its full speed',why:'Sound travels at a steady speed through the air from the start.'}
   ],explain:'Over 10 m the sound takes only about 0.03 s, far shorter than a reaction time of about 0.2 s. Over 100 m or more it takes 0.3 s or longer, so the same reaction-time error is a much smaller fraction of the time.'});
@@ -79,9 +79,9 @@ const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ ha
   createReorder({host:body,steps:[
     {id:'a',text:'Choose a large, flat, open field, away from buildings that could cause echoes.'},
     {id:'b',text:'Measure a distance of at least 100 m with a trundle wheel or tape measure, and mark both ends.'},
-    {id:'c',text:'Ali stands at one end with two wooden blocks; Sophie stands at the other end with a stopwatch.'},
-    {id:'d',text:'Ali bangs the blocks together above his head, so Sophie can see them hit.'},
-    {id:'e',text:'Sophie starts the stopwatch when she sees the blocks hit, and stops it when she hears the sound.'},
+    {id:'c',text:'Arjun stands at one end with two wooden blocks; Priya stands at the other end with a stopwatch.'},
+    {id:'d',text:'Arjun bangs the blocks together above his head, so Priya can see them hit.'},
+    {id:'e',text:'Priya starts the stopwatch when she sees the blocks hit, and stops it when she hears the sound.'},
     {id:'f',text:'Repeat several times (or use several timers) and work out the mean time.'},
     {id:'g',text:'Work out speed = [[distance|mean time]].'}
   ],constraints:[['a','b'],['b','c'],['c','d'],['d','e'],['e','f'],['f','g']],
@@ -119,7 +119,7 @@ const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ ha
 }
 {
   const body=act('accuracy','Multiple choice','Measuring 100 m','');
-  createPredict({host:body,q:'Elena measures 100 m with a metre rule. Why is that a poor choice?',options:[
+  createPredict({host:body,q:'Marta measures 100 m with a metre rule. Why is that a poor choice?',options:[
     {text:'Laying it 100 times adds an error each time',correct:true},
     {text:'It cannot be read to the nearest millimetre',why:'A metre rule reads to 1 mm, far better than needed. The problem is laying it end to end 100 times.'},
     {text:'Metre rules are only for indoor experiments',why:'The problem is not where it is used, but how many times it must be moved.'},
@@ -137,7 +137,7 @@ const ORDER_INTRO='Put the steps in the order you would do them. Drag the ≡ ha
 }
 
 /* ================= DO THE EXPERIMENT ================= */
-// The student drags Sophie to each mark on the tape and reads the stopwatch close-up (three timings at each place),
+// The student drags Priya to each mark on the tape and reads the stopwatch close-up (three timings at each place),
 // then measures with two microphones. SS_T and SS_DT must match animations/speed-of-sound.html?show=measure
 // (&part=direct and &part=mics; tools/CORE-PRACTICALS.md, "Measure modes", 3.25P).
 const SS_D=[100,200,300,400], SS_T=[[0.30,0.18,0.24],[0.52,0.59,0.47],[0.87,0.87,0.84],[1.12,1.21,1.13]];
@@ -145,9 +145,9 @@ const SS_M=[0.60,0.90,1.20,1.50], SS_DT=[[1.8,1.7,1.8],[2.6,2.7,2.6],[3.5,3.5,3.
 const ssMean=j=>(SS_T[j][0]+SS_T[j][1]+SS_T[j][2])/3;
 let ssTable=null,ssRows=()=>{};
 {
-  act('do','Your turn','Time the sound yourself','Ali bangs two blocks together; Sophie starts the stopwatch when she sees them hit and stops it when she hears the bang. Drag Sophie to 100 m on the tape and press Clap and time three times, writing down each time. Do the same at 200 m, 300 m and 400 m.');
+  act('do','Your turn','Time the sound yourself','Arjun bangs two blocks together; Priya starts the stopwatch when she sees them hit and stops it when she hears the bang. Drag Priya to 100 m on the tape and press Clap and time three times, writing down each time. Do the same at 200 m, 300 m and 400 m.');
 }
-frameAct('do','animations/speed-of-sound.html','measure&part=direct','Speed of sound experiment: drag Sophie along the tape and read the stopwatch','speed of sound',false);
+frameAct('do','animations/speed-of-sound.html','measure&part=direct','Speed of sound experiment: drag Priya along the tape and read the stopwatch','speed of sound',false);
 {
   const body=act('do','Calculate','Your results table','Write each time to 0.01 s, then work out the mean time to 2 decimal places. Press Check.');
   const t=(j,n)=>({k:'t'+j+n,label:'Time '+(n+1)+' at '+SS_D[j]+' m, in s',ok:v=>near(v,SS_T[j][n],0.005),fill:()=>dp(SS_T[j][n],2)});
@@ -174,12 +174,12 @@ frameAct('do','animations/speed-of-sound.html','measure&part=direct','Speed of s
 }
 {
   const body=act('do','Predict','Why does your line miss the origin?','');
-  createPredict({host:body,q:'Your line of best fit crosses the distance axis at about 24 m, not at the origin. What does this show about Sophie’s timings?',options:[
+  createPredict({host:body,q:'Your line of best fit crosses the distance axis at about 24 m, not at the origin. What does this show about Priya’s timings?',options:[
     {text:'They are all a little too short',correct:true},
     {text:'They are all a little too long',why:'Times that were too long would move the line to the right, so it would cross the time axis to the right of the origin.'},
     {text:'The tape was 24 m short every time',why:'The distances were read from the same tape at every mark. The error is in the times.'},
-    {text:'Sound travels faster close to Ali',why:'Sound travels at the same speed all the way across the field.'}
-  ],explain:'Sophie reacts a little more slowly to seeing the blocks hit than to hearing the bang, so she starts the stopwatch late by more than she stops it late. Every time is about 0.07 s short, which moves the whole line to the left. The gradient, and so the speed, is not changed.'});
+    {text:'Sound travels faster close to Arjun',why:'Sound travels at the same speed all the way across the field.'}
+  ],explain:'Priya reacts a little more slowly to seeing the blocks hit than to hearing the bang, so she starts the stopwatch late by more than she stops it late. Every time is about 0.07 s short, which moves the whole line to the left. The gradient, and so the speed, is not changed.'});
 }
 {
   act('do','Your turn','Now use two microphones','Drag microphone B to 0.60 m from microphone A and press Hit the plate. Count the divisions between the start of pulse A and the start of pulse B, and multiply by the time base (0.5 ms per division). Do the same at 0.90 m, 1.20 m and 1.50 m.');
@@ -205,12 +205,12 @@ frameAct('do','animations/speed-of-sound.html','measure&part=mics','Speed of sou
 
 /* ================= SHOW: the readings taken for you ================= */
 {
-  act('experiment','Your turn','Watch the readings','Press Experiment. Direct: drag Sophie to a distance and press Clap and time three times, at 4 distances from 100 m to 400 m. Then Echo: time one echo, then 20 echoes, at the same distance. Then Two microphones. Which method gives the most precise timings, and why?');
+  act('experiment','Your turn','Watch the readings','Press Experiment. Direct: drag Priya to a distance and press Clap and time three times, at 4 distances from 100 m to 400 m. Then Echo: time one echo, then 20 echoes, at the same distance. Then Two microphones. Which method gives the most precise timings, and why?');
 }
 frameAct('experiment','animations/speed-of-sound.html','','Speed of sound animation: timing a sound over a field, echoes from a wall, and two microphones with an oscilloscope','speed of sound',false);
 {
   const body=act('experiment','Multiple choice','Do the reaction times cancel?','');
-  createPredict({host:body,q:'Sophie is slow to start the stopwatch and slow to stop it. Ali says the two delays cancel out, so her reaction time does not matter. Is he right?',options:[
+  createPredict({host:body,q:'Priya is slow to start the stopwatch and slow to stop it. Arjun says the two delays cancel out, so her reaction time does not matter. Is he right?',options:[
     {text:'Not quite: her two delays are not the same',correct:true},
     {text:'Yes: the two delays always cancel out exactly',why:'Reacting to something you see and to something you hear take different times, and both vary from go to go.'},
     {text:'No: reaction time always makes the time too long',why:'The delay at the start makes the time shorter, and the one at the stop makes it longer. Overall it can go either way.'},
@@ -219,7 +219,7 @@ frameAct('experiment','animations/speed-of-sound.html','','Speed of sound animat
 }
 {
   const body=act('experiment','Multiple choice','Timing one echo','');
-  createPredict({host:body,q:'Charlie stands 50 m from a wall and times one echo with a stopwatch. Why are his timings so spread out?',options:[
+  createPredict({host:body,q:'Oskar stands 50 m from a wall and times one echo with a stopwatch. Why are his timings so spread out?',options:[
     {text:'One echo takes about 0.3 s, close to his reaction time',correct:true},
     {text:'The echo travels more slowly than the clap itself',why:'The echo travels through the same air, at the same speed as the clap.'},
     {text:'50 m is too far away for the echo to be heard',why:'He can hear it; at 50 m it comes back about 0.3 s later.'},
@@ -229,7 +229,7 @@ frameAct('experiment','animations/speed-of-sound.html','','Speed of sound animat
 
 /* ================= RESULTS ================= */
 {
-  const body=act('results','Calculate','Complete the results table','Charlie times a bang three times at each distance. Work out the missing means and speeds. Give each mean to 2 decimal places.');
+  const body=act('results','Calculate','Complete the results table','Oskar times a bang three times at each distance. Work out the missing means and speeds. Give each mean to 2 decimal places.');
   const tbl=mk('div','table-scroll');
   tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Distance (m)</th><th>Time 1 (s)</th><th>Time 2 (s)</th><th>Time 3 (s)</th><th>Mean time (s)</th><th>Speed (m/s)</th></tr></thead><tbody>'+
     [['100','0.31','0.27','0.32','0.30','?'],['200','0.60','0.55','0.59','?','345'],['300','0.86','0.91','0.87','?','?'],['400','1.20','1.15','1.19','1.18','339']].map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
@@ -243,7 +243,7 @@ frameAct('experiment','animations/speed-of-sound.html','','Speed of sound animat
 }
 {
   const body=act('results','Multiple choice','The most accurate speed','');
-  createPredict({host:body,q:'Use Charlie’s table. Which distance should give the most accurate speed of sound?',options:[
+  createPredict({host:body,q:'Use Oskar’s table. Which distance should give the most accurate speed of sound?',options:[
     {text:'400 m: reaction time matters least there',correct:true},
     {text:'100 m: the sound is loudest and easiest to hear',why:'It is easiest to hear, but 0.3 s is so short that a reaction-time error of a few hundredths of a second is a big fraction of it.'},
     {text:'None: the speed of sound is the same every time',why:'The speed of sound is the same, but the error in measuring it is not.'},
@@ -252,7 +252,7 @@ frameAct('experiment','animations/speed-of-sound.html','','Speed of sound animat
 }
 {
   const body=act('results','Multiple choice','An anomalous result','');
-  createPredict({host:body,q:'Lucas times the bang at 300 m three times. Which result is anomalous, and what should he do?',
+  createPredict({host:body,q:'Aarav times the bang at 300 m three times. Which result is anomalous, and what should he do?',
     pre:'<div class="table-scroll"><table class="units res-tbl"><thead><tr><th></th><th>Time 1</th><th>Time 2</th><th>Time 3</th></tr></thead><tbody><tr><th>Time (s)</th><td>0.88</td><td>0.87</td><td>0.61</td></tr></tbody></table></div>',
     options:[
     {text:'0.61 s: repeat it, and leave it out of the mean',correct:true},
@@ -271,9 +271,9 @@ function henryGraph(label){
     extra:[[0.35,100],[0.65,200],[0.95,300],[1.25,400]].map(p=>xmark(g0,p[0],p[1])).join('')},GR)).svg;
 }
 {
-  const body=act('graphs','Calculate','Read the graph','Henry times a bang at four distances and plots distance against mean time. Read values off his line of best fit.');
+  const body=act('graphs','Calculate','Read the graph','Hugo times a bang at four distances and plots distance against mean time. Read values off his line of best fit.');
   const split=mk('div','graph-split');body.appendChild(split);
-  split.appendChild(mk('div','graph-box',henryGraph('Henry’s distance against time, with a straight line of best fit')));
+  split.appendChild(mk('div','graph-box',henryGraph('Hugo’s distance against time, with a straight line of best fit')));
   const side=mk('div','graph-side');split.appendChild(side);
   createCalc({host:side,questions:[
     {q:'Use the gradient of the line to find the speed of sound.',unit:'m/s',answer:333,working:'Two points on the line: (0.35 s, 100 m) and (1.25 s, 400 m)<br>gradient = [[change in distance|change in time]]<br>gradient = [[400 − 100|1.25 − 0.35]]<br>gradient = [[300|0.90]]<br>speed = 333 m/s'},
@@ -283,16 +283,16 @@ function henryGraph(label){
 }
 {
   const body=act('graphs','Multiple choice','Why miss the origin?','');
-  createPredict({host:body,q:'Henry’s line crosses the time axis at 0.05 s, not at 0. What is the most likely reason?',options:[
+  createPredict({host:body,q:'Hugo’s line crosses the time axis at 0.05 s, not at 0. What is the most likely reason?',options:[
     {text:'Every timing is out by the same 0.05 s',correct:true},
     {text:'The sound took 0.05 s to start moving',why:'Sound leaves the blocks at full speed straight away.'},
     {text:'He measured every distance 0.05 m too short',why:'A distance error would shift the line up or down, and 0.05 m is far too small to see on this scale.'},
     {text:'The light took 0.05 s to reach him',why:'Light takes about a millionth of a second over these distances.'}
-  ],explain:'The same error in every timing (a systematic error, here from reaction time) moves the whole line along the time axis. Henry’s times are each about 0.05 s too long: perhaps he is slower to stop the stopwatch on the sound than to start it on seeing the blocks hit. A timer who is slower to start makes every time too short, and the line crosses below the origin instead, as in the animation’s Direct runs. Either way the gradient does not change.'});
+  ],explain:'The same error in every timing (a systematic error, here from reaction time) moves the whole line along the time axis. Hugo’s times are each about 0.05 s too long: perhaps he is slower to stop the stopwatch on the sound than to start it on seeing the blocks hit. A timer who is slower to start makes every time too short, and the line crosses below the origin instead, as in the animation’s Direct runs. Either way the gradient does not change.'});
 }
 {
   const body=act('graphs','Multiple choice','Gradient or one point?','');
-  createPredict({host:body,q:'Henry gets 333 m/s from the gradient but 320 m/s from the 400 m point alone. Which should he trust, and why?',options:[
+  createPredict({host:body,q:'Hugo gets 333 m/s from the gradient but 320 m/s from the 400 m point alone. Which should he trust, and why?',options:[
     {text:'The gradient: the 0.05 s error cancels out',correct:true},
     {text:'The single point: it uses his longest distance',why:'The 400 m time still includes the extra 0.05 s, which makes the speed too low.'},
     {text:'The single point: it is a real reading, not a line',why:'The line uses all four readings, so it averages out the random errors too.'},
@@ -304,7 +304,7 @@ function micGraph(label){
   return lineGraph(Object.assign({label:label,segments:[{pts:[[0,0],[1.7,5]],cls:'g-line-c'}]},GR2)).svg;
 }
 {
-  const body=act('graphs','Calculate','The axes the other way round','Some exam questions plot time up the side. Zahra moves one microphone to change the distance between them, and plots the time between the pulses against that distance.');
+  const body=act('graphs','Calculate','The axes the other way round','Some exam questions plot time up the side. Freya moves one microphone to change the distance between them, and plots the time between the pulses against that distance.');
   const split=mk('div','graph-split');body.appendChild(split);
   split.appendChild(mk('div','graph-box',micGraph('Time between the pulses against distance between the microphones')));
   const side=mk('div','graph-side');split.appendChild(side);

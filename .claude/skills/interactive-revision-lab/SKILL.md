@@ -100,7 +100,7 @@ Before calling a topic page finished, list its spec points and check each is cov
   - East Asia: Yuki, Mei, Sakura, Aiko, Jia, Xin, Min-ji, Seo-yeon, Ji-woo, Lan, Haruka, Ling (she); Kenji, Wei, Hiroshi, Takumi, Haruto, Jun, Hao, Ming, Min-jun, Ji-ho, Seo-jun, Chen (he)
   - Indian subcontinent: Priya, Meera, Diya, Kavya, Anjali, Riya, Ishani, Nisha, Sana, Tanvi, Lakshmi, Fariha (she); Arjun, Rohan, Vikram, Aarav, Kabir, Dev, Rahul, Sanjay, Imran, Faisal, Nikhil, Tariq (he)
   - South-East Asia: Linh, Siti, Nurul, Putri, Ayu, Mai, Thao, Dewi, Angelica, Ploy, Intan, Nadia, Kanya (she); Minh, Arif, Budi, Rizal, Hafiz, Duc, Quang, Somchai, Arthit, Paolo, Danial, Bayu, Thanh (he)
-  - Never put a girl's name beside a mass or weight; use a boy's name there.
+  - Girls' and boys' names can both go beside a mass or weight (Alex, 22 Nov 2026).
 - **Exciting and sci-fi contexts (Alex, 21 Nov 2026).** Set some questions and examples in an exciting or slightly sci-fi setting instead of an everyday one: drones, rockets, space probes, robots, a spaceship or Mars rover, base jumping, bungee jumping, deep-sea diving. Keep the physics and the numbers realistic, and use the g for wherever the question is set (say so if it isn't Earth).
 
 ## Tag it Draft after every change (Alex, 11 Nov 2026)

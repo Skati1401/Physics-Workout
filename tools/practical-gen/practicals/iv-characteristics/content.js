@@ -107,7 +107,7 @@ function quadGraph(o){
 }
 {
   const body=act('variables','Multiple choice','A new question to test','');
-  createPredict({host:body,q:'Fatimah wants to find out how the length of a wire affects its resistance. What is her independent variable?',options:[
+  createPredict({host:body,q:'Nurul wants to find out how the length of a wire affects its resistance. What is her independent variable?',options:[
     {text:'The length of the wire',correct:true},
     {text:'The current through the wire',why:'She measures the current (and the voltage) to work out the resistance. It is not what she chooses to change.'},
     {text:'The resistance of the wire',why:'The resistance is what she works out from her readings, so it depends on the length.'},
@@ -156,7 +156,7 @@ function quadGraph(o){
   act('method','Your turn','Build the circuit','The animation deals a task. Put the ammeter and the voltmeter into the circuit diagram, then press Go to see whether it works. In the exam: correct symbols, the ammeter in series, the voltmeter in parallel with the component, and a variable resistor (or a variable supply) to change the current.');
 }
 frameAct('method','animations/iv-characteristics.html','build','Build the I–V circuit: put the meters into the circuit diagram','current–voltage characteristics',false);
-// Ali's circuit as an exam circuit diagram. fixed=false: his drawing (second cell turned round, ammeter across the lamp, voltmeter in the
+// Arjun's circuit as an exam circuit diagram. fixed=false: his drawing (second cell turned round, ammeter across the lamp, voltmeter in the
 // main loop). fixed=true: the same circuit put right, with the three changes in green.
 function iv29CircuitSVG(fixed){
   const INK='var(--ink)',OK='var(--good)',col=c=>fixed&&c?OK:INK;
@@ -166,7 +166,7 @@ function iv29CircuitSVG(fixed){
   // a cell: the long thin plate is positive, the short thick plate negative; pos says which side the long plate is on
   const cell=(x,y,pos,c)=>{const xl=pos==='l'?x-5:x+5,xs=pos==='l'?x+5:x-5;return ln(xl,y-17,xl,y+17,c,2.4)+ln(xs,y-9,xs,y+9,c,5.5);};
   const L=60,R=330,T=48,B=222,X2=412;
-  let s='<svg class="graph" viewBox="0 0 460 270" role="img" aria-label="'+(fixed?'Ali’s circuit put right: both cells the same way round, the ammeter in series and the voltmeter across the lamp':'Ali’s circuit diagram: two cells, a switch, a variable resistor, a voltmeter, a filament lamp and an ammeter')+'">';
+  let s='<svg class="graph" viewBox="0 0 460 270" role="img" aria-label="'+(fixed?'Arjun’s circuit put right: both cells the same way round, the ammeter in series and the voltmeter across the lamp':'Arjun’s circuit diagram: two cells, a switch, a variable resistor, a voltmeter, a filament lamp and an ammeter')+'">';
   s+='<rect x="1" y="1" width="458" height="268" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';
   // top: two cells joined by a short wire
   s+=ln(L,T,165,T)+cell(170,T,'l')+ln(175,T,215,T)+cell(220,T,fixed?'l':'r',true)+ln(225,T,R,T);
@@ -181,12 +181,12 @@ function iv29CircuitSVG(fixed){
   return s+'</svg>';
 }
 {
-  const body=act('method','Sort','Find the errors in Ali’s circuit','Ali draws the circuit he will use to find the I–V characteristic of a filament lamp. Look at where each part is connected, then sort it and press Check.');
+  const body=act('method','Sort','Find the errors in Arjun’s circuit','Arjun draws the circuit he will use to find the I–V characteristic of a filament lamp. Look at where each part is connected, then sort it and press Check.');
   const split=mk('div','graph-split'),box=mk('div','graph-box',iv29CircuitSVG(false)),side=mk('div','act-body');
   split.appendChild(box);split.appendChild(side);body.appendChild(split);
   createSortGame({host:side,cats:[
     {id:'ok',label:'Connected correctly',hint:'Leave it as it is',color:'--c1',soft:'--c1-soft'},
-    {id:'no',label:'Connected wrongly',hint:'Ali must change it',color:'--c2',soft:'--c2-soft'}
+    {id:'no',label:'Connected wrongly',hint:'Arjun must change it',color:'--c2',soft:'--c2-soft'}
   ],items:[
     {id:'1',text:'The ammeter',cat:'no'},
     {id:'2',text:'The voltmeter',cat:'no'},
@@ -196,7 +196,7 @@ function iv29CircuitSVG(fixed){
     {id:'6',text:'The filament lamp',cat:'ok'}
   ]});
   const d=mk('details','');
-  d.innerHTML='<summary>Why</summary><div><ul><li>The ammeter is in parallel with the lamp: it must be in series, so the same current flows through it.</li><li>The voltmeter is in series: it must be in parallel across the lamp.</li><li>The second cell faces the wrong way, so the two cells cancel: each cell’s long plate must join the next cell’s short plate.</li><li>The variable resistor and the switch are in series, as they should be.</li></ul><p class="act-intro">Ali’s circuit put right (his three changes are in green):</p><div class="graph-box">'+iv29CircuitSVG(true)+'</div></div>';
+  d.innerHTML='<summary>Why</summary><div><ul><li>The ammeter is in parallel with the lamp: it must be in series, so the same current flows through it.</li><li>The voltmeter is in series: it must be in parallel across the lamp.</li><li>The second cell faces the wrong way, so the two cells cancel: each cell’s long plate must join the next cell’s short plate.</li><li>The variable resistor and the switch are in series, as they should be.</li></ul><p class="act-intro">Arjun’s circuit put right (his three changes are in green):</p><div class="graph-box">'+iv29CircuitSVG(true)+'</div></div>';
   body.appendChild(d);
 }
 
@@ -230,7 +230,7 @@ function iv29CircuitSVG(fixed){
 }
 {
   const body=act('accuracy','Multiple choice','A zero error','');
-  createPredict({host:body,q:'Before switching on, Fatimah’s ammeter reads 0.02 A. What should she do with her readings?',options:[
+  createPredict({host:body,q:'Before switching on, Nurul’s ammeter reads 0.02 A. What should she do with her readings?',options:[
     {text:'Take 0.02 A off every current she records',correct:true},
     {text:'Add 0.02 A on to every current she records',why:'The meter already reads 0.02 A too high, so adding more makes it worse.'},
     {text:'Nothing: 0.02 A is far too small to matter',why:'For a small current such as 0.10 A, 0.02 A is a 20% error.'},
@@ -356,7 +356,7 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
 }
 {
   const body=act('experiment','Predict','Testing a wire','');
-  createPredict({host:body,q:'Charlotte tests a long metal wire with small currents, so it stays cool. What shape is its I–V graph?',options:[
+  createPredict({host:body,q:'Zofia tests a long metal wire with small currents, so it stays cool. What shape is its I–V graph?',options:[
     {text:'Straight, through the origin, like a resistor',correct:true},
     {text:'A curve that bends over, like a filament lamp',why:'A lamp curves because it gets very hot. A wire kept cool has a constant resistance.'},
     {text:'Almost no current in one direction, like a diode',why:'A metal wire conducts equally well both ways.'},
@@ -376,7 +376,7 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
 
 /* ================= 3. RESULTS ================= */
 {
-  const body=act('results','Calculate','Complete the results table','Ali tests a filament lamp. Work out its resistance at each voltage, using V = I × R.');
+  const body=act('results','Calculate','Complete the results table','Arjun tests a filament lamp. Work out its resistance at each voltage, using V = I × R.');
   const tbl=mk('div','table-scroll');
   tbl.innerHTML='<table class="units res-tbl"><thead><tr><th>Voltage (V)</th><th>Current (A)</th><th>Resistance (Ω)</th></tr></thead><tbody>'+
     [['1.0','0.10','10'],['2.0','0.16','?'],['3.0','0.21','14.3'],['4.0','0.25','?'],['5.0','0.28','17.9'],['6.0','0.30','?']].map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>').join('')+'</tbody></table>';
@@ -390,7 +390,7 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
 }
 {
   const body=act('results','Multiple choice','Reading the results','');
-  createPredict({host:body,q:'Use Ali’s table. What happens to the lamp’s resistance as the voltage goes up?',options:[
+  createPredict({host:body,q:'Use Arjun’s table. What happens to the lamp’s resistance as the voltage goes up?',options:[
     {text:'It increases, from 10 Ω to 20 Ω',correct:true},
     {text:'It stays at 10 Ω, as the current also goes up',why:'The current goes up, but not in proportion: 6 V gives 0.30 A, not 0.60 A. Work out the resistance at each row.'},
     {text:'It decreases, as more current flows',why:'More current flows, but the voltage rises faster than the current, so the resistance goes up.'},
@@ -399,7 +399,7 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
 }
 {
   const body=act('results','Multiple choice','The line of best fit','');
-  createPredict({host:body,q:'Ali plots current against voltage for his lamp, with the connections forwards and reversed. What line of best fit should he draw?',options:[
+  createPredict({host:body,q:'Arjun plots current against voltage for his lamp, with the connections forwards and reversed. What line of best fit should he draw?',options:[
     {text:'One smooth curve through the origin',correct:true},
     {text:'Short straight lines joining each point to the next',why:'Joining the dots follows every small error. A line of best fit shows the trend, so it is one smooth line.'},
     {text:'One straight line through the origin and the last point',why:'The points do not lie on a straight line: the gradient gets less as the voltage rises. A straight line hides that.'},
@@ -408,7 +408,7 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
 }
 {
   const body=act('results','Multiple choice','An anomalous result','');
-  createPredict({host:body,q:'Ananya tests a fixed resistor. Which result is anomalous, and what should she do?',
+  createPredict({host:body,q:'Kavya tests a fixed resistor. Which result is anomalous, and what should she do?',
     pre:'<div class="table-scroll"><table class="units res-tbl"><thead><tr><th>Voltage (V)</th><th>1.0</th><th>2.0</th><th>3.0</th><th>4.0</th><th>5.0</th></tr></thead><tbody><tr><th>Current (A)</th><td>0.05</td><td>0.10</td><td>0.18</td><td>0.20</td><td>0.25</td></tr></tbody></table></div>',
     options:[
     {text:'3.0 V: repeat it, and leave it out of the line',correct:true},
@@ -420,7 +420,7 @@ frameAct('experiment','animations/iv-characteristics.html','','Current–voltage
 
 {
   const body=act('results','Multiple choice','Resistance against voltage','');
-  createPredict({host:body,q:'Ananya works out the resistance of her fixed resistor at each voltage, then plots resistance against voltage. What shape is the graph?',options:[
+  createPredict({host:body,q:'Kavya works out the resistance of her fixed resistor at each voltage, then plots resistance against voltage. What shape is the graph?',options:[
     {text:'A horizontal straight line above the axis',correct:true},
     {text:'A straight line rising from the origin',why:'That is the shape of its current against voltage. Its resistance is the same at every voltage.'},
     {text:'A curve that rises more steeply each time',why:'The resistor stays at the same temperature, so its resistance does not change with voltage.'},
@@ -487,7 +487,7 @@ function swapGraph(label){
 }
 {
   const body=act('graphs','Multiple choice','Steeper, with the axes swapped','');
-  createPredict({host:body,q:'Elizabeth says, “The steeper line always has the smaller resistance.” Is she right?',options:[
+  createPredict({host:body,q:'Ingrid says, “The steeper line always has the smaller resistance.” Is she right?',options:[
     {text:'Only when current is up the side of the graph',correct:true},
     {text:'Yes, on every I–V graph',why:'Look at P and Q: with voltage up the side, the steeper line (P) has the bigger resistance.'},
     {text:'Only when voltage is up the side of the graph',why:'With voltage up the side, a steeper line needs more volts for each amp, so it has more resistance.'},

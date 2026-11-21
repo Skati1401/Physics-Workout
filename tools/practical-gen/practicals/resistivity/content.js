@@ -235,7 +235,7 @@ const GR={xMin:0,xMax:1,yMin:0,yMax:12,xTicks:[0,0.2,0.4,0.6,0.8,1],yTicks:[0,2,
 
 /* ================= EXAM PRACTICE ================= */
 {
-  const body=act('exam','Exam style','The resistivity of nichrome','Rose measures the resistance of different lengths of nichrome wire (type a power of ten as e.g. 6.16e-8). She measures the diameter of the wire at three places: 0.27 mm, 0.28 mm and 0.29 mm.');
+  const body=act('exam','Exam style','The resistivity of nichrome','Astrid measures the resistance of different lengths of nichrome wire (type a power of ten as e.g. 6.16e-8). She measures the diameter of the wire at three places: 0.27 mm, 0.28 mm and 0.29 mm.');
   body.appendChild(resTable(['L (m)','0.200','0.400','0.600','0.800'],[['V (V)','0.84','1.38','1.71','1.92'],['I (A)','0.240','0.200','0.165','0.140'],['R (Ω)','3.50','6.90',null,'13.71']]));
   body.appendChild(mk('p','sub','(a) 1 mark'));
   createCalc({host:body,questions:[
@@ -249,15 +249,15 @@ const GR={xMin:0,xMax:1,yMin:0,yMax:12,xTicks:[0,0.2,0.4,0.6,0.8,1],yTicks:[0,2,
   createCalc({host:body,questions:[
     {q:'Use the readings at 0.200 m and 0.800 m to calculate the resistivity of nichrome.',unit:'Ω m',answer:1.05e-6,working:'R at 0.200 m = 3.50 Ω<br>R at 0.800 m = 13.71 Ω<br>A = 6.16 × 10⁻⁸ m²<br>ρ = ?||gradient = [[13.71 − 3.50|0.800 − 0.200]]<br>gradient = [[10.21|0.600]]<br>gradient = 17.02 Ω m⁻¹<br>ρ = gradient × A<br>ρ = 17.02 × 6.16 × 10⁻⁸<br>ρ = 1.05 × 10⁻⁶ Ω m'}
   ]});
-  examPart(body,'(d) 2 marks','Explain why Rose uses the gradient of a graph of R against L, rather than one value of R and L.',[
+  examPart(body,'(d) 2 marks','Explain why Astrid uses the gradient of a graph of R against L, rather than one value of R and L.',[
     'The clips and leads (contact resistance), or a zero error on a meter, add a resistance that is the same at every length, so the line does not pass through the origin.',
     'The gradient (ρ/A) does not include that extra resistance, and a line through many points averages out random errors.'
   ]);
-  examPart(body,'(e) 2 marks','Explain why Rose measures the diameter at several places along the wire and at right angles.',[
+  examPart(body,'(e) 2 marks','Explain why Astrid measures the diameter at several places along the wire and at right angles.',[
     'The wire may not be uniform, or may not be perfectly round.',
     'Repeating and taking a mean reduces the effect of random errors in d, whose percentage uncertainty is doubled in A because A ∝ d².'
   ]);
-  examPart(body,'(f) 6 marks','Describe how Rose should carry out this investigation to obtain an accurate value for the resistivity of nichrome.',[
+  examPart(body,'(f) 6 marks','Describe how Astrid should carry out this investigation to obtain an accurate value for the resistivity of nichrome.',[
     'Measure the diameter with a micrometer (using its ratchet) at several places and at right angles; check and correct for zero error; find the mean and A = πd²/4.',
     'Tape the wire to a metre rule; connect it in series with an ammeter (and a protective resistor), with a voltmeter across the length being tested.',
     'Measure L between the clips with the metre rule; record V and I; use R = V/I.',

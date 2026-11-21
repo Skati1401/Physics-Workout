@@ -220,7 +220,7 @@ const GV={xMin:0,xMax:2,yMin:0,yMax:10,xTicks:[0,0.5,1,1.5,2],yTicks:[0,2,4,6,8,
 
 /* ================= EXAM PRACTICE ================= */
 {
-  const body=act('exam','Exam style','The e.m.f. of a battery','Haris connects a battery to a variable resistor and an ammeter, with a voltmeter across the battery. He takes these readings.');
+  const body=act('exam','Exam style','The e.m.f. of a battery','Rizal connects a battery to a variable resistor and an ammeter, with a voltmeter across the battery. He takes these readings.');
   body.appendChild(resTable(['I (A)','0.20','0.40','0.60','0.80','1.00'],[['V (V)','4.30','4.05','3.85','3.58','3.35']]));
   examPart(body,'(a) 2 marks','Explain why the terminal potential difference falls as the current increases.',[
     'Some of the e.m.f. is “lost” across the internal resistance: the p.d. across it is Ir.',
@@ -234,11 +234,11 @@ const GV={xMin:0,xMax:2,yMin:0,yMax:10,xTicks:[0,0.5,1,1.5,2],yTicks:[0,2,4,6,8,
   createCalc({host:body,questions:[
     {q:'Calculate the e.m.f. of the battery.',unit:'V',answer:4.54,working:'r = 1.19 Ω<br>at 0.20 A, V = 4.30 V<br>ε = ?||ε = V + Ir<br>ε = 4.30 + 0.20 × 1.19<br>ε = 4.30 + 0.238<br>ε = 4.54 V'}
   ]});
-  examPart(body,'(d) 2 marks','Haris leaves the switch closed for the whole experiment. Explain how this could affect his value for the e.m.f.',[
+  examPart(body,'(d) 2 marks','Rizal leaves the switch closed for the whole experiment. Explain how this could affect his value for the e.m.f.',[
     'The battery runs down (and warms up) while current flows, so its e.m.f. falls (and r may change) during the experiment.',
     'So the points do not lie on one straight line, and the intercept (ε) found from the graph is too low or unreliable.'
   ]);
-  examPart(body,'(e) 6 marks','Describe how Haris could use a graph to find the e.m.f. and internal resistance of the battery accurately.',[
+  examPart(body,'(e) 6 marks','Describe how Rizal could use a graph to find the e.m.f. and internal resistance of the battery accurately.',[
     'Connect the battery in series with an ammeter, a switch and a variable resistor (and a fixed protective resistor); voltmeter across the battery’s terminals.',
     'Start at the largest resistance; close the switch, record I and V, open the switch.',
     'Decrease the resistance in steps to take at least six pairs of readings over a wide range of I.',

@@ -194,7 +194,7 @@ methodPicker('method');
 }
 {
   const body=act('variables','Multiple choice','A new question to test','');
-  createPredict({host:body,q:'Zahra wants to find out how the height of the ramp affects the car’s speed at the bottom. What is her independent variable?',options:[
+  createPredict({host:body,q:'Freya wants to find out how the height of the ramp affects the car’s speed at the bottom. What is her independent variable?',options:[
     {text:'The height of the ramp',correct:true},
     {text:'The speed at the bottom',why:'That is what she measures for each height, so it is the dependent variable.'},
     {text:'The length of the ramp',why:'She should keep the same ramp, so its length is a control variable.'},
@@ -203,7 +203,7 @@ methodPicker('method');
 }
 {
   const body=act('variables','Multiple choice','Let go, don’t push','');
-  createPredict({host:body,q:'Why must Charlie let go of the car rather than give it a little push?',options:[
+  createPredict({host:body,q:'Why must Oskar let go of the car rather than give it a little push?',options:[
     {text:'So it starts from rest, with no push, every run',correct:true},
     {text:'So that the stopwatch can start a little bit later',why:'The stopwatch should start the moment the car moves. Letting go is about the car’s starting speed.'},
     {text:'So the car speeds up more quickly down the ramp',why:'A push changes the starting speed, not how quickly the ramp makes it speed up.'},
@@ -230,7 +230,7 @@ methodPicker('method');
 }
 {
   const body=act('accuracy','Multiple choice','The front of the car','');
-  createPredict({host:body,q:'Why should Ananya stop the stopwatch when the front of the car passes each mark, every time?',options:[
+  createPredict({host:body,q:'Why should Kavya stop the stopwatch when the front of the car passes each mark, every time?',options:[
     {text:'The distances are measured to the front of the car',correct:true},
     {text:'The front of the car is the part that moves fastest',why:'Every part of the car moves at the same speed. The point is to time to the same place you measured to.'},
     {text:'The back of the car is too hard to see clearly',why:'You could see the back, but the distance would then be wrong by the length of the car.'},
@@ -239,7 +239,7 @@ methodPicker('method');
 }
 {
   const body=act('accuracy','Multiple choice','Improving the graph','');
-  createPredict({host:body,q:'Charlie only times the car to three marks, all within 30 cm of the start. His graph looks almost straight. How should he improve it?',options:[
+  createPredict({host:body,q:'Oskar only times the car to three marks, all within 30 cm of the start. His graph looks almost straight. How should he improve it?',options:[
     {text:'Use more marks, all the way down the ramp',correct:true},
     {text:'Repeat each of the three times and find the mean',why:'Repeats make each time more reliable, but three marks close together still cannot show that the graph curves.'},
     {text:'Use a stopwatch that shows times to 0.001 s',why:'A finer display does not remove reaction time, and three close marks still hide the curve.'},
@@ -299,7 +299,7 @@ sideBySide('do',[$('#panel-do .own-tbl')]);
 frameAct('experiment','animations/ramp-motion.html','','Toy car on a ramp animation: timing the car with a stopwatch or light gates','toy car on a ramp',false);
 {
   const body=act('experiment','Multiple choice','Three different times','');
-  createPredict({host:body,q:'Charlie times the car to the same mark three times with a stopwatch: 1.25 s, 1.27 s and 1.20 s. Why are they different?',options:[
+  createPredict({host:body,q:'Oskar times the car to the same mark three times with a stopwatch: 1.25 s, 1.27 s and 1.20 s. Why are they different?',options:[
     {text:'His reaction time is different on each run',correct:true},
     {text:'The car speeds up by a different amount each run',why:'The same car on the same ramp speeds up in the same way each time. The difference comes from the timing.'},
     {text:'The stopwatch only measures to the nearest 0.1 s',why:'The stopwatch shows 0.01 s. The 0.07 s spread comes from when he presses the button.'},
@@ -326,7 +326,7 @@ function rmTable(){
   return t;
 }
 {
-  const body=act('results','Calculate','Complete Zahra’s results','Zahra timed her toy car three times to each mark with a stopwatch, on a ramp 20 cm high.');
+  const body=act('results','Calculate','Complete Freya’s results','Freya timed her toy car three times to each mark with a stopwatch, on a ramp 20 cm high.');
   body.appendChild(rmTable());
   createCalc({host:body,questions:[
     {q:'Work out the mean time for 1.20 m.',unit:'s',answer:1.76,working:'mean = [[1.78 + 1.73 + 1.77|3]]<br>mean = [[5.28|3]]<br>mean = 1.76 s'},
@@ -336,7 +336,7 @@ function rmTable(){
 }
 {
   const body=act('results','Multiple choice','The line of best fit','');
-  createPredict({host:body,q:'What line of best fit should Zahra draw through her points?',options:[
+  createPredict({host:body,q:'What line of best fit should Freya draw through her points?',options:[
     {text:'A smooth curve from the origin, getting steeper',correct:true},
     {text:'Short straight lines joining each point in turn',why:'Joining the dots follows every small timing error. A line of best fit shows the trend.'},
     {text:'One straight line through as many points as it can',why:'The points do not lie on a straight line: each 0.2 m takes less time than the one before.'},
@@ -345,7 +345,7 @@ function rmTable(){
 }
 {
   const body=act('results','Multiple choice','The speed at the bottom','');
-  createPredict({host:body,q:'Charlie divides 1.20 m by 1.76 s to get 0.68 m/s, and says this is the car’s speed as it passes the 1.20 m mark. Is he right?',options:[
+  createPredict({host:body,q:'Oskar divides 1.20 m by 1.76 s to get 0.68 m/s, and says this is the car’s speed as it passes the 1.20 m mark. Is he right?',options:[
     {text:'No: that is the average; it was faster at the end',correct:true},
     {text:'Yes: speed is always distance divided by time',why:'Distance divided by time gives the average speed for the whole trip. The car sped up, so it was going faster than average at the end.'},
     {text:'No: the car was going slower than that at the end',why:'The car was speeding up all the way, so at the end it was going faster than its average speed, not slower.'},
@@ -354,7 +354,7 @@ function rmTable(){
 }
 {
   const body=act('results','Multiple choice','An anomalous result','');
-  createPredict({host:body,q:'Ananya’s three times to the 0.60 m mark are below. Which is anomalous, and what should she do?',
+  createPredict({host:body,q:'Kavya’s three times to the 0.60 m mark are below. Which is anomalous, and what should she do?',
     pre:'<div class="table-scroll"><table class="units res-tbl" style="width:fit-content"><thead><tr><th>Run</th><th>1</th><th>2</th><th>3</th></tr></thead><tbody><tr><th>Time (s)</th><td>1.25</td><td>1.27</td><td>1.62</td></tr></tbody></table></div>',
     options:[
     {text:'Run 3: repeat it, and leave it out of the mean',correct:true},
