@@ -87,7 +87,7 @@ Before the cuts, over the 30-minute limit: 1b, 1d, 3a, 4b, 7a (4d at it). Mostly
 14. **7a** What happens to the nucleus? Match and Balance the equations Calculate test the same changes in A and Z. Keep the Calculate. Two half-life Calculate cards: keep both (graph and numbers are both exam skills) but drop each to 2 questions.
 15. **7b** Control rods appear three times on the reactor tab (Chain reaction Order, Parts of a reactor Match, Lowering the control rods Predict) beside the chain reaction animation. Cut the Match or the Predict. Why so hot? Predict repeats a card of the Fission, fusion or both? Sort; cut the Predict or the card.
 16. **8a** From small to large Order and What is it? Match on the same tab use the same four things (solar system, Milky Way, galaxy, universe). Cut the Match. Star colours Order and Betelgeuse and Rigel Predict are both colour → temperature; cut the Predict.
-17. **8b** Red-shift Quick check question 1 and the Red-shift or blue-shift? Sort test the same idea; cut that question. Evidence for the Big Bang? Sort and From red-shift to an expanding universe Order overlap on distant galaxies' bigger red-shift; keep both (one is evidence, one is the argument), but trim the Sort's red-shift cards.
+17. **8b** Red-shift Quick check question 1 and the Red-shift or blue-shift? Sort test the same idea; cut that question. Evidence for the Big Bang? Sort and From red-shift to an expanding universe Order overlap on distant galaxies' bigger red-shift; keep both (one is evidence, one is the argument), but trim the Sort's red-shift cards. (The Sort was cut on 21 Nov 2026, when the CMB animation was framed in the tab: its first question asks the same thing.)
 
 ## 6. Year 9 project pages (16 Nov 2026)
 
