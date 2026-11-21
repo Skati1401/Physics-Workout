@@ -86,6 +86,7 @@
     -webkit-font-smoothing:antialiased;
   }
   [hidden]{display:none!important;}
+  .meas-off{display:none !important;}
   button{font:inherit;color:inherit;}
   :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
 
@@ -517,8 +518,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   var EHT={cx:68, top:186, w:104, h:54, posts:[CATH,ANODE]};
   var FACE, PXCM=22, FR_CM=3.8, GX, GY, GW, GH, NARROW, LY=null, svgEl=$('#ed-svg');
   function layout(){
-    LY=sizeView(svgEl,{VW:860,VH:278},{VW:430,VH:778});
+    LY=sizeView(svgEl,{VW:860,VH:278},{VW:430,VH:MEAS?524:778});
     NARROW = LY.VW===430;
+    if(MEAS){ if(NARROW){ MC={x:215,y:370,hw:190,top:300,bot:470}; MPX=50; } else { MC={x:612,y:96,hw:240,top:26,bot:196}; MPX=60; } }
     if(NARROW){ FACE={x:215,y:378}; GX=52; GY=516; GW=350; GH=212; }
     else { FACE={x:434,y:118}; GX=600; GY=30; GW=240; GH=196; }
   }
@@ -552,6 +554,44 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function readList(){ return Object.keys(readings).map(Number).sort(function(a,b){ return a-b; }).map(function(k){ var r=readings[k]; return {v:k/10, x:100/Math.sqrt(k*100), d1:r.d1, d2:r.d2}; }); }
   function fit(list, key){   // best line through the origin: gradient = Σxy / Σx²  (cm per 10⁻² V^−½, which is m V^½)
     var sxy=0, sxx=0; list.forEach(function(q){ sxy+=q.x*q[key]; sxx+=q.x*q.x; }); return sxx ? sxy/sxx : 0;
+  }
+  // Measure mode (?show=measure, for the practical page's Do Experiment tab; TODO 5v, 21 Nov 2026): the student sets the supply
+  // to 2.0, 2.5 ... 5.0 kV, lays the ruler on the inner or the outer ring and reads its diameter to 0.1 cm on a close-up that
+  // takes the place of the screen and the graph. The page records, plots and explains nothing. The readings are the Experiment
+  // mode's own, reading(v), so Do Experiment and Show Experiment agree:
+  //   V (kV)        2.0  2.5  3.0  3.5  4.0  4.5  5.0
+  //   D inner (cm)  3.5  3.1  2.9  2.6  2.4  2.3  2.2
+  //   D outer (cm)  6.1  5.5  5.0  4.6  4.3  4.1  3.8
+  // They are listed in tools/CORE-PRACTICALS.md, "Measure modes"; the practical's content.js must check against the same numbers.
+  var MEAS=/[?&]show=measure\b/.test(location.search), measRing=1, MC={x:612,y:96,hw:240,top:26,bot:196}, MPX=60;
+  function measClose(V, on){
+    var r=reading(kV()), d=[r.d1,r.d2], cx=MC.x, cy=MC.y, x0=MC.x-MC.hw, w=2*MC.hw, g='', lite='#e8f4ec';
+    var zero = on ? cx-d[measRing-1]/2*MPX : cx-3.5*MPX;      // the ruler's zero sits on the left of the ring being measured
+    g+='<clipPath id="ed-mclip"><rect x="'+x0+'" y="'+MC.top+'" width="'+w+'" height="'+(MC.bot-MC.top)+'" rx="10"/></clipPath>';
+    g+='<rect x="'+(x0-3)+'" y="'+(MC.top-3)+'" width="'+(w+6)+'" height="'+(MC.bot-MC.top+6)+'" rx="12" fill="var(--glass)"/>';
+    g+='<g clip-path="url(#ed-mclip)"><rect x="'+x0+'" y="'+MC.top+'" width="'+w+'" height="'+(MC.bot-MC.top)+'" fill="var(--screen)"/>';
+    if(on){
+      var bright = running ? 1 : 0.8;
+      d.forEach(function(dd, i){
+        var rr=(dd/2*MPX).toFixed(1);
+        g+='<circle cx="'+cx+'" cy="'+cy+'" r="'+rr+'" fill="none" stroke="var(--glow)" stroke-width="11" opacity="'+(0.2*bright).toFixed(2)+'"/>';
+        g+='<circle cx="'+cx+'" cy="'+cy+'" r="'+rr+'" fill="none" stroke="var(--glow)" stroke-width="2.4" opacity="'+((i?0.8:1)*bright).toFixed(2)+'"/>';
+      });
+      g+='<circle cx="'+cx+'" cy="'+cy+'" r="20" fill="var(--glow)" opacity="'+(0.3*bright).toFixed(2)+'"/><circle cx="'+cx+'" cy="'+cy+'" r="10" fill="#eafff0"/>';
+    } else g+='<text x="'+cx+'" y="'+(cy-30)+'" text-anchor="middle" font-size="13" fill="#cfe9d6">dark</text>';
+    // the clear ruler: its marked edge lies along a diameter of the rings
+    var rl=zero-0.5*MPX, rw=8*MPX, rh=50;
+    g+='<rect x="'+rl.toFixed(1)+'" y="'+cy+'" width="'+rw+'" height="'+rh+'" rx="3" fill="#ffffff" opacity=".17"/><rect x="'+rl.toFixed(1)+'" y="'+cy+'" width="'+rw+'" height="'+rh+'" rx="3" fill="none" stroke="'+lite+'" stroke-width="1" opacity=".75"/>';
+    g+='<line x1="'+rl.toFixed(1)+'" x2="'+(rl+rw).toFixed(1)+'" y1="'+(cy+rh-4)+'" y2="'+(cy+rh-4)+'" stroke="#ffffff" stroke-width="1.6" opacity=".3"/>';
+    for(var m=0; m<=70; m++){
+      var mx=(zero+m/10*MPX).toFixed(1), len = m%10===0 ? 16 : (m%5===0 ? 11 : 7);
+      g+='<line x1="'+mx+'" x2="'+mx+'" y1="'+cy+'" y2="'+(cy+len)+'" stroke="'+lite+'" stroke-width="'+(m%10===0?1.5:1)+'"/>';
+      if(m%10===0) g+='<text x="'+mx+'" y="'+(cy+32)+'" text-anchor="middle" font-size="14.5" font-weight="600" fill="'+lite+'">'+(m/10)+'</text>';
+    }
+    g+='<text x="'+zero.toFixed(1)+'" y="'+(cy+45)+'" text-anchor="middle" font-size="11.5" fill="'+lite+'">cm</text></g>';
+    var cap=NARROW ? ['the screen close up, with a clear ruler','held across the '+(measRing===1?'inner':'outer')+' ring'] : ['the screen close up, with a clear ruler held across the '+(measRing===1?'inner':'outer')+' ring'];
+    cap.forEach(function(c, i){ g+='<text x="'+cx+'" y="'+(MC.bot+22+i*16)+'" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">'+c+'</text>'; });
+    return g;
   }
   function clearExp(){ readings={}; swept=false; sweeping=false; dwell=0; }
   var CONST2 = 2*L*H, ROOT2ME = Math.sqrt(2*ME*E);
@@ -607,6 +647,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var lC=bez([CATH,AY+NR+4],[CATH-5,AY+NR+14],[CATH-5,TS.l[1]-10],TS.l,8), lA=bez([ANODE,AY+NR+4],[ANODE+5,AY+NR+14],[ANODE+5,TS.r[1]-10],TS.r,8);
     g+=dmm(EHT,{text:kV().toFixed(1), unit:'kV', tl:'var(--plug-k)', tr:'var(--plug-r)'})+lead(lC)+lead(lA);
     g+=txt(TS.l[0]-14,TS.l[1]+7,'−',{a:'middle',fs:14,w:700,c:'var(--ink)'})+txt(TS.r[0]+14,TS.r[1]+8,'+',{a:'middle',fs:14,w:700,c:'var(--ink)'})+txt(EHT.cx,EHT.top+EHT.h+16,'high-voltage supply',{a:'middle',fs:12});
+    if(MEAS){ svgEl.innerHTML=g+measClose(V, on); readout(V, on); return; }
     // --- the screen seen from the front, with a centimetre scale
     var fr=FR_CM*PXCM;
     g+='<circle cx="'+FACE.x+'" cy="'+FACE.y+'" r="'+(fr+3)+'" fill="var(--glass)"/><circle cx="'+FACE.x+'" cy="'+FACE.y+'" r="'+fr+'" fill="var(--screen)"/>';
@@ -745,6 +786,11 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       else if(sweeping) note='Reading the ring diameters at '+kV().toFixed(1)+' kV. Each reading is to the nearest 0.1 cm on the scale.';
       else note='Taking your own readings: drag the voltage slider. Press Play to carry on stepping up 0.5 kV at a time.';
     }
+    if(MEAS){
+      var rn = measRing===1 ? 'inner' : 'outer';
+      if(!started) note='Press Switch on. Then, at each voltage, measure the diameter of both rings with the ruler.';
+      else note='Read the voltage on the supply. The ruler&rsquo;s zero is on the left of the '+rn+' ring: read where the middle of the bright line crosses the ruler on the right, to 0.1 cm. That is the ring&rsquo;s diameter. Write it in your table, measure the '+(measRing===1?'outer':'inner')+' ring too, then change the voltage (2.0 to 5.0 kV in steps of 0.5 kV).';
+    }
     if(started && !running && t>0 && idle>=AUTO_PAUSE) note='Paused. Press Play to carry on. '+note;
     if(note!==lastNote){ $('#ed-note').innerHTML=note; lastNote=note; }
     playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : (started ? '&#9654; Play' : '&#9654; Switch on');
@@ -794,7 +840,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     if(exp && !swept){ if(!Object.keys(readings).length) vIn.value='2.0'; sweeping=true; dwell=0; }
     raf=requestAnimationFrame(frame); draw();
   }
-  function reset(){ stop(); started=false; t=0; idle=0; electrons=[]; spawn=0; clearExp(); if(exp) vIn.value='2.0'; markPreset(); draw(); }
+  function reset(){ stop(); started=false; t=0; idle=0; electrons=[]; spawn=0; clearExp(); if(exp||MEAS) vIn.value='2.0'; if(MEAS) setRing(1); markPreset(); draw(); }
   function touched(){ idle=0; }
 
   // ---- controls
@@ -823,6 +869,18 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   $('#ed-keep').addEventListener('click',function(){ if(kept.length<3){ kept.push({V:kV()*1000}); if(!started) run(); } listKept(); draw(); });
   $('#ed-clear').addEventListener('click',function(){ kept=[]; listKept(); draw(); });
 
+  // measure mode: only the supply, the voltage slider, the ruler choice and the note are left
+  function setRing(n){ measRing=n; var s=$('#ed-ring'); if(s) Array.prototype.forEach.call(s.children,function(b){ b.setAttribute('aria-pressed', String(+b.dataset.r===n)); }); }
+  if(MEAS){
+    ['#ed-slow','#ed-exp','#ed-keep','#ed-clear','#ed-kept','.model','#ed-vo','.stats','#ed-results','#ed-working'].forEach(function(q){ var e=$(q); if(e) e.classList.add('meas-off'); });
+    presetsEl.parentNode.classList.add('meas-off');
+    vIn.step='0.5'; vIn.setAttribute('aria-label','Accelerating voltage, 2.0 to 5.0 kilovolts in steps of 0.5');
+    var rw=document.createElement('div');
+    rw.innerHTML='<div class="lab">Ruler on</div><div class="seg" id="ed-ring"><button type="button" data-r="1" aria-pressed="true">Inner ring</button><button type="button" data-r="2" aria-pressed="false">Outer ring</button></div>';
+    $('.side').insertBefore(rw, $('#ed-note'));
+    $('#ed-ring').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; setRing(+b.dataset.r); touched(); draw(); });
+    svgEl.setAttribute('aria-label','An electron diffraction tube with its high-voltage supply. Beside it, the fluorescent screen close up: two bright rings round a central spot, with a clear centimetre ruler held across them.');
+  }
   watchEquals($('#ed-eq1')); watchEquals($('#ed-eq2'));
   listKept(); reset();
   // redraw when the picture changes between its wide and its tall shape
