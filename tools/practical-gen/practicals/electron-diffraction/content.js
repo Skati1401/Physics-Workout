@@ -14,7 +14,7 @@
    reserved, wording only) and the IAL Past Paper Index with its mark schemes (WPH13 June 2019 Q3(a)(b): measuring the
    ring on a curved screen, interference as a wave property; WPH13 June 2023 Q3(a): vernier calipers, reserved; WPH12
    Oct 2022 Q11, Oct 2023 Q15(a)(b)(iii): diffraction and interference, regular structure, λ similar to the atomic spacing,
-   higher p.d. → more momentum → shorter λ → smaller rings, reserved), and the IB mark schemes P2 HL Nov 2007 A4 (concentric rings with a central bright spot; v up, p up, λ down) and May 2022 TZ2 Q9 (wave properties; sin θ = λ/D, reserved). No question copies a paper's scenario or numbers. */
+   higher p.d. → more momentum → shorter λ → smaller rings, reserved), and the IB mark schemes P2 HL Nov 2007 A4 (concentric rings with a central bright spot; v up, p up, λ down) and May 2022 TZ2 Q9 (wave properties; sin θ = λ/D, reserved), and on 22 Nov 2026 Nov 2008 B3 Pt2 (a probability wave with every particle, λ = h/p; atoms regularly arranged with a small separation; the measured λ the same as de Broglie's), Nov 2009 B4 Pt2 (maxima and minima, interfering like waves; combine E = p²/2m and p = h/λ), Nov 2010 B1 Pt2 and May 2015 TZ1 Q7 Pt2 (bright and dark rings, constructive and destructive, interference characteristic of waves). No question copies a paper's scenario or numbers. */
 function examPart(body,head,q,bullets){
   body.appendChild(mk('p','sub',head));
   body.appendChild(mk('p','',FR(q)));
@@ -46,7 +46,7 @@ function edFrame(panel,show,title){
   const body=act('overview','Fill in the blanks','The practical in one passage','Drag a word into each gap, or tap a word and then tap a gap. Some words are not needed.');
   const parts=[
     'Electrons are released from a hot cathode and accelerated through a ',['b1','potential difference'],', V, in an evacuated tube, so each gains kinetic energy eV. They pass through a thin film of ',['b2','graphite'],
-    ', whose atoms are arranged in regular layers. The electrons are ',['b3','diffracted'],' and form bright ',['b4','rings'],' on the screen: the diffracted electrons interfere, which only waves do. This is evidence of the wave nature of matter. Each electron has a de Broglie wavelength λ = [[h|p]], and diffraction is clear because λ is similar to the ',['b5','spacing'],
+    ', whose atoms are arranged in regular layers. The electrons are ',['b3','diffracted'],' and form bright ',['b4','rings'],' on the screen: bright rings where the diffracted electrons interfere constructively, dark rings where they interfere destructively. Interference is characteristic of waves. This is evidence of the wave nature of matter. Each electron has a de Broglie wavelength λ = [[h|p]], and diffraction is clear because λ is similar to the ',['b5','spacing'],
     ' of the atoms. Raising V gives the electrons more ',['b6','momentum'],', so λ is shorter and the rings get ',['b7','smaller'],'. Measure the diameter D of each ring at each voltage. A graph of D against ',['b8','1/√V'],' is a straight line through the origin, and its gradient gives the spacing d of the atoms.'
   ];
   const cloze=mk('div','cloze'),slots=[],chips=[];
@@ -289,34 +289,45 @@ const GS={xMin:0,xMax:64,yMin:-3,yMax:2,xTicks:[0,8,16,24,32,40,48,56,64],yTicks
   const body=act('exam','Exam style','Electron diffraction','Kenji accelerates electrons through a potential difference V and fires them at a thin graphite film in an evacuated tube. He measures the diameter D of one ring on a screen 14.0 cm from the graphite. One reading is missing. '+CONSTS);
   body.appendChild(resTable(['V (kV)','1.5','2.0','3.0','4.0','6.0'],[['D (cm)','4.2','3.6','2.9',null,'2.1']]));
   examPart(body,'(a) 3 marks','Describe the pattern on the screen and explain how it shows that electrons have wave properties.',[
-    '(Alternate light and dark) concentric rings with a central bright spot.',
-    'The electrons are diffracted by the regular arrangement of atoms in the graphite, and the diffracted electrons interfere (superpose).',
-    'Diffraction and interference are wave properties, so the electrons behave as waves.',
-    'The rings are clear because the de Broglie wavelength of the electrons is similar to the spacing of the atoms.'
+    '(Alternate light and dark) concentric rings (circular fringes) with a central bright spot.',
+    'Bright rings are maxima, where the electrons interfere constructively; dark rings are minima, where they interfere destructively (superposition).',
+    'Interference is characteristic of waves, so the electrons behave as waves.'
   ]);
-  body.appendChild(mk('p','sub','(b) 3 marks'));
+  examPart(body,'(b) 2 marks','State the de Broglie hypothesis.',[
+    'There is a (probability) wave associated with all particles (all particles behave as waves).',
+    'Its wavelength is the Planck constant divided by the particle’s momentum, λ = [[h|p]].'
+  ]);
+  examPart(body,'(c) 2 marks','State two properties of the graphite that let the electrons be diffracted.',[
+    'The atoms are regularly arranged (in layers).',
+    'The separation between them is small, similar to the de Broglie wavelength of the electrons.'
+  ]);
+  body.appendChild(mk('p','sub','(d) 3 marks'));
   createCalc({host:body,questions:[
     {q:'Show that the de Broglie wavelength of the electrons at 3.6 kV is about 2 × 10⁻¹¹ m. Give your value to 3 significant figures.',unit:'m',answer:2.05e-11,working:'V = 3600 V<br>λ = ?||E<sub>k</sub> = eV = 1.60 × 10⁻¹⁹ × 3600<br>E<sub>k</sub> = 5.760 × 10⁻¹⁶ J<br>E<sub>k</sub> = [[p²|2m<sub>e</sub>]]<br>p = √(2 × 9.11 × 10⁻³¹ × 5.760 × 10⁻¹⁶)<br>p = 3.240 × 10⁻²³ kg m s⁻¹<br>λ = [[h|p]]<br>λ = [[6.63 × 10⁻³⁴|3.240 × 10⁻²³]]<br>λ = 2.05 × 10⁻¹¹ m'}
   ]});
-  body.appendChild(mk('p','sub','(c) 2 marks'));
+  body.appendChild(mk('p','sub','(e) 2 marks'));
   createCalc({host:body,questions:[
     {q:'Predict the missing diameter at 4.0 kV.',unit:'cm',answer:2.55,working:'D ∝ λ ∝ [[1|√V]]<br>D at 2.0 kV = 3.6 cm<br>D = ?||[[D|3.6]] = [[√2.0|√4.0]]<br>D = 3.6 × [[√2.0|√4.0]]<br>D = 3.6 × 0.7071<br>D = 2.55 cm'}
   ]});
-  examPart(body,'(d) 3 marks','Kenji plots D against [[1|√V]]. Explain why the graph is a straight line through the origin, and how he can find the spacing d of the atoms from it.',[
+  examPart(body,'(f) 3 marks','Kenji plots D against [[1|√V]]. Explain why the graph is a straight line through the origin, and how he can find the spacing d of the atoms from it.',[
     'eV = [[p²|2m<sub>e</sub>]] and λ = [[h|p]], so λ = [[h|√(2m<sub>e</sub>eV)]], so λ ∝ [[1|√V]].',
     'For small angles θ ≈ [[λ|d]] and D ≈ 2Lθ, so D = [[2Lh|d√(2m<sub>e</sub>e)]] × [[1|√V]]: the form y = mx, a straight line through the origin.',
     'd = [[2Lh|gradient × √(2m<sub>e</sub>e)]].'
   ]);
-  body.appendChild(mk('p','sub','(e) 2 marks'));
+  body.appendChild(mk('p','sub','(g) 2 marks'));
   createCalc({host:body,questions:[
     {q:'The gradient of Kenji’s line is 1.61 m V<sup>½</sup>. Determine d.',unit:'m',answer:2.14e-10,working:'gradient = 1.61 m V<sup>½</sup><br>L = 0.140 m<br>d = ?||d = [[2Lh|gradient × √(2m<sub>e</sub>e)]]<br>d = [[2 × 0.140 × 6.63 × 10⁻³⁴|1.61 × 5.399 × 10⁻²⁵]]<br>d = [[1.856 × 10⁻³⁴|8.692 × 10⁻²⁵]]<br>d = 2.14 × 10⁻¹⁰ m'}
   ]});
-  examPart(body,'(f) 3 marks','State and explain what happens to the rings when the accelerating potential difference is increased.',[
+  examPart(body,'(h) 2 marks','The accepted spacing of these atoms is 2.13 × 10⁻¹⁰ m. Explain how Kenji’s result supports the de Broglie hypothesis.',[
+    'Kenji’s d, found using the de Broglie wavelength λ = [[h|p]] of the electrons, is (almost) the same as the accepted spacing.',
+    'This is what is expected if de Broglie were correct: the electrons diffract with the wavelength the hypothesis predicts.'
+  ]);
+  examPart(body,'(i) 3 marks','State and explain what happens to the rings when the accelerating potential difference is increased.',[
     'The electrons gain more kinetic energy, so their (maximum) momentum (and velocity) increases.',
     'λ = [[h|p]], so the de Broglie wavelength of the electrons decreases.',
     'So the diffraction angle is smaller and the diameter of the rings decreases (the rings get closer together).'
   ]);
-  examPart(body,'(g) 6 marks','Describe how Kenji could measure the diameter of a ring accurately and use his results to determine d. Include one safety precaution.',[
+  examPart(body,'(j) 6 marks','Describe how Kenji could measure the diameter of a ring accurately and use his results to determine d. Include one safety precaution.',[
     'Set V on the supply and read it; darken the room so the rings show clearly.',
     'Use vernier calipers (or dividers transferred to a ruler, or a flexible tape) because the screen is curved; this also gives a smaller resolution than a ruler.',
     'Measure the diameter of the ring and halve it for the radius if needed, rather than measuring from the centre.',
@@ -325,7 +336,7 @@ const GS={xMin:0,xMax:64,yMin:-3,yMax:2,xTicks:[0,8,16,24,32,40,48,56,64],yTicks
     'Plot D against [[1|√V]], draw a line of best fit through the origin, and d = [[2Lh|gradient × √(2m<sub>e</sub>e)]].',
     'Safety: switch off the high-voltage supply before changing connections / do not touch the terminals while it is on.'
   ]);
-  examPart(body,'(h) 2 marks','State why the distance from the graphite to the screen must stay the same for every reading, and why the tube must be evacuated.',[
+  examPart(body,'(k) 2 marks','State why the distance from the graphite to the screen must stay the same for every reading, and why the tube must be evacuated.',[
     'D = 2L tan θ, so D depends on L as well as on λ; L must be fixed (and known) for D to change only because of V, and L appears in the gradient.',
     'Without a vacuum the electrons would collide with gas molecules and be scattered or stopped, so no clear pattern would form.'
   ]);
