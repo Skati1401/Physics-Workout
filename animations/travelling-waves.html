@@ -524,6 +524,10 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
                IAL, IB: lambda and T from the two graphs, then the speed (IB P2 HL Nov 2006 QB3(a)(ii), May 2010 TZ2 QB2 Part 1(d)(i); WPH12 Oct 2023 Q5).
        draw    sketch the wave after a change of frequency, speed or amplitude (4PH0/1P May 2015 Q13(a)(ii), May 2016 Q3(b)(iii); 4PH1/1P Nov 2020 Q8(b)(iii)).
        comp    IAL, IB: a compression, a rarefaction or (IAL) the greatest or least pressure on a displacement-distance graph (WPH12 Oct 2019 Q19(a)(i), (a)(ii)).
+       pd      IAL, IB (21 Nov 2026, TODO.md 7k): the phase difference between coils P and Q, in degrees or radians, from their distance apart and
+               the wavelength, both read from the graph (WPH12 June 2023 Q6, Oct 2020 Q2, Jan 2022 Q9, Jan 2026 Q5; IB P1 SL May 2018 TZ2 Q17,
+               P1 HL May 2017 TZ1 Q12), and the other way round: drag Q to the nearest coil with a given phase difference (IB P1 HL Nov 2021 Q11,
+               Nov 2020 Q11; IB P2 May 2023 TZ1 Q3(a)(iv); P2 HL May 2012 TZ2 QB4 Part 1(c)(iii)).
        quarter IAL, IB: where a crest is a quarter or half a period later (IB P2 HL May 2005 TZ1 QB2 Part 1(e), Nov 2004 QB4 Part 1(b)(iv), May 2007 TZ1 QB2 Part 1(b)(ii)).
        pol     IAL: sketch of intensity against angle for a turned filter (WPH12 June 2021 Q16(b), Oct 2025 Q18(a)(ii), Jan 2021 Q18(a), June 2024 Q11). */
   function sizeView(svg, wide, tall){
@@ -645,7 +649,10 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     if(k==='quarter'){ x=Q.xC+W.v*(T-Q.t0); g+=txt(ax.gx(x),ax.gy(A)-7,'C',{a:'middle',fs:13,w:700,c:'var(--ink)',halo:1});
       if(Q.choice!=null) g+=ln(ax.gx(Q.choice),R.y,ax.gx(Q.choice),R.y+R.h,'var(--accent)',1.6,' stroke-dasharray="5 4"')+txt(ax.gx(Q.choice),R.y+R.h-6,'✕',{a:'middle',fs:16,w:700,c:'var(--accent)'});
       if(done && !Q.ok) g+=ln(ax.gx(Q.target),R.y,ax.gx(Q.target),R.y+R.h,'var(--good)',2); }
-    [[!pr&&ks5()?S.xQ:null,'var(--qcol)'],[xP,'var(--pcol)']].forEach(function(m){ if(m[0]==null) return;
+    if(k==='pd' && done){ xa=ax.gx(Q.xP); xb=ax.gx(Q.xP+Q.dist);
+      if(Q.place && !Q.ok) g+=ln(xb,R.y,xb,R.y+R.h,'var(--good)',2);
+      g+=dblArrow(xa,y0,xb,y0,'var(--topic)',1.8)+txt((xa+xb)/2,y0-5,sig(Q.dist,3)+' m',{a:'middle',fs:12.5,c:'var(--topic)',w:600,halo:1}); }
+    [[pr?(Q&&Q.xQ!=null?Q.xQ:null):(ks5()?S.xQ:null),'var(--qcol)'],[xP,'var(--pcol)']].forEach(function(m){ if(m[0]==null) return;
       g+=ln(ax.gx(m[0]),127,ax.gx(m[0]),R.y+R.h,m[1],1,' stroke-dasharray="3 4" opacity=".6"')+'<circle cx="'+f1(ax.gx(m[0]))+'" cy="'+f1(ax.gy(psi(m[0],T,W)*100))+'" r="4.6" fill="'+m[1]+'" stroke="var(--panel)" stroke-width="1.2"/>'; });
     LY.ax=ax; return g;
   }
@@ -686,7 +693,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function waveSVG(){
     var pr=predict(), W=WV(), T=TV(), k=pr&&Q?Q.kind:'', done=pr&&Q.phase==='done', hide=k==='comp'&&!done, g='';
     var WS=k==='draw'&&done?{type:'T',f:1,A:Q.tA/100,v:Q.tLam,steady:true}:W;
-    g+=ruleSVG()+springSVG(WS,k==='draw'&&done?2.5:T,hide,pr?Q.xP:S.xP,!pr&&ks5()?S.xQ:null)+handSVG(WS,k==='draw'&&done?2.5:T);
+    g+=ruleSVG()+springSVG(WS,k==='draw'&&done?2.5:T,hide,pr?Q.xP:S.xP,pr?(Q.xQ!=null?Q.xQ:null):(ks5()?S.xQ:null))+handSVG(WS,k==='draw'&&done?2.5:T);
     if(W.type==='L' && !hide && !E.meas && k!=='dir' && k!=='comp') g+=crLabels(W,T);
     if(k==='comp' && done) Q.pts.forEach(function(p){ g+=txt(X(p.x),99,p.L,{a:'middle',fs:13,w:700,c:p.L===Q.right?'var(--good)':'var(--ink-soft)'}); });
     g+=graphX(W,T,pr);
@@ -764,7 +771,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var pr=predict(), W=WV(), T=TV(), k=pr&&Q?Q.kind:'', ask=pr&&Q&&Q.phase==='ask', wv=!pol(), xP=pr?(Q?Q.xP:null):S.xP, R=LY.GX, ax=LY.ax;
     function px(x){ return f1(X(x+(W.type==='L'?psi(x,T,W):0))); }
     knob(hP,wv&&xP!=null,!pr,tagHTML('P','var(--pcol)'),xP!=null?'translate('+px(xP)+',0)':'',xP);
-    knob(hQ,wv&&!pr&&ks5(),true,tagHTML('Q','var(--qcol)'),'translate('+px(S.xQ)+',0)',S.xQ);
+    var xQ=pr?(Q&&Q.xQ!=null?Q.xQ:null):(ks5()?S.xQ:null);
+    knob(hQ,wv&&xQ!=null,pr?!!(ask&&Q.place):true,tagHTML('Q','var(--qcol)'),xQ!=null?'translate('+px(xQ)+',0)':'',xQ);
     knob(hD,wv&&k==='draw',ask,'<circle class="ring" r="9" fill="var(--accent)" stroke="var(--panel)" stroke-width="2"/><circle r="20" fill="transparent"/>',k==='draw'?'translate('+f1(ax.gx(Q.d.lam/4))+','+f1(ax.gy(Q.d.A))+')':'',k==='draw'?Q.d.lam:null);
     knob(hM,wv&&k==='quarter',ask,'<rect class="ring" x="'+R.x+'" y="'+R.y+'" width="'+R.w+'" height="'+R.h+'" fill="transparent" stroke="none" style="cursor:crosshair"/>','',k==='quarter'&&Q.choice!=null?Q.choice:null);
     var P=LY.P, a=PO.ang*PI/180;
@@ -779,13 +787,13 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     $('#tw-gl').textContent=PO.n===2?'Angle of filter 2':'Angle of the filter';
     $('#tw-eye').innerHTML='Animations &middot; waves &middot; '+(lvl()==='igcse'?'IGCSE 3.2 to 3.6':lvl()==='ial'?(po?'IAL 49':'IAL 33 to 37'):'IB C.2');
     [['#tw-typelab',ex],['#tw-type',ex],['#tw-sprlab',ex],['#tw-spr',ex],['#tw-srclab',po&&!pr],['#tw-src',po&&!pr],['#tw-nlab',po&&!pr],['#tw-n',po&&!pr],['#tw-fbox',ex],['#tw-abox',ex],['#tw-gbox',po&&!pr],
-     ['#tw-step',ex&&!E.on],['#tw-prs',ex&&k5&&S.type==='L'&&!E.on],['#tw-exp',!pr],['#tw-reset',!pr],['#tw-slow',true],['#tw-new',pr],['#tw-guess',pr&&Q&&Q.kind==='read'],['#tw-sliders',!pr],
+     ['#tw-step',ex&&!E.on],['#tw-prs',ex&&k5&&S.type==='L'&&!E.on],['#tw-exp',!pr],['#tw-reset',!pr],['#tw-slow',true],['#tw-new',pr],['#tw-guess',pr&&Q&&Q.typed],['#tw-sliders',!pr],
      ['#tw-partlab',lvl()==='ial'],['#tw-part',lvl()==='ial'],['#tw-tablewrap',ex&&E.on],['#tw-stats',!pr]].forEach(function(p){ $(p[0]).hidden=!p[1]; });
     $('.side').classList.toggle('exp',ex&&E.on); statsEl.className='stats'+(k5&&!po?' six':'');
     playBtn.innerHTML=pr?'&#9654; Go':(running||E.run?'&#10074;&#10074; Pause':'&#9654; Play'); playBtn.disabled=pr&&(!Q||Q.phase!=='ask');
     fIn.disabled=aIn.disabled=E.on&&!po;
     if(pr){ working.hidden=!(Q&&Q.phase==='done'&&Q.work); if(!working.hidden){ $('#tw-eq1').innerHTML=FR(Q.work); $('#tw-eq2').hidden=$('#tw-eq3').hidden=true; $('#tw-eq4').textContent=''; }
-      if(Q&&Q.phase==='ask') note.innerHTML=Q.text+(Q.kind==='read'?' Type your answer, then press Go.':' Then press Go.'); draw(); return; }
+      if(Q&&Q.phase==='ask') note.innerHTML=Q.text+(Q.typed?' Type your answer, then press Go.':' Then press Go.'); draw(); return; }
     if(po){ polStats();
       working.hidden=true;
       note.innerHTML=E.on?'Experiment: press Play (or turn the filter yourself) and the reading is plotted every 10°.':
@@ -870,7 +878,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       q.dur=0.5; q.rate=0.25; q.step=function(el){ q.t=q.t0+el; }; }
     return q; };
   GEN.read=function(){
-    var k5=ks5(), u=US(), lam, f, v, T, q={};
+    var k5=ks5(), u=US(), lam, f, v, T, q={typed:true};
     do{ lam=pk(k5?[0.4,0.6,0.8,1,1.2,1.6]:[0.4,0.6,0.8,1,1.2]); T=pk([0.4,0.5,0.8,1,2]); f=k5?1/T:pk([1,1.5,2,2.5]); v=f*lam; }while(v>2.45||v<0.29);
     q.W={type:'T',f:f,A:pk([0.08,0.1,0.12]),v:v,steady:true}; q.t0=2.5/f; q.dur=1/f; q.rate=q.dur/2; q.step=function(el){ q.t=q.t0+el; };
     if(k5){ q.showT=true; q.TW=T<=0.5?2:4; q.xP=pk([0.5,1]); q.unit=u; q.answer=v;
@@ -894,6 +902,36 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       else if(c && c.kind!==tg) s='At '+ch+' the coils have '+(tg===0?'spread out: a rarefaction. ':'crowded together: a compression. ');
       return s+'At '+q.right+' the coils on its left are displaced to the '+(tg===0?'right and those on its right to the left, so they crowd together: a compression'+(ask==='pmax'?', where the pressure is greatest.':'.'):'left and those on its right to the right, so they spread out: a rarefaction'+(ask==='pmin'?', where the pressure is least.':'.')); };
     q.dur=0; return q; };
+  var pdn=0;
+  GEN.pd=function(){
+    var deg=pk(lvl()==='ial'?[true,false]:[false,false,true]), full=deg?360:2*PI, ft=deg?'360°':'2π', fu=deg?'360°':'2π rad', PT=['2π','π/4','π/2','3π/4','π','5π/4','3π/2','7π/4','2π'];
+    var place=(pdn++)%2===1, lam=pk([0.8,1.2,1.6]), f=pk([0.5,1,2]), n8, m, d, xP, q={};
+    function vt(n){ return deg?(n*45)+'°':PT[n]; }
+    if(place){ n8=pk(lam===1.2?[2,4,8]:[1,2,4,8]); } else { n8=pk(lam===1.2?[2,4,6,10,12]:[1,2,3,4,5,6,7,10,12]); }
+    m=n8%8; d=+(lam*n8/8).toFixed(2); xP=+(0.2+0.1*Math.floor(Math.random()*(Math.min(10,Math.round((2.6-d)/0.1))+1))).toFixed(1);
+    q.xP=xP; q.dist=d; q.W={type:'T',f:f,A:0.08,v:lam*f,steady:true}; q.t0=2.5/f; q.dur=1/f; q.rate=q.dur/2; q.step=function(el){ q.t=q.t0+el; };
+    if(place){ var word=n8===8?'is in phase with P':(n8===4&&lvl()==='ial'&&Math.random()<0.5?'is in antiphase with P':'has a phase difference of '+vt(n8)+(deg?'':' rad')+' from P');
+      q.place=true; q.xQ=+(xP+0.05).toFixed(2); q.target=+(xP+d).toFixed(2); q.first='Drag Q first.';
+      q.text='The wave is travelling to the right. Drag Q to the nearest coil to the right of P that '+word+'. You can also use the arrow keys.';
+      q.check=function(){ return Math.abs(q.choice-q.target)<=0.051; };
+      q.ans='Q is '+sig(d,3)+' m from P, at '+sig(q.target,3)+' m.';
+      q.work='λ = '+sig(lam,3)+' m<br>phase difference = [[distance P to Q|λ]] × '+ft+'<br>'+vt(n8)+' = [[distance P to Q|'+sig(lam,3)+']] × '+ft+'<br>distance P to Q = [['+vt(n8)+'|'+ft+']] × '+sig(lam,3)+'<br>distance P to Q = '+sig(d,3)+' m';
+      q.why=function(ch){ var e=ch-xP;
+        return (Math.abs(-e-d)<=0.051?'That coil has the right phase difference, but it is to the left of P. ':n8<8&&Math.abs(e-lam)<=0.051?'A coil one wavelength away is in phase with P. ':n8===8&&Math.abs(e-lam/2)<=0.051?'A coil half a wavelength away is in antiphase with P: it is always moving the opposite way. ':'')+
+          'One whole wavelength, '+sig(lam,3)+' m on the graph, is a phase difference of '+fu+'. '+(n8===8?'Coils in phase are a whole number of wavelengths apart, so the nearest is one wavelength from P.':
+          (n8===4?'Coils in antiphase are half a wavelength apart':'So '+vt(n8)+(deg?'':' rad')+' is '+['','an eighth','a quarter','','half'][n8]+' of a wavelength')+': '+sig(d,3)+' m from P.'); }; }
+    else { var tol=deg?5:0.06, ans=deg?m*45:m*PI/4, big=deg?n8*45:n8*PI/4, us=deg?'°':' rad', sg=function(x){ return deg?String(x):sig(x,3); };
+      q.typed=true; q.unit=deg?'°':'rad'; q.xQ=+(xP+d).toFixed(2); q.answer=ans;
+      q.text='Coils P and Q are marked on the wave. Find the phase difference between P and Q, in '+(deg?'degrees':'radians')+'.';
+      q.check=function(){ var c=q.choice, r=((c-ans)%full+full)%full, r2=((c+ans)%full+full)%full; return Math.min(r,full-r)<=tol || Math.min(r2,full-r2)<=tol; };
+      q.ans='The answer is '+sg(ans)+us+(deg?'':' ('+PT[m]+' rad)')+'.';
+      q.work='λ = '+sig(lam,3)+' m<br>distance P to Q = '+sig(d,3)+' m<br>phase difference = [[distance P to Q|λ]] × '+ft+'<br>phase difference = [['+sig(d,3)+'|'+sig(lam,3)+']] × '+ft+'<br>phase difference = '+sg(big)+us+
+        (n8>8?'<br>phase difference = '+sg(ans)+us+' (whole cycles taken away)':'');
+      q.why=function(c){ var other=deg?m*PI/4:m*45, otol=deg?0.06:5;
+        return (Math.abs(c-other)<=otol?'That is the phase difference in '+(deg?'radians: the question asks for degrees. ':'degrees: the question asks for radians. '):Math.abs(c-d/lam)<=0.011||Math.abs(c-m/8)<=0.011?'That is the fraction of a cycle between P and Q: multiply it by '+fu+'. ':'')+
+          'Read both distances from the graph: one wavelength is '+sig(lam,3)+' m, and P and Q are '+sig(d,3)+' m apart. One whole wavelength is a phase difference of '+fu+'.'+
+          (n8>8?' Whole cycles make no difference, so '+ft+' is taken away.':'')+(m===4?' P and Q are in antiphase: they always move opposite ways.':''); }; }
+    return q; };
   GEN.quarter=function(){
     var lam=pk([0.8,1,1.2,1.6]), f=pk([0.5,1,2]), fr=pk([0.25,0.5]), q={xC:lam/4, target:lam/4+fr*lam}, fw=fr===0.25?'a quarter of a period':'half a period';
     q.W={type:'T',f:f,A:0.08,v:lam*f,steady:true}; q.t0=2.5/f; q.dur=fr/f; q.rate=q.dur/2; q.step=function(el){ q.t=q.t0+el; };
@@ -927,21 +965,21 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         'The light reaching the turned filter is plane polarised. When its plane of oscillation is parallel to the axis of the filter it all passes; at 90° to the axis none passes.';
       return (ch==='half'?'The reading does not stop at half. ':ch==='flat'?'A steady reading would mean the light reaching the filter is unpolarised. ':q.right==='flat'&&ch!==q.right?'That would happen if the light reaching the filter were plane polarised. ':'')+s; };
     q.dur=3; q.rate=1; q.step=function(el){ q.ang=q.a0+90*el/3; }; return q; };
-  function kinds(){ return pol()?['pol']:ks5()?['dir','read','comp','quarter','draw']:['dir','read','draw']; }
+  function kinds(){ return pol()?['pol']:ks5()?['dir','read','pd','comp','quarter','draw']:['dir','read','draw']; }
   function newQ(){ var ks=kinds(), k=ks[qn%ks.length]; qn++; cancelAnimationFrame(raf); Q=GEN[k](); Q.kind=k; Q.phase='ask'; Q.choice=null; Q.el=0; if(Q.t0!=null) Q.t=Q.t0;
     ansIn.value=''; ansIn.disabled=false; if(Q.unit) $('#tw-ansu').textContent=Q.unit; refresh(); drawPicks(); }
   function go(){
     if(!Q || Q.phase!=='ask') return; var k=Q.kind, v;
-    if(k==='read'){ v=parseFloat(ansIn.value); if(isNaN(v)){ note.innerHTML=Q.text+' <b>Type your answer first.</b>'; return; } Q.choice=v; ansIn.disabled=true; }
+    if(Q.typed){ v=parseFloat(ansIn.value); if(isNaN(v)){ note.innerHTML=Q.text+' <b>Type your answer first.</b>'; return; } Q.choice=v; ansIn.disabled=true; }
     else if(k==='draw'){ if(Math.abs(Q.d.lam-Q.W.v)<1e-6&&Math.abs(Q.d.A-Q.W.A*100)<1e-6){ note.innerHTML=Q.text+' <b>Drag the dot first.</b>'; return; } }
-    else if(Q.choice==null){ note.innerHTML=Q.text+' <b>'+(k==='quarter'?'Mark the graph first.':'Click your answer in the picture first.')+'</b>'; return; }
+    else if(Q.choice==null){ note.innerHTML=Q.text+' <b>'+(Q.first||(k==='quarter'?'Mark the graph first.':'Click your answer in the picture first.'))+'</b>'; return; }
     Q.phase='run'; refresh(); placeHandles(); if(Q.dur>0) loop(); else finishQ();
   }
   function finishQ(){
     var k=Q.kind; Q.phase='done';
-    Q.ok=k==='read'?Math.abs(Q.choice-Q.answer)<=Math.max(0.05*Q.answer,0.011):k==='quarter'?Math.abs(Q.choice-Q.target)<=0.076:k==='draw'?(Q.lamOK()&&Q.ampOK()):Q.choice===Q.right;
+    Q.ok=Q.check?Q.check():k==='read'?Math.abs(Q.choice-Q.answer)<=Math.max(0.05*Q.answer,0.011):k==='quarter'?Math.abs(Q.choice-Q.target)<=0.076:k==='draw'?(Q.lamOK()&&Q.ampOK()):Q.choice===Q.right;
     refresh(); drawPicks();
-    note.innerHTML='<b>'+(Q.ok?'✓ Correct.':'✗ Not quite.')+'</b> '+(typeof Q.why==='function'?Q.why(Q.choice):Q.why)+(k==='read'?' '+Q.ans:'');
+    note.innerHTML='<b>'+(Q.ok?'✓ Correct.':'✗ Not quite.')+'</b> '+(typeof Q.why==='function'?Q.why(Q.choice):Q.why)+(Q.typed?' '+Q.ans:'');
   }
 
   // ---------- wiring ----------
@@ -950,7 +988,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   onPick(svg, function(id){ if(!Q || Q.phase!=='ask') return; Q.choice=id; drawPicks(); });
   function moveDrag(p){
     var R=LY.GX, ask=Q&&Q.phase==='ask';
-    if(drag==='tw-hP'||drag==='tw-hQ'){ var x=clamp(snap((p.x-LY.X0)/LY.SX,0.05),0.1,2.9); x=+x.toFixed(2); if(drag==='tw-hP') S.xP=x; else S.xQ=x; refresh(); }
+    if(drag==='tw-hP'||drag==='tw-hQ'){ var x=clamp(snap((p.x-LY.X0)/LY.SX,0.05),0.1,2.9); x=+x.toFixed(2);
+      if(predict()){ if(ask&&Q.place&&drag==='tw-hQ'){ Q.xQ=Q.choice=x; draw(); } return; }
+      if(drag==='tw-hP') S.xP=x; else S.xQ=x; refresh(); }
     else if(drag==='tw-hD'&&ask){ Q.d.lam=+clamp(snap(4*(p.x-R.x)/R.w*XL,0.1),0.2,3.2).toFixed(1); Q.d.A=clamp(Math.round((R.y+R.h/2-p.y)/4),1,15); draw(); }
     else if(drag==='tw-hM'&&ask){ Q.choice=+clamp(snap((p.x-R.x)/R.w*XL,0.05),0,XL).toFixed(2); draw(); }
     else if(drag==='tw-hF'){ var P=LY.P, a=Math.atan2(p.x-P.cx,-(p.y-P.fy))*180/PI; PO.ang=((snap(a,5)%360)+360)%360; stop(); logPol(); refresh(); }
@@ -960,7 +1000,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   ['pointerup','pointercancel'].forEach(function(n){ svg.addEventListener(n, function(){ drag=null; }); });
   svg.addEventListener('keydown', function(e){
     var h=e.target.closest('.knob'), dx=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0, dy=e.key==='ArrowUp'?1:e.key==='ArrowDown'?-1:0, s=dx||dy, ask=Q&&Q.phase==='ask'; if(!h || !s) return; e.preventDefault();
-    if(h.id==='tw-hP'){ S.xP=+clamp(S.xP+s*0.05,0.1,2.9).toFixed(2); refresh(); } else if(h.id==='tw-hQ'){ S.xQ=+clamp(S.xQ+s*0.05,0.1,2.9).toFixed(2); refresh(); }
+    if(predict()&&(h.id==='tw-hP'||h.id==='tw-hQ')){ if(ask&&Q.place&&h.id==='tw-hQ'){ Q.xQ=Q.choice=+clamp(Q.xQ+s*0.05,0.1,2.9).toFixed(2); draw(); } }
+    else if(h.id==='tw-hP'){ S.xP=+clamp(S.xP+s*0.05,0.1,2.9).toFixed(2); refresh(); } else if(h.id==='tw-hQ'){ S.xQ=+clamp(S.xQ+s*0.05,0.1,2.9).toFixed(2); refresh(); }
     else if(h.id==='tw-hD'&&ask){ Q.d.lam=+clamp(Q.d.lam+dx*0.1,0.2,3.2).toFixed(1); Q.d.A=clamp(Q.d.A+dy,1,15); draw(); }
     else if(h.id==='tw-hM'&&ask){ Q.choice=+clamp((Q.choice==null?1.5:Q.choice)+s*0.05,0,XL).toFixed(2); draw(); }
     else if(h.id==='tw-hF'){ PO.ang=((PO.ang+s*5)%360+360)%360; stop(); logPol(); refresh(); }
