@@ -25,7 +25,7 @@ Ask Alex for the spec page first. Build to the size rule in `CLAUDE.md`, add the
 
 - [x] **4p** Year 9 Space workout page `space.html` with the 8 tabs, framing the animations; card on `year-9.html` (after 4m to 4o; added 16 Nov 2026). Done 16 Nov 2026, Draft (🔍 in `tools/REVIEW.md`); decisions in the claude.ai project doc `claude/8l-batch-e-2026-11-16.md`.
 - [ ] **4r** IGCSE Unit 8: reuse three Year 9 8L animations in 8a `universe-and-stars.html` (which frames only `star-life-cycle.html` so far), each with a card on `animations/igcse.html` under Unit 8 and `?level=igcse`: `animations/orbits.html` in Gravity and Orbits (8.4, 8.5; it has no v = 2πr/T, 8.6), `animations/weight-on-planets.html` in Gravity and Orbits (8.3; W = mg, 1.18), `animations/zoom-out.html` in The Universe (8.2; its light-year work is beyond 4PH1). They were pitched at Year 9: check the wording and Questions are at IGCSE level, or give them an IGCSE level, before framing (Alex, 16 Nov 2026; do when Unit 8 is taught).
-- [ ] **4s** 3a `waves.html`: frame `animations/travelling-waves.html?level=igcse` (7i, 19 Nov 2026) on the Describing Waves tab (IGCSE 3.2 to 3.6), as the other workouts frame their animations (left from 7i, added 20 Nov 2026).
+- [x] **4s** (done 21 Nov 2026: an Explore card, “A wave on a spring”, first on the tab) 3a `waves.html`: frame `animations/travelling-waves.html?level=igcse` (7i, 19 Nov 2026) on the Describing Waves tab (IGCSE 3.2 to 3.6), as the other workouts frame their animations (left from 7i, added 20 Nov 2026).
 
 ## 5. Build: core practicals
 
