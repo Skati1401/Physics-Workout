@@ -14,7 +14,7 @@
    reserved, wording only) and the IAL Past Paper Index with its mark schemes (WPH13 June 2019 Q3(a)(b): measuring the
    ring on a curved screen, interference as a wave property; WPH13 June 2023 Q3(a): vernier calipers, reserved; WPH12
    Oct 2022 Q11, Oct 2023 Q15(a)(b)(iii): diffraction and interference, regular structure, λ similar to the atomic spacing,
-   higher p.d. → more momentum → shorter λ → smaller rings, reserved). No question copies a paper's scenario or numbers. */
+   higher p.d. → more momentum → shorter λ → smaller rings, reserved), and the IB mark schemes P2 HL Nov 2007 A4 (concentric rings with a central bright spot; v up, p up, λ down) and May 2022 TZ2 Q9 (wave properties; sin θ = λ/D, reserved). No question copies a paper's scenario or numbers. */
 function examPart(body,head,q,bullets){
   body.appendChild(mk('p','sub',head));
   body.appendChild(mk('p','',FR(q)));
@@ -289,7 +289,7 @@ const GS={xMin:0,xMax:64,yMin:-3,yMax:2,xTicks:[0,8,16,24,32,40,48,56,64],yTicks
   const body=act('exam','Exam style','Electron diffraction','Kenji accelerates electrons through a potential difference V and fires them at a thin graphite film in an evacuated tube. He measures the diameter D of one ring on a screen 14.0 cm from the graphite. One reading is missing. '+CONSTS);
   body.appendChild(resTable(['V (kV)','1.5','2.0','3.0','4.0','6.0'],[['D (cm)','4.2','3.6','2.9',null,'2.1']]));
   examPart(body,'(a) 3 marks','Describe the pattern on the screen and explain how it shows that electrons have wave properties.',[
-    'Concentric (bright) rings around a central spot.',
+    '(Alternate light and dark) concentric rings with a central bright spot.',
     'The electrons are diffracted by the regular arrangement of atoms in the graphite, and the diffracted electrons interfere (superpose).',
     'Diffraction and interference are wave properties, so the electrons behave as waves.',
     'The rings are clear because the de Broglie wavelength of the electrons is similar to the spacing of the atoms.'
