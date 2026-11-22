@@ -639,6 +639,9 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 .graph .g-sec{font:700 16px var(--f-mono);fill:var(--ink)}
 .graph .g-tan{stroke:var(--solid);stroke-width:2.8}
 .graph .tan-h{stroke:var(--solid)} .graph .tan-h.on{fill:var(--solid)}
+.graph .tan-hit{stroke:transparent;stroke-width:28;cursor:grab}
+.graph .tan-grip{cursor:grab} .graph .tan-grip rect{fill:var(--solid-soft);stroke:var(--solid);stroke-width:1.6} .graph .tan-grip line{stroke:var(--solid);stroke-width:1.6}
+.graph.is-sliding,.graph.is-sliding .tan-hit,.graph.is-sliding .tan-grip{cursor:grabbing}
 .graph .g-pt{fill:var(--ink)}
 .graph .g-ptlab{font:700 15px var(--f-mono);fill:var(--ink)}
 .graph .an-ring.is-shown{stroke-dasharray:6 4}
@@ -1904,6 +1907,11 @@ const TANGENT=(function(){
       g.innerHTML=lg.svg.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
       const gx=lg.gx,gy=lg.gy,L=lineOf(s);
       g.insertAdjacentHTML('beforeend',rulerSVG(gx,gy,o,L.m,L.c,'g-ruler g-tan'+(api.shown()?' is-shown':'')));
+      if(!api.locked){   // grab the line anywhere to slide it like a ruler; a grip in the middle shows where
+        const E=clipLine(o,L.m,L.c),mx=(gx(s.a[0])+gx(s.b[0]))/2,my=(gy(s.a[1])+gy(s.b[1]))/2,deg=Math.atan2(gy(s.b[1])-gy(s.a[1]),gx(s.b[0])-gx(s.a[0]))*180/Math.PI;
+        g.insertAdjacentHTML('beforeend','<line class="tan-hit" x1="'+gx(E[0][0])+'" y1="'+gy(E[0][1])+'" x2="'+gx(E[1][0])+'" y2="'+gy(E[1][1])+'"/>'+
+          '<g class="tan-grip" transform="translate('+mx.toFixed(1)+' '+my.toFixed(1)+') rotate('+deg.toFixed(1)+')"><rect x="-22" y="-8" width="44" height="16" rx="5"/>'+
+          [-8,0,8].map(x=>'<line x1="'+x+'" x2="'+x+'" y1="-4" y2="4"/>').join('')+'</g>');}
       if(api.locked||t.showPt)g.insertAdjacentHTML('beforeend','<circle class="g-pt" cx="'+gx(t.x0)+'" cy="'+gy(t.y0)+'" r="5"/>');
       if(!api.locked)[s.a,s.b].forEach((p,i)=>g.insertAdjacentHTML('beforeend','<circle class="bf-h tan-h'+(i===s.act?' on':'')+'" cx="'+gx(p[0])+'" cy="'+gy(p[1])+'" r="9"/>'));
       svg.setAttribute('tabindex','0');svg.classList.toggle('mk-svg',!api.locked);
@@ -1917,11 +1925,11 @@ const TANGENT=(function(){
         const ax=gx(s.a[0]),ay=gy(s.a[1]),bx=gx(s.b[0]),by=gy(s.b[1]),dl=Math.abs((bx-ax)*(ay-p.y)-(ax-p.x)*(by-ay))/Math.hypot(bx-ax,by-ay);
         try{svg.setPointerCapture(ev.pointerId);}catch(e){}ev.preventDefault();
         if(Math.min(da,db)<=16){drag={end:da<=db?0:1};return;}
-        if(dl<=12){drag={slide:toData(p)};return;}
+        if(dl<=16){drag={slide:toData(p)};svg.classList.add('is-sliding');return;}
         drag={end:da<=db?0:1};put(drag.end,toData(p));};
       svg.onpointermove=api.locked?null:ev=>{if(!drag)return;const p=api.pt(ev);if(!p)return;const q=toData(p);
         if(drag.slide){const d=[q[0]-drag.slide[0],q[1]-drag.slide[1]];drag.slide=q;slide(d[0],d[1]);}else put(drag.end,q);};
-      svg.onpointerup=svg.onpointercancel=()=>{drag=null;};
+      svg.onpointerup=svg.onpointercancel=()=>{drag=null;svg.classList.remove('is-sliding');};
       svg.onclick=null;
       svg.onkeydown=api.locked?null:ev=>{
         if(ev.key===' '||ev.key==='Enter'){ev.preventDefault();api.set({a:s.a,b:s.b,act:1-s.act});svg.focus({preventScroll:true});return;}
@@ -1948,7 +1956,7 @@ function tanTask(o,f,x0,curve,at){
   const h=(o.xMax-o.xMin)*1e-4,m=(f(x0+h)-f(x0-h))/(2*h);
   return {q:'',o:Object.assign({},o,{H:400}),f:f,x0:x0,y0:f(x0),m:m,tol:0.10,curve:curve,at:at,aria:'The graph, with a line to move into place as the tangent'};
 }
-const TAN_NOTE='Drag an end of the blue line to turn it, or drag the middle of the line to slide it. Keyboard: arrow keys move an end, Space swaps ends, Shift + arrows slide the line.';
+const TAN_NOTE='Grab the blue line anywhere (or its grip) to slide it like a ruler; drag an end to turn it. Keyboard: arrow keys move an end, Space swaps ends, Shift + arrows slide the line.';
 // two points on a straight line y = mx + c, well apart, on the grid lines along x and inside the graph
 function twoOnLine(o,m,c){
   const L=clipLine(o,m,c),a=Math.min(L[0][0],L[1][0]),b=Math.max(L[0][0],L[1][0]),sp=o.xTicks[1]-o.xTicks[0],inset=(b-a)*0.06;
@@ -1977,12 +1985,12 @@ function tanGradPart(o,T,q,sym,u,ux,uy,top,bot,abs,negLab,hints){
 
 /* ---- velocity–time: a curved graph, the acceleration at one moment from a tangent ---- */
 const TVT=[
-  {who:'A car pulls away from traffic lights.',up:true,V:[20,24,30],tau:[8,10,12],x:[0,60,10,2],y:[0,35,5,1]},
-  {who:'{n} rides an electric scooter away from rest.',up:true,V:[8,10,12],tau:[4,5,6],x:[0,30,5,1],y:[0,14,2,0.4]},
-  {who:'A delivery drone climbs straight up from the ground.',up:true,V:[8,10,12],tau:[3,4,5],x:[0,25,5,1],y:[0,14,2,0.4]},
-  {who:'{n} jumps from a plane and falls before opening {his} parachute.',up:true,V:[50,55],tau:[5,6],x:[0,30,5,1],y:[0,60,10,2]},
-  {who:'The engine of a speedboat stops and it slows down.',up:false,V:[16,18,20],tau:[6,8,10],x:[0,40,5,1],y:[0,20,5,1]},
-  {who:'{n} stops pedalling and the bicycle slows down.',up:false,V:[8,10],tau:[10,12,15],x:[0,50,10,2],y:[0,12,2,0.4]}];
+  {obj:'the car',who:'A car pulls away from traffic lights.',up:true,V:[20,24,30],tau:[8,10,12],x:[0,60,10,2],y:[0,35,5,1]},
+  {obj:'the scooter',who:'{n} rides an electric scooter away from rest.',up:true,V:[8,10,12],tau:[4,5,6],x:[0,30,5,1],y:[0,14,2,0.4]},
+  {obj:'the drone',who:'A delivery drone climbs straight up from the ground.',up:true,V:[8,10,12],tau:[3,4,5],x:[0,25,5,1],y:[0,14,2,0.4]},
+  {obj:'{n}',who:'{n} jumps from a plane and falls before opening {his} parachute.',up:true,V:[50,55],tau:[5,6],x:[0,30,5,1],y:[0,60,10,2]},
+  {obj:'the speedboat',who:'The engine of a speedboat stops and it slows down.',up:false,V:[16,18,20],tau:[6,8,10],x:[0,40,5,1],y:[0,20,5,1]},
+  {obj:'the bicycle',who:'{n} stops pedalling and the bicycle slows down.',up:false,V:[8,10],tau:[10,12,15],x:[0,50,10,2],y:[0,12,2,0.4]}];
 function genTanVt(rnd){
   for(let k=0;k<200;k++){
     const S=pk(rnd,TVT),V=pk(rnd,S.V),tau=pk(rnd,S.tau),pe=person(rnd);
@@ -1992,9 +2000,9 @@ function genTanVt(rnd){
     if(t0==null)continue;
     const T=tanTask(o,f,t0,curve,'t = '+N(t0)+' s'),dec=!S.up;
     const fig=lineGraph(Object.assign({},o,{H:400,segments:[],extra:(gx,gy)=>polyl(gx,gy,curve,'g-cv'),label:'Velocity–time graph'})).svg;
-    return {title:dec?'Deceleration from a tangent':'Acceleration from a tangent',stem:S.who.replace('{n}',pe.n).replace('{his}',pe.his)+' The graph shows how the velocity changes. The line is curved, so the '+(dec?'deceleration':'acceleration')+' is changing.',parts:[
-      {type:'fit',kind:'tangent',q:'Draw a tangent to the curve at '+BV('t = '+N(t0)+' s')+'.',note:TAN_NOTE,task:T},
-      tanGradPart(o,T,'Use your tangent to find the '+(dec?'deceleration':'acceleration')+' at t = '+N(t0)+' s.','a','m/s²','s','m/s','change in velocity','time taken',dec,'deceleration',
+    return {title:dec?'Deceleration from a tangent':'Acceleration from a tangent',stem:S.who.replace('{n}',pe.n).replace('{his}',pe.his)+' The graph shows how the velocity changes.<br><b>By drawing a tangent to the curve, determine the '+(dec?'deceleration':'acceleration')+' of '+S.obj.replace('{n}',pe.n)+' at a time of '+N(t0)+' s.</b>',parts:[
+      {type:'fit',kind:'tangent',q:'Draw your tangent.',note:TAN_NOTE,task:T},
+      tanGradPart(o,T,'Now find the '+(dec?'deceleration':'acceleration')+' from the gradient of your tangent.','a','m/s²','s','m/s','change in velocity','time taken',dec,'deceleration',
         ['The '+(dec?'deceleration':'acceleration')+' at a moment is the gradient of the tangent at that moment.','Read two points on your tangent, as far apart as you can.','a = [[change in velocity|time taken]]'+(dec?'. A deceleration is the size of a negative acceleration.':'')])]};
   }
 }
@@ -2038,15 +2046,17 @@ function genTanCool(rnd){
     const C=coolSet(rnd),o=C.o;
     const X=pk(rnd,ticks(C.Tr+0.35*(C.T0-C.Tr),C.T0-0.2*(C.T0-C.Tr),2).map(v=>Math.round(v/2)*2));const tx=crossAt(C.f,0,40,X);
     if(tx==null||tx<3||tx>28)continue;
-    const T=tanTask(o,C.f,tx,C.curve,N(X)+' °C');
-    return {title:'Rate of cooling from a tangent',stem:C.stem,parts:[
+    const T=tanTask(o,C.f,tx,C.curve,N(X)+' °C'),one=rnd()<0.5;   // one: a single question, as in Jan 2022; else (i) draw, (ii) calculate, as in May 2025
+    return {title:'Rate of cooling from a tangent',stem:C.stem+(one?'<br>The rate of cooling is shown by the gradient of the graph. <b>By drawing a tangent to the curve, determine the rate of cooling of '+C.S.w+' at '+N(X)+' °C.</b>':''),parts:[
       {type:'num',onlyWith:'read',q:'Use the graph to find the time when the temperature is '+BV(N(X)+' °C')+'.',unit:'minutes',answer:tx,tol:0.5,marks:[null,[{y:X}]],
         fig:coolFig(C),figWork:coolFig(C,(gx,gy)=>guide(gx,gy,o,tx,X,'y')+dot(gx,gy,tx,X)),
         hints:['Go across from '+N(X)+' °C to the curve, then down.','One small square on the time axis is 1 minute.'],
         working:'one small square = 1 minute||read across from '+N(X)+' °C to the curve, then down<br>time = '+N(+tx.toFixed(1))+' minutes'},
-      {type:'fit',kind:'tangent',q:'Draw a tangent to the curve at '+BV(N(X)+' °C')+'.',note:TAN_NOTE,task:T},
-      tanGradPart(o,T,'Use your tangent to find the rate at which the temperature is falling at '+N(X)+' °C.','gradient','°C/min','minutes','°C','change in temperature','time taken',true,'rate of cooling',
-        ['The rate of cooling at one moment is the gradient of the tangent there.','Read two points on your tangent, as far apart as you can.','rate = [[change in temperature|time taken]]. Give it as a positive number: the rate at which the temperature falls.'])]};
+      {type:'fit',kind:'tangent',q:one?'Draw your tangent.':'On the graph, draw a tangent to the curve when the temperature is '+BV(N(X)+' °C')+'.',note:TAN_NOTE,task:T},
+      one?tanGradPart(o,T,'Now find the rate of cooling from the gradient of your tangent.','gradient','°C/min','minutes','°C','change in temperature','time taken',true,'rate of cooling',
+        ['The rate of cooling at one moment is the gradient of the tangent there.','Read two points on your tangent, as far apart as you can.','rate = [[change in temperature|time taken]]. Give it as a positive number: the rate at which the temperature falls.'])
+       :tanGradPart(o,T,'Calculate the gradient of the tangent to find the rate of temperature change of '+C.S.w+' when the temperature is '+N(X)+' °C. Give your answer in °C/minute.','gradient','°C/min','minutes','°C','change in temperature','time taken',true,'',
+        ['The rate of temperature change at one moment is the gradient of the tangent there.','Read two points on your tangent, as far apart as you can.','gradient = [[change in temperature|time taken]]. The temperature is falling, so the gradient is negative.'])]};
   }
 }
 
