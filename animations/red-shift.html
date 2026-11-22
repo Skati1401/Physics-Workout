@@ -726,6 +726,16 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   // ---- many galaxies. Positions in million light years now; a: direction in degrees
   var GAL=[{n:'Milky Way',d:0,a:0},{n:'A',d:300,a:110},{n:'B',d:400,a:40},{n:'C',d:600,a:230},{n:'D',d:800,a:-25},{n:'E',d:1000,a:45},{n:'F',d:1200,a:8}];
   GAL.forEach(function(q){ q.x=q.d*Math.cos(q.a*Math.PI/180); q.y=q.d*Math.sin(q.a*Math.PI/180); });
+  // background galaxies (22 Nov 2026): unnamed, scattered all round so the expansion looks the same in every direction,
+  //   whichever galaxy you look from. A jittered grid (500 million light years apart), kept clear of the named galaxies.
+  //   They move with the same rule (speed ∝ distance) but are not on the graph or in the Experiment.
+  var BG=(function(){ var a=[], S=500, i=0, x, y, gx, gy, ok;
+    for(gy=-1600; gy<=2000; gy+=S) for(gx=-2100; gx<=2600; gx+=S){ i++;
+      x=gx+(hash(i*3+7)-0.5)*0.6*S; y=gy+(hash(i*3+8)-0.5)*0.6*S;
+      ok=GAL.every(function(q){ return Math.hypot(x-q.x,y-q.y)>230; });
+      if(ok) a.push({x:x, y:y, rot:-50+100*hash(i*3+9), k:0.32+0.12*hash(i*3+10)}); }
+    return a; })();
+  function bgList(h){ h=GAL[h==null?homeIx():h]; return BG.map(function(q){ var dx=q.x-h.x, dy=q.y-h.y, d=Math.hypot(dx,dy)||1e-9; return {ux:dx/d, uy:dy/d, d:d, v:d*HUB, rot:q.rot, k:q.k}; }); }
   function homeIx(){ return from==='b' ? 2 : 0; }
   function rel(i){ var h=GAL[homeIx()], q=GAL[i], dx=q.x-h.x, dy=q.y-h.y, d=Math.hypot(dx,dy)||1e-9; return {n:q.n, i:i, ux:dx/d, uy:dy/d, d:Math.hypot(dx,dy), v:Math.hypot(dx,dy)*HUB}; }
   function others(){ var a=[], i; for(i=0;i<GAL.length;i++) if(i!==homeIx()) a.push(rel(i)); return a; }
@@ -735,6 +745,12 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var W=F.w, H=F.h, s='', pk='', a=o.T/AGE, k=o.k||F.k, hot=Math.max(0,1-o.T/2.6);
     s+=sky(W,H,34,71);
     if(hot>0) s+=circ(F.cx,F.cy,30+90*hot,'url(#rs-bang)',' opacity="'+hot.toFixed(2)+'"');
+    (o.bg||[]).forEach(function(q){
+      var x=F.cx+q.ux*q.d*a*k, y=F.cy-q.uy*q.d*a*k, ax=q.ux, ay=-q.uy, L=7+q.v/VMAX*46;
+      if(x<-60 || x>W+60 || y<-60 || y>H+60) return;
+      s+=galaxy(x,y,q.k,0.7,q.rot);
+      if(a>0.08) s+='<g opacity=".6">'+arrow(x+ax*13,y+ay*13,x+ax*(13+L),y+ay*(13+L),VCOL,2)+'</g>';
+    });
     o.list.forEach(function(q){
       var x=F.cx+q.ux*q.d*a*k, y=F.cy-q.uy*q.d*a*k, op=q.op==null?1:q.op, ax=q.ux, ay=-q.uy, px=-ay, py=ax, L=7+q.v/VMAX*46; if(py>0){ px=-px; py=-py; }
       if(op<=0.01) return;
@@ -1025,7 +1041,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         sp=spectraSmall({title:'Galaxy G: red-shift z = '+qq.z, lines:LINES, hi:486, rows:[{lab:'lab',beta:0},{lab:'G',beta:qq.z}]});
         g+=at(F,f.g)+sp.g;
       } else if(Q.kind==='age'){
-        f=fieldHtml({T:AGE*(1-0.96*u), list:GAL.slice(1).map(function(x,i){ return {n:x.n, i:i+1, ux:x.x/x.d, uy:x.y/x.d, d:x.d, v:x.d*HUB}; }), home:'Milky Way (us)', title:dn ? verdict : ask ? 'The galaxies are moving apart' : 'Running it backwards', tw:dn?700:400, tc:dn?vc:WSOFT, foot:dn ? 'All together '+qq.ages+' billion years ago' : ''});
+        f=fieldHtml({T:AGE*(1-0.96*u), list:GAL.slice(1).map(function(x,i){ return {n:x.n, i:i+1, ux:x.x/x.d, uy:x.y/x.d, d:x.d, v:x.d*HUB}; }), bg:bgList(0), home:'Milky Way (us)', title:dn ? verdict : ask ? 'The galaxies are moving apart' : 'Running it backwards', tw:dn?700:400, tc:dn?vc:WSOFT, foot:dn ? 'All together '+qq.ages+' billion years ago' : ''});
         g+=at(F,f.g)+graphHtml({pts:qq.pts, cross:true, slope:qq.H/MPC, noLab:true, P:qq.P});
       } else {
         f=fieldHtml({T:AGE, k:F.k*2, noBar:true, list:[{n:'P',ux:qq.ux,uy:qq.uy,d:qq.d,v:qq.vP,i:0},{n:'Q',ux:qq.ux,uy:qq.uy,d:qq.d*qq.f,v:ask?0:qq.vP*qq.f*u,i:1,noArrow:ask,qm:ask}], home:'Milky Way (us)', title:dn ? verdict : 'Q is '+qq.fw+' as far from us as P', tw:dn?700:400, tc:dn?vc:WSOFT});
@@ -1034,7 +1050,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       }
     } else {
       var ex=exp(), list=others().map(function(x){ x.sel=x.i===sel; x.pick=true; return x; }), hm=from==='b' ? 'B (here)' : 'Milky Way (us)', s0=rel(sel);
-      f=fieldHtml({T:Tm, list:list, home:hm, homeSide:from==='b', title:'Seen from '+(from==='b'?'galaxy B':'the Milky Way')+(ex?': press a galaxy to measure it':''), foot:timeText()});
+      f=fieldHtml({T:Tm, list:list, bg:bgList(), home:hm, homeSide:from==='b', title:'Seen from '+(from==='b'?'galaxy B':'the Milky Way')+(ex?': press a galaxy to measure it':''), foot:timeText()});
       g+=at(F,f.g); pk+=at(F,f.pk);
       if(ex){
         var pts=X.order.map(function(i){ return {n:GAL[i].n, d:rel(i).d, v:X.meas[i].v}; }), fin=X.order.length===list.length;
