@@ -608,8 +608,8 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 .gq-q{font-size:16px;line-height:1.5;margin:0 0 10px}
 .gq-done{list-style:none;margin:0 0 8px;padding:0;font:500 13.5px var(--f-mono);color:var(--ink-soft)}
 .gq-done li{padding:3px 0}
-.gq-split{grid-template-columns:minmax(0,560px) minmax(0,1fr)}
-@media (max-width:900px){.gq-split{grid-template-columns:minmax(0,1fr)}}
+.gq-split,.graph-split.gq-split:has(.data-wrap){grid-template-columns:minmax(0,560px) minmax(0,1fr)}
+@media (max-width:900px){.gq-split,.graph-split.gq-split:has(.data-wrap){grid-template-columns:minmax(0,1fr)}}
 .gq-split .gq-fig{max-width:560px}
 .gq-split .calc-input-wrap{margin:4px 0 6px}
 .gq-end{font-weight:600;margin:12px 0 0}
@@ -631,6 +631,11 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 .graph .an-ring.is-shown{stroke-dasharray:6 4}
 .gq-mc .pred-opts{margin-top:0}
 .gq-pre{margin:0 0 10px;font-weight:600}
+.sc-fill{fill:var(--accent);opacity:.12}
+.sc-max{stroke:var(--accent);stroke-width:2;stroke-dasharray:7 5}
+.sc-maxt,.sc-offt{font:600 13px var(--f-mono);fill:var(--accent)}
+.sc-off{fill:none;stroke:var(--bad);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.sc-offt{fill:var(--bad)}
 .dt-svg.graph{touch-action:none}
 .gq-fit .dt-svg text{font-family:var(--f-mono)}
 .gq-fit .dt-q:empty{display:none}
@@ -819,7 +824,7 @@ function createDrawTasks(cfg){
   }
   function go(i){
     cur=(i+tasks.length)%tasks.length;T=tasks[cur];locked=status[cur]>0;st=locked?K.answer(T):K.init(T);
-    q.innerHTML=FR(T.q)+(T.src?'<span class="dt-src">Modelled on '+T.src+'</span>':'');
+    q.innerHTML=FR(T.q)+(T.src&&REVIEWER?'<span class="dt-src">Modelled on '+T.src+'</span>':'');
     notes.innerHTML='';ans.off();
     b.say(status[cur]===1?'Done: this one was right.':status[cur]===2?'Answer shown.':'',status[cur]===1?'good':'');
     svg.setAttribute('aria-label',T.aria||'The diagram');render();
@@ -1398,6 +1403,8 @@ const ANOMALY={
 
 /* ---- choose the scale before plotting (about half the plots): the vertical axis, from 1, 2, 5 (× 10ⁿ), with a 3 that is
    awkward to plot, one too small to fit and one that squashes the points. Only used when the drawn scale is the right answer. ---- */
+// the past-paper source of a question ("like 4PH1/1PR May 2024 Q7(b)(i)") is shown only in Alex's reviewer mode (?reviewer), never to students
+const REVIEWER=(()=>{try{return localStorage.getItem('pw-reviewer')==='1';}catch(e){return false;}})();
 const NICE=[];[-3,-2,-1,0,1,2,3,4].forEach(e=>[1,2,5].forEach(m=>NICE.push(+(m*Math.pow(10,e)).toPrecision(3))));
 function scalePart(o,pts,yn,uy){
   if(o.yMin!==0)return null;
@@ -1409,12 +1416,29 @@ function scalePart(o,pts,yn,uy){
   const why=s=>K*s<ymax-1e-9?'With '+per(s)+' the axis only goes up to '+N(r6(K*s))+' '+uy+', but the largest reading is '+N(ymax)+' '+uy+'.':
     s===aw?'That fits, but a scale of 3 is hard to plot and read: each small square would be '+N(r6(s/5))+' '+uy+'. Use 1, 2 or 5 (or 10, 20, 50…).':
     'That fits, but the points would only cover about '+Math.round(100*ymax/(K*s))+'% of the height. Choose the smallest easy scale that still fits.';
-  const opts=[{text:per(step),correct:true}];
-  [lo,hi,aw].forEach(s=>{if(s!==step&&!opts.some(x=>x.text===per(s)))opts.push({text:per(s),why:why(s)});});
-  return {type:'mc',q:'Before you plot: the grid is '+K+' large squares high, each split into 5 small squares. Which scale should go on the '+yn+' axis?',
-    pre:'<p class="gq-pre">The largest '+yn+' in the results is '+N(ymax)+' '+uy+'.</p>',options:opts,
+  const opts=[{text:per(step),correct:true,s:step}];
+  [lo,hi,aw].forEach(s=>{if(s!==step&&!opts.some(x=>x.text===per(s)))opts.push({text:per(s),why:why(s),s:s});});
+  const tab='<div class="data-wrap"><table class="data"><tr><th>'+o.xLabel+'</th>'+pts.map(p=>'<td>'+N(p.x)+'</td>').join('')+'</tr><tr><th>'+o.yLabel+'</th>'+pts.map(p=>'<td>'+N(p.y)+'</td>').join('')+'</tr></table></div>';
+  return {type:'mc',q:'Before you plot: which scale should go on the '+yn+' axis?',
+    pre:'<p class="gq-pre">The results:</p>'+tab,options:opts,fig:scaleFig(o,K,null,ymax,uy,hi),figFor:i=>scaleFig(o,K,opts[i].s,ymax,uy,hi),
     explain:'With '+per(step)+' the axis goes up to '+N(r6(K*step))+' '+uy+': every point fits, they spread over as much of the grid as they can, and each small square is an easy '+N(r6(step/5))+' '+uy+'.',
     sum:'Scale: '+per(step)};
+}
+
+// the empty graph paper for the scale question (s null: only 0 and "?" on the vertical axis); with a scale s it numbers the
+// axis and shades up to the largest reading, or shows the reading is off the top of the grid
+function scaleFig(o,K,s,ymax,uy,hi){
+  const wide=String(N(r6(K*hi))).length,pl=Math.max(o.pl,58+Math.max(0,wide-3)*9);
+  const g=lineGraph(Object.assign({},o,{pl:pl,H:400,yMin:0,yMax:K,yTicks:[],minor:[o.minor[0],0.2],segments:[],label:s?'The graph paper numbered at '+N(s)+' '+uy+' per large square':'Empty graph paper, '+K+' large squares high',
+    under:(gx,gy)=>{let t='';
+      for(let k=0;k<=K;k++){t+=(k?'<line class="g-grid" x1="'+pl+'" x2="'+(560-18)+'" y1="'+gy(k)+'" y2="'+gy(k)+'"/>':'')+
+        '<text class="g-tick" x="'+(pl-8)+'" y="'+(gy(k)+5)+'" text-anchor="end">'+(s?N(r6(k*s)):k===0?'0':k===1?'?':'')+'</text>';}
+      if(!s)return t;
+      const top=ymax/s,lab='largest reading '+N(ymax)+' '+uy;
+      if(top>K+1e-9)return t+'<path class="sc-off" d="M'+(pl+22)+','+(gy(K)+32)+' l0,-26 m-8,8 l8,-8 l8,8"/><text class="sc-offt" x="'+(pl+36)+'" y="'+(gy(K)+24)+'">'+lab+' is off the top</text>';
+      return t+'<rect class="sc-fill" x="'+pl+'" y="'+gy(top)+'" width="'+(560-18-pl)+'" height="'+(gy(0)-gy(top))+'"/><line class="sc-max" x1="'+pl+'" x2="'+(560-18)+'" y1="'+gy(top)+'" y2="'+gy(top)+'"/>'+
+        '<text class="sc-maxt" x="'+(560-24)+'" y="'+(gy(top)-6)+'" text-anchor="end">'+lab+'</text>';}}));
+  return g.svg;
 }
 
 /* ================= distance–time graphs (Unit 1) ================= */
@@ -1879,7 +1903,7 @@ function render(){
   const Q=cur,host=byId('pr-card');host.innerHTML='';
   const a=mk('article','act gq');
   a.innerHTML='<h3 class="act-title"><span class="kind">Question '+qn+'</span><span>'+Q.title+'</span>'+(Q.row.ta||Q.ta?'<b class="ta" title="Triple Award only">TA</b>':'')+'</h3>'+
-    '<p class="act-intro">'+FR(Q.stem)+'<span class="gq-src">'+Q.row.label+' · Unit '+(Q.unit||Q.row.unit)+' · '+(Q.sp||Q.row.sp)+' · like '+Q.src+'</span></p>';
+    '<p class="act-intro">'+FR(Q.stem)+'<span class="gq-src">'+Q.row.label+' · Unit '+(Q.unit||Q.row.unit)+' · '+(Q.sp||Q.row.sp)+(REVIEWER?' · like '+Q.src:'')+'</span></p>';
   const done=mk('ol','gq-done');done.id='gq-done';a.appendChild(done);
   const body=mk('div','act-body gq-part');body.id='gq-part';a.appendChild(body);
   const nb=mk('div','bar gq-next');
@@ -2012,6 +2036,7 @@ function openMc(P,body){
   side.addEventListener('click',()=>setTimeout(()=>{
     if(ended)return;const s=api.getState();
     if(s.p.length&&!P.options[s.p[0]].correct)Q.clean=false;
+    if(P.figFor&&s.p.length){const f=split.querySelector('.gq-fig');if(f)f.innerHTML=P.figFor(api.isDone()?P.options.findIndex(o=>o.correct):s.p[s.p.length-1]);}
     if(!api.isDone())return;
     ended=true;const sum=(s.p.length===1?'✓ ':'Answer: ')+(P.sum||P.options.find(o=>o.correct).text);
     if(Q.pi===Q.parts.length-1){partDone(sum);return;}
