@@ -604,6 +604,9 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 .plot-state{font-size:12px;color:var(--ink-faint)}
 /* Graphs Workout (15 Nov 2026) */
 .ch-spec{font:500 12px var(--f-mono);color:var(--ink-faint)}
+.ch-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:18px;align-items:start}
+.ch-two .ch-unit{margin:0}
+.ch-two .ch-ta[hidden]{display:none}
 .gq-src{display:block;margin-top:4px;font:500 12px var(--f-mono);color:var(--ink-faint)}
 .gq-q{font-size:16px;line-height:1.5;margin:0 0 10px}
 .gq-done{list-style:none;margin:0 0 8px;padding:0;font:500 13.5px var(--f-mono);color:var(--ink-soft)}
@@ -681,10 +684,10 @@ table.data.facts th.facts-cap{background:none;color:var(--ink);font-weight:600;b
 <section id="chooser" aria-labelledby="ch-title">
 <div class="ch-top">
 <h2 id="ch-title" tabindex="-1">Choose Your Graphs</h2>
-<p>Graph skills as the exam asks for them. Every kind is ticked: press Start to practise them all, or untick some first. Every question draws a new graph from new data.</p>
+<p>Graph skills as the exam asks for them. Choose by type of graph on the left and by topic on the right; everything is ticked, so press Start to practise it all, or untick some first. Every question draws a new graph from new data.</p>
 <div class="ch-go"><button type="button" class="btn primary" id="ch-start" disabled>Start</button><span class="ch-count" id="ch-count" aria-live="polite"></span><button type="button" class="btn" id="ch-all">Tick all</button><button type="button" class="btn" id="ch-none">Clear ticks</button><button type="button" class="btn" id="ch-da" aria-pressed="false">Leave out TA</button></div>
 </div>
-<div class="ch-units" id="ch-units"></div>
+<div class="ch-two" id="ch-units"></div>
 </section>
 <section id="practice" aria-labelledby="pr-title" hidden>
 <div class="pr-bar"><h2 id="pr-title" tabindex="-1">Practise</h2><button type="button" class="btn" id="pr-back">&larr; Change graphs</button></div>
@@ -1872,47 +1875,67 @@ const ROWS=[
 const STORE='graphs-workout-v1';
 let st={on:[],da:false,stats:{},tot:{n:0,ok:0}};
 try{const s=JSON.parse(localStorage.getItem(STORE)||'null');if(s&&typeof s==='object'){st.da=!!s.da;st.stats=s.stats&&typeof s.stats==='object'?s.stats:{};st.tot=s.tot&&typeof s.tot.n==='number'?s.tot:{n:0,ok:0};}}catch(e){}
-function save(){try{localStorage.setItem(STORE,JSON.stringify({da:st.da,stats:st.stats,tot:st.tot}));}catch(e){}}
-// Every row is ticked each time the page opens (as on the Calculation Generator).
-st.on=ROWS.map(r=>r.id);
+function save(){try{localStorage.setItem(STORE,JSON.stringify({da:st.da,stats:st.stats,ustats:st.ustats,tot:st.tot}));}catch(e){}}
 const byId=id=>document.getElementById(id);
 const visible=r=>!(st.da&&r.ta);
-const isOn=r=>st.on.indexOf(r.id)>-1;
-function setOn(id,on){st.on=st.on.filter(x=>x!==id);if(on)st.on.push(id);}
-const GROUPS=SKILLS.map(s=>({id:s[0],name:s[1],rows:ROWS.filter(r=>r.skill===s[0])}));
-GROUPS.forEach(u=>{
-  const box=mk('fieldset','ch-unit'),lg=mk('legend'),lab=mk('label','ch-unit-label'),ub=mk('input');
-  ub.type='checkbox';ub.setAttribute('aria-label','Tick all of '+u.name);
-  const cnt=mk('span','ch-unit-count');
-  lab.append(ub,mk('span','ch-unit-name',u.name),cnt);lg.appendChild(lab);box.appendChild(lg);
-  u.el=box;u.box=ub;u.cnt=cnt;
-  u.rows.forEach(e=>{
-    const row=mk('label','ch-row'),cb=mk('input'),txt=mk('span','ch-text no-eq');
-    cb.type='checkbox';cb.value=e.id;
-    txt.innerHTML='<span class="ch-label">'+e.label+'</span><span class="ch-spec">Unit '+e.unit+' · '+e.sp+'</span>';
-    row.append(cb,txt);
-    if(e.ta){const t=mk('span','ch-ta','TA');t.title='Triple Award only';row.appendChild(t);}
-    const sc=mk('span','ch-score');row.appendChild(sc);
-    e.row=row;e.cb=cb;e.sc=sc;
-    cb.addEventListener('change',()=>{setOn(e.id,cb.checked);refresh();});
+// Everything is ticked each time the page opens (as on the Calculation Generator).
+// 22 Nov 2026: two ways to choose, used together. Left: by type of graph (the skills, no contexts listed). Right: by topic
+// (the IGCSE units). A kind is practised when its type and one of its units are ticked; a kind spread over several units
+// (describe, x × y, anomaly) only deals questions from the ticked units.
+const UNITS=[[1,'Forces and Motion'],[2,'Electricity'],[3,'Waves'],[5,'Solids, Liquids and Gases'],[6,'Magnetism and Electromagnetism'],[7,'Radioactivity and Particles']];
+const uniq=a=>a.filter((v,i)=>a.indexOf(v)===i);
+function rowUnits(r,da){
+  if(typeof r.unit==='number')return [r.unit];
+  const ok=c=>!(da&&c.ta);
+  if(r.id==='desc-rel')return uniq(REL.filter(ok).map(c=>c.u));
+  if(r.id==='desc-prod')return uniq(PROD.filter(ok).map(c=>c.u));
+  return [1,2,3,7];   // anomaly: spring and distance–time (1), resistor (2), refraction (3), decay (7)
+}
+st.sk=SKILLS.map(s=>s[0]);st.un=UNITS.map(u=>u[0]);
+if(!st.ustats)st.ustats={};
+try{const s=JSON.parse(localStorage.getItem(STORE)||'null');if(s&&s.ustats&&typeof s.ustats==='object')st.ustats=s.ustats;}catch(e){}
+const unitOk=r=>rowUnits(r,st.da).some(u=>st.un.indexOf(u)>-1);
+function buildCol(title,items,all,set){
+  const box=mk('fieldset','ch-unit'),lg=mk('legend'),lab=mk('label','ch-unit-label'),ub=mk('input'),cnt=mk('span','ch-unit-count');
+  ub.type='checkbox';ub.setAttribute('aria-label','Tick all '+title.toLowerCase());
+  lab.append(ub,mk('span','ch-unit-name',title),cnt);lg.appendChild(lab);box.appendChild(lg);
+  items.forEach(it=>{
+    const row=mk('label','ch-row'),cb=mk('input');cb.type='checkbox';
+    row.append(cb,mk('span','ch-text no-eq','<span class="ch-label">'+it.name+'</span>'));
+    it.ta=mk('span','ch-ta','TA');it.ta.title='Triple Award only';row.appendChild(it.ta);
+    it.sc=mk('span','ch-score');row.appendChild(it.sc);it.row=row;it.cb=cb;
+    cb.addEventListener('change',()=>{set(it.key,cb.checked);refresh();});
     box.appendChild(row);
   });
-  ub.addEventListener('change',()=>{u.rows.filter(visible).forEach(e=>setOn(e.id,ub.checked));refresh();});
+  ub.addEventListener('change',()=>{items.filter(it=>!it.row.hidden).forEach(it=>set(it.key,ub.checked));refresh();});
   byId('ch-units').appendChild(box);
-});
+  return {items:items,box:ub,cnt:cnt,list:all};
+}
+const tog=(arr,k,on)=>{const a=arr.filter(x=>x!==k);if(on)a.push(k);return a;};
+const COLS=[
+  buildCol('By Type of Graph',SKILLS.map(s=>({key:s[0],name:s[1],rows:da=>ROWS.filter(r=>r.skill===s[0]&&!(da&&r.ta))})),'sk',(k,on)=>{st.sk=tog(st.sk,k,on);}),
+  buildCol('By Topic',UNITS.map(u=>({key:u[0],name:'Unit '+u[0]+' '+u[1],rows:da=>ROWS.filter(r=>!(da&&r.ta)&&rowUnits(r,da).indexOf(u[0])>-1)})),'un',(k,on)=>{st.un=tog(st.un,k,on);})
+];
+const score=(it,c)=>{let n=0,ok=0;
+  if(c.list==='sk')it.rows(false).forEach(r=>{const s=st.stats[r.id];if(s){n+=s.n;ok+=s.ok;}});
+  else{const s=st.ustats[it.key];if(s){n=s.n;ok=s.ok;}}
+  return {n:n,ok:ok};};
 function refresh(){
-  let ticked=0;
-  GROUPS.forEach(u=>{
-    const vis=u.rows.filter(visible),on=vis.filter(isOn);
-    u.el.hidden=!vis.length;
-    u.box.checked=vis.length>0&&on.length===vis.length;u.box.indeterminate=on.length>0&&on.length<vis.length;
-    u.cnt.textContent=on.length?on.length+' of '+vis.length+' ticked':vis.length+(vis.length===1?' kind':' kinds');
-    u.rows.forEach(e=>{e.row.hidden=!visible(e);e.cb.checked=isOn(e);e.row.classList.toggle('is-on',isOn(e));
-      const s=st.stats[e.id];e.sc.textContent=s&&s.n?s.ok+'/'+s.n:'';e.sc.title=s&&s.n?s.ok+' right first time out of '+s.n+' tried':'';});
-    ticked+=on.length;
+  COLS.forEach(c=>{
+    const on=st[c.list];let vis=0,ticked=0;
+    c.items.forEach(it=>{
+      const has=it.rows(st.da).length>0,i=on.indexOf(it.key)>-1;
+      it.row.hidden=!has;it.ta.hidden=!(has&&!it.rows(true).length);
+      it.cb.checked=i;it.row.classList.toggle('is-on',i);
+      if(has){vis++;if(i)ticked++;}
+      const s=score(it,c);it.sc.textContent=s.n?s.ok+'/'+s.n:'';it.sc.title=s.n?s.ok+' right first time out of '+s.n+' tried':'';
+    });
+    c.box.checked=vis>0&&ticked===vis;c.box.indeterminate=ticked>0&&ticked<vis;
+    c.cnt.textContent=ticked+' of '+vis+' ticked';
   });
-  byId('ch-count').textContent=ticked?ticked+(ticked===1?' kind':' kinds')+' ticked':'Nothing ticked yet';
-  byId('ch-start').disabled=!ticked;
+  const n=picked().length;
+  byId('ch-count').textContent=n?n+(n===1?' kind of question':' kinds of question')+' to practise':!st.sk.length?'Tick at least one type of graph':!st.un.length?'Tick at least one topic':'No questions for these ticks: tick another type or topic';
+  byId('ch-start').disabled=!n;
   const da=byId('ch-da');da.setAttribute('aria-pressed',st.da?'true':'false');
   da.title=st.da?'Triple Award (TA) questions are left out. Click to show them.':'Click to leave out the Triple Award (TA) questions.';
   let pill=byId('tabs-done');
@@ -1920,13 +1943,13 @@ function refresh(){
   pill.textContent=st.tot.n?st.tot.ok+' of '+st.tot.n+' right first time':'No questions yet';
   pill.classList.toggle('all-done',st.tot.n>0&&st.tot.ok===st.tot.n);
 }
-byId('ch-all').addEventListener('click',()=>{st.on=ROWS.map(r=>r.id);refresh();});
-byId('ch-none').addEventListener('click',()=>{st.on=[];refresh();});
+byId('ch-all').addEventListener('click',()=>{st.sk=SKILLS.map(s=>s[0]);st.un=UNITS.map(u=>u[0]);refresh();});
+byId('ch-none').addEventListener('click',()=>{st.sk=[];st.un=[];refresh();});
 byId('ch-da').addEventListener('click',()=>{st.da=!st.da;save();refresh();});
 
 /* ---- one question at a time: its parts, (a), (b), (c), one after another ---- */
 let cur=null,last='',qn=0;
-const picked=()=>ROWS.filter(r=>isOn(r)&&visible(r));
+const picked=()=>ROWS.filter(r=>visible(r)&&st.sk.indexOf(r.skill)>-1&&unitOk(r));
 const SUPMAP={'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','⁻':'-'};
 function parseNum(raw){
   const t=raw.trim().replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+/g,m=>'^'+m.split('').map(c=>SUPMAP[c]).join(''))
@@ -1939,7 +1962,8 @@ function next(){
   const list=picked();if(!list.length){showChooser();return;}
   let pool=list.filter(r=>r.id!==last);if(!pool.length)pool=list;
   const row=calcPick(Math.random,pool);last=row.id;
-  let Q=null;for(let k=0;k<20&&!Q;k++)Q=row.gen(calcRnd(1+Math.floor(Math.random()*2147483646)));
+  let Q=null,any=null;for(let k=0;k<80&&!Q;k++){Q=row.gen(calcRnd(1+Math.floor(Math.random()*2147483646)));if(Q){any=any||Q;if(st.un.indexOf(+(Q.unit||row.unit))<0)Q=null;}}
+  Q=Q||any;   // a kind spread over several units: deal one from a ticked unit
   Q.row=row;Q.src=calcPick(Math.random,Q.srcs||row.src);Q.pi=0;Q.clean=true;Q.vals=[];Q.done=false;
   cur=Q;qn++;render();
 }
@@ -1972,6 +1996,7 @@ function partDone(summary){
   Q.done=true;
   const s=st.stats[Q.row.id]||(st.stats[Q.row.id]={n:0,ok:0});
   s.n++;st.tot.n++;if(Q.clean){s.ok++;st.tot.ok++;}
+  const qu=+(Q.unit||Q.row.unit),us=st.ustats[qu]||(st.ustats[qu]={n:0,ok:0});us.n++;if(Q.clean)us.ok++;
   save();refresh();
   const body=byId('gq-part');
   const end=mk('p','gq-end'+(Q.clean?' good':''),'<span>'+(Q.clean?'Question done, right first time.':'Question done.')+'</span>');body.appendChild(end);
