@@ -637,6 +637,8 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 .graph .an-ring{fill:none;stroke:var(--bad);stroke-width:2.6}
 .graph .g-cv{fill:none;stroke:var(--ink-soft);stroke-width:2.6;stroke-linejoin:round}   /* 3j: the curve under a tangent */
 .graph .g-sec{font:700 16px var(--f-mono);fill:var(--ink)}
+.graph .g-tan{stroke:var(--solid);stroke-width:2.8}
+.graph .tan-h{stroke:var(--solid)} .graph .tan-h.on{fill:var(--solid)}
 .graph .g-pt{fill:var(--ink)}
 .graph .g-ptlab{font:700 15px var(--f-mono);fill:var(--ink)}
 .graph .an-ring.is-shown{stroke-dasharray:6 4}
@@ -1879,51 +1881,74 @@ function ptMarks(gx,gy,o,P,band){
 const choiceOpts=(n,right,why)=>Array.from({length:n},(_,i)=>({text:'Section '+SEC[i],correct:i===right,why:i===right?'':why(i)}));
 const ltr=i=>'section '+SEC[i];
 
-/* ---- the tangent: a kind for createDrawTasks, like BESTFIT ----
-   A ruler pinned at the point on the curve, turned about it: drag anywhere on the graph (the ruler points at the pointer),
-   or Up and Down to turn it. It starts flat, so its start gives nothing away. Marked against the true gradient there,
-   within tol (10%). The student's tangent is kept in Q.tan for the gradient part. */
+/* ---- the tangent: a kind for createDrawTasks, like BESTFIT (22 Nov 2026, Alex: the student draws it) ----
+   A blue line the student moves anywhere: drag an end to turn or stretch it, drag the middle of the line to slide it,
+   or tap the graph to move the nearer end there. Keyboard: arrow keys move an end a small square, Space swaps ends,
+   Shift + arrows slide the whole line. It starts flat, low down and away from the point, so its start gives nothing away.
+   Marked as the mark schemes do: it must touch the curve at the point (within 0.8 of a small square) and have the
+   curve's gradient there (within tol, 10%). The student's tangent is kept in Q.tan for the gradient part. */
 const TANGENT=(function(){
-  let drag=false;
+  let drag=null,api0=null;
+  // how far the line is from the point, in small squares measured across the graph
+  const miss=(t,s,gx,gy)=>{const ax=gx(s.a[0]),ay=gy(s.a[1]),bx=gx(s.b[0]),by=gy(s.b[1]),px=gx(t.x0),py=gy(t.y0);
+    const d=Math.abs((bx-ax)*(ay-py)-(ax-px)*(by-ay))/Math.hypot(bx-ax,by-ay),sq=Math.min(gx(t.o.xMin+t.o.minor[0])-gx(t.o.xMin),gy(t.o.yMin)-gy(t.o.yMin+t.o.minor[1]));
+    return d/sq;};
   return {
-    init:()=>({m:0}),
-    answer:t=>({m:t.m}),
+    init:t=>{const o=t.o,R=o.xMax-o.xMin,y=o.yMin+(o.yMax-o.yMin)*0.12,far=t.x0<o.xMin+R/2;
+      return {a:[r6(o.xMin+R*(far?0.55:0.12)),r6(y)],b:[r6(o.xMin+R*(far?0.88:0.45)),r6(y)],act:0};},
+    answer:t=>{const o=t.o,d=(o.xMax-o.xMin)*0.18;let k=1;while(k>0.1&&!(t.y0-t.m*d*k>=o.yMin&&t.y0-t.m*d*k<=o.yMax&&t.y0+t.m*d*k>=o.yMin&&t.y0+t.m*d*k<=o.yMax))k/=1.5;
+      const a=clamp(t.x0-d*k,o.xMin,o.xMax),b=clamp(t.x0+d*k,o.xMin,o.xMax);return {a:[a,t.y0+t.m*(a-t.x0)],b:[b,t.y0+t.m*(b-t.x0)],act:0};},
     draw:function(g,t,s,api){
-      const o=t.o,svg=api.svg;svg.classList.add('graph');
+      const o=t.o,svg=api.svg;svg.classList.add('graph');api0=api;
       const lg=lineGraph(Object.assign({},o,{segments:[],extra:(gx,gy)=>polyl(gx,gy,t.curve,'g-cv')}));
       g.innerHTML=lg.svg.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
-      const gx=lg.gx,gy=lg.gy,c=t.y0-s.m*t.x0,P=[gx(t.x0),gy(t.y0)];
-      g.insertAdjacentHTML('beforeend',rulerSVG(gx,gy,o,s.m,c,'g-ruler'+(api.shown()?' is-shown':''))+'<circle class="g-pt" cx="'+P[0]+'" cy="'+P[1]+'" r="5"/>');
-      const kx=gx(t.x0+1)-gx(t.x0),ky=gy(t.y0)-gy(t.y0+1);
-      const side=P[0]<(lg.pl+lg.W-lg.pr)/2?1:-1,ang=Math.atan(s.m*ky/kx);
-      if(!api.locked)g.insertAdjacentHTML('beforeend','<circle class="bf-h on" cx="'+(P[0]+side*95*Math.cos(ang))+'" cy="'+(P[1]-side*95*Math.sin(ang))+'" r="9"/>');
+      const gx=lg.gx,gy=lg.gy,L=lineOf(s);
+      g.insertAdjacentHTML('beforeend',rulerSVG(gx,gy,o,L.m,L.c,'g-ruler g-tan'+(api.shown()?' is-shown':'')));
+      if(api.locked||t.showPt)g.insertAdjacentHTML('beforeend','<circle class="g-pt" cx="'+gx(t.x0)+'" cy="'+gy(t.y0)+'" r="5"/>');
+      if(!api.locked)[s.a,s.b].forEach((p,i)=>g.insertAdjacentHTML('beforeend','<circle class="bf-h tan-h'+(i===s.act?' on':'')+'" cx="'+gx(p[0])+'" cy="'+gy(p[1])+'" r="9"/>'));
       svg.setAttribute('tabindex','0');svg.classList.toggle('mk-svg',!api.locked);
-      const setAng=a=>{a=clamp(a,-1.50,1.50);api.set({m:Math.tan(a)*kx/ky});};
-      const aim=ev=>{const p=api.pt(ev);if(!p)return;const dx=p.x-P[0],dy=P[1]-p.y;if(Math.hypot(dx,dy)<14)return;setAng(Math.atan(dy/(dx||1e-6)));};
-      svg.onpointerdown=api.locked?null:ev=>{drag=true;try{svg.setPointerCapture(ev.pointerId);}catch(e){}aim(ev);ev.preventDefault();};
-      svg.onpointermove=api.locked?null:ev=>{if(drag)aim(ev);};
-      svg.onpointerup=svg.onpointercancel=()=>{drag=false;};
+      const toData=p=>[clamp(lg.ix(p.x),o.xMin,o.xMax),clamp(lg.iy(p.y),o.yMin,o.yMax)];
+      const tooClose=n=>Math.hypot(gx(n.a[0])-gx(n.b[0]),gy(n.a[1])-gy(n.b[1]))<40;
+      const put=(i,q)=>{const n={a:s.a.slice(),b:s.b.slice(),act:i};n[i?'b':'a']=q;if(tooClose(n))return;api.set(n);};
+      const slide=(dx,dy)=>{const a=[s.a[0]+dx,s.a[1]+dy],b=[s.b[0]+dx,s.b[1]+dy],ok=p=>p[0]>=o.xMin&&p[0]<=o.xMax&&p[1]>=o.yMin&&p[1]<=o.yMax;
+        if(ok(a)&&ok(b))api.set({a:a.map(r6),b:b.map(r6),act:s.act});};
+      svg.onpointerdown=api.locked?null:ev=>{const p=api.pt(ev);if(!p)return;
+        const da=Math.hypot(gx(s.a[0])-p.x,gy(s.a[1])-p.y),db=Math.hypot(gx(s.b[0])-p.x,gy(s.b[1])-p.y);
+        const ax=gx(s.a[0]),ay=gy(s.a[1]),bx=gx(s.b[0]),by=gy(s.b[1]),dl=Math.abs((bx-ax)*(ay-p.y)-(ax-p.x)*(by-ay))/Math.hypot(bx-ax,by-ay);
+        try{svg.setPointerCapture(ev.pointerId);}catch(e){}ev.preventDefault();
+        if(Math.min(da,db)<=16){drag={end:da<=db?0:1};return;}
+        if(dl<=12){drag={slide:toData(p)};return;}
+        drag={end:da<=db?0:1};put(drag.end,toData(p));};
+      svg.onpointermove=api.locked?null:ev=>{if(!drag)return;const p=api.pt(ev);if(!p)return;const q=toData(p);
+        if(drag.slide){const d=[q[0]-drag.slide[0],q[1]-drag.slide[1]];drag.slide=q;slide(d[0],d[1]);}else put(drag.end,q);};
+      svg.onpointerup=svg.onpointercancel=()=>{drag=null;};
       svg.onclick=null;
-      svg.onkeydown=api.locked?null:ev=>{const d={ArrowUp:1,ArrowRight:1,ArrowDown:-1,ArrowLeft:-1}[ev.key];if(!d)return;ev.preventDefault();
-        setAng(ang+d*(ev.shiftKey?0.2:1)*Math.PI/180);svg.focus({preventScroll:true});};
+      svg.onkeydown=api.locked?null:ev=>{
+        if(ev.key===' '||ev.key==='Enter'){ev.preventDefault();api.set({a:s.a,b:s.b,act:1-s.act});svg.focus({preventScroll:true});return;}
+        const k={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[ev.key];if(!k)return;ev.preventDefault();
+        if(ev.shiftKey)slide(k[0]*o.minor[0],k[1]*o.minor[1]);
+        else{const p=s.act?s.b:s.a;put(s.act,[r6(clamp(p[0]+k[0]*o.minor[0],o.xMin,o.xMax)),r6(clamp(p[1]+k[1]*o.minor[1],o.yMin,o.yMax))]);}
+        svg.focus({preventScroll:true});};
     },
     check:function(t,s){
-      const rel=(s.m-t.m)/Math.abs(t.m);
-      if(Math.abs(rel)<=t.tol)return {ok:true,notes:[[1,'Your tangent touches the curve at the point and slopes the same way as the curve there.']]};
+      const lg=lineGraph(Object.assign({},t.o,{segments:[]})),L=lineOf(s),rel=(L.m-t.m)/Math.abs(t.m),off=miss(t,s,lg.gx,lg.gy),touch=off<=0.8,slope=Math.abs(rel)<=t.tol;
+      if(touch&&slope)return {ok:true,notes:[[1,'Your tangent touches the curve at the point and has the same slope as the curve there.']]};
       const notes=[];
-      if(s.m*t.m<=0)notes.push([0,'Your line does not slope the same way as the curve at the point. A tangent '+(t.m>0?'slopes up':'slopes down')+' here, just like the curve.']);
-      else if(Math.abs(s.m)>Math.abs(t.m))notes.push([0,'Your line is too steep: close to the point, it cuts across the curve.']);
-      else notes.push([0,'Your line is not steep enough: close to the point, it cuts across the curve.']);
+      if(!touch){if(!t.showPt){t.showPt=true;setTimeout(()=>{if(api0)api0.redraw();},0);}notes.push([0,'Your line must touch the curve at '+t.at+'. That point is now marked: move your line onto it.']);}
+      if(!slope){
+        if(L.m*t.m<=0)notes.push([0,'Your line does not slope the same way as the curve there. The curve '+(t.m>0?'slopes up':'slopes down')+' at that point.']);
+        else if(Math.abs(L.m)>Math.abs(t.m))notes.push([0,'Your line is too steep: close to the point, it cuts across the curve.']);
+        else notes.push([0,'Your line is not steep enough: close to the point, it cuts across the curve.']);}
       notes.push([0,'A tangent just touches the curve at the point. Close to the point, the curve stays on one side of it.']);
       return {ok:false,notes:notes};
     }
   };
 })();
-function tanTask(o,f,x0,curve){
+function tanTask(o,f,x0,curve,at){
   const h=(o.xMax-o.xMin)*1e-4,m=(f(x0+h)-f(x0-h))/(2*h);
-  return {q:'',o:Object.assign({},o,{H:400}),f:f,x0:x0,y0:f(x0),m:m,tol:0.10,curve:curve,aria:'The graph, with a ruler pinned to the point on the curve, to turn into the tangent'};
+  return {q:'',o:Object.assign({},o,{H:400}),f:f,x0:x0,y0:f(x0),m:m,tol:0.10,curve:curve,at:at,aria:'The graph, with a line to move into place as the tangent'};
 }
-const TAN_NOTE='Drag on the graph to turn the ruler about the point. Keyboard: Up and Down turn it (Shift for small steps).';
+const TAN_NOTE='Drag an end of the blue line to turn it, or drag the middle of the line to slide it. Keyboard: arrow keys move an end, Space swaps ends, Shift + arrows slide the line.';
 // two points on a straight line y = mx + c, well apart, on the grid lines along x and inside the graph
 function twoOnLine(o,m,c){
   const L=clipLine(o,m,c),a=Math.min(L[0][0],L[1][0]),b=Math.max(L[0][0],L[1][0]),sp=o.xTicks[1]-o.xTicks[0],inset=(b-a)*0.06;
@@ -1943,7 +1968,7 @@ function gradWork3(p,q,sym,top,bot,ux,uy,u,lead,negLab){
 function tanGradPart(o,T,q,sym,u,ux,uy,top,bot,abs,negLab,hints){
   return {type:'num',q:q,unit:u,abs:abs,tool:'grad',live:Q=>{
     const L=Q.tan||{m:T.m,c:T.y0-T.m*T.x0},pq=twoOnLine(o,L.m,L.c),p=[pq[0][0],sig(pq[0][1])],qq=[pq[1][0],sig(pq[1][1])];
-    const fig=extra=>lineGraph(Object.assign({},o,{H:400,segments:[],extra:(gx,gy)=>polyl(gx,gy,T.curve,'g-cv')+rulerSVG(gx,gy,o,L.m,L.c)+'<circle class="g-pt" cx="'+gx(T.x0)+'" cy="'+gy(T.y0)+'" r="5"/>'+(extra?extra(gx,gy):''),label:'The graph with your tangent'})).svg;
+    const fig=extra=>lineGraph(Object.assign({},o,{H:400,segments:[],extra:(gx,gy)=>polyl(gx,gy,T.curve,'g-cv')+rulerSVG(gx,gy,o,L.m,L.c,'g-ruler g-tan')+'<circle class="g-pt" cx="'+gx(T.x0)+'" cy="'+gy(T.y0)+'" r="5"/>'+(extra?extra(gx,gy):''),label:'The graph with your tangent'})).svg;
     const g=(qq[1]-p[1])/(qq[0]-p[0]),A=abs?Math.abs(g):g;
     return {answer:A,tol:Math.abs(g)*0.05,alt:abs?Math.abs(T.m):T.m,fig:fig(),figWork:fig((gx,gy)=>gradTri(gx,gy,p,qq,bot,top)),hints:hints,
       working:gradWork3(p,qq,sym,top,bot,ux,uy,u,'Read two points off your tangent, far apart',abs?negLab:'')};
@@ -1965,7 +1990,7 @@ function genTanVt(rnd){
     const o=axes(S.x,S.y,'Time / s','Velocity / m/s'),curve=curvePts(f,0,S.x[1],120);
     const t0=pk(rnd,ticks(S.x[3],S.x[1],S.x[3]).filter(t=>t>=0.45*tau&&t<=1.5*tau&&(onGrid(t,S.x[2]/2))));
     if(t0==null)continue;
-    const T=tanTask(o,f,t0,curve),dec=!S.up;
+    const T=tanTask(o,f,t0,curve,'t = '+N(t0)+' s'),dec=!S.up;
     const fig=lineGraph(Object.assign({},o,{H:400,segments:[],extra:(gx,gy)=>polyl(gx,gy,curve,'g-cv'),label:'Velocity–time graph'})).svg;
     return {title:dec?'Deceleration from a tangent':'Acceleration from a tangent',stem:S.who.replace('{n}',pe.n).replace('{his}',pe.his)+' The graph shows how the velocity changes. The line is curved, so the '+(dec?'deceleration':'acceleration')+' is changing.',parts:[
       {type:'fit',kind:'tangent',q:'Draw a tangent to the curve at '+BV('t = '+N(t0)+' s')+'.',note:TAN_NOTE,task:T},
@@ -2013,9 +2038,9 @@ function genTanCool(rnd){
     const C=coolSet(rnd),o=C.o;
     const X=pk(rnd,ticks(C.Tr+0.35*(C.T0-C.Tr),C.T0-0.2*(C.T0-C.Tr),2).map(v=>Math.round(v/2)*2));const tx=crossAt(C.f,0,40,X);
     if(tx==null||tx<3||tx>28)continue;
-    const T=tanTask(o,C.f,tx,C.curve);
+    const T=tanTask(o,C.f,tx,C.curve,N(X)+' °C');
     return {title:'Rate of cooling from a tangent',stem:C.stem,parts:[
-      {type:'num',q:'Use the graph to find the time when the temperature is '+BV(N(X)+' °C')+'.',unit:'minutes',answer:tx,tol:0.5,marks:[null,[{y:X}]],
+      {type:'num',onlyWith:'read',q:'Use the graph to find the time when the temperature is '+BV(N(X)+' °C')+'.',unit:'minutes',answer:tx,tol:0.5,marks:[null,[{y:X}]],
         fig:coolFig(C),figWork:coolFig(C,(gx,gy)=>guide(gx,gy,o,tx,X,'y')+dot(gx,gy,tx,X)),
         hints:['Go across from '+N(X)+' °C to the curve, then down.','One small square on the time axis is 1 minute.'],
         working:'one small square = 1 minute||read across from '+N(X)+' °C to the curve, then down<br>time = '+N(+tx.toFixed(1))+' minutes'},
@@ -2531,6 +2556,8 @@ function next(){
   const row=calcPick(Math.random,pool);last=row.id;
   let Q=null,any=null;for(let k=0;k<80&&!Q;k++){Q=row.gen(calcRnd(1+Math.floor(Math.random()*2147483646)));if(Q){any=any||Q;if(st.un.indexOf(+(Q.unit||row.unit))<0)Q=null;}}
   Q=Q||any;   // a kind spread over several units: deal one from a ticked unit
+  // a part that practises another type (3j: the reading before a cooling-curve tangent) is kept only when that type is ticked too
+  Q.parts=Q.parts.filter(P=>!P.onlyWith||st.sk.indexOf(P.onlyWith)>-1);
   Q.row=row;Q.src=calcPick(Math.random,Q.srcs||row.src);Q.pi=0;Q.clean=true;Q.vals=[];Q.done=false;
   cur=Q;qn++;render();
 }
@@ -2655,7 +2682,7 @@ function openFit(P,body){
   const nb=mk('div','bar');nb.innerHTML='<button type="button" class="btn primary" id="gq-go" hidden>Next part &rarr;</button>';
   createDrawTasks({host:host,tasks:[P.task],kind:kind,W:560,H:400,single:true,onDone:status=>{
     if(status===2){Q.clean=false;Q.line=null;Q.curve=null;Q.tan=null;}
-    else if(K===TANGENT)Q.tan={m:last.m,c:P.task.y0-last.m*P.task.x0};
+    else if(K===TANGENT)Q.tan=lineOf(last);
     else if(K===BESTFIT)Q.line=lineOf(last);else if(K===CURVEFIT)Q.curve={hx:P.task.hx,y:last.y.slice()};
     if(Q.pi===Q.parts.length-1){partDone(what[status===2?0:1]);return;}
     const go=byId('gq-go');go.hidden=false;go.focus({preventScroll:true});
