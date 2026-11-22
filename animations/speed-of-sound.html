@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Speed of Sound in Air Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Interactive physics animation. Measure the speed of sound in air three ways: a flash and bang across a field timed with a stopwatch, echoes from a wall, and two microphones with an oscilloscope. Experiment mode: take three timings at each distance and plot distance against time. A Questions tab deals exam-style measurements to work out the speed from, and asks where to stand for the most accurate result.">
+<meta name="description" content="Interactive physics animation. Measure the speed of sound in air three ways: a flash and bang across a field timed with a stopwatch, echoes from a wall, and two microphones with an oscilloscope. Experiment mode: take three timings at each distance and plot distance against time. A Questions tab deals exam-style measurements to work out the speed from, and asks where to stand for the most accurate result. At IAL (core practical 4): a signal generator, loudspeaker, microphone and two-beam oscilloscope, with the wavelength found by moving the microphone until the traces are in phase.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -182,8 +182,15 @@
   .embed .view{max-height:460px;}
   #ss-svg{touch-action:pan-y;}
   /* measure mode (?show=measure): everything that reads, records or explains is hidden */
-  .meas-off{display:none !important;}
+  .meas-off,.ph-off{display:none !important;}
   .embed .side>#ss-mode{align-self:flex-start;}
+  .embed #ss-level{display:none;}   /* the level switch is for the teacher: never in a frame */
+  #ss-mode>button[hidden],#ss-phrow[hidden],#ss-grow[hidden]{display:none;}
+  #ss-phrow .seg button{padding-inline:5px;} #ss-phrow.kit{gap:8px 10px;}
+  #ss-expbox.ph6 .rtable-wrap{max-height:178px;}   /* six frequencies: all six rows show */
+  #ss-nudge{display:contents;} #ss-nudge[hidden]{display:none;}
+  #ss-nudge>.btn{flex:1 1 0;min-width:max-content;justify-content:center;padding-inline:9px;}
+  @media (max-width:560px){ #ss-mode{flex-wrap:wrap;} }
   #ss-svg sub{font-size:.8em;}
   /* Questions (?show=predict) */
   #ss-svg .pick{cursor:pointer;} #ss-svg .pick:focus{outline:none;} #ss-svg .pick .ring{fill:none;stroke:transparent;} #ss-svg .pick:focus-visible .ring{stroke:var(--accent);}
@@ -317,10 +324,11 @@
   <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
   <header class="page-head">
     <div>
-      <div class="eyebrow">Animations &middot; sound &middot; core practical 3.25P</div>
+      <div class="eyebrow" id="ss-eyebrow">Animations &middot; sound &middot; core practical 3.25P</div>
       <h1>Speed of Sound in Air</h1>
     </div>
-    <div class="seg tabs" id="ss-mode" role="group" aria-label="Method"><button type="button" data-v="direct" aria-pressed="true">Direct</button><button type="button" data-v="echo" aria-pressed="false">Echo</button><button type="button" data-v="mics" aria-pressed="false">Two microphones</button></div>
+    <div class="seg tabs" id="ss-level" role="group" aria-label="Level"><button type="button" data-v="igcse" aria-pressed="true">IGCSE</button><button type="button" data-v="ial" aria-pressed="false">IAL</button></div>
+    <div class="seg tabs" id="ss-mode" role="group" aria-label="Method"><button type="button" data-v="direct" aria-pressed="true">Direct</button><button type="button" data-v="echo" aria-pressed="false">Echo</button><button type="button" data-v="mics" aria-pressed="false">Two microphones</button><button type="button" data-v="phase" aria-pressed="false" hidden>Signal generator</button></div>
   </header>
 
   <section class="card stage">
@@ -334,7 +342,12 @@
           <button class="btn" id="ss-exp" type="button" aria-pressed="false" title="Take your own timings, three at each distance, and plot them">Experiment</button>
           <button class="btn btn-primary" id="ss-go" type="button" hidden>&#9654; Go</button>
           <button class="btn" id="ss-new" type="button" hidden>New question</button>
+          <span id="ss-nudge" role="group" aria-label="Move the microphone" hidden><button class="btn" type="button" data-mm="-10" aria-label="Move the microphone 1 cm towards the loudspeaker">&#9664; 1 cm</button><button class="btn" type="button" data-mm="-1" aria-label="Move the microphone 1 mm towards the loudspeaker">&#9664; 1 mm</button><button class="btn" type="button" data-mm="1" aria-label="Move the microphone 1 mm away from the loudspeaker">1 mm &#9654;</button><button class="btn" type="button" data-mm="10" aria-label="Move the microphone 1 cm away from the loudspeaker">1 cm &#9654;</button></span>
           <button class="btn to-q" type="button" data-mode="ss-tab" hidden>Try the questions &rarr;</button>
+        </div>
+        <div class="cgrid one" id="ss-grow" hidden>
+          <span class="rowlab" id="ss-glab">Graph</span>
+          <div class="seg" id="ss-gsel" role="group" aria-labelledby="ss-glab"><button type="button" data-v="f" aria-pressed="false">λ against f</button><button type="button" data-v="inv" aria-pressed="true">λ against 1/f</button></div>
         </div>
       </div>
     </div>
@@ -348,6 +361,12 @@
       <div class="cgrid" id="ss-nrow" hidden>
         <span class="rowlab">Time</span>
         <div class="seg" id="ss-n"><button type="button" data-v="1" aria-pressed="false">1 echo</button><button type="button" data-v="20" aria-pressed="true">20 echoes</button></div>
+      </div>
+      <div class="cgrid" id="ss-phrow" hidden>
+        <span class="rowlab" id="ss-flab">Frequency (kHz)</span>
+        <div class="seg" id="ss-f" role="group" aria-labelledby="ss-flab"><button type="button" data-v="0" aria-pressed="true">2.0</button><button type="button" data-v="1" aria-pressed="false">2.5</button><button type="button" data-v="2" aria-pressed="false">3.125</button><button type="button" data-v="3" aria-pressed="false">4.0</button><button type="button" data-v="4" aria-pressed="false">5.0</button><button type="button" data-v="5" aria-pressed="false">8.0</button></div>
+        <span class="rowlab" id="ss-tblab">Time base (µs)</span>
+        <div class="seg" id="ss-tb" role="group" aria-labelledby="ss-tblab"><button type="button" data-v="0" aria-pressed="false">20</button><button type="button" data-v="1" aria-pressed="false">50</button><button type="button" data-v="2" aria-pressed="true">100</button><button type="button" data-v="3" aria-pressed="false">200</button></div>
       </div>
       <p class="note" id="ss-note" aria-live="polite"></p>
       <div id="ss-expbox" hidden>
@@ -650,9 +669,9 @@ function expKey(x, y, upLabel, downLabel){
   // Reaction times (s), mean and spread. Reacting to a sight is a little slower than reacting to a sound,
   // so starting on the flash and stopping on the bang do not cancel: the stopwatch reads about 0.04 s short.
   var RT_SEE=[0.21,0.03], RT_HEAR=[0.17,0.03], RT_ECHO=[0.17,0.035];
-  var LIM={direct:[50,400,10], echo:[20,150,5], mics:[0.2,1.5,0.05]};
-  var dv={direct:200, echo:60, mics:1};
-  if(/[?&]show=measure\b/.test(location.search)) dv={direct:200, echo:100, mics:0.9};
+  var LIM={direct:[50,400,10], echo:[20,150,5], mics:[0.2,1.5,0.05], phase:[0.1,1.45,0.001]};
+  var dv={direct:200, echo:60, mics:1, phase:0.1};
+  if(/[?&]show=measure\b/.test(location.search)) dv={direct:200, echo:100, mics:0.9, phase:0.1};
   var SEED=20261104;
   function rng(seed){ var a=seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
   function seeded(tag){ var h=SEED; for(var i=0;i<tag.length;i++) h=Math.imul(h^tag.charCodeAt(i), 2654435761)>>>0; return rng(h); }
@@ -667,7 +686,19 @@ function expKey(x, y, upLabel, downLabel){
   var svg=$('#ss-svg'), gMain=$('#ss-main'), gPicks=$('#ss-picks'), playBtn=$('#ss-play'), slowBtn=$('#ss-slow'), expBtn=$('#ss-exp');
   var modeSeg=segGroup($('#ss-mode'), function(){ setMode(); });
   var nSeg=segGroup($('#ss-n'), function(){ reset(); });
-  var showQ=location.search.match(/[?&]show=(direct|echo|mics)\b/);
+  // The level: IGCSE (3.25P: Direct, Echo, Two microphones) or IAL, which adds core practical 4 (Method: Signal generator) and opens on it.
+  var levelSeg=segGroup($('#ss-level'), function(){ setLevel(true); });
+  function ial(){ return levelSeg.value()==='ial'; }
+  function setLevel(user){
+    var pb=$('#ss-mode').querySelector('[data-v="phase"]'); pb.hidden=!ial();
+    $('#ss-eyebrow').innerHTML = ial() ? 'Animations &middot; waves &middot; core practical 4' : 'Animations &middot; sound &middot; core practical 3.25P';
+    if(!ial() && mode()==='phase') modeSeg.pick('direct'); else if(ial() && user && !QM) modeSeg.pick('phase');
+    if(user) setMode();
+  }
+  var showQ=location.search.match(/[?&]show=(direct|echo|mics|phase)\b/);
+  if(PW_LEVEL==='ial' || (showQ && showQ[1]==='phase') || /[?&]part=phase\b/.test(location.search)){ levelSeg.pick('ial'); $('#ss-mode').querySelector('[data-v="phase"]').hidden=false;
+    $('#ss-eyebrow').innerHTML='Animations &middot; waves &middot; core practical 4';
+    if(!showQ && !/[?&]show=predict\b/.test(location.search)) modeSeg.pick('phase'); }
   if(showQ){ modeSeg.pick(showQ[1]); $('#ss-mode').hidden=true; }
   // ?show=measure: the Do Experiment tab of the 3.25P practical page. The student reads the distance off the tape (or the rule) and the time
   // off the stopwatch (or counts divisions on the oscilloscope); nothing is read, recorded or explained for them. &part=direct|echo|mics fixes
@@ -677,7 +708,7 @@ function expKey(x, y, upLabel, downLabel){
   var MD={direct:[100,200,300,400], echo:[75,100,125,150], mics:[0.6,0.9,1.2,1.5]};                   // where the timer, the people or microphone B can stand
   var MMIC={'0.60':[1.8,1.7,1.8], '0.90':[2.6,2.7,2.6], '1.20':[3.5,3.5,3.6], '1.50':[4.4,4.4,4.4]};  // Δt in ms for hits 1, 2 and 3: each on a small mark of the screen
   if(MEAS){
-    var mp=location.search.match(/[?&]part=(direct|echo|mics)\b/), mn0=location.search.match(/[?&]n=(1|20)\b/);
+    var mp=location.search.match(/[?&]part=(direct|echo|mics|phase)\b/), mn0=location.search.match(/[?&]n=(1|20)\b/);
     if(mp){ modeSeg.pick(mp[1]); $('#ss-mode').hidden=true; }
     if(mn0){ nSeg.pick(mn0[1]); $('#ss-nrow').classList.add('meas-off'); }
     expBtn.setAttribute('aria-pressed','true'); document.documentElement.classList.add('measure');
@@ -721,7 +752,7 @@ function expKey(x, y, upLabel, downLabel){
   var G, SW=580, FS=1, narrowQ=window.matchMedia('(max-width:560px)');
   function layout(){
     var tall=narrowQ.matches; FS=tall?1.4:1;
-    if(tall){ G={x:76, y:414, w:440, h:190}; svg.setAttribute('viewBox','0 0 580 '+((MEAS||QM) ? (mode()==='mics' ? (QM ? 376 : 350) : (QM && Q && Q.kind==='stand') ? 380 : 566) : 668)); }
+    if(tall){ G={x:76, y:414, w:440, h:190}; svg.setAttribute('viewBox','0 0 580 '+((MEAS||QM) ? (mode()==='phase' ? 510 : mode()==='mics' ? (QM ? 376 : 350) : (QM && Q && Q.kind==='stand') ? 380 : 566) : 668)); }
     else { G={x:662, y:40, w:180, h:222}; svg.setAttribute('viewBox','0 0 860 350'); }
   }
   if(narrowQ.addEventListener) narrowQ.addEventListener('change', function(){ layout(); draw(); });
@@ -749,7 +780,7 @@ function expKey(x, y, upLabel, downLabel){
   var tA=(MA-SRC)/PXm/V;               // time for the sound to reach microphone A (s)
   // the oscilloscope's screen: beside the graph, or right across the picture in measure mode so that it can be read
   function scope(){
-    if((MEAS||QM) && mode()==='mics') return narrowQ.matches ? {x:62, y:190, w:490, h:112} : {x:96, y:190, w:700, h:112};
+    if(((MEAS||QM) && mode()==='mics') || (MEAS && mode()==='phase')) return narrowQ.matches ? {x:62, y:190, w:490, h:112} : {x:96, y:190, w:700, h:112};
     return {x:150, y:190, w:300, h:112};
   }
 
@@ -805,8 +836,8 @@ function expKey(x, y, upLabel, downLabel){
     } else lastShown=run;
   }
   function reset(){ stop(); run=null; lastShown=null; justAdded=null; lastReading=null; draw(); }
-  function clearReadings(){ R[rkey()]={}; reset(); }
-  function setMode(){ layout(); reset(); setAria(); }
+  function clearReadings(){ if(mode()==='phase'){ phClear(); return; } R[rkey()]={}; reset(); }
+  function setMode(){ phUI(); layout(); reset(); setAria(); }
   function setExp(){ $('#ss-expbox').hidden=!exp(); reset(); }
 
   // ---- drawing helpers
@@ -1084,9 +1115,10 @@ function expKey(x, y, upLabel, downLabel){
       '<marker id="ss-aht" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--trace)"/></marker>'+
       '<clipPath id="ss-clip"><rect x="0" y="0" width="'+SW+'" height="'+(GY-16)+'"/></clipPath>'+
       '<clipPath id="ss-clipw"><rect x="0" y="0" width="'+WX+'" height="'+(GY-16)+'"/></clipPath>'+
-      '<clipPath id="ss-clipm"><rect x="0" y="0" width="'+SW+'" height="'+(BY-12)+'"/></clipPath></defs>';
-    g+= m==='direct' ? sceneDirect() : m==='echo' ? sceneEcho() : sceneMics();
-    if(!MEAS && !QM) g+=drawGraph();
+      '<clipPath id="ss-clipm"><rect x="0" y="0" width="'+SW+'" height="'+(BY-12)+'"/></clipPath>'+
+      '<clipPath id="ss-clipp"><rect x="112" y="'+(BY-48)+'" width="'+(SW-130)+'" height="36"/></clipPath></defs>';
+    g+= m==='direct' ? sceneDirect() : m==='echo' ? sceneEcho() : m==='phase' ? scenePhase() : sceneMics();
+    if(!MEAS && !QM) g+= m==='phase' ? phGraph() : drawGraph();
     if(QM && Q) g+=qText();
     if(run && !run.over && !run.still && (slowOn() || run.rate<1)){
       var sp = run.rate<1 ? Math.round(1/run.rate)+' × slower' : '';
@@ -1098,11 +1130,239 @@ function expKey(x, y, upLabel, downLabel){
     readings();
   }
 
+  // ---- IAL core practical 4 (spec 38; TODO 5k, 22 Nov 2026): the speed of sound with a signal generator, a loudspeaker, a microphone and a
+  // two-beam oscilloscope. Shown only at the IAL level (Method: Signal generator; ?show=phase, or ?show=measure&part=phase for the Do
+  // Experiment tab of speed-of-sound-ial-practical.html). The signal generator feeds the loudspeaker and the upper trace; the microphone
+  // feeds the lower trace. Each wavelength the microphone moves away brings the traces back into phase. Kinds and wording from the IAL
+  // papers: WPH12 Oct 2019 Q19(b), WPH12 June 2021 Q17, WPH12 June 2024 Q15(a) and (c), WPH13 Jan 2022 Q5(a).
+  // The readings are fixed, and tools/practical-gen/practicals/speed-of-sound-ial/content.js checks against the same numbers
+  // (SS4_T, SS4_X1, SS4_X2): MEAS_T is the period at each setting, MEAS_X1 the first place from the 10 cm mark where the traces are in
+  // phase, and MEAS_X2 the place five wavelengths further on.
+  var PHF=[2000,2500,3125,4000,5000,8000];              // Hz, settings 1 to 6
+  var MEAS_T=[0.500,0.400,0.320,0.250,0.200,0.125];     // ms
+  var MEAS_X1=[12.3,15.6,11.9,13.2,10.4,12.7];          // cm
+  var MEAS_X2=[97.3,84.6,66.9,55.2,45.4,33.7];          // cm
+  var PTB=[20,50,100,200];                              // time base, µs per division
+  var PH={fi:0, tbi:2, rec:{}, anim:null, raf:0, msg:'', added:null, auto:false, tm:0, inv:true};
+  var PHAUTO=/[?&]run=auto\b/.test(location.search);   // the Watch Experiment tab: Play takes every reading by itself
+  var GENX=16, CONE=[110, BY-30];
+  function phLam(i){ return (MEAS_X2[i]-MEAS_X1[i])/5; }                       // cm
+  function phX(){ return Math.round(d()*1000)/10; }                            // microphone position, cm
+  function phN(){ return Math.round((phX()-MEAS_X1[PH.fi])/phLam(PH.fi)); }    // which in-phase place is nearest
+  function phFrac(){ var q=(d()*100-MEAS_X1[PH.fi])/phLam(PH.fi); return q-Math.floor(q); }   // fraction of a cycle the lower trace is behind
+  function phIn(){ return Math.abs(phX()-(MEAS_X1[PH.fi]+phN()*phLam(PH.fi)))<0.05; }
+  function phAnti(){ var q=(phX()-MEAS_X1[PH.fi])/phLam(PH.fi)-0.5; return Math.abs(q-Math.round(q))*phLam(PH.fi)<0.05; }
+  function phRec(i){ return PH.rec[i]||[]; }
+  function phHave(i){ var r=phRec(i); return r.length>1; }
+  function phFit(){ var p=[]; PHF.forEach(function(f,i){ if(phHave(i)) p.push([MEAS_T[i], phLam(i)]); }); return p.length>=4 ? fitLine(p) : null; }
+  function phStop(){ cancelAnimationFrame(PH.raf); clearTimeout(PH.tm); PH.raf=0; PH.anim=null; PH.auto=false; }
+  function phReset(){ phStop(); dv.phase=0.1; PH.msg=''; PH.added=null; if(PHAUTO) PH.rec={}; draw(); }
+  function phClear(){ PH.rec={}; phReset(); }
+  // glide the microphone to a place in a given time, then call done
+  function phGlide(to, dur, done){
+    PH.anim={x0:d(), x1:to, t:0}; var lastT=performance.now();
+    (function step(now){
+      var a=PH.anim; if(!a) return;
+      a.t=Math.min(1, a.t+Math.min(0.05,(now-lastT)/1000)/dur); lastT=now;
+      var e=a.t<0.5 ? 2*a.t*a.t : 1-2*(1-a.t)*(1-a.t);
+      dv.phase=a.x0+(a.x1-a.x0)*e;
+      if(a.t>=1){ dv.phase=+a.x1.toFixed(3); PH.anim=null; PH.raf=0; if(done) done(); else draw(); return; }
+      draw(); PH.raf=requestAnimationFrame(step);
+    })(lastT);
+  }
+  function phMove(){
+    var lam=phLam(PH.fi)/100, x1=d()+lam; PH.msg='away';
+    if(x1>LIM.phase[1]+1e-9){ x1=d()-lam; PH.msg='closer'; }
+    phGlide(x1, 4);
+  }
+  // Watch Experiment: at each frequency the microphone goes to the first in-phase place, then on through five wavelengths
+  function phAutoRun(){
+    phStop(); PH.rec={}; PH.added=null; PH.auto=true; PH.msg='auto'; var i=0;
+    (function next(){
+      if(i>=PHF.length){ PH.auto=false; PH.msg='autodone'; draw(); return; }
+      PH.fi=i; fSeg.pick(String(i)); dv.phase=0.1; draw();
+      phGlide(MEAS_X1[i]/100, 1.2, function(){ PH.rec[i]=[0]; PH.added=PHF[i]/1000; draw();
+        PH.tm=setTimeout(function(){ phGlide(MEAS_X2[i]/100, 2.8, function(){ PH.rec[i]=[0,5]; i++; draw(); PH.tm=setTimeout(next, 700); }); }, 500); });
+    })();
+  }
+  function phPlay(){
+    if(PH.anim || PH.auto) return;
+    if(PHAUTO){ phAutoRun(); return; }
+    if(!exp()){ phMove(); return; }
+    var r=phRec(PH.fi).slice(), n=phN();
+    if(!phIn()){ PH.msg='not'; PH.added=null; draw(); return; }
+    if(r.indexOf(n)<0){ r.push(n); r.sort(function(a,b){ return a-b; }); PH.rec[PH.fi]=r; }
+    PH.msg='rec'; PH.added=PHF[PH.fi]/1000; draw();
+  }
+  function phUI(){
+    var p=mode()==='phase';
+    $('#ss-phrow').hidden=!p; $('#ss-expbox').classList.toggle('ph6', p); $('#ss-nudge').hidden=!p; $('#ss-tab').hidden=p; slowBtn.hidden=p;
+    playBtn.hidden = p && MEAS; $('#ss-grow').hidden = !p || MEAS;
+    if(p && PHAUTO){ expBtn.setAttribute('aria-pressed','true'); $('#ss-expbox').hidden=false; ['#ss-exp','#ss-nudge','#ss-clear'].forEach(function(q){ $(q).classList.add('meas-off'); }); }
+    if(p) $('#ss-nrow').hidden=true; else { phStop(); $('.stats').classList.remove('ph-off'); }
+    $('#ss-flab').textContent = MEAS ? 'Signal generator setting' : 'Frequency (kHz)';
+    Array.prototype.forEach.call($('#ss-f').querySelectorAll('button'), function(b, i){ b.textContent = MEAS ? String(i+1) : String(PHF[i]/1000).replace(/^(\d)$/,'$1.0'); });
+  }
+  function phTraces(Sc, yA, yB, amp){
+    var Tus=1000*MEAS_T[PH.fi], tot=10*PTB[PH.tbi], n=Math.max(160, Math.ceil(tot/Tus*30)), fr=phFrac(), g='';
+    var aB=amp*Math.max(0.3, Math.min(1, Math.pow(0.15/(d()+0.05), 0.7)));
+    [[yA, amp, 0],[yB, aB, fr]].forEach(function(tr){
+      var pts=[];
+      for(var i=0;i<=n;i++){ var s=tot*i/n; pts.push((Sc.x+Sc.w*i/n).toFixed(1)+','+(tr[0]-tr[1]*Math.sin(2*Math.PI*(s/Tus-tr[2]))).toFixed(1)); }
+      g+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--trace)" stroke-width="1.7" stroke-linejoin="round"/>';
+    });
+    return g;
+  }
+  // measure mode: the rule under the microphone, close up (a mark every millimetre, a number every centimetre)
+  function phClose(){
+    var tall=narrowQ.matches, w=tall?460:250, x0=tall?60:598, y0=tall?404:64, pc=w/5, xc=d()*100, g='', mm, X;
+    g+=T(x0+w/2, y0-24*FS, 'The rule at the pointer, close up', {a:'middle', fs:tall?12.5:11.5, w:600, c:'var(--ink)'});
+    g+='<clipPath id="ss-clipr"><rect x="'+x0+'" y="'+(y0-14)+'" width="'+w+'" height="'+(86+14)+'"/></clipPath><g clip-path="url(#ss-clipr)">';
+    g+=rect(x0, y0+22, w, 50, 'var(--tape)');
+    for(mm=Math.floor((xc-2.6)*10); mm<=Math.ceil((xc+2.6)*10); mm++){
+      X=x0+w/2+(mm/10-xc)*pc;
+      g+=ln(X, y0+22, X, y0+22+(mm%10===0 ? 20 : mm%5===0 ? 14 : 9), 'var(--tape-ink)', mm%10===0 ? 1.5 : 1);
+      if(mm%10===0) g+=txt(X, y0+62, String(mm/10), {a:'middle', fs:15*(tall?1.3:1), w:600, c:'var(--tape-ink)'});
+    }
+    g+=pg([[x0+w/2,y0+21],[x0+w/2-7,y0+5],[x0+w/2+7,y0+5]],'var(--topic)')+rect(x0+w/2-16, y0-8, 32, 13, 'var(--steel)', ' rx="3"')+rect(x0+w/2-13, y0-7, 26, 3, 'var(--steel-hi)', ' rx="1.5" opacity=".7"');
+    g+='</g>'+rect(x0, y0+22, w, 50, 'none', ' stroke="var(--ink-soft)" stroke-width="1.2"');
+    g+=T(x0+w, y0+90, 'cm', {a:'end', fs:12, c:'var(--ink-soft)'})+T(x0, y0+90, 'pointer on the microphone stand', {fs:11.5, c:'var(--ink-soft)'});
+    return g;
+  }
+  function scenePhase(){
+    var g='', bx=micBX(), Sc=scope(), div=Sc.w/10, yA=Sc.y+Sc.h*0.27, yB=Sc.y+Sc.h*0.73, amp=Sc.h*0.19, fi=PH.fi, v, k, n;
+    var cx0=Sc.x-48, cy0=Sc.y-14, cw=Sc.w+62, ch=Sc.h+54, sA=[cx0+14, cy0-14], sB=[cx0+34, cy0-14];
+    // the leads go down behind the bench and come out underneath it: signal generator to input A, microphone to input B
+    g+=lead(bez([GENX+12,BY-4],[GENX+12,BY+44],[sA[0]-10,BY+30],sA,22), 'var(--lead)', 3)+lead(bez([bx+2,BY-4],[bx+2,BY+46],[sB[0]+30,BY+30],sB,22), 'var(--lead)', 3);
+    // the bench, with a rule fixed along its front edge, numbered in centimetres
+    g+=box(14, BY, SW-52, 22, 20, -12, 'var(--wood-f)', {top:'var(--wood-t)', side:'var(--wood-s)'});
+    g+=rect(MA-4, BY+1.5, 1.5*PXm+8, 6.5, 'var(--tape)', ' rx="1.5"');
+    for(v=0; v<=150; v+=5){ var X=MA+v/100*PXm, big=v%10===0; g+=ln(X, BY+1.5, X, BY+(big?8:5), 'var(--tape-ink)', big?1.2:0.8);
+      if(big) g+=txt(X, BY+19, String(v), {a:'middle', fs:10.5, c:'var(--bench-ink)', w:600}); }
+    g+=txt(MA+1.5*PXm+17, BY+19, 'cm', {fs:11, c:'var(--bench-ink)', w:600});
+    // wavefronts: where the compressions are at the moment the signal generator's trace is at a peak
+    var lamPx=phLam(fi)/100*PXm, r0=MA+MEAS_X1[fi]/100*PXm-CONE[0];
+    for(n=-Math.floor((r0-5)/lamPx); r0+n*lamPx<SW-CONE[0]-18; n++){ var rr=r0+n*lamPx;
+      g+='<circle cx="'+CONE[0]+'" cy="'+CONE[1]+'" r="'+rr.toFixed(1)+'" fill="none" stroke="var(--sound)" stroke-width="1.5" opacity="'+Math.max(0.22, 0.75-rr/700).toFixed(2)+'" clip-path="url(#ss-clipp)"/>'; }
+    // the signal generator and the loudspeaker it drives
+    g+=ell(GENX+34, BY-8, 36, 3.6, '#000', ' opacity=".12"')+icase(GENX, BY-54, 60, 44);
+    g+=rect(GENX+5, BY-49, 50, 15, '#0b0f14', ' rx="2.5"')+txt(GENX+30, BY-38, MEAS ? 'setting '+(fi+1) : sn(PHF[fi]/1000,3)+' kHz', {a:'middle', fs:9.5, w:600, c:'var(--trace)'});
+    g+='<circle cx="'+(GENX+16)+'" cy="'+(BY-22)+'" r="6.5" fill="var(--case-t)" stroke="var(--case-s)" stroke-width="1"/>'+ln(GENX+16, BY-22, GENX+16+5.5*Math.cos(-2.4+fi*0.75), BY-22+5.5*Math.sin(-2.4+fi*0.75), '#fff', 1.6);
+    g+=stud(GENX+38, BY-22)+stud(GENX+50, BY-22, 'var(--steel)');
+    g+=lead([[GENX+50,BY-19],[GENX+58,BY-9],[GENX+74,BY-7],[94,BY-12]], 'var(--lead)', 2.6);
+    g+=ell(102, BY-7, 13, 3.4, '#000', ' opacity=".12"')+box(92, BY-52, 12, 42, 6, -4, 'var(--case-f)', {top:'var(--case-t)', side:'var(--case-s)'});
+    g+=ell(107.5, BY-32, 2.8, 13, '#0b0f14')+ell(107.2, BY-32, 1.3, 6, 'var(--steel)');
+    // labels in clear space above the apparatus: on a phone (larger text) they take a row each
+    var LB={fs:11, c:'var(--ink)', w:600}, LM={a:'middle', fs:11, c:'var(--ink)', w:600}, at='at '+sn(d()*100,1)+' cm';
+    g+=mic(bx, '');
+    if(narrowQ.matches){
+      var mx=Math.max(52, Math.min(SW-52, bx));
+      g+=T(4, BY-110, 'signal generator', LB)+T(62, BY-94, 'loudspeaker', LB)+T(mx, BY-(MEAS ? 62 : 78), 'microphone', LM)+(MEAS ? '' : T(mx, BY-62, at, LM));
+    } else {
+      g+=T(6, BY-88, 'signal', LB)+T(6, BY-75, 'generator', LB)+T(84, BY-61, 'loudspeaker', LB);
+      var mlab=MEAS ? 'microphone' : 'microphone '+at, near=bx<=(MEAS ? 196 : 238);   // near the loudspeaker the microphone's label goes above the loudspeaker's
+      g+= near ? T(bx-33, BY-76, mlab, LB) : T(Math.min(bx, SW-(MEAS ? 36 : 76)), BY-54, mlab, LM);
+      if(!PH.anim) g+=T(bx, BY-(near ? 90 : 68), '← drag →', {a:'middle', fs:11, c:'var(--accent)'});
+    }
+    // the oscilloscope: both traces start at the left when the signal generator's signal rises through zero
+    g+=shadow(cx0, cy0+ch, cw)+icase(cx0, cy0, cw, ch);
+    [sA,sB].forEach(function(q){ g+=rect(q[0]-4.5, q[1], 9, 11, 'var(--plug-k)', ' rx="2"')+ell(q[0], q[1], 4.5, 2.2, 'var(--case-t)'); });
+    g+=txt(cx0+24, yA+5, 'A', {a:'middle', fs:14, w:700, c:'#fff'})+txt(cx0+24, yB+5, 'B', {a:'middle', fs:14, w:700, c:'#fff'});
+    g+=rect(Sc.x-3, Sc.y-3, Sc.w+6, Sc.h+6, '#0b0f14', ' rx="4"')+rect(Sc.x, Sc.y, Sc.w, Sc.h, 'var(--screen)');
+    for(k=1;k<10;k++) g+=ln(Sc.x+k*div, Sc.y, Sc.x+k*div, Sc.y+Sc.h, 'var(--screen-grid)', 0.8);
+    for(k=1;k<4;k++) g+=ln(Sc.x, Sc.y+k*Sc.h/4, Sc.x+Sc.w, Sc.y+k*Sc.h/4, 'var(--screen-grid)', 0.8);
+    for(k=0;k<=50;k++){ var xx=Sc.x+k*div/5; g+=ln(xx, yA-2.6, xx, yA+2.6, 'var(--screen-axis)', 0.7)+ln(xx, yB-2.6, xx, yB+2.6, 'var(--screen-axis)', 0.7); }
+    g+=phTraces(Sc, yA, yB, amp);
+    g+=txt(Sc.x+Sc.w, Sc.y+Sc.h+17, 'time base '+PTB[PH.tbi]+' µs per division', {a:'end', fs:11.5, c:'#fff', w:600});
+    g+=txt(Sc.x, Sc.y+Sc.h+17, 'oscilloscope', {fs:11.5, c:'#fff'});
+    g+=txt(Sc.x, Sc.y+Sc.h+33, 'A: signal generator', {fs:11.5, c:'#fff'})+txt(Sc.x+Sc.w, Sc.y+Sc.h+33, 'B: microphone', {a:'end', fs:11.5, c:'#fff'});
+    if(MEAS) g+=phClose();
+    return g;
+  }
+  // the graph beside the picture: wavelength against 1/f. Explore: the line for 340 m/s and where this frequency is on it.
+  // Experiment: a cross for each frequency once two in-phase places are recorded, and a best-fit line after four frequencies.
+  function phGraph(){
+    var inv=PH.inv, a=inv ? {x1:0.5, xs:0.1, y1:20, ys:5} : {x1:10, xs:2, y1:20, ys:5}, g='', v, i;
+    var X=function(k){ return inv ? MEAS_T[k] : PHF[k]/1000; };
+    for(v=0; v<=a.x1+1e-9; v+=a.xs){ var px=gx(a,v); g+=ln(px, G.y, px, G.y+G.h, 'var(--panel-border)', 1)+T(px, G.y+G.h+18*FS, inv ? sn(v,1) : String(v), {a:'middle', fs:11, c:'var(--ink-faint)'}); }
+    for(v=0; v<=a.y1+1e-9; v+=a.ys){ var py=gy(a,v); g+=ln(G.x, py, G.x+G.w, py, 'var(--panel-border)', 1)+T(G.x-5, py+4*FS, String(v), {a:'end', fs:11, c:'var(--ink-faint)'}); }
+    g+=ln(G.x, G.y, G.x, G.y+G.h, 'var(--ink-soft)', 2)+ln(G.x, G.y+G.h, G.x+G.w, G.y+G.h, 'var(--ink-soft)', 2);
+    g+=T(G.x-30*FS, G.y-12*FS, 'wavelength λ (cm)', {fs:12})+T(G.x+G.w/2, G.y+G.h+35*FS, inv ? '1/f (ms)' : 'frequency f (kHz)', {a:'middle', fs:12});
+    var curve=function(k, col, w, extra){   // λ = k × 1/f, with k in cm per ms: a straight line against 1/f, a curve against f
+      if(inv) return ln(gx(a,0), gy(a,0), gx(a,a.x1), gy(a,k*a.x1), col, w, extra);
+      var p=[]; for(var q=k/a.y1; q<=a.x1+1e-9; q+=0.1) p.push([gx(a,q), gy(a,k/q)]);
+      return pl(p, col, w, extra);
+    };
+    if(!exp()){
+      var x0=X(PH.fi), y0=V/10*MEAS_T[PH.fi];
+      g+=curve(V/10, 'var(--sound)', 2.4);
+      g+=ln(G.x, gy(a,y0), gx(a,x0), gy(a,y0), 'var(--ink-faint)', 1, ' stroke-dasharray="3 3"')+ln(gx(a,x0), gy(a,y0), gx(a,x0), G.y+G.h, 'var(--ink-faint)', 1, ' stroke-dasharray="3 3"');
+      g+='<circle cx="'+gx(a,x0).toFixed(1)+'" cy="'+gy(a,y0).toFixed(1)+'" r="5" fill="var(--sound)" stroke="var(--panel)" stroke-width="1.5"/>';
+    } else {
+      var any=false;
+      for(i=0;i<PHF.length;i++) if(phHave(i)){ any=true; g+=expCross(+gx(a,X(i)).toFixed(1), +gy(a,phLam(i)).toFixed(1), 4.5); }
+      if(!any) g+=T(G.x+G.w/2, G.y+G.h/2, 'readings appear here', {a:'middle', fs:12, c:'var(--ink-faint)'});
+      var f=phFit();
+      if(f) g+=curve(f.m, 'var(--accent)', 1.8, ' stroke-dasharray="5 4"')+T(G.x+G.w-3, inv ? G.y+G.h-9 : G.y+14*FS, inv ? 'best fit' : 'a curve', {a:'end', fs:11.5, c:'var(--accent)', halo:1});
+    }
+    return g;
+  }
+  function phReadings(){
+    var fi=PH.fi, f=PHF[fi], Tus=1000*MEAS_T[fi], tb=PTB[PH.tbi], xc=phX(), E=exp(), busy=!!PH.anim, lam=phLam(fi), note='', w1='', w2='', w3='';
+    var xs=sn(xc,1)+' cm', fk=f+' Hz', inph=phIn(), anti=phAnti(), fr=phFrac();
+    $('.stats').classList.toggle('ph-off', E);   // in Experiment the table and the picture give every reading
+    var state = inph ? 'in phase' : anti ? 'in antiphase' : 'out of phase';
+    svg.setAttribute('aria-valuenow', d()); svg.setAttribute('aria-valuetext', 'microphone at '+xs+'; the traces are '+(inph ? 'in phase' : anti ? 'in antiphase' : 'out of phase'));
+    busy=busy || PH.auto;
+    ['#ss-f','#ss-tb','#ss-nudge','#ss-mode','#ss-level'].forEach(function(q){ Array.prototype.forEach.call($(q).querySelectorAll('button'), function(b){ b.disabled=busy; }); });
+    if(MEAS){
+      note='Find <i>T</i> from the upper trace: the divisions for several whole cycles × the time base. Move the microphone until the traces are <b>in phase</b>, and read its position on the close-up of the rule. A faster time base shows more clearly when the peaks line up.';
+      if(note!==lastNote){ $('#ss-note').innerHTML=note; lastNote=note; }
+      return;
+    }
+    var r=phRec(fi), have=phHave(fi), x1=have ? MEAS_X1[fi]+r[0]*lam : null, x2=have ? MEAS_X1[fi]+r[r.length-1]*lam : null, nw=have ? r[r.length-1]-r[0] : 0, sp=Math.round(f*lam/100*10)/10;
+    var divs=Tus/tb;
+    w1='<i>T</i> = divisions for one cycle × time base<br><i>T</i> = '+sig(divs,3)+' × '+tb+' µs<br><i>T</i> = '+sig(Tus,3)+' µs<br><i>f</i> = [[1|<i>T</i>]]<br><i>f</i> = [[1|'+sci(Tus/1e6,2)+']]<br><i>f</i> = <b>'+grp(f)+' Hz</b>';
+    if(!E){
+      S(1,'Frequency, f', fk); S(2,'Period, T', sig(Tus,3)+' µs'); S(3,'Wavelength, λ', (PH.msg==='away' || PH.msg==='closer') && !busy ? sn(lam,1)+' cm' : '?'); S(4,'Trace B is behind by', inph ? 'in phase' : sn(fr,2)+' cycle');
+      w3='Each time the microphone moves one wavelength further from the loudspeaker, the sound takes one period longer to reach it. The lower trace falls one whole cycle further behind, so the two traces are in phase again.';
+      if(busy) note='The microphone moves one wavelength '+(PH.msg==='closer' ? 'closer to' : 'further from')+' the loudspeaker. Watch the lower trace slide through one whole cycle.';
+      else if(PH.msg==='away' || PH.msg==='closer') note='The microphone has moved <b>one wavelength</b>, so the lower trace has shifted by exactly one cycle and the phase difference is the same as before. The distance moved is the wavelength: read it from the rule.';
+      else note='The signal generator drives the loudspeaker and the upper trace; the microphone gives the lower trace. The traces are now <b>'+state+'</b>. Drag the microphone: each wavelength it moves brings the traces back into phase.';
+    } else {
+      var rows=[]; PHF.forEach(function(ff,i){ var q=phRec(i), L=phLam(i); if(!q.length) return;
+        rows.push({v:ff/1000, x1:MEAS_X1[i]+q[0]*L, x2:q.length>1 ? MEAS_X1[i]+q[q.length-1]*L : '', n:q.length>1 ? q[q.length-1]-q[0] : '', lam:q.length>1 ? L : ''}); });
+      expTable($('#ss-table'), [{label:'f (kHz)', key:'v', dp:3},{label:'first (cm)', key:'x1', dp:1},{label:'last (cm)', key:'x2', dp:1},{label:'wavelengths', key:'n', dp:0},{label:'λ (cm)', key:'lam', dp:1}], rows, PH.added);
+      if(have){
+        w2='λ = [[distance moved|number of wavelengths]]<br>λ = [['+sn(x2,1)+' − '+sn(x1,1)+'|'+nw+']]<br>λ = '+sn(lam,1)+' cm<br>λ = '+sn(lam/100,3)+' m<br><i>v</i> = <i>f</i>λ<br><i>v</i> = '+grp(f)+' × '+sn(lam/100,3)+'<br><i>v</i> = <b>'+sig(f*lam/100,3)+' m s⁻¹</b>';
+      }
+      var ft=phFit(), nf=PHF.filter(function(_,i){ return phHave(i); }).length;
+      if(ft){
+        var xa=0.1, xb=0.5, ya=ft.m*xa+ft.c, yb=ft.m*xb+ft.c;
+        w3='Gradient of λ against [[1|<i>f</i>]], from two points on your best-fit line: [['+sn(yb,2)+' − '+sn(ya,2)+'|'+sn(xb,1)+' − '+sn(xa,1)+']] cm per ms = '+sn(ft.m,1)+' cm per ms = <b>'+sig(ft.m*10,3)+' m s⁻¹</b>. Since λ = <i>v</i> × [[1|<i>f</i>]], the gradient is the speed of sound. The model uses 340 m s⁻¹.';
+      } else w3='Since <i>v</i> = <i>f</i>λ, λ = <i>v</i> × [[1|<i>f</i>]]: a graph of λ against [[1|<i>f</i>]] is a straight line through the origin whose gradient is the speed of sound.';
+      if(PH.auto) note='Setting '+(fi+1)+': the microphone is moved to the first place where the traces are in phase, then on through five wavelengths. The wavelength is one fifth of the distance moved.';
+      else if(PH.msg==='not') note='The traces are <b>not in phase</b> here. Move the microphone until the peaks of the lower trace are exactly under the peaks of the upper trace (the 1 mm buttons and a faster time base help), then record.';
+      else if(!PH.inv && nf) note='Against <i>f</i> the points lie on a curve: λ = [[<i>v</i>|<i>f</i>]], so λ is inversely proportional to <i>f</i>. A curve cannot give <i>v</i> from a gradient. Try λ against [[1|<i>f</i>]].';
+      else if(ft) note='Done: the best-fit line passes close to the origin, and its gradient is the speed of sound: <b>'+sig(ft.m*10,3)+' m s⁻¹</b>.';
+      else if(have) note=fk+': the traces came back into phase '+nw+' time'+(nw===1?'':'s')+' in '+sn(x2-x1,1)+' cm, so λ = '+sn(lam,1)+' cm. '+nf+' frequenc'+(nf===1?'y':'ies')+' done: do at least 4.';
+      else if(r.length===1) note='Recorded: in phase at '+sn(MEAS_X1[fi]+r[0]*lam,1)+' cm. Now move the microphone away, counting each time the traces come back into phase, and record the last place.';
+      else if(PHAUTO) note='Press <b>Play</b>: at each frequency the microphone is moved to the first place where the traces are in phase, and then on through five wavelengths.';
+      else note='Experiment: move the microphone until the two traces are in phase, then press <b>Record this position</b>. Move it away through several wavelengths, record again, and then change the frequency. Do at least 4 frequencies.';
+    }
+    $('#ss-eq1').innerHTML=FR(w1); $('#ss-eq1').hidden=false; $('#ss-eq2').innerHTML=FR(w2); $('#ss-eq2').hidden=!w2; $('#ss-eq3').innerHTML=FR(w3); $('#ss-eq3').hidden=!w3;
+    note=FR(note);
+    if(note!==lastNote){ $('#ss-note').innerHTML=note; lastNote=note; }
+    $('#ss-clear').disabled=busy;
+    playBtn.innerHTML = PHAUTO ? '&#9654; Play' : E ? 'Record this position' : '&#9654; Move one wavelength'; playBtn.disabled=busy;
+  }
+
   // ---- readings, table, working and note
   var lastNote='';
   function S(i, label, val){ $('#ss-l'+i).textContent=label; $('#ss-s'+i).textContent=val; }
   function readings(){
     if(QM){ qReadings(); return; }
+    if(mode()==='phase'){ phReadings(); return; }
     var m=mode(), D=d(), E=exp(), U=tUnit(), busy=run && !run.over;
     $('#ss-nrow').hidden = !(m==='echo' && E);
     svg.setAttribute('aria-valuenow', D); svg.setAttribute('aria-valuetext', MEAS ? 'position '+(MD[m].indexOf(D)+1)+' of '+MD[m].length : 'd = '+dTxt(D));
@@ -1374,7 +1634,7 @@ function expKey(x, y, upLabel, downLabel){
     stop();
     if(on){
       if(exp()){ expBtn.setAttribute('aria-pressed','false'); setExp(); }
-      qSaved={m:mode(), dv:{direct:dv.direct, echo:dv.echo, mics:dv.mics}, n:nSeg.value()}; QM=true;
+      qSaved={m:mode(), dv:{direct:dv.direct, echo:dv.echo, mics:dv.mics, phase:dv.phase}, n:nSeg.value()}; QM=true;
     } else { QM=false; Q=null; run=null; modeSeg.pick(qSaved.m); dv=qSaved.dv; nSeg.pick(qSaved.n); }
     ['#ss-play','#ss-reset','#ss-exp','.stats'].forEach(function(sel){ var e=$(sel); if(e) e.hidden=on; });
     $('#ss-mode').hidden = on || !!showQ; $('#ss-go').hidden=!on; $('#ss-new').hidden=!on; $('#ss-q').hidden=!on;
@@ -1389,31 +1649,37 @@ function expKey(x, y, upLabel, downLabel){
 
   // ---- buttons
   playBtn.addEventListener('click', function(){
+    if(mode()==='phase'){ phPlay(); return; }
     if(exp()){ if(!(run && !run.over)){ justAdded=null; run=newRun('exp'); loop(); draw(); } return; }
     if(run && !run.over){ run.paused=!run.paused; if(run.paused){ stop(); draw(); } else loop(); return; }
     run=newRun('watch'); lastShown=null; loop(); draw();
   });
   slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slowOn())); draw(); });
   expBtn.addEventListener('click', function(){ expBtn.setAttribute('aria-pressed', String(!exp())); setExp(); });
-  $('#ss-reset').addEventListener('click', reset);
+  $('#ss-reset').addEventListener('click', function(){ if(mode()==='phase') phReset(); else reset(); });
+  segGroup($('#ss-gsel'), function(v){ PH.inv=v==='inv'; lastNote=''; draw(); });
+  var fSeg=segGroup($('#ss-f'), function(v){ PH.fi=+v; PH.msg=''; PH.added=null; dv.phase=0.1; draw(); });
+  segGroup($('#ss-tb'), function(v){ PH.tbi=+v; draw(); });
+  $('#ss-nudge').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b || b.disabled || PH.anim) return; PH.msg=''; setD(d()+(+b.dataset.mm)/1000); });
   $('#ss-clear').addEventListener('click', clearReadings);
 
   // ---- drag the timer (direct), the people (echo) or microphone B along the bench, or use the arrow keys
   function lim(){ return LIM[mode()]; }
   function setD(v){
-    var L=lim(); v=Math.round(v/L[2])*L[2]; v=+Math.max(L[0], Math.min(L[1], v)).toFixed(2);
-    if(MEAS){ var md=MD[mode()], best=md[0]; md.forEach(function(p){ if(Math.abs(p-v)<Math.abs(best-v)) best=p; }); v=best; }   // measure mode: only the marked places
+    var L=lim(); v=Math.round(v/L[2])*L[2]; v=+Math.max(L[0], Math.min(L[1], v)).toFixed(mode()==='phase' ? 3 : 2);
+    if(mode()==='phase'){ if(PH.anim) return; PH.msg=''; }
+    if(MEAS && MD[mode()]){ var md=MD[mode()], best=md[0]; md.forEach(function(p){ if(Math.abs(p-v)<Math.abs(best-v)) best=p; }); v=best; }   // measure mode: only the marked places
     if(v===dv[mode()]) return; dv[mode()]=v;
     if(run && !run.over) stop();
     run=null; lastShown=null; justAdded=null; lastReading=null; draw();
   }
   function objX(){ var m=mode(); return m==='direct' ? sophieX() : m==='echo' ? aliEchoX()-22 : micBX(); }
-  function objY(){ var m=mode(); return m==='mics' ? BY-26 : GY-62; }
+  function objY(){ var m=mode(); return (m==='mics' || m==='phase') ? BY-26 : GY-62; }
   function toD(x){ var m=mode(); return m==='direct' ? (x-AX)/PXd : m==='echo' ? (WX-x-22)/PXe : (x-MA)/PXm; }
   function svgPt(e){ var p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
   var grab=null;
   svg.addEventListener('pointerdown', function(e){
-    if(QM || (run && !run.over)) return;
+    if(QM || (run && !run.over) || PH.anim) return;
     var q=svgPt(e), ox=objX(), oy=objY();
     if(Math.abs(q.x-ox)>(mode()==='echo'?46:30) || Math.abs(q.y-oy)>(mode()==='mics'?36:70)) return;
     grab=q.x-ox; svg.setPointerCapture(e.pointerId); svg.classList.add('dragging'); e.preventDefault();
@@ -1424,16 +1690,17 @@ function expKey(x, y, upLabel, downLabel){
   svg.addEventListener('keydown', function(e){
     if(QM || (run && !run.over)) return;
     var L=lim(), k=e.key, v=null, D=d();
-    if(MEAS){ var md=MD[mode()], pi=md.indexOf(D), far=mode()==='echo' ? -1 : 1;   // the next marked place (for the echo, right is nearer the wall)
+    if(MEAS && MD[mode()]){ var md=MD[mode()], pi=md.indexOf(D), far=mode()==='echo' ? -1 : 1;   // the next marked place (for the echo, right is nearer the wall)
       if(k==='ArrowRight'||k==='ArrowUp') pi+=far; else if(k==='ArrowLeft'||k==='ArrowDown') pi-=far; else return;
       setD(md[Math.max(0, Math.min(md.length-1, pi))]); e.preventDefault(); return; }
     if(k==='ArrowRight'||k==='ArrowUp') v=D+L[2]; else if(k==='ArrowLeft'||k==='ArrowDown') v=D-L[2];
-    else if(k==='PageUp') v=D+5*L[2]; else if(k==='PageDown') v=D-5*L[2]; else if(k==='Home') v=L[0]; else if(k==='End') v=L[1];
+    else if(k==='PageUp') v=D+(mode()==='phase'?10:5)*L[2]; else if(k==='PageDown') v=D-(mode()==='phase'?10:5)*L[2]; else if(k==='Home') v=L[0]; else if(k==='End') v=L[1];
     if(v!==null){ setD(v); e.preventDefault(); }
   });
   function setAria(){
     var L=lim(), m=mode();
     svg.setAttribute('aria-valuemin', L[0]); svg.setAttribute('aria-valuemax', L[1]);
+    if(m==='phase'){ svg.setAttribute('aria-label', 'A signal generator drives a loudspeaker on a bench with a rule along it. The signal generator gives the upper trace of a two-beam oscilloscope and a microphone gives the lower trace. Drag the microphone, or use the arrow keys, to move it a millimetre at a time.'); return; }
     svg.setAttribute('aria-label', MEAS ? (m==='mics' ? 'A hammer hits a steel plate; microphones A and B stand on a bench with a rule along it, connected to an oscilloscope whose screen is large enough to read. Drag microphone B, or use the arrow keys, to move it.' : 'A field with a measuring tape along the ground, and a stopwatch shown close up. Drag the person, or use the arrow keys, to move to the next mark on the tape.') :
       m==='direct' ? 'A field: Arjun bangs two blocks, Priya times him from a distance d. Drag Priya, or use the arrow keys, to change d. A distance–time graph is on the right.' :
       m==='echo' ? 'Arjun and Priya stand a distance d from a wall; Arjun claps and the echo comes back. Drag them, or use the arrow keys, to change d.' :
@@ -1442,7 +1709,7 @@ function expKey(x, y, upLabel, downLabel){
   svg.setAttribute('tabindex','0'); svg.setAttribute('role','slider');
 
   watchEquals($('#ss-eq1')); watchEquals($('#ss-eq2'));
-  setAria(); setExp();
+  phUI(); setAria(); setExp();
   if(MEAS) $('#ss-tab').classList.add('meas-off');
   else if(/[?&]show=predict\b/.test(location.search)) setQM(true);
 })();
