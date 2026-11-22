@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Graphs Workout</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
-<meta name="description" content="Edexcel IGCSE Physics graph skills practice: read values off distance–time, velocity–time, decay, I–V and oscilloscope graphs, find gradients and areas, plot results with a line or curve of best fit, sketch graphs, describe relationships, test x × y = constant and spot anomalies, with a new graph every question and full working."><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.anim-frame{display:block;width:100%;height:600px;border:0}
+<meta name="description" content="Edexcel IGCSE Physics graph skills practice: read values off motion, decay, I–V, cooling, thermistor and oscilloscope graphs, find gradients, tangents and areas, plot results with a line or curve of best fit, extrapolate to absolute zero, interpret and explain the shape of graphs, sketch graphs, describe relationships and spot anomalies, with a new graph every question and full working."><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.anim-frame{display:block;width:100%;height:600px;border:0}
 .anim-open{font:600 13px 'IBM Plex Mono',ui-monospace,monospace;margin:4px 0 18px}
 .anim-open a{color:var(--accent)}
   /* link from a workout tab to its core practical page, on the heading line to the right of the title */
@@ -635,6 +635,10 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 .graph .g-curve.is-shown{stroke-dasharray:8 5}
 .graph .g-thin{stroke-width:2}
 .graph .an-ring{fill:none;stroke:var(--bad);stroke-width:2.6}
+.graph .g-cv{fill:none;stroke:var(--ink-soft);stroke-width:2.6;stroke-linejoin:round}   /* 3j: the curve under a tangent */
+.graph .g-sec{font:700 16px var(--f-mono);fill:var(--ink)}
+.graph .g-pt{fill:var(--ink)}
+.graph .g-ptlab{font:700 15px var(--f-mono);fill:var(--ink)}
 .graph .an-ring.is-shown{stroke-dasharray:6 4}
 .gq-mc .pred-opts{margin-top:0}
 .gq-pre{margin:0 0 10px;font-weight:600}
@@ -1847,8 +1851,550 @@ function genAnomaly(rnd){
 }
 
 /* ================= the rows of the chooser: by skill, each with its unit, spec points and the Index parts it is modelled on ================= */
-const SKILLS=[['read','Read a Value'],['grad','Gradient'],['area','Area Under a Velocity–Time Graph'],['plot','Plot and Line or Curve of Best Fit'],
-  ['sketch','Sketch or Complete a Graph'],['desc','Describe a Relationship'],['anom','Spot an Anomaly']];
+/* ================= third release (22 Nov 2026, TODO 3j) =================
+   Kinds and contexts from the IGCSE Physics Question Index (Graph task and Summary columns): tangents to a curve (v–t,
+   cooling), interpret a graph (sections of v–t and d–t graphs, match graphs to motions, force–extension, heating curves),
+   explain the shape of a v–t graph with forces, intercept and extrapolate (p–T to absolute zero, mass–volume), and the
+   contexts not yet in: cooling curves (read), thermistor and LDR graphs (read, plot). Mark-scheme tolerances: tangent
+   gradient within 10% (4PH1/1P May 2024 Q12(a): 1.05–1.15 for full marks), absolute zero within 20 °C (4PH1/1PR Jan 2021 Q4). */
+const SEC='ABCDEFG';
+// a letter for each straight stretch, just off its middle on the upper side, a faint line where each stretch ends,
+// and (hi) one stretch shaded
+function secMarks(gx,gy,o,pts,hi){
+  let s='';const top=gy(o.yMax),bot=gy(o.yMin);
+  if(hi!=null){const a=gx(pts[hi][0]),b=gx(pts[hi+1][0]);s+='<rect class="mk-band" x="'+a+'" y="'+top+'" width="'+(b-a)+'" height="'+(bot-top)+'"/>';}
+  pts.slice(1,-1).forEach(p=>{s+='<line class="g-div" x1="'+gx(p[0])+'" x2="'+gx(p[0])+'" y1="'+bot+'" y2="'+top+'"/>';});
+  pts.slice(0,-1).forEach((p,i)=>{const q=pts[i+1],ax=gx(p[0]),ay=gy(p[1]),bx=gx(q[0]),by=gy(q[1]),dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy)||1;
+    const x=clamp((ax+bx)/2+17*dy/L,gx(o.xMin)+14,gx(o.xMax)-10),y=Math.max(top+16,Math.min(bot-6,(ay+by)/2-17*dx/L+6));
+    s+='<text class="g-sec" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" text-anchor="middle">'+SEC[i]+'</text>';});
+  return s;
+}
+// labelled points on a curve (A, B, C …), with a stretch between two of them shaded
+function ptMarks(gx,gy,o,P,band){
+  let s='';const top=gy(o.yMax),bot=gy(o.yMin);
+  if(band){const a=gx(band[0]),b=gx(band[1]);s+='<rect class="mk-band" x="'+a+'" y="'+top+'" width="'+(b-a)+'" height="'+(bot-top)+'"/>';}
+  P.forEach(p=>{const x=gx(p.x),y=gy(p.y);s+='<circle class="g-pt" cx="'+x+'" cy="'+y+'" r="4.5"/><text class="g-ptlab" x="'+(x+(p.dx||0))+'" y="'+(y+(p.dy==null?-10:p.dy))+'" text-anchor="middle">'+p.n+'</text>';});
+  return s;
+}
+const choiceOpts=(n,right,why)=>Array.from({length:n},(_,i)=>({text:'Section '+SEC[i],correct:i===right,why:i===right?'':why(i)}));
+const ltr=i=>'section '+SEC[i];
+
+/* ---- the tangent: a kind for createDrawTasks, like BESTFIT ----
+   A ruler pinned at the point on the curve, turned about it: drag anywhere on the graph (the ruler points at the pointer),
+   or Up and Down to turn it. It starts flat, so its start gives nothing away. Marked against the true gradient there,
+   within tol (10%). The student's tangent is kept in Q.tan for the gradient part. */
+const TANGENT=(function(){
+  let drag=false;
+  return {
+    init:()=>({m:0}),
+    answer:t=>({m:t.m}),
+    draw:function(g,t,s,api){
+      const o=t.o,svg=api.svg;svg.classList.add('graph');
+      const lg=lineGraph(Object.assign({},o,{segments:[],extra:(gx,gy)=>polyl(gx,gy,t.curve,'g-cv')}));
+      g.innerHTML=lg.svg.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
+      const gx=lg.gx,gy=lg.gy,c=t.y0-s.m*t.x0,P=[gx(t.x0),gy(t.y0)];
+      g.insertAdjacentHTML('beforeend',rulerSVG(gx,gy,o,s.m,c,'g-ruler'+(api.shown()?' is-shown':''))+'<circle class="g-pt" cx="'+P[0]+'" cy="'+P[1]+'" r="5"/>');
+      const kx=gx(t.x0+1)-gx(t.x0),ky=gy(t.y0)-gy(t.y0+1);
+      const side=P[0]<(lg.pl+lg.W-lg.pr)/2?1:-1,ang=Math.atan(s.m*ky/kx);
+      if(!api.locked)g.insertAdjacentHTML('beforeend','<circle class="bf-h on" cx="'+(P[0]+side*95*Math.cos(ang))+'" cy="'+(P[1]-side*95*Math.sin(ang))+'" r="9"/>');
+      svg.setAttribute('tabindex','0');svg.classList.toggle('mk-svg',!api.locked);
+      const setAng=a=>{a=clamp(a,-1.50,1.50);api.set({m:Math.tan(a)*kx/ky});};
+      const aim=ev=>{const p=api.pt(ev);if(!p)return;const dx=p.x-P[0],dy=P[1]-p.y;if(Math.hypot(dx,dy)<14)return;setAng(Math.atan(dy/(dx||1e-6)));};
+      svg.onpointerdown=api.locked?null:ev=>{drag=true;try{svg.setPointerCapture(ev.pointerId);}catch(e){}aim(ev);ev.preventDefault();};
+      svg.onpointermove=api.locked?null:ev=>{if(drag)aim(ev);};
+      svg.onpointerup=svg.onpointercancel=()=>{drag=false;};
+      svg.onclick=null;
+      svg.onkeydown=api.locked?null:ev=>{const d={ArrowUp:1,ArrowRight:1,ArrowDown:-1,ArrowLeft:-1}[ev.key];if(!d)return;ev.preventDefault();
+        setAng(ang+d*(ev.shiftKey?0.2:1)*Math.PI/180);svg.focus({preventScroll:true});};
+    },
+    check:function(t,s){
+      const rel=(s.m-t.m)/Math.abs(t.m);
+      if(Math.abs(rel)<=t.tol)return {ok:true,notes:[[1,'Your tangent touches the curve at the point and slopes the same way as the curve there.']]};
+      const notes=[];
+      if(s.m*t.m<=0)notes.push([0,'Your line does not slope the same way as the curve at the point. A tangent '+(t.m>0?'slopes up':'slopes down')+' here, just like the curve.']);
+      else if(Math.abs(s.m)>Math.abs(t.m))notes.push([0,'Your line is too steep: close to the point, it cuts across the curve.']);
+      else notes.push([0,'Your line is not steep enough: close to the point, it cuts across the curve.']);
+      notes.push([0,'A tangent just touches the curve at the point. Close to the point, the curve stays on one side of it.']);
+      return {ok:false,notes:notes};
+    }
+  };
+})();
+function tanTask(o,f,x0,curve){
+  const h=(o.xMax-o.xMin)*1e-4,m=(f(x0+h)-f(x0-h))/(2*h);
+  return {q:'',o:Object.assign({},o,{H:400}),f:f,x0:x0,y0:f(x0),m:m,tol:0.10,curve:curve,aria:'The graph, with a ruler pinned to the point on the curve, to turn into the tangent'};
+}
+const TAN_NOTE='Drag on the graph to turn the ruler about the point. Keyboard: Up and Down turn it (Shift for small steps).';
+// two points on a straight line y = mx + c, well apart, on the grid lines along x and inside the graph
+function twoOnLine(o,m,c){
+  const L=clipLine(o,m,c),a=Math.min(L[0][0],L[1][0]),b=Math.max(L[0][0],L[1][0]),sp=o.xTicks[1]-o.xTicks[0],inset=(b-a)*0.06;
+  let xa=Math.ceil((a+inset)/sp-1e-9)*sp,xb=Math.floor((b-inset)/sp+1e-9)*sp;
+  if(xb-xa<sp){const mi=o.minor[0];xa=Math.ceil((a+inset)/mi-1e-9)*mi;xb=Math.floor((b-inset)/mi+1e-9)*mi;}
+  return [[r6(xa),m*xa+c],[r6(xb),m*xb+c]];
+}
+const sig=x=>+(+x).toPrecision(3);
+// gradient working from two points read off a line the student drew: the answer to 3 significant figures
+function gradWork3(p,q,sym,top,bot,ux,uy,u,lead,negLab){
+  const dy=r6(q[1]-p[1]),dx=r6(q[0]-p[0]),g=dy/dx;
+  return lead+':<br>('+N(p[0])+' '+ux+', '+N(p[1])+' '+uy+')<br>('+N(q[0])+' '+ux+', '+N(q[1])+' '+uy+')<br>'+sym+' = ?||'+
+    sym+' = [['+top+'|'+bot+']]<br>'+sym+' = [['+N(q[1])+' − '+N(p[1])+'|'+N(q[0])+' − '+N(p[0])+']]<br>'+sym+' = [['+N(dy)+'|'+N(dx)+']]<br>'+sym+' = '+fmtSF(g,3)+' '+u+
+    (negLab&&g<0?'<br>'+negLab+' = '+fmtSF(-g,3)+' '+u:'');
+}
+// the gradient of the student's own tangent (or the true one, if theirs was shown)
+function tanGradPart(o,T,q,sym,u,ux,uy,top,bot,abs,negLab,hints){
+  return {type:'num',q:q,unit:u,abs:abs,tool:'grad',live:Q=>{
+    const L=Q.tan||{m:T.m,c:T.y0-T.m*T.x0},pq=twoOnLine(o,L.m,L.c),p=[pq[0][0],sig(pq[0][1])],qq=[pq[1][0],sig(pq[1][1])];
+    const fig=extra=>lineGraph(Object.assign({},o,{H:400,segments:[],extra:(gx,gy)=>polyl(gx,gy,T.curve,'g-cv')+rulerSVG(gx,gy,o,L.m,L.c)+'<circle class="g-pt" cx="'+gx(T.x0)+'" cy="'+gy(T.y0)+'" r="5"/>'+(extra?extra(gx,gy):''),label:'The graph with your tangent'})).svg;
+    const g=(qq[1]-p[1])/(qq[0]-p[0]),A=abs?Math.abs(g):g;
+    return {answer:A,tol:Math.abs(g)*0.05,alt:abs?Math.abs(T.m):T.m,fig:fig(),figWork:fig((gx,gy)=>gradTri(gx,gy,p,qq,bot,top)),hints:hints,
+      working:gradWork3(p,qq,sym,top,bot,ux,uy,u,'Read two points off your tangent, far apart',abs?negLab:'')};
+  }};
+}
+
+/* ---- velocity–time: a curved graph, the acceleration at one moment from a tangent ---- */
+const TVT=[
+  {who:'A car pulls away from traffic lights.',up:true,V:[20,24,30],tau:[8,10,12],x:[0,60,10,2],y:[0,35,5,1]},
+  {who:'{n} rides an electric scooter away from rest.',up:true,V:[8,10,12],tau:[4,5,6],x:[0,30,5,1],y:[0,14,2,0.4]},
+  {who:'A delivery drone climbs straight up from the ground.',up:true,V:[8,10,12],tau:[3,4,5],x:[0,25,5,1],y:[0,14,2,0.4]},
+  {who:'{n} jumps from a plane and falls before opening {his} parachute.',up:true,V:[50,55],tau:[5,6],x:[0,30,5,1],y:[0,60,10,2]},
+  {who:'The engine of a speedboat stops and it slows down.',up:false,V:[16,18,20],tau:[6,8,10],x:[0,40,5,1],y:[0,20,5,1]},
+  {who:'{n} stops pedalling and the bicycle slows down.',up:false,V:[8,10],tau:[10,12,15],x:[0,50,10,2],y:[0,12,2,0.4]}];
+function genTanVt(rnd){
+  for(let k=0;k<200;k++){
+    const S=pk(rnd,TVT),V=pk(rnd,S.V),tau=pk(rnd,S.tau),pe=person(rnd);
+    const f=S.up?t=>V*(1-Math.exp(-t/tau)):t=>V*Math.exp(-t/tau);
+    const o=axes(S.x,S.y,'Time / s','Velocity / m/s'),curve=curvePts(f,0,S.x[1],120);
+    const t0=pk(rnd,ticks(S.x[3],S.x[1],S.x[3]).filter(t=>t>=0.45*tau&&t<=1.5*tau&&(onGrid(t,S.x[2]/2))));
+    if(t0==null)continue;
+    const T=tanTask(o,f,t0,curve),dec=!S.up;
+    const fig=lineGraph(Object.assign({},o,{H:400,segments:[],extra:(gx,gy)=>polyl(gx,gy,curve,'g-cv'),label:'Velocity–time graph'})).svg;
+    return {title:dec?'Deceleration from a tangent':'Acceleration from a tangent',stem:S.who.replace('{n}',pe.n).replace('{his}',pe.his)+' The graph shows how the velocity changes. The line is curved, so the '+(dec?'deceleration':'acceleration')+' is changing.',parts:[
+      {type:'fit',kind:'tangent',q:'Draw a tangent to the curve at '+BV('t = '+N(t0)+' s')+'.',note:TAN_NOTE,task:T},
+      tanGradPart(o,T,'Use your tangent to find the '+(dec?'deceleration':'acceleration')+' at t = '+N(t0)+' s.','a','m/s²','s','m/s','change in velocity','time taken',dec,'deceleration',
+        ['The '+(dec?'deceleration':'acceleration')+' at a moment is the gradient of the tangent at that moment.','Read two points on your tangent, as far apart as you can.','a = [[change in velocity|time taken]]'+(dec?'. A deceleration is the size of a negative acceleration.':'')])]};
+  }
+}
+
+/* ---- cooling curves (Unit 4): read, then the rate of cooling from a tangent ---- */
+const COOLS=[
+  {s:'{n} pours hot water into a beaker and leaves it to cool in the room.',w:'the water'},
+  {s:'A mug of tea is left to cool on a desk.',w:'the tea'},
+  {s:'{n} takes a metal block out of an oven and leaves it to cool.',w:'the block'},
+  {s:'A can of hot soup is left to cool in the kitchen.',w:'the soup'}];
+function coolSet(rnd){
+  const S=pk(rnd,COOLS),T0=pk(rnd,[70,76,80,82,90]),Tr=pk(rnd,[18,20,22,24]),tau=pk(rnd,[8,10,12,15]),pe=person(rnd);
+  const f=t=>Tr+(T0-Tr)*Math.exp(-t/tau),o=axes([0,40,5,1],[0,100,10,2],'Time / minutes','Temperature / °C');
+  return {S:S,T0:T0,Tr:Tr,tau:tau,f:f,o:o,curve:curvePts(f,0,40,120),stem:S.s.replace('{n}',pe.n)+' The graph shows how the temperature of '+S.w+' changes.'};
+}
+const coolFig=(C,extra)=>lineGraph(Object.assign({},C.o,{H:400,segments:[{pts:C.curve}],extra:extra,label:'Temperature–time graph'})).svg;
+function genCoolRead(rnd){
+  for(let k=0;k<200;k++){
+    const C=coolSet(rnd),o=C.o,t1=pk(rnd,[3,4,5,6,7,8,9,12,14,16]),y1=C.f(t1);
+    const X=pk(rnd,ticks(C.Tr+0.3*(C.T0-C.Tr),C.T0-0.15*(C.T0-C.Tr),2).map(v=>Math.round(v/2)*2));const tx=crossAt(C.f,0,40,X);
+    if(tx==null||tx<2||Math.abs(tx-t1)<3||tx>36)continue;
+    return {title:'Read a cooling curve',stem:C.stem,parts:[
+      {type:'num',q:'Use the graph to find the temperature after '+BV(N(t1)+' minutes')+'.',unit:'°C',answer:y1,tol:1,marks:[null,[{x:t1}]],
+        fig:coolFig(C),figWork:coolFig(C,(gx,gy)=>guide(gx,gy,o,t1,y1,'x')+dot(gx,gy,t1,y1)),
+        hints:['One small square on the temperature axis is 2 °C.','Go up from '+N(t1)+' minutes to the curve, then across.'],
+        working:'one small square = 2 °C||read up from '+N(t1)+' minutes to the curve, then across<br>temperature = '+N(Math.round(y1))+' °C'},
+      {type:'num',q:'How long does it take for '+C.S.w+' to cool to '+BV(N(X)+' °C')+'?',unit:'minutes',answer:tx,tol:0.5,marks:[null,[{y:X}]],
+        fig:coolFig(C),figWork:coolFig(C,(gx,gy)=>guide(gx,gy,o,tx,X,'y')+dot(gx,gy,tx,X)),
+        hints:['Go across from '+N(X)+' °C to the curve, then down to the time axis.','One small square on the time axis is 1 minute.'],
+        working:'one small square = 1 minute||read across from '+N(X)+' °C to the curve, then down<br>time = '+N(+tx.toFixed(1))+' minutes'},
+      {type:'mc',q:'The curve gets less steep as time goes on. Why does '+C.S.w+' cool more slowly?',fig:coolFig(C),
+        options:[{text:'The difference in temperature between '+C.S.w+' and the room gets smaller, so it transfers energy more slowly',correct:true},
+          {text:'The room warms up until it is as hot as '+C.S.w,why:'The room is much bigger: its temperature hardly changes. The curve levels off at room temperature, '+N(C.Tr)+' °C.'},
+          {text:'Its specific heat capacity increases as it cools',why:'The specific heat capacity stays the same. What changes is how much hotter than the room it is.'},
+          {text:'It has less energy left, so it stops cooling',why:'It keeps cooling until it reaches room temperature; it just cools more slowly as it gets closer to it.'}],
+        explain:'The hotter an object is than its surroundings, the faster it transfers energy to them. As the difference gets smaller, the rate of cooling falls.',sum:'The temperature difference with the room gets smaller'}]};
+  }
+}
+function genTanCool(rnd){
+  for(let k=0;k<200;k++){
+    const C=coolSet(rnd),o=C.o;
+    const X=pk(rnd,ticks(C.Tr+0.35*(C.T0-C.Tr),C.T0-0.2*(C.T0-C.Tr),2).map(v=>Math.round(v/2)*2));const tx=crossAt(C.f,0,40,X);
+    if(tx==null||tx<3||tx>28)continue;
+    const T=tanTask(o,C.f,tx,C.curve);
+    return {title:'Rate of cooling from a tangent',stem:C.stem,parts:[
+      {type:'num',q:'Use the graph to find the time when the temperature is '+BV(N(X)+' °C')+'.',unit:'minutes',answer:tx,tol:0.5,marks:[null,[{y:X}]],
+        fig:coolFig(C),figWork:coolFig(C,(gx,gy)=>guide(gx,gy,o,tx,X,'y')+dot(gx,gy,tx,X)),
+        hints:['Go across from '+N(X)+' °C to the curve, then down.','One small square on the time axis is 1 minute.'],
+        working:'one small square = 1 minute||read across from '+N(X)+' °C to the curve, then down<br>time = '+N(+tx.toFixed(1))+' minutes'},
+      {type:'fit',kind:'tangent',q:'Draw a tangent to the curve at '+BV(N(X)+' °C')+'.',note:TAN_NOTE,task:T},
+      tanGradPart(o,T,'Use your tangent to find the rate at which the temperature is falling at '+N(X)+' °C.','gradient','°C/min','minutes','°C','change in temperature','time taken',true,'rate of cooling',
+        ['The rate of cooling at one moment is the gradient of the tangent there.','Read two points on your tangent, as far apart as you can.','rate = [[change in temperature|time taken]]. Give it as a positive number: the rate at which the temperature falls.'])]};
+  }
+}
+
+/* ---- thermistor and LDR graphs (Unit 2): read the resistance, then V = IR; plot, curve of best fit, read ---- */
+const RT=[
+  {k:'th',n:'thermistor',xn:'temperature',xl:'Temperature / °C',ux:'°C',yl:'Resistance / Ω',uy:'Ω',x:[0,100,10,2],y:[0,1600,200,40],f:x=>1500*Math.exp(-x/35),xs:[0,10,20,30,40,50,60,70,80,90],
+    use:'temperature sensor in a fridge',src:['4PH1/1PR May 2025 Q3(b)(ii)','4PH1/1PR May 2025 Q3(b)(iii)']},
+  {k:'th',n:'thermistor',xn:'temperature',xl:'Temperature / °C',ux:'°C',yl:'Resistance / kΩ',uy:'kΩ',x:[0,80,10,2],y:[0,6,1,0.2],f:x=>5.4*Math.exp(-x/28),xs:[0,10,20,30,40,50,60,70],
+    use:'temperature sensor in a greenhouse',src:['4PH1/1PR May 2025 Q3(b)(ii)','4PH0/2PR May 2015 TZ2 Q5(c)(i)']},
+  {k:'ldr',n:'light-dependent resistor (LDR)',xn:'light intensity',xl:'Light intensity / lux',ux:'lux',yl:'Resistance / kΩ',uy:'kΩ',x:[0,500,100,20],y:[0,10,2,0.4],f:x=>9.6/(1+x/60),xs:[20,60,100,140,200,300,400,480],
+    use:'light sensor for a street lamp',src:['4PH1/1PR May 2022 Q3(b)(i)','4PH1/1PR May 2022 Q3(b)(ii)']},
+  {k:'ldr',n:'light-dependent resistor (LDR)',xn:'light intensity',xl:'Light intensity / units',ux:'units',yl:'Resistance / Ω',uy:'Ω',x:[0,10,1,0.2],y:[0,4000,500,100],f:x=>3800/(1+x/1.2),xs:[0.4,1,2,3,4,6,8,9.6],
+    use:'light sensor on a robot',src:['4PH1/1PR May 2022 Q3(b)(i)','4PH1/1PR May 2022 Q3(b)(ii)']}];
+const rtFig=(c,o,extra)=>lineGraph(Object.assign({},o,{H:380,segments:[{pts:curvePts(c.f,c.x[0],c.x[1],120).filter(p=>p[1]<=o.yMax)}],extra:extra,label:'Resistance–'+c.xn+' graph for a '+c.n})).svg;
+function genRtRead(rnd){
+  for(let k=0;k<200;k++){
+    const c=pk(rnd,RT),o=axes(c.x,c.y,c.xl,c.yl),x0=r6(pk(rnd,ticks(0,c.x[1],c.x[3]).filter(x=>x>=c.x[1]*0.15&&x<=c.x[1]*0.85))),R=c.f(x0),ym=c.y[3];
+    if(R>c.y[1]*0.95)continue;
+    const Rr=+(Math.round(R/(ym/2))*(ym/2)).toPrecision(3),kO=c.uy==='kΩ',Rohm=kO?Rr*1000:Rr,Rtrue=kO?R*1000:R;
+    const wk=(gx,gy)=>guide(gx,gy,o,x0,R,'x')+dot(gx,gy,x0,R),fig=rtFig(c,o),figW=rtFig(c,o,wk);
+    const p1={type:'num',q:'Use the graph to find the resistance of the '+(c.k==='th'?'thermistor':'LDR')+' at '+BV(N(x0)+' '+c.ux)+'.',unit:c.uy,answer:R,tol:ym/2,marks:[null,[{x:x0}]],fig:fig,figWork:figW,
+      hints:['One small square on the resistance axis is '+N(ym)+' '+c.uy+'.','Go up from '+N(x0)+' '+c.ux+' to the curve, then across.'],
+      working:'one small square = '+N(ym)+' '+c.uy+'||read up from '+N(x0)+' '+c.ux+' to the curve, then across<br>R = '+N(Rr)+' '+c.uy};
+    let p2;
+    if(c.k==='th'){
+      const V=pk(rnd,[3,4.5,6,9,12]),I=V/Rtrue,Iu=I<0.1?'mA':'A',f=Iu==='mA'?1000:1;
+      p2={type:'num',q:'The thermistor is connected on its own to a '+BV(N(V)+' V')+' battery. Calculate the current in it at '+N(x0)+' '+c.ux+'.',unit:Iu,answer:I*f,tol:I*f*(0.02+ym/2/R),
+        ecf:prev=>prev&&prev[0]?V/(prev[0]*(kO?1000:1))*f:null,fig:figW,figWork:figW,
+        hints:['Use V = IR with the resistance you read off the graph'+(kO?', in ohms (1 kΩ = 1000 Ω)':'')+'.','Put the numbers in, then rearrange for I.'+(Iu==='mA'?' Give your answer in mA (1 A = 1000 mA).':'')],
+        working:'V = '+N(V)+' V<br>R = '+N(Rohm)+' Ω<br>I = ?||V = IR<br>'+N(V)+' = I × '+N(Rohm)+'<br>I = [['+N(V)+'|'+N(Rohm)+']]<br>I = '+fmtSF(V/Rohm,3)+' A'+(Iu==='mA'?'<br>I = '+fmtSF(V/Rohm*1000,3)+' mA':'')};
+    }else{
+      const ImA=pk(rnd,[0.5,0.8,1.2,1.5,2.0]),Vt=ImA/1000*Rtrue;
+      p2={type:'num',q:'The current in the LDR is '+BV(N(ImA)+' mA')+'. Calculate the voltage across it at '+N(x0)+' '+c.ux+'.',unit:'V',answer:Vt,tol:Vt*(0.02+ym/2/R),
+        ecf:prev=>prev&&prev[0]?ImA/1000*prev[0]*(kO?1000:1):null,fig:figW,figWork:figW,
+        hints:['Use V = IR with the resistance you read off the graph.','Change the units first: current in amps (1 mA = 0.001 A)'+(kO?', resistance in ohms (1 kΩ = 1000 Ω)':'')+'.'],
+        working:'I = '+N(ImA)+' mA = '+N(ImA/1000)+' A<br>R = '+N(Rohm)+' Ω<br>V = ?||V = IR<br>V = '+N(ImA/1000)+' × '+N(Rohm)+'<br>V = '+fmtSF(ImA/1000*Rohm,3)+' V'};
+    }
+    return {title:c.k==='th'?'Thermistor: resistance, then current':'LDR: resistance, then voltage',srcs:c.src,stem:'The graph shows how the resistance of a '+c.n+' changes with '+c.xn+'. It is used as a '+c.use+'.',parts:[p1,p2]};
+  }
+}
+function genRtPlot(rnd){
+  for(let k=0;k<200;k++){
+    const c=pk(rnd,RT),o=axes(c.x,c.y,c.xl,c.yl),ym=c.y[3],st=person(rnd);
+    const pts=c.xs.map(x=>({x:x,y:r6(clamp(Math.round((c.f(x)+pk(rnd,[-0.5,0,0,0.5])*ym)/ym)*ym,ym,c.y[1]))}));
+    const xa=r6(pk(rnd,ticks(c.xs[1],c.xs[c.xs.length-2],c.x[3]).filter(x=>c.xs.indexOf(x)<0)));if(isNaN(xa))continue;
+    const Q={title:c.k==='th'?'Plot a thermistor’s resistance':'Plot an LDR’s resistance',srcs:c.k==='th'?['4PH0/2PR May 2015 TZ2 Q5(c)(i)','4PH0/1P May 2011 Q10(b)(iii)']:['4PH0/1P May 2016 TZ1 Q5(c)(i)'],
+      stem:st.n+' measures the resistance of a '+c.n+' at different '+(c.k==='th'?'temperatures':'light intensities')+'. Plot the results, draw the curve of best fit, then use your curve.'};
+    return curveQuestion(Q,pts,o,p=>N(p.x)+' '+c.ux+', '+N(p.y)+' '+c.uy,c.f,c.k==='th'?'T':'light intensity',c.ux,{type:'num',q:'Use your curve to find the resistance at '+BV(N(xa)+' '+c.ux)+'.',unit:c.uy,marks:[[{x:xa}]],live:Q=>{
+      const g=myCurve(Q),y=g(xa),a0=c.xs[0],a1=c.xs[c.xs.length-1];
+      const fig=extra=>lineGraph(Object.assign({},o,{H:400,segments:[],extra:(gx,gy)=>crosses(gx,gy,pts)+polyl(gx,gy,curvePts(g,a0,a1,90).map(p=>[p[0],clamp(p[1],o.yMin,o.yMax)]),'g-curve')+(extra?extra(gx,gy):''),label:'Your graph with your curve of best fit'})).svg;
+      return {answer:y,tol:ym,alt:c.f(xa),fig:fig(),figWork:fig((gx,gy)=>guide(gx,gy,o,xa,y,'x')+dot(gx,gy,xa,y)),
+        hints:['Go up from '+N(xa)+' '+c.ux+' to your curve, then across.','One small square on the resistance axis is '+N(ym)+' '+c.uy+'.'],
+        working:'one small square = '+N(ym)+' '+c.uy+'||read up from '+N(xa)+' '+c.ux+' to your curve, then across<br>R = '+N(sig(y))+' '+c.uy};
+    }},{rnd:rnd,yn:'resistance',uy:c.uy});
+  }
+}
+
+/* ---- interpret a graph: which section, describe a section, which feature ---- */
+const VMOVE={acc:'speeding up at a steady rate',con:'moving at a steady speed',dec:'slowing down at a steady rate',rest:'stationary'};
+const VWHY={acc:'the line slopes up: the velocity increases steadily',con:'the line is flat, above zero: the velocity does not change',dec:'the line slopes down: the velocity decreases steadily',rest:'the line is along the time axis: the velocity is zero'};
+const VWHO=['a car on a straight road','a tram','a bus','a delivery drone flying in a straight line','a robot moving along a corridor'];
+function vtSections(rnd){
+  for(let k=0;k<500;k++){
+    const n=pk(rnd,[4,5]),types=[],vs=[0];let v=0;
+    for(let i=0;i<n;i++){
+      let op=v===0?['acc','acc','rest']:['acc','con','con','dec','dec'];if(v>=20)op=op.filter(x=>x!=='acc');
+      if(i===0)op=['acc'];if(i===n-1)op=v>0?['dec','con']:['rest','acc'];
+      const ty=pk(rnd,op.filter(t=>!(i>0&&t===types[i-1]&&(t==='con'||t==='rest'))));if(!ty)break;types.push(ty);
+      if(ty==='acc')v=pk(rnd,[5,10,15,20].filter(x=>x>v));else if(ty==='dec')v=pk(rnd,[0,5,10,15].filter(x=>x<v));
+      vs.push(v);
+    }
+    if(types.length<n)continue;
+    const T=[0];types.forEach(()=>T.push(T[T.length-1]+pk(rnd,[4,5,6,8,10])));
+    if(T[n]>50||T[n]<20)continue;
+    return {n:n,types:types,T:T,vs:vs,pts:T.map((t,i)=>[t,vs[i]]),sl:types.map((_,i)=>(vs[i+1]-vs[i])/(T[i+1]-T[i]))};
+  }
+}
+const vtSecAxes=J=>axes([0,J.T[J.n]<=30?30:J.T[J.n]<=40?40:50,5,1],[0,25,5,1],'Time / s','Velocity / m/s');
+function genIntVt(rnd){
+  for(let k=0;k<300;k++){
+    const J=vtSections(rnd),o=vtSecAxes(J),who=pk(rnd,VWHO),idx=ty=>J.types.map((t,i)=>t===ty?i:-1).filter(i=>i>=0);
+    const fig=hi=>lineGraph(Object.assign({},o,{segments:[{pts:J.pts}],extra:(gx,gy)=>secMarks(gx,gy,o,J.pts,hi),label:'Velocity–time graph in sections'})).svg;
+    const why=i=>'In section '+SEC[i]+', '+VWHY[J.types[i]]+'.';
+    const which=[];
+    const one=(ty,q,ex)=>{const a=idx(ty);if(a.length===1)which.push({q:q,r:a[0],ex:ex});};
+    one('dec','In which section is it slowing down?','The line slopes down, so the velocity is decreasing: a deceleration.');
+    one('con','In which section is it moving at a steady speed?','A flat line above zero: the velocity does not change.');
+    one('rest','In which section is it stationary?','The line is along the time axis: the velocity is zero.');
+    const acc=idx('acc');
+    if(acc.length===1)which.push({q:'In which section is it speeding up?',r:acc[0],ex:'The line slopes up: the velocity is increasing.'});
+    else if(acc.length>1){const s=acc.map(i=>J.sl[i]),mx=Math.max.apply(null,s);if(s.filter(x=>Math.abs(x-mx)<1e-9).length===1){const r=acc[s.indexOf(mx)];
+      which.push({q:'In which section is the acceleration greatest?',r:r,ex:'The acceleration is the gradient: section '+SEC[r]+' has the steepest upward slope.',why:i=>J.types[i]==='acc'?'Section '+SEC[i]+' speeds up too, but its line is less steep, so its acceleration is smaller.':why(i)});}}
+    const dec=idx('dec');
+    if(dec.length>1){const s=dec.map(i=>-J.sl[i]),mx=Math.max.apply(null,s);if(s.filter(x=>Math.abs(x-mx)<1e-9).length===1){const r=dec[s.indexOf(mx)];
+      which.push({q:'In which section is the deceleration greatest?',r:r,ex:'Section '+SEC[r]+' has the steepest downward slope.',why:i=>J.types[i]==='dec'?'Section '+SEC[i]+' slows down too, but its line is less steep.':why(i)});}}
+    if(which.length<2)continue;
+    const W=shuffle(which).slice(0,2);
+    const parts=W.map(w=>({type:'mc',q:w.q,fig:fig(),options:choiceOpts(J.n,w.r,w.why||why),explain:w.ex,sum:'Section '+SEC[w.r]}));
+    if(rnd()<0.5){
+      const d=pk(rnd,[0,1,2,3,4].slice(0,J.n).filter(i=>W.every(w=>w.r!==i))),ty=J.types[d];
+      parts.push({type:'mc',q:'Describe the motion in section '+SEC[d]+'.',fig:fig(d),
+        options:Object.keys(VMOVE).map(t=>({text:cap(VMOVE[t]),correct:t===ty,why:t===ty?'':'In section '+SEC[d]+', '+VWHY[ty]+'.'})),
+        explain:cap(VWHY[ty])+'.'+(ty==='acc'||ty==='dec'?' The line is straight, so the rate is steady (constant acceleration).':''),sum:cap(VMOVE[ty])});
+    }else{
+      const dist=rnd()<0.5;
+      parts.push({type:'mc',q:'Which feature of a velocity–time graph gives the '+(dist?'distance travelled':'acceleration')+'?',fig:fig(),
+        options:[{text:'The area under the line',correct:dist,why:'The area under the line gives the distance travelled.'},
+          {text:'The gradient of the line',correct:!dist,why:'The gradient gives the acceleration.'},
+          {text:'The value on the velocity axis',why:'That is the velocity at one moment.'},
+          {text:'The length of the line',why:'The length of the line has no meaning.'}],
+        explain:dist?'Distance travelled = the area under a velocity–time graph.':'Acceleration = the gradient of a velocity–time graph.',sum:dist?'The area under the line':'The gradient of the line'});
+    }
+    return {title:'Read the story of a velocity–time graph',stem:'The velocity–time graph shows the journey of '+who+'. It is split into sections A to '+SEC[J.n-1]+'.',parts:parts};
+  }
+}
+const DWHO=[{n:'{n} walks to the shops',s:[0.5,1,1.5,2]},{n:'{n} goes for a run with some stops',s:[1,2,3,4]},{n:'A robot vacuum cleaner moves along a corridor',s:[0.2,0.3,0.4,0.5]},{n:'A tram moves between stops',s:[2,4,5,6,8]}];
+function genIntDt(rnd){
+  for(let k=0;k<500;k++){
+    const W=pk(rnd,DWHO),pe=person(rnd),n=pk(rnd,[4,5]),sp=[],ds=[];
+    for(let i=0;i<n;i++){sp.push(pk(rnd,(i>0&&sp[i-1]===0?W.s:[0].concat(W.s)).filter(v=>i===0||v!==sp[i-1])));ds.push(pk(rnd,[10,20,30]));}
+    if(sp[0]===0)sp[0]=pk(rnd,W.s);
+    const T=[0],D=[0];sp.forEach((v,i)=>{T.push(T[i]+ds[i]);D.push(r6(D[i]+v*ds[i]));});
+    if(T[n]>120||T[n]<60)continue;
+    const yM=NICE.find(s=>D[n]/s<=8&&D[n]/s>=3);if(!yM)continue;const yMax=Math.ceil(D[n]*1.15/yM)*yM;
+    const o=axes([0,120,20,4],[0,yMax,yM,yM/5],'Time / s','Distance / m'),pts=T.map((t,i)=>[t,D[i]]);
+    const fig=hi=>lineGraph(Object.assign({},o,{segments:[{pts:pts}],extra:(gx,gy)=>secMarks(gx,gy,o,pts,hi),label:'Distance–time graph in sections'})).svg;
+    const why=i=>sp[i]===0?'In section '+SEC[i]+' the line is flat: the distance does not change, so it is stationary.':'In section '+SEC[i]+' the line slopes up: it is moving'+(sp[i]===Math.max.apply(null,sp)?', and fast':'')+'.';
+    const which=[],rest=sp.map((v,i)=>v===0?i:-1).filter(i=>i>=0),mov=sp.map((v,i)=>v>0?i:-1).filter(i=>i>=0),mx=Math.max.apply(null,sp),mn=Math.min.apply(null,mov.map(i=>sp[i]));
+    if(rest.length===1)which.push({q:'In which section is '+(W.n[0]==='{'?pe.he:'it')+' stationary?',r:rest[0],ex:'A flat line: the distance does not change with time.'});
+    if(sp.filter(v=>v===mx).length===1)which.push({q:'In which section is '+(W.n[0]==='{'?pe.he:'it')+' moving fastest?',r:sp.indexOf(mx),ex:'The speed is the gradient: section '+SEC[sp.indexOf(mx)]+' is the steepest.',why:i=>sp[i]>0?'Section '+SEC[i]+' slopes up too, but less steeply, so the speed is lower.':why(i)});
+    if(mov.length>2&&mov.filter(i=>sp[i]===mn).length===1){const r=mov.find(i=>sp[i]===mn);which.push({q:'In which section is '+(W.n[0]==='{'?pe.he:'it')+' moving, but most slowly?',r:r,ex:'Section '+SEC[r]+' slopes up least steeply. A flat section is not moving at all.',why:i=>sp[i]===0?'Section '+SEC[i]+' is flat: not moving at all.':'Section '+SEC[i]+' is steeper, so faster.'});}
+    if(which.length<2)continue;
+    const Wh=shuffle(which).slice(0,2),parts=Wh.map(w=>({type:'mc',q:w.q,fig:fig(),options:choiceOpts(n,w.r,w.why||why),explain:w.ex,sum:'Section '+SEC[w.r]}));
+    if(mov.length>=2&&rnd()<0.6){
+      const a=pk(rnd,mov),b=pk(rnd,mov.filter(i=>i!==a)),i1=Math.min(a,b),i2=Math.max(a,b),c=sp[i2]>sp[i1]?0:sp[i2]<sp[i1]?1:2;
+      parts.push({type:'mc',q:'Compare the speed in section '+SEC[i2]+' with the speed in section '+SEC[i1]+'.',fig:fig(),
+        options:[{text:'Faster in section '+SEC[i2],correct:c===0,why:'The line in section '+SEC[i2]+' is '+(c===2?'just as steep':'less steep')+'.'},
+          {text:'Slower in section '+SEC[i2],correct:c===1,why:'The line in section '+SEC[i2]+' is '+(c===2?'just as steep':'steeper')+'.'},
+          {text:'The same speed in both',correct:c===2,why:'The two lines have different gradients.'},
+          {text:'You cannot tell from a distance–time graph',why:'You can: the speed is the gradient of a distance–time graph.'}],
+        explain:'Speed is the gradient of a distance–time graph: '+N(sp[i1])+' m/s in section '+SEC[i1]+' and '+N(sp[i2])+' m/s in section '+SEC[i2]+'.',sum:['Faster','Slower','The same'][c]+' in section '+SEC[i2]});
+    }else parts.push({type:'mc',q:'Which feature of a distance–time graph gives the speed?',fig:fig(),
+        options:[{text:'The gradient of the line',correct:true},{text:'The area under the line',why:'That is for a velocity–time graph, where it gives the distance.'},
+          {text:'The value on the distance axis',why:'That is how far it has gone, not how fast.'},{text:'The length of the line',why:'The length of the line has no meaning.'}],
+        explain:'Speed = [[distance moved|time taken]], which is the gradient of a distance–time graph.',sum:'The gradient of the line'});
+    return {title:'Read the story of a distance–time graph',stem:W.n.replace('{n}',pe.n)+'. The distance–time graph is split into sections A to '+SEC[n-1]+'.',parts:parts};
+  }
+}
+
+/* ---- match graphs to motions: four small graphs, P to S ---- */
+const MOT={con:'moving at a steady speed',rest:'stationary',up:'speeding up',down:'slowing down'};
+const MINI={
+  'd-con':{t:'d',k:'con',f:x=>0.8*x,why:'a straight line sloping up on a distance–time graph: a steady speed'},
+  'd-rest':{t:'d',k:'rest',f:()=>0.55,why:'a flat line on a distance–time graph: the distance does not change, so it is stationary'},
+  'd-up':{t:'d',k:'up',f:x=>0.85*x*x,why:'a distance–time curve getting steeper: speeding up'},
+  'd-down':{t:'d',k:'down',f:x=>0.85*(1-(1-x)*(1-x)),why:'a distance–time curve getting less steep: slowing down'},
+  'v-con':{t:'v',k:'con',f:()=>0.6,why:'a flat line on a velocity–time graph: a steady speed (it is moving, not stationary)'},
+  'v-up':{t:'v',k:'up',f:x=>0.85*x,why:'a velocity–time line sloping up: speeding up'},
+  'v-down':{t:'v',k:'down',f:x=>0.85*(1-x),why:'a velocity–time line sloping down: slowing down'}};
+function miniGraphs(keys){
+  const W=560,H=380,PW=240,PH=130,X0=[48,322],Y0=[18,208];
+  let s='<svg class="graph" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Four small motion graphs, P to S">';
+  keys.forEach((k,i)=>{const G=MINI[k],x0=X0[i%2],y0=Y0[i>>1],gx=x=>x0+x*PW,gy=y=>y0+PH-y*PH;
+    s+='<line class="g-axis" x1="'+x0+'" x2="'+x0+'" y1="'+y0+'" y2="'+(y0+PH)+'"/><line class="g-axis" x1="'+x0+'" x2="'+(x0+PW)+'" y1="'+(y0+PH)+'" y2="'+(y0+PH)+'"/>';
+    s+='<text class="g-lab" x="'+(x0+PW/2)+'" y="'+(y0+PH+20)+'" text-anchor="middle">time</text>';
+    s+='<text class="g-lab" transform="translate('+(x0-12)+' '+(y0+PH/2)+') rotate(-90)" text-anchor="middle">'+(G.t==='d'?'distance':'velocity')+'</text>';
+    s+=polyl(gx,gy,curvePts(G.f,0,1,40).map(p=>[p[0]*0.92+0.04,p[1]]),'g-line');
+    s+='<text class="g-sec" x="'+(x0+PW-6)+'" y="'+(y0+14)+'" text-anchor="end">'+'PQRS'[i]+'</text>';});
+  return s+'</svg>';
+}
+function genIntMatch(rnd){
+  for(let k=0;k<200;k++){
+    const pick={con:pk(rnd,['d-con','v-con']),rest:'d-rest',up:pk(rnd,['d-up','v-up']),down:pk(rnd,['d-down','v-down'])};
+    const keys=shuffle(Object.values(pick)),ts=keys.map(x=>MINI[x].t);if(ts.filter(t=>t==='v').length<1)continue;
+    const asks=shuffle(Object.keys(MOT)).slice(0,2),fig=miniGraphs(keys);
+    const parts=asks.map(m=>{const r=keys.indexOf(pick[m]);
+      return {type:'mc',q:'Which graph shows an object that is '+BV(MOT[m])+'?',fig:fig,
+        options:keys.map((x,i)=>({text:'Graph '+'PQRS'[i],correct:i===r,why:i===r?'':'Graph '+'PQRS'[i]+' is '+MINI[x].why+'.'})),
+        explain:'Graph '+'PQRS'[r]+' is '+MINI[pick[m]].why+'. Check the label on the vertical axis first: a flat line means stationary on a distance–time graph, but a steady speed on a velocity–time graph.',sum:'Graph '+'PQRS'[r]};});
+    return {title:'Match the graph to the motion',stem:'Each graph shows the motion of an object. Look at the label on each vertical axis.',parts:parts};
+  }
+}
+
+/* ---- force–extension: where Hooke's law holds ---- */
+function genIntFe(rnd){
+  const pe=person(rnd),o=axes([0,10,1,0.2],[0,30,5,1],'Force / N','Extension / cm');
+  if(rnd()<0.3){
+    const g=F=>1.6*F+0.12*F*F;   // a rubber band: curved from the start
+    const fig=lineGraph(Object.assign({},o,{segments:[{pts:curvePts(g,0,10,90)}],label:'Extension–force graph for a rubber band'})).svg;
+    return {title:'Does it obey Hooke’s law?',stem:pe.n+' hangs weights on a rubber band and measures its extension. The graph shows the results.',srcs:['4PH1/1P November 2021 Q10(b)(i)','4PH1/1PR May 2024 Q9(b)(i)'],parts:[
+      {type:'mc',q:'Does the rubber band obey Hooke’s law?',fig:fig,
+        options:[{text:'No: the graph is not a straight line through the origin, so the extension is not proportional to the force',correct:true},
+          {text:'Yes: the extension increases when the force increases',why:'That is true of almost anything that stretches. Hooke’s law needs the extension to be proportional to the force.'},
+          {text:'Yes: the graph starts at the origin',why:'It must also be a straight line. This one curves.'},
+          {text:'No: the extension decreases as the force increases',why:'The extension increases: the line rises all the way.'}],
+        explain:'Hooke’s law: the extension is directly proportional to the force, which gives a straight line through the origin. This graph curves.',sum:'No: not a straight line through the origin'}]};
+  }
+  for(let k=0;k<100;k++){
+    const kk=pk(rnd,[1.5,2,2.5]),Fp=pk(rnd,[5,6,7]),c=pk(rnd,[0.8,1,1.2]),g=F=>kk*F+(F>Fp?c*(F-Fp)*(F-Fp):0);
+    if(g(10)>29)continue;
+    const Fq=10,P=[{x:0,y:0,n:'O',dx:-10,dy:16},{x:Fp,y:g(Fp),n:'P',dx:-12},{x:Fq,y:g(Fq),n:'Q',dx:-12}];
+    const fig=band=>lineGraph(Object.assign({},o,{segments:[{pts:curvePts(g,0,Fq,120)}],extra:(gx,gy)=>ptMarks(gx,gy,o,P,band),label:'Extension–force graph for a spring'})).svg;
+    return {title:'Where does it obey Hooke’s law?',stem:pe.n+' hangs weights on a spring and measures its extension. The graph shows the results, from O to Q.',srcs:['4420/2H November 2007 Q1(c)(i)','4420/03 June 2010 Q1(c)(i)','4PH1/1PR May 2024 Q9(b)(i)'],parts:[
+      {type:'mc',q:'Between which points does the spring obey Hooke’s law?',fig:fig(),
+        options:[{text:'From O to P',correct:true},{text:'From P to Q',why:'From P to Q the graph curves, so the extension is not proportional to the force.'},
+          {text:'From O to Q',why:'Only part of the graph is a straight line through the origin.'},{text:'Nowhere on the graph',why:'Part of the graph is a straight line through the origin.'}],
+        explain:'From O to P the graph is a straight line through the origin.',sum:'From O to P'},
+      {type:'mc',q:'How does the graph show that the spring obeys Hooke’s law from O to P?',fig:fig([0,Fp]),
+        options:[{text:'It is a straight line through the origin, so the extension is proportional to the force',correct:true},
+          {text:'The extension increases as the force increases',why:'That is true from P to Q as well. Hooke’s law needs proportion: a straight line through the origin.'},
+          {text:'It is a straight line',why:'Not enough: the straight line must also pass through the origin.'},
+          {text:'It is steeper than from P to Q',why:'It is less steep, and steepness is not the test.'}],
+        explain:'The mark schemes want both: a straight line, and through the origin (or: the extension is directly proportional to the force).',sum:'A straight line through the origin'},
+      {type:'mc',q:'What happens to the spring after P?',fig:fig([Fp,Fq]),
+        options:[{text:'Each extra newton stretches it more than before',correct:true},{text:'Each extra newton stretches it less than before',why:'The graph gets steeper after P: more extension for each newton.'},
+          {text:'It stops stretching',why:'The extension keeps increasing.'},{text:'It obeys Hooke’s law again',why:'The graph is curved after P.'}],
+        explain:'After P the graph curves upwards: the extension is no longer proportional to the force, and each newton adds more extension.',sum:'Each newton stretches it more'}]};
+  }
+}
+
+/* ---- heating and cooling curves in sections (TA: 5.9P, 5.11P) ---- */
+function genIntHeat(rnd){
+  for(let k=0;k<100;k++){
+    const heat=rnd()<0.65;
+    if(heat){
+      const a=pk(rnd,[-30,-20]),t=[0,pk(rnd,[2,3]),0,0,0,0];t[2]=t[1]+pk(rnd,[4,5,6]);t[3]=t[2]+pk(rnd,[5,6,7]);t[4]=t[3]+pk(rnd,[7,8,9]);t[5]=t[4]+pk(rnd,[2,3]);if(t[5]>30)continue;
+      const y=[a,0,0,100,100,120],pts=t.map((x,i)=>[x,y[i]]),o=axes([0,30,5,1],[-40,140,20,4],'Time / minutes','Temperature / °C');
+      const fig=hi=>lineGraph(Object.assign({},o,{segments:[{pts:pts}],extra:(gx,gy)=>'<line class="g-zero" x1="'+gx(0)+'" x2="'+gx(30)+'" y1="'+gy(0)+'" y2="'+gy(0)+'"/>'+secMarks(gx,gy,o,pts,hi),label:'Heating curve in sections'})).svg;
+      const name=['solid ice warming up','ice melting','liquid water warming up','water boiling','steam warming up'],why=i=>'In section '+SEC[i]+' it is '+name[i]+'.';
+      const pool=[
+        {q:'In which section is the ice melting?',r:1,ex:'The first flat section, at 0 °C: the temperature stays the same while it melts.'},
+        {q:'In which section is the water boiling?',r:3,ex:'The second flat section, at 100 °C.'},
+        {q:'In which section is it all liquid?',r:2,ex:'Between melting (B) and boiling (D), all of it is liquid water, warming up.'},
+        {q:'In which section is it all solid?',r:0,ex:'Before it starts to melt, it is all ice.'}];
+      const W=shuffle(pool).slice(0,2),parts=W.map(w=>({type:'mc',q:w.q,fig:fig(),options:choiceOpts(5,w.r,why),explain:w.ex,sum:'Section '+SEC[w.r]}));
+      parts.push({type:'mc',q:'Why does the temperature stay the same in section B, even though the ice is still being heated?',fig:fig(1),
+        options:[{text:'The energy weakens and breaks the bonds between the particles, so their kinetic energy does not increase',correct:true},
+          {text:'No energy is being supplied in section B',why:'The heater is on the whole time.'},
+          {text:'The particles stop moving while it melts',why:'Particles are always moving: as it melts they go from vibrating in place to sliding past each other.'},
+          {text:'All the energy is lost to the surroundings',why:'Some is lost, but most goes into melting the ice.'}],
+        explain:'While a substance changes state, the energy goes into the bonds between the particles, not into their kinetic energy, so the temperature does not change.',sum:'The energy breaks bonds between particles'});
+      return {title:'Sections of a heating curve',ta:true,stem:'A beaker of ice at '+N(a)+' °C is heated steadily until the water boils and the steam is heated. The graph is split into sections A to E.',parts:parts};
+    }
+    const S=pk(rnd,[{n:'stearic acid',mp:69,a:[90,95],b:[40,45]},{n:'paraffin wax',mp:55,a:[80,85],b:[25,30]},{n:'liquid gallium',mp:30,a:[50,55],b:[10,15]}]);
+    const a=pk(rnd,S.a),b=pk(rnd,S.b),t=[0,pk(rnd,[3,4,5]),0,0];t[2]=t[1]+pk(rnd,[6,7,8]);t[3]=t[2]+pk(rnd,[5,6,7]);if(t[3]>20)continue;
+    const pts=[[0,a],[t[1],S.mp],[t[2],S.mp],[t[3],b]],o=axes([0,20,2,0.5],[0,100,10,2],'Time / minutes','Temperature / °C');
+    const fig=hi=>lineGraph(Object.assign({},o,{segments:[{pts:pts}],extra:(gx,gy)=>secMarks(gx,gy,o,pts,hi),label:'Cooling curve in sections'})).svg;
+    const name=['liquid, cooling','freezing (liquid turning to solid)','solid, cooling'],why=i=>'In section '+SEC[i]+' it is '+name[i]+'.';
+    const pool=[{q:'In which section is it freezing?',r:1,ex:'The flat section: the temperature stays at the melting point, '+S.mp+' °C, while it freezes.'},
+      {q:'In which section is it all solid?',r:2,ex:'After it has all frozen, the solid cools.'},{q:'In which section is it all liquid?',r:0,ex:'Before it starts to freeze, it is all liquid.'}];
+    const W=shuffle(pool).slice(0,2),parts=W.map(w=>({type:'mc',q:w.q,fig:fig(),options:choiceOpts(3,w.r,why),explain:w.ex,sum:'Section '+SEC[w.r]}));
+    parts.push({type:'mc',q:'What is the melting point of '+S.n.replace('liquid ','')+'?',fig:fig(1),
+      options:[S.mp,a,b,Math.round((a+b)/2)].filter((v,i,arr)=>arr.indexOf(v)===i).slice(0,4).map((v,i)=>({text:N(v)+' °C',correct:i===0,why:i===0?'':v===a?'That is where it starts.':v===b?'That is where it ends.':'Melting and freezing happen at the same temperature: the flat part of the graph.'})),
+      explain:'It freezes at the temperature of the flat section, '+S.mp+' °C, and it melts at the same temperature.',sum:S.mp+' °C'});
+    return {title:'Sections of a cooling curve',ta:true,stem:'Some '+S.n+' at '+a+' °C cools and freezes. The graph is split into sections A to C.',parts:parts};
+  }
+}
+
+/* ---- explain the shape of a velocity–time graph using forces (the mark schemes' chain) ---- */
+function genExplain(rnd){
+  for(let k=0;k<100;k++){
+    const pe=person(rnd),kind=pk(rnd,['fall','fall','drive','chute']);
+    if(kind!=='chute'){
+      const fall=kind==='fall',S=fall?pk(rnd,[{p:true,who:pe.n+' does a base jump from a cliff and falls before opening '+pe.his+' parachute.',V:[50,55],tau:[5,6],x:[0,30,5,1],y:[0,60,10,2],W:'weight',D:'air resistance'},
+          {who:'A steel ball is dropped into a tall tube of oil.',V:[0.4,0.5],tau:[0.2,0.25],x:[0,1.5,0.5,0.1],y:[0,0.6,0.1,0.02],W:'weight',D:'drag from the oil'}])
+        :pk(rnd,[{who:'A van starts from rest. Its engine gives a constant driving force.',V:[30,32],tau:[8,10],x:[0,60,10,2],y:[0,40,10,2],W:'driving force',D:'air resistance and friction'},
+          {who:'A racing drone flies off in a straight line. Its motors give a constant forward force.',V:[20,24],tau:[3,4],x:[0,20,5,1],y:[0,30,5,1],W:'forward force',D:'air resistance'}]);
+      const V=pk(rnd,S.V),tau=pk(rnd,S.tau),f=t=>V*Math.tanh(t/tau),tB=r6(Math.round(3.2*tau/S.x[3])*S.x[3]),tC=S.x[1]*0.95;
+      if(tB>tC*0.8)continue;
+      const o=axes(S.x,S.y,'Time / s','Velocity / m/s',{tickFmt:t=>N(r6(t))}),P=[{x:0,y:0,n:'A',dx:12,dy:-6},{x:tB,y:f(tB),n:'B'},{x:tC,y:f(tC),n:'C'}];
+      const fig=b=>lineGraph(Object.assign({},o,{segments:[{pts:curvePts(f,0,tC,120)}],extra:(gx,gy)=>ptMarks(gx,gy,o,P,b),label:'Velocity–time graph'})).svg;
+      const it=S.p?pe.he:'it',W=S.W,D=S.D,Ds=D.split(' and ')[0],dir=fall?'downwards':'forwards',are=D.indexOf(' and ')>0?'are':'is',inc=D.indexOf(' and ')>0?'increase':'increases',dec=D.indexOf(' and ')>0?'decrease':'decreases',eq=D.indexOf(' and ')>0?'equal':'equals';
+      return {title:'Explain the shape of the graph',unit:1,sp:'1.7, 1.17, 1.21',stem:S.who+' The graph shows '+(it==='it'?'its':pe.his)+' velocity. Explain each part of the graph using the forces.',parts:[
+        {type:'mc',q:'At A, why is the graph at its steepest?',fig:fig([0,tB*0.3]),
+          options:[{text:'The '+W+' is greater than the '+D+', so there is a resultant force '+dir+' and '+it+' accelerates',correct:true},
+            {text:'The '+D+' '+are+' greater than the '+W+', so '+it+' speeds up',why:'If the '+Ds+' were greater, '+it+' would slow down.'},
+            {text:'The forces are balanced, so '+it+' speeds up',why:'Balanced forces mean no acceleration: the line would be flat.'},
+            {text:'The '+W+' increases as '+it+' speeds up',why:'The '+W+' stays the same the whole time.'}],
+          explain:'Unbalanced forces: a large resultant force gives a large acceleration, which is a steep gradient.',sum:'The '+W+' is greater than the '+D+': resultant force, so it accelerates'},
+        {type:'mc',q:'From A to B, why does the gradient decrease?',fig:fig([0,tB]),
+          options:[{text:'As the speed increases, the '+D+' '+inc+', so the resultant force and the acceleration decrease',correct:true},
+            {text:'The '+W+' decreases, so the resultant force decreases',why:'The '+W+' stays the same. It is the '+Ds+' that changes.'},
+            {text:'The '+D+' '+dec+' as the speed increases',why:'Moving faster means more '+Ds+', not less.'},
+            {text:'The resultant force increases, so the acceleration decreases',why:'A bigger resultant force would give a bigger acceleration (F = ma).'}],
+          explain:'The gradient is the acceleration. Faster means more '+Ds+', so the resultant force falls and the acceleration falls with it.',sum:'More '+Ds+' as it speeds up: less resultant force, less acceleration'},
+        {type:'mc',q:'From B to C, why is the line flat?',fig:fig([tB,tC]),
+          options:[{text:'The '+D+' '+eq+' the '+W+', so the resultant force is zero and '+it+' moves at a constant (terminal) velocity',correct:true},
+            {text:'There are no forces acting',why:'The '+W+' and the '+Ds+' are both still acting: they balance.'},
+            {text:'The '+D+' '+are+' greater than the '+W+', so '+it+' stops accelerating',why:'If the '+Ds+' were greater, '+it+' would slow down.'},
+            {text:it==='it'?'It has stopped moving':cap(pe.he)+' has stopped moving',why:'The line is flat but well above zero: the velocity is constant, not zero.'}],
+          explain:'Balanced forces: zero resultant force, zero acceleration, a flat line at the terminal velocity.',sum:'Forces balanced: terminal velocity'}]};
+    }
+    const him=pe.he==='she'?'her':'him',His=cap(pe.his);
+    const V1=pk(rnd,[50,55]),V2=pk(rnd,[5,6,8]),tau=pk(rnd,[5,6]),t1=pk(rnd,[25,30]),tau2=1.4,f=t=>t<=t1?V1*Math.tanh(t/tau):V2+(V1*Math.tanh(t1/tau)-V2)*Math.exp(-(t-t1)/tau2);
+    const tD=t1+6,tE=48,o=axes([0,50,10,2],[0,60,10,2],'Time / s','Velocity / m/s');
+    const P=[{x:0,y:0,n:'A',dx:12,dy:-6},{x:18,y:f(18),n:'B'},{x:t1,y:f(t1),n:'C',dx:10},{x:tD,y:f(tD),n:'D',dy:-12},{x:tE,y:f(tE),n:'E'}];
+    const fig=b=>lineGraph(Object.assign({},o,{segments:[{pts:curvePts(f,0,tE,200)}],extra:(gx,gy)=>ptMarks(gx,gy,o,P,b),label:'Velocity–time graph of a skydive'})).svg;
+    return {title:'Explain the shape of the graph',unit:1,sp:'1.7, 1.17, 1.21',srcs:['4PH1/1PR May 2026 Q11(b)(i)','4PH0/1P January 2014 Q7(d)'],stem:pe.n+' jumps from a plane. From B to C '+pe.he+' falls at terminal velocity. At C '+pe.he+' opens '+pe.his+' parachute. Explain the rest of the graph using the forces.',parts:[
+      {type:'mc',q:'From C to D, why does '+pe.his+' velocity decrease?',fig:fig([t1,tD]),
+        options:[{text:'The parachute increases the air resistance, so it is greater than '+pe.his+' weight: the resultant force is upwards and '+pe.he+' decelerates',correct:true},
+          {text:'The parachute decreases '+pe.his+' weight',why:His+' weight stays the same: the parachute changes the air resistance.'},
+          {text:'The air resistance becomes less than '+pe.his+' weight',why:'Then the resultant force would be downwards and '+pe.he+' would speed up.'},
+          {text:'The resultant force is downwards, so '+pe.he+' slows down',why:'A downward resultant force would make '+him+' speed up.'}],
+        explain:'The open parachute gives much more air resistance. Upward resultant force: '+pe.he+' decelerates.',sum:'Air resistance greater than weight: resultant force upwards'},
+      {type:'mc',q:'From C to D, why does the graph get less steep?',fig:fig([t1,tD]),
+        options:[{text:'As '+pe.he+' slows down, the air resistance decreases, so the resultant force and the deceleration decrease',correct:true},
+          {text:'The air resistance increases as '+pe.he+' slows down',why:'Slower means less air resistance, not more.'},
+          {text:His+' weight increases',why:'The weight stays the same.'},
+          {text:'The resultant force increases',why:'A bigger resultant force would make the graph steeper.'}],
+        explain:'The gradient is the deceleration. Less speed, less air resistance, a smaller resultant force: the line levels off.',sum:'Less air resistance as '+pe.he+' slows: smaller resultant force'},
+      {type:'mc',q:'From D to E, why is the line flat, and lower than from B to C?',fig:fig([tD,tE]),
+        options:[{text:'The air resistance equals '+pe.his+' weight again, at a lower speed because the parachute is open: zero resultant force, a lower terminal velocity',correct:true},
+          {text:cap(pe.he)+' has stopped moving',why:'The line is above zero: '+pe.he+' is still falling, at a constant velocity.'},
+          {text:'There are no forces on '+him,why:'Weight and air resistance both act: they balance.'},
+          {text:'The air resistance is now zero',why:'The air resistance balances the weight; it is far from zero.'}],
+        explain:'With the parachute open, the air resistance matches the weight at a much lower speed, so the new terminal velocity is lower.',sum:'Forces balanced at a lower speed: a lower terminal velocity'}]};
+  }
+}
+
+/* ---- intercept and extrapolate: absolute zero from p–T, the container's mass from mass–volume ---- */
+function genExtPT(rnd){
+  for(let k=0;k<100;k++){
+    const p0=pk(rnd,[90,95,100]),pe=person(rnd),f=T=>p0*(1+T/273),Ts=[0,20,40,60,80,100];
+    const pts=Ts.map(T=>({x:T,y:r6(Math.round(f(T)+pk(rnd,[-1,0,0,1])))}));
+    const o=axes([-350,100,50,10],[0,140,20,2],'Temperature / °C','Pressure / kPa',{H:400}),fit=lsq(pts);
+    const fig=extra=>lineGraph(Object.assign({},o,{segments:[],extra:(gx,gy)=>crosses(gx,gy,pts)+(extra?extra(gx,gy):''),label:'Pressure–temperature graph'})).svg;
+    return {title:'Extrapolate to absolute zero',stem:pe.n+' heats the air in a sealed flask and measures its pressure at different temperatures. '+cap(pe.he)+' plots the results.',parts:[
+      {type:'fit',q:'Draw the line of best fit through the points.',note:'Drag either end of the ruler, or tap where an end should go. Keyboard: arrow keys move an end, Space swaps ends. The ruler runs right across the graph.',
+        task:{q:'',o:o,pts:pts,fit:fit,tolFit:2,aria:'The plotted points with a ruler to place as the line of best fit'}},
+      {type:'num',q:'Your line, extended, shows where the pressure would be zero. Use it to find this temperature.',unit:'°C',tool:'read',live:Q=>{
+        const L=Q.line||fit,x0=-L.c/L.m,lf=extra=>fig((gx,gy)=>rulerSVG(gx,gy,o,L.m,L.c)+(extra?extra(gx,gy):''));
+        return {answer:x0,tol:10,alt:-273,fig:lf(),figWork:lf((gx,gy)=>dot(gx,gy,x0,0)),
+          hints:['Follow your line down and to the left until it reaches zero pressure (the temperature axis).','One small square on the temperature axis is 10 °C.'],
+          working:'one small square = 10 °C||follow your line to zero pressure<br>temperature = '+N(Math.round(x0))+' °C'};}},
+      {type:'mc',q:'What is this temperature?',fig:fig((gx,gy)=>rulerSVG(gx,gy,o,fit.m,fit.c)),
+        options:[{text:'Absolute zero: the particles would have no kinetic energy, so the gas would exert no pressure',correct:true},
+          {text:'The temperature at which the air turns to liquid',why:'Air does turn to liquid when very cold, but that is not what the line shows: it shows where the pressure would be zero.'},
+          {text:'The freezing point of water',why:'Water freezes at 0 °C.'},
+          {text:'The lowest temperature measured',why:'The lowest temperature measured was 0 °C. The line has been extended far beyond the results.'}],
+        explain:'Absolute zero, about −273 °C (0 K): the lowest possible temperature. The pressure of a gas would be zero there.',sum:'Absolute zero (about −273 °C)'},
+      {type:'mc',q:'Is the pressure directly proportional to the temperature in °C?',fig:fig((gx,gy)=>rulerSVG(gx,gy,o,fit.m,fit.c)+'<circle class="g-pt" cx="'+gx(0)+'" cy="'+gy(fit.c)+'" r="5"/>'),
+        options:[{text:'No: it is a straight line, but it does not pass through the origin (0 °C, 0 kPa)',correct:true},
+          {text:'Yes: it is a straight line',why:'A straight line is linear, but proportional also needs it to pass through the origin.'},
+          {text:'Yes: the pressure increases when the temperature increases',why:'That shows they increase together, not that they are proportional.'},
+          {text:'No: the graph is a curve',why:'The points lie on a straight line.'}],
+        explain:'At 0 °C the pressure is about '+N(Math.round(fit.c))+' kPa, not zero. In kelvin the line would pass through the origin: p is proportional to T in kelvin.',sum:'No: straight, but not through the origin'}]};
+  }
+}
+const MV=[{n:'paraffin',r:0.8},{n:'olive oil',r:0.9},{n:'water',r:1.0},{n:'sea water',r:1.05},{n:'glycerol',r:1.25}];
+function genExtMV(rnd){
+  for(let k=0;k<100;k++){
+    const L=pk(rnd,MV),mc=pk(rnd,[40,50,60,80,100,120]),pe=person(rnd),Vs=[20,40,60,80,100],f=V=>mc+L.r*V;
+    const ys=NICE.find(s=>f(120)/s<=8&&f(120)/s>=4);if(!ys)continue;const yM=Math.ceil(f(120)/ys)*ys,ym=ys/5;
+    const pts=Vs.map(V=>({x:V,y:r6(Math.round((f(V)+pk(rnd,[-0.5,0,0,0.5])*ym)/(ym/2))*(ym/2))}));
+    const o=axes([0,120,20,4],[0,yM,ys,ym],'Volume of '+L.n+' / cm³','Total mass / g',{H:400}),fit=lsq(pts);
+    const lf=(Q,extra)=>{const Ln=Q.line||fit;return lineGraph(Object.assign({},o,{segments:[],extra:(gx,gy)=>crosses(gx,gy,pts)+rulerSVG(gx,gy,o,Ln.m,Ln.c)+(extra?extra(gx,gy):''),label:'Your graph with your line of best fit'})).svg;};
+    return {title:'Intercept and gradient: mass and volume',stem:pe.n+' pours '+L.n+' into a measuring cylinder, 20 cm³ at a time, and measures the total mass of the cylinder and the '+L.n+'. '+cap(pe.he)+' plots the results.',parts:[
+      {type:'fit',q:'Draw the line of best fit through the points.',note:'Drag either end of the ruler, or tap where an end should go. Keyboard: arrow keys move an end, Space swaps ends.',
+        task:{q:'',o:o,pts:pts,fit:fit,tolFit:Math.max(1.5*ym,0.04*(pts[4].y-pts[0].y)),aria:'The plotted points with a ruler to place as the line of best fit'}},
+      {type:'num',q:'Use your line to find the mass of the empty measuring cylinder.',unit:'g',live:Q=>{
+        const Ln=Q.line||fit;return {answer:Ln.c,tol:ym,alt:mc,fig:lf(Q),figWork:lf(Q,(gx,gy)=>dot(gx,gy,0,Ln.c)),
+          hints:['With no '+L.n+' in it (volume = 0), the mass is just the cylinder.','Read where your line meets the mass axis. One small square is '+N(ym)+' g.'],
+          working:'volume of '+L.n+' = 0, so the mass is the cylinder alone||read where your line meets the mass axis<br>mass of cylinder = '+N(sig(Ln.c))+' g'};}},
+      {type:'num',q:'Use the gradient of your line to find the density of the '+L.n+'.',unit:'g/cm³',tool:'grad',live:Q=>{
+        const Ln=Q.line||fit,pq=twoOnLine(o,Ln.m,Ln.c),p=[pq[0][0],sig(pq[0][1])],q=[pq[1][0],sig(pq[1][1])],g=(q[1]-p[1])/(q[0]-p[0]);
+        return {answer:g,tol:g*0.04,alt:L.r,fig:lf(Q),figWork:lf(Q,(gx,gy)=>gradTri(gx,gy,p,q,'change in volume','change in mass')),
+          hints:['Each extra cm³ of '+L.n+' adds the same mass, so the gradient is the mass of each cm³: the density.','Read two points on your line, far apart.','density = [[change in mass|change in volume]]'],
+          working:gradWork3(p,q,'ρ','change in mass','change in volume','cm³','g','g/cm³','Read two points off your line, far apart','')};}}]};
+  }
+}
+
+const SKILLS=[['read','Read a Value'],['grad','Gradient'],['tan','Tangent to a Curve'],['area','Area Under a Velocity–Time Graph'],['plot','Plot and Line or Curve of Best Fit'],
+  ['ext','Intercept and Extrapolate'],['sketch','Sketch or Complete a Graph'],['int','Interpret a Graph'],['expl','Explain the Shape'],['desc','Describe a Relationship'],['anom','Spot an Anomaly']];
 const ROWS=[
   {id:'dt-read',lv:'e',skill:'read',label:'Distance–time graph: distance, time stopped, average speed',unit:1,sp:'1.3, 1.4',gen:genDtRead,src:['4PH0/2P January 2012 Q2(c)','4PH1/1P January 2020 Q5(a)(i)','4PH0/1P May 2015 TZ1 Q2(c)(ii)']},
   {id:'vt-read',lv:'e',skill:'read',label:'Velocity–time graph',unit:1,sp:'1.7, 1.19',gen:genVtRead,src:['4PH1/1P May 2019 TZ1 Q4(a)(i)','4420/2H June 2010 Q2(a)(i)']},
@@ -1871,6 +2417,19 @@ const ROWS=[
   {id:'sk-vt',lv:'h',skill:'sketch',label:'Velocity–time line for a change',unit:1,sp:'1.7, 1.9, 1.20',gen:genSkVt,src:['4PH1/1P November 2020 Q2(c)','4420/2H June 2008 Q1(a)(iii)','4420/2H June 2007 Q1(b)(ii)']},
   {id:'sk-heat',lv:'h',skill:'sketch',label:'Heating and cooling curves',unit:5,sp:'5.9P, 5.11P',ta:true,gen:genSkHeat,src:['4PH1/2PR May 2024 Q3(b)','4PH1/2P May 2023 Q2(b)(iii)','4PH1/2PR January 2020 Q5(a)(i)']},
   {id:'sk-osc',lv:'h',skill:'sketch',label:'Oscilloscope traces',unit:3,sp:'3.26P, 3.28P',ta:true,gen:genSkOsc,src:['4PH1/2PR May 2024 Q9(b)','4PH1/2P May 2025 Q2(c)(ii)','4PH1/2P January 2021 Q1(c)']},
+  {id:'cool-read',lv:'e',skill:'read',label:'Cooling curve: temperature and time',unit:4,sp:'4.9, 4.10',gen:genCoolRead,src:['4PH1/2PR January 2022 Q7(a)','4PH1/1P May 2021 Q6(b)(i)']},
+  {id:'rt-read',lv:'e',skill:'read',label:'Thermistor or LDR: resistance, then V = IR',unit:2,sp:'2.11, 2.13',gen:genRtRead,src:['4PH1/1PR May 2025 Q3(b)(ii)','4PH1/1PR May 2022 Q3(b)(i)']},
+  {id:'tan-vt',lv:'h',skill:'tan',label:'Curved velocity–time graph: acceleration at a moment',unit:1,sp:'1.8',gen:genTanVt,src:['4PH1/1P May 2024 Q12(a)']},
+  {id:'tan-cool',lv:'h',skill:'tan',label:'Cooling curve: rate of cooling at a temperature',unit:4,sp:'4.9, 4.10',gen:genTanCool,src:['4PH1/2PR January 2022 Q7(a)','4PH1/2PR May 2025 Q7(c)(i)','4PH1/2PR May 2025 Q7(c)(ii)']},
+  {id:'rt-plot',lv:'h',skill:'plot',label:'Thermistor or LDR resistance: curve of best fit',unit:2,sp:'2.11',gen:genRtPlot,src:['4PH0/2PR May 2015 TZ2 Q5(c)(i)','4PH0/1P May 2016 TZ1 Q5(c)(i)']},
+  {id:'ext-pt',lv:'h',skill:'ext',label:'Pressure and temperature: absolute zero',unit:5,sp:'5.16, 5.20',gen:genExtPT,src:['4PH1/1PR January 2021 Q4(b)(ii)','4PH1/1P November 2021 Q9(b)(i)','4PH0/1P January 2018 Q9(a)(i)']},
+  {id:'ext-mv',lv:'h',skill:'ext',label:'Mass and volume: the container’s mass and the density',unit:5,sp:'5.3, 5.4',gen:genExtMV,src:['4420/03 June 2010 Q2(b)(i)']},
+  {id:'int-vt',lv:'e',skill:'int',label:'Velocity–time graph in sections',unit:1,sp:'1.7, 1.8, 1.9',gen:genIntVt,src:['4420/2H June 2007 Q1(a)(i)','4420/2H November 2008 Q13(c)(ii)','4PH0/1PR May 2013 TZ2 Q5(a)','4PH1/1P November 2021 Q1(b)']},
+  {id:'int-dt',lv:'e',skill:'int',label:'Distance–time graph in sections',unit:1,sp:'1.3, 1.4',gen:genIntDt,src:['4PH1/1P January 2020 Q5(a)(i)','4PH1/1P January 2020 Q5(a)(iii)','4PH0/1P January 2018 Q2(b)(ii)']},
+  {id:'int-match',lv:'e',skill:'int',label:'Match the graph to the motion',unit:1,sp:'1.3, 1.7',gen:genIntMatch,src:['4PH1/1P November 2021 Q1(a)','4PH0/1P May 2016 TZ1 Q1(a)']},
+  {id:'int-fe',lv:'e',skill:'int',label:'Force–extension: where Hooke’s law holds',unit:1,sp:'1.22, 1.23',gen:genIntFe,src:['4420/2H November 2007 Q1(c)(i)','4PH1/1PR May 2024 Q9(b)(i)']},
+  {id:'int-heat',lv:'h',skill:'int',label:'Heating and cooling curves in sections',unit:5,sp:'5.9P, 5.11P',ta:true,gen:genIntHeat,src:['4PH1/2PR January 2021 Q1(a)(i)','4PH1/2P November 2023 Q5(b)(i)','4PH1/2PR November 2020 Q6(b)(ii)']},
+  {id:'exp-vt',lv:'h',skill:'expl',label:'Explain a velocity–time graph with forces',unit:1,sp:'1.7, 1.17, 1.21',gen:genExplain,src:['4PH1/1P January 2022 Q6(b)(iii)','4PH0/2P January 2017 Q6(c)','4PH0/1P January 2014 Q7(b)']},
   {id:'desc-rel',lv:'e',skill:'desc',label:'What relationship does the graph show?',unit:'1–6',sp:'1.22, 2.9, 2.11, 3.25P, 5.20, 6.19P',gen:genDescribe,src:['4PH1/2PR May 2022 Q7(a)']},
   {id:'desc-prod',lv:'h',skill:'desc',label:'Test whether x × y is constant',unit:'2–7',sp:'2.25P, 3.5, 3.12, 5.20, 7.6, 7.13',gen:genProduct,src:['4PH1/2PR May 2024 Q9(c)']},
   {id:'anomaly',lv:'e',skill:'anom',label:'Spot the anomaly, then the correct reading',unit:'1–7',sp:'1.3, 1.22, 2.9, 3.19, 7.13',gen:genAnomaly,src:['4PH0/1PR May 2014 TZ2 Q4(b)(ii)']}
@@ -1887,7 +2446,7 @@ const visible=r=>!(st.da&&r.ta);
 // 22 Nov 2026: two ways to choose, used together. Left: by type of graph (the skills, no contexts listed). Right: by topic
 // (the IGCSE units). A kind is practised when its type and one of its units are ticked; a kind spread over several units
 // (describe, x × y, anomaly) only deals questions from the ticked units.
-const UNITS=[[1,'Forces and Motion'],[2,'Electricity'],[3,'Waves'],[5,'Solids, Liquids and Gases'],[6,'Magnetism and Electromagnetism'],[7,'Radioactivity and Particles']];
+const UNITS=[[1,'Forces and Motion'],[2,'Electricity'],[3,'Waves'],[4,'Energy Resources and Energy Transfers'],[5,'Solids, Liquids and Gases'],[6,'Magnetism and Electromagnetism'],[7,'Radioactivity and Particles']];
 const uniq=a=>a.filter((v,i)=>a.indexOf(v)===i);
 function rowUnits(r,da){
   if(typeof r.unit==='number')return [r.unit];
@@ -2091,11 +2650,12 @@ function openPlot(P,body){
 function openFit(P,body){
   const Q=cur,host=mk('div','gq-fit');body.appendChild(host);
   let last=null;
-  const K=P.type==='click'?ANOMALY:P.kind==='curve'?CURVEFIT:BESTFIT,what=P.type==='click'?['Anomaly shown.','✓ Anomaly found.']:P.kind==='curve'?['Curve of best fit shown.','✓ Curve of best fit drawn.']:['Line of best fit shown.','✓ Line of best fit drawn.'];
+  const K=P.type==='click'?ANOMALY:P.kind==='curve'?CURVEFIT:P.kind==='tangent'?TANGENT:BESTFIT,what=P.type==='click'?['Anomaly shown.','✓ Anomaly found.']:P.kind==='curve'?['Curve of best fit shown.','✓ Curve of best fit drawn.']:P.kind==='tangent'?['Tangent shown.','✓ Tangent drawn.']:['Line of best fit shown.','✓ Line of best fit drawn.'];
   const kind=Object.assign({},K,{check:(t,s)=>{const r=K.check(t,s);last=s;if(!r.ok)Q.clean=false;return r;}});
   const nb=mk('div','bar');nb.innerHTML='<button type="button" class="btn primary" id="gq-go" hidden>Next part &rarr;</button>';
   createDrawTasks({host:host,tasks:[P.task],kind:kind,W:560,H:400,single:true,onDone:status=>{
-    if(status===2){Q.clean=false;Q.line=null;Q.curve=null;}
+    if(status===2){Q.clean=false;Q.line=null;Q.curve=null;Q.tan=null;}
+    else if(K===TANGENT)Q.tan={m:last.m,c:P.task.y0-last.m*P.task.x0};
     else if(K===BESTFIT)Q.line=lineOf(last);else if(K===CURVEFIT)Q.curve={hx:P.task.hx,y:last.y.slice()};
     if(Q.pi===Q.parts.length-1){partDone(what[status===2?0:1]);return;}
     const go=byId('gq-go');go.hidden=false;go.focus({preventScroll:true});
