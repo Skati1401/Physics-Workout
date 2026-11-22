@@ -201,7 +201,10 @@
   /* Experiment has a table as well, so its rows sit closer and its buttons are shorter */
   @media (min-width:861px){ .side.exp{gap:8px;} .side.exp .seg button{min-height:36px;padding-block:5px;} .side.exp .note{min-height:0;font-size:14px;} }
   /* ===== this page ===== */
-  .view{max-height:max(260px,calc(100vh - 292px));}
+  /* the picture gets more room and the right-hand column less (Alex, 22 Nov 2026: the HR diagram looked small and cluttered) */
+  .view{max-height:max(260px,calc(100vh - 250px));}
+  .stage.xrow .view{max-height:max(260px,calc(100vh - 300px));}   /* IB: the row of extra lines under the buttons */
+  @media (min-width:861px){ .stage{grid-template-columns:minmax(0,1fr) minmax(300px,380px);} .side .note{font-size:14px;line-height:1.45;} }
   #sl-stats{grid-template-columns:1fr 1fr;}
   #sl-stats .stat strong{font-size:13.5px;white-space:normal;}
   .seg button b.ta,.eyebrow b.ta{font:600 10.5px var(--font-mono);border:1px solid currentColor;border-radius:4px;padding:0 4px;margin-left:5px;vertical-align:1px;}
@@ -209,7 +212,7 @@
   .view .pick:focus{outline:none;}
   .view .pick:focus-visible .ring{stroke:var(--accent);stroke-width:3.2;}
   .view .hrpick{cursor:crosshair;}
-  @media (max-height:640px) and (min-width:861px){ .side{gap:9px;} .note{font-size:14px;min-height:0;} .seg button{min-height:38px;padding-block:5px;} }
+  @media (max-height:640px) and (min-width:861px){ .side{gap:9px;} .note{font-size:14px;min-height:0;} .seg button{min-height:38px;padding-block:5px;} .side .note{line-height:1.36;} }
 
 </style>
 <style id="choice-kit">
@@ -639,19 +642,21 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   }
 
   // ---- layout: the star in its window, the life-cycle chart, then the star data or the HR diagram. On a phone they go one under the other.
-  var LY, TALL, P1, P2, P3;
+  var LY, TALL, P1, P2, P3, PK=1;   // PK: the star data or HR diagram is drawn this much bigger on a wide screen, and the star's window taller to match
   function layout(){
     // on a phone the four temperature scales of the IAL axis question are drawn taller, so the picture grows to hold them
     var axQ=hrOn() && predict() && ks5() && Q.h && Q.h.type==='axis';
-    var v=sizeView(svg,{VW:860,VH:350},{VW:430,VH:axQ?1190:1070}); LY=v; TALL=v.VW===430;
+    var v=sizeView(svg,{VW:912,VH:418},{VW:430,VH:axQ?1190:1070}); LY=v; TALL=v.VW===430;
+    PK = TALL ? 1 : 1.2; WH = TALL ? 342 : 410; CY = Math.round(WH/2)-1;
     P1 = TALL ? {x:84,y:4} : {x:6,y:4};        // the star: 262 × 342
     P2 = TALL ? {x:81,y:362} : {x:286,y:4};    // the chart: 268 × 342
-    P3 = TALL ? {x:74,y:722} : {x:572,y:4};    // star data or HR diagram: 282 × 342
+    P3 = TALL ? {x:74,y:722} : {x:572,y:4};    // star data or HR diagram: 282 × 342 (× PK)
   }
-  function at(P,s){ return '<g transform="translate('+P.x+','+P.y+')">'+s+'</g>'; }
+  function at(P,s,k){ return '<g transform="translate('+P.x+','+P.y+')'+(k && k!==1 ? ' scale('+k+')' : '')+'">'+s+'</g>'; }
 
   // ---- the star in its window (always dark, like the night sky, in both themes)
-  var WW=262, WH=342, CX=131, CY=170, GRAV='#7fb2ff', PRESS='#ffa24a', WINK='#e9eef8', WSOFT='#b9c4d8';
+  var WW=262, WH=342, CX=131, CY=170,   // WH and CY are set by layout()
+    GRAV='#7fb2ff', PRESS='#ffa24a', WINK='#e9eef8', WSOFT='#b9c4d8';
   var PART=(function(){ var a=[], i; for(i=0;i<120;i++) a.push({r:14+106*Math.sqrt(hash(i*3+1)), th:hash(i*3+2)*6.283, sz:0.7+1.5*hash(i*3+3), o:0.35+0.55*hash(i*7+5)}); return a; })();
   var BLOB=[[-38,-22,74,'#7a5cff'],[30,-34,62,'#ff6fae'],[40,26,70,'#39c6c9'],[-28,36,58,'#ff9d6b'],[2,0,84,'#5f8bff']];
   var SKY=(function(){ var a=[], i; for(i=0;i<22;i++) a.push([8+246*hash(i*5+11), 8+326*hash(i*5+12), 0.6+0.8*hash(i*5+13)]); return a; })();
@@ -682,10 +687,10 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   }
   // what the star is drawn against, to the same scale: the Sun today, the Earth, or a 20 km bar
   function comparator(m){
-    var S=m.S, x=36, y=250, r;
+    var S=m.S, x=36, y=WH-92, b=WH-78, r;
     if(!S) return '';
-    if(m.bar){ r=S*20/696000; return ln(18,264,18+r,264,WINK,2)+ln(18,260,18,268,WINK,2)+ln(18+r,260,18+r,268,WINK,2)+wtxt(18+r+8,268,'20 km',{fs:11.5}); }
-    if(S<=27.5){ if(m.s===STARS.sun && m.id==='ms') return wtxt(18,268,'This is the Sun today',{fs:11.5,c:WSOFT});
+    if(m.bar){ r=S*20/696000; return ln(18,b,18+r,b,WINK,2)+ln(18,b-4,18,b+4,WINK,2)+ln(18+r,b-4,18+r,b+4,WINK,2)+wtxt(18+r+8,b+4,'20 km',{fs:11.5}); }
+    if(S<=27.5){ if(m.s===STARS.sun && m.id==='ms') return wtxt(18,b+4,'This is the Sun today',{fs:11.5,c:WSOFT});
       r=Math.max(1.4,S); return sphere(x,y,r,TSUN,1)+wtxt(x+Math.max(r,5)+9,y+4,'Sun today, same scale',{fs:11.5,c:WSOFT}); }
     r=S*REARTH;
     if(r>=1 && r<=30) return circ(x,y,r,'#3d84d6')+circ(x-r*0.25,y-r*0.3,r*0.45,'#8fc0f2',' opacity=".55"')+circ(x+r*0.3,y+r*0.25,r*0.3,'#4caf6e',' opacity=".8"')+wtxt(x+Math.max(r,5)+9,y+4,'the Earth, same scale',{fs:11.5,c:WSOFT});
@@ -705,7 +710,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     var g='', s='', t2;
     g+='<defs><clipPath id="sl-win"><rect x="0" y="0" width="'+WW+'" height="'+WH+'" rx="10"/></clipPath></defs>'+rect(0,0,WW,WH,'#070b16',' rx="10"');
     s+='<g clip-path="url(#sl-win)">';
-    SKY.forEach(function(q){ s+=circ(q[0],q[1],q[2],'#fff',' opacity=".5"'); });
+    SKY.forEach(function(q){ s+=circ(q[0],q[1]*WH/342,q[2],'#fff',' opacity=".5"'); });
     if(m.cloud>0.01) s+=cloud(m.cloudU,m.cloud);
     if(m.shell){ s+=sphere(CX,CY,m.shell.r,m.shell.T,0.55*m.shell.op)+'<circle cx="'+CX+'" cy="'+CY+'" r="'+f1(m.shell.r)+'" fill="none" stroke="#7fe3d4" stroke-width="5" opacity="'+(0.5*m.shell.op).toFixed(2)+'"/>'; }
     if(m.debris){
@@ -731,9 +736,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     t2 = m.id ? NAME[m.id] : BOXNAME[m.a]+' → '+BOXNAME[m.b].toLowerCase();
     g+=wtxt(CX,19,m.s.title,{a:'middle',fs:12,c:WSOFT})+wtxt(CX,37,t2,{a:'middle',fs:13,w:700});
     // key to the arrows, then what is happening in the core
-    g+=arrow(30,293,14,293,GRAV,2.4)+wtxt(38,297,'gravity pulls inwards',{fs:11.5,c:WSOFT});
-    g+=arrow(14,310,30,310,PRESS,2.4)+wtxt(38,314,ib() ? 'radiation pressure pushes out' : 'gas pressure pushes outwards',{fs:11.5,c:WSOFT});
-    g+=wtxt(14,333,caption(m),{fs:11.5});
+    g+=arrow(30,WH-49,14,WH-49,GRAV,2.4)+wtxt(38,WH-45,'gravity pulls inwards',{fs:11.5,c:WSOFT});
+    g+=arrow(14,WH-32,30,WH-32,PRESS,2.4)+wtxt(38,WH-28,ib() ? 'radiation pressure pushes out' : 'gas pressure pushes outwards',{fs:11.5,c:WSOFT});
+    g+=wtxt(14,WH-9,caption(m),{fs:11.5});
     return g;
   }
 
@@ -1025,7 +1030,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       if(pr && Q.kind==='change') d=dataHtml(m,{title:dn ? v+': '+Q.res.filter(function(x){ return x; }).length+' of 3' : 'Click ▲ or ▼ in each row', tw:dn?700:600, tc:dn?vc:'var(--ink)', q:true, ch:Q.ch, ans:Q.ans, done:dn, locked:!ask});
       else d=dataHtml(m,{title:'Star data, compared with the Sun'});
     }
-    g+=at(P3,d.g); pk+=at(P3,d.pk);
+    g+=at(P3,d.g,PK); pk+=at(P3,d.pk,PK);
     live.innerHTML=g;
     if(pk!==picksHtml){ setKeepFocus(picksG,pk); picksHtml=pk; }
     readings(m);
@@ -1206,7 +1211,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function isPath(){ return !!Q.h && Q.h.type==='path'; }
   svg.addEventListener('click', function(e){
     if(!predict() || Q.kind!=='hr' || Q.phase!=='ask' || !e.target.closest('.hrpick')) return;
-    var q=svgPoint(svg,e); if(isPath()) pathClick(hT(q.x-P3.x), hM(q.y-P3.y)); else setMark(hT(q.x-P3.x), hM(q.y-P3.y));
+    var q=svgPoint(svg,e), qx=(q.x-P3.x)/PK, qy=(q.y-P3.y)/PK; if(isPath()) pathClick(hT(qx), hM(qy)); else setMark(hT(qx), hM(qy));
   });
   svg.addEventListener('keydown', function(e){
     if(!predict() || Q.kind!=='hr' || Q.phase!=='ask' || !e.target.closest('.hrpick')) return;
@@ -1222,7 +1227,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function setRows(){
     var pr=predict();
     $('#sl-masslab').hidden=pr; $('#sl-mass').hidden=pr; nextBtn.hidden=pr; newBtn.hidden=!pr;
-    $('#sl-xgrid').hidden=pr || !ib() || !hrOn();
+    $('#sl-xgrid').hidden=pr || !ib() || !hrOn(); $('.stage').classList.toggle('xrow',!$('#sl-xgrid').hidden);
   }
   function applyLevel(){
     var k=ks5(), hb=$('#sl-pane [data-v="hr"]');
@@ -1257,11 +1262,11 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   ansIn.addEventListener('keydown', function(e){ if(e.key==='Enter' && !playBtn.disabled){ e.preventDefault(); playBtn.click(); } });
   watchEquals($('#sl-eq'));
 
-  // every level opens on the HR diagram (Alex, 22 Nov 2026: at IGCSE it is Triple Award only, but students missed the button), except
-  // in the 8a workout's frame, whose intro talks about the star data, and in ?show=predict. The level switch shows on the page at every level (for the teacher) but never in a frame.
+  // every level opens on the HR diagram, the 8a workout's frame too (Alex, 22 Nov 2026: at IGCSE it is Triple Award only, but students
+  // missed the button), except ?show=predict. The level switch shows on the page at every level (for the teacher) but never in a frame.
   if(EMBED) levelEl.hidden=true;
   applyLevel();
-  if(ks5() || !EMBED) paneSeg.pick(SHOW==='predict' ? 'data' : 'hr');
+  paneSeg.pick(SHOW==='predict' ? 'data' : 'hr');
   if(SHOW==='hr' || SHOW==='hrq') paneSeg.pick('hr');
   if(SHOW==='predict' || SHOW==='hrq'){ tabSeg.pick('predict'); setTab(); }
   else { setRows(); draw(); }
