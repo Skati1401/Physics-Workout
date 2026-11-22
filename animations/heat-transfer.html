@@ -126,6 +126,7 @@
   .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
   .stat strong{font:600 15px var(--font-mono);color:var(--ink);white-space:nowrap;}
   .stat.hi strong{color:var(--topic);}
+  .stats.two{grid-template-columns:1fr 1fr;}
   .note{font-size:15px;line-height:1.5;color:var(--ink);padding:10px 12px;border-radius:8px;background:var(--bg);min-height:4.6em;}
   .note b{color:var(--topic);}
 
@@ -171,6 +172,7 @@
   .embed body{background:transparent;}
   .embed .page{padding:0;max-width:none;display:flow-root;}
   .embed .home-link,.embed .page-head{display:none;}
+  .embed #ht-level,.measure #ht-level{display:none;}   /* the level switch is for the teacher: never in a frame */
   .embed .view{max-height:460px;}
   .view.tall,.embed .view.tall{max-height:none;}
   .side>.seg.tabs{align-self:flex-start;}
@@ -299,6 +301,7 @@
       <h1>Thermal Energy Transfer</h1>
     </div>
     <div class="seg tabs" id="ht-mode" role="group" aria-label="Part"><button type="button" data-v="cond" aria-pressed="true">Conduction</button><button type="button" data-v="conv" aria-pressed="false">Convection</button><button type="button" data-v="rad" aria-pressed="false">Radiation</button></div>
+    <div class="seg tabs" id="ht-level" role="group" aria-label="Level"><button type="button" data-v="igcse" aria-pressed="true">IGCSE</button><button type="button" data-v="ib" aria-pressed="false">IB</button></div>
   </header>
 
   <section class="card stage">
@@ -309,10 +312,16 @@
           <button class="btn btn-primary" id="ht-play" type="button">&#9654; Play</button>
           <button class="btn" id="ht-act" type="button" hidden>Mark the front</button>
           <button class="btn" id="ht-cmp" type="button" hidden>Compare</button>
+          <button class="btn" id="ht-keep" type="button" hidden>Keep this</button>
           <button class="btn" id="ht-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="ht-slow" type="button" aria-pressed="false">Slow motion</button>
           <button class="btn" id="ht-exp" type="button" aria-pressed="false" title="Take your own readings">Experiment</button>
           <button class="btn" id="ht-clear" type="button" hidden>Clear readings</button>
+        </div>
+        <div class="sliders" id="ht-rsl" hidden>
+          <div><label class="lab" for="ht-a">Area A <output id="ht-ao"></output></label><input type="range" id="ht-a" min="0" max="16" step="1" value="15"></div>
+          <div><label class="lab" for="ht-x">Thickness &Delta;x <output id="ht-xo"></output></label><input type="range" id="ht-x" min="0" max="20" step="1" value="3"></div>
+          <div><label class="lab" for="ht-dt">Temperature difference &Delta;T <output id="ht-dto"></output></label><input type="range" id="ht-dt" min="1" max="80" step="1" value="15"></div>
         </div>
         <div class="sliders" id="ht-sliders" hidden>
           <div><label class="lab" for="ht-d">Detector distance <output id="ht-do"></output></label><input type="range" id="ht-d" min="5" max="40" step="1" value="10"></div>
@@ -322,6 +331,10 @@
     </div>
     <div class="side">
       <div class="cgrid">
+        <span class="rowlab" id="ht-mlab" hidden>Material</span>
+        <div class="seg" id="ht-mat" hidden><button type="button" data-v="0" aria-pressed="false">Copper</button><button type="button" data-v="1" aria-pressed="false">Aluminium</button><button type="button" data-v="2" aria-pressed="false">Steel</button><button type="button" data-v="3" aria-pressed="true">Glass</button><button type="button" data-v="4" aria-pressed="false">Brick</button><button type="button" data-v="5" aria-pressed="false">Wood</button><button type="button" data-v="6" aria-pressed="false">Polystyrene</button></div>
+        <span class="rowlab" id="ht-elab" hidden>Examples</span>
+        <div class="seg" id="ht-ex" hidden><button type="button" data-v="win" aria-pressed="false">Window</button><button type="button" data-v="pan" aria-pressed="false">Pan base</button><button type="button" data-v="box" aria-pressed="false">Cool box</button></div>
         <span class="rowlab" id="ht-jlab">Jump to</span>
         <div class="seg" id="ht-jump"><button type="button" data-v="0" aria-pressed="false">Start</button><button type="button" data-v="cu" aria-pressed="false">Copper pin</button><button type="button" data-v="fe" aria-pressed="false">Iron pin</button><button type="button" data-v="end" aria-pressed="false">10 min</button></div>
         <span class="rowlab" id="ht-hlab">Heat</span>
@@ -337,7 +350,7 @@
       <div class="rtable-wrap" id="ht-tablewrap" hidden><div id="ht-table"></div></div>
       <div class="stats" id="ht-stats"></div>
       <details class="working">
-        <summary>Show explanation</summary>
+        <summary id="ht-sum">Show explanation</summary>
         <div class="expl" id="ht-expl"></div>
       </details>
     </div>
@@ -577,6 +590,11 @@ function expKey(x, y, upLabel, downLabel){
   var faceSeg=segGroup($('#ht-face'), function(v){ turnTo(+v); });
   var intSeg=segGroup($('#ht-int'), function(){ resetPart(); });
   var jumpSeg=segGroup($('#ht-jump'), function(v){ jumpTo(v); });
+  // Level (TODO 9d, 22 Nov 2026): IGCSE | IB. IB changes only the Conduction part, to the rate of conduction (part 'rate').
+  // The switch is for the teacher: hidden in a frame and in measure mode, which stay IGCSE.
+  var levelSeg=segGroup($('#ht-level'), function(){ expBtn.setAttribute('aria-pressed','false'); resetPart(); });
+  if(PW_LEVEL==='ib' && !/[?&]show=measure\b/.test(location.search)) levelSeg.pick('ib');
+  function ib(){ return levelSeg.value()==='ib'; }
   // Measure mode (?show=measure, 13 Nov 2026): the 4.9 practical page's Do Experiment tab (TODO 8f). The student reads the
   // instruments and writes the readings in a table on the practical page; nothing is read, recorded or explained for them
   // (no results table, reading boxes, graph, Compare or explanation).
@@ -601,7 +619,7 @@ function expKey(x, y, upLabel, downLabel){
   }
   else if(showQ){ modeSeg.pick(showQ[1]); $('#ht-mode').hidden=true; }
   else if(EMBED){ $('.side').insertBefore($('#ht-mode'), $('.side').firstChild); }
-  function part(){ return modeSeg.value(); }
+  function part(){ var p=modeSeg.value(); return p==='cond' && ib() ? 'rate' : p; }
 
   var raf=0, last=0, running=false;
   function stop(){ running=false; cancelAnimationFrame(raf); }
@@ -614,6 +632,7 @@ function expKey(x, y, upLabel, downLabel){
       var chunk=Math.min(0.05,real), dt=chunk*(slowOn()?0.3:1); real-=chunk;
       if(p==='cond') more=condTick(dt);
       else if(p==='conv') more=convTick(dt);
+      else if(p==='rate') more=rateTick(dt);
       else more=radTick(dt);
     }while(more && real>1e-6);
     draw();
@@ -1192,6 +1211,119 @@ function expKey(x, y, upLabel, downLabel){
   dSl.addEventListener('input', function(){ setD(+dSl.value); });
   twSl.addEventListener('input', function(){ R.tw=+twSl.value; draw(); });
 
+  /* ---------------- RATE OF CONDUCTION (IB B.1; TODO 9d, 22 Nov 2026) ----------------
+     The Conduction part at IB level (the Level switch). A slab of one material is the wall between hot water kept at
+     20 + ΔT °C and cold water kept at 20 °C. In the steady state the temperature falls in a straight line across the
+     slab, and ΔQ/Δt = kAΔT/Δx. Play runs 60 s at 6× speed and adds up ΔQ = (ΔQ/Δt) × Δt; Keep this stores a setup to
+     compare with. k values are typical ones (W m⁻¹ K⁻¹). The slab in the picture grows with A and Δx but is not to scale. */
+  var MATS=[
+    {name:'Copper',K:390,col:'#c47a45'}, {name:'Aluminium',K:240,col:'#b9bec6'}, {name:'Steel',K:50,col:'#8a8f98'},
+    {name:'Glass',K:0.80,col:'#cfe6ee'}, {name:'Brick',K:0.60,col:'#b5553a'}, {name:'Wood',K:0.15,col:'#b98a52'}, {name:'Polystyrene',K:0.035,col:'#ecece6'}
+  ];
+  var AV=[0.01,0.02,0.03,0.05,0.1,0.15,0.2,0.25,0.3,0.4,0.5,0.6,0.8,1.0,1.2,1.5,2.0];   // m²
+  var XV=[1,2,3,4,5,6,8,10,12,15,20,25,30,40,50,60,80,100,120,150,200];                // mm
+  var EXAMPLES={win:{m:3,A:1.5,x:4,dT:15}, pan:{m:1,A:0.03,x:5,dT:1}, box:{m:6,A:0.5,x:30,dT:25}};
+  var RT_END=60, RT_SPEED=6;
+  var S={m:3,A:1.5,x:4,dT:15,t:0,keep:null};
+  var aSl=$('#ht-a'), xSl=$('#ht-x'), tSl=$('#ht-dt'), keepBtn=$('#ht-keep');
+  var matSeg=segGroup($('#ht-mat'), function(v){ S.m=+v; rateChanged(); });
+  var exSeg=segGroup($('#ht-ex'), function(v){ var e=EXAMPLES[v]; S.m=e.m; S.A=e.A; S.x=e.x; S.dT=e.dT; rateSync(); rateChanged(v); });
+  function rateSync(){ matSeg.pick(String(S.m)); aSl.value=AV.indexOf(S.A); xSl.value=XV.indexOf(S.x); tSl.value=S.dT; }
+  function rateChanged(ex){ stop(); S.t=0; exSeg.pick(ex||null); draw(); }
+  aSl.addEventListener('input', function(){ S.A=AV[+aSl.value]; rateChanged(); });
+  xSl.addEventListener('input', function(){ S.x=XV[+xSl.value]; rateChanged(); });
+  tSl.addEventListener('input', function(){ S.dT=+tSl.value; rateChanged(); });
+  keepBtn.addEventListener('click', function(){ S.keep={m:S.m,A:S.A,x:S.x,dT:S.dT,P:rateP()}; draw(); });
+  function tS(){ return Math.floor(S.t+1e-9); }   // whole seconds on the clock
+  function rateP(s){ s=s||S; return MATS[s.m].K*s.A*s.dT/(s.x/1000); }
+  function rateTick(dt){ if(!running) return false; S.t=Math.min(RT_END,S.t+dt*RT_SPEED); if(S.t>=RT_END-1e-9){ S.t=RT_END; running=false; return false; } return true; }
+  function num(v){ return (v>=1e5 || v<0.01) ? sci(v,2) : grp(sig(v,3)); }      // 3 significant figures
+  function kTxt(K){ return K>=10 ? String(K) : K>=0.1 ? K.toFixed(2) : String(K); }
+  function aTxt(A){ return A.toFixed(2); }
+  function mTxt(x){ return String(+(x/1000).toFixed(3)); }
+  function rateLay(){ return narrow() ? {W:430,H:610,k:430/540,gx:62,gy:262,fs:16,tall:1} : {W:860,H:352,k:1,gx:552,gy:0,fs:13,tall:0}; }
+  function drawRate(){
+    var L=rateLay(), fs=L.fs, s='', M=MATS[S.m], TH=20+S.dT, TC=20, P=rateP(), BY=300;
+    var side=56+124*Math.sqrt((S.A-0.01)/1.99), w=12+100*Math.sqrt((S.x-1)/199), ddx=side*0.5, ddy=-side*0.32, tw=118;
+    var tot=2*tw+w+ddx, hx=Math.round((540-tot)/2), xs=hx+tw, cx=xs+w, top=BY-side;
+    var hot='rgba(214,38,30,', cold='rgba(52,110,205,';
+    // ---- the picture, in its own 540 × 352 units ----
+    s+='<g transform="scale('+L.k+')">';
+    s+=box(8,BY,524-ddx-16,10,ddx+14,ddy-8,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'});
+    // the hot water: back and top, then its front (the slab hides its right-hand side)
+    s+=pg([[hx,top],[xs,top],[xs+ddx,top+ddy],[hx+ddx,top+ddy]],hot+'0.20)')+rect(hx+ddx,top+ddy,tw,side,hot+'0.08)',' stroke="var(--glass)" stroke-width="1.2"');
+    s+=rect(hx,top,tw,side,hot+'0.22)',' stroke="var(--glass)" stroke-width="2.2"');
+    // the slab: its right-hand face (area A) is the cold face
+    s+=box(xs,top,w,side,ddx,ddy,M.col);
+    // the particles in the slab vibrate more where it is hotter
+    var sp=11, nc=Math.max(1,Math.floor(w/sp)), nr=Math.max(2,Math.floor(side/sp)), tt=RM?0:S.t;
+    for(var i=0;i<nc;i++){ var f=(i+0.5)/nc, T=TH-S.dT*f, a=0.3+2.4*(T-20)/80;
+      for(var j=0;j<nr;j++){ var ph=(i*7.13+j*3.71)%6.283, px=xs+f*w+a*Math.sin(tt*4.1+ph), py=top+(j+0.5)*side/nr+a*Math.cos(tt*3.3+ph*1.7);
+        s+='<circle cx="'+f1(px)+'" cy="'+f1(py)+'" r="'+(w<20?2:2.4)+'" fill="'+heatCol(T)+'" stroke="rgba(0,0,0,.35)" stroke-width=".6"/>'; } }
+    // the cold water, in front of the slab's cold face
+    s+=pg([[cx,top],[cx+tw,top],[cx+tw+ddx,top+ddy],[cx+ddx,top+ddy]],cold+'0.18)')+pg([[cx+tw,top],[cx+tw+ddx,top+ddy],[cx+tw+ddx,BY+ddy],[cx+tw,BY]],cold+'0.26)');
+    s+=rect(cx,top,tw,side,cold+'0.14)');
+    s+=pg([[cx,top],[cx+ddx,top+ddy],[cx+ddx,BY+ddy],[cx,BY]],'none',' stroke="var(--topic)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"');
+    s+=pg([[cx,top],[cx+tw,top],[cx+tw+ddx,top+ddy],[cx+ddx,top+ddy]],'none',' stroke="var(--glass)" stroke-width="1.6" stroke-linejoin="round"')+
+       pg([[cx+tw,top],[cx+tw+ddx,top+ddy],[cx+tw+ddx,BY+ddy],[cx+tw,BY]],'none',' stroke="var(--glass)" stroke-width="1.6" stroke-linejoin="round"')+
+       rect(cx,top,tw,side,'none',' stroke="var(--glass)" stroke-width="2.2"');
+    // energy flows from the hot water through the slab to the cold water (thicker arrow for a larger rate)
+    var aw=Math.max(2.5,Math.min(9,2.5+0.9*Math.log10(Math.max(1,P))));
+    s+=arrow(hx+26,top+side*0.5,cx+tw-24,top+side*0.5,'var(--topic)',aw,' opacity=".85"');
+    // labels, in clear space
+    s+=txt(xs+(w+ddx)/2,top+ddy-46,M.name.toLowerCase(),{a:'middle',fs:fs,c:'var(--ink)',w:600});
+    s+=txt(hx,top+ddy-28,'hot water',{fs:fs,c:'var(--ink)'})+txt(hx,top+ddy-11,'kept at '+TH+' °C',{fs:fs,c:'var(--ink-soft)'});
+    s+=txt(cx+ddx*0.5+8,top+ddy-28,'cold water',{fs:fs,c:'var(--ink)'})+txt(cx+ddx*0.5+8,top+ddy-11,'kept at '+TC+' °C',{fs:fs,c:'var(--ink-soft)'});
+    var dy0=BY+20;
+    s+=ln(xs,BY+12,xs,dy0+6,'var(--ink-soft)',1.2)+ln(cx,BY+12,cx,dy0+6,'var(--ink-soft)',1.2)+ln(xs,dy0,cx,dy0,'var(--ink-soft)',1.2);
+    s+=txt(xs+w/2,dy0+20,'Δx = '+S.x+' mm',{a:'middle',fs:fs,c:'var(--ink)',halo:1});
+    var fx=cx+ddx*0.45, fy=top+side*0.82+ddy*0.45;
+    s+=ln(fx,fy,cx+50,dy0+2,'var(--topic)',1.2)+txt(cx+54,dy0+20,'area A = '+aTxt(S.A)+' m²',{fs:fs,c:'var(--topic)',halo:1});
+    s+='</g>';
+    // ---- the exam graph: temperature across the slab ----
+    var XR=Math.max(S.x,S.keep?S.keep.x:0), XR_=XR<=10?10:XR<=50?50:200, st=XR_===10?2:XR_===50?10:50;
+    var G0=48, G1=272, Y0=292, Y1=72, gfs=13;
+    function gX(x){ return G0+x/XR_*(G1-G0); } function gY(T){ return Y0-T/100*(Y0-Y1); }
+    var g='<g transform="translate('+L.gx+','+L.gy+')">';
+    g+=txt((G0+G1)/2,30,'temperature across the slab',{a:'middle',fs:gfs,c:'var(--ink)',w:600});
+    g+=rect(gX(0),Y1,gX(S.x)-gX(0),Y0-Y1,M.col,' opacity=".35"');
+    for(var T=0;T<=100;T+=20){ g+=ln(G0,gY(T),G1,gY(T),'var(--panel-border)',1)+txt(G0-6,gY(T)+4.5,String(T),{a:'end',fs:12}); }
+    for(var x=0;x<=XR_+1e-9;x+=st){ g+=ln(gX(x),Y0,gX(x),Y0+5,'var(--ink-soft)',1)+txt(gX(x),Y0+19,String(x),{a:'middle',fs:12}); }
+    g+=ln(G0,Y1-6,G0,Y0,'var(--ink-soft)',1.4)+ln(G0,Y0,G1+6,Y0,'var(--ink-soft)',1.4);
+    g+=txt(G0-6,Y1-14,'T / °C',{fs:12,c:'var(--ink)'})+txt(G1+4,Y0+36,'x / mm',{a:'end',fs:12,c:'var(--ink)'});
+    if(S.keep){ var K=S.keep; g+=pl([[gX(0),gY(20+K.dT)],[gX(K.x),gY(20)],[gX(XR_),gY(20)]],'var(--ink-faint)',2,' stroke-dasharray="6 5"'); }
+    g+=pl([[gX(S.x),gY(TC)],[gX(XR_),gY(TC)]],'var(--topic)',2,' stroke-dasharray="3 4"');
+    g+=pl([[gX(0),gY(TH)],[gX(S.x),gY(TC)]],'var(--topic)',3);
+    g+='<circle cx="'+f1(gX(0))+'" cy="'+f1(gY(TH))+'" r="4.5" fill="'+heatCol(TH)+'" stroke="var(--ink)"/><circle cx="'+f1(gX(S.x))+'" cy="'+f1(gY(TC))+'" r="4.5" fill="'+heatCol(TC)+'" stroke="var(--ink)"/>';
+    g+=txt(G1,Y1+14,'hot face '+TH+' °C',{a:'end',fs:12,c:'var(--ink)',halo:1})+txt(G1,Y1+30,'cold face '+TC+' °C',{a:'end',fs:12,c:'var(--ink)',halo:1});
+    if(S.keep) g+=txt(G1,Y1+46,'- - kept',{a:'end',fs:12,c:'var(--ink-faint)',halo:1});
+    g+='</g>';
+    return {s:s+g, W:L.W, H:L.H, tall:L.tall};
+  }
+  function rateNote(){
+    var M=MATS[S.m], P=rateP(), k='';
+    if(S.keep){ var r=P/S.keep.P;
+      k=' The kept setup ('+MATS[S.keep.m].name.toLowerCase()+', '+aTxt(S.keep.A)+' m², '+S.keep.x+' mm, '+S.keep.dT+' K) gave '+num(S.keep.P)+' W, so this rate is <b>'+(Math.abs(r-1)<5e-4?'the same':num(r)+' times')+'</b>'+(Math.abs(r-1)<5e-4?'.':' the kept rate.'); }
+    if(running) return 'Energy is conducted through the '+M.name.toLowerCase()+' at a steady <b>'+num(P)+' W</b>: '+num(P*tS())+' J so far.';
+    if(S.t>=RT_END) return 'In 60 s, ΔQ = '+num(P)+' W × 60 s = <b>'+num(P*RT_END)+' J</b> was conducted through the slab.'+k;
+    return '<b>'+M.name+'</b>, k = '+kTxt(M.K)+' W m⁻¹ K⁻¹. Energy is conducted through the slab from the hot water to the cold water at <b>'+num(P)+' W</b>.'+(k||' Change one thing at a time, or press <b>Keep this</b> to compare.');
+  }
+  function rateStats(){
+    var P=rateP();
+    return stat('ΔQ/Δt', num(P)+' W', true)+stat('ΔT/Δx', num(S.dT/(S.x/1000))+' K m⁻¹')+stat('Time', tS()+' s')+stat('Energy ΔQ', num(P*tS())+' J');
+  }
+  var lastExpl='';
+  function rateExpl(){
+    var M=MATS[S.m], P=rateP(), h='<div class="eq">Δx = '+S.x+' mm = '+mTxt(S.x)+' m<br>ΔT = '+(20+S.dT)+' − 20 = '+S.dT+' K<br>'+
+      '[[ΔQ|Δt]] = kA[[ΔT|Δx]]<br>[[ΔQ|Δt]] = '+kTxt(M.K)+' × '+aTxt(S.A)+' × [['+S.dT+'|'+mTxt(S.x)+']]<br>[[ΔQ|Δt]] = '+num(P)+' W</div>';
+    if(tS()>0) h+='<div class="eq">ΔQ = [[ΔQ|Δt]] × Δt<br>ΔQ = '+num(P)+' × '+tS()+'<br>ΔQ = '+num(P*tS())+' J</div>';
+    h+='<p>The rate of thermal energy transfer by conduction is <b>proportional to</b> the thermal conductivity k, the area A and the temperature difference ΔT, and <b>inversely proportional to</b> the thickness Δx. Double A or ΔT and the rate doubles; double Δx and it halves.</p>'+
+      '<p>[[ΔT|Δx]] is the <b>temperature gradient</b>. The temperature falls in a straight line across the slab (the graph) because it is in a <b>steady state</b>: the energy going in at the hot face each second equals the energy leaving at the cold face.</p>'+
+      '<p>Metals have a large k: <b>free electrons</b> carry energy through them, as well as the vibrating particles passing it on. Polystyrene is mostly trapped air, a very poor conductor.</p>'+
+      '<p>The values of k are typical ones. The slab is not drawn to scale.</p>';
+    return FR(h);
+  }
+
   /* ---------------- explanations ---------------- */
   var EXPL={
     cond:'<p>In a solid, the particles at the hot end vibrate more. They pass energy on to their neighbours, so energy is <b>conducted</b> along the rod.</p><p>Metals also have <b>free electrons</b>, which carry energy quickly along the rod. That is why metals are good conductors and glass is a poor one.</p><p>Fair test: the rods are the same length and thickness, in the same hot water, with the same amount of wax at the same distance.</p>',
@@ -1204,6 +1336,9 @@ function expKey(x, y, upLabel, downLabel){
     var p=part(), ex=exp(), o;
     if(p==='cond'){ o=drawCond(); noteEl.innerHTML=condNote(); statsEl.innerHTML=condStats(); if(ex) condTable(); }
     else if(p==='conv'){ o=drawConv(); noteEl.innerHTML=convNote(); statsEl.innerHTML=convStats(); if(ex) convTable(); }
+    else if(p==='rate'){ o=drawRate(); noteEl.innerHTML=rateNote(); statsEl.innerHTML=rateStats();
+      var h=rateExpl(); if(h!==lastExpl){ lastExpl=h; explEl.innerHTML=h; Array.prototype.forEach.call(explEl.querySelectorAll('.eq'), alignEquals); }
+      $('#ht-ao').textContent=aTxt(S.A)+' m²'; $('#ht-xo').textContent=S.x+' mm'; $('#ht-dto').textContent=S.dT+' K'; }
     else { o=cans()?drawCans():drawCube(); noteEl.innerHTML=radNote(); statsEl.innerHTML=radStats(); if(ex) radTable(); }
     svg.setAttribute('viewBox','0 0 '+o.W+' '+o.H); svg.classList.toggle('tall',!!o.tall);
     svg.innerHTML=o.s;
@@ -1223,7 +1358,9 @@ function expKey(x, y, upLabel, downLabel){
     playBtn.disabled = !!d || (p==='rad' && cans() && ex && running);
   }
   function setRows(){
-    var p=part(), ex=exp(), cn=cans();
+    var p=part(), ex=exp() && p!=='rate', cn=cans(), rt=p==='rate';
+    $('#ht-mlab').hidden=$('#ht-mat').hidden=$('#ht-elab').hidden=$('#ht-ex').hidden=$('#ht-rsl').hidden=!rt;
+    keepBtn.hidden=!rt; expBtn.hidden=rt; statsEl.classList.toggle('two',rt); $('#ht-sum').textContent=rt?'Show working':'Show explanation'; lastExpl='';
     $('#ht-jlab').hidden=$('#ht-jump').hidden=!(p==='cond' && !ex);
     $('#ht-hlab').hidden=$('#ht-heat').hidden=p!=='conv';
     $('#ht-slab').hidden=$('#ht-setup').hidden=p!=='rad';
@@ -1234,9 +1371,10 @@ function expKey(x, y, upLabel, downLabel){
     $('#ht-clear').hidden=!ex; $('#ht-tablewrap').hidden=!ex; statsEl.hidden=ex;
     slowBtn.hidden = p==='rad' && !cn;
     if(MEAS){ playBtn.hidden = p==='rad' && !cn; $('#ht-reset').hidden = p==='rad' && !cn; }
-    explEl.innerHTML=EXPL[p];
+    explEl.innerHTML=EXPL[p]||'';
     svg.setAttribute('tabindex', p==='rad' && !cn ? '0' : '-1');
-    svg.setAttribute('aria-label', p==='cond' ? 'A tank of hot water with rods of copper, aluminium, iron and glass sticking out of its side. A drawing pin is stuck with wax to each rod, 11 cm from the water.'
+    svg.setAttribute('aria-label', rt ? 'A slab of '+MATS[S.m].name.toLowerCase()+' is the wall between hot water and cold water. An arrow shows energy conducted through it, and its particles vibrate more on the hot side. Beside it, a graph of temperature against distance across the slab.'
+      : p==='cond' ? 'A tank of hot water with rods of copper, aluminium, iron and glass sticking out of its side. A drawing pin is stuck with wax to each rod, 11 cm from the water.'
       : p==='conv' ? 'A beaker of water on a tripod with a potassium permanganate crystal at the bottom on the left, heated from below or at the top. Purple dye shows how the water moves.'
       : cn ? 'A radiant heater between two cans of water, one matt black and one shiny, each with a thermometer. '+(MEAS?'A stopwatch and a close-up of each thermometer are beside them.':'A temperature against time graph is beside them.')
       : 'A Leslie cube of hot water with a thermometer through its lid, and an infrared detector on a bench joined to a millivoltmeter. A small picture shows the cube from above. Use the arrow keys to move the detector.');
@@ -1246,6 +1384,7 @@ function expKey(x, y, upLabel, downLabel){
     var p=part();
     if(p==='cond'){ condInit(); jumpSeg.pick(null); }
     else if(p==='conv') convInit();
+    else if(p==='rate'){ S.t=0; S.keep=null; }
     else { radInit(); if(cans()){ R.next=0; if(MEAS) takeCan(); } }
     setRows(); draw();
   }
@@ -1266,6 +1405,7 @@ function expKey(x, y, upLabel, downLabel){
     if(running){ stop(); draw(); return; }
     if(p==='cond'){ if(C.t>=CEND-1e-9) condInit(); jumpSeg.pick(null); }
     if(p==='conv' && V.t>=CVEND-1e-9) convInit();
+    if(p==='rate' && S.t>=RT_END-1e-9) S.t=0;
     if(p==='rad' && R.t>=10) radInit();
     running=true; loop(); draw();
   });
