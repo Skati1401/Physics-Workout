@@ -556,6 +556,28 @@ table.data th{background:var(--panel-2);font-weight:500;color:var(--ink-soft);te
 .gen-hints{grid-column:1/-1}
 #pr-card{margin-bottom:14px}
 #pr-card .bar .btn{min-height:44px}
+/* quick chooser: calculations.html is this page built by tools/sets/build.py with whole units and Easy / Hard */
+.q-level{display:inline-flex;flex-wrap:wrap;gap:3px;padding:3px;margin:0 0 14px;border:1px solid var(--panel-border);border-radius:10px;background:var(--panel);box-shadow:var(--shadow)}
+.q-level label{position:relative;display:flex;flex-direction:column;justify-content:center;min-height:44px;padding:6px 18px;border-radius:7px;cursor:pointer}
+.q-level label:hover{background:var(--panel-2)}
+.q-level input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.q-level b{font:800 18px/1.1 var(--f-head)}
+.q-level small{font-size:12.5px;color:var(--ink-soft)}
+.q-level label:has(input:checked){background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.q-level label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.pr-bar .q-level{margin:0}
+.pr-bar .q-level label{padding:4px 16px}
+.q-units{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px}
+.q-unit{display:flex;align-items:flex-start;gap:12px;min-height:44px;padding:12px 14px;border:1px solid var(--panel-border);border-radius:10px;background:var(--panel);box-shadow:var(--shadow);cursor:pointer}
+.q-unit:hover{background:var(--panel-2)}
+.q-unit.is-on{background:var(--accent-soft);border-color:var(--accent)}
+.q-unit[hidden]{display:none}
+.q-unit input{width:22px;height:22px;flex:none;margin:2px 0 0;accent-color:var(--accent);cursor:pointer}
+.q-unit-text{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.q-unit-num{font:500 12px var(--f-mono);color:var(--ink-faint)}
+.q-unit-name{font:800 20px/1.1 var(--f-head)}
+.q-unit-eqs{font-size:13px;color:var(--ink-soft)}
+@media (prefers-reduced-motion: no-preference){.q-unit,.q-level label{transition:background .15s ease-out}}
 </style>
 <div class="page">
 <header class="page-head">
@@ -1106,25 +1128,44 @@ function makeOne(e,opt,rnd){
   if(u!==subject)hints.push('Write down '+FR(e.show)+', put the numbers in, then rearrange for '+(e.vars[u].sym||u)+'.');
   if(ask.f!==1)hints.push('Your answer comes out in '+unitSI+'. Change it into '+ask.u+' at the end.');
   if(sfN&&!sfSaid)hints.push('Count the significant figures in each value you are given. The fewest is '+(sfLo||sfN)+', so give your answer to '+(sfLo||sfN)+' s.f.');
-  return {eq:e,q:q,unit:ask.u==='%'?'%':ask.u,answer:ansAsk,sf:sfN,sfLo:sfLo||sfN,dp:dp&&!sfN?dp:0,ansSI:ans,unitSI:unitSI,working:given.join('<br>')+'||'+steps.join('<br>'),hints:hints};
+  return {eq:e,q:q,conv:nConv+nMult+(ask.f!==1?1:0),unit:ask.u==='%'?'%':ask.u,answer:ansAsk,sf:sfN,sfLo:sfLo||sfN,dp:dp&&!sfN?dp:0,ansSI:ans,unitSI:unitSI,working:given.join('<br>')+'||'+steps.join('<br>'),hints:hints};
 }
 
 /* ================= the page: choose, then practise one question at a time ================= */
-const STORE='calc-generator-v1';
-let st={on:[],da:false,opt:{rearr:true,conv:false,mult:false,sf:false,show:true},view:'choose',stats:{},tot:{n:0,ok:0}};
+/* Quick mode (Alex, 22 Nov 2026): calculations.html, the Calculations Workout, is this page built by tools/sets/build.py
+   with a simpler chooser (#chooser has data-quick): tick whole units and choose Easy (substitute and rearrange) or Hard
+   (also unit conversions and multipliers), then the same one-question-at-a-time practice. Saved apart, under calc-quick-v1. */
+const QUICK=document.getElementById('chooser').hasAttribute('data-quick');
+const LEVELS={easy:{rearr:true,conv:false,mult:false,sf:false,show:true},hard:{rearr:true,conv:true,mult:true,sf:false,show:false}};
+const STORE=QUICK?'calc-quick-v1':'calc-generator-v1';
+let st={on:[],da:false,opt:{rearr:true,conv:false,mult:false,sf:false,show:true},level:'easy',units:[],view:'choose',stats:{},tot:{n:0,ok:0}};
 try{const s=JSON.parse(localStorage.getItem(STORE)||'null');if(s&&typeof s==='object'){st=Object.assign(st,s);st.opt=Object.assign({rearr:true,conv:false,mult:false,sf:false,show:true},s.opt||{});}}catch(e){}
 function save(){try{localStorage.setItem(STORE,JSON.stringify(st));}catch(e){}}
 // Every equation is ticked each time the page opens, on the chooser (Alex, 12 Nov 2026); ticks are not remembered between visits.
+// Quick mode: no unit is ticked when the page opens; the level is remembered.
 st.on=EQS.map(e=>e.id);st.view='choose';
+if(QUICK){st.units=[];if(!LEVELS[st.level])st.level='easy';st.opt=Object.assign({},LEVELS[st.level]);}
 const byId=id=>document.getElementById(id);
 const visible=e=>!(st.da&&e.ta);
-const isOn=e=>st.on.indexOf(e.id)>-1;
+const isOn=e=>QUICK?st.units.indexOf(e.unit)>-1:st.on.indexOf(e.id)>-1;
 function setOn(id,on){st.on=st.on.filter(x=>x!==id);if(on)st.on.push(id);}
+function setUnit(name,on){st.units=st.units.filter(x=>x!==name);if(on)st.units.push(name);}
 
 /* ---- the chooser ---- */
 const UNITS=[];
 EQS.forEach(e=>{let u=UNITS.find(x=>x.name===e.unit);if(!u){u={name:e.unit,eqs:[]};UNITS.push(u);}u.eqs.push(e);});
-UNITS.forEach(u=>{
+if(QUICK)UNITS.forEach(u=>{
+  // one tile per unit: "Unit 1" over its name, the equations it covers, and right-first-time so far
+  const tile=mk('label','q-unit'),cb=mk('input'),m=/^(Unit \d+) (.*)$/.exec(u.name)||['',u.name,''];
+  cb.type='checkbox';cb.value=u.name;
+  const txt=mk('span','q-unit-text','<span class="q-unit-num">'+m[1]+'</span><span class="q-unit-name">'+m[2]+'</span><span class="q-unit-eqs"></span>');
+  const sc=mk('span','ch-score');
+  tile.append(cb,txt,sc);
+  u.el=tile;u.box=cb;u.cnt=txt.querySelector('.q-unit-eqs');u.sc=sc;
+  cb.addEventListener('change',()=>{setUnit(u.name,cb.checked);save();refresh();});
+  byId('ch-units').appendChild(tile);
+});
+else UNITS.forEach(u=>{
   const box=mk('fieldset','ch-unit'),lg=mk('legend'),lab=mk('label','ch-unit-label'),ub=mk('input');
   ub.type='checkbox';ub.setAttribute('aria-label','Tick all of '+u.name);
   const cnt=mk('span','ch-unit-count');
@@ -1145,20 +1186,39 @@ UNITS.forEach(u=>{
   byId('ch-units').appendChild(box);
 });
 const OPTS=['rearr','conv','mult','sf','show'];
-OPTS.forEach(k=>{const b=byId('opt-'+k);b.checked=!!st.opt[k];b.addEventListener('change',()=>{st.opt[k]=b.checked;save();});});
+if(!QUICK)OPTS.forEach(k=>{const b=byId('opt-'+k);b.checked=!!st.opt[k];b.addEventListener('change',()=>{st.opt[k]=b.checked;save();});});
+// Quick mode: Easy / Hard, at the top of the chooser and of the practice view (the two stay in step).
+// A change during practice replaces the question on screen if it is not answered yet.
+function setLevel(v){
+  if(!LEVELS[v]||v===st.level)return;
+  st.level=v;st.opt=Object.assign({},LEVELS[v]);save();syncLevel();
+  if(!byId('practice').hidden&&cur&&!byId('gen-in').disabled){qn--;next();}
+}
+function syncLevel(){$$('input[data-level]').forEach(r=>{r.checked=r.value===st.level;});}
+if(QUICK){$$('input[data-level]').forEach(r=>r.addEventListener('change',()=>{if(r.checked)setLevel(r.value);}));syncLevel();}
 
 function refresh(){
   let ticked=0;
   UNITS.forEach(u=>{
     const vis=u.eqs.filter(visible),on=vis.filter(isOn);
     u.el.hidden=!vis.length;
+    if(QUICK){
+      const sel=st.units.indexOf(u.name)>-1;
+      u.box.checked=sel;u.el.classList.toggle('is-on',sel);
+      u.cnt.textContent=vis.map(e=>e.label).join(' · ');
+      const s=vis.reduce((a,e)=>{const x=st.stats[e.id];if(x){a.n+=x.n;a.ok+=x.ok;}return a;},{n:0,ok:0});
+      u.sc.textContent=s.n?s.ok+'/'+s.n:'';u.sc.title=s.n?s.ok+' right first time out of '+s.n+' tried':'';
+      if(sel&&vis.length)ticked++;
+      return;
+    }
     u.box.checked=vis.length>0&&on.length===vis.length;u.box.indeterminate=on.length>0&&on.length<vis.length;
     u.cnt.textContent=on.length?on.length+' of '+vis.length+' ticked':vis.length+(vis.length===1?' equation':' equations');
     u.eqs.forEach(e=>{e.row.hidden=!visible(e);e.cb.checked=isOn(e);e.row.classList.toggle('is-on',isOn(e));
       const s=st.stats[e.id];e.sc.textContent=s&&s.n?s.ok+'/'+s.n:'';e.sc.title=s&&s.n?s.ok+' right first time out of '+s.n+' tried':'';});
     ticked+=on.length;
   });
-  byId('ch-count').textContent=ticked?ticked+(ticked===1?' equation':' equations')+' ticked':'Nothing ticked yet';
+  byId('ch-count').textContent=QUICK?(ticked?ticked+(ticked===1?' unit':' units')+' ticked':'Tick a unit to start'):
+    ticked?ticked+(ticked===1?' equation':' equations')+' ticked':'Nothing ticked yet';
   byId('ch-start').disabled=!ticked;
   const da=byId('ch-da');da.setAttribute('aria-pressed',st.da?'true':'false');
   da.title=st.da?'Triple Award (TA) equations are left out. Click to show them.':'Click to leave out the Triple Award (TA) equations.';
@@ -1167,8 +1227,8 @@ function refresh(){
   pill.textContent=st.tot.n?st.tot.ok+' of '+st.tot.n+' right first time':'No questions yet';
   pill.classList.toggle('all-done',st.tot.n>0&&st.tot.ok===st.tot.n);
 }
-byId('ch-all').addEventListener('click',()=>{st.on=EQS.map(e=>e.id);save();refresh();});
-byId('ch-none').addEventListener('click',()=>{st.on=[];save();refresh();});
+byId('ch-all').addEventListener('click',()=>{if(QUICK)st.units=UNITS.map(u=>u.name);else st.on=EQS.map(e=>e.id);save();refresh();});
+if(byId('ch-none'))byId('ch-none').addEventListener('click',()=>{if(QUICK)st.units=[];else st.on=[];save();refresh();});
 byId('ch-da').addEventListener('click',()=>{st.da=!st.da;save();refresh();});
 
 /* ---- one question at a time ---- */
@@ -1220,7 +1280,10 @@ function next(){
   const list=picked();if(!list.length){showChooser();return;}
   let pool=list.filter(e=>e.id!==last);if(!pool.length)pool=list;
   const e=calcPick(Math.random,pool);last=e.id;
-  cur=makeQuestion(e,st.opt,calcRnd(1+Math.floor(Math.random()*2147483646)));
+  // Quick mode, Hard: try a few times for a question with a unit conversion or multiplier in it
+  const rnd=calcRnd(1+Math.floor(Math.random()*2147483646));
+  cur=makeQuestion(e,st.opt,rnd);
+  if(QUICK&&st.opt.conv)for(let i=0;i<12&&!cur.conv;i++)cur=makeQuestion(e,st.opt,rnd);
   tries=0;helped=false;qn++;render();
 }
 function score(ok){
