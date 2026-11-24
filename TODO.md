@@ -40,6 +40,10 @@ From a check of the three specs against every animation (22 Nov 2026). Alex like
 - [ ] **9r** Thermodynamics: a gas in a cylinder with its p–V diagram, isovolumetric, isobaric, isothermal and adiabatic changes, W = pΔV as the area, a heat-engine cycle and the Carnot limit, and entropy with coins. IB B.4 (HL) (added 22 Nov 2026).
 - [ ] **9s** Rotation: torque on a wheel, moment of inertia (masses moved along a rod), angular momentum conserved (a skater pulling in her arms), rolling without slipping. IB A.4 (HL) (added 22 Nov 2026).
 
+## 10. Teaching materials (question packs and other work off the site)
+
+- [ ] **10a** Year 11 IGCSE question pack on Units 1 to 6, weighted towards the question styles students lose marks on: investigation (plan, variables, improve a method), maths on what has been taught (calculations, rearranging, graphs), suggest and deduce (including "Is the person correct? Explain your answer") and explain questions; mark scheme answers in the mark schemes' own words. Past papers before 2020 only (2020 onwards are reserved for mocks and topic tests). Runs on the school account with the `alex-school-drive` skill (question-pack skill, IGCSE index). Not in this public repo (Alex, 24 Nov 2026).
+
 ## 2. Lesson decks (PPT reviews)
 
 Items from the claude.ai PPT-review projects go here, one line each: deck, slide, change.
