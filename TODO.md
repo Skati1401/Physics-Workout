@@ -42,7 +42,7 @@ From a check of the three specs against every animation (22 Nov 2026). Alex like
 
 ## 10. Teaching materials (question packs and other work off the site)
 
-- [ ] **10a** Year 11 IGCSE question pack on Units 1 to 6, weighted towards the question styles students lose marks on: investigation (plan, variables, improve a method), maths on what has been taught (calculations, rearranging, graphs), suggest and deduce (including "Is the person correct? Explain your answer") and explain questions; mark scheme answers in the mark schemes' own words. Past papers before 2020 only (2020 onwards are reserved for mocks and topic tests). Runs on the school account with the `alex-school-drive` skill (question-pack skill, IGCSE index). Not in this public repo (Alex, 24 Nov 2026).
+- [ ] **10a** Year 11 IGCSE question pack in 9 sections: one per unit, Unit 1 to Unit 6, then extra investigation questions (plan, variables, improve a method), then multi-step maths (on what has been taught), then suggest and deduce questions (including "Is the person correct? Explain your answer"); explain questions throughout; mark scheme answers in the mark schemes' own words. Past papers before 2020 only (2020 onwards are reserved for mocks and topic tests). Runs on the school account with the `alex-school-drive` skill (question-pack skill, IGCSE index). Not in this public repo (Alex, 24 Nov 2026).
 
 ## 2. Lesson decks (PPT reviews)
 
