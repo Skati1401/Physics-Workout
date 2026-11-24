@@ -201,6 +201,11 @@
   /* dispersion view (?show=dispersion): two sliders sit under the picture, so the picture is a little shorter */
   .disp #rf-svg{max-height:max(240px,calc(100vh - 300px));}
   @media (max-width:560px){ .disp #rf-svg{max-height:none;} }
+  /* optical fibre view (?show=fibre): two sliders under the picture, each with its label above it */
+  .fibre .under .sliders>div{display:block !important;} .fibre .under .sliders .lab{margin:0 0 4px !important;white-space:normal !important;}
+  .fibre #fb-svg{max-height:max(240px,calc(100vh - 300px));} .embed.fibre #fb-svg{max-height:460px;}
+  @media (max-width:560px){ .fibre #fb-svg{max-height:none;} }
+  #fb-jump,#fb-around{display:flex;flex-wrap:wrap;} #fb-jump>button{flex:1 1 auto;padding-inline:6px;font-size:12px;}
 </style>
 <style id="choice-kit">
 /* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
@@ -376,6 +381,42 @@
       </details>
     </div>
   </section>
+<!-- The optical fibre view (?show=fibre): its stage card takes the place of the one above. See fibreView() in the script. -->
+<template id="fb-tpl">
+  <section class="card stage">
+    <div>
+      <svg class="view" id="fb-svg" viewBox="0 0 860 360" tabindex="0" role="slider" aria-label="A ray box shines a ray of light into the end of a thick glass fibre. The ray zig-zags along the fibre by total internal reflection, with the ray diagram at one wall beside it. Drag the free end of the fibre, or use the arrow keys, to bend it" aria-valuemin="0" aria-valuemax="180"></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="fb-play" type="button">&#9654; Play</button>
+          <button class="btn" id="fb-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="fb-slow" type="button" aria-pressed="false">Slow motion</button>
+        </div>
+        <div class="sliders">
+          <div><label class="lab" for="fb-bend">Bend the fibre (or drag its end)<output id="fb-bo"></output></label><input type="range" id="fb-bend" min="0" max="180" step="1" value="30"></div>
+          <div><label class="lab" for="fb-i">Angle of incidence at the first wall (or turn the ray box)<output id="fb-io"></output></label><input type="range" id="fb-i" min="50" max="88" step="1" value="68"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="cgrid" id="fb-grid">
+        <span class="rowlab" id="fb-alab" hidden>Around the glass</span>
+        <div class="seg" id="fb-around" hidden><button type="button" data-v="air" aria-pressed="true">Air</button><button type="button" data-v="clad" aria-pressed="false">Cladding, n = 1.40</button></div>
+      </div>
+      <div class="cgrid" id="fb-jgrid">
+        <span class="rowlab">Jump to</span>
+        <div class="seg" id="fb-jump"><button type="button" data-v="s" aria-pressed="false">Straight</button><button type="button" data-v="g" aria-pressed="false">Gentle bend</button><button type="button" data-v="e" aria-pressed="false">Light just escapes</button><button type="button" data-v="t" aria-pressed="false">Tight bend</button></div>
+      </div>
+      <p class="note" id="fb-note" aria-live="polite"></p>
+      <div class="stats" id="fb-stats"></div>
+      <details class="working">
+        <summary>Show working</summary>
+        <div class="eq" id="fb-eq1"></div>
+        <p class="eqnote" id="fb-eq3"></p>
+      </details>
+    </div>
+  </section>
+</template>
 </div>
 <script>
 // Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
@@ -670,6 +711,295 @@ function expKey(x, y, upLabel, downLabel){
     }
     pts.push(add(cur,dir,900)); inten.push(I);
     return {pts:pts, ev:ev, part:part, inten:inten, dir:dir};
+  }
+
+  // ================= Optical fibre view (?show=fibre, TODO 9b, 24 Nov 2026) =================
+  // A ray box shines into the end of a thick glass fibre (n = 1.50). The fibre is a straight length, a bend of fixed length
+  // (120 units) and another straight length: bending it more makes the bend tighter (radius = 120 / angle). The ray is followed
+  // wall by wall with Snell's law, so where the angle of incidence falls below the critical angle most of the light refracts
+  // out, and the weak reflection carries on. Beside it, the exam ray diagram at the point P (the first place light escapes,
+  // or the smallest angle of incidence). IAL and IB add a cladding of n = 1.40. Everything is inside fibreView(): the page
+  // stops here in this view, so the glass-block views below are not touched. Questions on the picture are still to come.
+  var FIB = !DISP && !MEAS && /[?&]show=fibre\b/.test(location.search);
+  if(FIB){ fibreView(); return; }
+  function fibreView(){
+    var old=$('.stage'); old.parentNode.replaceChild($('#fb-tpl').content.cloneNode(true), old);
+    document.documentElement.classList.add('fibre');
+    document.title='Optical Fibre Animation'; $('.page-head h1').textContent='Light in an Optical Fibre';
+    var svg=$('#fb-svg'), playBtn=$('#fb-play'), slowBtn=$('#fb-slow'), bIn=$('#fb-bend'), iIn=$('#fb-i');
+    var NC=1.50, NCL=1.40, H=22, L1=165, LA=120, L2=140, A=[104,94], TOT=L1+LA+L2, CLW=7, SPEED=300;
+    var BEND=30, I0=68, prog=null, running=false, raf=0, last=0, total=0, lastNote='';
+    var narrow=window.matchMedia('(max-width:560px)');
+    var aroundSeg=segGroup($('#fb-around'), function(v){ halt(); jumpSeg.pick(null); if(v==='clad' && I0<76) I0=76; draw(); });   // with cladding c = 69.0°, so start with a ray that is guided
+    var levelSeg=segGroup($('#rf-level'), function(){ halt(); if(!k5()) aroundSeg.pick('air'); setLevel(); draw(); });
+    var jumpSeg=segGroup($('#fb-jump'), function(v){
+      halt(); I0=clad()?76:68;   // the standard ray: in air at 68° the light first escapes at a bend of 52° and at every tighter bend
+      if(v==='s') BEND=0; else if(v==='g') BEND=30; else if(v==='t') BEND=150;
+      else { var b, f=180; for(b=1;b<=180;b++){ if(firstLeak(trace(geom(b)))){ f=b; break; } } BEND=f; }
+      draw();
+    });
+    function k5(){ return levelSeg.value()!=='ks4'; }
+    function ib(){ return levelSeg.value()==='ib'; }
+    function clad(){ return k5() && aroundSeg.value()==='clad'; }
+    function nOut(){ return clad() ? NCL : 1; }
+    function critA(){ return deg(Math.asin(nOut()/NC)); }
+    function cH(){ return ib() ? 'θ<sub>c</sub>' : k5() ? 'C' : 'c'; }                                             // in the page's text
+    function cS(){ return ib() ? 'θ<tspan baseline-shift="sub" font-size="75%">c</tspan>' : k5() ? 'C' : 'c'; }    // in the picture
+    function setLevel(){
+      var v=levelSeg.value();
+      $('.eyebrow').innerHTML = v==='ial' ? 'Animations &middot; light &middot; IAL Unit 2: total internal reflection' : v==='ib' ? 'Animations &middot; light &middot; IB C.3 Wave behaviour' : 'Animations &middot; light &middot; IGCSE 3.20 and 3.21';
+      $('#fb-alab').hidden=!k5(); $('#fb-around').hidden=!k5();
+    }
+
+    // ---------- the shape of the fibre ----------
+    function geom(bd){
+      var th=bd*D2R, B=[A[0]+L1,A[1]], g={th:th, B:B, straight:bd<0.5};
+      if(g.straight){ g.E=[B[0]+LA,B[1]]; g.d=[1,0]; g.n=[0,1]; }
+      else { g.R=LA/th; g.C=[B[0],B[1]+g.R]; g.E=[g.C[0]+g.R*Math.sin(th), g.C[1]-g.R*Math.cos(th)]; g.d=[Math.cos(th),Math.sin(th)]; g.n=[-Math.sin(th),Math.cos(th)]; }
+      g.F=add(g.E,g.d,L2);
+      return g;
+    }
+    function centre(g, s){   // the point on the centre line a distance s along it, and the way the fibre points there
+      if(s<=L1 || g.straight && s<=L1+LA) return {p:[A[0]+s,A[1]], d:[1,0]};
+      if(s<=L1+LA){ var ph=(s-L1)/g.R; return {p:[g.C[0]+g.R*Math.sin(ph), g.C[1]-g.R*Math.cos(ph)], d:[Math.cos(ph),Math.sin(ph)]}; }
+      return {p:add(g.E,g.d,s-L1-LA), d:g.d};
+    }
+    function side(g, off){   // a line along the fibre, off to one side of the centre line (+ is the inside of the bend)
+      var ss=[0,L1], k, out=[]; for(k=1;k<=40;k++) ss.push(L1+LA*k/40); ss.push(TOT);
+      ss.forEach(function(s){ var c=centre(g,s); out.push([c.p[0]-c.d[1]*off, c.p[1]+c.d[0]*off]); });
+      return out;
+    }
+    function outline(g, off){
+      var p=side(g,off).concat(side(g,-off).reverse());
+      return 'M'+p.map(function(q){ return f1(q[0])+','+f1(q[1]); }).join(' L')+' Z';
+    }
+    function walls(g){
+      var e=[], B=g.B;
+      function S(a,b,face){ e.push({t:'s', a:a, b:b, face:face}); }
+      S([A[0],A[1]-H],[A[0],A[1]+H],'in');
+      S([A[0],A[1]-H],[B[0],B[1]-H],'wall'); S([A[0],A[1]+H],[B[0],B[1]+H],'wall');
+      if(g.straight){ S([B[0],B[1]-H],[g.E[0],g.E[1]-H],'wall'); S([B[0],B[1]+H],[g.E[0],g.E[1]+H],'wall'); }
+      else { e.push({t:'c', c:g.C, r:g.R+H, th:g.th, face:'wall'}); e.push({t:'c', c:g.C, r:g.R-H, th:g.th, face:'wall'}); }
+      S(add(g.E,g.n,-H), add(g.F,g.n,-H),'wall'); S(add(g.E,g.n,H), add(g.F,g.n,H),'wall');
+      S(add(g.F,g.n,-H), add(g.F,g.n,H),'end');
+      return e;
+    }
+    function hit(e, S, d){
+      if(e.t==='s') return hitEdge(e,S,d);
+      var fx=S[0]-e.c[0], fy=S[1]-e.c[1], b=fx*d[0]+fy*d[1], c=fx*fx+fy*fy-e.r*e.r, disc=b*b-c, best=null;
+      if(disc<0) return null;
+      var sq=Math.sqrt(disc);
+      [-b-sq,-b+sq].forEach(function(t){
+        if(t<1e-6 || best) return;
+        var px=S[0]+d[0]*t-e.c[0], py=S[1]+d[1]*t-e.c[1], ph=Math.atan2(px,-py);
+        if(ph<-1) ph+=2*Math.PI;
+        if(ph<-1e-7 || ph>e.th+1e-7) return;                 // only the part of the circle that is the bend
+        best={t:t, N:[px/e.r,py/e.r]};
+      });
+      return best;
+    }
+    // Follow the ray from the middle of the end face. At each wall: total internal reflection, or most of the light refracts
+    // out (leak) and the weak reflection goes on. The far end face lets the light out (its own weak reflection is left out).
+    function trace(g){
+      var el=walls(g), a=(90-I0)*D2R, dir=[Math.cos(a),-Math.sin(a)], cur=[A[0],A[1]], I=1, n2=nOut();
+      var pts=[cur], inten=[], ev=[], end=0;
+      for(var k=0;k<90 && I>0.004;k++){
+        var best=null;
+        el.forEach(function(e){ var h=hit(e,cur,dir); if(h && (!best || h.t<best.t)){ best=h; best.e=e; } });
+        if(!best) break;
+        var p=add(cur,dir,best.t), N=best.N, face=best.e.face; if(dot(N,dir)>0) N=[-N[0],-N[1]];
+        pts.push(p); inten.push(I);
+        if(face==='in'){ ev.push({p:p, kind:'back', I:I, face:face}); I=0; break; }
+        var no = face==='end' ? 1 : n2, eta=NC/no, ci=-dot(N,dir), si=Math.sqrt(Math.max(0,1-ci*ci)), st=eta*si;
+        var refl=[dir[0]+2*ci*N[0], dir[1]+2*ci*N[1]], iA=deg(Math.asin(Math.min(1,si)));
+        if(st>1+1e-12){ ev.push({p:p, kind:'tir', i:iA, N:N, din:dir, dout:refl, I:I, face:face}); dir=refl; }
+        else {
+          var ct=Math.sqrt(Math.max(0,1-st*st)), nd=unit([eta*dir[0]+(eta*ci-ct)*N[0], eta*dir[1]+(eta*ci-ct)*N[1]]), R=fresnel(NC,no,ci,ct);
+          if(face==='end'){ ev.push({p:p, kind:'end', i:iA, N:N, din:dir, dout:nd, I:I, face:face}); end+=I; I=0; break; }
+          ev.push({p:p, kind:'leak', i:iA, r:deg(Math.asin(Math.min(1,st))), N:N, din:dir, dout:nd, I:I, T:I*(1-R), R:R, face:face});
+          I*=R; dir=refl;
+        }
+        cur=p;
+      }
+      return {pts:pts, inten:inten, ev:ev, end:end};
+    }
+    function firstLeak(tr){ for(var k=0;k<tr.ev.length;k++){ var e=tr.ev[k]; if(e.kind==='leak' && e.T>0.02) return e; } return null; }
+    function wallEvents(tr){ return tr.ev.filter(function(e){ return e.face==='wall' && e.I>0.02 && (e.kind==='tir' || e.kind==='leak'); }); }
+    function keyEvent(tr){   // P: the first place light escapes, or else the smallest angle of incidence
+      var lk=firstLeak(tr), w=wallEvents(tr), m=null; if(lk) return lk;
+      w.forEach(function(e){ if(!m || e.i<m.i-0.05) m=e; });
+      return m;
+    }
+    // the ray box: outside the end face, turned so that the ray refracts to the chosen angle inside
+    function boxAt(){ var a=(90-I0)*D2R, al=Math.asin(Math.min(1,NC*Math.sin(a))), d=[Math.cos(al),-Math.sin(al)]; return {B:add(A,d,-66), d:d}; }
+
+    // ---------- drawing ----------
+    function op(I){ return Math.max(0.12, Math.min(1, Math.sqrt(I))).toFixed(2); }
+    function part(a, b, L){ var d=Math.hypot(b[0]-a[0], b[1]-a[1]); return d<=L ? b : add(a,[(b[0]-a[0])/d,(b[1]-a[1])/d],L); }
+    function clampP(p, mx, my){ var W=narrow.matches?600:590; return [Math.max(mx,Math.min(W-mx,p[0])), Math.max(my,Math.min(352,p[1]))]; }
+    function panel(P){
+      var s='', O=[129,138], cA=critA(), cl=clad(), L=84;
+      s+='<rect x="0.5" y="0.5" width="257" height="329" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>';
+      s+=txt(129,23,'Ray diagram at P',{a:'middle',fs:13,w:600,c:'var(--ink)'});
+      if(cl) s+='<rect x="14" y="46" width="230" height="92" fill="var(--accent-soft)"/>';
+      s+='<rect x="14" y="138" width="230" height="92" fill="var(--glass)" fill-opacity=".8"/>';
+      s+=ln(14,138,244,138,'var(--glass-edge)',2);
+      s+=ln(129,50,129,226,'var(--pencil)',1.3,' stroke-dasharray="5 4"');
+      s+=txt(20,62,cl?'cladding':'air',{fs:12})+txt(20,222,cl?'glass core':'glass',{fs:12})+txt(134,60,'normal',{fs:11,c:'var(--pencil)'});
+      if(!P) return s;
+      var a=P.i*D2R, S=[O[0]-L*Math.sin(a), O[1]+L*Math.cos(a)], Rf=[O[0]+L*Math.sin(a), O[1]+L*Math.cos(a)], leak=P.kind==='leak';
+      function mid(p,q,o){ return tri((p[0]+q[0])/2+(q[0]-p[0])*0.06, (p[1]+q[1])/2+(q[1]-p[1])*0.06, deg(Math.atan2(q[1]-p[1],q[0]-p[0])), 4.4, 'var(--ray)', ' opacity="'+o+'"'); }
+      var ro = leak ? Math.max(0.3, Math.sqrt(P.R)).toFixed(2) : '1';
+      s+=ln(S[0],S[1],O[0],O[1],'var(--ray)',2.4,' stroke-linecap="round"')+mid(S,O,'1');
+      s+=ln(O[0],O[1],Rf[0],Rf[1],'var(--ray)',leak?1.6:2.4,' stroke-linecap="round" opacity="'+ro+'"')+mid(O,Rf,ro);
+      s+='<path d="M'+O[0]+','+(O[1]+30)+' A30,30 0 0 1 '+f1(O[0]-30*Math.sin(a))+','+f1(O[1]+30*Math.cos(a))+'" fill="none" stroke="var(--topic)" stroke-width="1.6"/>';
+      s+=txt(O[0]-45*Math.sin(a/2), O[1]+45*Math.cos(a/2)+4, 'i', {a:'middle',fs:13,w:600,c:'var(--topic)'});
+      if(leak){
+        var r=P.r*D2R, Tp=[O[0]+L*Math.sin(r), O[1]-L*Math.cos(r)];
+        s+=ln(O[0],O[1],Tp[0],Tp[1],'var(--ray)',2.4,' stroke-linecap="round"')+mid(O,Tp,'1');
+        s+='<path d="M'+O[0]+','+(O[1]-30)+' A30,30 0 0 1 '+f1(O[0]+30*Math.sin(r))+','+f1(O[1]-30*Math.cos(r))+'" fill="none" stroke="var(--topic)" stroke-width="1.6"/>';
+        s+=txt(O[0]+45*Math.sin(r/2), O[1]-45*Math.cos(r/2)+4, 'r', {a:'middle',fs:13,w:600,c:'var(--topic)'});
+      }
+      s+='<circle cx="'+O[0]+'" cy="'+O[1]+'" r="3" fill="var(--topic)"/>';
+      s+=txt(20,256,'angle of incidence, i = '+d1(P.i),{fs:12,c:'var(--ink)'});
+      s+=txt(20,274,'critical angle, '+cS()+' = '+d1(cA),{fs:12,c:'var(--ink)'});
+      s+='<rect x="14" y="282" width="230" height="42" rx="6" fill="var(--'+(leak?'bad':'good')+'-soft)"/>';
+      s+=txt(129,298,'i is '+(leak?'less':'greater')+' than '+cS()+', so',{a:'middle',fs:11.5,c:'var(--ink)'});
+      s+=txt(129,317,leak?'light refracts out':'total internal reflection',{a:'middle',fs:12,w:600,c:'var(--'+(leak?'bad':'good')+')'});
+      return s;
+    }
+    function draw(){
+      var nw=narrow.matches, W=nw?600:590, g=geom(BEND), tr=trace(g), P=keyEvent(tr), cl=clad(), bx=boxAt(), s='', top='', k;
+      FS = nw ? 1.45 : 1;
+      svg.setAttribute('viewBox', nw ? '0 0 600 872' : '0 0 860 360');
+      var body=outline(g,H), slit=add(bx.B,bx.d,24), lim = prog==null ? Infinity : prog, cum=0, PL=null;
+      s+='<defs><clipPath id="fb-clip"><path d="'+body+'"/></clipPath><clipPath id="fb-paper"><rect x="0" y="0" width="'+W+'" height="360"/></clipPath></defs>';
+      s+='<rect x="0.5" y="0.5" width="'+(W-1)+'" height="359" rx="4" fill="var(--paper)" stroke="var(--panel-border)"/>';
+      s+='<g clip-path="url(#fb-paper)">';
+      // the fibre: a thick rod of clear glass lying on the paper (with its cladding at IAL and IB)
+      s+='<path d="'+outline(g,H+(cl?CLW:0))+'" transform="translate(5 6)" fill="#000" opacity=".10"/>';
+      if(cl) s+='<path d="'+outline(g,H+CLW)+'" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".7" stroke-width="1.4" stroke-linejoin="round"/>';
+      s+='<path d="'+body+'" fill="var(--glass)" fill-opacity="'+(cl?1:0.85)+'"/>';
+      s+='<g clip-path="url(#fb-clip)"><path d="'+body+'" fill="none" stroke="var(--glass-edge)" stroke-opacity=".3" stroke-width="9" stroke-linejoin="round"/>'+poly(side(g,-H*0.48),'var(--glass-hi)',3.6)+'</g>';
+      s+='<path d="'+body+'" fill="none" stroke="var(--glass-edge)" stroke-width="1.8" stroke-linejoin="round"/>';
+      // two bands near the free end: the place to hold it
+      [TOT-34,TOT-26].forEach(function(sv){ var c=centre(g,sv), n=[-c.d[1],c.d[0]], w=H+(cl?CLW:0)+1.5; s+=ln(c.p[0]-n[0]*w, c.p[1]-n[1]*w, c.p[0]+n[0]*w, c.p[1]+n[1]*w, 'var(--box-f)', 3.4, ' stroke-linecap="round"'); });
+      // the ray, as far as the light has got
+      var segs=[{a:slit, b:A, I:1}];
+      for(k=0;k<tr.pts.length-1;k++) segs.push({a:tr.pts[k], b:tr.pts[k+1], I:tr.inten[k], ev:tr.ev[k]});
+      var rays='', heads='', glow='', head=null;
+      segs.forEach(function(sg){
+        var L=Math.hypot(sg.b[0]-sg.a[0], sg.b[1]-sg.a[1]), e=sg.ev;
+        if(lim>cum && sg.I>=0.01){
+          var b = lim-cum>=L ? sg.b : part(sg.a, sg.b, lim-cum);
+          rays+=ln(sg.a[0],sg.a[1],b[0],b[1],'var(--ray)',2.4,' stroke-linecap="round" opacity="'+op(sg.I)+'"');
+          if(lim-cum<L) head=b;
+          else if(L>34 && sg.I>0.25) heads+=tri((sg.a[0]+sg.b[0])/2+(sg.b[0]-sg.a[0])/L*4, (sg.a[1]+sg.b[1])/2+(sg.b[1]-sg.a[1])/L*4, deg(Math.atan2(sg.b[1]-sg.a[1], sg.b[0]-sg.a[0])), 4.2, 'var(--ray)', ' opacity="'+op(sg.I)+'"');
+        }
+        cum+=L;
+        if(e && lim>cum){
+          var far=lim-cum, q;
+          if(e.kind==='leak' && e.T>=0.01){
+            q=part(e.p, add(e.p,e.dout,78), far);
+            rays+=ln(e.p[0],e.p[1],q[0],q[1],'var(--ray)',2.4,' stroke-linecap="round" opacity="'+op(e.T)+'"');
+            if(far>=78){ var q2=add(e.p,e.dout,104); rays+=ln(q[0],q[1],q2[0],q2[1],'var(--ray)',2.4,' stroke-linecap="round" opacity="'+(op(e.T)*0.4).toFixed(2)+'"'); }
+            else head=q;
+          }
+          if(e.kind==='end'){
+            q=part(e.p, add(e.p,e.dout,58), far);
+            rays+=ln(e.p[0],e.p[1],q[0],q[1],'var(--ray)',2.4,' stroke-linecap="round" opacity="'+op(e.I)+'"');
+            glow='<circle cx="'+f1(e.p[0])+'" cy="'+f1(e.p[1])+'" r="9" fill="var(--lamp)" opacity="'+(0.25+0.6*e.I).toFixed(2)+'"/>';
+            if(far<58) head=q;
+          }
+        }
+      });
+      total=cum+110;
+      s+=glow+rays+heads;
+      if(head) s+='<circle cx="'+f1(head[0])+'" cy="'+f1(head[1])+'" r="6.5" fill="var(--lamp)" opacity=".9"/><circle cx="'+f1(head[0])+'" cy="'+f1(head[1])+'" r="3" fill="var(--ray)"/>';
+      // P: the normal there, a ring and its letter
+      if(P){
+        var out=[-P.N[0],-P.N[1]], tg=[-out[1],out[0]]; if(P.kind==='leak' && dot(tg,P.dout)>0) tg=[-tg[0],-tg[1]]; if(P.kind!=='leak' && dot(tg,P.din)<0) tg=[-tg[0],-tg[1]];
+        s+=ln(P.p[0]-out[0]*24, P.p[1]-out[1]*24, P.p[0]+out[0]*34, P.p[1]+out[1]*34, 'var(--pencil)', 1.3, ' stroke-dasharray="5 4"');
+        s+='<circle cx="'+f1(P.p[0])+'" cy="'+f1(P.p[1])+'" r="6.5" fill="none" stroke="var(--topic)" stroke-width="2"/>';
+        var lp=clampP(add(add(P.p,out,23+(cl?CLW:0)),tg,13), 12, 16); PL=lp;
+        s+=TH(lp[0], lp[1]+4.5*FS, 'P', {a:'middle', fs:14, w:700, c:'var(--topic)'});
+      }
+      s+=rayBox(bx.B, bx.d, true);
+      s+='</g>';
+      // labels, in clear space
+      var lb=clampP([bx.B[0]-bx.d[0]*4+(bx.d[1]<-0.5?-8:0), bx.B[1]+38], 34*FS, 16);
+      s+=TH(lb[0], lb[1], 'ray box', {a:'middle', fs:12});
+      var fx=A[0]+(nw?14:30), fy=A[1]+H+(cl?CLW:0)+19*FS;
+      if(cl) s+=TH(fx, fy, 'core, n = 1.50', {fs:12})+TH(fx, fy+15*FS, 'cladding, n = 1.40', {fs:12}); else s+=TH(fx, fy, 'glass, n = 1.50', {fs:12});
+      var hc=centre(g,TOT-30), ho=H+(cl?CLW:0)+13*FS+38*FS*Math.abs(hc.d[1]), hp=clampP([hc.p[0]+hc.d[1]*ho, hc.p[1]-hc.d[0]*ho+4*FS], 44*FS, 14);
+      var lk=firstLeak(tr), ep=null;
+      if(lk && prog==null){ ep=clampP(add(lk.p,lk.dout,122), 56*FS, 16); s+=TH(ep[0], ep[1]+4, 'light escapes', {a:'middle', fs:12, w:600, c:'var(--bad)'}); }
+      function near(q, dx){ return q && Math.abs(q[0]-hp[0])<dx*FS && Math.abs(q[1]-hp[1])<22*FS; }
+      if(!near(PL,62) && !near(ep,104)) s+=TH(hp[0], hp[1], 'drag to bend', {a:'middle', fs:11.5, c:'var(--ink-faint)'});   // left out when another label is there
+      s+='<circle class="grab" cx="'+f1(hc.p[0])+'" cy="'+f1(hc.p[1])+'" r="34" fill="transparent"/>';
+      // the exam diagram beside it (under it on a phone)
+      s+='<g transform="'+(nw ? 'translate(106.5 372) scale(1.5)' : 'translate(602 15)')+'">'+panel(P)+'</g>';
+      svg.innerHTML=s;
+      svg.setAttribute('aria-valuenow', BEND); svg.setAttribute('aria-valuetext', 'bend '+BEND+'°');
+      bIn.value=BEND; iIn.value=I0; $('#fb-bo').textContent=BEND+'°'; $('#fb-io').textContent=I0+'°';
+      playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play';
+      readings(tr, P);
+    }
+
+    // ---------- readings, note, working ----------
+    function readings(tr, P){
+      var cA=critA(), w=wallEvents(tr), lk=firstLeak(tr), mn=P ? P.i : 90, pc=Math.round(tr.end*100), cl=clad(), o=nOut().toFixed(2), q=(nOut()/NC).toFixed(4), C=d1(cA), eq;
+      $('#fb-stats').innerHTML = stat('Critical angle, '+cH(), C)+stat(lk ? 'Angle of incidence at P' : 'Smallest angle of incidence', d1(mn), true)+stat('Reflections', w.length)+stat('Light reaching the end', pc+'%', !!lk);
+      var note;
+      if(lk) note='At P the ray meets the wall at <b>'+d1(lk.i)+'</b>, which is less than the critical angle of '+C+'. Most of the light is <b>refracted out</b> of the '+(cl?'core into the cladding, and is lost':'glass')+', so '+(pc<1 ? 'almost none of it' : 'only '+pc+'% of it')+' reaches the far end. A tighter bend gives a smaller angle of incidence.';
+      else note=(BEND<0.5 ? 'A straight fibre: the ray meets the wall at the same angle every time. ' : '')+'At every wall the angle of incidence is greater than the critical angle (the smallest is <b>'+d1(mn)+'</b>, and '+cH()+' = '+C+'), so all of the light is <b>totally internally reflected</b> and it zig-zags to the far end.'+(BEND<0.5 ? '' : ' Bend the fibre more.');
+      if(note!==lastNote){ $('#fb-note').innerHTML=note; lastNote=note; }
+      if(ib()) eq='[[n₁|n₂]] = [[sin θ₂|sin θ₁]]<br>[[1.50|'+o+']] = [[sin 90°|sin θ<sub>c</sub>]]<br>sin θ<sub>c</sub> = [['+o+'|1.50]]<br>sin θ<sub>c</sub> = '+q+'<br>θ<sub>c</sub> = <b>'+C+'</b>';
+      else if(cl) eq='n₁ sin C = n₂ sin 90°<br>1.50 × sin C = '+o+' × 1<br>sin C = [['+o+'|1.50]]<br>sin C = '+q+'<br>C = <b>'+C+'</b>';
+      else eq='sin '+cH()+' = [[1|n]]<br>sin '+cH()+' = [[1|1.50]]<br>sin '+cH()+' = '+q+'<br>'+cH()+' = <b>'+C+'</b>';
+      if($('#fb-eq1').getAttribute('data-k')!==eq){ $('#fb-eq1').innerHTML=FR(eq); $('#fb-eq1').setAttribute('data-k',eq); }
+      $('#fb-eq3').innerHTML = 'Total internal reflection needs the light to be in the '+(cl?'medium with the higher refractive index (the core)':'denser medium (the glass)')+' and the angle of incidence to be greater than the critical angle. '+(cl ? 'With cladding the critical angle is much larger, so only rays close to the axis of the fibre stay in the core.' : 'In the bend the ray meets the outer wall at a smaller angle of incidence than in the straight parts.');
+    }
+
+    // ---------- motion: a pulse of light travels along the path ----------
+    function halt(){ running=false; cancelAnimationFrame(raf); prog=null; }
+    function frame(now){
+      var dt=Math.min(0.05,(now-last)/1000); last=now;
+      prog+=dt*SPEED*(pressed(slowBtn)?0.3:1);
+      if(prog>=total){ prog=null; running=false; }
+      draw();
+      if(running) raf=requestAnimationFrame(frame);
+    }
+    playBtn.addEventListener('click', function(){
+      if(running){ running=false; cancelAnimationFrame(raf); draw(); return; }
+      if(prog==null) prog=0;
+      running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw();
+    });
+    slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!pressed(slowBtn))); });
+    $('#fb-reset').addEventListener('click', function(){ halt(); BEND=30; I0=68; jumpSeg.pick(null); draw(); });
+    function setBend(v){ halt(); BEND=Math.max(0,Math.min(180,Math.round(v))); jumpSeg.pick(null); draw(); }
+    function setI0(v){ halt(); I0=Math.max(50,Math.min(88,Math.round(v))); jumpSeg.pick(null); draw(); }
+    bIn.addEventListener('input', function(){ setBend(+bIn.value); });
+    iIn.addEventListener('input', function(){ setI0(+iIn.value); });
+    svgDrag(svg, {   // the free end of the fibre
+      hit:function(q){ var c=centre(geom(BEND),TOT-30).p; return Math.hypot(q.x-c[0], q.y-c[1])<34; },
+      move:function(q){ var b, best=BEND, bd=1e9; for(b=0;b<=180;b++){ var c=centre(geom(b),TOT-30).p, d=Math.hypot(q.x-c[0], q.y-c[1]); if(d<bd){ bd=d; best=b; } } if(best!==BEND) setBend(best); }
+    });
+    svgDrag(svg, {   // the ray box, turned about the end face
+      hit:function(q){ var c=centre(geom(BEND),TOT-30).p, B=boxAt().B; return Math.hypot(q.x-c[0], q.y-c[1])>=34 && Math.hypot(q.x-B[0], q.y-B[1])<40; },
+      move:function(q){ var al=Math.atan2(q.y-A[1], A[0]-q.x), sa=Math.sin(Math.max(0,Math.min(1.45,al)))/NC; setI0(90-deg(Math.asin(Math.min(1,sa)))); }
+    });
+    svg.addEventListener('keydown', function(e){
+      var k=e.key, v=null, st=e.shiftKey?10:1;
+      if(k==='ArrowRight'||k==='ArrowUp') v=BEND+st; else if(k==='ArrowLeft'||k==='ArrowDown') v=BEND-st;
+      else if(k==='PageUp') v=BEND+10; else if(k==='PageDown') v=BEND-10; else if(k==='Home') v=0; else if(k==='End') v=180;
+      if(v!==null){ setBend(v); e.preventDefault(); }
+    });
+    if(narrow.addEventListener) narrow.addEventListener('change', draw);
+    if(PW_LEVEL==='ial' || PW_LEVEL==='ib') levelSeg.pick(PW_LEVEL);
+    setLevel();
+    teachPage({svg:svg, strip:['fb-grid','fb-jgrid'], q:null});
+    draw();
   }
 
   // ================= state =================
