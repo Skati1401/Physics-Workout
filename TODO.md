@@ -43,6 +43,7 @@ From a check of the three specs against every animation (22 Nov 2026). Alex like
 ## 10. Teaching materials (question packs and other work off the site)
 
 - [ ] **10a** Year 11 IGCSE question pack in 9 sections: one per unit, Unit 1 to Unit 6, then extra investigation questions (plan, variables, improve a method), then multi-step maths (on what has been taught), then suggest and deduce questions (including "Is the person correct? Explain your answer"); explain questions throughout; mark scheme answers in the mark schemes' own words. Past papers before 2020 only (2020 onwards are reserved for mocks and topic tests). Runs on the school account with the `alex-school-drive` skill (question-pack skill, IGCSE index). Not in this public repo (Alex, 24 Nov 2026).
+- [ ] **10b** Year 13 IAL question pack: a P1 section (Unit 1 Mechanics and Materials), a P3 section (practical skills, Unit 1 and 2 practicals), then a section each on 5.1 and 5.2, with the P6 practical questions relevant to them (Alex, 24 Nov 2026: written as "5.1, 5.2"; 5.1 Thermodynamics and 5.2 Nuclear decay assumed, the Unit 5 topics taught so far). Mark scheme answers in the mark schemes' own words. Past papers before 2020 only (2020 onwards are reserved). Runs on the school account with the `alex-school-drive` skill (question-pack skill, IAL index). Not in this public repo (Alex, 24 Nov 2026).
 
 ## 2. Lesson decks (PPT reviews)
 
