@@ -216,7 +216,7 @@ An animation page opened on its own (not `?embed` in a workout) is for the teach
 1. `node --check` on the page's scripts (CLAUDE.md, "Check before you commit").
 2. `python3 tools/anim-check.py page.html "page.html?show=x"` with a server on port 8765: errors, one-screen fit, sideways scrolling, clipped or overlapping picture text, at three sizes, pressing every button.
 3. Screenshots at 1366×657, phone width and dark mode; look at them. The script cannot see a label lying over a drawn object.
-4. The workout tab that frames the page: frame height equals the inner page's height, at laptop and phone width.
+4. The workout tab that frames the page: frame height equals the inner page's height, at laptop and phone width. When a change should not touch the frames (a teacher page, a fix to the stand-alone view), `python3 tools/frame-check.py page.html` compares every frame with `origin/main` and must end "Every frame is the same."
 5. Physics: for each direction the page shows, check one case by hand against the rule.
 
 ## Starting a batch in a new chat
