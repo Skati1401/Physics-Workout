@@ -77,7 +77,25 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## 6. Build: IAL and IB
 
-- [ ] **6b** `ial.html` holds only Core Practicals so far; IAL workouts are still to plan. Alex, 15 Nov 2026: plan them after the IAL core practicals (5h to 5q) are done. The Unit 4 one should frame `animations/time-dilation.html?part=muon&level=ial` on a tab with the IAL muon kinds 1 to 3 from `tools/handoffs/5x-relativity.md` (IAL 120; left out of the IB page `relativity.html`, 5x, 21 Nov 2026).
+The IAL workouts, in build order (plan: `tools/handoffs/ial-workouts.md`, 24 Nov 2026). Unit 5 first, still-to-teach topics and IB twins still to teach at the front; then Unit 1. One Opus chat each, school account.
+
+- [ ] **6c** Simple Harmonic Motion Workout (IAL 143–147, 150), built with its IB C.1 twin from one source. Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6d** Radioactive Decay Workout (IAL 137–142), built with its IB E.3 twin (decay half) from one source. Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6e** Damping and Resonance Workout (IAL 148, 150–153); IB C.4 twin optional, decide in the chat. Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6f** Gravitational Fields Workout (IAL 154–160). Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6g** Stars Workout (IAL 161–163, 167, 168), built with its IB E.5 twin from one source. Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6h** Distances and the Expanding Universe Workout (IAL 164–166, 169–171). Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6i** Mass Defect, Binding Energy, Fission and Fusion Workout (IAL 133–136); build after the 9g and 9h animations, which it frames. Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6j** Thermal Energy Workout (IAL 125, 128, 129). Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6k** Ideal Gases Workout (IAL 129–132). Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6l** Motion Workout (IAL 1–3). Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6m** Vectors and Projectiles Workout (IAL 4–7). Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6n** Forces and Newton's Laws Workout (IAL 8–10, 12). Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6o** Momentum and Moments Workout (IAL 13–16). Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6p** Work, Energy and Power Workout (IAL 17–22); first give `animations/roller-coaster-energy.html` an IAL level. Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6q** Fluids Workout (IAL 23–26). Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6r** Materials Workout (IAL 27–32). Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
+- [ ] **6s** Plan the IAL Unit 2 and Unit 4 workouts (they matter less, Alex 15 Nov 2026). The Unit 4 one should frame `animations/time-dilation.html?part=muon&level=ial` on a tab with the IAL muon kinds 1 to 3 from `tools/handoffs/5x-relativity.md` (IAL 120; left out of the IB page `relativity.html`, 5x, 21 Nov 2026) (moved from 6b, 24 Nov 2026).
 
 ## 7. Fable visuals (ideas, added 10 Nov 2026)
 
@@ -111,6 +129,7 @@ Follow-ups (moved out of the ticked batches' "Left for later" notes in the 14 No
 - [x] **8ac** Teacher pages, Quantum, scattering and relativity: IAL Units 2 and 4, IB A.5 and E: photoelectric, electron-diffraction, rutherford-scattering, time-dilation, spacetime-diagram (the Year 9 projector layout of 24 Nov 2026: teach kit, layout B, no Questions, Notes button, small controls; unsure pages as a Layout A | B | C trial). Prompt: `tools/handoffs/teacher-pages.md` (added 24 Nov 2026) Done 24 Nov 2026 (school account): all five; layout B (time-dilation chosen by Alex after a trial; it keeps Explore | Derivation in the strip).
 
 ## Done
+- [x] **6b** Plan the IAL workouts (Unit 5 first, then Unit 1). Done 24 Nov 2026: 16 workouts (9 for Unit 5, 7 for Unit 1) as items 6c to 6r, the plan in `tools/handoffs/ial-workouts.md`; Units 2 and 4 moved to 6s.
 - [x] **9d** `animations/heat-transfer.html`: an IB level for conduction, rate ΔQ/Δt = kAΔT/Δx (change the material, area, thickness and temperature difference). IB B.1. Nice to have: B.1 is not in Alex's IB order (added 22 Nov 2026). Done 22 Nov 2026: an "IGCSE | IB" switch on the title line (hidden in frames and measure mode); at IB the Conduction part is a slab between hot and cold water, with seven materials, sliders for A, Δx and ΔT, three examples, a temperature–distance graph, Keep this to compare, and the working. Card on the IB list under Theme B.
 - [x] **3j** Graphs Workout, third release (left from 3i, 15 Nov 2026; done 22 Nov 2026): 13 new kinds (37 in all) and four new types of graph, taken from the IGCSE Question Index: **Tangent to a Curve** (curved v–t graphs, acceleration or deceleration at a moment; cooling curves, rate of cooling at a temperature: a ruler pinned at the point and turned about it, then the gradient of your own tangent), **Intercept and Extrapolate** (p–T to absolute zero; mass–volume: the cylinder’s mass from the intercept and the density from the gradient), **Interpret a Graph** (v–t and d–t graphs in sections, match the graph to the motion, force–extension and Hooke’s law, heating and cooling curves in sections (TA)), **Explain the Shape** (a v–t graph explained with forces, in the mark schemes’ chain: falling, driven, parachute opening); new contexts: cooling curves (read), thermistor and LDR (read then V = IR; plot and curve of best fit). See `tools/REVIEW.md` for what to check.
 - [x] **3m** Simplify the Calculations Workout (Alex, 22 Nov 2026; done 22 Nov 2026): tick whole units, Easy (substitute and rearrange) or Hard (also unit conversions and multipliers) at the top, one question at a time. It is now the Calculation Generator's questions with a quick chooser, built from `calculation-generator.html` by `tools/sets/build.py`; the Generator stays the detailed selector. Alex to check it (`tools/REVIEW.md`).
