@@ -9,7 +9,11 @@
    end, superpose, node where destructive interference); Exam (e), (f) and the Accuracy cards from WPH13 June 2019 Q4(b) (sources:
    identifying maximum amplitude, length to the top of the pulley, parallax, zero error; techniques: frequency from above and below
    resonance and the mean, rule in contact or set square at eye level, vibrator off so the string is straight, zero the balance).
-   The 8PH0/9PH0 mark schemes are not on the school Drive, so they were not read. */
+   24 Nov 2026 (home PC): 8PH0/02 June 2016 Q12 (tension from T = mg with masses over a pulley; f² against T, λ = 2L, μ from the
+   gradient), June 2023 Q12 (f to 2f: no standing wave between, two antinodes at 2f; new Exam (g)) and 9PH0/03 June 2022 Q13 (waves
+   reflect from the bridge and meet in phase at the antinode, now in Exam (a); safety glasses, footwear, sand tray in Exam (e); a
+   micrometer at several places for μ from the diameter, new Accuracy card). Do Experiment stays on the length only: no paper varies
+   μ (it is always found from a gradient), and tension is practised in Analysis and the Exam question (decision, TODO 5ac). */
 function examPart(body,head,q,bullets){
   body.appendChild(mk('p','sub',head));
   body.appendChild(mk('p','',FR(q)));
@@ -231,6 +235,7 @@ const GV={xMin:0,xMax:2.5,yMin:0,yMax:100,xTicks:[0,0.5,1,1.5,2,2.5],yTicks:[0,2
     {id:'3',text:'Use lengths that are as long as possible, so the percentage uncertainty in L is small',cat:'a'},
     {id:'4',text:'Repeat each frequency reading and take a mean',cat:'a'},
     {id:'5',text:'Find μ by weighing several metres of the string, not a short piece',cat:'a'},
+    {id:'11',text:'If μ is found from the diameter of a wire, measure it with a micrometer at several places and angles along the wire and take a mean, as the wire may not be uniform',cat:'a'},
     {id:'6',text:'Wear eye protection in case the string or wire snaps',cat:'s'},
     {id:'7',text:'Put a tray of foam or sand under the hanging masses',cat:'s'},
     {id:'8',text:'Keep feet clear of the space under the hanging masses',cat:'s'}
@@ -244,7 +249,7 @@ const GV={xMin:0,xMax:2.5,yMin:0,yMax:100,xTicks:[0,0.5,1,1.5,2,2.5],yTicks:[0,2
   examPart(body,'(a) 3 marks','Explain how a standing wave is formed on the string.',[
     'Waves from the vibration generator travel along the string and reflect from each end (the pulley and the generator).',
     'The reflected wave and the incoming wave have the same frequency and travel in opposite directions, so they superpose (interfere).',
-    'A node forms where there is destructive interference: the string always has zero displacement there. An antinode forms where there is constructive interference: the string vibrates with maximum amplitude.'
+    'A node forms where there is destructive interference: the string always has zero displacement there. An antinode forms where the two waves always meet in phase, so there is constructive interference: the string vibrates with maximum amplitude.'
   ]);
   body.appendChild(mk('p','sub','(b) 4 marks'));
   createCalc({host:body,questions:[
@@ -264,11 +269,15 @@ const GV={xMin:0,xMax:2.5,yMin:0,yMax:100,xTicks:[0,0.5,1,1.5,2,2.5],yTicks:[0,2
     'For each length, raise the frequency from zero until the string vibrates in one loop with the largest amplitude, and record the frequency from the signal generator.',
     'Vary the frequency from above and from below resonance to find two values where the standing wave forms, and take the mean; use at least six lengths over as wide a range as possible.',
     'Plot f against 1/L: a straight line through the origin shows that f is inversely proportional to L.',
-    'Safety: wear eye protection in case the string snaps, or put foam under the masses and keep feet clear.'
+    'Safety: wear eye protection in case the string snaps, or wear suitable footwear and put a tray of sand or foam under the masses in case they fall.'
   ]);
   examPart(body,'(f) 3 marks','Give two sources of uncertainty in this experiment, and describe how one of them can be reduced.',[
     'Frequency: uncertainty in identifying the maximum amplitude (when the standing wave forms), because the loop stays large over a small range of frequencies.',
     'Length: uncertainty in measuring the length to the top of the pulley, or parallax error when reading the rule.',
     'Reduce the first by varying the frequency from above and below resonance, finding two values and calculating the mean; reduce the second by holding the rule in contact with the string (or using a set square) at eye level.'
+  ]);
+  examPart(body,'(g) 2 marks','Kenji keeps 0.300 kg hanging and finds one loop at a frequency f. He then raises the frequency slowly until it is 2f. Describe what he sees.',[
+    'Between f and 2f there is no standing wave: the amplitude of the loop falls and the string only trembles.',
+    'At 2f a standing wave forms again, with two loops (two antinodes and a node in the middle).'
   ]);
 }
