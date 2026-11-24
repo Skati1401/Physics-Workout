@@ -77,7 +77,7 @@ How to build one: `tools/CORE-PRACTICALS.md`.
 
 ## 6. Build: IAL and IB
 
-The IAL workouts, in build order (plan: `tools/handoffs/ial-workouts.md`, 24 Nov 2026). Unit 5 first, still-to-teach topics and IB twins still to teach at the front; then Unit 1. One Opus chat each, school account.
+The IAL workouts, in build order (plan: `tools/handoffs/ial-workouts.md`, 24 Nov 2026). Unit 5 first, still-to-teach topics and IB twins still to teach at the front; then Unit 1. One Opus chat each, school account. Alex, 24 Nov 2026: build 6c, 6d and 6g with their IB twins in the same chat, and keep 6d second.
 
 - [ ] **6c** Simple Harmonic Motion Workout (IAL 143–147, 150), built with its IB C.1 twin from one source. Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
 - [ ] **6d** Radioactive Decay Workout (IAL 137–142), built with its IB E.3 twin (decay half) from one source. Tabs, frames, practical links and IB twin in `tools/handoffs/ial-workouts.md` (added 24 Nov 2026, from 6b).
