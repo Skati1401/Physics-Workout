@@ -43,6 +43,7 @@ KITS = {
     'graph-helper': 'graph helper',
     'bench-helpers': 'bench helpers',
     'solid-people': 'solid people',
+    'teach-kit': 'teach kit',
 }
 TAG = 'copied by tools/kits.py'
 EXP_START = '/* ================= Experiment kit (copy this block'
