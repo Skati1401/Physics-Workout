@@ -29,3 +29,7 @@ Contamination against irradiation (IGCSE 7.15: May 2019 P1 TZ1 3(b), May 2022 P1
 - New animation, Opus for the logic and the cards; the scene pictures (a patient with a detector, rollers and a sheet, a box of fruit, a smoke alarm, a pipe under a road) are a Fable job. Question kinds above, so no index is needed in the build chat.
 - Each round: the scenario picture, the isotope cards (emission symbol, half-life, state), pick, Check, then "Why?" with chips; a wrong pick shows what goes wrong in the picture (alpha stopped in the body, gamma straight through the foil, the count falling away in a week).
 - Card on `animations/igcse.html` Unit 7, `ial.html` Unit 5 and `ib.html` Theme E; frame it in 7a `radioactivity.html` where uses are taught.
+
+## Fable half (personal account, 24 Nov 2026)
+
+`animations/isotope-choice.html` holds the pictures: scenarios 1, 3 and 4 (one picture: a seed in a tumour for six weeks), 5, 6, 7, 8, 9 and 12 above, each driven by the radiation and the half-life chosen. How to drive it from the game (`IC.set`, `IC.play`, `IC.state`, `IC.SC`) is in the page's note in `tools/PAGE-NOTES.md`. The half-lives and times on the page are made up; change them in `SC` if a card needs different ones.
