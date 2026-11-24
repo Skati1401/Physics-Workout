@@ -391,14 +391,16 @@
           <button class="btn btn-primary" id="fb-play" type="button">&#9654; Play</button>
           <button class="btn" id="fb-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="fb-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn to-q" type="button" data-mode="fb-mode" hidden>Try the questions &rarr;</button>
         </div>
-        <div class="sliders">
+        <div class="sliders" id="fb-sliders">
           <div><label class="lab" for="fb-bend">Bend the fibre (or drag its end)<output id="fb-bo"></output></label><input type="range" id="fb-bend" min="0" max="180" step="1" value="30"></div>
           <div><label class="lab" for="fb-i">Angle of incidence at the first wall (or turn the ray box)<output id="fb-io"></output></label><input type="range" id="fb-i" min="62" max="69" step="1" value="68"></div>
         </div>
       </div>
     </div>
     <div class="side">
+      <div class="seg tabs mode" id="fb-mode" role="group" aria-label="Mode"><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
       <div class="cgrid" id="fb-grid">
         <span class="rowlab" id="fb-alab" hidden>Around the glass</span>
         <div class="seg" id="fb-around" hidden><button type="button" data-v="air" aria-pressed="true">Air</button><button type="button" data-v="clad" aria-pressed="false">Cladding, n = 1.40</button></div>
@@ -719,7 +721,9 @@ function expKey(x, y, upLabel, downLabel){
   // wall by wall with Snell's law, so where the angle of incidence falls below the critical angle most of the light refracts
   // out, and the weak reflection carries on. Beside it, the exam ray diagram at the point P (the first place light escapes,
   // or the smallest angle of incidence). IAL and IB add a cladding of n = 1.40. Everything is inside fibreView(): the page
-  // stops here in this view, so the glass-block views below are not touched. Questions on the picture are still to come.
+  // stops here in this view, so the glass-block views below are not touched.
+  // Questions (24 Nov 2026, TODO 9b, Opus half; ?show=fibre&show=predict): four kinds, from the 4PH1 and WPH12 papers (see "Questions on the picture" below).
+  // The ray is shown as far as the place the question is about; Go sends the light on and marks the answer on the picture.
   var FIB = !DISP && !MEAS && /[?&]show=fibre\b/.test(location.search);
   if(FIB){ fibreView(); return; }
   function fibreView(){
@@ -730,8 +734,11 @@ function expKey(x, y, upLabel, downLabel){
     var NC=1.50, NCL=1.40, H=22, L1=165, LA=120, L2=140, A=[104,94], TOT=L1+LA+L2, CLW=7, SPEED=300;
     var BEND=30, I0=68, prog=null, running=false, raf=0, last=0, total=0, lastNote='';
     var narrow=window.matchMedia('(max-width:560px)');
+    var Q=null, score=[0,0], qN=0, lastKind='', saved=null;
     var aroundSeg=segGroup($('#fb-around'), function(v){ halt(); jumpSeg.pick(null); I0 = v==='clad' ? 76 : 68; draw(); });   // each has its own range of ray angles (iRange), so start at its standard ray
-    var levelSeg=segGroup($('#rf-level'), function(){ halt(); if(!k5() && aroundSeg.value()!=='air'){ aroundSeg.pick('air'); I0=68; } setLevel(); draw(); });
+    var levelSeg=segGroup($('#rf-level'), function(){ halt(); if(!k5() && aroundSeg.value()!=='air'){ aroundSeg.pick('air'); I0=68; } setLevel(); if(qm()) newQ(); draw(); });
+    var modeSeg=segGroup($('#fb-mode'), function(){ setMode(); });
+    function qm(){ return modeSeg.value()==='predict'; }
     var jumpSeg=segGroup($('#fb-jump'), function(v){
       halt(); I0=clad()?76:68;   // the standard ray: in air at 68° the light first escapes at a bend of 52° and at every tighter bend
       if(v==='s') BEND=0; else if(v==='g') BEND=30; else if(v==='t') BEND=150;
@@ -746,7 +753,7 @@ function expKey(x, y, upLabel, downLabel){
     function iRange(){ return clad() ? [73,80] : [62,69]; }
     function k5(){ return levelSeg.value()!=='ks4'; }
     function ib(){ return levelSeg.value()==='ib'; }
-    function clad(){ return k5() && aroundSeg.value()==='clad'; }
+    function clad(){ if(qm() && Q) return Q.clad; return k5() && aroundSeg.value()==='clad'; }
     function nOut(){ return clad() ? NCL : 1; }
     function critA(){ return deg(Math.asin(nOut()/NC)); }
     function cH(){ return ib() ? 'θ<sub>c</sub>' : k5() ? 'C' : 'c'; }                                             // in the page's text
@@ -875,11 +882,11 @@ function expKey(x, y, upLabel, downLabel){
       return s;
     }
     function draw(){
-      var ir=iRange(); I0=Math.max(ir[0],Math.min(ir[1],I0));
+      var ir=iRange(), QM=qm() && !!Q; if(!QM) I0=Math.max(ir[0],Math.min(ir[1],I0));
       var nw=narrow.matches, W=nw?600:590, g=geom(BEND), tr=trace(g), P=keyEvent(tr), cl=clad(), bx=boxAt(), s='', top='', k;
       FS = nw ? 1.45 : 1;
       svg.setAttribute('viewBox', nw ? '0 0 600 872' : '0 0 860 360');
-      var body=outline(g,H), slit=add(bx.B,bx.d,24), lim = prog==null ? Infinity : prog, cum=0, PL=null;
+      var body=outline(g,H), slit=add(bx.B,bx.d,24), lim = QM && Q.phase==='ask' ? Q.showLen : prog==null ? Infinity : prog, cum=0, PL=null;
       s+='<defs><clipPath id="fb-clip"><path d="'+body+'"/></clipPath><clipPath id="fb-paper"><rect x="0" y="0" width="'+W+'" height="360"/></clipPath></defs>';
       s+='<rect x="0.5" y="0.5" width="'+(W-1)+'" height="359" rx="4" fill="var(--paper)" stroke="var(--panel-border)"/>';
       s+='<g clip-path="url(#fb-paper)">';
@@ -923,7 +930,8 @@ function expKey(x, y, upLabel, downLabel){
       total=cum+110;
       s+=glow+rays+heads;
       if(head) s+='<circle cx="'+f1(head[0])+'" cy="'+f1(head[1])+'" r="6.5" fill="var(--lamp)" opacity=".9"/><circle cx="'+f1(head[0])+'" cy="'+f1(head[1])+'" r="3" fill="var(--ray)"/>';
-      // P: the normal there, a ring and its letter
+      // P: the normal there, a ring and its letter (in Questions: the place the question is about, or after Go the P of Explore)
+      var P0=P; P = !QM ? P0 : Q.e ? Q.e : Q.phase==='done' ? P0 : null;
       if(P){
         var out=[-P.N[0],-P.N[1]], tg=[-out[1],out[0]]; if(P.kind==='leak' && dot(tg,P.dout)>0) tg=[-tg[0],-tg[1]]; if(P.kind!=='leak' && dot(tg,P.din)<0) tg=[-tg[0],-tg[1]];
         s+=ln(P.p[0]-out[0]*24, P.p[1]-out[1]*24, P.p[0]+out[0]*34, P.p[1]+out[1]*34, 'var(--pencil)', 1.3, ' stroke-dasharray="5 4"');
@@ -937,36 +945,270 @@ function expKey(x, y, upLabel, downLabel){
       var lb=clampP([bx.B[0]-bx.d[0]*4+(bx.d[1]<-0.5?-8:0), bx.B[1]+38], 34*FS, 16);
       s+=TH(lb[0], lb[1], 'ray box', {a:'middle', fs:12});
       var fx=A[0]+(nw?14:30), fy=A[1]+H+(cl?CLW:0)+19*FS;
-      if(cl) s+=TH(fx, fy, 'core, n = 1.50', {fs:12})+TH(fx, fy+15*FS, 'cladding, n = 1.40', {fs:12}); else s+=TH(fx, fy, 'glass, n = 1.50', {fs:12});
+      if(cl) s+=TH(fx, fy, 'core, n = '+NC.toFixed(2), {fs:12})+TH(fx, fy+15*FS, 'cladding, n = '+NCL.toFixed(2), {fs:12}); else s+=TH(fx, fy, 'glass, n = '+NC.toFixed(2), {fs:12});
+      s+=T(8, 352, 'paper, seen from above, not to scale', {fs:11, c:'var(--ink-faint)'});
       var hc=centre(g,TOT-30), ho=H+(cl?CLW:0)+13*FS+38*FS*Math.abs(hc.d[1]), hp=clampP([hc.p[0]+hc.d[1]*ho, hc.p[1]-hc.d[0]*ho+4*FS], 44*FS, 14);
       var lk=firstLeak(tr), ep=null;
-      if(lk && prog==null){ ep=clampP(add(lk.p,lk.dout,122), 56*FS, 16); s+=TH(ep[0], ep[1]+4, 'light escapes', {a:'middle', fs:12, w:600, c:'var(--bad)'}); }
+      if(lk && prog==null && (!QM || Q.phase==='done' && !Q.lines)){ ep=clampP(add(lk.p,lk.dout,122), 56*FS, 16); s+=TH(ep[0], ep[1]+4, 'light escapes', {a:'middle', fs:12, w:600, c:'var(--bad)'}); }
       function near(q, dx){ return q && Math.abs(q[0]-hp[0])<dx*FS && Math.abs(q[1]-hp[1])<22*FS; }
-      if(!near(PL,62) && !near(ep,104)) s+=TH(hp[0], hp[1], 'drag to bend', {a:'middle', fs:11.5, c:'var(--ink-faint)'});   // left out when another label is there
-      s+='<circle class="grab" cx="'+f1(hc.p[0])+'" cy="'+f1(hc.p[1])+'" r="34" fill="transparent"/>';
+      if(!QM && !near(PL,62) && !near(ep,104)) s+=TH(hp[0], hp[1], 'drag to bend', {a:'middle', fs:11.5, c:'var(--ink-faint)'});   // left out when another label is there
+      if(!QM) s+='<circle class="grab" cx="'+f1(hc.p[0])+'" cy="'+f1(hc.p[1])+'" r="34" fill="transparent"/>';
+      if(QM) s+=qPicks(g, W);
       // the exam diagram beside it (under it on a phone)
-      s+='<g transform="'+(nw ? 'translate(106.5 372) scale(1.5)' : 'translate(602 15)')+'">'+panel(P)+'</g>';
+      s+='<g transform="'+(nw ? 'translate(106.5 372) scale(1.5)' : 'translate(602 15)')+'">'+(QM ? qPanel() : panel(P))+'</g>';
       svg.innerHTML=s;
       svg.setAttribute('aria-valuenow', BEND); svg.setAttribute('aria-valuetext', 'bend '+BEND+'°');
       iIn.min=ir[0]; iIn.max=ir[1];
       bIn.value=BEND; iIn.value=I0; $('#fb-bo').textContent=BEND+'°'; $('#fb-io').textContent=I0+'°';
-      playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play';
-      readings(tr, P);
+      playBtn.innerHTML = running ? '&#10074;&#10074; Pause' : QM ? '&#9654; Go' : '&#9654; Play';
+      readings(tr, P0);
     }
 
     // ---------- readings, note, working ----------
     function readings(tr, P){
       var cA=critA(), w=wallEvents(tr), lk=firstLeak(tr), mn=P ? P.i : 90, pc=Math.round(tr.end*100), cl=clad(), o=nOut().toFixed(2), q=(nOut()/NC).toFixed(4), C=d1(cA), eq;
       $('#fb-stats').innerHTML = stat('Critical angle, '+cH(), C)+stat(lk ? 'Angle of incidence at P' : 'Smallest angle of incidence', d1(mn), true)+stat('Reflections', w.length)+stat('Light reaching the end', pc+'%', !!lk);
-      var note;
+      var note, nn=NC.toFixed(2);
       if(lk) note='At P the ray meets the wall at <b>'+d1(lk.i)+'</b>, which is less than the critical angle of '+C+'. Most of the light is <b>refracted out</b> of the '+(cl?'core into the cladding, and is lost':'glass')+', so '+(pc<1 ? 'almost none of it' : 'only '+pc+'% of it')+' reaches the far end. A tighter bend gives a smaller angle of incidence.';
       else note=(BEND<0.5 ? 'A straight fibre: the ray meets the wall at the same angle every time. ' : '')+'At every wall the angle of incidence is greater than the critical angle (the smallest is <b>'+d1(mn)+'</b>, and '+cH()+' = '+C+'), so all of the light is <b>totally internally reflected</b> and it zig-zags to the far end.'+(BEND<0.5 ? '' : ' Bend the fibre more.');
+      if(qm() && Q){ note=qNote(); if(Q.phase!=='done') $('#fb-stats').innerHTML=''; }
       if(note!==lastNote){ $('#fb-note').innerHTML=note; lastNote=note; }
-      if(ib()) eq='[[n₁|n₂]] = [[sin θ₂|sin θ₁]]<br>[[1.50|'+o+']] = [[sin 90°|sin θ<sub>c</sub>]]<br>sin θ<sub>c</sub> = [['+o+'|1.50]]<br>sin θ<sub>c</sub> = '+q+'<br>θ<sub>c</sub> = <b>'+C+'</b>';
-      else if(cl) eq='n₁ sin C = n₂ sin 90°<br>1.50 × sin C = '+o+' × 1<br>sin C = [['+o+'|1.50]]<br>sin C = '+q+'<br>C = <b>'+C+'</b>';
-      else eq='sin '+cH()+' = [[1|n]]<br>sin '+cH()+' = [[1|1.50]]<br>sin '+cH()+' = '+q+'<br>'+cH()+' = <b>'+C+'</b>';
+      if(ib()) eq='[[n₁|n₂]] = [[sin θ₂|sin θ₁]]<br>[['+nn+'|'+o+']] = [[sin 90°|sin θ<sub>c</sub>]]<br>sin θ<sub>c</sub> = [['+o+'|'+nn+']]<br>sin θ<sub>c</sub> = '+q+'<br>θ<sub>c</sub> = <b>'+C+'</b>';
+      else if(cl) eq='n₁ sin C = n₂ sin 90°<br>'+nn+' × sin C = '+o+' × 1<br>sin C = [['+o+'|'+nn+']]<br>sin C = '+q+'<br>C = <b>'+C+'</b>';
+      else eq='sin '+cH()+' = [[1|n]]<br>sin '+cH()+' = [[1|'+nn+']]<br>sin '+cH()+' = '+q+'<br>'+cH()+' = <b>'+C+'</b>';
       if($('#fb-eq1').getAttribute('data-k')!==eq){ $('#fb-eq1').innerHTML=FR(eq); $('#fb-eq1').setAttribute('data-k',eq); }
       $('#fb-eq3').innerHTML = 'Total internal reflection needs the light to be in the '+(cl?'medium with the higher refractive index (the core)':'denser medium (the glass)')+' and the angle of incidence to be greater than the critical angle. '+(cl ? 'With cladding the critical angle is much larger, so only rays close to the axis of the fibre stay in the core.' : 'In the bend the ray meets the outer wall at a smaller angle of incidence than in the straight parts.');
+    }
+
+    // ---------- Questions on the picture (TODO 9b, Opus half, 24 Nov 2026) ----------
+    // Four kinds, from the question indexes (wording from the mark schemes):
+    //  path   complete the path of the ray at the wall (4PH1 Jan 2013 1P 2(b)(i), 4420 Jun 2009 18(e)): lines to click, or every
+    //         second one drawn by turning the ray about P, marked as the mark schemes do (angle of reflection = angle of incidence, ±3°)
+    //  escape where does the light first escape from the bent fibre? Click the wall, or "No light escapes" (4420 Jun 2010 10(c):
+    //         i compared with the critical angle; WPH12 Jan 2025 18(c): some rays refract out of the fibre)
+    //  crit   the critical angle from n, then the path at P (sin c = 1/n; WPH12 Jan 2025 18(b): compare C with i and conclude;
+    //         with cladding n₁ sin C = n₂ sin 90°, 8PH0 Jun 2016 9(a))
+    //  why    tick the three statements that explain why light stays in (4PH1 Jan 2023 1P 6(c), May 2022 2PR 6(c): total internal
+    //         reflection; the glass (core) has a higher refractive index than the air (cladding); i greater than the critical angle)
+    // At IAL and IB about half the questions have a cladding. n and the ray box are set per question; Explore gets back n = 1.50.
+    var pk=function(a){ return a[Math.floor(Math.random()*a.length)]; }, nPath=0, ARIA0=svg.getAttribute('aria-label');
+    function setUp(n, ncl, cl, i0, bd){ NC=n; NCL=ncl; Q.clad=cl; I0=i0; BEND=bd; }
+    function lenTo(tr, k){   // how far the light goes, from the ray box's slit to the k-th place it meets a surface
+      var bx=boxAt(), sl=add(bx.B,bx.d,24), L=Math.hypot(A[0]-sl[0], A[1]-sl[1]), j;
+      for(j=0;j<=k;j++) L+=Math.hypot(tr.pts[j+1][0]-tr.pts[j][0], tr.pts[j+1][1]-tr.pts[j][1]);
+      return L;
+    }
+    function bnd(){ return Q.clad ? 'the core–cladding boundary' : 'the wall'; }
+    function newQ(){
+      halt();
+      var w={path:3, escape:3, crit:3, why:2}, bag=[], name, cl, g, tr, e=null, ok=false, t, C, lk, K;
+      Object.keys(w).forEach(function(k){ if(k!==lastKind) for(var j=0;j<w[k];j++) bag.push(k); });
+      name=pk(bag); lastKind=name; cl=k5() && Math.random()<0.5;
+      Q={name:name, clad:cl, n:++qN, phase:'ask', pick:null};
+      for(t=0; t<600 && !ok; t++){
+        if(name==='crit') setUp(cl ? pk([1.50,1.52,1.55,1.58]) : pk([1.45,1.48,1.52,1.55,1.60,1.65]), cl ? pk([1.38,1.40,1.42,1.45]) : 1.40, cl,
+          cl ? 70+Math.floor(Math.random()*13) : 58+Math.floor(Math.random()*23), pk([0,20,40,60,80,100,120,150]));
+        else setUp(1.50, 1.40, cl, cl ? 73+Math.floor(Math.random()*8) : 62+Math.floor(Math.random()*8),
+          name==='escape' ? pk([0,25,60,90,120,150,170]) : name==='why' ? pk([0,0,15,25]) : pk([0,0,20,30]));
+        g=geom(BEND); tr=trace(g); C=critA(); lk=firstLeak(tr); K=keyEvent(tr);
+        if(!tr.ev.length || tr.ev[0].face!=='wall' || tr.ev[0].kind!=='tir' || !K) continue;
+        if(name==='path' || name==='why'){ ok=!lk; e = name==='path' ? tr.ev[0] : null; Q.k=0; }
+        else if(name==='escape'){ ok = lk ? lk.i<C-1.5 : K.i>C+1.5; Q.lk=lk; Q.k=0; }
+        else { ok = Math.abs(K.i-C)>=2.5 && K.i<86 && K.i>8; e=K; Q.k=tr.ev.indexOf(K); Q.tir = K.kind==='tir'; }
+        if(ok && name==='escape' && !lk && Math.random()<0.4 && t<300) ok=false;   // about a third of them: no light escapes
+      }
+      Q.e=e; Q.showLen=lenTo(tr, Q.k); Q.C=C;
+      if(name==='path'){ Q.draw = (++nPath)%2===0; if(Q.draw){ Q.dang=Math.atan2(-e.N[1], -e.N[0]); } }   // a drawn ray starts along the normal, out of the glass
+      if(name==='path' || name==='crit') makeLines();
+      if(name==='why') makeStatements();
+      Q.ask=askText(); lastNote='';
+      rows();
+    }
+    function makeLines(){
+      var e=Q.e, C=d1(Q.C), m=Q.clad ? 'core' : 'glass', lines;
+      if(Q.name==='path' || Q.tir) lines=[{a:e.i, refl:1, ok:1, w:'is totally internally reflected: the angle of reflection equals the angle of incidence'},
+        {a:Math.min(84, e.i+15), w:'refracts out of the '+m+', bending away from the normal', no:'Light refracts out only when the angle of incidence is less than the critical angle ('+C+').'},
+        {a:e.i, w:'carries straight on', no:'Light never carries straight on when it meets a boundary at an angle.'},
+        {a:Math.max(8, e.i-30), refl:1, opt:1, w:'is reflected at a smaller angle', no:'It is reflected, but the angle of reflection must equal the angle of incidence.'}];
+      else { var r=deg(Math.asin(Math.min(1, NC/nOut()*sinD(e.i))));
+        lines=[{a:r, ok:1, w:'refracts out of the '+m+', bending away from the normal'},
+        {a:e.i, refl:1, w:'is totally internally reflected', no:'Total internal reflection needs the angle of incidence to be greater than the critical angle ('+C+').'},
+        {a:e.i, w:'carries straight on', no:'It speeds up as it leaves the '+m+', so it bends away from the normal.'},
+        {a:Math.max(4, e.i*0.5), opt:1, w:'bends towards the normal', no:'Leaving the '+m+' the light speeds up, so it bends away from the normal.'}]; }
+      // three or four lines, none within 13° of another on the same side; letters go round P from a random line
+      lines=lines.filter(function(c){ return !c.opt || Math.random()<0.6; });
+      lines=lines.filter(function(c, j){ return c.ok || !lines.some(function(o, k){ return (k<j || o.ok) && o!==c && !!o.refl===!!c.refl && Math.abs(o.a-c.a)<13; }); });
+      lines.forEach(function(c){ c.dir=qDir(e, c); c.ang=Math.atan2(c.dir[1], c.dir[0]); });
+      lines.sort(function(a,b){ return a.ang-b.ang; });
+      lines.forEach(function(c, j){ c.odd=j%2; });
+      if(Math.random()<0.5) lines.reverse();
+      var sh=Math.floor(Math.random()*lines.length); lines=lines.slice(sh).concat(lines.slice(0,sh));
+      lines.forEach(function(c, j){ c.id='ABCD'.charAt(j); });
+      Q.lines=lines; Q.right=lines.filter(function(c){ return c.ok; })[0]; Q.ans=Q.right.id;
+    }
+    function makeStatements(){
+      var cl=Q.clad, right = cl ? ['The light is totally internally reflected at the boundary', 'The core has a higher refractive index than the cladding', 'The angle of incidence is greater than the critical angle']
+                                : ['The light is totally internally reflected at each wall', 'The glass has a higher refractive index than the air', 'The angle of incidence is greater than the critical angle'];
+      var wrong = cl ? ['The cladding has a higher refractive index than the core', 'The angle of incidence is less than the critical angle', 'The light is refracted at the boundary and back again']
+                     : ['The air has a higher refractive index than the glass', 'The angle of incidence is less than the critical angle', 'The light is refracted at each wall', 'The wall of the fibre is silvered like a mirror'];
+      wrong.sort(function(){ return Math.random()-0.5; });
+      var st=right.map(function(s){ return {t:s, ok:1}; }).concat(wrong.slice(0,2).map(function(s){ return {t:s}; }));
+      st.sort(function(){ return Math.random()-0.5; });
+      Q.st=st; Q.sel=[];
+    }
+    function askText(){
+      var C=d1(Q.C), e=Q.e;
+      if(Q.name==='path') return (Q.draw ? 'Draw the path of the light after P. ' : '')+'The ray meets '+bnd()+' at P at '+d0(e.i)+' to the normal. The critical angle is '+C+'.'+(Q.draw ? '' : ' Which line shows the path of the light?');
+      if(Q.name==='escape') return 'The light goes into the bent fibre. The critical angle is '+C+'. Where does the light first escape from the '+(Q.clad ? 'core' : 'fibre')+'?';
+      if(Q.name==='crit') return (Q.clad ? 'The core has n = '+NC.toFixed(2)+' and the cladding n = '+NCL.toFixed(2)+'.' : 'The glass has a refractive index of '+NC.toFixed(2)+'.')+' At P the ray meets '+bnd()+' at '+d0(e.i)+'. Calculate the critical angle. Which line shows the path of most of the light?';
+      return 'The light stays inside the '+(Q.clad ? 'core' : 'fibre')+' all the way along. Which three statements explain why?';
+    }
+    function instr(){
+      if(Q.phase==='run') return 'The ray box is switched on…';
+      if(Q.name==='escape') return 'Click the wall where it first escapes (or use the arrow keys), or choose “No light escapes”. Then press Go.';
+      if(Q.name==='why') return 'Choose three ('+Q.sel.length+' chosen), then press Go.';
+      if(Q.draw) return 'Drag the end of the orange ray to turn it about P (or use the arrow keys), then press Go.';
+      return 'Click a line'+(Q.pick ? ' (you chose '+Q.pick+')' : '')+', then press Go.';
+    }
+    function ready(){ return Q.name==='why' ? Q.sel.length===3 : !!Q.pick; }
+    // a drawn ray, judged by eye as the mark schemes do
+    function drawJudge(){
+      var e=Q.e, d=[Math.cos(Q.dang), Math.sin(Q.dang)], cs=-dot(e.N,e.din), tv=[e.din[0]+cs*e.N[0], e.din[1]+cs*e.N[1]], tl=Math.hypot(tv[0],tv[1]), tt=[tv[0]/tl, tv[1]/tl];
+      var side=dot(d,e.N), a=deg(Math.acos(Math.max(-1,Math.min(1,side))));
+      if(side<=0.05){ Q.drawWhy='The light is totally internally reflected, so the ray stays inside the '+(Q.clad?'core':'glass')+'.'; return false; }
+      if(dot(d,tt)<=0){ Q.drawWhy='The reflected ray goes on along the fibre, on the other side of the normal from the ray coming in.'; return false; }
+      if(Math.abs(a-e.i)>3){ Q.drawWhy='The angle of reflection must equal the angle of incidence: '+d0(e.i)+' from the normal (yours is '+d0(a)+').'; return false; }
+      return true;
+    }
+    function qJudge(){
+      var ok;
+      if(Q.name==='why'){ Q.nRight=Q.sel.filter(function(j){ return Q.st[j].ok; }).length; ok=Q.nRight===3; }
+      else if(Q.name==='escape') ok = Q.lk ? Q.pick==='wall' && Math.hypot(Q.pp[0]-Q.lk.p[0], Q.pp[1]-Q.lk.p[1])<=30 : Q.pick==='none';
+      else if(Q.draw) ok=drawJudge();
+      else ok = Q.pick===Q.ans;
+      Q.ok=ok;
+    }
+    function verdict(){
+      if(Q.name==='why') return Q.ok ? 'all three.' : Q.nRight+' of your three are right.';
+      if(Q.name==='escape') return Q.lk ? 'the light first escapes at P, on the '+(Q.lkOuter ? 'outer' : 'inner')+' wall of the bend.' : 'no light escapes.';
+      return (Q.draw ? 'the ray ' : 'line '+Q.ans+'. The ray ')+Q.right.w+'.';
+    }
+    function critWork(){
+      var o=nOut().toFixed(2), n=NC.toFixed(2), C=d1(Q.C);
+      if(ib()) return '[['+n+'|'+o+']] = [[sin 90°|sin θ<sub>c</sub>]], so θ<sub>c</sub> = '+C;
+      if(Q.clad || k5()) return n+' × sin C = '+o+' × sin 90°, so C = '+C;
+      return 'sin c = [[1|n]] = [[1|'+n+']], so c = '+C;
+    }
+    function qNote(){
+      if(Q.phase!=='done') return instr();
+      var e=Q.e, C=d1(Q.C), m=Q.clad ? 'core' : 'glass', s=(Q.ok ? '<b>Right.</b> ' : '<b>Not quite.</b> ');
+      if(Q.name==='path') s+=(Q.draw && !Q.ok && Q.drawWhy ? Q.drawWhy+' ' : '')+d0(e.i)+' is <b>greater than the critical angle</b> ('+C+'), so there is <b>total internal reflection</b>: the angle of reflection equals the angle of incidence. The ray zig-zags along the fibre.';
+      else if(Q.name==='crit') s+=critWork()+'. '+d0(e.i)+' is <b>'+(Q.tir ? 'greater' : 'less')+' than the critical angle</b>, so '+(Q.tir ? 'there is <b>total internal reflection</b>.' : 'most of the light is <b>refracted out</b> of the '+m+', bending away from the normal.')+(!Q.ok && Q.pickLine && Q.pickLine.no ? ' Line '+Q.pick+': '+Q.pickLine.no : '');
+      else if(Q.name==='escape'){
+        if(Q.lk) s+=(!Q.ok && Q.pick==='wall' ? 'Your mark is not where the light first escapes. ' : '')+'At P the ray meets the '+(Q.lkOuter?'outer':'inner')+' wall of the bend at <b>'+d1(Q.lk.i)+'</b>, which is <b>less than the critical angle</b> ('+C+'), so most of the light is <b>refracted out</b> of the '+m+'. Before the bend every angle of incidence was greater than the critical angle. In a bend the ray meets the outer wall at a smaller angle of incidence.';
+        else s+='At every wall the angle of incidence is <b>greater than the critical angle</b> ('+C+'), so the light is <b>totally internally reflected</b> all the way to the end. A gentle bend does not lose light; a tight bend does.';
+      }
+      else s+='The light stays in by <b>total internal reflection</b>: it travels from the '+(Q.clad ? 'core towards the cladding, which has a lower refractive index' : 'glass towards the air, which has a lower refractive index')+', and the <b>angle of incidence is greater than the critical angle</b> ('+C+').';
+      return FR(s);
+    }
+    function goQ(){
+      if(Q.phase!=='ask' || !ready()) return;
+      qJudge(); score[1]++; if(Q.ok) score[0]++;
+      if(Q.name==='crit' || (Q.name==='path' && !Q.draw)) Q.pickLine=Q.lines.filter(function(c){ return c.id===Q.pick; })[0];
+      if(Q.lk){ var gg=geom(BEND); Q.lkOuter = !gg.straight && Math.hypot(Q.lk.p[0]-gg.C[0], Q.lk.p[1]-gg.C[1]) > gg.R; }
+      Q.phase='run'; prog=Q.showLen; running=true; last=performance.now(); lastNote=''; raf=requestAnimationFrame(frame); draw();
+    }
+    function qDone(){ Q.phase='done'; lastNote=''; rows(); }
+
+    // the picture's part of a question: the lines (or the ray to turn) at P, or the mark on the wall
+    function qPicks(g, W){
+      var s='', e=Q.e, ask=Q.phase==='ask', done=Q.phase==='done';
+      if(Q.name==='escape'){
+        if(Q.pick==='wall' && Q.pp){ var mc = done ? (Q.ok ? 'var(--good)' : 'var(--bad)') : 'var(--accent)', p=Q.pp;
+          s+='<circle cx="'+f1(p[0])+'" cy="'+f1(p[1])+'" r="10" fill="var(--panel)" fill-opacity=".6" stroke="'+mc+'" stroke-width="2.6"/>'+ln(p[0]-5,p[1]-5,p[0]+5,p[1]+5,mc,2.4)+ln(p[0]-5,p[1]+5,p[0]+5,p[1]-5,mc,2.4); }
+        if(ask) s+=T(W-10, 18, 'click the wall', {a:'end', fs:11.5, c:'var(--ink-faint)'});
+        return s;
+      }
+      if(!e || Q.name==='why') return s;
+      function fit(d, L, m){ [0,1].forEach(function(k){ var lim=k?360:W; if(d[k]>1e-6) L=Math.min(L,(lim-m-e.p[k])/d[k]); if(d[k]<-1e-6) L=Math.min(L,(m-e.p[k])/d[k]); }); return Math.max(30, L); }
+      if(Q.draw){
+        var dd=[Math.cos(Q.dang), Math.sin(Q.dang)], de=add(e.p, dd, fit(dd, 100, 16)), dc = done ? (Q.ok ? 'var(--good)' : 'var(--bad)') : 'var(--accent)';
+        s+='<g class="pick fb-dh" data-pick="draw" tabindex="'+(ask?0:-1)+'" role="slider" aria-valuemin="0" aria-valuemax="359" aria-valuenow="'+Math.round(((deg(Q.dang)%360)+360)%360)+'" aria-label="The ray you are drawing: turn it with the left and right arrow keys, or drag its end">'+
+          ln(e.p[0],e.p[1],de[0],de[1],dc,2.6)+arrowMid(e.p, de, dc, 1)+'<circle cx="'+f1(de[0])+'" cy="'+f1(de[1])+'" r="'+(10*FS).toFixed(1)+'" fill="var(--panel)" stroke="'+dc+'" stroke-width="2.2" style="cursor:grab"/>'+
+          '<circle class="ring" cx="'+f1(de[0])+'" cy="'+f1(de[1])+'" r="'+(14*FS).toFixed(1)+'" fill="none" stroke-width="3"/></g>';
+        if(done && !Q.ok){ var rd=add(e.p, Q.right.dir, fit(Q.right.dir, 100, 16)); s+=ln(e.p[0],e.p[1],rd[0],rd[1],'var(--good)',2.2,' stroke-dasharray="6 4"'); }
+        return s;
+      }
+      var r=11*FS;
+      Q.lines.forEach(function(c){
+        var end=add(e.p, c.dir, fit(c.dir, c.odd ? 72 : 100, r+4)), sel=Q.pick===c.id, st = done ? (c.ok ? 'good' : (sel ? 'bad' : '')) : '';
+        var col = st==='good' ? 'var(--good)' : st==='bad' ? 'var(--bad)' : sel ? 'var(--accent)' : 'var(--ink-soft)', fill = st==='good' ? 'var(--good-soft)' : st==='bad' ? 'var(--bad-soft)' : sel ? 'var(--accent-soft)' : 'var(--panel)';
+        var a0=add(e.p, c.dir, 7), a1=add(e.p, c.dir, Math.hypot(end[0]-e.p[0], end[1]-e.p[1])-r);
+        s+='<g class="pick" data-pick="'+c.id+'" tabindex="'+(ask?0:-1)+'" role="button" aria-label="Line '+c.id+': the ray '+c.w+'"'+(sel?' aria-pressed="true"':'')+(done && !c.ok && !sel ? ' opacity=".4"' : '')+'>'+
+          ln(a0[0],a0[1],a1[0],a1[1],'transparent',10)+ln(a0[0],a0[1],a1[0],a1[1],col,sel||st?2.4:1.7,sel||st?'':' stroke-dasharray="6 4"')+
+          '<circle class="ring" cx="'+f1(end[0])+'" cy="'+f1(end[1])+'" r="'+f1(r+4)+'" fill="none" stroke-width="3"/>'+
+          '<circle cx="'+f1(end[0])+'" cy="'+f1(end[1])+'" r="'+f1(r)+'" fill="'+fill+'" stroke="'+col+'" stroke-width="2"/>'+
+          T(end[0], end[1]+4.4*FS, c.id, {a:'middle', fs:12.5, w:700, c:col})+'</g>';
+      });
+      return s;
+    }
+    // the question in the panel beside the picture, and afterwards the verdict in the same place
+    function qPanel(){
+      var s='<rect x="0.5" y="0.5" width="257" height="329" rx="8" fill="var(--panel)" stroke="var(--panel-border)"/>', x=14, y=24, done=Q.phase==='done', ask=Q.phase==='ask';
+      function para(t, o, n, lh){ wrapLines(t, n||34).forEach(function(l){ s+=txt(x, y, l, o); y+=lh||15.5; }); }
+      s+=txt(x, y, 'Question '+Q.n, {fs:13, w:600, c:'var(--ink)'});
+      if(score[1]) s+=txt(244, y, 'Score '+score[0]+' / '+score[1], {a:'end', fs:11.5, c:'var(--ink-soft)'});
+      y+=20;
+      para(Q.ask, {fs:12, c:'var(--ink)'}, 33); y+=4;
+      if(Q.name==='why') Q.st.forEach(function(st, j){
+        var on=Q.sel.indexOf(j)>=0, ls=wrapLines(st.t, 31), h=ls.length*13.5+8, mk = done ? (st.ok ? 'good' : on ? 'bad' : '') : '';
+        var col = mk ? 'var(--'+mk+')' : on ? 'var(--accent)' : 'var(--panel-border)', fill = mk ? 'var(--'+mk+'-soft)' : on ? 'var(--accent-soft)' : 'var(--bg)';
+        s+='<g class="pick" data-pick="st'+j+'" tabindex="'+(ask?0:-1)+'" role="checkbox" aria-checked="'+on+'" aria-label="'+st.t+'"'+(done && !st.ok && !on ? ' opacity=".5"' : '')+'>'+
+          '<rect class="ring" x="'+(x-4)+'" y="'+(y-12)+'" width="238" height="'+(h+2)+'" rx="7" fill="none" stroke-width="3"/>'+
+          '<rect x="'+(x-2)+'" y="'+(y-10)+'" width="234" height="'+(h-2)+'" rx="6" fill="'+fill+'" stroke="'+col+'" stroke-width="1.5"/>'+
+          '<rect x="'+(x+3)+'" y="'+(y-4)+'" width="11" height="11" rx="2" fill="var(--panel)" stroke="'+(on||mk?col:'var(--ink-soft)')+'" stroke-width="1.5"/>'+(on ? '<path d="M'+(x+5)+','+(y+1.5)+' l3,3 l5,-7" fill="none" stroke="'+col+'" stroke-width="2"/>' : '');
+        ls.forEach(function(l, k){ s+=txt(x+20, y+5+k*13.5, l, {fs:11, c:'var(--ink)'}); });
+        s+='</g>'; y+=h+3;
+      });
+      if(Q.name==='escape'){
+        var on=Q.pick==='none', mk = done ? (!Q.lk ? 'good' : on ? 'bad' : '') : '', col = mk ? 'var(--'+mk+')' : on ? 'var(--accent)' : 'var(--ink-soft)';
+        s+='<g class="pick" data-pick="none" tabindex="'+(ask?0:-1)+'" role="button" aria-pressed="'+on+'"><rect class="ring" x="'+(x-3)+'" y="'+(y-3)+'" width="166" height="34" rx="9" fill="none" stroke-width="3"/>'+
+          '<rect x="'+x+'" y="'+y+'" width="160" height="28" rx="7" fill="'+(mk ? 'var(--'+mk+'-soft)' : on ? 'var(--accent-soft)' : 'var(--bg)')+'" stroke="'+col+'" stroke-width="1.6"/>'+
+          txt(x+80, y+18.5, 'No light escapes', {a:'middle', fs:12, w:600, c:'var(--ink)'})+'</g>';
+        y+=44;
+      }
+      y+=4;
+      if(done) para((Q.ok ? '✓ Right: ' : '✗ Not quite: ')+verdict(), {fs:12, w:600, c:Q.ok ? 'var(--good)' : 'var(--bad)'}, 31);
+      else para(instr(), {fs:11.5, c:'var(--ink-soft)'}, 34, 14.5);
+      return s;
+    }
+    function choose(id){
+      if(!Q || Q.phase!=='ask') return;
+      if(Q.name==='why' && /^st\d$/.test(id)){ var j=+id.slice(2), k=Q.sel.indexOf(j); if(k>=0) Q.sel.splice(k,1); else if(Q.sel.length<3) Q.sel.push(j); }
+      else if(Q.name==='escape'){ if(id==='none'){ Q.pick='none'; Q.pp=null; } }
+      else if(!Q.draw && id!=='draw') Q.pick=id;
+      lastNote=''; keepFocus(id);
+    }
+    function keepFocus(id){ draw(); var el=svg.querySelector('.pick[data-pick="'+id+'"]'); if(el) el.focus({preventScroll:true}); }
+    function wallPick(q){   // the nearest place on the walls of the core, if the click was close to one
+      var g=geom(BEND), best=null;
+      [H,-H].forEach(function(off){ var pts=side(g,off), j; for(j=0;j<pts.length-1;j++){ var a=pts[j], b=pts[j+1], d=[b[0]-a[0], b[1]-a[1]], L2=d[0]*d[0]+d[1]*d[1],
+        t=L2 ? Math.max(0, Math.min(1, ((q.x-a[0])*d[0]+(q.y-a[1])*d[1])/L2)) : 0, p=[a[0]+d[0]*t, a[1]+d[1]*t], dd=Math.hypot(q.x-p[0], q.y-p[1]); if(!best || dd<best.d) best={d:dd, p:p}; } });
+      if(best && best.d<=14+(Q.clad ? CLW : 0)){ Q.pick='wall'; Q.pp=best.p; lastNote=''; draw(); }
+    }
+    function rows(){
+      var q=qm();
+      $('#fb-sliders').hidden=q; $('#fb-grid').hidden=q; $('#fb-jgrid').hidden=q;
+      $('#fb-reset').innerHTML = q ? 'New question' : '&#8634; Reset';
+      $('details.working').hidden = q && !(Q && Q.phase==='done' && Q.name==='crit');
+      svg.setAttribute('role', q ? 'group' : 'slider');
+      svg.setAttribute('aria-label', q ? 'A ray box shines a ray of light into a glass fibre on a sheet of paper, with the question beside it. Press Tab to reach the lines or choices, Enter to choose, then press Go.'+(Q && Q.name==='escape' ? ' Or, with the picture focused, move a mark along the wall with the arrow keys (up and down change wall).' : '') : ARIA0);
+    }
+    function setMode(){
+      halt();
+      if(qm()){ saved={b:BEND, i:I0}; newQ(); }
+      else { Q=null; NC=1.50; NCL=1.40; if(saved){ BEND=saved.b; I0=saved.i; saved=null; } }
+      rows(); lastNote=''; draw();
     }
 
     // ---------- motion: a pulse of light travels along the path ----------
@@ -974,40 +1216,71 @@ function expKey(x, y, upLabel, downLabel){
     function frame(now){
       var dt=Math.min(0.05,(now-last)/1000); last=now;
       prog+=dt*SPEED*(pressed(slowBtn)?0.3:1);
-      if(prog>=total){ prog=null; running=false; }
+      if(prog>=total){ prog=null; running=false; if(qm() && Q && Q.phase==='run') qDone(); }
       draw();
       if(running) raf=requestAnimationFrame(frame);
     }
     playBtn.addEventListener('click', function(){
+      if(qm() && Q && Q.phase==='ask'){ goQ(); return; }
+      if(qm() && Q && Q.phase==='done') return;
       if(running){ running=false; cancelAnimationFrame(raf); draw(); return; }
       if(prog==null) prog=0;
       running=true; last=performance.now(); raf=requestAnimationFrame(frame); draw();
     });
     slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!pressed(slowBtn))); });
-    $('#fb-reset').addEventListener('click', function(){ halt(); BEND=30; I0=clad()?76:68; jumpSeg.pick(null); draw(); });
+    $('#fb-reset').addEventListener('click', function(){ if(qm()){ newQ(); draw(); return; } halt(); BEND=30; I0=clad()?76:68; jumpSeg.pick(null); draw(); });
     function setBend(v){ halt(); BEND=Math.max(0,Math.min(180,Math.round(v))); jumpSeg.pick(null); draw(); }
     function setI0(v){ var r=iRange(); halt(); I0=Math.max(r[0],Math.min(r[1],Math.round(v))); jumpSeg.pick(null); draw(); }
     bIn.addEventListener('input', function(){ setBend(+bIn.value); });
     iIn.addEventListener('input', function(){ setI0(+iIn.value); });
     svgDrag(svg, {   // the free end of the fibre
+      ok:function(){ return !qm(); },
       hit:function(q){ var c=centre(geom(BEND),TOT-30).p; return Math.hypot(q.x-c[0], q.y-c[1])<34; },
       move:function(q){ var b, best=BEND, bd=1e9; for(b=0;b<=180;b++){ var c=centre(geom(b),TOT-30).p, d=Math.hypot(q.x-c[0], q.y-c[1]); if(d<bd){ bd=d; best=b; } } if(best!==BEND) setBend(best); }
     });
     svgDrag(svg, {   // the ray box, turned about the end face
+      ok:function(){ return !qm(); },
       hit:function(q){ var c=centre(geom(BEND),TOT-30).p, B=boxAt().B; return Math.hypot(q.x-c[0], q.y-c[1])>=34 && Math.hypot(q.x-B[0], q.y-B[1])<40; },
       move:function(q){ var al=Math.atan2(q.y-A[1], A[0]-q.x), sa=Math.sin(Math.max(0,Math.min(1.45,al)))/NC; setI0(90-deg(Math.asin(Math.min(1,sa)))); }
     });
     svg.addEventListener('keydown', function(e){
+      if(qm()) return;
       var k=e.key, v=null, st=e.shiftKey?10:1;
       if(k==='ArrowRight'||k==='ArrowUp') v=BEND+st; else if(k==='ArrowLeft'||k==='ArrowDown') v=BEND-st;
       else if(k==='PageUp') v=BEND+10; else if(k==='PageDown') v=BEND-10; else if(k==='Home') v=0; else if(k==='End') v=180;
       if(v!==null){ setBend(v); e.preventDefault(); }
     });
+    // Questions: clicks and keys on the picture
+    svg.addEventListener('click', function(e){
+      if(!qm() || !Q || Q.phase!=='ask') return;
+      var t=e.target.closest('.pick'); if(t){ choose(t.getAttribute('data-pick')); return; }
+      if(Q.name==='escape') wallPick(svgPoint(svg, e));
+    });
+    function turnTo(q){ Q.dang=Math.atan2(q.y-Q.e.p[1], q.x-Q.e.p[0]); Q.pick='draw'; lastNote=''; draw(); }
+    svgDrag(svg, {ok:function(){ return qm() && Q && Q.draw && Q.phase==='ask'; },
+      hit:function(q){ return q.x>=0 && q.x<=600 && q.y>=0 && q.y<=360 && Math.hypot(q.x-Q.e.p[0], q.y-Q.e.p[1])>12; }, start:turnTo, move:turnTo,
+      end:function(){ var h=svg.querySelector('.fb-dh'); if(h) h.focus({preventScroll:true}); }});
+    svg.addEventListener('keydown', function(e){
+      if(!qm() || !Q || Q.phase!=='ask') return;
+      var k=e.key, t=e.target.closest && e.target.closest('.pick');
+      if((k==='Enter' || k===' ') && t && t.getAttribute('data-pick')!=='draw'){ e.preventDefault(); choose(t.getAttribute('data-pick')); return; }
+      var dx={ArrowLeft:-1, ArrowDown:-1, ArrowRight:1, ArrowUp:1}[k]; if(!dx) return;
+      if(Q.draw){ e.preventDefault(); Q.dang+=dx*(e.shiftKey?5:1)*D2R; Q.pick='draw'; lastNote=''; keepFocus('draw'); return; }
+      if(Q.name==='escape' && e.target===svg){   // a mark moved along the wall: left and right along it, up and down to the other wall
+        e.preventDefault();
+        if(Q.ks==null){ Q.ks=L1+LA/2; Q.koff=-H; }
+        else if(k==='ArrowUp' || k==='ArrowDown') Q.koff=-Q.koff;
+        else Q.ks=Math.max(6, Math.min(TOT-6, Q.ks+dx*(e.shiftKey?30:8)));
+        var c=centre(geom(BEND), Q.ks); Q.pick='wall'; Q.pp=[c.p[0]-c.d[1]*Q.koff, c.p[1]+c.d[0]*Q.koff]; lastNote=''; draw();
+      }
+    });
     if(narrow.addEventListener) narrow.addEventListener('change', draw);
     if(PW_LEVEL==='ial' || PW_LEVEL==='ib') levelSeg.pick(PW_LEVEL);
     setLevel();
-    teachPage({svg:svg, strip:['fb-grid','fb-jgrid'], q:null});
-    draw();
+    // teacher page: the student version is the Total Internal Reflection tab of 3b (IGCSE); IAL and IB have no workout for it yet
+    teachPage({svg:svg, mode:'fb-mode', strip:['fb-grid','fb-jgrid'], q:(!PW_LEVEL||PW_LEVEL==='igcse') ? {href:'../light-and-sound.html#tir', label:'Student version with questions &rarr;'} : null});
+    watchEquals($('#fb-eq1'));
+    if(/[?&]show=predict\b/.test(location.search)){ modeSeg.pick('predict'); setMode(); } else { rows(); draw(); }
   }
 
   // ================= state =================
