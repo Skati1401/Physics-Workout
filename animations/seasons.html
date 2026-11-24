@@ -199,6 +199,35 @@
   .why{margin:0;padding-left:1.3em;line-height:1.55;font-size:14px;}
   .why li+li{margin-top:3px;}
   @media (max-height:700px){ .note{font-size:14px;min-height:4em;} .stat strong{font-size:14px;} }
+  /* Teacher page (not ?embed, 24 Nov 2026): for a projector. The picture is the main display; no Questions mode
+     (they are in the Space Workout); the note, readings and "Why" sit behind a Notes button. Layouts A, B and C are
+     on trial (?layout=a|b|c): A picture full width with one strip of controls under it; B the same, with the places
+     picked on the close-up itself; C a narrow column of choices beside the picture. */
+  .teach .page{padding-block:6px 24px;max-width:1900px;}
+  .teach .home-link{min-height:32px;margin:0;}
+  .teach .page-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-bottom:8px;}
+  .teach .page-head .eyebrow{display:none;}
+  .teach .page-head h1{font-size:26px;}
+  .qlink{font:600 13px var(--font-mono);color:var(--topic);text-decoration:none;min-height:32px;display:inline-flex;align-items:center;}
+  .qlink:hover{text-decoration:underline;}
+  .laypick{margin-left:auto;display:flex;align-items:center;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);}
+  .laypick .seg button{min-height:32px;padding:4px 12px;}
+  .teach .stage{padding:12px;gap:12px 18px;}
+  .teach .view{max-height:none;}
+  .teach .under{margin-top:10px;gap:10px 20px;align-items:flex-end;}
+  .teach .under .sliders{flex:1 1 440px;grid-template-columns:repeat(2,minmax(0,1fr));}
+  .teach #ss-setup.kit{gap:8px 14px;}
+  .teach #ss-notes{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:10px 18px;align-items:start;margin-top:12px;}
+  .teach #ss-notes .note{min-height:0;}
+  .lay-a .stage,.lay-b .stage{grid-template-columns:minmax(0,1fr);}
+  .lay-a #ss-side,.lay-b #ss-side{display:none;}
+  .lay-c .stage{grid-template-columns:minmax(0,1fr) 250px;}
+  .lay-c #ss-notes{grid-template-columns:minmax(0,1fr);}
+  @media (max-width:860px){ .lay-c .stage{grid-template-columns:minmax(0,1fr);} .teach #ss-notes{grid-template-columns:minmax(0,1fr);} }
+  .pchip{cursor:pointer;}
+  .pchip:focus{outline:none;}
+  .pchip:focus-visible rect{stroke:#ffb347;stroke-width:2.5;}
+  .pchip:not(.on):hover rect{stroke:#ffffff;}
 </style>
 <style id="choice-kit">
 /* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
@@ -740,6 +769,7 @@ var SK=(function(){
   var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var ML=[31,28,31,30,31,30,31,31,30,31,30,31];
   var d=171, hr=15, dayNote=false, place='uk', tilt=23.5, mode='explore', slow=false, run=null, narrow=false, Q=null;
+  var TEACH=!EMBED, LAY=(location.search.match(/[?&]layout=([abc])\b/)||[])[1]||'a';
 
   // ---------- the model ----------
   var ANCH=[[79,-90],[171,0],[265,90],[354,180],[444,270]];
@@ -881,11 +911,21 @@ var SK=(function(){
     s+=SK.earth(GX,GY,GR,o);
     var eq=null; for(var lo=-180;lo<180;lo+=3){ var q=SK.place(GX,GY,GR,o,0,lo); if(q.z>=0 && (!eq || q.x<eq.x)) eq=q; }
     if(eq) s+=SK.txt(eq.x-6,eq.y+4,'Equator',{a:'end',fs:11.5,col:'#dfe6f3'});
-    var pin=SK.place(GX,GY,GR,o,P.lat,P.lon), lx=290, ly=place==='nz'?170:44;
-    if(pin.z>0) s+='<line x1="'+f(pin.x+5)+'" y1="'+f(pin.y)+'" x2="'+(lx-6)+'" y2="'+(ly-4)+'" stroke="#c9d2e3" stroke-width="1" opacity=".8"/>';
-    s+=SK.txt(lx,ly,P.name,{fs:12.5,w:600});
+    var chips=TEACH && LAY==='b';
+    if(chips){      // layout B: pick the place here, on the close-up (a 2 by 2 grid of chips under the title)
+      ['uk','bn','nz','np'].forEach(function(k,i){
+        var x=290+(i%2)*100, y=31+Math.floor(i/2)*22, on=k===place;
+        s+='<g class="pchip'+(on?' on':'')+'" data-p="'+k+'" tabindex="0" role="button" aria-pressed="'+on+'" aria-label="Place: '+PLACES[k].name+'">'
+          +'<rect x="'+x+'" y="'+y+'" width="96" height="19" rx="5" fill="'+(on?'#c2410c':'#1d2a4a')+'" stroke="'+(on?'#ff9a5c':'#4b5873')+'" stroke-width="1.2"/>'
+          +SK.txt(x+48,y+13.5,PLACES[k].name,{a:'middle',fs:11.5,w:on?700:500,col:on?'#ffffff':'#dfe6f3'})+'</g>';
+      });
+    }else{
+      var pin=SK.place(GX,GY,GR,o,P.lat,P.lon), lx=290, ly=place==='nz'?160:44;
+      if(pin.z>0) s+='<line x1="'+f(pin.x+5)+'" y1="'+f(pin.y)+'" x2="'+(lx-6)+'" y2="'+(ly-4)+'" stroke="#c9d2e3" stroke-width="1" opacity=".8"/>';
+      s+=SK.txt(lx,ly,P.name,{fs:12.5,w:600});
+    }
     // a day of 24 hours
-    var bx=290, by=place==='nz'?78:84, bw=196, bh=18;
+    var bx=290, by=chips?95:place==='nz'?72:84, bw=196, bh=18;
     s+=SK.txt(bx,by-8,'One day of 24 hours',{fs:11.5,col:'#b9c3d6'});
     s+='<rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="4" fill="#1d2a4a" stroke="#4b5873"/>';
     if(noBar){ s+=SK.txt(bx+bw/2,by+14,'?',{a:'middle',fs:14,w:700}); }
@@ -1076,6 +1116,16 @@ var SK=(function(){
       gK.setAttribute('transform','translate(516,0)'); gT.setAttribute('transform','translate(516,210)');
     }
     draw();
+    if(TEACH) fitView();
+  }
+  // Teacher page: make the picture as big as the window allows, with its controls still on screen
+  function fitView(){
+    svg.style.maxHeight='';
+    if(narrow) return;
+    var stage=svg.closest('.stage'), r=stage.getBoundingClientRect(), sv=svg.getBoundingClientRect();
+    var rest=r.height-sv.height, top=r.top+window.scrollY;
+    if(LAY==='c'){ var left=svg.parentNode.getBoundingClientRect().height; rest=Math.max(0,left-sv.height)+24; }
+    svg.style.maxHeight=Math.max(260,Math.floor(window.innerHeight-top-rest-12))+'px';
   }
 
   // ---------- Play, drag, keys, choices ----------
@@ -1357,6 +1407,47 @@ var SK=(function(){
     else{ Q=null; drawPicks(); d=171; hr=15; dayNote=false; setPlace('uk'); setTilt(23.5); draw(); }
   }
   $('ss-mode').addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setMode(b.getAttribute('data-v')); });
+
+  // ---------- teacher page (not in a workout frame) ----------
+  if(TEACH){
+    var root=document.documentElement, stage=svg.closest('.stage'), under=svg.parentNode.querySelector('.under'), side=$('ss-side');
+    root.classList.add('teach');
+    $('ss-mode').hidden=true;                 // the questions are in the Space Workout (for students); the kit then hides "Try the questions"
+    var head=document.querySelector('.page-head');
+    head.insertBefore(document.querySelector('.home-link'), head.firstChild);
+    var ql=document.createElement('a'); ql.className='qlink'; ql.href='../space.html#seasons';
+    ql.innerHTML='Student version with questions: Space Workout &rarr;'; head.appendChild(ql);
+    // layout trial switch (remove when Alex has chosen)
+    var lp=document.createElement('div'); lp.className='laypick';
+    lp.innerHTML='<span id="ss-lay-lab">Layout</span><div class="seg pick fit" id="ss-lay" role="group" aria-labelledby="ss-lay-lab"><button type="button" data-l="a">A</button><button type="button" data-l="b">B</button><button type="button" data-l="c">C</button></div>';
+    head.appendChild(lp);
+    // Notes: the note, the readings and "Why is it warmer in summer?", hidden until asked for
+    var notes=document.createElement('div'); notes.id='ss-notes'; notes.className='card'; notes.hidden=true;
+    notes.style.padding='14px';
+    var nl=document.createElement('div'); nl.appendChild($('ss-note')); nl.appendChild($('ss-stats')); nl.style.display='grid'; nl.style.gap='10px';
+    notes.appendChild(nl); notes.appendChild($('ss-working'));
+    var nb=document.createElement('button'); nb.className='btn'; nb.id='ss-notes-btn'; nb.type='button';
+    nb.setAttribute('aria-expanded','false'); nb.setAttribute('aria-controls','ss-notes'); nb.textContent='Notes';
+    $('ss-slow').parentNode.insertBefore(nb,$('ss-slow').nextSibling);
+    nb.addEventListener('click',function(){ notes.hidden=!notes.hidden; nb.setAttribute('aria-expanded',notes.hidden?'false':'true'); fitView(); });
+    // the place chips on the close-up (layout B)
+    function chipGo(e){ var c=e.target.closest('.pchip'); if(!c) return; stopRun(); setPlace(c.getAttribute('data-p')); draw(); var n=gC.querySelector('.pchip[data-p="'+place+'"]'); if(n && e.type==='keydown') n.focus(); }
+    gC.addEventListener('click',chipGo);
+    gC.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); chipGo(e); } });
+    function setLayout(L){
+      LAY=L; root.classList.remove('lay-a','lay-b','lay-c'); root.classList.add('lay-'+L);
+      Array.prototype.forEach.call($('ss-lay').children,function(b){ b.setAttribute('aria-pressed',b.getAttribute('data-l')===L?'true':'false'); });
+      if(L==='c'){ side.appendChild($('ss-setup')); side.appendChild(notes); notes.classList.remove('card'); notes.style.padding='0'; }
+      else{ under.insertBefore($('ss-setup'),under.firstChild); stage.parentNode.insertBefore(notes,stage.nextSibling); notes.classList.add('card'); notes.style.padding='14px'; }
+      $('ss-place').hidden=$('ss-place-lab').hidden=(L==='b');
+      try{ var u=new URL(location.href); u.searchParams.set('layout',L); history.replaceState(null,'',u.href); }catch(e){}
+      layout();
+    }
+    $('ss-lay').addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setLayout(b.getAttribute('data-l')); });
+    setLayout(LAY);
+    window.addEventListener('load',fitView); setTimeout(fitView,0);
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitView);
+  }
 
   window.addEventListener('resize',function(){ layout(); });
   layout();
