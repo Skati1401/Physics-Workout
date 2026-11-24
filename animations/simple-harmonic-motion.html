@@ -334,12 +334,13 @@
 
   <section class="card stage">
     <div>
-      <svg class="view" id="sh-svg" viewBox="0 0 860 350" role="img" aria-label="A mass hangs on a spring from a clamp on a stand, beside a rule, or a pendulum swings from a clamp. Arrows show the displacement, the velocity and the acceleration. Beside the apparatus are graphs of displacement, velocity and acceleration against time, or of the energy."></svg>
+      <svg class="view" id="sh-svg" viewBox="0 0 860 350" role="img" aria-label="A mass hangs on a spring from a clamp on a stand, beside a rule, or a pendulum swings from a clamp. Arrows show the displacement, the velocity and the acceleration, or a point going round a reference circle has the motion as its shadow. Beside the apparatus are graphs of displacement, velocity and acceleration against time, or of the energy."></svg>
       <div class="under">
         <div class="btn-group">
           <button class="btn btn-primary" id="sh-play" type="button">&#9654; Play</button>
           <button class="btn" id="sh-reset" type="button">&#8634; Reset</button>
           <button class="btn" id="sh-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="sh-circ" type="button" aria-pressed="false" title="A point going round a circle at ω, whose shadow is the motion (in place of the arrows)">Reference circle</button>
           <button class="btn" id="sh-exp" type="button" aria-pressed="false" title="Time the oscillations and plot a graph of period squared">Experiment</button>
           <button class="btn" id="sh-clear" type="button" hidden>Clear readings</button>
           <button class="btn" id="sh-new" type="button" hidden>New question</button>
@@ -770,10 +771,13 @@ function expKey(x, y, upLabel, downLabel){
   var startSeg=segGroup($('#sh-start'), function(){ changed(); });
   var jumpSeg=segGroup($('#sh-jump'), function(v){ jumpTo(v); });
   var graphSeg=segGroup($('#sh-graph'), function(){ lastNote=''; draw(); });
+  var circBtn=$('#sh-circ');
+  circBtn.addEventListener('click', function(){ circBtn.setAttribute('aria-pressed', String(!circ())); lastNote=''; draw(); });
   var loadSeg=segGroup($('#sh-load'), function(){ loadChanged(); });
   function ib(){ return levelSeg.value()==='ib'; }
   function predict(){ return tabSeg.value()==='predict'; }
   function exp(){ return pressed(expBtn); }
+  function circ(){ return pressed($('#sh-circ')); }
   function slowOn(){ return pressed(slowBtn); }
   function pend(){ return sysSeg.value()!=='spring'; }
   function moon(){ return sysSeg.value()==='moon'; }
@@ -833,7 +837,7 @@ function expKey(x, y, upLabel, downLabel){
 
   // ---- layout: one wide picture (apparatus, then the graphs); tall on a phone with the graphs underneath
   var LY, TALL, SOX, GA, QT, QG, GAP=24;
-  var SPX=150, SPY=40, L0=40, HANG=46, BY=326, RX=206, RY0=100, SC=0.8, PV=30, PS=240;
+  var CCX=276, SPX=150, SPY=40, L0=40, HANG=46, BY=326, RX=206, RY0=100, SC=0.8, PV=30, PS=240;
   function layout(){
     var pr=predict(), v=sizeView(svg,{VW:860,VH:350},{VW:430,VH:pr?948:724}); LY=v; TALL=v.VW===430;
     SOX=TALL?55:0;
@@ -880,8 +884,42 @@ function expKey(x, y, upLabel, downLabel){
   function extPx(o){ return SC*o.m*o.g/o.k*1000; }
   function eqY(o){ return SPY+L0+extPx(o)+HANG; }          // the pointer (the bottom of the load) at rest
   // o: the oscillator; s: its state now; q = {arrows, lab, watch, count, grab}
+  // ---- the reference circle (TODO 9a): a point going round at ω whose shadow on a diameter is the motion, x = r sin θ with θ = ωt + ϕ.
+  //   It is drawn at the amplitude's own size, so the shadow lines up with the pointer (spring) or the bob (pendulum).
+  //   Spring: θ from the equilibrium line to the right; pendulum: θ from the vertical line down. Both turn anticlockwise.
+  //   With damping the point spirals in (x = r₀e^(−bt) sin (ω₁t + ϕ), exactly the model's x); no circle when it does not oscillate.
+  var SANS=' style="font-family:\'IBM Plex Sans\',sans-serif"';   // the words beside the circle are in Sans: narrow enough to fit between the rule and the graphs
+  function phasor(o,tt){ var R0=Math.hypot(o.C1,o.C2), ph=Math.atan2(o.C1,o.C2); if(ph<0) ph+=2*Math.PI; if(ph>2*Math.PI-1e-9) ph=0; return {k:R0/o.A, r:R0/o.A*Math.exp(-o.b*tt), th:o.w1*tt+ph, ph:ph}; }
+  function refCircle(o,tt,cx,cy,Rp,vert){
+    if(o.zeta>=1) return null;
+    var TWO=2*Math.PI, P=function(th,r){ return vert ? [cx+r*Math.cos(th), cy-r*Math.sin(th)] : [cx+r*Math.sin(th), cy+r*Math.cos(th)]; },
+      f=phasor(o,tt), R=Rp*f.k, pt=P(f.th,Rp*f.r), sh=vert?[cx,pt[1]]:[pt[0],cy], back='', front='', list=[], i, u, q, t0, p0;
+    function arc(a0,a1,r,col){ var d=a1-a0, b0, b1; if(d<0.03 || r<2) return ''; if(d>TWO-0.03) return '<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+f1(r)+'" fill="none" stroke="'+col+'" stroke-width="2"/>';
+      b0=P(a0,r); b1=P(a1,r); return '<path d="M'+f1(b0[0])+','+f1(b0[1])+' A'+f1(r)+','+f1(r)+' 0 '+(d>Math.PI?1:0)+' 0 '+f1(b1[0])+','+f1(b1[1])+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linecap="round"/>'; }
+    back+='<circle cx="'+f1(cx)+'" cy="'+f1(cy)+'" r="'+f1(R)+'" fill="none" stroke="var(--ink-soft)" stroke-width="1.3"'+(o.zeta?' stroke-dasharray="4 3"':'')+'/>';
+    back+= vert ? ln(cx,cy-R-6,cx,cy+R+6,'var(--ink-faint)',1) : ln(cx-R-6,cy,cx+R+6,cy,'var(--ink-faint)',1);
+    if(o.zeta){ t0=Math.max(0,tt-3*o.T); for(i=0;i<=120;i++){ u=t0+(tt-t0)*i/120; q=phasor(o,u); list.push(P(q.th,Rp*q.r)); } back+=pl(list,'var(--xc)',1.4,' opacity=".5"'); }
+    else { p0=P(f.ph,R); back+=ln(cx,cy,p0[0],p0[1],'var(--ink-faint)',1.1,' stroke-dasharray="3 3"')+arc(f.ph,f.ph+(o.w1*tt)%TWO,R*0.62,'var(--ink)');
+      if(ib()) back+=arc(0,f.ph,R*0.36,'var(--hot)'); }
+    back+=ln(cx,cy,pt[0],pt[1],'var(--ink-soft)',1.4)+ln(pt[0],pt[1],sh[0],sh[1],'var(--xc)',1.3,' stroke-dasharray="3 3"');
+    front+='<circle cx="'+f1(sh[0])+'" cy="'+f1(sh[1])+'" r="3.4" fill="var(--xc)"/><circle cx="'+f1(pt[0])+'" cy="'+f1(pt[1])+'" r="4.6" fill="var(--ink)" stroke="var(--panel)" stroke-width="1.6"/>';
+    return {back:back, front:front, pt:pt, R:R};
+  }
+  // the words beside the circle: the equation, with ωt and ϕ in the colours of their angles, and ϕ itself at IB (HL)
+  function circleWords(o,x,y,anchor){
+    var W='<tspan fill="var(--ink)" font-weight="700">ωt</tspan>', F='<tspan fill="var(--hot)" font-weight="700">ϕ</tspan>', g='', ph, xf;
+    if(o.zeta) return txt(x,y,'The radius shrinks',{a:anchor,fs:12.5,halo:1,x:SANS})+txt(x,y+15,'with the amplitude',{a:anchor,fs:12.5,halo:1,x:SANS});
+    if(!ib()) return txt(x,y,o.start==='neg'?'x = −A cos '+W:o.start==='zero'?'x = A sin '+W:'x = A cos '+W,{a:anchor,fs:13,c:'var(--ink)',w:600,halo:1,x:SANS});
+    g+=txt(x,y,'x = x₀ sin ('+W+' + '+F+')',{a:anchor,fs:13,c:'var(--ink)',w:600,halo:1,x:SANS});
+    ph=o.start==='pos'?'π':o.start==='neg'?'3π':'';
+    if(!ph) return g+txt(x,y+20,'HL: '+F+' = 0',{a:anchor,fs:12.5,halo:1,x:SANS});
+    xf = anchor==='middle' ? x+16 : x+54;                                     // the fraction ϕ = π over 2, stacked
+    g+=txt(xf-10,y+24,'HL: '+F+' =',{a:'end',fs:12.5,halo:1,x:SANS});
+    g+=txt(xf,y+19,ph,{a:'middle',fs:12,c:'var(--ink-soft)',x:SANS})+ln(xf-8,y+21.5,xf+8,y+21.5,'var(--ink-soft)',1)+txt(xf,y+32,'2',{a:'middle',fs:12,c:'var(--ink-soft)',x:SANS});
+    return g;
+  }
   function sceneSpring(o,s,q){
-    var g='', ye=eqY(o), yb=ye-SC*s.x*1000, ys=yb-HANG, cols=[[244,'x','var(--xc)',SC*s.x*1000],[268,'v','var(--vc)',34*s.v/o.vS],[300,'a, F','var(--ac)',34*s.a/o.aS]];
+    var g='', rc, ye=eqY(o), yb=ye-SC*s.x*1000, ys=yb-HANG, cols=[[244,'x','var(--xc)',SC*s.x*1000],[268,'v','var(--vc)',34*s.v/o.vS],[300,'a, F','var(--ac)',34*s.a/o.aS]];
     g+=stand(18,31,SPX-16);
     g+=box(SPX-15,25,30,12,4,-3,'var(--steel-sh)')+rect(SPX-2,37,4,5,'var(--steel-sh)');
     g+=ln(128,ye,318,ye,'var(--ink-faint)',1.2,' stroke-dasharray="5 4"');
@@ -889,6 +927,9 @@ function expKey(x, y, upLabel, downLabel){
     g+=ruleStand();
     g+=ln(SPX+19,yb-2,RX+2,yb-2,'var(--accent)',2)+pg([[RX+6,yb-2],[RX-2,yb-6],[RX-2,yb+2]],'var(--accent)');
     if(q.arrows){ cols.forEach(function(c){ g+=txt(c[0],ye-46,c[1],{a:'middle',fs:13,w:700,c:c[2]})+vec(c[0],ye,0,-1,Math.max(-40,Math.min(40,c[3])),c[2]); }); }
+    if(q.circle){ rc=refCircle(o,q.t,CCX,ye,SC*o.A*1000,true);
+      if(rc) g+=ln(rc.pt[0],rc.pt[1],RX+18,rc.pt[1],'var(--xc)',1.3,' stroke-dasharray="3 3"')+rc.back+rc.front+circleWords(o,CCX+6,ye-rc.R-(ib()&&!o.zeta?38:o.zeta?28:12),'middle');
+      else g+=txt(CCX+6,ye-24,'No oscillation, so',{a:'middle',fs:12.5,halo:1,x:SANS})+txt(CCX+6,ye-9,'no reference circle',{a:'middle',fs:12.5,halo:1,x:SANS}); }
     if(q.watch) g+=stopwatch(238,6,q.watch)+txt(277,62,q.count,{a:'middle',fs:12,c:'var(--ink)'});
     g+=txt(SPX+24,22,'clamp',{fs:12})+txt(42,78,'stand',{fs:12});
     g+=txt(SPX-20,68,'spring',{a:'end',fs:12})+ln(SPX-18,64,SPX-11,64,'var(--ink-faint)',1);
@@ -900,12 +941,15 @@ function expKey(x, y, upLabel, downLabel){
   }
   function bobR(o){ return 6+2*Math.sqrt(o.m*1000/50); }
   function sceneP(o,s,q){
-    var g='', L=o.l*PS, th=s.x/o.l, bx=SPX+L*Math.sin(th), by=PV+L*Math.cos(th), r=bobR(o), rows=[[112,'x','var(--xc)',PS*s.x],[154,'v','var(--vc)',34*s.v/o.vS],[196,'a, F','var(--ac)',34*s.a/o.aS]];
+    var g='', L=o.l*PS, th=s.x/o.l, bx=SPX+L*Math.sin(th), by=PV+L*Math.cos(th), r=bobR(o), rc=q.circle?refCircle(o,q.t,SPX,PV+L,PS*o.A,false):null, rows=[[112,'x','var(--xc)',PS*s.x],[154,'v','var(--vc)',34*s.v/o.vS],[196,'a, F','var(--ac)',34*s.a/o.aS]];
     g+=stand(10,23,SPX-12);
     g+=box(SPX-13,17,26,6,4,-3,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'})+box(SPX-13,24,26,6,4,-3,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'});
-    g+=ln(SPX,PV,SPX,PV+L+r+8,'var(--ink-faint)',1.2,' stroke-dasharray="5 4"');
+    g+=ln(SPX,PV,SPX,PV+L+Math.max(r,rc?rc.R:0)+8,'var(--ink-faint)',1.2,' stroke-dasharray="5 4"');
+    if(rc) g+=rc.back+ln(rc.pt[0],rc.pt[1],rc.pt[0],by,'var(--xc)',1.3,' stroke-dasharray="3 3"');
     g+=ln(SPX,PV,bx,by,'var(--ink-soft)',1.4);
     g+='<g'+(q.grab?' class="grab"':'')+'><circle cx="'+f1(bx)+'" cy="'+f1(by)+'" r="'+f1(r)+'" fill="var(--brass)" stroke="var(--case-s)" stroke-width="1"/><circle cx="'+f1(bx-r*0.32)+'" cy="'+f1(by-r*0.34)+'" r="'+f1(r*0.3)+'" fill="#fff" opacity=".55"/></g>';
+    if(rc) g+=rc.front+circleWords(o,SPX+rc.R+r+10,PV+L+(ib()&&!o.zeta?-16:o.zeta?-4:4),'start');
+    else if(q.circle) g+=txt(262,140,'No oscillation, so',{a:'middle',fs:12.5,halo:1,x:SANS})+txt(262,155,'no reference circle',{a:'middle',fs:12.5,halo:1,x:SANS});
     if(q.arrows){ g+=ln(262,92,262,208,'var(--ink-faint)',1.2,' stroke-dasharray="5 4"');
       rows.forEach(function(c){ g+=txt(262,c[0]-14,c[1],{a:'middle',fs:13,w:700,c:c[2],halo:1})+vec(262,c[0],1,0,Math.max(-40,Math.min(40,c[3])),c[2]); }); }
     if(q.watch) g+=stopwatch(238,6,q.watch)+txt(277,62,q.count,{a:'middle',fs:12,c:'var(--ink)'});
@@ -1016,7 +1060,7 @@ function expKey(x, y, upLabel, downLabel){
   function clock(tt){ return tt.toFixed(2)+' s'; }
   function drawExplore(){
     var o=cur(), s=stt(o,t), gv=graphSeg.value();
-    live.innerHTML=tr(SOX,0,scene(o,s,{arrows:true,lab:massLab(o),grab:!running}))+(gv==='et'?graphET(o,t):gv==='ex'?graphEX(o,t):gv==='ax'?graphAX(o,t):graphXVA(o,t));
+    live.innerHTML=tr(SOX,0,scene(o,s,{arrows:!circ(),circle:circ(),t:t,lab:massLab(o),grab:!running}))+(gv==='et'?graphET(o,t):gv==='ex'?graphEX(o,t):gv==='ax'?graphAX(o,t):graphXVA(o,t));
   }
   function drawExp(){
     var o=cur(), tt=E.run?E.run.t:0, s=stt(o,tt), n=E.run?Math.min(NOSC,Math.floor(tt/o.T+1e-6)):0, R=E.rd[sysSeg.value()][+loadSeg.value()||0];
@@ -1353,7 +1397,7 @@ function expKey(x, y, upLabel, downLabel){
     expBtn.hidden=pr; newBtn.hidden=!pr; slowBtn.hidden=ex; $('#sh-reset').hidden=ex; $('#sh-clear').hidden=!ex;
     $('#sh-glab').hidden=$('#sh-graph').hidden=pr || ex;
     $('#sh-ylab').hidden=$('#sh-sys').hidden=pr;
-    $('#sh-dlab').hidden=$('#sh-damp').hidden=pr || ex; $('#sh-slab').hidden=$('#sh-start').hidden=pr || ex;
+    $('#sh-dlab').hidden=$('#sh-damp').hidden=pr || ex; $('#sh-circ').hidden=pr || ex; $('#sh-slab').hidden=$('#sh-start').hidden=pr || ex;
     $('#sh-jlab').hidden=$('#sh-jump').hidden=pr || ex || ZETA[dv]>=1;
     $('#sh-llab').hidden=$('#sh-load').hidden=!ex;
     $('#sh-tablewrap').hidden=!ex; $('#sh-working').hidden=pr; $('.side').classList.toggle('exp', ex);
@@ -1403,6 +1447,7 @@ function expKey(x, y, upLabel, downLabel){
   watchEquals($('#sh-eq1')); watchEquals($('#sh-eq2')); watchEquals($('#sh-eq3'));
   (function(){ var sm=(location.search.match(/[?&]sys=(pend|moon)\b/)||[])[1]; if(sm) sysSeg.pick(sm); })();
   (function(){ var gm=(location.search.match(/[?&]graph=(xva|et|ex|ax)\b/)||[])[1]; if(gm) graphSeg.pick(gm); })();
+  if(/[?&]circle\b/.test(location.search)) circBtn.setAttribute('aria-pressed','true');
   setSliders(); setLoadLabels();
   if(/[?&]show=predict\b/.test(location.search)){ tabSeg.pick('predict'); setTab(); }
   else if(/[?&]show=exp\b/.test(location.search)){ expBtn.setAttribute('aria-pressed','true'); setExp(); }
