@@ -302,6 +302,14 @@ const GL={xMin:0,xMax:240,yMin:1,yMax:5,xTicks:[0,40,80,120,160,200,240],yTicks:
   ]});
 }
 
+/* ================= WHICH ISOTOPE? (TODO 9f) =================
+   The Which Isotope? game, framed from animations/isotope-choice.html at this level, opening on its Questions: pick the
+   isotope for a job, watch it work or go wrong, choose the reasons that score, and a calculation with A = A0 e^(-lambda t). */
+{
+  const body=act('uses','Explore','Which isotope?','Read the job, pick the isotope from the cards (what it emits and its half-life) and press Check to watch it do the job, or go wrong. Then choose the reasons that would score marks, and on some rounds calculate the activity left or the time.');
+  body.innerHTML='<iframe class="anim-frame" src="animations/isotope-choice.html?embed&level=ib&show=predict" title="Which Isotope? game: pick the radioactive isotope for a job, watch it work, give the reasons and calculate" loading="lazy"></iframe><p class="anim-open"><a href="animations/isotope-choice.html?level=ib">Open the Which Isotope? animation full screen &rarr;</a></p>';
+}
+
 /* ================= 7. ACCURACY AND SAFETY ================= */
 {
   const body=act('accuracy','Sort','Better results or safer?','Sort each card into the right bin, then press Check.');
