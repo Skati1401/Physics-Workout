@@ -1214,7 +1214,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   var qBody=qEl('pt-q-body'), qChk=qEl('pt-q-check'), qNx=qEl('pt-q-next'), statsEl=document.querySelector('.side .stats');
   function qStart(){ Q.list=ROUNDS[LV]; Q.i=0; Q.score=0; Q.out=0; Q.log=[]; Q.r=Q.list[0]; qDeal(); }
   function qDeal(){
-    var r=Q.list[Q.i]; Q.r=r; Q.pick=null; Q.cq=null; Q.got=0; Q.of=0; Q.si=0;
+    var r=Q.list[Q.i]; Q.r=r; Q.pick=null; Q.cq=null; Q.tries=0; Q.got=0; Q.of=0; Q.si=0;
     Q.stages=[r.type||'build']; if(r.chips) Q.stages.push('chips'); if(r.chain) Q.stages.push('chain');
     Q.stage=Q.stages[0]; focus=null; view.pick(r.view||'graph'); uiSig='';
     PT.set(r.place, r.lock||[]);        // deal the place and what is already built; this runs clear() and draws
@@ -1280,12 +1280,18 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     if(!Q.on || (Q.stage!=='build' && Q.stage!=='predict')) return;
     var r=Q.r, S=PT.result(), ok, h;
     if(Q.stage==='build'){ var w=failures(r,S); ok=!w.length;
+      if(!ok){ Q.tries++; lockBody();     // a wrong build: another go before the pros and cons (no answer given away)
+        verdict(false,'<b>✗ Not this time:</b> '+w.join('; and ')+'. Change your choice and run the day again.'+
+          (Q.tries>=2?'<div style="margin-top:8px"><button type="button" class="btn" data-giveup="1">Show the answer</button></div>':''));
+        Q.stage='retry'; panel(); qNx.innerHTML='&#8634; Try again'; qNx.hidden=false; qChk.hidden=true; try{ qNx.focus({preventScroll:true}); }catch(e){}
+        return; }
       h=ok?'<b>✓ The lights stayed on all day'+(r.co2max!==undefined?(S.co2>0?', with '+num(S.co2,0)+' t of CO₂':', with no CO₂ released'):'')+'.</b>':'<b>✗ Not this time:</b> '+w.join('; and ')+'.'; }
     else { ok=Q.pick===r.right;
       Array.prototype.forEach.call(qBody.querySelectorAll('#pt-q-opts button'),function(b){ var k=+b.dataset.k; if(k===r.right) b.classList.add('is-right'); else if(k===Q.pick) b.classList.add('is-wrong'); });
       h=(ok?'<b>✓ Right.</b> ':'<b>✗ No.</b> ')+'The wind farm met only '+num(S.met,0)+'% of the city’s demand.'; }
-    qMark(ok?2:0,2); lockBody();
-    verdict(ok, h+'<span class="model">'+r.model+'</span>');
+    var pts=ok?(Q.tries?1:2):0;          // 2 marks first go, 1 after a retry
+    qMark(pts,2); lockBody();
+    verdict(ok, h+(ok&&Q.tries?' (On go '+(Q.tries+1)+': 1 mark of 2.)':'')+'<span class="model">'+r.model+'</span>');
     Q.stage='marked'; panel(); qNextBtn();
   }
   function chainRight(id){ return CHAIN[id].nodes[0].cap[0].split(' ')[0]; }
@@ -1324,7 +1330,11 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     }
     qNextBtn();
   }
+  function qRetry(){ Q.stage='build'; qStage('build'); stop(); t=0; started=false; panel(); uiSig=''; draw(); }   // keeps what they built
+  function qGiveUp(){ var r=Q.r; qBody.querySelectorAll('[data-giveup]').forEach(function(b){ b.parentNode.remove(); });
+    qMark(0,2); verdict(false,'<b>The answer:</b><span class="model">'+r.model+'</span>'); Q.stage='marked'; panel(); qNextBtn(); }
   function qNext(){
+    if(Q.stage==='retry'){ qRetry(); return; }
     if(Q.stage==='summary'){ qStart(); return; }
     if(Q.si<Q.stages.length-1){ Q.si++; qStage(Q.stages[Q.si]); return; }
     Q.log.push({t:Q.r.title, got:Q.got, of:Q.of}); Q.i++;
@@ -1333,7 +1343,8 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function chainReady(){ var cq=Q.cq; qChk.disabled=!(cq.store && cq.slots[0] && cq.slots[1]);
     [0,1].forEach(function(k){ qEl('pt-q-s'+k).textContent=cq.slots[k]||('box '+(k+1)); }); }
   qBody.addEventListener('click',function(e){
-    var b=e.target.closest('button'); if(!b || b.disabled || !Q.on) return;
+    var b=e.target.closest('button'); if(b && b.dataset.giveup && Q.on && Q.stage==='retry'){ qGiveUp(); return; }
+    if(!b || b.disabled || !Q.on) return;
     var grp=b.parentNode;
     if(grp.id==='pt-q-opts'){ Q.pick=+b.dataset.k; Array.prototype.forEach.call(grp.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); });
       if(Q.stage==='predict') panel(); else qChk.disabled=false; }
