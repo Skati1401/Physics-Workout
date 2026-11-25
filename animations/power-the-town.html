@@ -1217,7 +1217,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function qStart(){ Q.list=LV==='ib'?ROUNDS.ib.slice(0,3).concat(shuffle(ROUNDS.ib.slice(3))):shuffle(ROUNDS.igcse.slice());   // a new order each game (IB: the energy density rounds first, in order)
     Q.i=0; Q.score=0; Q.out=0; Q.log=[]; Q.r=Q.list[0]; qDeal(); }
   function qDeal(){
-    var r=Q.list[Q.i]; Q.r=r; Q.pick=null; Q.cq=null; Q.tries=0; Q.skip=false; Q.got=0; Q.of=0; Q.si=0;
+    var r=Q.list[Q.i]; Q.r=r; Q.pick=null; Q.cq=null; Q.tries=0; Q.skip=false; Q.mk=-1; Q.got=0; Q.of=0; Q.si=0;
     Q.stages=[r.type||'build']; if(r.chips) Q.stages.push('chips'); if(r.chain) Q.stages.push('chain');
     Q.stage=Q.stages[0]; focus=null; view.pick(r.view||'graph'); uiSig='';
     PT.set(r.place, r.lock||[]);        // deal the place and what is already built; this runs clear() and draws
@@ -1257,14 +1257,14 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     }
     else if(st==='summary'){
       h='<p class="qprompt"><b>Score '+Q.score+' out of '+Q.out+'.</b> '+(Q.out&&Q.score>=0.8*Q.out?'Excellent: you can choose and justify a resource like the mark schemes do.':'Play again to beat it: the reasons in the model answers are the ones that score marks.')+'</p>'+
-        '<div class="qsum">'+Q.log.map(function(l){ return '<span>'+l.t+'</span><b>'+(l.skip&&!l.of?'skipped':l.got+' / '+l.of+(l.skip?' (then skipped)':''))+'</b>'; }).join('')+'</div>';
+        '<div class="qsum">'+Q.log.map(function(l){ return '<span>'+l.t+'</span><b>'+l.got+' / '+l.of+(l.skip?' (skipped)':'')+'</b>'; }).join('')+'</div>';
       qNx.innerHTML='Play again'; qNx.hidden=false;
     }
     qBody.innerHTML=h; uiSig=''; draw();
   }
   function verdict(ok, html){ var d=document.createElement('div'); d.className='qverdict '+(ok?'ok':'no'); d.setAttribute('role','status'); d.innerHTML=html; qBody.appendChild(d); return d; }
   function lockBody(){ Array.prototype.forEach.call(qBody.querySelectorAll('button,input'),function(b){ b.disabled=true; }); }
-  function qMark(got,of){ Q.got+=got; Q.of+=of; Q.score+=got; Q.out+=of; qScore(true); }
+  function qMark(got,of){ Q.mk=Q.si; Q.got+=got; Q.of+=of; Q.score+=got; Q.out+=of; qScore(true); }
   function qNextBtn(){
     var last=Q.si>=Q.stages.length-1, nxt=Q.stages[Q.si+1];
     qNx.innerHTML=!last?(nxt==='chips'?'Next: pros and cons':'Next: energy transfers')+' &rarr;':(Q.i>=Q.list.length-1?'See your score &rarr;':'Next round &rarr;');
@@ -1361,7 +1361,9 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   qBody.addEventListener('keydown',function(e){ if(e.key==='Enter' && e.target.id==='pt-q-in'){ e.preventDefault(); if(!qChk.disabled && !qChk.hidden) qCheck(); } });
   qChk.addEventListener('click',qCheck);
   qNx.addEventListener('click',qNext);
-  qSk.addEventListener('click',function(){ if(!Q.on||Q.stage==='summary') return; stop(); Q.skip=true; Q.si=Q.stages.length-1; Q.stage='marked'; qNext(); });   // skipped parts score nothing and are not counted
+  qSk.addEventListener('click',function(){ if(!Q.on||Q.stage==='summary') return; stop(); Q.skip=true;   // skipped parts count as 0 out of their marks (Alex, 25 Nov 2026)
+    var of=0; for(var j=(Q.mk===Q.si?Q.si+1:Q.si); j<Q.stages.length; j++) of+=Q.stages[j]==='chips'?5:2;
+    Q.of+=of; Q.out+=of; Q.si=Q.stages.length-1; Q.stage='marked'; qNext(); });
 
   // Explore | Questions
   function setMode(m){
