@@ -228,6 +228,7 @@
   .qsum{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-size:13.5px;}
   .qsum b{font-family:var(--font-mono);}
   .qbtns{display:flex;flex-wrap:wrap;gap:8px;}
+  #pt-q-skip{margin-left:auto;background:none;border-color:transparent;color:var(--ink-soft);font-weight:500;text-decoration:underline;text-underline-offset:3px;}
   @media (prefers-reduced-motion: no-preference){
     .qhead .score.pop{animation:ptpop .25s ease-out;}
     @keyframes ptpop{50%{transform:scale(1.05);}}
@@ -376,7 +377,7 @@
       <div class="qcard" id="pt-q" hidden>
         <div class="qhead"><span id="pt-q-round"></span><span class="score" id="pt-q-score"></span></div>
         <div id="pt-q-body"></div>
-        <div class="qbtns"><button class="btn btn-primary" id="pt-q-check" type="button">Check</button><button class="btn" id="pt-q-next" type="button">Next &rarr;</button></div>
+        <div class="qbtns"><button class="btn btn-primary" id="pt-q-check" type="button">Check</button><button class="btn" id="pt-q-next" type="button">Next &rarr;</button><button class="btn btn-ghost" id="pt-q-skip" type="button">Skip to the next round &rarr;</button></div>
       </div>
       <div id="pt-place-row">
         <div class="lab">Place</div>
@@ -1022,6 +1023,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
         cap=[v||(k?'box 2':'box 1'),''];
       } else {
         g+=icon(nd.ic,x,y,bw,bh);
+        if(Q.on && Q.cq && nd===TUR) cap=['turbine','(kinetic store)'];   // the answer's word under the box it went in
         if(cq && q===0) cap=[cq.store?cq.store+' store':'? store',''];
       }
       var caps=L.n?[cap[0]].concat(wrapLines(cap[1],19)):cap;
@@ -1211,10 +1213,11 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
 
   function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), x=a[i]; a[i]=a[j]; a[j]=x; } return a; }
   function qEl(id){ return document.getElementById(id); }
-  var qBody=qEl('pt-q-body'), qChk=qEl('pt-q-check'), qNx=qEl('pt-q-next'), statsEl=document.querySelector('.side .stats');
-  function qStart(){ Q.list=ROUNDS[LV]; Q.i=0; Q.score=0; Q.out=0; Q.log=[]; Q.r=Q.list[0]; qDeal(); }
+  var qBody=qEl('pt-q-body'), qChk=qEl('pt-q-check'), qNx=qEl('pt-q-next'), qSk=qEl('pt-q-skip'), statsEl=document.querySelector('.side .stats');
+  function qStart(){ Q.list=LV==='ib'?ROUNDS.ib.slice(0,3).concat(shuffle(ROUNDS.ib.slice(3))):shuffle(ROUNDS.igcse.slice());   // a new order each game (IB: the energy density rounds first, in order)
+    Q.i=0; Q.score=0; Q.out=0; Q.log=[]; Q.r=Q.list[0]; qDeal(); }
   function qDeal(){
-    var r=Q.list[Q.i]; Q.r=r; Q.pick=null; Q.cq=null; Q.tries=0; Q.got=0; Q.of=0; Q.si=0;
+    var r=Q.list[Q.i]; Q.r=r; Q.pick=null; Q.cq=null; Q.tries=0; Q.skip=false; Q.got=0; Q.of=0; Q.si=0;
     Q.stages=[r.type||'build']; if(r.chips) Q.stages.push('chips'); if(r.chain) Q.stages.push('chain');
     Q.stage=Q.stages[0]; focus=null; view.pick(r.view||'graph'); uiSig='';
     PT.set(r.place, r.lock||[]);        // deal the place and what is already built; this runs clear() and draws
@@ -1227,6 +1230,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     qEl('pt-q-round').textContent=st==='summary'?'All rounds done':'Round '+(Q.i+1)+' of '+Q.list.length+': '+r.title;
     qScore(false);
     qChk.hidden=true; qChk.disabled=false; qNx.hidden=true;
+    qSk.hidden=st==='summary'; qSk.innerHTML=(Q.i>=Q.list.length-1?'Skip to your score':'Skip to the next round')+' &rarr;';
     var run=st==='build'||st==='predict'; $('#pt-note').hidden=!(run||st==='summary'); statsEl.hidden=!run;
     if(st==='build') h='<p class="qprompt">'+r.ask+'</p><p class="qsub">Choose from the cards under the picture, then press <b>Run the day</b>. The day is marked when it ends.</p>';
     else if(st==='predict') h='<p class="qprompt">'+r.ask+'</p>'+optsHtml(r);
@@ -1244,17 +1248,16 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     }
     else if(st==='chain'){
       id=r.chain; Q.cq={id:id, store:null, slots:[null,null], shown:false}; view.pick('chain');
-      h='<p class="qprompt">The energy transfers in <b>'+CH[id].n+'</b> are under the picture.</p>'+
-        '<div class="qrow"><span class="qlab" id="pt-q-st-lab">1. Which energy store decreases?</span><div class="seg" id="pt-q-store" role="group" aria-labelledby="pt-q-st-lab">'+
+      h='<p class="qprompt">Complete the energy transfers in <b>'+CH[id].n+'</b> under the picture: choose what goes in each box with a <b>?</b></p>'+
+        '<div class="qrow"><span class="qlab" id="pt-q-st-lab">? store: which energy store decreases?</span><div class="seg" id="pt-q-store" role="group" aria-labelledby="pt-q-st-lab">'+
         STORES.map(function(x){ return '<button type="button" data-s="'+x+'" aria-pressed="false">'+x+'</button>'; }).join('')+'</div></div>'+
-        '<div class="qrow"><span class="qlab" id="pt-q-pt-lab">2. Fill boxes 1 and 2: press the parts in the order the energy goes through them.</span>'+
-        '<div class="slots" aria-live="polite"><span class="slot-box" id="pt-q-s0">box 1</span><span aria-hidden="true">&rarr;</span><span class="slot-box" id="pt-q-s1">box 2</span></div>'+
-        '<div class="seg" id="pt-q-parts" role="group" aria-labelledby="pt-q-pt-lab">'+PARTS.map(function(x){ return '<button type="button" data-p="'+x+'">'+x+'</button>'; }).join('')+'<button type="button" data-p="">Clear</button></div></div>';
+        [0,1].map(function(k){ return '<div class="qrow"><span class="qlab" id="pt-q-b'+k+'-lab">Box '+(k+1)+'</span><div class="seg" id="pt-q-b'+k+'" data-k="'+k+'" role="group" aria-labelledby="pt-q-b'+k+'-lab">'+
+          PARTS.map(function(x){ return '<button type="button" data-p="'+x+'" aria-pressed="false">'+x+'</button>'; }).join('')+'</div></div>'; }).join('');
       qChk.hidden=false; qChk.disabled=true;
     }
     else if(st==='summary'){
-      h='<p class="qprompt"><b>Score '+Q.score+' out of '+Q.out+'.</b> '+(Q.score>=0.8*Q.out?'Excellent: you can choose and justify a resource like the mark schemes do.':'Play again to beat it: the reasons in the model answers are the ones that score marks.')+'</p>'+
-        '<div class="qsum">'+Q.log.map(function(l){ return '<span>'+l.t+'</span><b>'+l.got+' / '+l.of+'</b>'; }).join('')+'</div>';
+      h='<p class="qprompt"><b>Score '+Q.score+' out of '+Q.out+'.</b> '+(Q.out&&Q.score>=0.8*Q.out?'Excellent: you can choose and justify a resource like the mark schemes do.':'Play again to beat it: the reasons in the model answers are the ones that score marks.')+'</p>'+
+        '<div class="qsum">'+Q.log.map(function(l){ return '<span>'+l.t+'</span><b>'+(l.skip&&!l.of?'skipped':l.got+' / '+l.of+(l.skip?' (then skipped)':''))+'</b>'; }).join('')+'</div>';
       qNx.innerHTML='Play again'; qNx.hidden=false;
     }
     qBody.innerHTML=h; uiSig=''; draw();
@@ -1265,7 +1268,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
   function qNextBtn(){
     var last=Q.si>=Q.stages.length-1, nxt=Q.stages[Q.si+1];
     qNx.innerHTML=!last?(nxt==='chips'?'Next: pros and cons':'Next: energy transfers')+' &rarr;':(Q.i>=Q.list.length-1?'See your score &rarr;':'Next round &rarr;');
-    qNx.hidden=false; qChk.hidden=true; try{ qNx.focus({preventScroll:true}); }catch(e){}
+    qNx.hidden=false; qChk.hidden=true; if(last) qSk.hidden=true; try{ qNx.focus({preventScroll:true}); }catch(e){}
   }
   // why a build did not do what the round asked, in the mark schemes' words
   function failures(r,S){
@@ -1324,7 +1327,7 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       var cq=Q.cq, sOk=cq.store===chainRight(cq.id), pOk=cq.slots[0]==='turbine' && cq.slots[1]==='generator';
       qMark((sOk?1:0)+(pOk?1:0),2); lockBody();
       Array.prototype.forEach.call(qBody.querySelectorAll('#pt-q-store button'),function(b){ if(b.dataset.s===chainRight(cq.id)) b.style.outline='2px solid var(--good)'; });
-      qEl('pt-q-s0').classList.add(cq.slots[0]==='turbine'?'ok':'no'); qEl('pt-q-s1').classList.add(cq.slots[1]==='generator'?'ok':'no');
+      ['turbine','generator'].forEach(function(w,k){ Array.prototype.forEach.call(qEl('pt-q-b'+k).children,function(b){ if(b.dataset.p===w) b.style.outline='2px solid var(--good)'; }); });
       cq.shown=true; uiSig=''; draw();
       verdict(sOk&&pOk,(sOk?'✓':'✗')+' The <b>'+chainRight(cq.id)+'</b> store decreases. '+(pOk?'✓':'✗')+' The <b>turbine</b> turns the <b>generator</b>.<span class="model">'+chainWords(cq.id)+'. Energy is wasted, transferred by heating and by sound to the surroundings.</span>');
     }
@@ -1337,11 +1340,10 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
     if(Q.stage==='retry'){ qRetry(); return; }
     if(Q.stage==='summary'){ qStart(); return; }
     if(Q.si<Q.stages.length-1){ Q.si++; qStage(Q.stages[Q.si]); return; }
-    Q.log.push({t:Q.r.title, got:Q.got, of:Q.of}); Q.i++;
+    Q.log.push({t:Q.r.title, got:Q.got, of:Q.of, skip:Q.skip}); Q.i++;
     if(Q.i>=Q.list.length){ Q.cq=null; view.pick('graph'); qStage('summary'); } else qDeal();
   }
-  function chainReady(){ var cq=Q.cq; qChk.disabled=!(cq.store && cq.slots[0] && cq.slots[1]);
-    [0,1].forEach(function(k){ qEl('pt-q-s'+k).textContent=cq.slots[k]||('box '+(k+1)); }); }
+  function chainReady(){ var cq=Q.cq; qChk.disabled=!(cq.store && cq.slots[0] && cq.slots[1]); }
   qBody.addEventListener('click',function(e){
     var b=e.target.closest('button'); if(b && b.dataset.giveup && Q.on && Q.stage==='retry'){ qGiveUp(); return; }
     if(!b || b.disabled || !Q.on) return;
@@ -1352,13 +1354,14 @@ var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&
       Array.prototype.forEach.call(grp.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); });
       qChk.disabled=Q.chips.some(function(x){ return !x.pick; }); }
     else if(grp.id==='pt-q-store'){ Q.cq.store=b.dataset.s; Array.prototype.forEach.call(grp.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); }); chainReady(); uiSig=''; draw(); }
-    else if(grp.id==='pt-q-parts'){ var p=b.dataset.p, k=Q.cq.slots.indexOf(null);
-      if(!p) Q.cq.slots=[null,null]; else if(k>=0) Q.cq.slots[k]=p;
+    else if(grp.id==='pt-q-b0'||grp.id==='pt-q-b1'){ Q.cq.slots[+grp.dataset.k]=b.dataset.p;
+      Array.prototype.forEach.call(grp.children,function(x){ x.setAttribute('aria-pressed',String(x===b)); });
       chainReady(); uiSig=''; draw(); }
   });
   qBody.addEventListener('keydown',function(e){ if(e.key==='Enter' && e.target.id==='pt-q-in'){ e.preventDefault(); if(!qChk.disabled && !qChk.hidden) qCheck(); } });
   qChk.addEventListener('click',qCheck);
   qNx.addEventListener('click',qNext);
+  qSk.addEventListener('click',function(){ if(!Q.on||Q.stage==='summary') return; stop(); Q.skip=true; Q.si=Q.stages.length-1; Q.stage='marked'; qNext(); });   // skipped parts score nothing and are not counted
 
   // Explore | Questions
   function setMode(m){
