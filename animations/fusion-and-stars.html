@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fusion and Stars Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation. Hydrogen nuclei in a hot gas repel each other: raise the temperature and the density until some get close enough to fuse. Then a star held in equilibrium by gravity and pressure, and what happens as the hydrogen in its core runs out.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#4d7c0f;   --topic-soft:#e6f3d3;
+    --pc:#e5484d; --nc:#8b95a7; --edge:#ffffff; --force:#d9720c; --hot:#d99a00; --tf:#d9720c;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    /* solid kit colours */ --glass:#9fb4c8; --glass-in:#f4f8fb; --thermo:#f3f6fa; --thread:#d7261e; --steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --wood-f:#c99e6a; --wood-t:#e3c08f; --wood-s:#9c7444; --case:#3f4a5e; --concrete:#b4bac6; --head:#eef1f5; --blockhi:#f1f3f6;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+      --panel:#1b212e; --panel-border:#2c3444;
+      --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+      --accent:#ff9a3d; --accent-soft:#3a2712;
+      --good:#4ade80; --good-soft:#123321;
+      --bad:#f27159; --bad-soft:#3a1712;
+      --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+      --topic:#a3d65c; --topic-soft:#1f2e12;
+      --pc:#ff6b5e; --nc:#aeb8c8; --edge:#1b212e; --force:#ff9a3d; --hot:#ffd34d; --tf:#ff9a3d;
+      /* solid kit colours */ --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f; --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --case:#56617a; --concrete:#596375; --head:#12161f; --blockhi:#394252;
+    color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#a3d65c; --topic-soft:#1f2e12;
+    --pc:#ff6b5e; --nc:#aeb8c8; --edge:#1b212e; --force:#ff9a3d; --hot:#ffd34d; --tf:#ff9a3d;
+    /* solid kit colours */ --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f; --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --case:#56617a; --concrete:#596375; --head:#12161f; --blockhi:#394252;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  /* picture on the left with its buttons under it; choices, readings and working on the right */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(290px,380px);gap:14px 22px;align-items:start;padding:16px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(250px,calc(100vh - 290px));touch-action:pan-y;}
+  .fs-grab{cursor:grab;} .view.dragging,.view.dragging .fs-grab{cursor:grabbing;}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 22px;margin-top:10px;}
+  .sliders{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:6px 18px;flex:1 1 340px;min-width:min(100%,340px);}
+  .sliders>div{min-width:0;}
+  .side{display:flex;flex-direction:column;gap:10px;min-width:0;}
+  .pair{display:flex;flex-wrap:wrap;gap:10px 18px;}
+  .lab{display:flex;justify-content:space-between;gap:8px;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:5px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{font-size:12.5px;padding:8px 10px;white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+  .seg button{font:12.5px var(--font-mono);padding:7px 10px;min-height:40px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 14.5px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--topic);}
+  .note{font-size:14.5px;line-height:1.45;color:var(--ink);padding:9px 12px;border-radius:8px;background:var(--bg);min-height:150px;}
+  .note b{color:var(--topic);}
+  .tf{color:var(--tf);font-weight:600;}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:44px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:14px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eq + .eq{margin-top:8px;}
+  .eqnote{font-size:13.5px;color:var(--ink-soft);margin-top:8px;}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .eqg-l{justify-self:end;text-align:right}
+  .eqg-m{justify-self:center}
+  .eqg-r{justify-self:start;min-width:0}
+  .eqg-full{grid-column:1/-1}
+  .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .15em;line-height:1.25;}
+  .frac>span{padding:0 .25em;white-space:nowrap;}
+  .frac>span:first-child{border-bottom:1.5px solid currentColor;}
+  @media (max-width:560px){ .stage{padding:12px;} .view{max-height:none;} .sliders{grid-template-columns:1fr;} .note{font-size:14px;min-height:0;} }
+
+
+  /* inside a workout tab (?embed): no page heading, no outer margins */
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head,.embed #fs-level{display:none;}
+  .embed .view{max-height:460px;}
+  .view.tall{max-height:none;}
+  @media (max-height:700px) and (min-width:861px){ .side{gap:7px;} .side .seg button{min-height:34px;padding-block:4px;} .note{font-size:13.5px;line-height:1.4;padding:7px 10px;min-height:132px;} .side .lab{margin-bottom:3px;} }
+</style>
+<style id="choice-kit">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
+.seg.pick{background:var(--bg);box-shadow:inset 0 0 0 1px var(--panel-border);border-radius:8px;}
+.seg.pick.fit{width:fit-content;max-width:100%;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on){background:transparent;border-color:transparent;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on):not(:disabled):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode{display:flex;flex-wrap:nowrap;align-self:stretch;flex-grow:1;background:var(--bg);box-shadow:0 0 0 1px var(--panel-border);border-radius:11px;padding:3px;gap:3px;}
+.seg.mode>button:nth-child(n){flex:1 1 0;min-height:38px;margin-left:0;padding:6px 12px;border-radius:8px;white-space:nowrap;font:600 14.5px var(--font-body,inherit);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]){background:transparent;border-color:transparent;color:var(--ink);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode>button:nth-child(n)[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel);}
+/* Choice rows (13 Nov 2026, Alex): in a .cgrid the label sits above its group, each group is only as wide as its
+   buttons, and short groups share a row, as on dc-motor.html. The script wraps each label and its control in a .cgroup. */
+.cgrid.kit{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-start;}
+.cgrid.kit>.cgroup{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;max-width:100%;}
+/* a row of one group (e.g. Graph under the picture) keeps its label beside it, to save height */
+.cgrid.kit.one>.cgroup{flex-direction:row;align-items:center;gap:10px;}
+.cgrid.kit>.cgroup[hidden]{display:none;}
+.cgrid.kit>.cgroup>.rowlab{font:12.5px var(--font-mono,ui-monospace,monospace);color:var(--ink-soft);}
+.cgrid.kit>.cgroup>.seg{display:flex;flex-wrap:wrap;max-width:100%;}
+.cgrid.kit>.cgroup>.seg>button{flex:0 1 auto;}
+.to-q[hidden]{display:none!important;}
+.to-q:nth-child(n){border-style:dashed;border-color:var(--ink);font-weight:600;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' · ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+<!-- pw-review -->
+<script>
+  // Draft tags and Alex's reviewer button (tools/review/drafts.py writes this block; edit tools/review/snippet.html, then run drafts.py sync).
+  // A page is Draft while its row in tools/REVIEW.md is not ✅: <meta name="pw-draft"> on the page, data-draft on its list cards.
+  // ?reviewer (once, on any page) turns on reviewer mode in this browser; ?reviewer=off turns it off.
+  (function(){
+    var on = false, embed = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var m = /[?&]reviewer(?:=([^&]*))?/.exec(location.search);
+    on = !!m && m[1] !== 'off';
+    try {
+      if (m) { if (m[1] === 'off') localStorage.removeItem('pw-reviewer'); else localStorage.setItem('pw-reviewer', '1'); }
+      else on = localStorage.getItem('pw-reviewer') === '1';
+    } catch (e) {}
+    var CSS = '.pw-draft{display:inline-block;vertical-align:middle;margin-left:10px;font:600 11.5px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:0;color:var(--bad,#b42318);border:1px dashed currentColor;border-radius:5px;padding:1px 7px;white-space:nowrap}'
+      + '.act-top .pw-draft{margin-left:auto;flex:none}.act-top .pw-draft~.cp-tag,.act-top .pw-draft~.ta-tag{margin-left:0}'
+      + 'a[data-draft]{position:relative}.pw-draft.pw-corner{position:absolute;top:10px;right:10px;margin:0;background:var(--panel,#fff)}'
+      + '.pw-check{display:inline-block;vertical-align:middle;margin-left:8px;font:600 13px/1.4 "IBM Plex Sans",system-ui,sans-serif;color:#fff;background:#1a7f37;border-radius:6px;padding:4px 10px;text-decoration:none;white-space:nowrap}'
+      + '.pw-check:hover{background:#116329}.pw-check:focus-visible{outline:2px solid #1a7f37;outline-offset:2px}'
+      + '.pw-reviewer{position:fixed;left:10px;bottom:10px;z-index:9999;font:500 12px/1.4 "IBM Plex Mono",ui-monospace,monospace;background:#1d2433;color:#fff;border-radius:6px;padding:4px 9px;opacity:.85}'
+      + '.pw-reviewer a{color:#ffc83d}';
+    function tag(){ var t = document.createElement('span'); t.className = 'pw-draft'; t.title = 'Not yet checked'; t.textContent = 'Draft'; return t; }
+    function go(){
+      var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+      var meta = document.querySelector('meta[name="pw-draft"]'), h1 = document.querySelector('h1');
+      if (meta && h1 && !embed) {
+        h1.appendChild(tag());
+        if (on) {
+          var page = meta.getAttribute('content'), b = document.createElement('a');
+          b.className = 'pw-check'; b.target = '_blank'; b.rel = 'noopener'; b.textContent = '✓ Checked';
+          b.title = 'Opens a GitHub issue. Submit it and the Draft tag goes in a minute or two.';
+          b.href = 'https://github.com/Skati1401/Physics-Workout/issues/new?title=' + encodeURIComponent('Checked: ' + page)
+            + '&body=' + encodeURIComponent('Submit this issue to mark `' + page + '` as checked. The Draft tag goes in a minute or two, and the issue closes itself.');
+          h1.appendChild(b);
+        }
+      }
+      document.querySelectorAll('a[data-draft]').forEach(function(a){
+        if (a.querySelector('.pw-draft')) return;
+        var t = tag(), top = a.querySelector('.act-top');
+        if (top) top.insertBefore(t, top.querySelector('.cp-tag,.ta-tag'));
+        else { t.className += ' pw-corner'; a.appendChild(t); }
+      });
+      // No tag on a unit or theme heading (Alex, 12 Nov 2026): only the pages and their cards.
+      if (on && !embed) {
+        // Carry ?reviewer in every link to another page of the site, so reviewer mode survives
+        // browsers that clear site storage (school Chromebooks) and pages cached from before.
+        var carry = function(a){
+          try {
+            var u = new URL(a.href, location.href);
+            if (u.origin !== location.origin || !/(\.html|\/)$/.test(u.pathname) || u.searchParams.has('reviewer')) return;
+            u.searchParams.set('reviewer', ''); a.href = u.href.replace('reviewer=', 'reviewer');
+          } catch (e) {}
+        };
+        document.querySelectorAll('a[href]').forEach(carry);
+        ['click', 'auxclick', 'contextmenu'].forEach(function(ev){
+          document.addEventListener(ev, function(e){ var a = e.target.closest && e.target.closest('a[href]'); if (a) carry(a); }, true);
+        });
+        var r = document.createElement('div'); r.className = 'pw-reviewer';
+        r.innerHTML = 'Reviewer mode · <a href="' + location.pathname + '?reviewer=off">turn off</a>';
+        document.body.appendChild(r);
+      }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  })();
+</script>
+<!-- /pw-review -->
+<meta name="pw-draft" content="animations/fusion-and-stars.html">
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div class="titleblock">
+      <div class="eyebrow">Animations &middot; nuclear fusion</div>
+      <h1>Fusion and Stars</h1>
+    </div>
+    <div class="seg tabs" id="fs-level" role="group" aria-label="Level"><button type="button" data-v="ks4" aria-pressed="true">IGCSE</button><button type="button" data-v="ial" aria-pressed="false">IAL</button><button type="button" data-v="ib" aria-pressed="false">IB</button></div>
+  </header>
+  <section class="card stage">
+    <div>
+      <svg class="view" id="fs-view" viewBox="0 0 860 350" role="img" aria-label=""><g id="fs-static"></g><g id="fs-dyn"></g></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="fs-go" type="button">&#9654; Play</button>
+          <button class="btn" id="fs-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="fs-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn" id="fs-squeeze" type="button" hidden>Squeeze the star</button>
+          <button class="btn" id="fs-stretch" type="button" hidden>Stretch the star</button>
+        </div>
+        <div class="sliders" id="fs-sliders">
+          <div><label class="lab" for="fs-t"><span>Temperature</span><output id="fs-t-out"></output></label><input type="range" id="fs-t" min="0" max="100" step="1" value="27"></div>
+          <div><label class="lab" for="fs-n"><span id="fs-n-lab">Pressure</span><output id="fs-n-out"></output></label><input type="range" id="fs-n" min="1" max="8" step="1" value="7"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div id="fs-view-wrap">
+        <div class="lab">Picture</div>
+        <div class="seg" id="fs-viewseg" role="group" aria-label="Picture"><button type="button" data-v="box" aria-pressed="true">Nuclei in a hot gas</button><button type="button" data-v="star" aria-pressed="false">A star</button></div>
+      </div>
+      <div class="pair">
+        <div id="fs-nuc-wrap">
+          <div class="lab">Nuclei</div>
+          <div class="seg" id="fs-nuc" role="group" aria-label="Nuclei"><button type="button" data-v="p" aria-pressed="true">Hydrogen (1+)</button><button type="button" data-v="he" aria-pressed="false">Helium (2+)</button></div>
+        </div>
+        <div id="fs-star-wrap" hidden>
+          <div class="lab">Star</div>
+          <div class="seg" id="fs-star" role="group" aria-label="Star"><button type="button" data-v="sun" aria-pressed="true">The Sun</button><button type="button" data-v="big" aria-pressed="false">16 &times; the Sun&rsquo;s mass</button></div>
+        </div>
+      </div>
+      <div id="fs-try-wrap">
+        <div class="lab">Try these</div>
+        <div class="seg" id="fs-try" role="group" aria-label="Try these"><button type="button" data-v="surface">Sun&rsquo;s surface</button><button type="button" data-v="core">Sun&rsquo;s core</button><button type="button" data-v="reactor">Fusion reactor</button><button type="button" data-v="giant" id="fs-try-giant">Red giant&rsquo;s core</button></div>
+      </div>
+      <div id="fs-jump-wrap" hidden>
+        <div class="lab">Jump to</div>
+        <div class="seg" id="fs-jump" role="group" aria-label="Jump to"><button type="button" data-v="proto">Protostar</button><button type="button" data-v="ms">Main sequence</button><button type="button" data-v="out">Hydrogen running out</button><button type="button" data-v="contract">Core contracting</button><button type="button" data-v="giant" id="fs-jump-giant">Red giant</button></div>
+      </div>
+      <p class="note" id="fs-note" aria-live="polite"></p>
+      <div class="stats" id="fs-stats">
+        <div class="stat"><small id="fs-s1l"></small><strong id="fs-s1"></strong></div>
+        <div class="stat"><small id="fs-s2l"></small><strong id="fs-s2"></strong></div>
+        <div class="stat"><small id="fs-s3l"></small><strong id="fs-s3"></strong></div>
+        <div class="stat hi"><small id="fs-s4l"></small><strong id="fs-s4"></strong></div>
+      </div>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // Fusion and Stars (TODO 9h, Fable half, 27 Nov 2026). IGCSE 7.24 to 7.26, IAL 136, IB E.5.
+  // Two pictures. (1) Nuclei in a hot gas: real two-dimensional motion with a short-range repulsion between every
+  //     pair; two nuclei of the same kind fuse only if they touch. Nothing about a collision is scripted.
+  // (2) A star: one equation for the core temperature (net energy loss makes the core contract and heat up; fusion
+  //     faster than the loss makes it expand and cool), with the same gas shown as a sample of the core.
+  // The numbers that are made up (the fraction of collisions that fuse, the pace of the star's life) are listed in
+  // tools/PAGE-NOTES.md. No past-paper question is used on this page yet: the Questions are the Opus half.
+  //
+  // This page is the one copy of this animation. With ?embed it drops its heading so a workout tab
+  // can show it in a frame, and it tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(sel){ return document.querySelector(sel); }
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ Array.prototype.forEach.call(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===v)); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  // ---- solid kit (master: tools/solid-kit/kit.js; copied by tools/kits.py, do not edit here) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
+  function circ(x,y,r,fill,extra){ return '<circle cx="'+f1(x)+'" cy="'+f1(y)+'" r="'+(+r).toFixed(2)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function fmtInt(n){ return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
+
+  var svg=$('#fs-view'), gS=$('#fs-static'), gD=$('#fs-dyn');
+  var QS=location.search, m;
+  var SHOW=(QS.match(/[?&]show=(box|star)\b/)||[])[1]||'';
+  var view=SHOW||(QS.match(/[?&]view=(box|star)\b/)||[])[1]||'box';
+
+  // colours inside the dark windows (the same in the light and the dark theme)
+  var WBG='#0b1020', WINK='#e9eef8', WSOFT='#b9c4d8', GRAV='#7fb2ff', PRESS='#ffa24a', HOT='#ffd34d';
+  function wtxt(x,y,s,o){ o=o||{}; if(!o.c) o.c=WINK; return txt(x,y,s,o); }
+
+  // ================= the gas: nuclei that repel =================
+  // Energies are in "million kelvin": a nucleus has a mean kinetic energy of kT, and KAPPA turns that into (px/s)².
+  // A proton's r.m.s. speed is 280 px/s at 200 million K, and speed is proportional to √T, as in a real gas.
+  var KAPPA=196, RNG=15;                       // RNG: the repulsion starts this far (px) before two nuclei touch
+  var EB={pp:50, hh:350, ph:120};              // energy (in million K × k) a pair needs, along the line joining them, to touch
+  var KIND={p:{m:1,r:5.5}, he:{m:4,r:8}, d:{m:2,r:7.5}, x:{m:8,r:11}};   // d: the product of two protons; x: of two helium nuclei
+  function gauss(){ var u=1-Math.random(), v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+  function Gas(){ this.parts=[]; this.enc={}; this.flashes=[]; this.best=null; this.T=15; this.N=0; this.nHe=0; this.col=0; this.fus=0;
+    this.box={x:0,y:0,w:100,h:100}; this.spawnT=0; this.convT=0; this.nextId=1; }
+  Gas.prototype.sig=function(m){ return Math.sqrt(Math.max(this.T,1e-6)*KAPPA/m); };
+  Gas.prototype.add=function(k,x,y,vx,vy){ var K=KIND[k], p={id:this.nextId++,k:k,x:x,y:y,vx:vx,vy:vy,m:K.m,r:K.r,age:0}; this.parts.push(p); return p; };
+  Gas.prototype.active=function(){ return this.parts.filter(function(p){ return p.k==='p'||p.k==='he'; }); };
+  Gas.prototype.free=function(x,y,r,gap){ return this.parts.every(function(q){ return Math.hypot(q.x-x,q.y-y) > r+q.r+gap; }); };
+  Gas.prototype.seed=function(N,nHe){ var B=this.box, i, t, x, y, k, s;
+    this.parts=[]; this.enc={}; this.flashes=[]; this.best=null; this.col=0; this.fus=0; this.N=N; this.nHe=nHe;
+    for(i=0;i<N;i++){ k=i<nHe?'he':'p'; s=this.sig(KIND[k].m);
+      for(t=0;t<60;t++){ x=B.x+12+Math.random()*(B.w-24); y=B.y+12+Math.random()*(B.h-24); if(this.free(x,y,KIND[k].r,RNG)) break; }
+      this.add(k,x,y,gauss()*s,gauss()*s); } };
+  Gas.prototype.purge=function(id){ var k; for(k in this.enc){ var ab=k.split('_'); if(+ab[0]===id||+ab[1]===id) delete this.enc[k]; } };
+  Gas.prototype.offer=function(ev){ var b=this.best; if(ev.k==='mix') return; if(!b || (ev.fused&&!b.fused) || (ev.fused===b.fused && ev.e>b.e)) this.best=ev; };
+  Gas.prototype.fuse=function(p,q){ var M=p.m+q.m, k=p.k==='p'?'d':'x';
+    this.parts=this.parts.filter(function(z){ return z!==p && z!==q; }); this.purge(p.id); this.purge(q.id); p.dead=q.dead=true;
+    this.add(k,(p.x+q.x)/2,(p.y+q.y)/2,0.4*(p.m*p.vx+q.m*q.vx)/M,0.4*(p.m*p.vy+q.m*q.vy)/M);
+    this.flashes.push({x:(p.x+q.x)/2,y:(p.y+q.y)/2,age:0}); this.col++; this.fus++; this.offer({e:1,fused:true,k:p.k}); };
+  Gas.prototype.spawn=function(k){ var B=this.box, s=this.sig(KIND[k].m), r=KIND[k].r, t, x, y, vx, vy, side;
+    for(t=0;t<30;t++){ side=Math.floor(Math.random()*4);
+      if(side<2){ x=side?B.x+B.w-r-1:B.x+r+1; y=B.y+r+Math.random()*(B.h-2*r); vx=(side?-1:1)*Math.abs(gauss())*s; vy=gauss()*s; }
+      else { y=side===3?B.y+B.h-r-1:B.y+r+1; x=B.x+r+Math.random()*(B.w-2*r); vy=(side===3?-1:1)*Math.abs(gauss())*s; vx=gauss()*s; }
+      if(this.free(x,y,r,RNG)){ this.add(k,x,y,vx,vy).born=0; return; } } };
+  Gas.prototype.maintain=function(dt){ var a=this.active(), nh=a.filter(function(p){ return p.k==='he'; }).length, np=a.length-nh, self=this, z;
+    this.spawnT-=dt; this.convT-=dt;
+    if(a.length<this.N){ if(this.spawnT<=0){ this.spawn(nh<this.nHe?'he':'p'); this.spawnT=0.2; } return; }
+    if(a.length>this.N){ z=a[Math.floor(Math.random()*a.length)]; this.parts=this.parts.filter(function(q){ return q!==z; }); this.purge(z.id); return; }
+    if(this.convT<=0 && nh!==this.nHe){ var from=nh<this.nHe?'p':'he', to=from==='p'?'he':'p', c=a.filter(function(p){ return p.k===from; });
+      if(c.length){ z=c[Math.floor(Math.random()*c.length)]; var sc=Math.sqrt(z.m/KIND[to].m); z.k=to; z.m=KIND[to].m; z.r=KIND[to].r; z.vx*=sc; z.vy*=sc; self.purge(z.id); this.convT=0.1; } } };
+  Gas.prototype.step=function(dt){ var B=this.box, sub=3, h=dt/sub, s, i, j, a, key, seen, self=this;
+    for(s=0;s<sub;s++){
+      a=this.active(); seen={};
+      for(i=0;i<a.length;i++) for(j=i+1;j<a.length;j++){ var p=a[i], q=a[j]; if(p.dead||q.dead) continue;
+        var dx=q.x-p.x, dy=q.y-p.y, df=p.r+q.r, dc=df+RNG; if(dx>dc||dx<-dc||dy>dc||dy<-dc) continue;
+        var d=Math.sqrt(dx*dx+dy*dy)||0.01; if(d>=dc) continue;
+        var same=p.k===q.k, E=(same?(p.k==='p'?EB.pp:EB.hh):EB.ph)*KAPPA; key=p.id+'_'+q.id;
+        var en=this.enc[key]||(this.enc[key]={min:d,df:df,k:same?p.k:'mix'}); if(d<en.min) en.min=d; seen[key]=1;
+        if(same && d<df){ this.fuse(p,q); continue; }
+        var f=2*E*(dc-d)/(RNG*RNG), ux=dx/d, uy=dy/d;
+        p.vx-=f*ux/p.m*h; p.vy-=f*uy/p.m*h; q.vx+=f*ux/q.m*h; q.vy+=f*uy/q.m*h; }
+      for(key in this.enc) if(!seen[key]){ var e=this.enc[key]; delete this.enc[key]; this.col++;
+        this.offer({e:Math.min(0.97,Math.pow(clamp((e.df+RNG-e.min)/RNG,0,1),2)),fused:false,k:e.k}); }
+      this.parts.forEach(function(p){ p.x+=p.vx*h; p.y+=p.vy*h;
+        if(p.x<B.x+p.r){ p.x=B.x+p.r; p.vx=Math.abs(p.vx); } else if(p.x>B.x+B.w-p.r){ p.x=B.x+B.w-p.r; p.vx=-Math.abs(p.vx); }
+        if(p.y<B.y+p.r){ p.y=B.y+p.r; p.vy=Math.abs(p.vy); } else if(p.y>B.y+B.h-p.r){ p.y=B.y+B.h-p.r; p.vy=-Math.abs(p.vy); } });
+    }
+    this.parts.forEach(function(p){ if(p.k==='d'||p.k==='x') p.age+=dt; if(p.born!==undefined) p.born+=dt; });
+    this.parts=this.parts.filter(function(p){ return !((p.k==='d'||p.k==='x') && p.age>2.2); });
+    this.flashes.forEach(function(fl){ fl.age+=dt; }); this.flashes=this.flashes.filter(function(fl){ return fl.age<0.7; });
+    // the gas is held at its temperature (the energy a fusion releases is shown, then carried away)
+    a=this.active(); if(a.length){ var KE=0; a.forEach(function(p){ KE+=0.5*p.m*(p.vx*p.vx+p.vy*p.vy); }); var Ti=KE/(a.length*KAPPA);
+      if(Ti<1e-9){ a.forEach(function(p){ var sg=self.sig(p.m); p.vx=gauss()*sg; p.vy=gauss()*sg; }); }
+      else { var lam=Math.sqrt(clamp(1+(dt/0.25)*(this.T/Ti-1),0.25,2.25)); a.forEach(function(p){ p.vx*=lam; p.vy*=lam; }); } }
+    this.maintain(dt); };
+  Gas.prototype.svg=function(clip){ var g='<g clip-path="url(#'+clip+')" style="--pc:#ff6b5e;--nc:#aeb8c8;--edge:#0b1020">';
+    this.flashes.forEach(function(fl){ var u=fl.age/0.7; g+=circ(fl.x,fl.y,10+34*u,'none',' stroke="'+HOT+'" stroke-width="'+(3*(1-u)+0.5).toFixed(1)+'" opacity="'+(1-u).toFixed(2)+'"')+circ(fl.x,fl.y,13*(1-u)+2,'#fff7d6',' opacity="'+(0.5*(1-u)).toFixed(2)+'"'); });
+    this.parts.forEach(function(p){ var op=1; if(p.k==='d'||p.k==='x') op=clamp((2.2-p.age)/0.6,0,1); else if(p.born!==undefined) op=clamp(p.born/0.3,0,1);
+      g+='<use href="#fs-'+p.k+'" x="'+f1(p.x)+'" y="'+f1(p.y)+'"'+(op<1?' opacity="'+op.toFixed(2)+'"':'')+'/>'; });
+    return g+'</g>'; };
+  // the four kinds of nucleus, drawn once and used for every particle: protons red with a plus sign, neutrons grey
+  function plus(x,y,k){ return '<path d="M'+f1(x-k)+','+f1(y)+' H'+f1(x+k)+' M'+f1(x)+','+f1(y-k)+' V'+f1(y+k)+'" stroke="#fff" stroke-width="'+(k*0.52).toFixed(2)+'" stroke-linecap="round" fill="none"/>'; }
+  function nuc1(x,y,r,isP){ return circ(x,y,r,isP?'var(--pc)':'var(--nc)',' stroke="var(--edge)" stroke-width="'+(r*0.12).toFixed(2)+'"')+(isP?plus(x,y,r*0.48):''); }
+  function nucleus(k,s){ s=s||1; var g='', i, a;
+    if(k==='p') return nuc1(0,0,5.5*s,1);
+    if(k==='he') return nuc1(-3.4*s,-3.4*s,4.2*s,1)+nuc1(3.4*s,-3.4*s,4.2*s,0)+nuc1(-3.4*s,3.4*s,4.2*s,0)+nuc1(3.4*s,3.4*s,4.2*s,1);
+    if(k==='d') return nuc1(-3.9*s,0,4.6*s,1)+nuc1(3.9*s,0,4.6*s,0);
+    for(i=0;i<6;i++){ a=i*Math.PI/3; g+=nuc1(7.2*s*Math.cos(a),7.2*s*Math.sin(a),3.9*s,i%2===0); }
+    return g+nuc1(-2.6*s,0,3.9*s,0)+nuc1(2.6*s,0,3.9*s,1); }
+  function defs(){ return '<defs>'+['p','he','d','x'].map(function(k){ return '<g id="fs-'+k+'">'+nucleus(k)+'</g>'; }).join('')+
+    '<g id="fs-P">'+nucleus('p',2.5)+'</g><g id="fs-HE">'+nucleus('he',2.1)+'</g><g id="fs-D">'+nucleus('d',2.5)+'</g><g id="fs-X">'+nucleus('x',1.7)+'</g></defs>'; }
+  function key(xr,y,col){ // "proton" and "neutron" with their dots, ending at xr
+    return '<g style="--pc:#e5484d;--nc:#8b95a7;--edge:transparent">'+'<g transform="translate('+f1(xr-120)+','+f1(y-4)+') scale(.9)">'+nucleus('p')+'</g><g transform="translate('+f1(xr-56)+','+f1(y-4)+') scale(.9)">'+nuc1(0,0,5.5,0)+'</g></g>'+
+      txt(xr-112,y,'proton',{fs:11.5,c:col})+txt(xr-48,y,'neutron',{fs:11.5,c:col}); }
+
+  // ================= state =================
+  var levelSeg, viewSeg, nucSeg, starSeg;
+  function lvl(){ return levelSeg ? levelSeg.value() : 'ks4'; }
+  function ks4(){ return lvl()==='ks4'; }
+  function ib(){ return lvl()==='ib'; }
+  var goBtn=$('#fs-go'), slowBtn=$('#fs-slow'), tIn=$('#fs-t'), nIn=$('#fs-n'), noteEl=$('#fs-note');
+  function slow(){ return pressed(slowBtn); }
+  var running=false, raf=0, last=0, tall=false, L={};
+  // picture 1
+  var RUN=30, gasA=new Gas(), boxT=15, boxN=7, nuc='p', boxClock=0, boxDone=false, cu=null;
+  // picture 2
+  var STARS={
+    sun:{name:'The Sun', Tms:15, THe:100, Sf:5, Tsurf:5800, pw:0.3, life:'about 10 billion years', giant:'Red giant'},
+    big:{name:'A star of 16 × the Sun’s mass', Tms:35, THe:100, Sf:6, Tsurf:30000, pw:1.2, life:'about 10 million years', giant:'Red supergiant'}
+  };
+  var gasB=new Gas(), starId='sun', S={T:1,h:1,he:1,dev:1,ignited:true,done:false}, dragging=null, poke='';
+  function star(){ return STARS[starId]; }
+  function THe(){ return star().THe/star().Tms; }
+
+  // ---- the star: one equation. T is the core temperature (1 = its main sequence value), and the core's radius is 1/T.
+  // If fusion releases less energy than the star loses, the core contracts and heats up; if more, it expands and cools.
+  var KT=0.32, HOLD=1.35;                      // KT: the fastest the core can contract (per second of the animation)
+  function fuelH(h){ return h>0.05 ? 0.5+0.5*h : 0.525*h/0.05; }
+  function fusion(){ var fh=fuelH(S.h)*Math.pow(S.T,4), fhe=S.he*Math.pow(S.T/THe(),10); return {H:fh, He:fhe, all:fh+fhe}; }
+  function rateT(){ return dragging ? 0 : clamp(3*KT*(1-fusion().all), -0.6, KT); }
+  function envK(){ return (star().Sf-1)/(THe()-HOLD); }
+  function env(T){ return S.h>0 ? 1 : 1+envK()*Math.max(0,T-HOLD); }   // once the core's hydrogen has gone, the outer layers swell as the core heats up
+  function size(){ return env(S.T)*Math.max(1,1/S.T)*S.dev; }      // the star's radius (1 = main sequence)
+  function rateS(){ var r=rateT(); return (S.h===0 && S.T>HOLD ? envK()*S.T/env(S.T) : 0)*r - (S.T<1 ? r : 0) - 1.2*Math.log(S.dev); }
+  function qCore(){ return 1+0.4*Math.tanh(2.5*(-rateT())); }     // outward pressure over gravity at the core: under 1 while it contracts
+  function qSurf(){ return 1+0.4*Math.tanh(2.5*rateS()); }
+  function phase(){ var f=fusion().all;
+    if(S.h>0) return !S.ignited ? 'proto' : (S.h<0.06 ? 'out' : 'ms');
+    return (Math.abs(1-f)<0.05 && S.T>0.93*THe()) ? 'giant' : 'contract'; }
+  function stepStar(dt){ var f=fusion();
+    if(!dragging){ S.T*=Math.exp(rateT()*dt); S.dev=Math.exp(Math.log(S.dev)*Math.exp(-1.2*dt)); }
+    if(!S.ignited && f.all>=0.97) S.ignited=true;
+    if(S.ignited && !dragging){ S.h=Math.max(0,S.h-Math.min(f.H,1.3)*dt/10); if(S.h<0.002) S.h=0; }
+    S.he=Math.max(0.6,S.he-f.He*dt/80);
+    if(phase()==='giant' && Math.abs(1-fusion().all)<0.02 && Math.abs(Math.log(S.dev))<0.02) S.done=true; }
+  var JUMP={ proto:function(){ return {T:0.2,h:1,ignited:false}; }, ms:function(){ return {T:1,h:1,ignited:true}; },
+    out:function(){ return {T:1.165,h:0.055,ignited:true}; }, contract:function(){ return {T:Math.min(2.2,0.78*THe()),h:0,ignited:true}; },
+    giant:function(){ return {T:THe(),h:0,ignited:true}; } };
+  function jump(id){ var j=JUMP[id](); stop(); S={T:j.T,h:j.h,he:1,dev:1,ignited:j.ignited,done:false}; poke=''; syncCore(true); draw(); }
+  function squeeze(f){ // change the star's radius by the factor f: the core is squeezed (or stretched) with it
+    var S0=size(), Tn=clamp(S.T/f, 0.15, THe()*1.02); S.T=Tn; S.dev=clamp(S0*f/(env(Tn)*Math.max(1,1/Tn)), 0.5, 1.6); S.done=false; poke=f<1?'in':'out'; }
+  // the sample of the core follows the star: hotter and denser as the core contracts, and helium replaces hydrogen as it is used
+  function coreN(){ return Math.round(clamp(L.coreN*Math.pow(S.T,1.3), 5, L.coreMax)); }
+  function syncCore(reseed){ var N=coreN(), nHe=Math.round(N*(1-S.h)); gasB.T=S.T*star().Tms; gasB.N=N; gasB.nHe=nHe; if(reseed) gasB.seed(N,nHe); }
+
+  // ================= layout: wide, or tall on a phone =================
+  function layout(){
+    tall=svg.getBoundingClientRect().width<520; svg.classList.toggle('tall',tall);
+    if(view==='box'){
+      if(tall) L={vb:[430,612], box:{x:10,y:34,w:410,h:262}, cu:{x:10,y:308,w:410}};
+      else L={vb:[860,350], box:{x:14,y:34,w:500,h:302}, cu:{x:528,y:0,w:318}};
+      gasA.box=L.box;
+    } else {
+      if(tall) L={vb:[430,662], win:{x:10,y:10,w:410,h:330}, core:{x:10,y:376,w:410,h:170}, gg:{x:10,y:562,w:410}, coreN:22, coreMax:44};
+      else L={vb:[860,350], win:{x:14,y:14,w:392,h:322}, core:{x:420,y:34,w:426,h:186}, gg:{x:420,y:238,w:426}, coreN:26, coreMax:54};
+      L.cx=L.win.x+L.win.w/2; L.cy=L.win.y+L.win.h/2; gasB.box=L.core;
+    }
+    svg.setAttribute('viewBox','0 0 '+L.vb[0]+' '+L.vb[1]);
+  }
+  function keepIn(g){ var B=g.box; g.parts.forEach(function(p){ p.x=clamp(p.x,B.x+p.r,B.x+B.w-p.r); p.y=clamp(p.y,B.y+p.r,B.y+B.h-p.r); }); }
+
+  // ================= picture 1: nuclei in a hot gas, and a close-up of one collision =================
+  function fmtT(T){ if(T>=0.995) return (T>=99.5?Math.round(T/10)*10:Math.round(T))+' million K'; return fmtInt(+(T*1e6).toPrecision(2))+' K'; }
+  function tOfSlider(v){ var T=200*Math.pow(v/100,2); return T<0.0058 ? 0.0058 : +T.toPrecision(2); }
+  function sliderOfT(T){ return Math.round(100*Math.sqrt(T/200)); }
+  function nOf(level){ return 6*level; }
+  function kindName(cap){ var s=nuc==='he'?'helium':'hydrogen'; return cap ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+  var FORCE='var(--force)', SPEED='var(--ink)';
+  function staticBox(){ var B=L.box, P=L.cu, y=P.y, g=defs();
+    g+='<clipPath id="fs-clipA"><rect x="'+B.x+'" y="'+B.y+'" width="'+B.w+'" height="'+B.h+'" rx="10"/></clipPath>';
+    g+=rect(B.x,B.y,B.w,B.h,WBG,' rx="10"');
+    g+=txt(B.x+2,B.y-10,kindName(1)+' nuclei in a hot gas',{fs:13,w:700,c:'var(--ink)'})+key(B.x+B.w,B.y-10,'var(--ink-soft)');
+    g+=txt(P.x+8,y+24,'Close-up of one collision',{fs:13,w:700,c:'var(--ink)'});
+    g+=arrow(P.x+8,y+46,P.x+30,y+46,SPEED,2)+txt(P.x+36,y+50,'speed',{fs:11.5});
+    g+=arrow(P.x+104,y+46,P.x+126,y+46,FORCE,2)+txt(P.x+132,y+50,'electrostatic repulsion',{fs:11.5});
+    g+=txt(P.x+8,y+226,'Kinetic energy of this pair',{fs:12});
+    g+=rect(P.x+8,y+234,P.w-16,14,'var(--bg)',' rx="4" stroke="var(--panel-border)"');
+    g+=txt(P.x+8+0.78*(P.w-16),y+268,'needed to fuse',{fs:11.5,a:'middle'});
+    g+=txt(P.x+P.w-8,y+L.vb[1]-(tall?P.y+8:14),'A model: not to scale',{fs:11,a:'end',c:'var(--ink-faint)'});
+    return g; }
+  function drawBox(){ var B=L.box, P=L.cu, y=P.y, cx=P.x+P.w/2, y0=y+128, g='';
+    g+=rect(B.x,B.y,B.w,B.h,'#ff7a2e',' rx="10" opacity="'+(0.02+0.2*Math.sqrt(boxT/200)).toFixed(3)+'"');
+    g+=gasA.svg('fs-clipA');
+    // the close-up: the closest collision of the last few seconds, replayed head-on and slowed down
+    var k=cu?cu.ev.k:nuc, big=k==='he'?'HE':'P', R=k==='he'?17:14, far=150, touch=2*R, e=cu?cu.ev.e:0, u=cu?Math.min(cu.u,1):0, fused=cu&&cu.ev.fused;
+    var smin=touch+(1-Math.sqrt(e))*(far-touch)*0.72, sep, vlen=0, vdir=1, x, cap='', capc='var(--ink-soft)';
+    if(!cu){ sep=far; cap=running?'Waiting for a collision…':'Press Play'; }
+    else if(u<0.45){ x=u/0.45; sep=far+(smin-far)*(1-(1-x)*(1-x)); vlen=(8+26*Math.sqrt(e))*(1-x); cap='Repulsion slows them down'; }
+    else if(fused){ sep=0; cap='Close enough: they fuse. Energy is released'; capc='var(--good)'; }
+    else if(u<0.55){ sep=smin; cap='Stopped: not close enough to fuse'; capc='var(--bad)'; }
+    else { x=(u-0.55)/0.45; sep=smin+(far-smin)*x*x; vlen=(8+26*Math.sqrt(e))*x; vdir=-1; cap='Pushed apart again'; capc='var(--bad)'; }
+    g+='<g style="--edge:var(--panel)">';
+    if(fused && u>=0.45){ var w=(u-0.45)/0.55;
+      g+=circ(cx,y0,20+50*w,'none',' stroke="var(--hot)" stroke-width="'+(5*(1-w)+0.5).toFixed(1)+'" opacity="'+(1-w).toFixed(2)+'"');
+      for(var i=0;i<8;i++){ var a=i*Math.PI/4+0.3, r1=26+40*w, r2=r1+14; g+=ln(cx+r1*Math.cos(a),y0+r1*Math.sin(a),cx+r2*Math.cos(a),y0+r2*Math.sin(a),'var(--hot)',2.4,' stroke-linecap="round" opacity="'+(1-w).toFixed(2)+'"'); }
+      g+='<use href="#fs-'+(k==='he'?'X':'D')+'" x="'+f1(cx)+'" y="'+f1(y0)+'"/>';
+    } else {
+      var xl=cx-sep/2, xr=cx+sep/2, c=clamp((far-sep)/(far-touch),0,1), fl=6+30*c;
+      g+='<use href="#fs-'+big+'" x="'+f1(xl)+'" y="'+f1(y0)+'"/><use href="#fs-'+big+'" x="'+f1(xr)+'" y="'+f1(y0)+'"/>';
+      if(c>0.05){ g+=arrow(xl-R-3,y0,xl-R-3-fl,y0,FORCE,2.6)+arrow(xr+R+3,y0,xr+R+3+fl,y0,FORCE,2.6); }
+      if(vlen>5){ g+=arrow(xl-vdir*vlen/2,y0-R-12,xl+vdir*vlen/2,y0-R-12,SPEED,2.2)+arrow(xr+vdir*vlen/2,y0-R-12,xr-vdir*vlen/2,y0-R-12,SPEED,2.2); }
+    }
+    g+='</g>';
+    g+=txt(cx,y+190,cap,{a:'middle',fs:12,w:600,c:capc});
+    var bw=P.w-16, thr=0.78*bw;
+    if(cu) g+=rect(P.x+8,y+234,Math.min(e,1)*thr+(fused?0.06*bw:0),14,fused&&u>=0.45?'var(--good)':'var(--ink-soft)',' rx="4"');
+    g+=ln(P.x+8+thr,y+229,P.x+8+thr,y+253,'var(--ink)',2);
+    return g; }
+  function boxNote(){ var w=ks4()?'pressure':'density', T=fmtT(boxT), c=gasA.col, f=gasA.fus, n='', hi=boxN>=6, lo=boxN<=2;
+    if(!running && boxClock===0){
+      n=nuc==='he' ? 'These are <b>helium nuclei</b>. Each has a charge of 2+, so two of them repel <b>four times as strongly</b> as two protons the same distance apart. '
+        : 'These are <b>hydrogen nuclei</b> (protons). Each has a positive charge, so they <b>repel</b> each other. ';
+      if(ib()) n+='The strong nuclear force can only pull two nuclei together when they are almost touching. ';
+      return n+'Set the temperature and the '+w+', then press <b>Play</b> for '+RUN+' seconds. Do any of them fuse?'; }
+    if(boxDone) n='<b>In '+RUN+' s: '+fmtInt(c)+' collision'+(c===1?'':'s')+', '+fmtInt(f)+' fusion'+(f===1?'':'s')+'.</b> ';
+    if(c===0) n+='At '+T+' the nuclei are slow and hardly ever meet. ';
+    else if(f===0) n+='At '+T+' the nuclei are too slow. <span class="tf">Electrostatic repulsion</span> stops each pair and pushes them apart before they get close enough to fuse. ';
+    else if(f<0.15*c) n+='At '+T+' most pairs are still pushed apart, but the fastest get <b>close enough to fuse</b>: two nuclei join to make a larger nucleus, mass is lost and energy is released. ';
+    else n+='At '+T+' the nuclei are so fast that many pairs <b>overcome the electrostatic repulsion</b> and fuse: each fusion makes a larger nucleus, with a loss of mass and a release of energy. ';
+    if(lo) n+='At low '+w+' the nuclei are far apart, so collisions are rare'+(f>0?': few fusions each second.':'.');
+    else if(hi) n+='At high '+w+' the nuclei are packed close together, so there are many collisions each second'+(f>0&&!ks4()?', enough to maintain fusion.':'.');
+    return n; }
+
+  // ================= picture 2: a star, a sample of its core, and three gauges =================
+  var TCOL=[[2600,[255,96,56]],[3600,[255,140,66]],[4800,[255,190,110]],[5800,[255,232,160]],[9000,[250,246,255]],[30000,[160,190,255]]];
+  function tempCol(T){ var i, a, b, u; if(T<=TCOL[0][0]) return TCOL[0][1]; for(i=1;i<TCOL.length;i++) if(T<=TCOL[i][0]){ a=TCOL[i-1]; b=TCOL[i]; u=(T-a[0])/(b[0]-a[0]); return a[1].map(function(v,j){ return Math.round(v+(b[1][j]-v)*u); }); } return TCOL[TCOL.length-1][1]; }
+  function css(c){ return 'rgb('+c.join(',')+')'; }
+  function tFrac(Tmk){ return clamp(Math.log(Tmk/2)/Math.log(100),0,1); }
+  var ROWS=['Core temperature','Hydrogen in the core','Fusion rate'];
+  function staticStar(){ var W=L.win, C=L.core, G=L.gg, g=defs(), x0=G.x+150, bw=G.w-150, i, y;
+    g+='<clipPath id="fs-clipB"><rect x="'+C.x+'" y="'+C.y+'" width="'+C.w+'" height="'+C.h+'" rx="10"/></clipPath><clipPath id="fs-clipW"><rect x="'+W.x+'" y="'+W.y+'" width="'+W.w+'" height="'+W.h+'" rx="10"/></clipPath>';
+    g+=rect(W.x,W.y,W.w,W.h,WBG,' rx="10"')+rect(C.x,C.y,C.w,C.h,WBG,' rx="10"');
+    g+=wtxt(W.x+12,W.y+38,'Not to scale',{fs:11,c:WSOFT});
+    g+=arrow(W.x+30,W.y+W.h-16,W.x+12,W.y+W.h-16,GRAV,2.4)+wtxt(W.x+36,W.y+W.h-12,'gravity pulls inwards',{fs:11.5,c:WSOFT});
+    g+=wtxt(W.x+W.w-12,W.y+W.h-12,ib()?'radiation pressure':'pressure outwards',{fs:11.5,c:WSOFT,a:'end'})+arrow(W.x+W.w-(ib()?160:152),W.y+W.h-16,W.x+W.w-(ib()?142:134),W.y+W.h-16,PRESS,2.4);
+    g+=txt(C.x+2,C.y-10,'A sample of the core',{fs:13,w:700,c:'var(--ink)'})+key(C.x+C.w,C.y-10,'var(--ink-soft)');
+    for(i=0;i<3;i++){ y=G.y+10+32*i; g+=txt(G.x,y+10.5,ROWS[i],{fs:11.5,c:'var(--ink)'})+rect(x0,y,bw,12,'var(--bg)',' rx="4" stroke="var(--panel-border)"'); }
+    g+=txt(x0+tFrac(10)*bw,G.y+4,'hydrogen fuses',{fs:11,a:'middle'})+txt(x0+tFrac(100)*bw,G.y+4,'helium fuses',{fs:11,a:'middle'});
+    return g; }
+  function drawStar(){ var W=L.win, G=L.gg, CX=L.cx, CY=L.cy, st=star(), g='', i, a, sz=size(), R=62*Math.pow(sz,0.36), rc=22*Math.sqrt(1/S.T), f=fusion(), qs=qSurf(), qc=qCore();
+    var col=tempCol(st.Tsurf*Math.pow(sz,-st.pw)), lite=col.map(function(v){ return Math.round(v+(255-v)*0.5); }), dark=col.map(function(v){ return Math.round(v*0.72); });
+    g+='<defs><radialGradient id="fs-sg"><stop offset="0" stop-color="'+css(col)+'" stop-opacity=".55"/><stop offset=".62" stop-color="'+css(col)+'" stop-opacity=".2"/><stop offset="1" stop-color="'+css(col)+'" stop-opacity="0"/></radialGradient>'+
+      '<radialGradient id="fs-sb" cx=".4" cy=".36" r=".76"><stop offset="0" stop-color="'+css(lite)+'"/><stop offset=".6" stop-color="'+css(col)+'"/><stop offset="1" stop-color="'+css(dark)+'"/></radialGradient>'+
+      '<radialGradient id="fs-sc"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#fff6d8" stop-opacity=".85"/><stop offset="1" stop-color="#fff6d8" stop-opacity="0"/></radialGradient></defs>';
+    g+='<g clip-path="url(#fs-clipW)">'+circ(CX,CY,R*1.3,'url(#fs-sg)')+circ(CX,CY,R,'url(#fs-sb)',' id="fs-body" class="fs-grab"')+
+      circ(CX,CY,rc*1.25,'url(#fs-sc)',' opacity="'+clamp(0.12+0.75*Math.min(1,f.all),0,0.9).toFixed(2)+'" pointer-events="none"')+
+      circ(CX,CY,rc,'none',' stroke="'+WBG+'" stroke-width="1.4" stroke-dasharray="4 3" opacity=".7" pointer-events="none"')+'</g>';
+    // gravity inwards (on the diagonals) and pressure outwards (up, down, left and right), both drawn from the surface
+    // (the pressure arrows change length by more than the forces do, so the difference can be seen)
+    for(i=0;i<4;i++){ a=Math.PI/4+i*Math.PI/2; g+=arrow(CX+(R-3)*Math.cos(a),CY+(R-3)*Math.sin(a),CX+(R-27)*Math.cos(a),CY+(R-27)*Math.sin(a),'#2a56b8',3)+arrow(CX+(R-3)*Math.cos(a),CY+(R-3)*Math.sin(a),CX+(R-27)*Math.cos(a),CY+(R-27)*Math.sin(a),GRAV,1.6); }
+    for(i=0;i<4;i++){ a=i*Math.PI/2; var pl_=clamp(24*(1+2.2*(qs-1)),6,40); g+=arrow(CX+(R+3)*Math.cos(a),CY+(R+3)*Math.sin(a),CX+(R+3+pl_)*Math.cos(a),CY+(R+3+pl_)*Math.sin(a),PRESS,2.6); }
+    if(Math.abs(qc-1)>0.03 && rc+13<R-27) for(i=0;i<4;i++){ a=i*Math.PI/2; var r1=qc<1?rc+12:rc+2, r2=qc<1?rc+2:rc+12; g+=arrow(CX+r1*Math.cos(a),CY+r1*Math.sin(a),CX+r2*Math.cos(a),CY+r2*Math.sin(a),qc<1?'#2a56b8':'#b45a00',1.8); }
+    var lx=W.x+W.w-44, ly=W.y+27, d=Math.hypot(lx-CX,ly-CY), ux=(lx-CX)/d, uy=(ly-CY)/d;
+    g+=ln(lx,ly,CX+ux*(rc+1),CY+uy*(rc+1),WSOFT,1,' opacity=".8"')+wtxt(W.x+W.w-12,W.y+22,'core',{fs:12,a:'end'});
+    g+=wtxt(W.x+12,W.y+22,STAGE[phase()]||st.giant,{fs:13,w:700});
+    g+=gasB.svg('fs-clipB');
+    var x0=G.x+150, bw=G.w-150, y=G.y+10;
+    g+=rect(x0,y,tFrac(S.T*st.Tms)*bw,12,PRESS,' rx="4"')+rect(x0,y+32,S.h*bw,12,'var(--pc)',' rx="4"')+rect(x0,y+64,Math.min(f.all,2)/2*bw,12,'var(--hot)',' rx="4"');
+    g+=ln(x0+tFrac(10)*bw,y-3,x0+tFrac(10)*bw,y+15,'var(--ink)',1.6)+ln(x0+tFrac(100)*bw,y-3,x0+tFrac(100)*bw,y+15,'var(--ink)',1.6)+ln(x0+bw/2,y+61,x0+bw/2,y+79,'var(--ink)',1.6);
+    return g; }
+  var STAGE={proto:'Protostar', ms:'Main sequence', out:'Hydrogen running out', contract:'Core contracting'};
+  function starNote(){ var st=star(), ph=phase(), f=fusion().all, pw=ib()?'radiation pressure':'pressure', n='', big=starId==='big';
+    if(ph==='proto'){ n='<b>Protostar.</b> Gravity pulls the gas inwards. '+(f<0.2 ? 'There is no fusion yet, so nothing balances gravity: the cloud collapses, and its centre gets hotter and denser.' : 'The core is now hot and dense enough for some hydrogen nuclei to fuse. Fusion releases energy, and the outward '+pw+' grows.'); }
+    else if(ph==='ms'){
+      if(poke==='in' && f>1.08) n='<b>Squeezed.</b> The core is hotter and denser, so fusion is faster. The outward '+pw+' is now greater than gravity, so the star expands again.';
+      else if(poke==='out' && f<0.92) n='<b>Stretched.</b> The core is cooler and less dense, so fusion is slower. Gravity is now greater than the outward '+pw+', so the star contracts again.';
+      else n='<b>Main sequence.</b> Hydrogen nuclei fuse to make helium in the core. The outward '+pw+' balances the pull of gravity, so the star is stable for '+st.life+'.'+(big?' Its hotter core fuses hydrogen far faster than the Sun’s.':'')+(running?'':' Press <b>Play</b>, or drag the star’s surface in or out.'); }
+    else if(ph==='out') n='<b>The hydrogen in the core has almost run out.</b> Fusion slows down, so the outward '+pw+' falls.';
+    else if(ph==='contract') n=fusion().He>0.2 ? '<b>Helium fusion starts.</b> The core has reached about 100 million K, hot enough for helium nuclei to fuse. Fusion releases energy again, so the outward '+pw+' rises until it balances gravity.' : '<b>Fusion in the core has stopped.</b> Gravity is greater than the outward '+pw+', so the core contracts and its temperature rises.'+(size()>1.15?' The outer layers are pushed outwards: the star expands and its surface cools.':'');
+    else n='<b>'+st.giant+'.</b> At about 100 million K the core is hot enough for <b>helium nuclei</b> to fuse. Helium nuclei have a charge of 2+, so they repel more strongly than hydrogen nuclei and need a much higher temperature. The forces balance again.'+(big?' Later it fuses heavier nuclei, up to iron.':'');
+    return n; }
+
+  // ================= drawing =================
+  function setNote(h){ if(noteEl._h!==h){ noteEl._h=h; noteEl.innerHTML=h; } }
+  function set(id,v){ var el=$(id); if(el.textContent!==v) el.textContent=v; }
+  function redrawStatic(){ gS.innerHTML = view==='box' ? staticBox() : staticStar();
+    svg.setAttribute('aria-label', view==='box' ? kindName(1)+' nuclei moving in a hot gas. Each pair repels as it gets close; a pair that touches fuses. Beside it, a close-up of one collision with a bar for the pair’s kinetic energy.'
+      : 'A star with arrows for gravity inwards and pressure outwards, a sample of the nuclei in its core, and bars for the core temperature, the hydrogen left and the fusion rate.'); }
+  function readings(){
+    if(view==='box'){ var c=gasA.col, f=gasA.fus;
+      set('#fs-s1l','Time'); set('#fs-s1',boxClock.toFixed(0)+' s of '+RUN);
+      set('#fs-s2l','Collisions'); set('#fs-s2',fmtInt(c));
+      set('#fs-s3l','Fusions'); set('#fs-s3',fmtInt(f));
+      set('#fs-s4l','Fusions in every 100 collisions'); set('#fs-s4',c?(100*f/c<10&&f?(100*f/c).toFixed(1):String(Math.round(100*f/c))):'–');
+      set('#fs-t-out',fmtT(boxT)); set('#fs-n-out',nOf(boxN)+' nuclei');
+      setNote(boxNote());
+    } else { var st=star(), fu=fusion().all, qc=qCore();
+      set('#fs-s1l','Core temperature'); set('#fs-s1',fmtT(+(S.T*st.Tms).toPrecision(2)));
+      set('#fs-s2l','Hydrogen left in the core'); set('#fs-s2',Math.round(100*S.h)+' %');
+      set('#fs-s3l','Fusion rate'); set('#fs-s3',Math.round(100*fu)+' % of normal');
+      set('#fs-s4l','Forces on the core'); set('#fs-s4',Math.abs(qc-1)<0.03?'Balanced':(qc<1?'Gravity is greater':'Pressure is greater'));
+      setNote(starNote());
+    }
+    goBtn.innerHTML = running ? '&#10074;&#10074; Pause' : '&#9654; Play';
+  }
+  function draw(){ gD.innerHTML = view==='box' ? drawBox() : drawStar(); readings(); }
+
+  // ================= running =================
+  function stop(){ running=false; cancelAnimationFrame(raf); }
+  function frame(now){ if(!running) return; var real=Math.min(0.05,(now-last)/1000)||0.016, dt=real*(slow()?0.3:1); last=now;
+    if(view==='box'){ gasA.step(dt); boxClock+=dt;
+      if(cu){ cu.u+=real*(slow()?0.5:1)/2.6; }
+      if((!cu || cu.u>=1.12) && gasA.best){ cu={ev:gasA.best,u:0}; gasA.best=null; }
+      if(boxClock>=RUN){ boxClock=RUN; boxDone=true; stop(); if(FS.onEnd) FS.onEnd(FS.state()); }
+    } else { if(!dragging) stepStar(dt); syncCore(false); gasB.step(dt);
+      if(S.done){ stop(); if(FS.onEnd) FS.onEnd(FS.state()); } }
+    draw(); if(running) raf=requestAnimationFrame(frame); }
+  function play(){ if(running) return;
+    if(view==='box' && boxDone) resetBox();
+    if(view==='star' && S.done){ jump('ms'); }
+    running=true; last=performance.now(); raf=requestAnimationFrame(frame); readings(); }
+  function resetBox(){ stop(); boxClock=0; boxDone=false; cu=null; gasA.T=boxT; gasA.seed(nOf(boxN), nuc==='he'?nOf(boxN):0); }
+  function reset(){ if(view==='box'){ resetBox(); draw(); } else jump('ms'); }
+
+  // ================= controls =================
+  function showControls(){ var b=view==='box';
+    $('#fs-sliders').hidden=!b; $('#fs-nuc-wrap').hidden=!b||ks4(); $('#fs-try-wrap').hidden=!b; $('#fs-try-giant').hidden=ks4();
+    $('#fs-star-wrap').hidden=b; $('#fs-jump-wrap').hidden=b; $('#fs-squeeze').hidden=b; $('#fs-stretch').hidden=b;
+    $('#fs-view-wrap').hidden=!!SHOW; $('#fs-n-lab').textContent=ks4()?'Pressure':'Density'; $('#fs-jump-giant').textContent=star().giant; }
+  function setView(v){ stop(); view=v; viewSeg.pick(v); showControls(); layout(); if(v==='box'){ keepIn(gasA); if(!gasA.parts.length) resetBox(); } else { syncCore(!gasB.parts.length); keepIn(gasB); } redrawStatic(); draw(); }
+  function setBox(o){ // o: {T (million K), n (1 to 8), nuc ('p' or 'he')}; any of them
+    if(o.T!==undefined){ boxT=Math.max(0.0058,+o.T); tIn.value=sliderOfT(boxT); }
+    if(o.n!==undefined){ boxN=clamp(Math.round(o.n),1,8); nIn.value=boxN; }
+    if(o.nuc && o.nuc!==nuc){ nuc=o.nuc; nucSeg.pick(nuc); if(view==='box') redrawStatic(); }
+    resetBox(); if(view==='box') draw(); }
+  var TRY={surface:{T:0.0058,n:1,nuc:'p'}, core:{T:15,n:7,nuc:'p'}, reactor:{T:150,n:1,nuc:'p'}, giant:{T:100,n:8,nuc:'he'}};
+  levelSeg=segGroup($('#fs-level'), function(){ if(ks4() && nuc==='he') setBox({nuc:'p'}); showControls(); redrawStatic(); draw(); });
+  viewSeg=segGroup($('#fs-viewseg'), setView);
+  nucSeg=segGroup($('#fs-nuc'), function(v){ nuc=''; setBox({nuc:v}); });
+  starSeg=segGroup($('#fs-star'), function(v){ starId=v; showControls(); jump('ms'); });
+  $('#fs-try').addEventListener('click', function(e){ var b=e.target.closest('button'); if(b){ setBox(TRY[b.dataset.v]); play(); } });
+  $('#fs-jump').addEventListener('click', function(e){ var b=e.target.closest('button'); if(b) jump(b.dataset.v); });
+  tIn.addEventListener('input', function(){ boxT=tOfSlider(+tIn.value); gasA.T=boxT; if(boxClock>0||boxDone) resetBox(); draw(); });
+  nIn.addEventListener('input', function(){ boxN=+nIn.value; resetBox(); draw(); });
+  goBtn.addEventListener('click', function(){ if(running){ stop(); readings(); } else play(); });
+  $('#fs-reset').addEventListener('click', reset);
+  slowBtn.addEventListener('click', function(){ slowBtn.setAttribute('aria-pressed', String(!slow())); });
+  $('#fs-squeeze').addEventListener('click', function(){ squeeze(0.75); draw(); play(); });
+  $('#fs-stretch').addEventListener('click', function(){ squeeze(1.3); draw(); play(); });
+  // drag the star's surface in or out (the Squeeze and Stretch buttons do the same for the keyboard)
+  function svgPt(e){ var pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+  svg.addEventListener('pointerdown', function(e){ if(view!=='star') return; var p=svgPt(e), d=Math.hypot(p.x-L.cx,p.y-L.cy), R=62*Math.pow(size(),0.36);
+    if(d>R+14) return; stop(); dragging={d0:Math.max(d,R*0.5), T0:S.T, dev0:S.dev}; try{ svg.setPointerCapture(e.pointerId); }catch(x){} svg.classList.add('dragging'); e.preventDefault(); });
+  svg.addEventListener('pointermove', function(e){ if(!dragging) return; var p=svgPt(e), d=Math.hypot(p.x-L.cx,p.y-L.cy), f=clamp(Math.pow(d/dragging.d0,1/0.36),0.75,1.3);
+    S.T=dragging.T0; S.dev=dragging.dev0; squeeze(f); syncCore(false); draw(); });
+  function endDrag(){ if(!dragging) return; dragging=null; svg.classList.remove('dragging'); play(); }
+  svg.addEventListener('pointerup', endDrag); svg.addEventListener('pointercancel', endDrag);
+  var rz=0; window.addEventListener('resize', function(){ clearTimeout(rz); rz=setTimeout(function(){ var was=tall; layout(); if(was!==tall){ keepIn(view==='box'?gasA:gasB); } redrawStatic(); draw(); }, 80); });
+
+  // ================= for the Questions (the Opus half): drive the picture and read it =================
+  var FS=window.FS={ onEnd:null,
+    view:function(v){ setView(v); }, box:setBox, star:function(id){ starId=id; starSeg.pick(id); showControls(); jump('ms'); },
+    jump:jump, squeeze:function(f){ squeeze(f); draw(); }, play:play, pause:function(){ stop(); readings(); }, reset:reset,
+    state:function(){ return view==='box'
+      ? {view:'box', T:boxT, n:boxN, nuclei:nOf(boxN), nuc:nuc, time:boxClock, collisions:gasA.col, fusions:gasA.fus, running:running, done:boxDone}
+      : {view:'star', star:starId, phase:phase(), T:S.T*star().Tms, hydrogen:S.h, fusion:fusion().all, radius:size(), qCore:qCore(), qSurface:qSurf(), running:running, done:S.done}; } };
+
+  // ---------- teacher page (not in a workout frame): the teach kit ----------
+  // ---- teach kit (master: tools/teach-kit/kit.js; copied by tools/kits.py, do not edit here) ----
+  /* Teacher page (Alex, 24 Nov 2026). An animation page opened on its own (not ?embed in a workout) is for a teacher
+     showing it on a projector: they know the physics, so the picture is the main display and the controls are small.
+     teachPage() hides the Explore | Questions switch (the questions are for students, in the workout frame, which is not
+     changed), adds a "Student version with questions" link, puts the note, readings, hint and working behind a Notes
+     button (in a card under the stage), moves the choices into one strip under the picture (or onto it), and makes the
+     picture as big as the window allows with its controls still on screen.
+     o = {
+       svg:    the picture (svg.view),
+       mode:   id of the Explore | Questions switch (leave out on a page that has none),
+       strip:  ids of choice blocks for the strip under the picture, in order (a .cgrid, or a label and its buttons in a div),
+       pic:    ids of choice blocks the picture itself does in layout B,
+       pin:    'tr' | 'tl' | 'br' | 'bl': layout B lays the pic blocks over that corner of the picture;
+               'hide': layout B hides them, as the picture already does that job (e.g. click a bar or a planet),
+       q:      {href, label} for the student version, or null,
+       layout: 'a' | 'b' | 'c' (default 'b'); ?layout= overrides it,
+       trial:  true shows a "Layout A | B | C" picker on the title line (while Alex compares),
+       onLayout: function(L), called after each change of layout
+     }
+     A: all the choices in the strip. B: the pic blocks on the picture (or hidden), the rest in the strip. C: the choices in
+     a narrow column beside the picture. Returns {fit, layout} or null in a frame. */
+  function teachPage(o){
+    if(/[?&]embed\b/.test(location.search) || window.self!==window.top) return null;
+    var $=function(id){ return document.getElementById(id); };
+    var root=document.documentElement, svg=o.svg, stage=svg.closest('.stage'), left=svg.closest('.stage > *');
+    var under=left.querySelector('.under'), side=stage.querySelector('.side'), head=document.querySelector('.page-head');
+    var strip=(o.strip||[]).map($).filter(Boolean), pics=(o.pic||[]).map($).filter(Boolean), L='b';
+    root.classList.add('teach');
+    if(!$('teach-kit-css')){
+      var st=document.createElement('style'); st.id='teach-kit-css';
+      st.textContent=''
+        +'.teach .page{max-width:1900px;padding-block:6px 24px;}'
+        +'.teach .home-link{min-height:32px;margin:0;}'
+        +'.teach .page-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:6px 16px;margin-bottom:8px;}'
+        +'.teach .page-head .eyebrow{display:none;}'
+        +'.teach .page-head h1{font-size:26px;}'
+        +'.tk-q{font:600 13px var(--font-mono,monospace);color:var(--topic,var(--accent));text-decoration:none;min-height:32px;display:inline-flex;align-items:center;}'
+        +'.tk-q:hover{text-decoration:underline;}'
+        +'.tk-lay{margin-left:auto;display:flex;align-items:center;gap:8px;font:12.5px var(--font-mono,monospace);color:var(--ink-soft);}'
+        +'.tk-lay .seg button{min-height:32px;padding:4px 12px;}'
+        +'.teach .stage{padding:12px;gap:12px 18px;grid-template-columns:minmax(0,1fr);}'
+        +'.teach .view{max-height:none;}'
+        +'.teach .side{display:none;}'
+        +'.teach .under{display:flex;flex-direction:row;flex-wrap:wrap;margin-top:8px;gap:8px 18px;align-items:flex-end;}'
+        +'.teach .under .sliders{flex:1 1 340px;}'
+        // small controls: the picture is the display (Alex, 24 Nov 2026: zoomed in on a projector the full-size buttons were huge)
+        +'.teach .under .btn{min-height:36px;padding:5px 12px;font-size:14.5px;border-radius:8px;}'
+        +'.teach .under .btn-group{gap:6px;}'
+        // bigger text that may take two lines ("No / epicycles"), so a group stays narrow (Alex, 24 Nov 2026)
+        +'.teach .tk-strip .seg button,.teach .tk-strip .jumprow button{min-height:36px;padding:3px 9px;font-size:14.5px;line-height:1.15;white-space:normal;max-width:calc(10ch + 24px);text-align:center;flex:0 0 auto;}'
+        +'.teach .tk-strip .rowlab,.teach .under .lab{font-size:12.5px;margin-bottom:2px;}'
+        +'.teach .under input[type=range]{min-height:20px;}'
+        +'.tk-strip{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:flex-end;}'
+        +'.tk-strip:empty{display:none;}'
+        +'.tk-strip>*{margin:0;}'
+        +'.tk-pic{position:relative;margin-inline:auto;}'
+        +'.tk-on{position:absolute;display:flex;flex-direction:column;gap:4px;padding:3px;border-radius:8px;background:color-mix(in srgb,var(--panel) 80%,transparent);max-width:calc(100% - 12px);}'
+        +'.tk-on:empty{display:none;}'
+        +'.tk-on.tr{top:6px;right:6px;align-items:flex-end;}.tk-on.tl{top:6px;left:6px;}.tk-on.br{bottom:6px;right:6px;align-items:flex-end;}.tk-on.bl{bottom:6px;left:6px;}'
+        +'.tk-on .rowlab{display:none;}'
+        +'.tk-on .cgrid.kit,.tk-on .cgrid.kit>.cgroup{gap:0;}'
+        +'.tk-on .seg button{min-height:26px;padding:2px 8px;font-size:11.5px;}'
+        +'.tk-on .seg{flex-wrap:wrap;justify-content:flex-end;}'
+        +'.tk-notes{margin-top:12px;padding:14px;}'
+        +'.tk-notes>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:10px 18px;align-items:start;}'
+        +'.tk-notes .note{min-height:0;}'
+        +'.lay-c .stage{grid-template-columns:minmax(0,1fr) 250px;}'
+        +'.lay-c .side{display:flex;}'
+        +'@media (max-width:860px){ .lay-c .stage{grid-template-columns:minmax(0,1fr);} }';
+      document.head.appendChild(st);
+    }
+    // the title line: back link, title, student version, layout picker
+    var home=document.querySelector('.home-link'); if(home && head) head.insertBefore(home, head.firstChild);
+    if(o.q && head){ var a=document.createElement('a'); a.className='tk-q'; a.href=o.q.href; a.innerHTML=o.q.label||'Student version with questions &rarr;'; head.appendChild(a); }
+    if(o.mode && $(o.mode)) $(o.mode).hidden=true;   // the Choice kit then hides "Try the questions" too
+    // Notes: everything left in the side column that is not a choice
+    var notes=document.createElement('div'); notes.className='card tk-notes'; notes.hidden=true;
+    var inner=document.createElement('div'); notes.appendChild(inner);
+    Array.prototype.slice.call(side.children).forEach(function(c){ if(c.id!==o.mode && strip.indexOf(c)<0 && pics.indexOf(c)<0) inner.appendChild(c); });
+    stage.parentNode.insertBefore(notes, stage.nextSibling);
+    // Notes goes in the main button row: the one with "Try the questions" if there is one (a page may have a hidden Questions row first)
+    var tq=under.querySelector('.btn-group .to-q'), bg=tq?tq.parentNode:under.querySelector('.btn-group'), nb=document.createElement('button');
+    nb.className='btn'; nb.type='button'; nb.textContent='Notes'; nb.setAttribute('aria-expanded','false');
+    var toq=bg.querySelector('.to-q'); bg.insertBefore(nb, toq||null);
+    nb.addEventListener('click',function(){ notes.hidden=!notes.hidden; nb.setAttribute('aria-expanded',notes.hidden?'false':'true'); if(!notes.hidden) notes.scrollIntoView({block:'nearest'}); });
+    // where the choices go
+    var row=document.createElement('div'); row.className='tk-strip'; under.insertBefore(row, under.firstChild);
+    var wrap=document.createElement('div'); wrap.className='tk-pic'; svg.parentNode.insertBefore(wrap, svg); wrap.appendChild(svg);
+    var on=document.createElement('div'); on.className='tk-on '+(o.pin||'tr'); wrap.appendChild(on);
+    function fit(){
+      svg.style.maxHeight=''; wrap.style.maxWidth='';
+      if(window.innerWidth<=560) return;
+      var r=stage.getBoundingClientRect(), sv=svg.getBoundingClientRect(), rest=r.height-sv.height;
+      if(L==='c') rest=Math.max(0, left.getBoundingClientRect().height-sv.height)+24;
+      var mh=Math.max(260, Math.floor(window.innerHeight-(r.top+window.scrollY)-rest-12));
+      svg.style.maxHeight=mh+'px';
+      // the box round the picture is only as wide as the picture drawn, so anything laid on a corner stays on it
+      var vb=svg.viewBox && svg.viewBox.baseVal;
+      if(vb && vb.height) wrap.style.maxWidth=Math.floor(mh*vb.width/vb.height)+'px';
+    }
+    function layout(x){
+      L=x; root.classList.remove('lay-a','lay-b','lay-c'); root.classList.add('lay-'+x);
+      var hide=x==='b' && o.pin==='hide';
+      if(x==='c'){ strip.concat(pics).forEach(function(e){ side.appendChild(e); }); }
+      else{
+        strip.forEach(function(e){ row.appendChild(e); });
+        pics.forEach(function(e){ (x==='b' && !hide ? on : row).appendChild(e); });
+      }
+      pics.forEach(function(e){ e.style.display=hide?'none':''; });
+      if(lp) Array.prototype.forEach.call(lp.querySelectorAll('button'),function(b){ b.setAttribute('aria-pressed',b.getAttribute('data-l')===x?'true':'false'); });
+      if(o.trial){ try{ var u=new URL(location.href); u.searchParams.set('layout',x); history.replaceState(null,'',u.href); }catch(e){} }
+      if(o.onLayout) o.onLayout(x);
+      fit();
+    }
+    var lp=null;
+    if(o.trial && head){
+      lp=document.createElement('div'); lp.className='tk-lay';
+      lp.innerHTML='<span id="tk-lay-lab">Layout</span><div class="seg pick fit" role="group" aria-labelledby="tk-lay-lab"><button type="button" data-l="a">A</button><button type="button" data-l="b">B</button><button type="button" data-l="c">C</button></div>';
+      head.appendChild(lp);
+      lp.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) layout(b.getAttribute('data-l')); });
+    }
+    layout((location.search.match(/[?&]layout=([abc])\b/)||[])[1]||o.layout||'b');
+    window.addEventListener('resize',fit); window.addEventListener('load',fit); setTimeout(fit,0);
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+    if(window.ResizeObserver) new ResizeObserver(function(){ requestAnimationFrame(fit); }).observe(under);
+    return {fit:fit, layout:function(){ return L; }};
+  }
+  // ---- end of teach kit ----
+  if(typeof teachPage==='function'){
+    document.querySelector('.page-head').appendChild($('#fs-level'));
+    teachPage({svg:svg, strip:['fs-view-wrap','fs-nuc-wrap','fs-star-wrap','fs-try-wrap','fs-jump-wrap'], q:null});
+  }
+
+  if(PW_LEVEL==='ial'||PW_LEVEL==='ib') levelSeg.pick(PW_LEVEL);
+  if((m=QS.match(/[?&]star=(sun|big)\b/))){ starId=m[1]; starSeg.pick(starId); }
+  if((m=QS.match(/[?&]nuc=(p|he)\b/)) && !(ks4() && m[1]==='he')){ nuc=m[1]; nucSeg.pick(nuc); }
+  if((m=QS.match(/[?&]T=([\d.]+)/))){ boxT=clamp(+m[1],0.0058,200); tIn.value=sliderOfT(boxT); }
+  if((m=QS.match(/[?&]n=([1-8])\b/))){ boxN=+m[1]; nIn.value=boxN; }
+  showControls(); layout(); resetBox(); syncCore(true);
+  if((m=QS.match(/[?&]jump=(proto|ms|out|contract|giant)\b/))){ var j=JUMP[m[1]](); S={T:j.T,h:j.h,he:1,dev:1,ignited:j.ignited,done:false}; syncCore(true); }
+  setView(view);
+})();
+</script><script id="choice-kit-js">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices".
+   A group of choices with one chosen gets a track round it (class pick); a .to-q button opens the questions from Explore. */
+(function(){
+  function on(b){ return b.getAttribute('aria-pressed')==='true' || b.classList.contains('is-on'); }
+  function each(sel, fn){ Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+  function mark(s){
+    if(!s.classList.contains('pick')){
+      var n=0; Array.prototype.forEach.call(s.children, function(b){ if(b.tagName==='BUTTON' && on(b)) n++; });
+      if(n===1) s.classList.add('pick');
+    }
+    if(s.classList.contains('pick') && !s.hasAttribute('data-fit')){
+      var d=getComputedStyle(s).display;
+      if(d!=='none'){ s.setAttribute('data-fit','1'); if(d.indexOf('flex')>=0) s.classList.add('fit'); }
+    }
+  }
+  each('.seg:not(.tabs):not(.mode):not(.apps)', function(s){
+    mark(s);
+    if(window.MutationObserver) new MutationObserver(function(){ mark(s); }).observe(s, {childList:true, subtree:true, attributes:true, attributeFilter:['aria-pressed','class']});
+  });
+  // Choice rows: wrap each .rowlab and the control after it in a .cgroup (label above, groups side by side).
+  // A group is hidden when everything in it is hidden, so pages that hide a row's label and control still work.
+  function shown(e){ return !e.hidden && e.style.display!=='none'; }
+  each('.cgrid:not(.kit)', function(g){
+    var kids=Array.prototype.slice.call(g.children), groups=[];
+    for(var i=0;i<kids.length;i++){
+      var w=document.createElement('div'); w.className='cgroup';
+      g.insertBefore(w, kids[i]); w.appendChild(kids[i]);
+      if(kids[i].classList.contains('rowlab') && kids[i+1]){ w.appendChild(kids[i+1]); i++; }
+      groups.push(w);
+    }
+    g.classList.add('kit'); if(groups.length===1) g.classList.add('one');
+    groups.forEach(function(w){
+      function sync(){ var any=false; Array.prototype.forEach.call(w.children, function(c){ if(shown(c)) any=true; }); w.hidden=!any; }
+      sync();
+      if(window.MutationObserver) Array.prototype.forEach.call(w.children, function(c){ new MutationObserver(sync).observe(c, {attributes:true, attributeFilter:['hidden','style']}); });
+    });
+  });
+  each('.to-q[data-mode]', function(b){
+    var seg=document.getElementById(b.getAttribute('data-mode')); if(!seg) return;
+    var bs=seg.querySelectorAll('button');
+    function sync(){ b.hidden=!on(bs[0]) || !seg.getClientRects().length; }   // hidden too when the page hides its mode switch (e.g. at a level with no questions)
+    b.addEventListener('click', function(){ bs[1].click(); bs[1].focus(); });
+    if(window.MutationObserver) new MutationObserver(sync).observe(seg, {subtree:true, attributes:true, attributeFilter:['aria-pressed']});
+    document.addEventListener('click', function(){ setTimeout(sync, 0); });
+    sync(); setTimeout(sync, 0);
+  });
+})();
+</script>
+<footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
+</body>
+</html>
