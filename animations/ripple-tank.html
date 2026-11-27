@@ -1,0 +1,1300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ripple Tank Animation</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231d2433%27/%3E%3Cpath d=%27M18.5 3 7 18h7.5l-2 11L25 13h-7.5z%27 fill=%27%23ffc83d%27 stroke=%27%23ffe08a%27 stroke-width=%271%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">
+<meta name="description" content="Interactive physics animation for Edexcel IGCSE, IAL and IB. A ripple tank seen from above and from the side: watch water waves reflect from a barrier, refract over shallow water, diffract through a gap and interfere, and change the frequency, the angle and the width of the gap.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5; --bg-grid:rgba(29,41,61,0.055);
+    --panel:#ffffff; --panel-border:#d7dce4;
+    --ink:#182233; --ink-soft:#4c5668; --ink-faint:#8993a5;
+    --accent:#d9720c; --accent-soft:#fdead2;
+    --good:#15803d; --good-soft:#dcf5e3;
+    --bad:#c0311a; --bad-soft:#fbe1db;
+    --shadow:0 10px 26px -14px rgba(24,34,51,0.28);
+    --topic:#b45309;   --topic-soft:#fdecc8;
+    /* solid kit colours */ --glass:#9fb4c8; --glass-in:#f4f8fb; --thermo:#f3f6fa; --thread:#d7261e; --steel:#66748c; --steel-hi:#c3ccda; --steel-sh:#3f4a5e; --wood-f:#c99e6a; --wood-t:#e3c08f; --wood-s:#9c7444; --case:#3f4a5e; --case-p:#56617a; --case-p-hi:#8d98ad;
+    --font-display:'Big Shoulders',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#fbbf24; --topic-soft:#3a2a0c;
+    /* solid kit colours */ --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f; --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --case:#56617a; --case-p:#8792a3; --case-p-hi:#c3ccda;
+    color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161f; --bg-grid:rgba(255,255,255,0.045);
+    --panel:#1b212e; --panel-border:#2c3444;
+    --ink:#eef1f6; --ink-soft:#b1bacb; --ink-faint:#707a8d;
+    --accent:#ff9a3d; --accent-soft:#3a2712;
+    --good:#4ade80; --good-soft:#123321;
+    --bad:#f27159; --bad-soft:#3a1712;
+    --shadow:0 14px 30px -14px rgba(0,0,0,0.55);
+    --topic:#fbbf24; --topic-soft:#3a2a0c;
+    /* solid kit colours */ --glass:#7f97ad; --glass-in:#202938; --thermo:#dfe6ee; --thread:#e5392f; --steel:#8f9db3; --steel-hi:#dfe5ee; --steel-sh:#566179; --wood-f:#8a6a43; --wood-t:#a8855a; --wood-s:#644b2d; --case:#56617a; --case-p:#8792a3; --case-p-hi:#c3ccda;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px,transparent 1px) 0 0/100% 34px,
+      linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px) 0 0/34px 100%,
+      var(--bg);
+    color:var(--ink); font-family:var(--font-body); font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none!important;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+
+  .page{max-width:1400px;margin-inline:auto;padding-inline:20px;padding-block:12px 40px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:0.2px;text-wrap:balance;margin:0;}
+  p{margin:0;line-height:1.55;}
+
+  .home-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-bottom:4px;font:600 13px var(--font-mono);color:var(--ink-soft);text-decoration:none;}
+  .home-link:hover{color:var(--accent);}
+  .page-head{margin-bottom:12px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:6px;}
+  .page-head h1{font-size:clamp(28px,5vw,38px);color:var(--ink);}
+  .page-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px;}
+  .seg.tabs{gap:0;flex-wrap:nowrap;}
+  .seg.tabs button{font-size:12.5px;padding:8px 10px;white-space:nowrap;border-radius:0;margin-left:-1px;}
+  .seg.tabs button:first-child{border-radius:8px 0 0 8px;margin-left:0;}
+  .seg.tabs button:last-child{border-radius:0 8px 8px 0;}
+
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;box-shadow:var(--shadow);}
+  .btn{
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:9px;
+    padding:9px 15px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{border-color:var(--ink-faint);}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--bg);}
+  .btn-primary:hover{opacity:.88;border-color:var(--ink);}
+  .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);}
+  .btn-group{display:flex;flex-wrap:wrap;gap:10px;}
+
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(290px,380px);gap:14px 22px;align-items:start;padding:16px;}
+  @media (max-width:860px){ .stage{grid-template-columns:minmax(0,1fr);} }
+  .view{display:block;width:100%;height:auto;max-height:max(260px,calc(100vh - 300px));touch-action:pan-y;}
+  .view.tall{max-height:none;}
+  .embed .view{max-height:470px;} .embed .view.tall{max-height:none;}
+  .view text{font-family:var(--font-mono);}
+  .under{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
+  .side{display:flex;flex-direction:column;gap:10px;min-width:0;}
+  .lab{display:block;font:12.5px var(--font-mono);color:var(--ink-soft);margin-bottom:5px;}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;}
+  .seg button{font:12.5px var(--font-mono);padding:7px 10px;min-height:40px;border:1px solid var(--panel-border);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  .seg button[aria-pressed="true"]{background:var(--topic);border-color:var(--topic);color:var(--panel);}
+  .seg button:disabled{opacity:.45;cursor:default;}
+  .pair{display:flex;flex-wrap:wrap;gap:10px 18px;}
+  .stat{border:1px solid var(--panel-border);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;justify-content:space-between;}
+  .stat small{display:block;font:10.5px var(--font-mono);color:var(--ink-faint);}
+  .stat strong{font:600 14.5px var(--font-mono);color:var(--ink);white-space:nowrap;}
+  .stat.hi strong{color:var(--accent);}
+  .stat strong.ok{color:var(--good);} .stat strong.no{color:var(--bad);}
+  .note{font-size:14.5px;line-height:1.45;color:var(--ink);padding:9px 12px;border-radius:8px;background:var(--bg);min-height:84px;}
+  .note b{color:var(--topic);}
+  .note .v{display:block;margin-top:6px;padding-left:22px;position:relative;}
+  .note .v i{position:absolute;left:0;top:0;font-style:normal;font-weight:700;}
+  .note .v.ok i{color:var(--good);} .note .v.no i{color:var(--bad);}
+
+  details.working summary{cursor:pointer;font:600 13px var(--font-mono);color:var(--topic);min-height:40px;display:flex;align-items:center;}
+  .eq{font-family:var(--font-mono);font-size:13.5px;line-height:1.75;padding:8px 12px;border-left:3px solid var(--topic);background:var(--topic-soft);border-radius:6px;color:var(--ink);}
+  .eq b{color:var(--topic);}
+  .eqg{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:.45em;row-gap:.2em;align-items:center}
+  .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:8px 24px;}
+  .lab output{color:var(--ink);font-weight:600;white-space:nowrap;margin-left:6px;}
+  input[type=range]{width:100%;accent-color:var(--topic);min-height:28px;}
+  .cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;}
+  .rowlab{font:11.5px var(--font-mono);color:var(--ink-faint);}
+  .cgrid>[hidden]{display:none!important;}
+  .seg button[hidden]{display:none;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:6px;}
+  .stats.n6{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .note .cue{color:var(--topic);font-weight:600;}
+  /* things in the picture that are dragged */
+  .hdl{fill:#fff;stroke:#10283f;stroke-width:2.4;cursor:grab;touch-action:none;}
+  .hdl.drag{cursor:grabbing;fill:#ffe14d;}
+  .hdl:focus-visible{outline:none;stroke:var(--accent);stroke-width:4.5;}
+  @media (max-height:700px) and (min-width:861px){ .stat{padding:4px 8px;} .stats{gap:5px;} }
+  .embed body{background:transparent;}
+  .embed .page{padding:0;max-width:none;display:flow-root;}
+  .embed .home-link,.embed .page-head{display:none;}
+</style>
+<style id="choice-kit">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices". */
+.seg.pick{background:var(--bg);box-shadow:inset 0 0 0 1px var(--panel-border);border-radius:8px;}
+.seg.pick.fit{width:fit-content;max-width:100%;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on){background:transparent;border-color:transparent;}
+.seg.pick>button:not([aria-pressed="true"]):not(.is-on):not(:disabled):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode{display:flex;flex-wrap:nowrap;align-self:stretch;flex-grow:1;background:var(--bg);box-shadow:0 0 0 1px var(--panel-border);border-radius:11px;padding:3px;gap:3px;}
+.seg.mode>button:nth-child(n){flex:1 1 0;min-height:38px;margin-left:0;padding:6px 12px;border-radius:8px;white-space:nowrap;font:600 14.5px var(--font-body,inherit);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]){background:transparent;border-color:transparent;color:var(--ink);}
+.seg.mode>button:nth-child(n):not([aria-pressed="true"]):hover{background:var(--panel);border-color:var(--panel-border);}
+.seg.mode>button:nth-child(n)[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel);}
+/* Choice rows (13 Nov 2026, Alex): in a .cgrid the label sits above its group, each group is only as wide as its
+   buttons, and short groups share a row, as on dc-motor.html. The script wraps each label and its control in a .cgroup. */
+.cgrid.kit{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-start;}
+.cgrid.kit>.cgroup{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;max-width:100%;}
+/* a row of one group (e.g. Graph under the picture) keeps its label beside it, to save height */
+.cgrid.kit.one>.cgroup{flex-direction:row;align-items:center;gap:10px;}
+.cgrid.kit>.cgroup[hidden]{display:none;}
+.cgrid.kit>.cgroup>.rowlab{font:12.5px var(--font-mono,ui-monospace,monospace);color:var(--ink-soft);}
+.cgrid.kit>.cgroup>.seg{display:flex;flex-wrap:wrap;max-width:100%;}
+.cgrid.kit>.cgroup>.seg>button{flex:0 1 auto;}
+.to-q[hidden]{display:none!important;}
+.to-q:nth-child(n){border-style:dashed;border-color:var(--ink);font-weight:600;}
+</style>
+<script>
+  // Visit counter (GoatCounter: no cookies, no personal data). Skipped when a page is embedded in a workout, so a visit counts once.
+  // pwCountTab(tab, label): counts each workout tab once per visit as a GoatCounter event (path "page#tab"), skipped in frames the same way.
+  (function(){
+    var off = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var seen = {}, queue = [];
+    function send(e){ try { window.goatcounter.count(e); } catch (x) {} }
+    window.pwCountTab = function(tab, label){
+      if (off || !tab || seen[tab]) return;
+      seen[tab] = 1;
+      var page = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+      var e = { path: page + '#' + tab, title: (label || tab) + ' \u00b7 ' + document.title, event: true };
+      if (window.goatcounter && window.goatcounter.count) send(e); else queue.push(e);
+    };
+    if (off) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://physics-workout.goatcounter.com/count');
+    s.onload = function(){ var q = queue; queue = []; q.forEach(send); };
+    document.head.appendChild(s);
+  })();
+</script>
+<!-- pw-review -->
+<script>
+  // Draft tags and Alex's reviewer button (tools/review/drafts.py writes this block; edit tools/review/snippet.html, then run drafts.py sync).
+  // A page is Draft while its row in tools/REVIEW.md is not ✅: <meta name="pw-draft"> on the page, data-draft on its list cards.
+  // ?reviewer (once, on any page) turns on reviewer mode in this browser; ?reviewer=off turns it off.
+  (function(){
+    var on = false, embed = /[?&]embed\b/.test(location.search) || window.self !== window.top;
+    var m = /[?&]reviewer(?:=([^&]*))?/.exec(location.search);
+    on = !!m && m[1] !== 'off';
+    try {
+      if (m) { if (m[1] === 'off') localStorage.removeItem('pw-reviewer'); else localStorage.setItem('pw-reviewer', '1'); }
+      else on = localStorage.getItem('pw-reviewer') === '1';
+    } catch (e) {}
+    var CSS = '.pw-draft{display:inline-block;vertical-align:middle;margin-left:10px;font:600 11.5px/1.4 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:0;color:var(--bad,#b42318);border:1px dashed currentColor;border-radius:5px;padding:1px 7px;white-space:nowrap}'
+      + '.act-top .pw-draft{margin-left:auto;flex:none}.act-top .pw-draft~.cp-tag,.act-top .pw-draft~.ta-tag{margin-left:0}'
+      + 'a[data-draft]{position:relative}.pw-draft.pw-corner{position:absolute;top:10px;right:10px;margin:0;background:var(--panel,#fff)}'
+      + '.pw-check{display:inline-block;vertical-align:middle;margin-left:8px;font:600 13px/1.4 "IBM Plex Sans",system-ui,sans-serif;color:#fff;background:#1a7f37;border-radius:6px;padding:4px 10px;text-decoration:none;white-space:nowrap}'
+      + '.pw-check:hover{background:#116329}.pw-check:focus-visible{outline:2px solid #1a7f37;outline-offset:2px}'
+      + '.pw-reviewer{position:fixed;left:10px;bottom:10px;z-index:9999;font:500 12px/1.4 "IBM Plex Mono",ui-monospace,monospace;background:#1d2433;color:#fff;border-radius:6px;padding:4px 9px;opacity:.85}'
+      + '.pw-reviewer a{color:#ffc83d}';
+    function tag(){ var t = document.createElement('span'); t.className = 'pw-draft'; t.title = 'Not yet checked'; t.textContent = 'Draft'; return t; }
+    function go(){
+      var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+      var meta = document.querySelector('meta[name="pw-draft"]'), h1 = document.querySelector('h1');
+      if (meta && h1 && !embed) {
+        h1.appendChild(tag());
+        if (on) {
+          var page = meta.getAttribute('content'), b = document.createElement('a');
+          b.className = 'pw-check'; b.target = '_blank'; b.rel = 'noopener'; b.textContent = '✓ Checked';
+          b.title = 'Opens a GitHub issue. Submit it and the Draft tag goes in a minute or two.';
+          b.href = 'https://github.com/Skati1401/Physics-Workout/issues/new?title=' + encodeURIComponent('Checked: ' + page)
+            + '&body=' + encodeURIComponent('Submit this issue to mark `' + page + '` as checked. The Draft tag goes in a minute or two, and the issue closes itself.');
+          h1.appendChild(b);
+        }
+      }
+      document.querySelectorAll('a[data-draft]').forEach(function(a){
+        if (a.querySelector('.pw-draft')) return;
+        var t = tag(), top = a.querySelector('.act-top');
+        if (top) top.insertBefore(t, top.querySelector('.cp-tag,.ta-tag'));
+        else { t.className += ' pw-corner'; a.appendChild(t); }
+      });
+      // No tag on a unit or theme heading (Alex, 12 Nov 2026): only the pages and their cards.
+      if (on && !embed) {
+        // Carry ?reviewer in every link to another page of the site, so reviewer mode survives
+        // browsers that clear site storage (school Chromebooks) and pages cached from before.
+        var carry = function(a){
+          try {
+            var u = new URL(a.href, location.href);
+            if (u.origin !== location.origin || !/(\.html|\/)$/.test(u.pathname) || u.searchParams.has('reviewer')) return;
+            u.searchParams.set('reviewer', ''); a.href = u.href.replace('reviewer=', 'reviewer');
+          } catch (e) {}
+        };
+        document.querySelectorAll('a[href]').forEach(carry);
+        ['click', 'auxclick', 'contextmenu'].forEach(function(ev){
+          document.addEventListener(ev, function(e){ var a = e.target.closest && e.target.closest('a[href]'); if (a) carry(a); }, true);
+        });
+        var r = document.createElement('div'); r.className = 'pw-reviewer';
+        r.innerHTML = 'Reviewer mode · <a href="' + location.pathname + '?reviewer=off">turn off</a>';
+        document.body.appendChild(r);
+      }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  })();
+</script>
+<!-- /pw-review -->
+<meta name="pw-draft" content="animations/ripple-tank.html">
+</head>
+<body>
+<div class="page" id="page">
+  <a class="home-link" href="igcse.html">&larr; IGCSE animations</a>
+  <header class="page-head">
+    <div class="titleblock">
+      <div class="eyebrow">Animations &middot; waves</div>
+      <h1>Ripple Tank</h1>
+    </div>
+    <div class="seg tabs" id="rt-level" role="group" aria-label="Level"><button type="button" data-v="ks4" aria-pressed="true">IGCSE</button><button type="button" data-v="ial" aria-pressed="false">IAL</button><button type="button" data-v="ib" aria-pressed="false">IB</button></div>
+  </header>
+  <section class="card stage">
+    <div>
+      <svg class="view" id="rt-view" viewBox="0 0 860 370" role="img" aria-label=""></svg>
+      <div class="under">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="rt-go" type="button">&#9654; Play</button>
+          <button class="btn" id="rt-reset" type="button">&#8634; Reset</button>
+          <button class="btn" id="rt-slow" type="button" aria-pressed="false">Slow motion</button>
+          <button class="btn to-q" type="button" data-mode="rt-mode" hidden>Try the questions &rarr;</button>
+        </div>
+        <div class="sliders">
+          <div id="rt-fbox"><label class="lab" for="rt-f">Frequency, f<output id="rt-fo"></output></label><input type="range" id="rt-f" min="4" max="12" step="1" value="8"></div>
+          <div id="rt-abox" hidden><label class="lab" for="rt-a">Angle of incidence<output id="rt-ao"></output></label><input type="range" id="rt-a" min="0" max="60" step="5" value="30"></div>
+          <div id="rt-gbox" hidden><label class="lab" for="rt-g"><span id="rt-gl">Width of the gap</span><output id="rt-go2"></output></label><input type="range" id="rt-g" min="1" max="14" step="0.5" value="3"></div>
+          <div id="rt-sbox" hidden><label class="lab" for="rt-s">Distance between the dippers<output id="rt-so"></output></label><input type="range" id="rt-s" min="2" max="12" step="0.5" value="6"></div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <!-- The Explore | Questions switch is for the second half (TODO 9j): take off "hidden" when the questions are built. -->
+      <div class="seg tabs mode" id="rt-mode" role="group" aria-label="Mode" hidden><button type="button" data-v="explore" aria-pressed="true">Explore</button><button type="button" data-v="predict" aria-pressed="false">Questions</button></div>
+      <div id="rt-show-wrap">
+        <div class="lab" id="rt-show-lab">Show</div>
+        <div class="seg" id="rt-show" role="group" aria-labelledby="rt-show-lab"><button type="button" data-v="waves" aria-pressed="true">Wavefronts</button><button type="button" data-v="reflect" aria-pressed="false">Reflection</button><button type="button" data-v="refract" aria-pressed="false">Refraction</button><button type="button" data-v="diffract" aria-pressed="false">Diffraction</button><button type="button" data-v="two" aria-pressed="false">Two sources</button></div>
+      </div>
+      <div class="cgrid" id="rt-opts">
+        <span class="rowlab" id="rt-water-lab">Water</span>
+        <div class="seg" id="rt-water" role="group" aria-labelledby="rt-water-lab"><button type="button" data-v="6" aria-pressed="true">Deep, 6 mm</button><button type="button" data-v="2" aria-pressed="false">Shallow, 2 mm</button></div>
+        <span class="rowlab" id="rt-from-lab">The waves start in</span>
+        <div class="seg" id="rt-from" role="group" aria-labelledby="rt-from-lab"><button type="button" data-v="deep" aria-pressed="true">Deep water</button><button type="button" data-v="shallow" aria-pressed="false">Shallow water</button></div>
+        <span class="rowlab" id="rt-depth-lab">Water over the glass plate</span>
+        <div class="seg" id="rt-depth" role="group" aria-labelledby="rt-depth-lab"><button type="button" data-v="4" aria-pressed="false">4 mm</button><button type="button" data-v="3" aria-pressed="false">3 mm</button><button type="button" data-v="2" aria-pressed="true">2 mm</button></div>
+        <span class="rowlab" id="rt-kind-lab">In the way</span>
+        <div class="seg" id="rt-kind" role="group" aria-labelledby="rt-kind-lab"><button type="button" data-v="gap" aria-pressed="true">A gap</button><button type="button" data-v="obstacle" aria-pressed="false">An obstacle</button></div>
+        <span class="rowlab" id="rt-src-lab">Dippers in the water</span>
+        <div class="seg" id="rt-src" role="group" aria-labelledby="rt-src-lab"><button type="button" data-v="both" aria-pressed="true">Both</button><button type="button" data-v="s1" aria-pressed="false">S&#8321; only</button><button type="button" data-v="s2" aria-pressed="false">S&#8322; only</button></div>
+        <span class="rowlab" id="rt-phase-lab">S&#8322; and S&#8321; are</span>
+        <div class="seg" id="rt-phase" role="group" aria-labelledby="rt-phase-lab"><button type="button" data-v="in" aria-pressed="true">In phase</button><button type="button" data-v="anti" aria-pressed="false">In antiphase</button><button type="button" data-v="none" aria-pressed="false">Not coherent</button></div>
+      </div>
+      <div id="rt-draw-wrap">
+        <div class="lab" id="rt-draw-lab">Draw on the picture</div>
+        <div class="seg apps" id="rt-draw" role="group" aria-labelledby="rt-draw-lab"><button type="button" data-v="rays" aria-pressed="true">Rays</button><button type="button" data-v="wavelets" aria-pressed="false">Huygens&rsquo; wavelets</button><button type="button" data-v="lines" aria-pressed="false">Maxima and minima</button><button type="button" data-v="partial" aria-pressed="false">Reflected wave</button></div>
+      </div>
+      <p class="note" id="rt-note" aria-live="polite"></p>
+      <div class="stats" id="rt-stats"></div>
+      <details class="working" id="rt-work">
+        <summary id="rt-work-sum">Show working</summary>
+        <div class="eq" id="rt-eq"></div>
+      </details>
+    </div>
+  </section>
+</div>
+<script>
+// Which list this page was opened from: ?level=igcse, ial or ib sets the back link (and, on two-level pages, the starting level).
+var PW_LEVEL=(location.search.match(/[?&]level=(igcse|ial|ib)\b/)||[])[1]||(/[?&]from=alevel\b/.test(location.search)?'ial':'');
+(function(){
+  var hl=document.querySelector('.home-link'); if(!hl) return;
+  var lv=PW_LEVEL;
+  var L={igcse:['igcse.html','IGCSE animations'],ial:['ial.html','IAL animations'],ib:['ib.html','IB animations']}[lv];
+  if(L){ hl.href=L[0]; hl.innerHTML='&larr; '+L[1]; }
+})();
+(function(){
+  // ripple-tank.html is the one copy of this animation (TODO.md 9j). This is the first half: the tank seen from above and
+  // from the side, with the water worked out from the waves themselves (never drawn by hand), and an Explore view.
+  // The questions are the second half: they set the tank up and read it through window.RT (see "for the questions" below).
+  // The model: speeds are root(g h) for water 6, 4, 3 and 2 mm deep, the same at every frequency; the barriers soak up the
+  // waves that hit them, except the reflection barrier; past a gap the water is summed from point sources across the gap
+  // (Huygens), so the spreading and its minima come from the sum.
+  // With ?embed the page drops its heading so a workout tab can show it in a frame, and tells that page its height.
+  var EMBED = /[?&]embed\b/.test(location.search);
+  if(EMBED){
+    document.documentElement.classList.add('embed');
+    var page = document.getElementById('page');
+    var sendHeight = function(){ try{ parent.postMessage({animHeight: Math.ceil(page.getBoundingClientRect().height)}, '*'); }catch(e){} };
+    if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(page);
+    window.addEventListener('load', sendHeight);
+  }
+  function $(s){ return document.querySelector(s); }
+  function each(list,f){ Array.prototype.forEach.call(list,f); }
+  function pressed(b){ return b.getAttribute('aria-pressed')==='true'; }
+  function toggle(b){ b.setAttribute('aria-pressed', String(!pressed(b))); }
+  function segGroup(el, onPick){
+    el.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b||b.disabled) return; pick(b.dataset.v); onPick(b.dataset.v); });
+    function pick(v){ each(el.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.v===String(v))); }); }
+    function value(){ var b=el.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:null; }
+    return {pick:pick, value:value};
+  }
+  function FR(t){
+    return String(t).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+  }
+  // Each line of a working readout becomes left | = | right, so the = signs sit under each other.
+  function alignEquals(el){
+    if(el.querySelector('.eqg')) return;
+    var rows = el.innerHTML.split(/<br\s*\/?>/i).map(function(line){
+      var i = line.indexOf(' = ');
+      if(i<0) return '<span class="eqg-full">'+line+'</span>';
+      return '<span class="eqg-l">'+line.slice(0,i)+'</span><span class="eqg-m">=</span><span class="eqg-r">'+line.slice(i+3)+'</span>';
+    });
+    el.innerHTML = '<div class="eqg">'+rows.join('')+'</div>';
+  }
+  function watchEquals(el){ alignEquals(el); new MutationObserver(function(){ alignEquals(el); }).observe(el, {childList:true}); }
+  // ---- solid kit (master: tools/solid-kit/kit.js; copied by tools/kits.py, do not edit here) ----
+  function f1(n){ return (+n).toFixed(1); }
+  function pts(list){ return list.map(function(p){ return f1(p[0])+','+f1(p[1]); }).join(' '); }
+  function pl(list,col,w,extra){ return '<polyline points="'+pts(list)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(extra||'')+'/>'; }
+  function pg(list,fill,extra){ return '<polygon points="'+pts(list)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  function ln(x1,y1,x2,y2,col,w,extra){ return '<line x1="'+f1(x1)+'" y1="'+f1(y1)+'" x2="'+f1(x2)+'" y2="'+f1(y2)+'" stroke="'+col+'" stroke-width="'+(w||1)+'"'+(extra||'')+'/>'; }
+  function rect(x,y,w,h,fill,extra){ return '<rect x="'+f1(x)+'" y="'+f1(y)+'" width="'+f1(Math.max(0,w))+'" height="'+f1(Math.max(0,h))+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // text in clear space: halo:1 gives it a panel-coloured edge so a line passing behind never cuts a letter
+  function txt(x,y,s,o){ o=o||{}; return '<text x="'+f1(x)+'" y="'+f1(y)+'"'+(o.a?' text-anchor="'+o.a+'"':'')+' font-size="'+(o.fs||12)+'" fill="'+(o.c||'var(--ink-soft)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+(o.halo?' paint-order="stroke" stroke="var(--panel)" stroke-width="4" stroke-linejoin="round"':'')+(o.x||'')+'>'+s+'</text>'; }
+  // a solid block: front face at (x, y), w wide and h tall, going back by (dx, dy). Lit top, plain front, darker side.
+  function box(x,y,w,h,dx,dy,col,o){ o=o||{};
+    return pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],o.top||col)+(o.top?'':pg([[x,y],[x+w,y],[x+w+dx,y+dy],[x+dx,y+dy]],'#fff',' opacity=".38"'))+
+      pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],o.side||col)+(o.side?'':pg([[x+w,y],[x+w+dx,y+dy],[x+w+dx,y+h+dy],[x+w,y+h]],'#000',' opacity=".28"'))+
+      rect(x,y,w,h,col); }
+  // a round bar or post: a dark core with a lighter streak along it
+  function tube(x1,y1,x2,y2,w,col,hi){ var L=Math.hypot(x2-x1,y2-y1)||1, nx=-(y2-y1)/L*w*0.22, ny=(x2-x1)/L*w*0.22; if(ny>0){ nx=-nx; ny=-ny; }
+    return ln(x1,y1,x2,y2,col,w,' stroke-linecap="round"')+ln(x1+nx,y1+ny,x2+nx,y2+ny,hi,Math.max(0.8,w*0.3),' stroke-linecap="round"'); }
+  function wrapLines(s,n){ var out=[], cur=''; String(s).split(' ').forEach(function(w){ if(cur && (cur+' '+w).length>n){ out.push(cur); cur=w; } else cur=cur?cur+' '+w:w; }); if(cur) out.push(cur); return out; }
+  function onPick(svg, fn){
+    svg.addEventListener('click', function(e){ var t=e.target.closest('.pick'); if(t){ fn(t.getAttribute('data-pick')); } });
+    svg.addEventListener('keydown', function(e){ if(e.key!=='Enter' && e.key!==' ') return; var t=e.target.closest('.pick'); if(t){ e.preventDefault(); fn(t.getAttribute('data-pick')); } });
+  }
+  function setKeepFocus(el, html){ var f=document.activeElement, k=f && el.contains(f) ? f.getAttribute('data-pick') : null; el.innerHTML=html;
+    if(k!==null){ var n=el.querySelector('.pick[data-pick="'+k+'"]'); if(n && n.focus) n.focus(); } }
+  function ell(cx,cy,rx,ry,fill,extra){ return '<ellipse cx="'+f1(cx)+'" cy="'+f1(cy)+'" rx="'+f1(rx)+'" ry="'+f1(ry)+'" fill="'+fill+'"'+(extra||'')+'/>'; }
+  // a solid arrow from (x1, y1) to its tip at (x2, y2)
+  function arrow(x1,y1,x2,y2,col,w,extra){ var a=Math.atan2(y2-y1,x2-x1), s=w*2.2, bx=x2-Math.cos(a)*s*1.5, by=y2-Math.sin(a)*s*1.5;
+    return '<g'+(extra||'')+'>'+ln(x1,y1,bx,by,col,w)+'<path d="M'+f1(x2)+','+f1(y2)+' L'+f1(bx-Math.sin(a)*s)+','+f1(by+Math.cos(a)*s)+' L'+f1(bx+Math.sin(a)*s)+','+f1(by-Math.cos(a)*s)+' z" fill="'+col+'"/></g>'; }
+  // an upright cylinder (a can, a beaker of liquid): top ellipse at yt, bottom at yb. o.top fills the top; o.hi adds a streak of light.
+  function cyl(cx,yt,yb,rx,ry,fill,o){ o=o||{};
+    return '<path d="M'+f1(cx-rx)+','+f1(yt)+' L'+f1(cx-rx)+','+f1(yb)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="'+fill+'"'+(o.extra||'')+'/>'+
+      '<path d="M'+f1(cx+rx*0.45)+','+f1(yt)+' L'+f1(cx+rx*0.45)+','+f1(yb+ry*0.85)+' A'+f1(rx)+','+f1(ry)+' 0 0 0 '+f1(cx+rx)+','+f1(yb)+' L'+f1(cx+rx)+','+f1(yt)+' z" fill="#000" opacity="'+(o.shade==null?0.16:o.shade)+'"/>'+
+      (o.hi?ln(cx-rx*0.62,yt+ry+4,cx-rx*0.62,yb-2,o.hi,Math.max(1.6,rx*0.11),' stroke-linecap="round" opacity="'+(o.hiop||0.7)+'"'):'')+
+      ell(cx,yt,rx,ry,o.top||fill,o.topx||'')+(o.top?'':ell(cx,yt,rx,ry,'#fff',' opacity=".3"')); }
+  // a glass thermometer standing upright: bulb at (x, yb); the scale runs from t0 at y0 up to t1 at y1, and the thread stands at T.
+  // o.step: a tick every so many degrees; o.num: a number every so many; o.side: numbers on the right (1) or the left (-1); o.from: first tick;
+  // o.nobulb: the bulb is out of sight, inside a can or a cube
+  function thermo(x,yb,y0,t0,y1,t1,T,o){ o=o||{};
+    var w=o.w||7, yT=y1-9, sc=(y1-y0)/(t1-t0), yy=function(t){ return y0+(t-t0)*sc; }, side=o.side||1, fs=o.fs||11, g='', t;
+    g+=rect(x-w/2,yT,w,yb-yT,'var(--thermo)',' rx="'+f1(w/2)+'" stroke="var(--ink-faint)" stroke-width="1"');
+    g+=ln(x,yb,x,yy(Math.max(t0-4,Math.min(t1+2,T))),'var(--thread)',w*0.36,' stroke-linecap="round"');
+    if(!o.nobulb) g+='<circle cx="'+f1(x)+'" cy="'+f1(yb)+'" r="'+f1(w*0.9)+'" fill="var(--thread)" stroke="var(--ink-faint)" stroke-width="0.8"/>'+ell(x-w*0.3,yb-w*0.3,w*0.22,w*0.22,'#fff',' opacity=".7"');
+    for(t=(o.from==null?t0:o.from); t<=t1+1e-9; t+=(o.step||10)){ var big=!(Math.round(t)%(o.num||20));
+      g+=ln(x+side*w/2,yy(t),x+side*(w/2+(big?7:4)),yy(t),'var(--ink-soft)',big?1.3:0.9);
+      if(big && !o.nonum) g+=txt(x+side*(w/2+10),yy(t)+fs*0.36,String(Math.round(t)),{a:side>0?'start':'end',fs:fs,c:'var(--ink)'}); }
+    return g; }
+  // a stopwatch showing s (for example 1:37)
+  function stopwatch(x,y,s,k){ k=k||1; var w=78*k, h=40*k;
+    return rect(x+w/2-7*k,y-7*k,14*k,9*k,'var(--steel-sh,#3f4a5e)',' rx="2"')+rect(x,y,w,h,'var(--case,#3f4a5e)',' rx="'+f1(9*k)+'"')+rect(x+2,y+2,w-4,h*0.4,'#fff',' rx="'+f1(8*k)+'" opacity=".12"')+
+      rect(x+7*k,y+8*k,w-14*k,h-16*k,'var(--panel)',' rx="3"')+txt(x+w/2,y+h/2+5.5*k,s,{a:'middle',fs:15*k,c:'var(--ink)',w:600}); }
+  // ---- end of solid kit ----
+  function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+  function sstep(a){ return a<=0?0:(a>=1?1:a*a*(3-2*a)); }
+  function mod(a,n){ return ((a%n)+n)%n; }
+  function sf(v,n){ return (+v).toPrecision(n||3); }
+  var PI=Math.PI, TAU=2*PI, DEG=PI/180;
+
+  // ---- the tank (cm, seen from above: x to the right, y down the picture) ----
+  var TW=40, TH=25.6;              // the water inside the frame
+  var XB=1.4, YC=TH/2;             // the front edge of the vibrating bar; the centre line
+  var BR_X=27, BF_X=20;            // where the barrier (reflection) and the edge of the glass plate (refraction) cross the centre line
+  var DX=13;                       // the barrier with the gap, or the obstacle
+  var SX=7;                        // the two dippers
+  var SPEED={6:24.3, 4:19.8, 3:17.2, 2:14.0};   // cm/s for water 6, 4, 3 and 2 mm deep, from v = root(g h), to 3 s.f.
+  var SLOWF=0.2;                   // the picture runs 5 times slower than the tank
+  var FW=TAU*0.6;                  // the leading edge of the waves fades in over 0.6 of a cycle
+  var WATER=[90,155,201], CREST=[243,251,255], TROUGH=[24,66,110];
+
+  // ---- state ----
+  var svg=$('#rt-view'), goBtn=$('#rt-go'), slowBtn=$('#rt-slow');
+  var st={view:'waves', f:8, water:6, angR:30, angF:40, depth:2, from:'deep', partial:false, kind:'gap', gap:3, sep:6,
+          phase:'in', src:'both', rays:true, wavelets:false, lines:false, hide:false, lock:false, P:[30,7]};
+  var tw=0, playing=false, raf=0, last=0, levelSeg, showSeg;
+  var PR=null, L=null, comps=[], NX=0, NY=0, cx=1, cy=1, maxArr=0, BRK=[], U=null;
+  var frameFns=[];
+  function level(){ return levelSeg ? levelSeg.value() : 'ks4'; }
+  function ks5(){ return level()!=='ks4'; }
+  function ang(){ return st.view==='reflect' ? st.angR : st.angF; }
+  function ycut(){ return st.view==='two' ? st.P[1] : YC; }
+
+  // ---- the numbers every part of the page uses ----
+  function prm(){
+    var f=st.f, p={f:f, w:TAU*f, view:st.view};
+    if(st.view==='refract'){ var vp=SPEED[st.depth]; p.v1 = st.from==='deep' ? SPEED[6] : vp; p.v2 = st.from==='deep' ? vp : SPEED[6]; }
+    else if(st.view==='waves'){ p.v1=SPEED[st.water]; p.v2=p.v1; }
+    else { p.v1=SPEED[6]; p.v2=p.v1; }
+    p.l1=p.v1/f; p.l2=p.v2/f; p.k1=TAU/p.l1; p.k2=TAU/p.l2;
+    var a=ang()*DEG; p.a=a; p.ca=Math.cos(a); p.sa=Math.sin(a);
+    p.B=[st.view==='reflect'?BR_X:BF_X, YC];
+    p.n=[p.ca, p.sa]; p.tau=[-p.sa, p.ca];
+    p.r=[-Math.cos(2*a), -Math.sin(2*a)];          // the reflected direction
+    p.Ramp=1; p.Rph=0; p.Tamp=1; p.Tph=0; p.tir=false; p.th2=a; p.t=[1,0]; p.crit=null;
+    if(st.view==='refract'){
+      if(p.v1<p.v2) p.crit=Math.asin(p.v1/p.v2);
+      var s2=p.v2/p.v1*p.sa;
+      if(s2<=1){
+        p.th2=Math.asin(s2); var c2=Math.cos(p.th2);
+        p.c2=c2; p.t=[c2*p.n[0]-s2*p.tau[0], c2*p.n[1]-s2*p.tau[1]];
+        if(st.partial){ var A1=p.v1*p.ca, A2=p.v2*c2, R=(A1-A2)/(A1+A2); p.Ramp=Math.abs(R); p.Rph=R<0?PI:0; p.Tamp=2*A1/(A1+A2); }
+        else p.Ramp=0;
+      } else {
+        // total internal reflection: all of the wave is reflected, with a change of phase; the water beyond the edge only
+        // moves close to the edge (it dies away with distance)
+        p.tir=true; p.th2=null;
+        var ss=Math.sqrt(s2*s2-1), aa=p.v1*p.ca, bb=p.v2*ss;
+        p.Ramp=1; p.Rph=-2*Math.atan2(bb,aa); p.Tamp=2*aa/Math.sqrt(aa*aa+bb*bb); p.Tph=-Math.atan2(bb,aa); p.kap=p.k2*ss;
+      }
+    }
+    var d=st.sep; p.S1=[SX, YC-d/2]; p.S2=[SX, YC+d/2];
+    p.del2 = st.phase==='anti' ? PI : 0;
+    return p;
+  }
+  function dOf(x,y,p){ return (x-p.B[0])*p.n[0]+(y-p.B[1])*p.n[1]; }
+  function edge(x,y){ return Math.min(x-XB, TW-x, y, TH-y); }
+  function rayLen(O,e){
+    var t=1e9;
+    if(e[0]>1e-9) t=Math.min(t,(TW-O[0])/e[0]); if(e[0]<-1e-9) t=Math.min(t,(XB-O[0])/e[0]);
+    if(e[1]>1e-9) t=Math.min(t,(TH-O[1])/e[1]); if(e[1]<-1e-9) t=Math.min(t,(0-O[1])/e[1]);
+    return t;
+  }
+  function del2(){ return st.phase==='none' ? TAU*0.6*tw : PR.del2; }     // not coherent: S2 runs 0.6 Hz faster, so its phase drifts
+  function srcOn(c){ return st.src==='both' || (st.src==='s1')===(c===1); }
+
+  // ---- the water: each part of the wave is stored as C and S, with u = C cos(wt) + S sin(wt), and the phase at which it arrives ----
+  function isTall(){ return window.matchMedia('(max-width:520px)').matches; }
+  function build(){
+    var p=PR=prm();
+    NX = isTall() ? 224 : 320; NY=Math.round(NX*TH/TW); cx=TW/NX; cy=TH/NY;
+    var n=NX*NY, v=st.view, ix, iy, i, x, y;
+    comps=[]; U=new Float32Array(n);
+    function comp(o){ var c={C:new Float32Array(n), S:new Float32Array(n), arr:new Float32Array(n), born:!!o.born, src:o.src||0}; c.arr.fill(1e9); comps.push(c); return c; }
+    function put(c,i,A,P,arr){ c.C[i]=A*Math.cos(P); c.S[i]=A*Math.sin(P); c.arr[i]=arr; }
+    var k1=p.k1, k2=p.k2;
+    if(v==='waves'){
+      var c0=comp({});
+      for(ix=0;ix<NX;ix++){ x=(ix+0.5)*cx; if(x<XB) continue; var P0=k1*(x-XB); for(iy=0;iy<NY;iy++) put(c0, iy*NX+ix, 1, P0, P0); }
+    } else if(v==='reflect' || v==='refract'){
+      var ci=comp({}), cr=(v==='reflect'||p.tir||p.Ramp>0) ? comp({born:1}) : null, ct=(v==='refract') ? comp({born:1}) : null;
+      var Ra=(v==='reflect')?1:p.Ramp, Rp=(v==='reflect')?0:p.Rph, l1=p.l1, l2=p.l2;
+      for(iy=0;iy<NY;iy++){ y=(iy+0.5)*cy;
+        for(ix=0;ix<NX;ix++){ x=(ix+0.5)*cx; if(x<XB) continue; i=iy*NX+ix;
+          var d=dOf(x,y,p), q, hx, hy, tp, ph;
+          if(d<0){
+            ph=k1*(x-XB); put(ci,i,1,ph,ph);
+            if(cr){ q=-d/p.ca; hx=x-q*p.r[0]; hy=y-q*p.r[1]; tp=sstep(edge(hx,hy)/(0.5*l1)+0.5);
+              if(tp>0){ ph=k1*(hx-XB+q); put(cr,i,Ra*tp,ph+Rp,ph); } }
+          } else if(ct){
+            if(!p.tir){ q=d/p.c2; hx=x-q*p.t[0]; hy=y-q*p.t[1]; tp=sstep(edge(hx,hy)/(0.5*l2)+0.5);
+              if(tp>0){ ph=k1*(hx-XB)+k2*q; put(ct,i,p.Tamp*tp,ph,ph); } }
+            else { hx=x-d*p.n[0]; hy=y-d*p.n[1]; tp=sstep(edge(hx,hy)/(0.5*l1)+0.5);
+              if(tp>0){ ph=k1*(hx-XB); put(ct,i,p.Tamp*Math.exp(-p.kap*d)*tp,ph+p.Tph,ph); } }
+          }
+        }
+      }
+    } else if(v==='diffract'){
+      var cf=comp({}), cg=comp({born:1}), b=st.gap, obs=st.kind==='obstacle';
+      var ns=Math.max(10, Math.ceil(b/(p.l1/8))), dy=b/ns, phD=k1*(DX-XB), amp0=dy*Math.sqrt(k1/TAU), half=Math.ceil(NY/2);
+      var ys=[]; for(i=0;i<ns;i++) ys.push(-b/2+(i+0.5)*dy);
+      for(ix=0;ix<NX;ix++){ x=(ix+0.5)*cx; if(x<XB) continue;
+        if(x<DX){ ph=k1*(x-XB); for(iy=0;iy<NY;iy++) put(cf, iy*NX+ix, 1, ph, ph); continue; }
+        var X=x-DX, X2=X*X, pl=k1*(x-XB), cpl=Math.cos(pl), spl=Math.sin(pl);
+        for(iy=0;iy<half;iy++){ y=(iy+0.5)*cy-YC;
+          var re=0, im=0;
+          for(var j=0;j<ns;j++){ var dd=y-ys[j], r2=X2+dd*dd, r=Math.sqrt(r2), am=amp0*X/(r*Math.sqrt(r)), pp=k1*r+phD-PI/4; re+=am*Math.cos(pp); im+=am*Math.sin(pp); }
+          var m=Math.sqrt(re*re+im*im); if(m>1.5){ re*=1.5/m; im*=1.5/m; }
+          var ay=Math.abs(y), arr;
+          if(obs){ re=cpl-re; im=spl-im; arr = ay>b/2 ? pl : phD+k1*Math.sqrt(X2+(b/2-ay)*(b/2-ay)); }
+          else arr = phD+k1*(ay<b/2 ? X : Math.sqrt(X2+(ay-b/2)*(ay-b/2)));
+          var i1=iy*NX+ix, i2=(NY-1-iy)*NX+ix;
+          cg.C[i1]=re; cg.S[i1]=im; cg.arr[i1]=arr; cg.C[i2]=re; cg.S[i2]=im; cg.arr[i2]=arr;
+        }
+      }
+    } else {
+      [p.S1,p.S2].forEach(function(S,ci2){
+        var c=comp({src:ci2+1});
+        for(iy=0;iy<NY;iy++){ y=(iy+0.5)*cy; for(ix=0;ix<NX;ix++){ x=(ix+0.5)*cx; if(x<XB) continue;
+          var r=Math.sqrt((x-S[0])*(x-S[0])+(y-S[1])*(y-S[1])), A=Math.min(1.2, Math.sqrt(6/Math.max(r,0.2))), P=k1*r; put(c, iy*NX+ix, A, P, P); } }
+      });
+    }
+    maxArr=0; comps.forEach(function(c){ for(var i=0;i<n;i++){ var a=c.arr[i]; if(a<1e8 && a>maxArr) maxArr=a; } });
+    brackets();
+  }
+  function compOn(c){ if(st.hide && c.born) return false; if(c.src && !srcOn(c.src)) return false; return true; }
+  function compDel(c){ return c.src===2 ? del2() : 0; }
+  function fieldAt(x,y){     // {re, im} of everything now switched on, at a point (cm); used for labels and by the questions
+    var ix=clamp(Math.floor(x/cx),0,NX-1), iy=clamp(Math.floor(y/cy),0,NY-1), i=iy*NX+ix, re=0, im=0;
+    comps.forEach(function(c){ if(!compOn(c)) return; var d=compDel(c), cd=Math.cos(d), sd=Math.sin(d); re+=c.C[i]*cd-c.S[i]*sd; im+=c.S[i]*cd+c.C[i]*sd; });
+    return {re:re, im:im};
+  }
+  function rowU(iy, th, out){   // the height of the water along one row of the grid, now
+    var full=th>maxArr+FW, o=iy*NX, ix;
+    for(ix=0;ix<NX;ix++) out[ix]=0;
+    comps.forEach(function(c){ if(!compOn(c)) return; var t=th-compDel(c), cs=Math.cos(t), sn=Math.sin(t);
+      for(ix=0;ix<NX;ix++){ var v=c.C[o+ix]*cs+c.S[o+ix]*sn; if(!full){ var a=(th-c.arr[o+ix])/FW; if(a<=0) continue; if(a<1) v*=a*a*(3-2*a); } out[ix]+=v; } });
+    return out;
+  }
+
+  // ---- painting the water ----
+  var cv=document.createElement('canvas'), ctx=null, imgData=null, buf32=null, LUT=new Uint32Array(256);
+  (function(){
+    for(var i=0;i<256;i++){ var u=(i-128)/52, g=clamp(u/1.25,-1,1), t, a=WATER, b2;
+      // weak waves are lifted and strong ones levelled off, so a wave that has spread out can still be seen
+      var ag=Math.abs(g); t=(1-Math.exp(-1.9*ag))/(1-Math.exp(-1.9)); t=0.25*ag+0.75*t; b2 = g>=0 ? CREST : TROUGH;
+      var r=Math.round(a[0]+(b2[0]-a[0])*t), gg=Math.round(a[1]+(b2[1]-a[1])*t), bb=Math.round(a[2]+(b2[2]-a[2])*t);
+      LUT[i]=(255<<24)|(bb<<16)|(gg<<8)|r; }
+  })();
+  function paint(){
+    if(cv.width!==NX || cv.height!==NY || !ctx){ cv.width=NX; cv.height=NY; ctx=cv.getContext('2d'); imgData=ctx.createImageData(NX,NY); buf32=new Uint32Array(imgData.data.buffer); }
+    var n=NX*NY, th=PR.w*tw, full=th>maxArr+FW, i;
+    U.fill(0);
+    if(tw>0) comps.forEach(function(c){ if(!compOn(c)) return;
+      var t=th-compDel(c), cs=Math.cos(t), sn=Math.sin(t), C=c.C, S=c.S, A=c.arr;
+      if(full){ for(i=0;i<n;i++) U[i]+=C[i]*cs+S[i]*sn; }
+      else { for(i=0;i<n;i++){ var a=(th-A[i])/FW; if(a<=0) continue; var v=C[i]*cs+S[i]*sn; if(a<1) v*=a*a*(3-2*a); U[i]+=v; } }
+    });
+    for(i=0;i<n;i++){ var q=(U[i]*52+128)|0; buf32[i]=LUT[q<0?0:(q>255?255:q)]; }
+    ctx.putImageData(imgData,0,0);
+    var im=$('#rt-img'); if(im) im.setAttribute('href', cv.toDataURL('image/jpeg',0.88));
+  }
+
+  // ---- layout: one wide picture (the tank from above beside the tank from the side), or one above the other on a phone ----
+  function lay(){
+    if(isTall()){ var S=10.35, h=TH*S; return {tall:true, W:430, H:Math.round(24+h+24+28+330*1.286+4), S:S, ox:8, oy:24, side:{x:8, y:24+h+24+28, k:414/322}}; }
+    return {tall:false, W:860, H:370, S:12.5, ox:12, oy:24, side:{x:530, y:24, k:1}};
+  }
+  function X(x){ return L.ox+x*L.S; }
+  function Y(y){ return L.oy+y*L.S; }
+  function pt(a){ return [X(a[0]), Y(a[1])]; }
+  function add(a,b,k){ return [a[0]+b[0]*k, a[1]+b[1]*k]; }
+  var INK='#10283f', RAY='#e8590c', WVL='#ffe14d', PATH1='#e8590c', PATH2='#b5179e';
+  function pill(x,y,s,o){ o=o||{}; var fs=o.fs||12, w=s.replace(/&[^;]+;/g,'x').length*fs*0.62+10, h=fs+6, x0=o.a==='start'?x:(o.a==='end'?x-w:x-w/2);
+    return '<rect x="'+f1(x0)+'" y="'+f1(y-h/2)+'" width="'+f1(w)+'" height="'+f1(h)+'" rx="4" fill="var(--panel)" stroke="var(--panel-border)" opacity=".94"/>'+
+      '<text x="'+f1(x0+w/2)+'" y="'+f1(y+fs*0.36)+'" text-anchor="middle" font-size="'+fs+'" fill="'+(o.c||'var(--ink)')+'"'+(o.w?' font-weight="'+o.w+'"':'')+'>'+s+'</text>'; }
+  function seg2(a,b,col,w,extra){ return ln(a[0],a[1],b[0],b[1],'#fff',(w||2)+2.4,' stroke-linecap="round" opacity=".85"')+ln(a[0],a[1],b[0],b[1],col,w||2,' stroke-linecap="round"'+(extra||'')); }
+  function head(at,dir,col,k){ k=k||1; var a=Math.atan2(dir[1],dir[0]), c=Math.cos(a), s=Math.sin(a);
+    function q(u,v){ return [at[0]+(u*c-v*s)*k, at[1]+(u*s+v*c)*k]; }
+    return pg([q(7,0),q(-5,5.5),q(-5,-5.5)],col,' stroke="#fff" stroke-width="1.2" stroke-linejoin="round"'); }
+  // a ray in tank cm: a line with an arrowhead part of the way along it
+  function ray(a,b,col,o){ o=o||{}; var A=pt(a), B=pt(b), d=[B[0]-A[0],B[1]-A[1]], m=o.at==null?0.55:o.at;
+    return seg2(A,B,col||RAY,o.w||2.2,o.dash?' stroke-dasharray="6 5"':'')+head([A[0]+d[0]*m,A[1]+d[1]*m],d,col||RAY); }
+  function arc(c,r,a0,a1,col){ var C=pt(c), R=r*L.S, p0=[C[0]+R*Math.cos(a0),C[1]+R*Math.sin(a0)], p1=[C[0]+R*Math.cos(a1),C[1]+R*Math.sin(a1)], sw=a1>a0?1:0;
+    return '<path d="M'+f1(p0[0])+' '+f1(p0[1])+' A'+f1(R)+' '+f1(R)+' 0 0 '+sw+' '+f1(p1[0])+' '+f1(p1[1])+'" fill="none" stroke="#fff" stroke-width="4" opacity=".85"/>'+
+           '<path d="M'+f1(p0[0])+' '+f1(p0[1])+' A'+f1(R)+' '+f1(R)+' 0 0 '+sw+' '+f1(p1[0])+' '+f1(p1[1])+'" fill="none" stroke="'+(col||INK)+'" stroke-width="1.8"/>'; }
+  function letter(c,r,a,s){ var C=pt(c); return txt(C[0]+r*L.S*Math.cos(a), C[1]+r*L.S*Math.sin(a)+4.5, s, {a:'middle', fs:13.5, c:'var(--ink)', w:600, halo:1}); }
+  function halfPlane(p,sign){ var B=p.B, a=add(B,p.tau,-80), b=add(B,p.tau,80); return pts([pt(a),pt(b),pt(add(b,p.n,sign*80)),pt(add(a,p.n,sign*80))]); }
+  function angNames(){ return st.view==='refract' && ks5() ? ['&theta;&#8321;','&theta;&#8322;'] : ['i','r']; }
+
+  function skeleton(){
+    svg.innerHTML='<defs><clipPath id="rt-clip"><rect id="rt-clip-r"/></clipPath><clipPath id="rt-c1"><polygon id="rt-c1p"/></clipPath><clipPath id="rt-c2"><polygon id="rt-c2p"/></clipPath>'+
+      '<linearGradient id="rt-scr" x1="0" x2="1" y1="0" y2="0"></linearGradient></defs>'+
+      '<g id="rt-base"></g><image id="rt-img" preserveAspectRatio="none"/><g id="rt-fix"></g><g id="rt-live"></g><g id="rt-frame"></g>'+
+      '<g id="rt-side"><g id="rt-sA"></g><g id="rt-sL"></g><g id="rt-sB"></g></g><g id="rt-picks"></g>'+
+      '<g id="rt-handles">'+['A','G1','G2','S1','S2','P'].map(function(h){ return '<circle class="hdl" id="rt-h'+h+'" data-h="'+h+'" r="8.5"'+(h==='P'?' tabindex="0" aria-label="Point P. Drag it, or move it with the arrow keys."':' aria-hidden="true"')+' hidden/>'; }).join('')+'</g>';
+  }
+
+  // ---- everything that changes only when a setting changes ----
+  function drawFix(){
+    var p=PR, v=st.view, s='', i;
+    L=lay();
+    svg.setAttribute('viewBox','0 0 '+L.W+' '+L.H); svg.classList.toggle('tall', L.tall);
+    var x0=X(0), y0=Y(0), w=TW*L.S, h=TH*L.S;
+    each(svg.querySelectorAll('#rt-clip-r'), function(r){ r.setAttribute('x',f1(x0)); r.setAttribute('y',f1(y0)); r.setAttribute('width',f1(w)); r.setAttribute('height',f1(h)); });
+    var im=$('#rt-img'); im.setAttribute('x',f1(x0)); im.setAttribute('y',f1(y0)); im.setAttribute('width',f1(w)); im.setAttribute('height',f1(h));
+    var big='-999,-999 9999,-999 9999,9999 -999,9999', c1=big, c2=big;
+    if(v==='reflect'||v==='refract'){ c1=halfPlane(p,-1); c2=halfPlane(p,1); }
+    else if(v==='diffract'){ c1=pts([[x0,y0],[X(DX),y0],[X(DX),y0+h],[x0,y0+h]]); c2=pts([[X(DX),y0],[x0+w,y0],[x0+w,y0+h],[X(DX),y0+h]]); }
+    $('#rt-c1p').setAttribute('points',c1); $('#rt-c2p').setAttribute('points',c2);
+
+    // titles, and the rule along the front of the tank
+    var base=txt(x0, 15, 'The tank from above', {fs:12.5, c:'var(--ink-soft)'});
+    base+=txt(L.side.x, L.side.y-9, 'The tank from the side', {fs:L.tall?12.5:11.5, c:'var(--ink-soft)'});
+    var ry=y0+h+5;
+    for(i=0;i<=TW;i++){ var big5=i%5===0; base+=ln(X(i),ry,X(i),ry+(big5?6:3.5),'var(--ink-soft)',big5?1.2:0.8); }
+    for(i=0;i<=TW;i+=10) base+=txt(X(i)+(i===0?1:(i===TW?-1:0)), ry+16.5, i+(i===TW?' cm':''), {a:i===0?'start':(i===TW?'end':'middle'), fs:11, c:'var(--ink-soft)'});
+    $('#rt-base').innerHTML=base;
+
+    // the frame, with the marks for the line the side view is cut along
+    var yc=Y(ycut());
+    $('#rt-frame').innerHTML='<rect x="'+f1(x0-2.5)+'" y="'+f1(y0-2.5)+'" width="'+f1(w+5)+'" height="'+f1(h+5)+'" rx="3" fill="none" stroke="var(--steel-sh)" stroke-width="5"/>'+
+      '<rect x="'+f1(x0-4.2)+'" y="'+f1(y0-4.2)+'" width="'+f1(w+8.4)+'" height="'+f1(h+8.4)+'" rx="4" fill="none" stroke="var(--steel-hi)" stroke-width="1"/>'+
+      pg([[x0-5,yc],[x0-12,yc-4.5],[x0-12,yc+4.5]],'var(--ink-soft)')+pg([[x0+w+5,yc],[x0+w+12,yc-4.5],[x0+w+12,yc+4.5]],'var(--ink-soft)');
+
+    s+='<g clip-path="url(#rt-clip)">';
+    // the glass plate, the barrier
+    if(v==='refract'){
+      var shal = st.from==='deep' ? 1 : -1;
+      s+='<polygon points="'+halfPlane(p,shal)+'" fill="#fff" opacity=".16"/>';
+      var e1=pt(add(p.B,p.tau,-80)), e2=pt(add(p.B,p.tau,80));
+      s+=ln(e1[0],e1[1],e2[0],e2[1],'#fff',2.2,' opacity=".9"')+ln(e1[0]+shal*p.n[0]*2,e1[1]+shal*p.n[1]*2,e2[0]+shal*p.n[0]*2,e2[1]+shal*p.n[1]*2,INK,1,' opacity=".45"');
+    }
+    if(v==='reflect'){
+      var a1=add(p.B,p.tau,-80), a2=add(p.B,p.tau,80);
+      s+=pg([pt(a1),pt(a2),pt(add(a2,p.n,0.8)),pt(add(a1,p.n,0.8))],'var(--steel)',' stroke="var(--steel-sh)" stroke-width="1"');
+      var f0=pt(add(a1,p.n,0.16)), f2=pt(add(a2,p.n,0.16)); s+=ln(f0[0],f0[1],f2[0],f2[1],'var(--steel-hi)',1.6);
+    }
+    if(v==='diffract'){
+      var bx=X(DX)-0.4*L.S, bw=0.8*L.S, g=st.gap;
+      var bars = st.kind==='gap' ? [[0,YC-g/2],[YC+g/2,TH]] : [[YC-g/2,YC+g/2]];
+      bars.forEach(function(q){ s+=rect(bx,Y(q[0]),bw,(q[1]-q[0])*L.S,'var(--steel)',' stroke="var(--steel-sh)" stroke-width="1"')+ln(bx+1.6,Y(q[0])+1,bx+1.6,Y(q[1])-1,'var(--steel-hi)',1.6); });
+    }
+    // the vibrating bar, or the two dippers on their beam
+    if(v==='two'){
+      s+=rect(X(2.1),y0,1.0*L.S,h,'var(--wood-s)')+rect(X(2.1),y0,0.72*L.S,h,'var(--wood-t)')+rect(X(2.25),Y(YC-1.3),0.7*L.S,2.6*L.S,'var(--case)',' rx="2"');
+      [p.S1,p.S2].forEach(function(S,k){ var on=srcOn(k+1), A=pt([3.1,S[1]]), B=pt(S);
+        s+='<g'+(on?'':' opacity=".38"')+'>'+ln(A[0],A[1],B[0],B[1],'var(--steel-sh)',4.4,' stroke-linecap="round"')+ln(A[0],A[1]-0.8,B[0],B[1]-0.8,'var(--steel-hi)',1.3)+
+          '<circle cx="'+f1(B[0])+'" cy="'+f1(B[1])+'" r="'+f1(0.48*L.S)+'" fill="var(--steel-hi)" stroke="var(--steel-sh)" stroke-width="1.6"/><circle cx="'+f1(B[0]-1.6)+'" cy="'+f1(B[1]-1.6)+'" r="1.7" fill="#fff"/></g>'; });
+    } else {
+      s+=rect(X(XB-1.0),y0,1.0*L.S,h,'var(--wood-s)')+rect(X(XB-1.0),y0,0.72*L.S,h,'var(--wood-t)')+rect(X(XB-0.85),Y(YC-1.3),0.7*L.S,2.6*L.S,'var(--case)',' rx="2"');
+    }
+    // lines of maxima and minima (two dippers)
+    if(v==='two' && st.lines && st.src==='both' && st.phase!=='none') s+=nodal(p);
+    // rays, normals and angles
+    if(st.rays && v!=='two') s+=raysSvg(p);
+    if(v==='two') s+=pathsSvg(p);
+    s+='</g>';
+    s+=labelsSvg(p);
+    $('#rt-fix').innerHTML=s;
+    $('#rt-sA').innerHTML=''; sideFix();
+    placeHandles();
+  }
+
+  function raysSvg(p){
+    var v=st.view, s='', B=p.B, hid=st.hide, nm=angNames();
+    if(v==='waves'){ [YC-6.2, YC+6.2].forEach(function(y){ s+=ray([12,y],[27,y]); }); return s; }
+    if(v==='reflect' || v==='refract'){
+      var nb=add(B,p.n,-8.5), nf=add(B,p.n,8.5), N0=pt(nb), N1=pt(v==='refract'?nf:B);
+      s+=ln(N0[0],N0[1],N1[0],N1[1],'#fff',3.6,' opacity=".8"')+ln(N0[0],N0[1],N1[0],N1[1],INK,1.6,' stroke-dasharray="6 5"');
+      s+=ray([5,YC],B);
+      var a=p.a, showR = v==='reflect' || p.tir || p.Ramp>0;
+      if(showR && !hid) s+=ray(B, add(B,p.r,Math.min(13,rayLen(B,p.r)-0.8)), RAY, {dash:v==='refract'&&!p.tir, at:0.6});
+      if(v==='refract' && !p.tir && !hid) s+=ray(B, add(B,p.t,Math.min(14,rayLen(B,p.t)-0.8)), RAY, {at:0.6});
+      if(a>=9.9*DEG){
+        var rl=a<19*DEG?7.4:5.0;
+        s+=arc(B,3.2,PI,PI+a)+letter(B,rl,PI+a/2,nm[0]);
+        if(v==='reflect' && !hid) s+=arc(B,3.2,PI+a,PI+2*a)+letter(B,rl,PI+1.5*a,nm[1]);
+        if(v==='refract' && !p.tir && !hid && p.th2>=5*DEG){ var r2=p.th2<19*DEG?7.4:5.0; s+=arc(B,3.2,a-p.th2,a)+letter(B,r2,a-p.th2/2,nm[1]); }
+        if(v==='refract' && p.tir && !hid) s+=arc(B,3.2,PI+a,PI+2*a);
+      }
+      return s;
+    }
+    if(v==='diffract'){
+      var g=st.gap, sn=clamp(0.5*p.l1/g,0,0.94), th=Math.asin(sn), dir;
+      if(st.kind==='gap'){
+        s+=ray([4,YC],[DX+1,YC],RAY,{at:0.5});
+        if(!hid){ s+=ray([DX+1,YC],[DX+6.2,YC],RAY,{at:0.7});
+          [-1,1].forEach(function(k){ var O=[DX+0.6, YC+k*Math.max(0,g/2-0.5)]; dir=[Math.cos(th),k*Math.sin(th)]; s+=ray(O, add(O,dir,Math.min(13,rayLen(O,dir)-0.8)), RAY, {at:0.6}); }); }
+      } else {
+        [-1,1].forEach(function(k){ var y=YC+k*(g/2+2.6); if(y<1||y>TH-1) return; s+=ray([4,y],[hid?DX:DX+15,y],RAY,{at:hid?0.5:0.3});
+          if(!hid){ var O=[DX+0.6, YC+k*(g/2+0.5)]; dir=[Math.cos(th),-k*Math.sin(th)]; s+=ray(O, add(O,dir,Math.min(11,rayLen(O,dir)-0.8)), RAY, {at:0.6}); } });
+      }
+      return s;
+    }
+    return s;
+  }
+  function geomP(p){ var P=st.P, a=Math.sqrt((P[0]-p.S1[0])*(P[0]-p.S1[0])+(P[1]-p.S1[1])*(P[1]-p.S1[1])), b=Math.sqrt((P[0]-p.S2[0])*(P[0]-p.S2[0])+(P[1]-p.S2[1])*(P[1]-p.S2[1]));
+    var pd=b-a, n=pd/p.l1 - (st.phase==='anti'?0.5:0), near=Math.round(n), off=Math.abs(n-near), kind = off<0.12 ? 'max' : (off>0.38 ? 'min' : 'between');
+    return {s1:a, s2:b, pd:pd, lam:pd/p.l1, kind:kind}; }
+  function pathsSvg(p){
+    var s='', P=st.P, g=geomP(p), A=pt(p.S1), B=pt(p.S2), Q=pt(P);
+    if(srcOn(1)) s+=seg2(A,Q,PATH1,2);
+    if(srcOn(2)) s+=seg2(B,Q,PATH2,2);
+    if(st.src==='both'){      // the path difference: the extra length of the longer path, marked from its dipper
+      var lg=g.pd>=0?p.S2:p.S1, len=Math.abs(g.pd), tot=g.pd>=0?g.s2:g.s1;
+      if(len>0.05 && tot>0){ var e=[(P[0]-lg[0])/tot,(P[1]-lg[1])/tot], m=pt(add(lg,e,len)), a0=pt(lg); s+=ln(a0[0],a0[1],m[0],m[1],g.pd>=0?PATH2:PATH1,6,' stroke-linecap="round" opacity=".9"'); }
+    }
+    return s;
+  }
+  function nodal(p){
+    var s='', lam=p.l1, d=st.sep, c=d/2, off=st.phase==='anti'?0.5:0, labs=[], n, k;
+    function hyp(a){   // points with S2P - S1P = 2a (a may be negative): one branch, to the right and to the left of the dippers
+      var b2=c*c-a*a; if(b2<=0) return null; var b=Math.sqrt(b2), out=[], t;
+      for(t=-4.2;t<=4.2;t+=0.07) out.push([SX+b*Math.sinh(t), YC-a*Math.cosh(t)]);
+      return out; }
+    for(k=0;k<2;k++){            // k = 0 maxima, 1 minima
+      for(n=-12;n<=12;n++){
+        var pd=(n+off+(k?0.5:0))*lam; if(Math.abs(pd)>=d-1e-6) continue;
+        var pts2=hyp(pd/2); if(!pts2) continue;
+        var px=pts2.map(pt);
+        s+=pl(px,'#fff',k?3.2:3.6,' opacity=".55"')+pl(px,k?INK:'#0b7a3b',k?1.6:2,k?' stroke-dasharray="5 5"':'');
+      }
+    }
+    return s;
+  }
+  function labelsSvg(p){
+    var v=st.view, s='', fs=11.5;
+    if(v==='waves'){ if(st.rays) s+=pill(X(19.5),Y(YC-7.75),'direction of travel',{fs:fs}); }
+    if(v==='reflect'){ var q=add(add(p.B,p.n,2.6),p.tau,ang()>35?9.5:8.5); if(edge(q[0],q[1])<1.6) q=add(p.B,p.n,3); q[0]=clamp(q[0],4,TW-3.2); q[1]=clamp(q[1],1.2,TH-1.2); s+=pill(X(q[0]),Y(q[1]),'barrier',{fs:fs}); }
+    if(v==='refract'){
+      var names = st.from==='deep' ? ['deep water','shallow water'] : ['shallow water','deep water'];
+      var c1=[[6.5,TH-1.5],[6.5,1.5]], c2=[[33,TH-1.5],[33,1.5],[35,YC]];
+      var pick=function(list,sign){ for(var i=0;i<list.length;i++) if(sign*dOf(list[i][0],list[i][1],p)>3.4) return list[i]; return null; };
+      var q1=pick(c1,-1), q2=pick(c2,1);
+      if(q1) s+=pill(X(q1[0]),Y(q1[1]),names[0],{fs:fs});
+      if(q2) s+=pill(X(q2[0]),Y(q2[1]),names[1],{fs:fs});
+    }
+    if(v==='diffract'){ if(st.kind==='gap') s+=pill(X(DX+0.9),Y(1.4),'barrier',{fs:fs,a:'start'}); else s+=pill(X(DX-0.9),Y(YC),'obstacle',{fs:fs,a:'end'}); }
+    if(v==='two'){
+      var up=p.S1[1]>2.6, dn=p.S2[1]<TH-2.6;
+      s+=pill(X(SX)+(up?0:20),Y(p.S1[1])-(up?17:0),'S&#8321;',{fs:12,w:600,c:PATH1});
+      s+=pill(X(SX)+(dn?0:20),Y(p.S2[1])+(dn?17:0),'S&#8322;',{fs:12,w:600,c:PATH2});
+      var P=st.P, lx=P[0]>TW-3?-16:16, ly=P[1]<2?16:-14;
+      s+=pill(X(P[0])+lx,Y(P[1])+ly,'P',{fs:12,w:600});
+    }
+    return s;
+  }
+
+  // ---- labels that travel with the waves: one wavelength marked between two wavefronts ----
+  function brackets(){
+    var p=PR, v=st.view, out=[], k1=p.k1;
+    function fromField(O){ var f=fieldAt(O[0],O[1]); return Math.atan2(f.im,f.re); }
+    function near(ph,ref){ return ph+TAU*Math.round((ref-ph)/TAU); }
+    var name=function(i){ return v==='refract' && ks5() ? '&lambda;'+(i?'&#8322;':'&#8321;') : '&lambda;'; };
+    if(v==='waves') out.push({O:[5,3.2], e:[1,0], lam:p.l1, P0:k1*(5-XB), win:31, lab:name(0), tag:1});
+    if(v==='reflect'){ var xe=p.B[0]+(YC-4.6)*Math.tan(p.a); out.push({O:[4.5,4.6], e:[1,0], lam:p.l1, P0:k1*(4.5-XB), win:Math.min(xe,TW)-4.5-1.2, lab:name(0)}); }
+    if(v==='refract'){
+      var xe2=p.B[0]+(YC-4.6)*Math.tan(p.a); out.push({O:[4.5,4.6], e:[1,0], lam:p.l1, P0:k1*(4.5-XB), win:Math.min(xe2,TW)-4.5-1.2, lab:name(0)});
+      if(!p.tir){ var H=add(p.B,p.tau,6.6), O=add(H,p.t,0.9); if(edge(H[0],H[1])>0.5) out.push({O:O, e:p.t, lam:p.l2, P0:k1*(H[0]-XB)+p.k2*0.9, win:rayLen(O,p.t)-0.8, lab:name(1), born:1, side:-1}); }
+    }
+    if(v==='diffract'){
+      out.push({O:[3.2,3.2], e:[1,0], lam:p.l1, P0:k1*(3.2-XB), win:DX-3.2-0.9, lab:name(0)});
+      var O2=[DX+7, st.kind==='gap'?YC:2.6]; out.push({O:O2, e:[1,0], lam:p.l1, P0:near(fromField(O2), k1*(O2[0]-XB)), win:TW-O2[0]-1, lab:name(0), born:1, side:st.kind==='gap'&&st.rays?1:-1});
+    }
+    BRK=out;
+  }
+  function liveSvg(th){
+    var p=PR, s='', v=st.view;
+    if(tw<=0) return '';
+    BRK.forEach(function(b){
+      if(b.born && st.hide) return;
+      var k=TAU/b.lam, n=Math.floor((b.win-b.lam)/b.lam+1e-6); if(n<1) return;
+      var sc=mod((th-b.P0)/k, n*b.lam);
+      if(th-(b.P0+k*(sc+b.lam)) < FW) return;                          // the waves have not filled this stretch yet
+      var a=pt(add(b.O,b.e,sc)), c=pt(add(b.O,b.e,sc+b.lam)), nx=-b.e[1], ny=b.e[0], sd=b.side||-1, tk=7;
+      s+=seg2(a,c,INK,1.8)+head(a,[-b.e[0],-b.e[1]],INK,0.72)+head(c,b.e,INK,0.72);
+      s+=ln(a[0]-nx*tk,a[1]-ny*tk,a[0]+nx*tk,a[1]+ny*tk,INK,1.6)+ln(c[0]-nx*tk,c[1]-ny*tk,c[0]+nx*tk,c[1]+ny*tk,INK,1.6);
+      var m=[(a[0]+c[0])/2+nx*sd*15, (a[1]+c[1])/2+ny*sd*15];
+      s+=pill(m[0],m[1],b.lab,{fs:12.5,w:600});
+      if(b.tag){ var q=pt(add(b.O,b.e,sc+b.lam)); var ty=Y(TH-3.4); s+=ln(q[0],Y(TH-5.2),q[0]+12,ty-8,INK,1.4)+'<circle cx="'+f1(q[0])+'" cy="'+f1(Y(TH-5.2))+'" r="2.6" fill="'+INK+'"/>'+pill(q[0]+14,ty,'wavefront',{fs:11.5,a:'start'}); }
+    });
+    if(st.wavelets && ks5()) s+=waveletsSvg(th);
+    return '<g clip-path="url(#rt-clip)">'+s+'</g>';
+  }
+
+  // ---- Huygens' construction: points on one wavefront send out wavelets; the next wavefront touches them all ----
+  // seeds(J): points on wavefront number J (the phase there is 2 pi J), with the direction the wave travels and its speed
+  function seeds(J){
+    var p=PR, v=st.view, out=[], k1=p.k1, l1=p.l1, i, y, s, H, q, P;
+    function inc(test){ var x=XB+J*l1; if(x>TW) return; for(i=0;i<10;i++){ y=1.28+i*2.56; if(test(x,y)) out.push({x:x,y:y,a:0,v:p.v1,c:1}); } }
+    if(v==='waves') inc(function(){ return true; });
+    if(v==='reflect' || v==='refract'){
+      inc(function(x,y){ return dOf(x,y,p)<-0.05; });
+      var ds=2.56/Math.max(0.5,p.ca), showR = v==='reflect' || p.tir || p.Ramp>0, Rp=v==='reflect'?0:p.Rph;
+      for(s=-40;s<=40;s+=ds){ H=add(p.B,p.tau,s+ds*0.37); if(edge(H[0],H[1])<0) continue;
+        if(showR && !st.hide){ q=(TAU*J-Rp)/k1-(H[0]-XB); if(q>=0){ P=add(H,p.r,q); if(edge(P[0],P[1])>0) out.push({x:P[0],y:P[1],a:Math.atan2(p.r[1],p.r[0]),v:p.v1,c:1}); } }
+        if(v==='refract' && !p.tir && !st.hide){ q=(TAU*J-k1*(H[0]-XB))/p.k2; if(q>=0){ P=add(H,p.t,q); if(edge(P[0],P[1])>0) out.push({x:P[0],y:P[1],a:Math.atan2(p.t[1],p.t[0]),v:p.v2,c:2}); } }
+      }
+    }
+    if(v==='diffract'){
+      var g=st.gap, rho=J*l1-(DX-XB), obs=st.kind==='obstacle';
+      if(rho<0) inc(function(){ return true; });
+      else if(!st.hide){
+        var x=DX+rho, m, th, n;
+        if(!obs){
+          n=Math.max(1,Math.round(g/2.56)); if(x<TW) for(i=0;i<=n;i++) out.push({x:x, y:YC-g/2+g*i/n, a:0, v:p.v1, c:2});
+          m=Math.max(1,Math.round(rho*PI/2/2.56));
+          [-1,1].forEach(function(k){ for(i=1;i<=m;i++){ th=i/m*PI/2*0.94; P=[DX+rho*Math.cos(th), YC+k*(g/2+rho*Math.sin(th))]; if(edge(P[0],P[1])>0) out.push({x:P[0],y:P[1],a:k*th,v:p.v1,c:2}); } });
+        } else {
+          if(x<TW) for(i=0;i<10;i++){ y=1.28+i*2.56; if(Math.abs(y-YC)>g/2+0.3) out.push({x:x,y:y,a:0,v:p.v1,c:2}); }
+          m=Math.max(1,Math.round(rho*PI/2/2.56));
+          [-1,1].forEach(function(k){ for(i=0;i<=m;i++){ th=i/m*PI/2*0.94; P=[DX+rho*Math.cos(th), YC+k*(g/2-rho*Math.sin(th))]; if(k*(P[1]-YC)>=-0.01 && edge(P[0],P[1])>0) out.push({x:P[0],y:P[1],a:-k*th,v:p.v1,c:2}); } });
+        }
+      }
+    }
+    if(v==='two'){
+      [p.S1,p.S2].forEach(function(S,c){ if(!srcOn(c+1)) return; var rho=(J-(c?del2()/TAU:0))*l1; if(rho<0.2) return;
+        var m=Math.max(6,Math.round(TAU*rho/2.56)); for(i=0;i<m;i++){ var th=TAU*(i+0.5)/m, P=[S[0]+rho*Math.cos(th), S[1]+rho*Math.sin(th)]; if(edge(P[0],P[1])>0) out.push({x:P[0],y:P[1],a:th,v:p.v1,c:0}); } });
+    }
+    return out;
+  }
+  function trackJ(){ var n=Math.floor(tw*PR.f+1e-9), Jm=Math.max(2,Math.floor(maxArr/TAU)+1); return {J:n<1?-1:(n-1)%Jm, frac:tw*PR.f-n}; }
+  function waveletsSvg(){
+    var t=trackJ(); if(t.J<0) return '';
+    var S=seeds(t.J), g=['','',''];
+    S.forEach(function(q){ var R=q.v*t.frac/PR.f*L.S, C=pt([q.x,q.y]), a0=q.a-PI/2, a1=q.a+PI/2;
+      var s='';
+      if(R>1.2) s+='<path d="M'+f1(C[0]+R*Math.cos(a0))+' '+f1(C[1]+R*Math.sin(a0))+' A'+f1(R)+' '+f1(R)+' 0 0 1 '+f1(C[0]+R*Math.cos(a1))+' '+f1(C[1]+R*Math.sin(a1))+'" fill="none" stroke="'+WVL+'" stroke-width="1.5"/>';
+      s+='<circle cx="'+f1(C[0])+'" cy="'+f1(C[1])+'" r="2.6" fill="'+WVL+'" stroke="'+INK+'" stroke-width="0.9"/>';
+      g[q.c]+=s; });
+    return g[0]+'<g clip-path="url(#rt-c1)">'+g[1]+'</g><g clip-path="url(#rt-c2)">'+g[2]+'</g>';
+  }
+
+  // ---- the tank from the side: lamp, water, screen. Drawn in its own 322 x 330 units ----
+  var SD={x0:60, ss:5.05, yw:216, yf:240, lx:161, ly:30, ys:293, av:3.2};
+  function xs(x){ return SD.x0+x*SD.ss; }
+  function sideFix(){
+    var p=PR, v=st.view, a='', b='', M=(SD.ys-SD.ly)/(SD.yw-SD.ly), hw=(TW*SD.ss/2)*M;
+    $('#rt-side').setAttribute('transform','translate('+f1(L.side.x)+' '+f1(L.side.y)+') scale('+L.side.k.toFixed(4)+')');
+    // behind the water: the light, the bench, the screen, the lamp on its stand, the legs
+    a+=pg([[SD.lx,SD.ly],[SD.lx+hw,SD.ys],[SD.lx-hw,SD.ys]],'#ffd24a',' opacity=".13"');
+    a+=box(4,300,304,12,9,-5,'var(--wood-f)',{top:'var(--wood-t)',side:'var(--wood-s)'});
+    a+=rect(SD.lx-hw-6,SD.ys-1,2*hw+12,5.5,'#f6f7f9',' stroke="var(--steel)" stroke-width="0.8"')+rect(SD.lx-hw,SD.ys-1,2*hw,4,'url(#rt-scr)');
+    a+=tube(312,297,312,14,5,'var(--steel)','var(--steel-hi)')+tube(312,16,176,16,4.5,'var(--steel)','var(--steel-hi)');
+    a+=pg([[146,9],[176,9],[183,SD.ly],[139,SD.ly]],'var(--case)')+pg([[146,9],[176,9],[178,14],[144,14]],'var(--case-p)')+ell(SD.lx,SD.ly+1.5,9,4,'#ffe14d',' stroke="#c9a800" stroke-width="0.8"');
+    a+=rect(57,245,6,48,'var(--steel)')+rect(57,245,2,48,'var(--steel-hi)')+rect(259,245,6,48,'var(--steel)')+rect(259,245,2,48,'var(--steel-hi)');
+    // in front: the glass tray, what stands in the water, the labels
+    var plate=null;
+    if(v==='refract') plate = st.from==='deep' ? [BF_X,TW] : [0,BF_X];
+    if(v==='waves' && st.water!==6) plate=[0,TW];
+    if(plate){ var dep=(v==='refract'?st.depth:st.water), ph=(6-dep)*4; b+=rect(xs(plate[0]),SD.yf-ph,(plate[1]-plate[0])*SD.ss,ph,'var(--glass)',' stroke="var(--steel)" stroke-width="0.8"')+ln(xs(plate[0])+1,SD.yf-ph+1.4,xs(plate[1])-1,SD.yf-ph+1.4,'#fff',1.2,' opacity=".7"');
+      b+=txt(xs((plate[0]+plate[1])/2),SD.yf+22,'glass plate',{a:'middle',fs:11,halo:1})+ln(xs((plate[0]+plate[1])/2),SD.yf+11,xs((plate[0]+plate[1])/2),SD.yf-ph/2,'var(--ink-soft)',1); }
+    if(v==='reflect') b+=rect(xs(BR_X),SD.yw-13,0.8*SD.ss+1,SD.yf-SD.yw+13,'var(--steel)',' stroke="var(--steel-sh)" stroke-width="0.8"')+txt(xs(BR_X)+2.5,SD.yw-18,'barrier',{a:'middle',fs:11,halo:1});
+    if(v==='diffract'){ var solid=st.kind==='obstacle'; b+=rect(xs(DX)-2.5,SD.yw-13,5,SD.yf-SD.yw+13,'var(--steel)',' stroke="var(--steel-sh)" stroke-width="0.8"'+(solid?'':' opacity=".32"'))+txt(xs(DX),SD.yw-18,solid?'obstacle':'gap',{a:'middle',fs:11,halo:1}); }
+    b+=rect(55,202,5,43,'var(--glass)',' stroke="var(--steel)" stroke-width="0.8"')+rect(262,202,5,43,'var(--glass)',' stroke="var(--steel)" stroke-width="0.8"')+rect(55,SD.yf,212,5,'var(--glass)',' stroke="var(--steel)" stroke-width="0.8"');
+    b+=rect(49,166,4.5,38,'var(--steel)')+tube(51,168,xs(v==='two'?2.1:XB)+10,168,3.4,'var(--steel)','var(--steel-hi)');
+    b+=txt(136,24,'lamp',{a:'end',fs:11});
+    b+=txt(4,150,v==='two'?'dipper':'vibrating bar',{fs:11})+ln(22,154,xs(v==='two'?SX:XB)-(v==='two'?4:5),v==='two'?204:192,'var(--ink-soft)',1);
+    b+=txt(271,231,'water',{fs:11});
+    b+=txt(SD.lx,326,'screen: a bright line under each crest',{a:'middle',fs:11});
+    $('#rt-sA').innerHTML=a; $('#rt-sB').innerHTML=b;
+  }
+  var ROW=null;
+  function sideLive(th){
+    var p=PR, v=st.view, s='', ix, iy=clamp(Math.floor(ycut()/cy),0,NY-1);
+    if(!ROW || ROW.length!==NX) ROW=new Float32Array(NX);
+    if(tw>0) rowU(iy, th, ROW); else ROW.fill(0);
+    var pts2=[], step=NX>260?2:1, yOf=function(i){ return SD.yw-SD.av*clamp(ROW[i],-2,2); };
+    for(ix=0;ix<NX;ix+=step) pts2.push([xs((ix+0.5)*cx), yOf(ix)]);
+    pts2.unshift([SD.x0,pts2[0][1]]); pts2.push([xs(TW),pts2[pts2.length-1][1]]);
+    // light brought to a line under each crest
+    var M, hwl=Math.min(5, 0.2*p.l1*SD.ss);
+    for(ix=2;ix<NX-2;ix++){ var u=ROW[ix]; if(u>0.4 && u>ROW[ix-1] && u>=ROW[ix+1] && u>=ROW[ix-2] && u>=ROW[ix+2]){
+      var xc=xs((ix+0.5)*cx), yc=yOf(ix); M=(SD.ys-SD.ly)/(yc-SD.ly); var xsn=SD.lx+(xc-SD.lx)*M;
+      s+=pg([[xc-hwl,yc+2],[xc+hwl,yc+2],[xsn,SD.ys]],'#ffd24a',' opacity="'+(0.16+0.2*Math.min(1,u)).toFixed(2)+'"'); } }
+    s+=pg(pts2.concat([[xs(TW),SD.yf],[SD.x0,SD.yf]]),'rgb('+WATER.join(',')+')',' opacity=".82"')+pl(pts2,'rgb('+TROUGH.join(',')+')',1.5);
+    // the bar, or a dipper, moving up and down
+    var bob = tw>0 ? -1.7*Math.cos(th) : 0;
+    if(v==='two'){ var xd=xs(SX), xw=xs(2.1); s+=ln(xw+2,169,xw+2,184+bob,'var(--thread)',1.2)+ln(xw+6,169,xw+6,184+bob,'var(--thread)',1.2)+rect(xw,184+bob,8,10,'var(--wood-f)',' stroke="var(--wood-s)" stroke-width="0.8"')+pl([[xw+8,189+bob],[xd,189+bob],[xd,208+bob]],'var(--steel-sh)',2.2)+'<circle cx="'+f1(xd)+'" cy="'+f1(212+bob)+'" r="4.2" fill="var(--steel-hi)" stroke="var(--steel-sh)" stroke-width="1.2"/>'; }
+    else { var xb=xs(XB); s+=ln(xb-6,169,xb-6,202+bob,'var(--thread)',1.2)+ln(xb-1,169,xb-1,202+bob,'var(--thread)',1.2)+rect(xb-8,202+bob,8,16,'var(--wood-f)',' stroke="var(--wood-s)" stroke-width="0.8"')+rect(xb-9,195+bob,10,7,'var(--case)',' rx="1.5"'); }
+    $('#rt-sL').innerHTML=s;
+    // the screen: brighter under the crests, darker under the troughs (the pattern is larger than the tank, as the light spreads out)
+    var M0=(SD.ys-SD.ly)/(SD.yw-SD.ly), hw=(TW*SD.ss/2)*M0, g='', N=56;
+    for(var i=0;i<=N;i++){ var xscr=SD.lx-hw+2*hw*i/N, xt=(SD.lx+(xscr-SD.lx)/M0-SD.x0)/SD.ss, j=clamp(Math.floor(xt/cx),0,NX-1), uu=clamp(ROW[j],-1,1), c=Math.round(uu>=0?214+41*uu:214+84*uu);
+      g+='<stop offset="'+(i/N).toFixed(4)+'" stop-color="rgb('+c+','+c+','+Math.min(255,c+3)+')"/>'; }
+    $('#rt-scr').innerHTML=g;
+  }
+
+  // ---- the readings, the note and the working ----
+  function stat(l,v,hi){ return '<div class="stat'+(hi?' hi':'')+'"><small>'+l+'</small><strong>'+v+'</strong></div>'; }
+  function deg1(r){ return (r/DEG).toFixed(1)+'&deg;'; }
+  function readout(){
+    var p=PR, v=st.view, k5=ks5(), ib=level()==='ib', S='', N='', E='', nm=angNames(), a=ang();
+    var lam1=sf(p.l1), lam2=sf(p.l2), v1=sf(p.v1), v2=sf(p.v2);
+    $('#rt-fo').textContent=st.f+' Hz';
+    $('#rt-ao').textContent=a+'°';
+    $('#rt-go2').textContent=st.gap.toFixed(1)+' cm';
+    $('#rt-so').textContent=st.sep.toFixed(1)+' cm';
+    $('#rt-gl').textContent = st.kind==='gap' ? 'Width of the gap' : 'Width of the obstacle';
+    var eqLam=function(vv,ll,sub){ return 'v'+sub+' = f&lambda;'+sub+'<br>'+vv+' = '+st.f+' &times; &lambda;'+sub+'<br>&lambda;'+sub+' = [['+vv+'|'+st.f+']]<br>&lambda;'+sub+' = <b>'+ll+' cm</b>'; };
+    if(v==='waves'){
+      S=stat('Wave speed, v',v1+' cm/s')+stat('Wavelength, &lambda;',lam1+' cm',1)+stat('Period, T',sf(1/st.f)+' s');
+      N='Each bright line is a <b>wavefront</b>: a line that joins points where the water is at the same stage of its motion, here the crests. One <b>wavelength</b> is the distance from one wavefront to the next. The wave travels at right angles to its wavefronts.'+(st.water===6?'':' In shallow water the wave is slower, so at the same frequency the wavefronts are closer together.');
+      E=eqLam(v1,lam1,'')+'<br>T = [[1|f]]<br>T = [[1|'+st.f+']]<br>T = <b>'+sf(1/st.f)+' s</b>';
+    } else if(v==='reflect'){
+      S=stat('Angle i',a+'&deg;')+stat('Angle r',a+'&deg;',1)+stat('Wavelength, &lambda;',lam1+' cm')+stat('Wave speed, v',v1+' cm/s');
+      N='The waves <b>reflect</b> from the barrier. The angle of incidence equals the angle of reflection ('+a+'&deg;), each measured between a ray and the normal. The speed, the frequency and the wavelength do not change.'+(a===0?' Here the waves meet the barrier head on, so they go straight back.':'');
+      E='angle of reflection = angle of incidence<br>r = <b>'+a+'&deg;</b><br>'+eqLam(v1,lam1,'');
+    } else if(v==='refract'){
+      var into=st.from==='deep'?'shallow':'deep', slow=p.v2<p.v1, s1=k5?'&#8321;':'', s2=k5?'&#8322;':'';
+      var w1=st.from==='deep'?'Deep':'Shallow', w2=st.from==='deep'?'Shallow':'Deep';
+      S=stat(w1+' water, v',v1+' cm/s')+stat(w1+' water, &lambda;',lam1+' cm')+stat('Angle '+nm[0],a+'&deg;')+
+        stat(w2+' water, v',v2+' cm/s')+stat(w2+' water, &lambda;',p.tir?'&ndash;':lam2+' cm',1)+stat(p.tir?'Critical angle':'Angle '+nm[1],p.tir?deg1(p.crit):deg1(p.th2),1);
+      if(p.tir) N='The angle of incidence ('+a+'&deg;) is greater than the critical angle ('+deg1(p.crit)+'), so the wave is <b>totally internally reflected</b>: none of it travels on into the deep water.';
+      else N='The waves <b>refract</b> as they pass into the '+into+' water. They travel more '+(slow?'slowly':'quickly')+' there. The frequency does not change, so the wavelength is '+(slow?'shorter':'longer')+'.'+
+        (a===0?' They meet the edge head on (along the normal), so they do not change direction.':' The wavefronts change direction: the wave bends '+(slow?'towards':'away from')+' the normal.')+
+        (k5&&st.partial?' Part of the wave is reflected at the edge of the plate.':'');
+      E=eqLam(v1,lam1,'&#8321;')+'<br>'+eqLam(v2,lam2,'&#8322;');
+      if(!k5) E='In the '+(st.from==='deep'?'deep':'shallow')+' water:<br>'+eqLam(v1,lam1,'')+'<br>In the '+into+' water (the same frequency):<br>'+eqLam(v2,lam2,'');
+      else if(a>0){
+        if(p.tir) E='At the critical angle the refracted ray is along the edge<br>sin &theta;<sub>c</sub> = [[v&#8321;|v&#8322;]]<br>sin &theta;<sub>c</sub> = [['+v1+'|'+v2+']]<br>sin &theta;<sub>c</sub> = '+sf(p.v1/p.v2,4)+'<br>&theta;<sub>c</sub> = <b>'+deg1(p.crit)+'</b><br>'+a+'&deg; is greater than &theta;<sub>c</sub>: total internal reflection';
+        else E+='<br>[[sin &theta;&#8322;|sin &theta;&#8321;]] = [[v&#8322;|v&#8321;]]<br>[[sin &theta;&#8322;|sin '+a+'&deg;]] = [['+v2+'|'+v1+']]<br>sin &theta;&#8322; = [['+v2+'|'+v1+']] &times; sin '+a+'&deg;<br>sin &theta;&#8322; = '+sf(p.v2/p.v1*p.sa,4)+'<br>&theta;&#8322; = <b>'+deg1(p.th2)+'</b>';
+      }
+    } else if(v==='diffract'){
+      var ratio=st.gap/p.l1, gapK=st.kind==='gap';
+      S=stat('Wavelength, &lambda;',lam1+' cm')+stat(gapK?'Width of the gap':'Width of the obstacle',st.gap.toFixed(1)+' cm')+stat('Width &divide; wavelength',sf(ratio),1);
+      if(gapK) N='The waves spread out as they pass through the gap: this is <b>diffraction</b>. '+
+        (ratio<=1.3?'The gap is about one wavelength wide or less, so the waves spread out in almost every direction, as semicircles.':(ratio<3.2?'The gap is a few wavelengths wide, so the waves spread out, but less.':'The gap is much wider than the wavelength, so the waves spread only a little, at the edges.'))+
+        ' The speed, the frequency and the wavelength do not change.';
+      else N='The waves spread round the edges of the obstacle into the space behind it: this is <b>diffraction</b>. '+(ratio<=1.6?'The obstacle is about as wide as the wavelength, so the waves close up behind it and there is almost no shadow.':'The obstacle is wider than the wavelength, so it leaves a shadow of calmer water behind it.');
+      E=eqLam(v1,lam1,'')+'<br>[[width|&lambda;]] = [['+st.gap.toFixed(1)+'|'+lam1+']]<br>[[width|&lambda;]] = <b>'+sf(ratio)+'</b>';
+      if(ib && gapK && ratio>1) E+='<br>HL: first minimum<br>&theta; = [[&lambda;|b]]<br>&theta; = [['+lam1+'|'+st.gap.toFixed(1)+']]<br>&theta; = '+sf(p.l1/st.gap)+' rad<br>&theta; = <b>'+sf(p.l1/st.gap/DEG)+'&deg;</b>';
+    } else {
+      var g=geomP(p), both=st.src==='both';
+      S=stat('S&#8321;P',g.s1.toFixed(1)+' cm')+stat('S&#8322;P',g.s2.toFixed(1)+' cm')+stat('Path difference',Math.abs(g.pd).toFixed(1)+' cm',1)+stat('In wavelengths',sf(Math.abs(g.lam))+' &lambda;',1);
+      if(!both) N='One dipper alone sends out circular wavefronts. Put both dippers in the water to see the two sets of waves <b>superpose</b>.';
+      else if(st.phase==='none') N='The dippers now have different frequencies, so they are <b>not coherent</b>: the phase difference between them keeps changing. The places where the waves add and cancel keep moving, so there is no steady pattern.';
+      else { var anti=st.phase==='anti';
+        N='The dippers are <b>coherent</b>: the same frequency and a constant phase difference. Where a crest meets a crest the waves add (constructive interference); where a crest meets a trough they cancel (destructive). At P the path difference is '+sf(Math.abs(g.lam))+' &lambda;'+
+          (g.kind==='between'?', between a maximum and a minimum.':(', '+(((g.kind==='max'))?'so the waves arrive in phase: a <b>maximum</b>.':'so the waves arrive in antiphase: a <b>minimum</b>.')))+(anti?' (The dippers are in antiphase, so a whole number of wavelengths now gives a minimum.)':''); }
+      var lg=g.pd>=0?['S&#8322;P','S&#8321;P',g.s2,g.s1]:['S&#8321;P','S&#8322;P',g.s1,g.s2];
+      E=eqLam(v1,lam1,'')+'<br>path difference = '+lg[0]+' &minus; '+lg[1]+'<br>path difference = '+lg[2].toFixed(1)+' &minus; '+lg[3].toFixed(1)+'<br>path difference = '+Math.abs(g.pd).toFixed(1)+' cm<br>[[path difference|&lambda;]] = [['+Math.abs(g.pd).toFixed(1)+'|'+lam1+']]<br>[[path difference|&lambda;]] = <b>'+sf(Math.abs(g.lam))+'</b>';
+    }
+    if(tw<=0 && !playing) N='<span class="cue">Press Play: the '+(v==='two'?'dippers move':'bar moves')+' up and down '+st.f+' times a second (shown 5 times slower).</span> '+N;
+    $('#rt-stats').innerHTML=S; $('#rt-stats').className='stats n'+(S.split('class="stat').length-1);
+    $('#rt-note').innerHTML=N; $('#rt-eq').innerHTML=FR(E);
+    var alt={waves:'Straight wavefronts travel across a ripple tank from a vibrating bar.', reflect:'Straight wavefronts meet a barrier at '+a+' degrees and reflect at the same angle.',
+      refract:'Straight wavefronts pass from '+(st.from==='deep'?'deep into shallow':'shallow into deep')+' water over the edge of a glass plate, and '+(p.tir?'are totally internally reflected.':'change wavelength'+(a?' and direction.':'.')),
+      diffract:'Straight wavefronts meet '+(st.kind==='gap'?'a gap in a barrier':'an obstacle')+' and spread out beyond it.', two:'Circular wavefronts spread from two dippers and overlap.'}[v];
+    svg.setAttribute('aria-label', alt+' Beside it, the tank seen from the side: a lamp above the water and a screen below it.');
+  }
+
+  // ---- drawing: need = 2 builds the water again, 1 redraws the picture, 0 only moves it on ----
+  var need=0, queued=false;
+  function frame(){
+    var th=PR.w*tw;
+    paint(); $('#rt-live').innerHTML=liveSvg(th); sideLive(th);
+    for(var i=0;i<frameFns.length;i++){ try{ frameFns[i](api.state()); }catch(e){} }
+  }
+  function flush(){
+    queued=false;
+    if(need>=2) build();
+    if(need>=1){ drawFix(); readout(); }
+    need=0; frame();
+  }
+  function changed(n){ need=Math.max(need,n); if(playing && raf) return; if(!queued){ queued=true; requestAnimationFrame(flush); } }
+  function now(){ if(need||queued) flush(); }
+
+  function tick(t){
+    if(!playing){ raf=0; return; }
+    var dt=Math.min(0.05,(t-last)/1000); last=t;
+    var was=tw; tw+=dt*SLOWF*(pressed(slowBtn)?0.3:1);
+    if(was<=0) readout();
+    if(need){ flush(); } else frame();
+    raf=requestAnimationFrame(tick);
+  }
+  function setPlaying(on){
+    playing=on; goBtn.innerHTML = on ? '&#10074;&#10074; Pause' : '&#9654; Play';
+    if(on && !raf){ last=performance.now(); raf=requestAnimationFrame(tick); }
+    if(!on) readout();
+  }
+  function reset(){ tw=0; setPlaying(false); changed(1); }
+  goBtn.addEventListener('click', function(){ setPlaying(!playing); });
+  $('#rt-reset').addEventListener('click', reset);
+  slowBtn.addEventListener('click', function(){ toggle(slowBtn); });
+
+  // ---- the choices ----
+  var VIEWS=['waves','reflect','refract','diffract','two'];
+  function allowed(v){ return ks5() || VIEWS.indexOf(v)<3; }
+  function showRow(id,on){ $('#'+id).hidden=!on; var l=$('#'+id+'-lab'); if(l) l.hidden=!on; }
+  function syncUi(){
+    var v=st.view, k5=ks5();
+    each($('#rt-show').querySelectorAll('button'), function(b){ b.hidden=!allowed(b.dataset.v); });
+    showSeg.pick(v);
+    $('#rt-abox').hidden=!(v==='reflect'||v==='refract'); $('#rt-gbox').hidden=v!=='diffract'; $('#rt-sbox').hidden=v!=='two';
+    $('#rt-a').value=ang(); $('#rt-f').value=st.f; $('#rt-g').value=st.gap; $('#rt-s').value=st.sep;
+    showRow('rt-water',v==='waves'); showRow('rt-from',v==='refract'); showRow('rt-depth',v==='refract');
+    showRow('rt-kind',v==='diffract'); showRow('rt-src',v==='two'); showRow('rt-phase',v==='two'&&k5);
+    var vis={rays:v!=='two', wavelets:k5, lines:v==='two', partial:v==='refract'&&k5};
+    each($('#rt-draw').querySelectorAll('button'), function(b){ b.hidden=!vis[b.dataset.v]; b.setAttribute('aria-pressed', String(!!st[b.dataset.v])); });
+    segs.water.pick(st.water); segs.from.pick(st.from); segs.depth.pick(st.depth); segs.kind.pick(st.kind); segs.src.pick(st.src); segs.phase.pick(st.phase);
+  }
+  function setView(v){ if(!allowed(v)) v='waves'; st.view=v; tw=0; syncUi(); changed(2); }
+  levelSeg=segGroup($('#rt-level'), function(){ if(!ks5()){ st.wavelets=false; st.partial=false; st.phase='in'; } setView(st.view); });
+  showSeg=segGroup($('#rt-show'), setView);
+  var segs={};
+  [['water',function(v){ st.water=+v; }],['from',function(v){ st.from=v; }],['depth',function(v){ st.depth=+v; }],['kind',function(v){ st.kind=v; }],['src',function(v){ st.src=v; }],['phase',function(v){ st.phase=v; }]].forEach(function(q){
+    segs[q[0]]=segGroup($('#rt-'+q[0]), function(v){ q[1](v); changed(2); }); });
+  $('#rt-draw').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; st[b.dataset.v]=!st[b.dataset.v]; b.setAttribute('aria-pressed', String(st[b.dataset.v])); changed(b.dataset.v==='partial'?2:1); });
+  $('#rt-f').addEventListener('input', function(){ st.f=+this.value; changed(2); });
+  $('#rt-a').addEventListener('input', function(){ if(st.view==='reflect') st.angR=+this.value; else st.angF=+this.value; changed(2); });
+  $('#rt-g').addEventListener('input', function(){ st.gap=+this.value; changed(2); });
+  $('#rt-s').addEventListener('input', function(){ st.sep=+this.value; changed(2); });
+
+  // ---- things in the picture that are dragged: the barrier or the edge of the plate, the edges of the gap, the dippers, point P ----
+  function hdl(h){ return $('#rt-h'+h); }
+  function placeHandles(){
+    var p=PR, v=st.view, at={};
+    if(v==='reflect'||v==='refract') at.A=add(p.B,p.tau,-9);
+    if(v==='diffract'){ at.G1=[DX,YC-st.gap/2]; at.G2=[DX,YC+st.gap/2]; }
+    if(v==='two'){ at.S1=p.S1; at.S2=p.S2; at.P=st.P; }
+    ['A','G1','G2','S1','S2','P'].forEach(function(h){ var e=hdl(h); if(!e) return; if(at[h] && !(st.lock)){ e.removeAttribute('hidden'); e.setAttribute('cx',f1(X(at[h][0]))); e.setAttribute('cy',f1(Y(at[h][1]))); e.setAttribute('r', h==='P'?8.5:(h[0]==='S'?0.6*L.S:6.5)); } else e.setAttribute('hidden',''); });
+  }
+  function toTank(ev){ var q=svg.createSVGPoint(); q.x=ev.clientX; q.y=ev.clientY; q=q.matrixTransform(svg.getScreenCTM().inverse()); return [(q.x-L.ox)/L.S, (q.y-L.oy)/L.S]; }
+  function half(v,lo,hi){ return clamp(Math.round(v*2)/2, lo, hi); }
+  function dragTo(h,q){
+    if(h==='A'){ var a=Math.atan2(q[0]-PR.B[0], -(q[1]-PR.B[1]))/DEG; a=clamp(Math.round(a/5)*5,0,60); if(st.view==='reflect') st.angR=a; else st.angF=a; syncUi(); changed(2); }
+    else if(h[0]==='G'){ st.gap=half(2*Math.abs(q[1]-YC),1,14); syncUi(); changed(2); }
+    else if(h[0]==='S'){ st.sep=half(2*Math.abs(q[1]-YC),2,12); syncUi(); changed(2); }
+    else if(h==='P'){ st.P=[clamp(Math.round(q[0]*10)/10,SX+2,TW-0.6), clamp(Math.round(q[1]*10)/10,0.6,TH-0.6)]; changed(1); }
+  }
+  function wireHandles(){
+    ['A','G1','G2','S1','S2','P'].forEach(function(h){ var e=hdl(h), on=false;
+      e.addEventListener('pointerdown', function(ev){ on=true; try{ e.setPointerCapture(ev.pointerId); }catch(x){} e.classList.add('drag'); ev.preventDefault(); if(h==='P') e.focus(); });
+      e.addEventListener('pointermove', function(ev){ if(on) dragTo(h,toTank(ev)); });
+      var end=function(){ on=false; e.classList.remove('drag'); };
+      e.addEventListener('pointerup', end); e.addEventListener('pointercancel', end);
+    });
+    hdl('P').addEventListener('keydown', function(ev){ var d={ArrowLeft:[-0.5,0],ArrowRight:[0.5,0],ArrowUp:[0,-0.5],ArrowDown:[0,0.5]}[ev.key]; if(!d) return; ev.preventDefault(); dragTo('P',[st.P[0]+d[0],st.P[1]+d[1]]); });
+  }
+
+  // ---- for the questions (the second half of TODO 9j): set the tank up, run it, read it ----
+  var api={
+    views:VIEWS,
+    // set({view, f, angle, water, depth, from, partial, kind, gap, sep, phase, src, rays, wavelets, lines, P:[x,y], hide, lock})
+    // hide: true leaves out everything that happens after the wave meets the barrier, the plate or the gap (and its rays and labels),
+    // so a question can ask what happens next; reveal() shows it. lock: true takes away the drag handles.
+    set:function(o){ o=o||{}; var k;
+      if(o.view && VIEWS.indexOf(o.view)>=0 && o.view!==st.view){ st.view=o.view; tw=0; }
+      if(o.angle!=null){ if(st.view==='reflect') st.angR=+o.angle; else st.angF=+o.angle; }
+      for(k in o) if(k!=='view' && k!=='angle' && Object.prototype.hasOwnProperty.call(st,k)) st[k]=o[k];
+      if(o.lock!=null) st.lock=!!o.lock;
+      syncUi(); changed(2); now(); return api.state(); },
+    play:function(){ setPlaying(true); }, pause:function(){ setPlaying(false); }, reset:function(){ reset(); now(); },
+    develop:function(){ tw=Math.max(tw,(maxArr+FW)/PR.w+0.02); changed(1); now(); },      // jump to the steady pattern
+    reveal:function(){ st.hide=false; changed(1); now(); },
+    onFrame:function(fn){ frameFns.push(fn); },
+    picks:function(){ return $('#rt-picks'); },                                           // an empty layer above the picture
+    // tank cm to picture units and back; the wave directions (unit vectors) and the lines that matter
+    geom:function(){ var p=PR; return {TW:TW, TH:TH, XB:XB, YC:YC, DX:DX, S:L.S, toPx:function(x,y){ return [X(x),Y(y)]; }, toTank:function(px,py){ return [(px-L.ox)/L.S,(py-L.oy)/L.S]; },
+      B:p.B.slice(), normal:p.n.slice(), along:p.tau.slice(), inc:[1,0], refl:p.r.slice(), trans:p.tir?null:p.t.slice(), S1:p.S1.slice(), S2:p.S2.slice(), gap:[YC-st.gap/2, YC+st.gap/2]}; },
+    front:function(J){ var h=st.hide; st.hide=false; var o=seeds(J); st.hide=h; return o; },                                                // points on wavefront J: {x, y, a (direction), v, c (1 before, 2 after)}
+    field:function(x,y){ return fieldAt(x,y); },
+    state:function(){ var p=PR, g=geomP(p), th=PR.w*tw;
+      return {view:st.view, level:level(), f:st.f, v1:p.v1, v2:p.v2, lam1:p.l1, lam2:p.l2, i:ang(), r:st.view==='reflect'?ang():null,
+        theta2:(st.view==='refract'&&!p.tir)?p.th2/DEG:null, tir:p.tir, crit:p.crit==null?null:p.crit/DEG, gap:st.gap, kind:st.kind, ratio:st.gap/p.l1,
+        sep:st.sep, phase:st.phase, src:st.src, P:st.P.slice(), s1p:g.s1, s2p:g.s2, pd:g.pd, pdLam:g.lam, atP:g.kind,
+        hide:st.hide, playing:playing, t:tw, steady:th>maxArr+FW}; }
+  };
+  window.RT=api;
+
+  skeleton(); wireHandles();
+  watchEquals($('#rt-eq'));
+  var rsz=0; window.addEventListener('resize', function(){ clearTimeout(rsz); rsz=setTimeout(function(){ var t=isTall(); if(!L || t!==L.tall || (NX===224)!==t) changed(2); }, 120); });
+
+  // ---- teach kit (master: tools/teach-kit/kit.js; copied by tools/kits.py, do not edit here) ----
+  /* Teacher page (Alex, 24 Nov 2026). An animation page opened on its own (not ?embed in a workout) is for a teacher
+     showing it on a projector: they know the physics, so the picture is the main display and the controls are small.
+     teachPage() hides the Explore | Questions switch (the questions are for students, in the workout frame, which is not
+     changed), adds a "Student version with questions" link, puts the note, readings, hint and working behind a Notes
+     button (in a card under the stage), moves the choices into one strip under the picture (or onto it), and makes the
+     picture as big as the window allows with its controls still on screen.
+     o = {
+       svg:    the picture (svg.view),
+       mode:   id of the Explore | Questions switch (leave out on a page that has none),
+       strip:  ids of choice blocks for the strip under the picture, in order (a .cgrid, or a label and its buttons in a div),
+       pic:    ids of choice blocks the picture itself does in layout B,
+       pin:    'tr' | 'tl' | 'br' | 'bl': layout B lays the pic blocks over that corner of the picture;
+               'hide': layout B hides them, as the picture already does that job (e.g. click a bar or a planet),
+       q:      {href, label} for the student version, or null,
+       layout: 'a' | 'b' | 'c' (default 'b'); ?layout= overrides it,
+       trial:  true shows a "Layout A | B | C" picker on the title line (while Alex compares),
+       onLayout: function(L), called after each change of layout
+     }
+     A: all the choices in the strip. B: the pic blocks on the picture (or hidden), the rest in the strip. C: the choices in
+     a narrow column beside the picture. Returns {fit, layout} or null in a frame. */
+  function teachPage(o){
+    if(/[?&]embed\b/.test(location.search) || window.self!==window.top) return null;
+    var $=function(id){ return document.getElementById(id); };
+    var root=document.documentElement, svg=o.svg, stage=svg.closest('.stage'), left=svg.closest('.stage > *');
+    var under=left.querySelector('.under'), side=stage.querySelector('.side'), head=document.querySelector('.page-head');
+    var strip=(o.strip||[]).map($).filter(Boolean), pics=(o.pic||[]).map($).filter(Boolean), L='b';
+    root.classList.add('teach');
+    if(!$('teach-kit-css')){
+      var st=document.createElement('style'); st.id='teach-kit-css';
+      st.textContent=''
+        +'.teach .page{max-width:1900px;padding-block:6px 24px;}'
+        +'.teach .home-link{min-height:32px;margin:0;}'
+        +'.teach .page-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:6px 16px;margin-bottom:8px;}'
+        +'.teach .page-head .eyebrow{display:none;}'
+        +'.teach .page-head h1{font-size:26px;}'
+        +'.tk-q{font:600 13px var(--font-mono,monospace);color:var(--topic,var(--accent));text-decoration:none;min-height:32px;display:inline-flex;align-items:center;}'
+        +'.tk-q:hover{text-decoration:underline;}'
+        +'.tk-lay{margin-left:auto;display:flex;align-items:center;gap:8px;font:12.5px var(--font-mono,monospace);color:var(--ink-soft);}'
+        +'.tk-lay .seg button{min-height:32px;padding:4px 12px;}'
+        +'.teach .stage{padding:12px;gap:12px 18px;grid-template-columns:minmax(0,1fr);}'
+        +'.teach .view{max-height:none;}'
+        +'.teach .side{display:none;}'
+        +'.teach .under{display:flex;flex-direction:row;flex-wrap:wrap;margin-top:8px;gap:8px 18px;align-items:flex-end;}'
+        +'.teach .under .sliders{flex:1 1 340px;}'
+        // small controls: the picture is the display (Alex, 24 Nov 2026: zoomed in on a projector the full-size buttons were huge)
+        +'.teach .under .btn{min-height:36px;padding:5px 12px;font-size:14.5px;border-radius:8px;}'
+        +'.teach .under .btn-group{gap:6px;}'
+        // bigger text that may take two lines ("No / epicycles"), so a group stays narrow (Alex, 24 Nov 2026)
+        +'.teach .tk-strip .seg button,.teach .tk-strip .jumprow button{min-height:36px;padding:3px 9px;font-size:14.5px;line-height:1.15;white-space:normal;max-width:calc(10ch + 24px);text-align:center;flex:0 0 auto;}'
+        +'.teach .tk-strip .rowlab,.teach .under .lab{font-size:12.5px;margin-bottom:2px;}'
+        +'.teach .under input[type=range]{min-height:20px;}'
+        +'.tk-strip{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:flex-end;}'
+        +'.tk-strip:empty{display:none;}'
+        +'.tk-strip>*{margin:0;}'
+        +'.tk-pic{position:relative;margin-inline:auto;}'
+        +'.tk-on{position:absolute;display:flex;flex-direction:column;gap:4px;padding:3px;border-radius:8px;background:color-mix(in srgb,var(--panel) 80%,transparent);max-width:calc(100% - 12px);}'
+        +'.tk-on:empty{display:none;}'
+        +'.tk-on.tr{top:6px;right:6px;align-items:flex-end;}.tk-on.tl{top:6px;left:6px;}.tk-on.br{bottom:6px;right:6px;align-items:flex-end;}.tk-on.bl{bottom:6px;left:6px;}'
+        +'.tk-on .rowlab{display:none;}'
+        +'.tk-on .cgrid.kit,.tk-on .cgrid.kit>.cgroup{gap:0;}'
+        +'.tk-on .seg button{min-height:26px;padding:2px 8px;font-size:11.5px;}'
+        +'.tk-on .seg{flex-wrap:wrap;justify-content:flex-end;}'
+        +'.tk-notes{margin-top:12px;padding:14px;}'
+        +'.tk-notes>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:10px 18px;align-items:start;}'
+        +'.tk-notes .note{min-height:0;}'
+        +'.lay-c .stage{grid-template-columns:minmax(0,1fr) 250px;}'
+        +'.lay-c .side{display:flex;}'
+        +'@media (max-width:860px){ .lay-c .stage{grid-template-columns:minmax(0,1fr);} }';
+      document.head.appendChild(st);
+    }
+    // the title line: back link, title, student version, layout picker
+    var home=document.querySelector('.home-link'); if(home && head) head.insertBefore(home, head.firstChild);
+    if(o.q && head){ var a=document.createElement('a'); a.className='tk-q'; a.href=o.q.href; a.innerHTML=o.q.label||'Student version with questions &rarr;'; head.appendChild(a); }
+    if(o.mode && $(o.mode)) $(o.mode).hidden=true;   // the Choice kit then hides "Try the questions" too
+    // Notes: everything left in the side column that is not a choice
+    var notes=document.createElement('div'); notes.className='card tk-notes'; notes.hidden=true;
+    var inner=document.createElement('div'); notes.appendChild(inner);
+    Array.prototype.slice.call(side.children).forEach(function(c){ if(c.id!==o.mode && strip.indexOf(c)<0 && pics.indexOf(c)<0) inner.appendChild(c); });
+    stage.parentNode.insertBefore(notes, stage.nextSibling);
+    // Notes goes in the main button row: the one with "Try the questions" if there is one (a page may have a hidden Questions row first)
+    var tq=under.querySelector('.btn-group .to-q'), bg=tq?tq.parentNode:under.querySelector('.btn-group'), nb=document.createElement('button');
+    nb.className='btn'; nb.type='button'; nb.textContent='Notes'; nb.setAttribute('aria-expanded','false');
+    var toq=bg.querySelector('.to-q'); bg.insertBefore(nb, toq||null);
+    nb.addEventListener('click',function(){ notes.hidden=!notes.hidden; nb.setAttribute('aria-expanded',notes.hidden?'false':'true'); if(!notes.hidden) notes.scrollIntoView({block:'nearest'}); });
+    // where the choices go
+    var row=document.createElement('div'); row.className='tk-strip'; under.insertBefore(row, under.firstChild);
+    var wrap=document.createElement('div'); wrap.className='tk-pic'; svg.parentNode.insertBefore(wrap, svg); wrap.appendChild(svg);
+    var on=document.createElement('div'); on.className='tk-on '+(o.pin||'tr'); wrap.appendChild(on);
+    function fit(){
+      svg.style.maxHeight=''; wrap.style.maxWidth='';
+      if(window.innerWidth<=560) return;
+      var r=stage.getBoundingClientRect(), sv=svg.getBoundingClientRect(), rest=r.height-sv.height;
+      if(L==='c') rest=Math.max(0, left.getBoundingClientRect().height-sv.height)+24;
+      var mh=Math.max(260, Math.floor(window.innerHeight-(r.top+window.scrollY)-rest-12));
+      svg.style.maxHeight=mh+'px';
+      // the box round the picture is only as wide as the picture drawn, so anything laid on a corner stays on it
+      var vb=svg.viewBox && svg.viewBox.baseVal;
+      if(vb && vb.height) wrap.style.maxWidth=Math.floor(mh*vb.width/vb.height)+'px';
+    }
+    function layout(x){
+      L=x; root.classList.remove('lay-a','lay-b','lay-c'); root.classList.add('lay-'+x);
+      var hide=x==='b' && o.pin==='hide';
+      if(x==='c'){ strip.concat(pics).forEach(function(e){ side.appendChild(e); }); }
+      else{
+        strip.forEach(function(e){ row.appendChild(e); });
+        pics.forEach(function(e){ (x==='b' && !hide ? on : row).appendChild(e); });
+      }
+      pics.forEach(function(e){ e.style.display=hide?'none':''; });
+      if(lp) Array.prototype.forEach.call(lp.querySelectorAll('button'),function(b){ b.setAttribute('aria-pressed',b.getAttribute('data-l')===x?'true':'false'); });
+      if(o.trial){ try{ var u=new URL(location.href); u.searchParams.set('layout',x); history.replaceState(null,'',u.href); }catch(e){} }
+      if(o.onLayout) o.onLayout(x);
+      fit();
+    }
+    var lp=null;
+    if(o.trial && head){
+      lp=document.createElement('div'); lp.className='tk-lay';
+      lp.innerHTML='<span id="tk-lay-lab">Layout</span><div class="seg pick fit" role="group" aria-labelledby="tk-lay-lab"><button type="button" data-l="a">A</button><button type="button" data-l="b">B</button><button type="button" data-l="c">C</button></div>';
+      head.appendChild(lp);
+      lp.addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) layout(b.getAttribute('data-l')); });
+    }
+    layout((location.search.match(/[?&]layout=([abc])\b/)||[])[1]||o.layout||'b');
+    window.addEventListener('resize',fit); window.addEventListener('load',fit); setTimeout(fit,0);
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+    if(window.ResizeObserver) new ResizeObserver(function(){ requestAnimationFrame(fit); }).observe(under);
+    return {fit:fit, layout:function(){ return L; }};
+  }
+  // ---- end of teach kit ----
+  teachPage({svg:svg, mode:'rt-mode', strip:['rt-show-wrap','rt-opts','rt-draw-wrap'], q:null});
+
+  if(PW_LEVEL==='ial'||PW_LEVEL==='ib') levelSeg.pick(PW_LEVEL);
+  var qs=location.search, m;
+  if((m=qs.match(/[?&]view=(\w+)/)) && VIEWS.indexOf(m[1])>=0) st.view=m[1];
+  if((m=qs.match(/[?&]f=(\d+)/))) st.f=clamp(+m[1],4,12);
+  if((m=qs.match(/[?&]angle=(\d+)/))) st.angR=st.angF=clamp(Math.round(+m[1]/5)*5,0,60);
+  if((m=qs.match(/[?&]gap=([\d.]+)/))) st.gap=half(+m[1],1,14);
+  if((m=qs.match(/[?&]sep=([\d.]+)/))) st.sep=half(+m[1],2,12);
+  if(/[?&]kind=obstacle\b/.test(qs)) st.kind='obstacle';
+  if(/[?&]start=shallow\b/.test(qs)) st.from='shallow';
+  if((m=qs.match(/[?&]depth=([234])\b/))) st.depth=+m[1];
+  if(/[?&]wavelets\b/.test(qs)) st.wavelets=true;
+  if(/[?&]lines\b/.test(qs)) st.lines=true;
+  if(/[?&]partial\b/.test(qs)) st.partial=true;
+  if((m=qs.match(/[?&]phase=(in|anti|none)\b/))) st.phase=m[1];
+  setView(st.view); now();
+  if((m=qs.match(/[?&]t=([\d.]+|steady)\b/))){ if(m[1]==='steady') api.develop(); else { tw=+m[1]; changed(1); now(); } }
+})();
+</script>
+<script id="choice-kit-js">
+/* Choice kit (12 Nov 2026): the same block on every animation page. See tools/ANIMATION-STYLE.md, "Choices".
+   A group of choices with one chosen gets a track round it (class pick); a .to-q button opens the questions from Explore. */
+(function(){
+  function on(b){ return b.getAttribute('aria-pressed')==='true' || b.classList.contains('is-on'); }
+  function each(sel, fn){ Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+  function mark(s){
+    if(!s.classList.contains('pick')){
+      var n=0; Array.prototype.forEach.call(s.children, function(b){ if(b.tagName==='BUTTON' && on(b)) n++; });
+      if(n===1) s.classList.add('pick');
+    }
+    if(s.classList.contains('pick') && !s.hasAttribute('data-fit')){
+      var d=getComputedStyle(s).display;
+      if(d!=='none'){ s.setAttribute('data-fit','1'); if(d.indexOf('flex')>=0) s.classList.add('fit'); }
+    }
+  }
+  each('.seg:not(.tabs):not(.mode):not(.apps)', function(s){
+    mark(s);
+    if(window.MutationObserver) new MutationObserver(function(){ mark(s); }).observe(s, {childList:true, subtree:true, attributes:true, attributeFilter:['aria-pressed','class']});
+  });
+  // Choice rows: wrap each .rowlab and the control after it in a .cgroup (label above, groups side by side).
+  // A group is hidden when everything in it is hidden, so pages that hide a row's label and control still work.
+  function shown(e){ return !e.hidden && e.style.display!=='none'; }
+  each('.cgrid:not(.kit)', function(g){
+    var kids=Array.prototype.slice.call(g.children), groups=[];
+    for(var i=0;i<kids.length;i++){
+      var w=document.createElement('div'); w.className='cgroup';
+      g.insertBefore(w, kids[i]); w.appendChild(kids[i]);
+      if(kids[i].classList.contains('rowlab') && kids[i+1]){ w.appendChild(kids[i+1]); i++; }
+      groups.push(w);
+    }
+    g.classList.add('kit'); if(groups.length===1) g.classList.add('one');
+    groups.forEach(function(w){
+      function sync(){ var any=false; Array.prototype.forEach.call(w.children, function(c){ if(shown(c)) any=true; }); w.hidden=!any; }
+      sync();
+      if(window.MutationObserver) Array.prototype.forEach.call(w.children, function(c){ new MutationObserver(sync).observe(c, {attributes:true, attributeFilter:['hidden','style']}); });
+    });
+  });
+  each('.to-q[data-mode]', function(b){
+    var seg=document.getElementById(b.getAttribute('data-mode')); if(!seg) return;
+    var bs=seg.querySelectorAll('button');
+    function sync(){ b.hidden=!on(bs[0]) || !seg.getClientRects().length; }   // hidden too when the page hides its mode switch (e.g. at a level with no questions)
+    b.addEventListener('click', function(){ bs[1].click(); bs[1].focus(); });
+    if(window.MutationObserver) new MutationObserver(sync).observe(seg, {subtree:true, attributes:true, attributeFilter:['aria-pressed']});
+    document.addEventListener('click', function(){ setTimeout(sync, 0); });
+    sync(); setTimeout(sync, 0);
+  });
+})();
+</script>
+<footer class="pw-licence" style="max-width:1400px;margin:32px auto 0;padding:8px 20px 24px;font:13px/1.5 'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-faint,#6b6b6b)">&copy; 2026 Physics Workout by Alexander Robson &middot; <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license" style="color:inherit;display:inline-block;padding:12px 0">CC BY-NC-SA 4.0</a>: share and adapt with credit, not for sale.<script>if(/[?&]embed\b/.test(location.search)||window.self!==window.top)document.currentScript.parentNode.hidden=true;</script></footer>
+</body>
+</html>
